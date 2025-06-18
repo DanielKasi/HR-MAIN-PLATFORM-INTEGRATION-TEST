@@ -375,7 +375,7 @@ class ResendOTPAPIView(APIView):
                 status=status.HTTP_201_CREATED,
             )
 
-        except CustomUser.DoesNotExist | Exception as e:
+        except Exception as e:
             return Response(
                 {"detail": "Could not send the OTP"},
                 status=status.HTTP_401_UNAUTHORIZED,
