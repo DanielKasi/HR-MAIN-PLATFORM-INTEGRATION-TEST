@@ -233,80 +233,53 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
-      title: "GPS Tracking",
+      title: "Recruitment",
       href: "#1",
       icon: <Package2 className="h-5 w-5" />,
       // requiredPermission: "can_access_valuation",
       submenu: [
         {
-          title: "Monitor",
-          href: "/monitor",
+          title: "Job Adverts",
+          href: "/job-adverts",
           // requiredPermission: "can_access_gps_monitioning",
         },
         {
-          title: "Device Management",
-          href: "/device-management",
+          title: "Applications",
+          href: "/applications",
           // requiredPermission: "can_access_gps_device_management",
         },
         {
-          title: "Reports",
-          href: "/tracking-reports",
+          title: "Interviews",
+          href: "/interviews",
           // requiredPermission: "can_access_gps_reports",
         },
       ],
     },
     {
-      title: "Asset Valuation",
+      title: "Onboarding",
+      href: "/onboarding",
+      icon: <Icon height="24" icon="hugeicons:inbox-download" width="24" />,
+      // requiredPermission: "can_view_orders",
+    },
+    {
+      title: "Employees",
       href: "#1",
       icon: <Package2 className="h-5 w-5" />,
       // requiredPermission: "can_access_valuation",
       submenu: [
         {
-          title: "Valuation Requests",
-          href: "/valuation-requests",
+          title: "Profile",
+          href: "/profile",
           // requiredPermission: "can_access_valuation_requests",
         },
         {
-          title: "Valuation Instructions",
+          title: "All Employees",
           href: "/valuation-instructions",
           // requiredPermission: "can_access_valuation_instructions",
-        },
-        {
-          title: "Reviews And Approvals",
-          href: "/reviews-and-approvals",
-          // requiredPermission: "can_access_valuation_reviews_and_approvals",
-        },
-        {
-          title: "Completed Valuations",
-          href: "/completed-valuations",
-          // requiredPermission: "can_access_completed_valuations",
-        },
-        {
-          title: "Asset Register",
-          href: "/asset-register",
-          // requiredPermission: "can_access_asset_register",
-        },
-        {
-          title: "Inspections",
-          href: "/inspections",
-          // requiredPermission: "can_access_inspections",
-        },
+        }
       ],
     },
 
-    // {
-    //   title: "Recovery",
-    //   href: "/recovery",
-    //   icon: <Icon height="24" icon="hugeicons:inbox-download" width="24" />,
-    //   // requiredPermission: "can_view_orders",
-    // },
-
-    // {
-    //   title: "Parking",
-    //   href: "/parking",
-    //   icon: <Icon height="24" icon="hugeicons:inbox-download" width="24" />,
-    //   // requiredPermission: "can_view_orders",
-    // },
   ];
 
   const toggleSideBar = () => {

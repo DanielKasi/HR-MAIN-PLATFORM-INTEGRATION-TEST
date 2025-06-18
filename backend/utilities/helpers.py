@@ -247,4 +247,5 @@ accounts_increased_by_credits = [
 
 
 def get_system_parameter(code):
-    return SystemParameters.objects.get(code=code)
+    ...
+    # return SystemParameters.objects.get(code=code)
