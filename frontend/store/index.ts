@@ -38,7 +38,14 @@ const storage = typeof window !== "undefined" ? createWebStorage("local") : crea
 const persistConfig: PersistConfig<RootState> = {
   key: "root",
   storage,
-  blacklist: [], // We can define the slices to blacklist here
+  version:1,
+  blacklist: [], // We can define the slices to blacklist here,
+  migrate: async (state, currentVersion) => {
+    if(!state || state._persist.version !== currentVersion){
+      return undefined
+    }
+    return state
+  }
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
