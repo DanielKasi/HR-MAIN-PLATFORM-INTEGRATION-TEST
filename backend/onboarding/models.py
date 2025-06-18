@@ -10,8 +10,8 @@ class OnBoarding(models.Model):
     ]
     
     application = models.ForeignKey(
-        'applications.Application',
-        on_delete=models.CASCADE,
+        'recruitment.JobAdvertApplication',
+        on_delete=models.PROTECT,
         related_name='onboardings'
     )
     attended = models.BooleanField(default=False)
