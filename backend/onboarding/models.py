@@ -12,7 +12,9 @@ class OnBoarding(models.Model):
     application = models.OneToOneField(
         'recruitment.JobAdvertApplication',
         on_delete=models.PROTECT,
-        related_name='onboarding'
+        related_name='onboarding',
+        null=True,
+        blank=True
     )
     attended = models.BooleanField(default=False)
     remarks = models.TextField(blank=True, null=True)
@@ -21,7 +23,7 @@ class OnBoarding(models.Model):
         choices=STATUS_CHOICES,
         default='training'
     )
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
