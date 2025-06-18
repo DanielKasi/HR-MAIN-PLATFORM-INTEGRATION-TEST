@@ -9,10 +9,10 @@ class OnBoarding(models.Model):
         ('accepted_offer', 'Accepted Offer'),
     ]
     
-    application = models.ForeignKey(
+    application = models.OneToOneField(
         'recruitment.JobAdvertApplication',
         on_delete=models.PROTECT,
-        related_name='onboardings'
+        related_name='onboarding'
     )
     attended = models.BooleanField(default=False)
     remarks = models.TextField(blank=True, null=True)
