@@ -1,0 +1,49 @@
+[
+  {
+    "code": "product",
+    "label": "All approvals on a product",
+    "workflow_actions": [
+      { "code": "product_creation", "label": "When a Product is created" }
+    ]
+  },
+  {
+    "code": "purchase_order",
+    "label": "All approvals on a purchase order",
+    "workflow_actions": [
+      {
+        "code": "purchase_order_creation",
+        "label": "When a Purchase Order is created"
+      }
+    ]
+  },
+  {
+    "code": "stock_movement_to_branch",
+    "label": "All approvals on stock allocation to a branch",
+    "workflow_actions": [
+      {
+        "code": "stock_movement_to_branch",
+        "label": "When Stock is allocated to a branch"
+      }
+    ]
+  },
+  {
+    "code": "stock_movement_to_shelf",
+    "label": "All approvals on stock movement to shelf",
+    "workflow_actions": [
+      {
+        "code": "stock_movement_to_shelf",
+        "label": "When branch stock is moved to shelf"
+      }
+    ]
+  },
+  {
+    "code": "return_request",
+    "label": "All approvals on the return request",
+    "workflow_actions": [
+      {
+        "code": "return_request",
+        "label": "When a return request is made"
+      }
+    ]
+  }
+]

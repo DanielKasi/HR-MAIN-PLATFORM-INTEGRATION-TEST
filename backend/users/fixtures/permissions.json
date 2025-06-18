@@ -1,0 +1,86 @@
+{
+  "User Management": [
+    {
+      "code": "can_deactivate_users",
+      "name": "Create Product",
+      "description": "Allows creating new products"
+    },
+    {
+      "code": "can_create_users",
+      "name": "Can Create User",
+      "description": "Can Create User"
+    },
+    {
+      "code": "view_users",
+      "name": "can view users",
+      "description": "can view users"
+    },
+    {
+      "code": "can_view_staff_roles",
+      "name": "can view staff roles",
+      "description": "Can View Staff Roles"
+    },
+    {
+      "code": "can_edit_staff_roles",
+      "name": "can edit staff roles",
+      "description": "Can Edit Staff Roles"
+    },
+    {
+      "code": "can_edit_user",
+      "name": "can edit users",
+      "description": "can edit users"
+    }
+  ],
+  "Administrative Tasks": [
+    {
+      "code": "can_view_admin_dashboard",
+      "name": "Can View Admin Dashboard",
+      "description": "This permissions lets someone see the button to access admin"
+    },
+    {
+      "code": "can_view_guide",
+      "name": "Can View Guide",
+      "description": "This permissions lets someone view the Institution setup guide"
+    },
+    {
+      "code": "can_view_settings",
+      "name": "Can View Settings",
+      "description": "This lets someone view Institution organisation settings"
+    },
+    {
+      "code": "can_view_modules",
+      "name": "Can View Modules",
+      "description": "This lets someone view modules"
+    },
+    {
+      "code": "can_change_theme_color",
+      "name": "Can Change Theme Color",
+      "description": "This lets someone change the theme color of the Institution"
+    },
+    {
+      "code": "can_add_Institution_approval_steps",
+      "name": "Can add Institution approval steps",
+      "description": "This lets someone add new Institution approval steps"
+    },
+    {
+      "code": "can_edit_branch",
+      "name": "Can Edit Branch",
+      "description": "This lets someone edit branch details"
+    },
+    {
+      "code": "can_delete_branch",
+      "name": "Can Delete Branch",
+      "description": "This lets someone delete branch details"
+    },
+    {
+      "code": "can_add_branch",
+      "name": "Can Add Branch",
+      "description": "This lets someone add new branch details"
+    },
+    {
+      "code": "can_view_admin_page",
+      "name": "Can View Admin Page",
+      "description": "This lets someone view admin page"
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+export enum MISC_ACTION_TYPES {
+  TOGGLE_SIDEBAR = "misc/TOGGLE_SIDEBAR",
+}
