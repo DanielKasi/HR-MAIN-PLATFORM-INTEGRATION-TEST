@@ -36,6 +36,9 @@ INSTALLED_APPS = [
     "users",
     "institution",
     "workflows",
+    "employee",
+    "onboarding",
+    "recruitment",
 ]
 
 MIDDLEWARE = [

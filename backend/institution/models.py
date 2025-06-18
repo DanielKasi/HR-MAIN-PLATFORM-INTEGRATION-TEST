@@ -1,14 +1,15 @@
 from django.db import models
 from datetime import time
+
 # from django.contrib.gis.db import models as gis_models
 
 
 class Institution(models.Model):
     APPROVAL_STATUS_CHOICES = [
-        ('pending', 'Pending Approval'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('under_review', 'Under Review'),
+        ("pending", "Pending Approval"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+        ("under_review", "Under Review"),
     ]
     institution_owner = models.ForeignKey(
         "users.CustomUser", related_name="institutions_owned", on_delete=models.CASCADE
@@ -17,7 +18,9 @@ class Institution(models.Model):
     institution_name = models.CharField(max_length=255)
     first_phone_number = models.CharField(max_length=20, blank=True, null=True)
     second_phone_number = models.CharField(max_length=20, blank=True, null=True)
-    institution_logo = models.ImageField(upload_to="institutions/images/", blank=True, null=True)
+    institution_logo = models.ImageField(
+        upload_to="institutions/images/", blank=True, null=True
+    )
 
     theme_color = models.CharField(max_length=400, blank=True, null=True)
     setup = models.BooleanField(default=False)
@@ -31,7 +34,7 @@ class Institution(models.Model):
     approval_status = models.CharField(
         max_length=20,
         choices=APPROVAL_STATUS_CHOICES,
-        default='approved' #This will later be changed to pending when a whole implementation of approval at the management side is done
+        default="approved",  # This will later be changed to pending when a whole implementation of approval at the management side is done
     )
     approval_date = models.DateTimeField(blank=True, null=True)
     approved_by = models.ForeignKey(
@@ -39,12 +42,11 @@ class Institution(models.Model):
         related_name="approved_institutions",
         on_delete=models.PROTECT,
         blank=True,
-        null=True
+        null=True,
     )
     rejection_reason = models.TextField(blank=True, null=True)
 
     description = models.TextField(blank=True, null=True)
-
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -57,14 +59,14 @@ class Institution(models.Model):
     )
 
     class Meta:
-        unique_together = ('institution_owner', 'institution_name')
+        unique_together = ("institution_owner", "institution_name")
 
     def __str__(self):
         return self.name
 
     @property
     def is_approved(self):
-        return self.approval_status == 'approved'
+        return self.approval_status == "approved"
 
     def save(self, *args, **kwargs):
         # if self.latitude and self.longitude:
@@ -74,7 +76,9 @@ class Institution(models.Model):
 
 
 class InstitutionDocument(models.Model):
-    institution = models.ForeignKey(Institution, related_name="documents", on_delete=models.CASCADE)
+    institution = models.ForeignKey(
+        Institution, related_name="documents", on_delete=models.CASCADE
+    )
     document_title = models.CharField(max_length=255)
     document_file = models.FileField(upload_to="institutions/documents/")
     document_type = models.CharField(max_length=10, blank=True, null=True)
@@ -92,7 +96,7 @@ class InstitutionDocument(models.Model):
     def save(self, *args, **kwargs):
         if self.document_file and not self.pk:
             self.document_size = self.document_file.size
-            self.document_type = self.document_file.name.split('.')[-1].lower()
+            self.document_type = self.document_file.name.split(".")[-1].lower()
         super().save(*args, **kwargs)
 
     @property
@@ -102,9 +106,10 @@ class InstitutionDocument(models.Model):
         return 0
 
 
-
 class Branch(models.Model):
-    institution = models.ForeignKey(Institution, related_name="branches", on_delete=models.CASCADE)
+    institution = models.ForeignKey(
+        Institution, related_name="branches", on_delete=models.CASCADE
+    )
     branch_name = models.CharField(max_length=255, blank=True, null=True)
     branch_phone_number = models.CharField(max_length=20, blank=True, null=True)
     branch_location = models.CharField(max_length=255)
@@ -133,6 +138,7 @@ class Branch(models.Model):
             + " - "
             + self.branch_name
         )
+
 
 # Many to many relationship between branches and users
 # user can have multiple branches and branches can have multiple users
@@ -169,3 +175,20 @@ class UserBranch(models.Model):
 
     def __str__(self):
         return self.user.email + " - " + self.branch.branch_location
+
+
+class Department(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    institution = models.ForeignKey(
+        Institution, related_name="departments", on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        "users.CustomUser",
+        related_name="created_departments",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
