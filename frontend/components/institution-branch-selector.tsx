@@ -75,7 +75,7 @@ export function InstitutionBranchSelector() {
     if (selectedInstitution && selectedBranch) {
       setDisplayName(`${selectedBranch.branch_name}`);
     } else if (selectedInstitution) {
-      setDisplayName(selectedInstitution.Institution_name);
+      setDisplayName(selectedInstitution.institution_name);
     } else {
       setDisplayName("Select Institution");
     }
