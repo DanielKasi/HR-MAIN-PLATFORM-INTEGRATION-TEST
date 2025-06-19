@@ -263,16 +263,11 @@ export const updateJobPosition = async ({
 export const createJobApplication = async ({
   institutionId,
   applicationData,
-<<<<<<< Updated upstream
 }: {
   institutionId: number
-=======
-}: {institutionId:number,
->>>>>>> Stashed changes
   applicationData: JobApplicationFormData;
 }): Promise<JobApplication | null> => {
-  try {
-    console.log(`Making request to: recruitment/institution/${institutionId}/job-application/`)
+  
     
     const formData = new FormData();
     
@@ -284,15 +279,8 @@ export const createJobApplication = async ({
       }
     });
 
-<<<<<<< Updated upstream
-    // Log FormData contents (for debugging)
-    console.log("FormData entries:")
-    for (let [key, value] of formData.entries()) {
-      console.log(key, value instanceof File ? `File: ${value.name}` : value)
-    }
-=======
-    const response = await apiRequest.post(`recruitment/institution/${institutionId}/job-application/`, formData);
->>>>>>> Stashed changes
+
+
 
     const response = await apiRequest.post(
       `recruitment/institution/${institutionId}/job-application/`, 
@@ -301,17 +289,6 @@ export const createJobApplication = async ({
 
     console.log("API Response:", response.data)
     return response.data as JobApplication;
-  } catch (error: any) {
-    console.error("API Error Details:")
-    console.error("- Status:", error?.response?.status)
-    console.error("- Status Text:", error?.response?.statusText)
-    console.error("- Response Data:", error?.response?.data)
-    console.error("- Request URL:", error?.config?.url)
-    console.error("- Full Error:", error)
-    
-    // Re-throw the error so the component can handle it
-    throw error;
-  }
 };
 
 // Fetch all job applications for a specific institution

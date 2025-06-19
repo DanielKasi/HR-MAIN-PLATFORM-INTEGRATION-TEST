@@ -145,6 +145,9 @@ export interface CreateJobPositionData {
 
 
 export interface JobApplication {
+  job_position_advert_job_details: any;
+  job_position_advert_job_details: any;
+  positions: ReactNode;
   id: number
   job_position_advert: number
   applicant_name: string
@@ -180,6 +183,7 @@ export interface JobApplicationFormData {
 export type JobAdvertStatus = "expired" | "active" | "archived" | "closed";
 
 export interface JobPositionAdvert {
+  job_position_details: any;
   id: number;
   job_position: number; // Foreign key to JobPosition
   status: JobAdvertStatus;
