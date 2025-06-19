@@ -336,14 +336,6 @@ export interface ITill {
 
 
 
-
-
-
-
-
-
-
-
 // replace the fields below with whatever your CustomUserSerializer emits
 export interface ICustomUser {
   id: number;

@@ -257,7 +257,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     },
     {
       title: "Onboarding",
-      href: "/onboarding",
+      href: "#",
       icon: <Icon height="24" icon="hugeicons:inbox-download" width="24" />,
       // requiredPermission: "can_view_orders",
     },
@@ -269,7 +269,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       submenu: [
         {
           title: "Profile",
-          href: "/#5",
+          href: "#5",
           // requiredPermission: "can_access_valuation_requests",
         },
         {
