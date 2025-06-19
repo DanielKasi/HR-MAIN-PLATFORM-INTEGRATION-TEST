@@ -10,8 +10,8 @@ class JobPosition(models.Model):
         on_delete=models.PROTECT,
         related_name="job_positions",
     )
-    contract_template = models.FileField(upload_to="job_positions/contracts/")
-    offer_letter_template = models.FileField(upload_to="job_positions/offer_letters/")
+    contract_template = models.FileField(upload_to="job_positions/contracts/", blank=True, null=True)
+    offer_letter_template = models.FileField(upload_to="job_positions/offer_letters/", blank=True, null=True)
     salary = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     reports_to = models.ForeignKey(
         "self",

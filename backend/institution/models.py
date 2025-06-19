@@ -183,6 +183,13 @@ class Department(models.Model):
     institution = models.ForeignKey(
         Institution, related_name="departments", on_delete=models.CASCADE
     )
+    head_of_department = models.OneToOneField(
+        "employee.Employee",
+        related_name="department_head",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
