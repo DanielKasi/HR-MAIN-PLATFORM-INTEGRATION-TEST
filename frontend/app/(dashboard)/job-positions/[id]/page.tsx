@@ -180,7 +180,7 @@ export default function JobPositionDetailsPage() {
                   <DollarSign className="h-5 w-5" />
                   {formatCurrency(jobPosition.salary.toLocaleString())}
                 </div>
-                <p className="text-sm text-muted-foreground">Annual Salary</p>
+                <p className="text-sm text-muted-foreground">Salary</p>
               </div>
             </div>
           </CardHeader>

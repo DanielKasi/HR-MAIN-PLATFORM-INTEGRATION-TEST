@@ -108,20 +108,6 @@ export default function DashboardPage() {
       <div className="space-y-6">
         <WelcomeCard />
 
-        {isMounted && InstitutionId && canViewThisGuide && (
-          <>
-            {!isSetupComplete() && (
-              <SetupGuide
-                className="mb-8"
-                collapsible={true}
-                maxVisibleSteps={4}
-                InstitutionId={InstitutionId}
-                showCompleteButton={true}
-              />
-            )}
-          </>
-        )}
-
         {isMounted && InstitutionId && (
           <>
             <div className="flex items-center justify-between mb-6">
