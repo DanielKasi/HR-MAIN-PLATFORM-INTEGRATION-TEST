@@ -21,7 +21,7 @@ class JobPositionListAPI(APIView):
     def post(self, request, institution_id):
         serializer = JobPositionSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(institution_id=institution_id)
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
