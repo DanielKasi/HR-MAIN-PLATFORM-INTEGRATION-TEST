@@ -90,7 +90,7 @@ class JobPositionAdvertListAPI(APIView):
         summary="Create Job Position Advert",
         tags=["Recruitment"]
     )
-    def post(self, request):
+    def post(self, request, institution_id):
         serializer = JobPositionAdvertSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -153,12 +153,13 @@ class JobAdvertApplicationListAPI(APIView):
         summary="Submit Job Application",
         tags=["Recruitment"]
     )
-    def post(self, request):
+    def post(self, request, institution_id):
         serializer = JobAdvertApplicationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
+
 
     @extend_schema(
         responses={200: JobAdvertApplicationSerializer(many=True)},
@@ -216,7 +217,7 @@ class InterviewStageListAPI(APIView):
         summary="Create Interview Stage",
         tags=["Recruitment"]
     )
-    def post(self, request):
+    def post(self, request, institution_id):
         serializer = InterviewStageSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -279,7 +280,7 @@ class JobInterviewListAPI(APIView):
         summary="Schedule Job Interview",
         tags=["Recruitment"]
     )
-    def post(self, request):
+    def post(self, request, institution_id):
         serializer = JobInterviewSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
