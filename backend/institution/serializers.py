@@ -193,9 +193,9 @@ class UserBranchSerializer(serializers.ModelSerializer):
 
 class DepartmentSerializer(serializers.ModelSerializer):
     institution_details = InstitutionSerializer(source="institution", read_only=True)
-    head_of_department_details = EmployeeSerializer(
-        source="head_of_department", read_only=True
-    )
+    # head_of_department_details = EmployeeSerializer(
+    #     source="head_of_department", read_only=True
+    # )
 
     class Meta:
         model = Department
@@ -204,7 +204,7 @@ class DepartmentSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "institution",
-            "head_of_department",
-            "head_of_department_details",
+            # "head_of_department",
+            # "head_of_department_details",
             "institution_details",
         ]

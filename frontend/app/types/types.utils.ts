@@ -51,12 +51,7 @@ export enum PERMISSION_CODES {
 
 
 
-export interface Department {
-  id: number
-  name: string
-  description: string
-  institution: number
-}
+
 
 export interface CreateDepartmentData {
   name: string
@@ -71,36 +66,82 @@ export interface DepartmentFormData {
   institution: number
 }
 
-export interface JobApplication {
-  id: number
-  job_position_advert: number
-  applicant_name: string
-  applicant_email: string
-  applicant_phone: string
-  resume: string
-  cover_letter: string
-  application_date: string
-  status: "new" | "reviewed" | "shortlisted" | "rejected" | "passed"
-  gender: "male" | "female"
-  state: string
-  address: string
-  country: string
-  source: "website" | "referral" | "job_board" | "social_media" | "other"
+
+export interface IInstitution {
+  id: number;
+  institutionEmail: string;
+  institutionName: string;
+  firstPhoneNumber: string;
+  secondPhoneNumber?: string | null;
+  institutionLogo?: string | null; // ImageField serialized as URL or null
+  institutionOwnerId: number; // ForeignKey as ID
+  themeColor?: string | null;
+  location?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  approvalStatus: string;
+  approvalStatusDisplay: string;
+  approvalDate?: string | null; // ISO date
+  documents: IInstitutionDocument[]; // Embedded serializer
+  documentFiles?: File[]; // Write-only field
+  documentTitles?: string[]; // Write-only field
 }
 
-export interface JobApplicationFormData {
-  job_position_advert: number
-  applicant_name: string
-  applicant_email: string
-  applicant_phone?: string
-  resume: File
-  cover_letter?: File
-  application_date?: string
-  status?: "new" | "reviewed" | "shortlisted" | "rejected" | "passed"
-  gender: "male" | "female"
-  state?: string
-  address: string
-  country: string
-  source?: "website" | "referral" | "job_board" | "social_media" | "other"
+export interface IInstitutionDocument {
+  id: number;
+  title: string;
+  fileUrl: string; // Adjust based on the serializer output
 }
+
+export interface IDepartment {
+  id: number;
+  name: string;
+  description?: string | null;
+  institution: number; // ForeignKey as ID
+  institutionDetails?: IInstitution | null; // Embedded serializer
+}
+
+export interface IReportsToDetails {
+  id: number;
+  name: string;
+  email: string;
+  department: string; // Department name
+}
+
+export interface IJobPosition {
+  id: number;
+  name: string;
+  description?: string | null;
+  department: number; // ForeignKey as ID
+  departmentDetails?: IDepartment | null; // Embedded serializer
+  reportsTo?: number | null; // ForeignKey as ID
+  reportsToDetails?: IReportsToDetails | null; // SerializerMethodField
+  contractTemplate?: string | null; // FileField serialized as URL
+  offerLetterTemplate?: string | null; // FileField serialized as URL
+  salary: number;
+}
+
+
+
+export interface JobPositionFormData {
+  name: string
+  description: string
+  department: number | null
+  reportsTo: number | null
+  contractTemplate: File | null
+  offerLetterTemplate: File | null
+  salary: string
+}
+
+export interface CreateJobPositionData {
+  name: string
+  description?: string
+  department: number
+  reports_to?: number
+  contract_template?: File
+  offer_letter_template?: File
+  salary: number
+}
+
+
 

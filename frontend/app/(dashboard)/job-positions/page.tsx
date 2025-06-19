@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
-import { Building2, Plus, Search, Filter, MoreVertical, Edit, Trash2, RefreshCw } from "lucide-react"
+import { Briefcase, Plus, Search, Filter, MoreVertical, Edit, Trash2, RefreshCw, DollarSign, Users } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,12 +13,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Skeleton } from "@/components/ui/skeleton"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { getDepartments } from "@/lib/utils"
-import { IDepartment } from "@/app/types/types.utils"
+import { getJobPositions } from "@/lib/utils"
+import { IJobPosition } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import { formatCurrency } from "@/lib/helpers"
 
-export default function DepartmentsPage() {
-  const [departments, setDepartments] = useState<IDepartment[]>([])
+export default function JobPositionsPage() {
+  const [jobPositions, setJobPositions] = useState<IJobPosition[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -34,10 +35,10 @@ export default function DepartmentsPage() {
       return
     }
 
-    fetchDepartments()
+    fetchJobPositions()
   }, [selectedBranch, selectedInstitution, router])
 
-  const fetchDepartments = async (showRefreshLoader = false) => {
+  const fetchJobPositions = async (showRefreshLoader = false) => {
     if (!selectedInstitution) return
 
     try {
@@ -48,17 +49,17 @@ export default function DepartmentsPage() {
       }
       setError("")
 
-      const fetchedDepartments = await getDepartments({ institutionId: selectedInstitution.id })
+      const fetchedJobPositions = await getJobPositions({ institutionId: selectedInstitution.id })
 
-      if (fetchedDepartments) {
-        setDepartments(fetchedDepartments)
+      if (fetchedJobPositions) {
+        setJobPositions(fetchedJobPositions)
       } else {
-        setError("Failed to fetch departments. Please try again.")
-        toast.error("Failed to load departments")
+        setError("Failed to fetch job positions. Please try again.")
+        toast.error("Failed to load job positions")
       }
     } catch (err) {
-      setError("Failed to fetch departments. Please try again.")
-      toast.error("Failed to load departments")
+      setError("Failed to fetch job positions. Please try again.")
+      toast.error("Failed to load job positions")
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
@@ -66,26 +67,27 @@ export default function DepartmentsPage() {
   }
 
   const handleRefresh = () => {
-    fetchDepartments(true)
+    fetchJobPositions(true)
   }
 
-  const filteredDepartments = departments.filter(
-    (dept) =>
-      dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dept?.description?.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredJobPositions = jobPositions.filter(
+    (position) =>
+      position.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      position.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      position.departmentDetails?.name.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleCreateDepartment = () => {
-    router.push("/admin/departments/create")
+  const handleCreateJobPosition = () => {
+    router.push("/job-positions/create")
   }
 
-  const handleEditDepartment = (departmentId: number) => {
-    router.push(`/admin/departments/${departmentId}/edit`)
+  const handleEditJobPosition = (positionId: number) => {
+    router.push(`/job-positions/${positionId}/edit`)
   }
 
-  const handleDeleteDepartment = (departmentId: number) => {
+  const handleDeleteJobPosition = (positionId: number) => {
     // TODO: Implement delete functionality
-    toast.success("Department deletion would be implemented here")
+    toast.success("Job position deletion would be implemented here")
   }
 
   if (!selectedInstitution || !selectedBranch) {
@@ -97,9 +99,9 @@ export default function DepartmentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Departments</h1>
+          <h1 className="text-2xl font-bold">Job Positions</h1>
           <p className="text-muted-foreground">
-            Manage departments for {selectedBranch.branch_name} - {selectedInstitution.Institution_name}
+            Manage job positions for {selectedBranch.branch_name} - {selectedInstitution.Institution_name}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -113,9 +115,9 @@ export default function DepartmentsPage() {
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
             Refresh
           </Button>
-          <Button onClick={handleCreateDepartment} className="flex items-center gap-2">
+          <Button onClick={handleCreateJobPosition} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Create Department
+            Create Job Position
           </Button>
         </div>
       </div>
@@ -125,7 +127,7 @@ export default function DepartmentsPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search departments..."
+            placeholder="Search job positions..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -142,20 +144,22 @@ export default function DepartmentsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">{departments.length}</div>
-              <p className="text-xs text-muted-foreground">Total Departments</p>
+              <div className="text-2xl font-bold">{jobPositions.length}</div>
+              <p className="text-xs text-muted-foreground">Total Job Positions</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">{filteredDepartments.length}</div>
+              <div className="text-2xl font-bold">{filteredJobPositions.length}</div>
               <p className="text-xs text-muted-foreground">Filtered Results</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">{selectedInstitution.Institution_name}</div>
-              <p className="text-xs text-muted-foreground">Current Organization</p>
+              <div className="text-2xl font-bold">
+                ${formatCurrency(jobPositions.reduce((sum, pos) => Number(sum) + Number(pos.salary), 0))}
+              </div>
+              <p className="text-xs text-muted-foreground">Total Salary Budget</p>
             </CardContent>
           </Card>
         </div>
@@ -168,7 +172,7 @@ export default function DepartmentsPage() {
         </div>
       )}
 
-      {/* Departments Grid */}
+      {/* Job Positions Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {[...Array(8)].map((_, i) => (
@@ -184,35 +188,36 @@ export default function DepartmentsPage() {
             </Card>
           ))}
         </div>
-      ) : filteredDepartments.length === 0 ? (
+      ) : filteredJobPositions.length === 0 ? (
         <Card className="p-12 text-center">
-          <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No departments found</h3>
+          <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No job positions found</h3>
           <p className="text-muted-foreground mb-4">
             {searchTerm
-              ? "No departments match your search criteria."
-              : "Get started by creating your first department."}
+              ? "No job positions match your search criteria."
+              : "Get started by creating your first job position."}
           </p>
           {!searchTerm && (
-            <Button onClick={handleCreateDepartment} className="flex items-center gap-2">
+            <Button onClick={handleCreateJobPosition} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              Create First Department
+              Create First Job Position
             </Button>
           )}
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredDepartments.map((department) => (
-            <Card key={department.id} className="hover:shadow-md transition-shadow">
+          {filteredJobPositions.map((position) => (
+            <Card key={position.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Building2 className="h-5 w-5 text-primary" />
+                      <Briefcase className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg">{department.name}</CardTitle>
+                      <CardTitle className="text-lg">{position.name}</CardTitle>
                       <Badge variant="secondary" className="text-xs">
+                        ID: {position.id}
                       </Badge>
                     </div>
                   </div>
@@ -223,23 +228,63 @@ export default function DepartmentsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEditDepartment(department.id)}>
+                      <DropdownMenuItem onClick={() => handleEditJobPosition(position.id)}>
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDeleteDepartment(department.id)}
+                      {/* <DropdownMenuItem
+                        onClick={() => handleDeleteJobPosition(position.id)}
                         className="text-destructive"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
-                      </DropdownMenuItem>
+                      </DropdownMenuItem> */}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground line-clamp-3">{department.description}</p>
+                <p className="text-sm text-muted-foreground line-clamp-2">{position.description}</p>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Department:</span>
+                    <Badge variant="outline">{position.departmentDetails?.name}</Badge>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <DollarSign className="h-3 w-3" />
+                      Salary:
+                    </span>
+                    <span className="font-medium">${position.salary.toLocaleString()}</span>
+                  </div>
+
+                  {position.reportsToDetails && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        Reports to:
+                      </span>
+                      <span className="font-medium text-xs">{position.reportsToDetails.name}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2 border-t">
+                  <div className="flex gap-2">
+                    {position.contractTemplate && (
+                      <Badge variant="outline" className="text-xs">
+                        Contract
+                      </Badge>
+                    )}
+                    {position.offerLetterTemplate && (
+                      <Badge variant="outline" className="text-xs">
+                        Offer Letter
+                      </Badge>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           ))}
