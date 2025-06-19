@@ -65,7 +65,7 @@ export default function WelcomePage() {
 
             <div className="space-y-4 text-center grid w-8/12 mx-auto justify-items-center">
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                Welcome to APPLICATION NAME, {userName}
+                Welcome to BAIFAM HR SYSTEM, {userName}
               </h1>
 
               <p className="text-muted-foreground text-center">

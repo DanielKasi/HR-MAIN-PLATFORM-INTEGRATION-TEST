@@ -115,7 +115,7 @@ export default function SignupPage() {
           </div>
           <CardTitle className="text-2xl text-center">Create an Account</CardTitle>
           <CardDescription className="text-center">
-            Enter your details to sign up for APPLICATION NAME
+            Enter your details to sign up for BAIFAM HR SYSTEM
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSignup}>

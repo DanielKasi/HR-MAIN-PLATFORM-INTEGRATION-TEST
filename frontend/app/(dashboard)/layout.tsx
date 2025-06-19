@@ -585,7 +585,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             />
           </div>
 
-          <h1 className="text-xl font-semibold text-gray-600 ml-8">APPLICATION NAME</h1>
+          <h1 className="text-xl font-semibold text-gray-600 ml-8">BAIFAM HR SYSTEM</h1>
 
           <div className="flex-1 flex justify-center">
             {/* Assuming InstitutionBranchSelector is a custom component, we'll wrap it to add hover effects */}

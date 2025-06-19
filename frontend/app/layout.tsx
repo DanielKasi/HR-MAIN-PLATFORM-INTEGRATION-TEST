@@ -16,7 +16,7 @@ import {cn} from "@/lib/utils";
 const inter = Inter({subsets: ["latin"]});
 
 export const metadata: Metadata = {
-  title: "APPLICATION NAME",
+  title: "BAIFAM HR SYSTEM",
   description: "A comprehensive SaaS solution for organisation management",
   generator: "v0.dev",
 };
