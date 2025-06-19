@@ -1,6 +1,6 @@
 import {type ClassValue, clsx} from "clsx";
 import {twMerge} from "tailwind-merge";
-import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, IInterview } from "@/app/types/types.utils";
+import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, IInterview, EmployeeFormData, User } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/app/types";
@@ -267,10 +267,10 @@ export const createJobApplication = async ({
   institutionId: number
   applicationData: JobApplicationFormData;
 }): Promise<JobApplication | null> => {
-  
-    
+
+
     const formData = new FormData();
-    
+
     // Log what we're appending to FormData
     Object.entries(applicationData).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
@@ -283,7 +283,7 @@ export const createJobApplication = async ({
 
 
     const response = await apiRequest.post(
-      `recruitment/institution/${institutionId}/job-application/`, 
+      `recruitment/institution/${institutionId}/job-application/`,
       formData
     );
 
@@ -460,7 +460,7 @@ export const getInterviews = async ({ institutionId }: { institutionId: number }
       return null
     }
   }
-  
+
   export const getInterviewById = async ({
     interviewId,
   }: {
@@ -474,3 +474,77 @@ export const getInterviews = async ({ institutionId }: { institutionId: number }
       return null;
     }
   };
+
+// It returns a promise that resolves to an array of IEmployee objects or throws an error ifAdd commentMore actions
+export const getAllEmployees = async ({institutionId}:{institutionId:number}) => {
+  try {
+    const endpoint = `employee/${institutionId}/employee/`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IEmployee[];
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const createEmployee = async ({
+  institutionId,
+  employeeData,
+}: {
+  institutionId: number;
+  employeeData: EmployeeFormData;
+}): Promise<EmployeeFormData | null> => {
+  try {
+    const formData = new FormData();
+
+    // Append institutionId
+    formData.append("institutionId", institutionId.toString());
+
+    // Handle nested user object
+    if (employeeData.user && typeof employeeData.user === 'object') {
+      Object.entries(employeeData.user).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (key === 'roles_ids' && Array.isArray(value)) {
+            // Handle array - you might need to stringify or handle differently based on your backend
+            formData.append(`user.${key}`, JSON.stringify(value));
+          } else {
+            formData.append(`user.${key}`, value.toString());
+          }
+        }
+      });
+    }
+
+    // Handle other fields
+    Object.entries(employeeData).forEach(([key, value]) => {
+      if (key === "user") {
+        // Already handled above
+        return;
+      }
+
+      if (key === "employee_profile_picture" && value instanceof File) {
+        formData.append(key, value);
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `/employee/employee/create`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    if (!response.data || typeof response.data !== "object") {
+      throw new Error("Invalid response format");
+    }
+
+    return response.data as EmployeeFormData;
+  } catch (error: any) {
+    console.error("Failed to create employee:", error.message || error);
+    return null;
+  }
+};

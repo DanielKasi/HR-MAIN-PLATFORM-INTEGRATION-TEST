@@ -17,6 +17,7 @@ urlpatterns = [
     # path("api/workflow/", include("workflows.urls")),
     path("api/recruitment/", include("recruitment.urls")),
     path("api/on-boarding/", include("onboarding.urls")),
+    path("api/employee/", include("employee.urls")),
 ]
 
 if settings.DEBUG:

@@ -255,30 +255,30 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         },
       ],
     },
-    // {
-    //   title: "Onboarding",
-    //   href: "/onboarding",
-    //   icon: <Icon height="24" icon="hugeicons:inbox-download" width="24" />,
-    //   // requiredPermission: "can_view_orders",
-    // },
-    // {
-    //   title: "Employees",
-    //   href: "#1",
-    //   icon: <Package2 className="h-5 w-5" />,
-    //   // requiredPermission: "can_access_valuation",
-    //   submenu: [
-    //     {
-    //       title: "Profile",
-    //       href: "/#5",
-    //       // requiredPermission: "can_access_valuation_requests",
-    //     },
-    //     {
-    //       title: "All Employees",
-    //       href: "/#6",
-    //       // requiredPermission: "can_access_valuation_instructions",
-    //     }
-    //   ],
-    // },
+    {
+      title: "Onboarding",
+      href: "/onboarding",
+      icon: <Icon height="24" icon="hugeicons:inbox-download" width="24" />,
+      // requiredPermission: "can_view_orders",
+    },
+    {
+      title: "Employees",
+      href: "#1",
+      icon: <Package2 className="h-5 w-5" />,
+      // requiredPermission: "can_access_valuation",
+      submenu: [
+        {
+          title: "Profile",
+          href: "/#5",
+          // requiredPermission: "can_access_valuation_requests",
+        },
+        {
+          title: "All Employees",
+          href: "/employees/employee-list",
+          // requiredPermission: "can_access_valuation_instructions",
+        }
+      ],
+    },
 
   ];
 
