@@ -269,7 +269,7 @@ export default function EditJobPositionPage() {
                             <div>
                                 <CardTitle className="text-xl">Edit Job Position</CardTitle>
                                 <p className="text-sm text-muted-foreground">
-                                    Update job position details for {selectedBranch.branch_name} - {selectedInstitution.Institution_name}
+                                    Update job position details for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
                                 </p>
                             </div>
                         </div>

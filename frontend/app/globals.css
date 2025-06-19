@@ -105,3 +105,7 @@
   animation: slide-in 0.3s forwards ease-in;
 }
 
+textarea {
+  resize: none !important;
+}
+

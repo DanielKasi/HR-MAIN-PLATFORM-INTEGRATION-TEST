@@ -207,7 +207,7 @@ export function getInstitutionLogo(): string | null {
     const selectedInstitution = store.getState().auth.selectedInstitution.value;
 
     if (selectedInstitution) {
-      return selectedInstitution.Institution_logo || null;
+      return selectedInstitution.institution_logo || null;
     }
 
     return null;
