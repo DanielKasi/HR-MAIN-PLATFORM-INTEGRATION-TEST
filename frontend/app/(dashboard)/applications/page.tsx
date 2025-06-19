@@ -19,8 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Mail, Phone, MapPin, Calendar, User, Upload, FileText, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { createJobApplication, getJobApplications } from "@/lib/utils"
-import type { JobApplication, JobApplicationFormData } from "@/app/types/types.utils"
+import { createJobApplication, getJobApplications, getJobPositions } from "@/lib/utils"
+import type { JobApplication, JobApplicationFormData, IJobPosition } from "@/app/types/types.utils"
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
@@ -67,9 +67,13 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
     source: "website",
   })
 
+  const [jobPositions, setJobPositions] = useState<IJobPosition[]>([])
+  const [isLoadingPositions, setIsLoadingPositions] = useState(false)
+
   // Load applications
   useEffect(() => {
     loadApplications()
+    loadJobPositions()
   }, [institutionId])
 
   const loadApplications = async () => {
@@ -83,11 +87,26 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
       } else {
         setError("Failed to load applications")
       }
-    } catch (err) {
-      setError("An error occurred while loading applications")
+    } catch (err: any) {
+      setError(err?.message || "An error occurred while loading applications")
       console.error(err)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadJobPositions = async () => {
+    setIsLoadingPositions(true)
+    try {
+      const data = await getJobPositions({ institutionId })
+      if (data) {
+        setJobPositions(data)
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to load job positions")
+      console.error("Failed to load job positions:", err)
+    } finally {
+      setIsLoadingPositions(false)
     }
   }
 
@@ -124,6 +143,8 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
         applicant_phone: formData.applicant_phone || undefined,
         state: formData.state || undefined,
         application_date: new Date().toISOString(),
+        address: formData.address || undefined,
+        country: formData.country || undefined,
       }
 
       const newApplication = await createJobApplication({ applicationData })
@@ -150,8 +171,8 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
       } else {
         setError("Failed to create application")
       }
-    } catch (err) {
-      setError("An error occurred while creating the application")
+    } catch (err: any) {
+      setError(err?.message || "An error occurred while creating the application")
       console.error(err)
     } finally {
       setIsSubmitting(false)
@@ -170,7 +191,7 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="w-full py-8">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
@@ -212,14 +233,26 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="job_position_advert">Job Position ID *</Label>
-                  <Input
-                    id="job_position_advert"
-                    type="number"
-                    value={formData.job_position_advert}
-                    onChange={(e) => handleInputChange("job_position_advert", Number.parseInt(e.target.value) || 0)}
-                    required
-                  />
+                  <Label htmlFor="job_position_advert">Job Position *</Label>
+                  <Select
+                    value={formData.job_position_advert.toString()}
+                    onValueChange={(value) => handleInputChange("job_position_advert", Number.parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={isLoadingPositions ? "Loading positions..." : "Select a job position"}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {jobPositions.map((position) => (
+                        <SelectItem key={position.id} value={position.id.toString()}>
+                          {position.title}
+                          {position.department && ` - ${position.department}`}
+                          {position.location && ` (${position.location})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="applicant_name">Applicant Name *</Label>
@@ -391,6 +424,7 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
                 <TableHeader>
                   <TableRow>
                     <TableHead>Applicant</TableHead>
+                    <TableHead>Job Position</TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Status</TableHead>
@@ -409,6 +443,12 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
                             <User className="mr-1 h-3 w-3" />
                             {application.gender}
                           </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">
+                          {jobPositions.find((pos) => pos.id === application.job_position_advert)?.title ||
+                            `Position #${application.job_position_advert}`}
                         </div>
                       </TableCell>
                       <TableCell>
