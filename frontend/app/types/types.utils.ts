@@ -148,8 +148,8 @@ export interface CreateJobPositionData {
 
 
 export interface JobApplication {
-  job_position_advert_job_details: any;
-  positions: ReactNode;
+  job_position_advert_job_details: {name:string, description:string};
+  positions: number;
   id: number
   job_position_advert: number
   applicant_name: string
