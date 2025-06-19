@@ -176,3 +176,24 @@ export interface JobApplicationFormData {
   country: string
   source?: "website" | "referral" | "job_board" | "social_media" | "other"
 }
+
+export type JobAdvertStatus = "expired" | "active" | "archived" | "closed";
+
+export interface JobPositionAdvert {
+  id: number;
+  job_position: number; // Foreign key to JobPosition
+  status: JobAdvertStatus;
+  published_date: string; // ISO datetime string
+  expiry_date: string; // ISO datetime string
+  number_of_employees_expected?: number | null;
+  extra_information?: string | null;
+}
+
+// For creating/updating job adverts
+export interface JobPositionAdvertFormData {
+  job_position: number;
+  status?: JobAdvertStatus;
+  expiry_date: string; // ISO datetime string
+  number_of_employees_expected?: number;
+  extra_information?: string;
+}
