@@ -288,9 +288,6 @@ export default function CreateJobAdvertPage() {
                     <p>
                       <span className="font-medium text-foreground">Institution :</span> {selectedInstitution.institution_name}
                     </p>
-                    <p>
-                      <span className="font-medium text-foreground">Available Positions:</span> {jobPositions.length}
-                    </p>
                   </div>
                 </div>
               </div>

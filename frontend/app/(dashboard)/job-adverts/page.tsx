@@ -297,9 +297,9 @@ export default function JobAdvertsPage() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground flex items-center gap-1">
                       <Briefcase className="h-3 w-3" />
-                      Position ID:
+                      Position:
                     </span>
-                    <span className="font-medium">{advert.job_position}</span>
+                    <span className="font-medium">{advert.job_position_details.name}</span>
                   </div>
 
                   <div className="flex items-center justify-between text-sm">
