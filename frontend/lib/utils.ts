@@ -1,6 +1,6 @@
 import {type ClassValue, clsx} from "clsx";
 import {twMerge} from "tailwind-merge";
-import { Department, CreateDepartmentData, DepartmentFormData } from "@/app/types/types.utils";
+import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/app/types";
@@ -123,72 +123,30 @@ export async function resetPassword(
 
 
 
-// Mock departments data
-const mockDepartments: Department[] = [
-  {
-    id: 1,
-    name: "Human Resources",
-    description: "Manages employee relations, recruitment, and HR policies",
-    institution: 1}
-    ,
-  {
-    id: 2,
-    name: "Finance",
-    description: "Handles financial planning, budgeting, and accounting",
-    institution: 1,
-  },
-  {
-    id: 3,
-    name: "Operations",
-    description: "Oversees daily operations and process optimization",
-    institution: 1,
-  },
-]
-
-// export const mockDepartmentApi = {
-//   // Fetch departments for a specific branch
-//   getDepartmentsByBranch: async (branchId: number): Promise<Department[]> => {
-//     // Simulate API delay
-//     await new Promise((resolve) => setTimeout(resolve, 800))
-
-//     // Filter departments by branch_id
-//     return mockDepartments.filter((dept) => dept.branch_id === branchId)
-//   },
-
-//   // Create a new department
-//   createDepartment: async (departmentData: CreateDepartmentData): Promise<Department> => {
-//     // Simulate API delay
-//     await new Promise((resolve, reject) =>{
-//       setTimeout(()=>{resolve("")}, 3000)
-//     })
-
-//     // Create new department with mock data
-//     const newDepartment: Department = {
-//       id: Math.max(...mockDepartments.map((d) => d.id)) + 1,
-//       ...departmentData,
-//     }
-
-//     // Add to mock data (in real app, this would be handled by backend)
-//     mockDepartments.push(newDepartment)
-
-//     return newDepartment
-//   },
-// }
 
 
 export const createDepartment = async ({departmentData}:{departmentData:DepartmentFormData}) =>{
   try {
     const response = await apiRequest.post(`institution/${departmentData.institution}/department/`, departmentData )
-    return response.data as Department
+    return response.data as IDepartment
   } catch (error) {
     return null
   }
 }
 
-export const updateDepartment = async ({departmentData}:{departmentData:Department}) =>{
+export const getDepartment = async ({departmentId}:{departmentId:number}) =>{
   try {
-    const response = await apiRequest.patch(`department/${departmentData.id}/`, {name:departmentData.name, description:departmentData.description, institution:departmentData.institution} )
-    return response.data as Department
+    const response = await apiRequest.get(`institution/department/${departmentId}/` )
+    return response.data as IDepartment
+  } catch (error) {
+    return null
+  }
+}
+
+export const updateDepartment = async ({departmentData}:{departmentData:IDepartment}) =>{
+  try {
+    const response = await apiRequest.patch(`institution/department/${departmentData.id}/`, {name:departmentData.name, description:departmentData.description, institution:departmentData.institution} )
+    return response.data as IDepartment
   } catch (error) {
     return null
   }
@@ -197,11 +155,60 @@ export const updateDepartment = async ({departmentData}:{departmentData:Departme
 export const getDepartments = async ({institutionId}:{institutionId:number}) =>{
   try {
     const response = await apiRequest.get(`institution/${institutionId}/department/` )
-    return response.data as Department[]
+    return response.data as IDepartment[]
   } catch (error) {
     return null
   }
 }
+
+
+export const getJobPositions = async ({ institutionId }: { institutionId: number }) => {
+  try {
+    const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`)
+    return response.data as IJobPosition[]
+  } catch (error) {
+    console.error("Error fetching job positions:", error)
+    return null
+  }
+}
+
+export const createJobPosition = async ({
+  institutionId,
+  jobPositionData,
+}: {
+  institutionId: number
+  jobPositionData: CreateJobPositionData
+}) => {
+  try {
+    const formData = new FormData()
+
+    // Add text fields
+    formData.append("name", jobPositionData.name)
+    if (jobPositionData.description) {
+      formData.append("description", jobPositionData.description)
+    }
+    formData.append("department", jobPositionData.department.toString())
+    if (jobPositionData.reports_to) {
+      formData.append("reports_to", jobPositionData.reports_to.toString())
+    }
+    formData.append("salary", jobPositionData.salary.toString())
+
+    // Add file fields
+    if (jobPositionData.contract_template) {
+      formData.append("contract_template", jobPositionData.contract_template)
+    }
+    if (jobPositionData.offer_letter_template) {
+      formData.append("offer_letter_template", jobPositionData.offer_letter_template)
+    }
+
+    const response = await apiRequest.post(`recruitment/institution/${institutionId}/job-position/`, formData)
+    return response.data as IJobPosition
+  } catch (error) {
+    console.error("Error creating job position:", error)
+    return null
+  }
+}
+
 
 
 
