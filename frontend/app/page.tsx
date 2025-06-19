@@ -135,7 +135,7 @@ export default function LandingPage() {
                 <div className="relative h-[350px] w-[350px] sm:h-[450px] sm:w-[450px] lg:h-[550px] lg:w-[550px]">
                   <div className="absolute -inset-4 rounded-full bg-primary/5 animate-pulse" />
                   <img
-                    alt="APPLICATION NAME Dashboard"
+                    alt="BAIFAM HR SYSTEM Dashboard"
                     className="rounded-3xl object-cover shadow-xl"
                     src="/supamax-cover.jpg?height=550&width=550"
                   />
@@ -456,7 +456,7 @@ export default function LandingPage() {
             <div className="bg-primary/10 p-2 rounded-full">
               <ShoppingCart className="h-5 w-5 text-primary" />
             </div>
-            <span className="text-xl font-bold">APPLICATION NAME</span>
+            <span className="text-xl font-bold">BAIFAM HR SYSTEM</span>
           </div>
           <nav className="flex gap-6">
             <Link
@@ -482,7 +482,7 @@ export default function LandingPage() {
             </Link>
           </nav>
           <div className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} APPLICATION NAME. All rights reserved.
+            © {new Date().getFullYear()} BAIFAM HR SYSTEM. All rights reserved.
           </div>
         </div>
       </footer>
