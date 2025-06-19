@@ -340,7 +340,7 @@ export default function ApplicationsPage() {
                               <span className="font-medium">
                                 {advert.job_position_details?.name || `Job Advert #${advert.id}`}
                               </span>
-                             
+
                             </div>
                           </SelectItem>
                         ))}

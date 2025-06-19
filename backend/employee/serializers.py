@@ -41,3 +41,21 @@ class EmployeeSerializer(serializers.ModelSerializer):
             user = user_serializer.save()
             validated_data["user"] = user
         return Employee.objects.create(**validated_data)
+
+    def get_department(self, obj):
+        if obj.department:
+            return {
+                "id": obj.department.id,
+                "name": obj.department.name,
+                "institution_id": obj.department.institution.id
+            }
+        return None
+
+    def get_position(self, obj):
+        if obj.position:
+            return {
+                "id": obj.position.id,
+                "name": obj.position.name,
+                "department_id": obj.position.department.id if obj.position.department else None
+            }
+        return None
