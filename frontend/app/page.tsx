@@ -6,12 +6,18 @@ import Link from "next/link";
 import {
   ArrowRight,
   CheckCircle,
-  Globe,
+  Users,
   Heart,
-  ShoppingBag,
-  ShoppingCart,
+  Calendar,
+  Clock,
   Sparkles,
   Star,
+  UserPlus,
+  FileText,
+  DollarSign,
+  BarChart3,
+  Shield,
+  Award
 } from "lucide-react";
 import {useSelector} from "react-redux";
 
@@ -44,30 +50,30 @@ export default function LandingPage() {
         <div className="container mx-auto flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="bg-primary/10 p-2 rounded-full">
-              <ShoppingCart className="h-6 w-6 text-primary" />
+              <Users className="h-6 w-6 text-primary" />
             </div>
-            <span className="text-xl font-bold">APP TITLE</span>
+            <span className="text-xl font-bold">BAIFAM HR SYSTEM</span>
           </div>
           <nav className="hidden gap-6 md:flex">
             <Link
               className="text-sm font-medium transition-colors hover:text-primary relative group"
               href="#features"
             >
-              Tab
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
-            </Link>
-            <Link
-              className="text-sm font-medium transition-colors hover:text-primary relative group"
-              href=""
-            >
-              Tab
+              Features
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
             </Link>
             <Link
               className="text-sm font-medium transition-colors hover:text-primary relative group"
               href="#benefits"
             >
-              Tab
+              Benefits
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
+            </Link>
+            <Link
+              className="text-sm font-medium transition-colors hover:text-primary relative group"
+              href="#pricing"
+            >
+              Pricing
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
             </Link>
           </nav>
@@ -99,15 +105,15 @@ export default function LandingPage() {
                 <div className="space-y-2">
                   <div className="inline-flex items-center rounded-full border bg-background px-3 py-1 text-sm shadow-sm">
                     <Sparkles className="h-3.5 w-3.5 mr-1 text-primary" />
-                    <span className="font-medium text-primary">Super Fast</span>
+                    <span className="font-medium text-primary">Complete HR Solution</span>
                     <span className="mx-1">•</span>
-                    <span>No Credit Card Required</span>
+                    <span>Free Trial Available</span>
                   </div>
                   <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-                    Application Catch line
+                    Streamline Your HR Operations
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Application Description Text
+                    Comprehensive human resource management system designed to simplify employee management, payroll, attendance, and performance tracking all in one platform.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -137,7 +143,7 @@ export default function LandingPage() {
                   <img
                     alt="BAIFAM HR SYSTEM Dashboard"
                     className="rounded-3xl object-cover shadow-xl"
-                    src="/supamax-cover.jpg?height=550&width=550"
+                    src="/hr-dashboard.jpg?height=550&width=550"
                   />
                   <div className="absolute -bottom-4 -right-4 bg-background rounded-full p-3 shadow-lg">
                     <Heart className="h-6 w-6 text-primary" fill="currentColor" />
@@ -164,78 +170,74 @@ export default function LandingPage() {
               </Badge>
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  Powerful Features at No Cost
+                  Everything You Need for HR Management
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Everything you need to manage your organisation efficiently in one integrated
-                  platform
+                  Comprehensive tools to manage your workforce efficiently with automated processes and insightful analytics
                 </p>
               </div>
             </div>
             <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-2 lg:grid-cols-3">
               <div className="flex flex-col items-center space-y-3 rounded-3xl border p-6 shadow-sm bg-background transition-transform hover:scale-105 hover:shadow-md">
                 <div className="p-3 bg-primary/10 rounded-2xl">
-                  <ShoppingCart className="h-10 w-10 text-primary" />
+                  <UserPlus className="h-10 w-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">Point of Sale</h3>
+                <h3 className="text-xl font-bold">Employee Management</h3>
                 <p className="text-center text-muted-foreground">
-                  Fast and intuitive POS system with barcode scanning, receipt printing, and
-                  multiple payment options.
+                  Comprehensive employee profiles, onboarding workflows, and document management system.
                 </p>
               </div>
               <div className="flex flex-col items-center space-y-3 rounded-3xl border p-6 shadow-sm bg-background transition-transform hover:scale-105 hover:shadow-md">
                 <div className="p-3 bg-primary/10 rounded-2xl">
-                  <Package className="h-10 w-10 text-primary" />
+                  <Clock className="h-10 w-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">Inventory Management</h3>
+                <h3 className="text-xl font-bold">Time & Attendance</h3>
                 <p className="text-center text-muted-foreground">
-                  Track stock levels, set reorder points, and manage product categories with ease.
+                  Track working hours, manage leave requests, and monitor attendance with real-time reporting.
                 </p>
               </div>
               <div className="flex flex-col items-center space-y-3 rounded-3xl border p-6 shadow-sm bg-background transition-transform hover:scale-105 hover:shadow-md">
                 <div className="p-3 bg-primary/10 rounded-2xl">
-                  <Globe className="h-10 w-10 text-primary" />
+                  <DollarSign className="h-10 w-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">Online Marketplace</h3>
+                <h3 className="text-xl font-bold">Payroll Management</h3>
                 <p className="text-center text-muted-foreground">
-                  Showcase your products online and reach more customers through our integrated
-                  marketplace.
+                  Automated payroll processing, tax calculations, and salary slip generation.
                 </p>
               </div>
               <div className="flex flex-col items-center space-y-3 rounded-3xl border p-6 shadow-sm bg-background transition-transform hover:scale-105 hover:shadow-md">
                 <div className="p-3 bg-primary/10 rounded-2xl">
-                  <BarChart className="h-10 w-10 text-primary" />
+                  <BarChart3 className="h-10 w-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">Reports & Analytics</h3>
+                <h3 className="text-xl font-bold">Performance Analytics</h3>
                 <p className="text-center text-muted-foreground">
-                  Gain insights with detailed sales, inventory, and online performance reports.
+                  Track employee performance, set goals, and generate detailed analytics reports.
                 </p>
               </div>
               <div className="flex flex-col items-center space-y-3 rounded-3xl border p-6 shadow-sm bg-background transition-transform hover:scale-105 hover:shadow-md">
                 <div className="p-3 bg-primary/10 rounded-2xl">
-                  <Store className="h-10 w-10 text-primary" />
+                  <Calendar className="h-10 w-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">Multi-Branch Support</h3>
+                <h3 className="text-xl font-bold">Leave Management</h3>
                 <p className="text-center text-muted-foreground">
-                  Manage multiple locations with centralized control and branch-specific reporting.
+                  Streamlined leave application process with approval workflows and balance tracking.
                 </p>
               </div>
               <div className="flex flex-col items-center space-y-3 rounded-3xl border p-6 shadow-sm bg-background transition-transform hover:scale-105 hover:shadow-md">
                 <div className="p-3 bg-primary/10 rounded-2xl">
-                  <ShoppingBag className="h-10 w-10 text-primary" />
+                  <FileText className="h-10 w-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">E-commerce Integration</h3>
+                <h3 className="text-xl font-bold">Document Management</h3>
                 <p className="text-center text-muted-foreground">
-                  Sync your inventory with our marketplace for seamless online and offline sales
-                  management.
+                  Secure storage and management of employee documents, contracts, and HR files.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Online Marketplace Section */}
-        <section className="w-full py-12 md:py-24 lg:py-32 relative" id="marketplace">
+        {/* Performance Management Section */}
+        <section className="w-full py-12 md:py-24 lg:py-32 relative" id="performance">
           <div className="absolute top-1/2 left-0 w-24 h-24 bg-primary/5 rounded-full -translate-x-1/2" />
           <div className="container mx-auto px-4 md:px-6 relative">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 xl:grid-cols-2 items-center">
@@ -243,12 +245,12 @@ export default function LandingPage() {
                 <div className="relative h-[350px] w-[350px] sm:h-[450px] sm:w-[450px]">
                   <div className="absolute inset-0 border-4 border-primary/10 rounded-3xl -rotate-3" />
                   <img
-                    alt="Online Marketplace"
+                    alt="Performance Analytics Dashboard"
                     className="rounded-3xl object-cover shadow-xl rotate-3"
-                    src="/online-market.jpg?height=450&width=450"
+                    src="/performance-analytics.jpg?height=450&width=450"
                   />
                   <div className="absolute -top-4 -right-4 bg-background rounded-full p-2 shadow-lg">
-                    <Star className="h-5 w-5 text-primary" fill="currentColor" />
+                    <Award className="h-5 w-5 text-primary" fill="currentColor" />
                   </div>
                 </div>
               </div>
@@ -257,42 +259,40 @@ export default function LandingPage() {
                   className="px-4 py-1 rounded-full bg-background self-start"
                   variant="outline"
                 >
-                  <Globe className="h-3.5 w-3.5 mr-1.5 text-primary" />
-                  Marketplace
+                  <BarChart3 className="h-3.5 w-3.5 mr-1.5 text-primary" />
+                  Performance
                 </Badge>
                 <div className="space-y-2">
                   <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                    Boost Your Sales with Our Online Marketplace
+                    Data-Driven Performance Management
                   </h2>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    When you use our POS system, your products are automatically showcased on our
-                    online marketplace, helping you reach more customers and increase sales without
-                    any additional effort.
+                    Make informed decisions about your workforce with comprehensive analytics, performance tracking, and actionable insights that drive organizational growth.
                   </p>
                   <ul className="space-y-3 pt-4">
                     <li className="flex items-center gap-3 bg-background p-3 rounded-2xl shadow-sm">
                       <div className="bg-primary/10 p-1.5 rounded-full">
                         <CheckCircle className="h-4 w-4 text-primary" />
                       </div>
-                      <span>Automatic product listing on our marketplace</span>
+                      <span>Real-time performance dashboards and KPI tracking</span>
                     </li>
                     <li className="flex items-center gap-3 bg-background p-3 rounded-2xl shadow-sm">
                       <div className="bg-primary/10 p-1.5 rounded-full">
                         <CheckCircle className="h-4 w-4 text-primary" />
                       </div>
-                      <span>Expand your customer base beyond physical location</span>
+                      <span>360-degree feedback and performance reviews</span>
                     </li>
                     <li className="flex items-center gap-3 bg-background p-3 rounded-2xl shadow-sm">
                       <div className="bg-primary/10 p-1.5 rounded-full">
                         <CheckCircle className="h-4 w-4 text-primary" />
                       </div>
-                      <span>Integrated order management for online sales</span>
+                      <span>Goal setting and progress tracking capabilities</span>
                     </li>
                     <li className="flex items-center gap-3 bg-background p-3 rounded-2xl shadow-sm">
                       <div className="bg-primary/10 p-1.5 rounded-full">
                         <CheckCircle className="h-4 w-4 text-primary" />
                       </div>
-                      <span>Real-time inventory sync between online and offline</span>
+                      <span>Automated reporting and analytics insights</span>
                     </li>
                   </ul>
                 </div>
@@ -302,7 +302,7 @@ export default function LandingPage() {
                       className="gap-1 rounded-full shadow-lg transition-transform hover:scale-105"
                       size="lg"
                     >
-                      Start Selling Online
+                      Start Tracking Performance
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
@@ -328,11 +328,10 @@ export default function LandingPage() {
               </Badge>
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  Why Choose Our Solution?
+                  Why Choose BAIFAM HR System?
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Discover how our system can transform your organisation operations and boost your
-                  online presence.
+                  Transform your HR operations with our comprehensive solution designed to increase efficiency and employee satisfaction.
                 </p>
               </div>
             </div>
@@ -342,11 +341,10 @@ export default function LandingPage() {
                   <div className="bg-primary/10 p-2 rounded-full">
                     <CheckCircle className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold">Increased Online Visibility</h3>
+                  <h3 className="text-xl font-bold">Increased Productivity</h3>
                 </div>
                 <p className="text-muted-foreground pl-10">
-                  Get your products seen by thousands of online Institutionpers through our
-                  marketplace.
+                  Automate routine HR tasks and free up time for strategic initiatives and employee development.
                 </p>
               </div>
               <div className="flex flex-col gap-2 bg-background p-5 rounded-3xl shadow-sm transition-transform hover:scale-105 hover:shadow-md">
@@ -354,10 +352,10 @@ export default function LandingPage() {
                   <div className="bg-primary/10 p-2 rounded-full">
                     <CheckCircle className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold">Expanded Customer Reach</h3>
+                  <h3 className="text-xl font-bold">Enhanced Employee Experience</h3>
                 </div>
                 <p className="text-muted-foreground pl-10">
-                  Attract customers beyond your physical location through our online platform.
+                  Self-service portals and streamlined processes improve employee satisfaction and engagement.
                 </p>
               </div>
               <div className="flex flex-col gap-2 bg-background p-5 rounded-3xl shadow-sm transition-transform hover:scale-105 hover:shadow-md">
@@ -365,10 +363,10 @@ export default function LandingPage() {
                   <div className="bg-primary/10 p-2 rounded-full">
                     <CheckCircle className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold">Better Inventory Control</h3>
+                  <h3 className="text-xl font-bold">Compliance Management</h3>
                 </div>
                 <p className="text-muted-foreground pl-10">
-                  Prevent stockouts and overstock situations with real-time inventory tracking.
+                  Stay compliant with labor laws and regulations through automated compliance tracking and reporting.
                 </p>
               </div>
               <div className="flex flex-col gap-2 bg-background p-5 rounded-3xl shadow-sm transition-transform hover:scale-105 hover:shadow-md">
@@ -376,10 +374,10 @@ export default function LandingPage() {
                   <div className="bg-primary/10 p-2 rounded-full">
                     <CheckCircle className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold">Data-Driven Decisions</h3>
+                  <h3 className="text-xl font-bold">Data Security</h3>
                 </div>
                 <p className="text-muted-foreground pl-10">
-                  Make informed business decisions based on comprehensive sales and inventory data.
+                  Enterprise-grade security ensures your sensitive HR data is protected with encryption and access controls.
                 </p>
               </div>
               <div className="flex flex-col gap-2 bg-background p-5 rounded-3xl shadow-sm transition-transform hover:scale-105 hover:shadow-md">
@@ -387,10 +385,10 @@ export default function LandingPage() {
                   <div className="bg-primary/10 p-2 rounded-full">
                     <CheckCircle className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold">Enhanced Customer Experience</h3>
+                  <h3 className="text-xl font-bold">Scalable Solution</h3>
                 </div>
                 <p className="text-muted-foreground pl-10">
-                  Provide faster service and personalized offers to increase customer satisfaction.
+                  Grows with your organization from startup to enterprise with flexible modules and pricing.
                 </p>
               </div>
               <div className="flex flex-col gap-2 bg-background p-5 rounded-3xl shadow-sm transition-transform hover:scale-105 hover:shadow-md">
@@ -398,31 +396,30 @@ export default function LandingPage() {
                   <div className="bg-primary/10 p-2 rounded-full">
                     <CheckCircle className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold">Zero Cost Implementation</h3>
+                  <h3 className="text-xl font-bold">Cost Effective</h3>
                 </div>
                 <p className="text-muted-foreground pl-10">
-                  Get all the benefits of a premium POS system without any subscription fees or
-                  hidden costs.
+                  Reduce HR operational costs while improving efficiency with our affordable, all-in-one solution.
                 </p>
               </div>
             </div>
           </div>
         </section>
+
         {/* CTA Section */}
-        <section className="w-full bg-muted py-12 md:py-24 lg:py-32 relative overflow-hidden">
+        <section className="w-full bg-muted py-12 md:py-24 lg:py-32 relative overflow-hidden" id="pricing">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/5 to-transparent opacity-70" />
           <div className="container mx-auto px-4 md:px-6 relative">
             <div className="flex flex-col items-center justify-center space-y-6 text-center">
               <div className="inline-flex p-1 bg-background rounded-full shadow-sm">
-                <Sparkles className="h-5 w-5 text-primary" />
+                <Shield className="h-5 w-5 text-primary" />
               </div>
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  Ready to Boost Your Sales?
+                  Ready to Transform Your HR?
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Join thousands of organisations already using our platform to streamline
-                  operations and sell online.
+                  Join hundreds of organizations already using BAIFAM HR System to streamline their human resource operations and improve employee satisfaction.
                 </p>
               </div>
               <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -431,17 +428,17 @@ export default function LandingPage() {
                     className="gap-1 rounded-full shadow-lg transition-transform hover:scale-105"
                     size="lg"
                   >
-                    Get Started
+                    Start Free Trial
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-                <Link href="#marketplace">
+                <Link href="#features">
                   <Button
                     className="rounded-full shadow-sm transition-transform hover:scale-105"
                     size="lg"
                     variant="outline"
                   >
-                    Learn About Our Marketplace
+                    Learn More About Features
                   </Button>
                 </Link>
               </div>
@@ -454,7 +451,7 @@ export default function LandingPage() {
         <div className="container mx-auto flex flex-col gap-6 py-8 md:flex-row md:items-center md:justify-between md:py-12">
           <div className="flex items-center gap-2">
             <div className="bg-primary/10 p-2 rounded-full">
-              <ShoppingCart className="h-5 w-5 text-primary" />
+              <Users className="h-5 w-5 text-primary" />
             </div>
             <span className="text-xl font-bold">BAIFAM HR SYSTEM</span>
           </div>
@@ -468,9 +465,9 @@ export default function LandingPage() {
             </Link>
             <Link
               className="text-sm font-medium transition-colors hover:text-primary relative group"
-              href="#marketplace"
+              href="#performance"
             >
-              Marketplace
+              Performance
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
             </Link>
             <Link
@@ -487,75 +484,5 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
-  );
-}
-
-function Package(props: any) {
-  return (
-    <svg
-      {...props}
-      fill="none"
-      height="24"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-      width="24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path d="m7.5 4.27 9 5.15" />
-      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-      <path d="m3.3 7 8.7 5 8.7-5" />
-      <path d="M12 22V12" />
-    </svg>
-  );
-}
-
-function Store(props: any) {
-  return (
-    <svg
-      {...props}
-      fill="none"
-      height="24"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-      width="24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
-      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-      <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
-      <path d="M2 7h20" />
-      <path d="M22 7v3a2 2 0 0 1-2 2v0a2 2 0 0 1-2-2V7" />
-      <path d="M18 12v0a2 2 0 0 1-2-2V7" />
-      <path d="M14 7v3a2 2 0 0 1-2 2v0a2 2 0 0 1-2-2V7" />
-      <path d="M10 12v0a2 2 0 0 1-2-2V7" />
-      <path d="M6 7v3a2 2 0 0 1-2 2v0a2 2 0 0 1-2-2V7" />
-    </svg>
-  );
-}
-
-function BarChart(props: any) {
-  return (
-    <svg
-      {...props}
-      fill="none"
-      height="24"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-      width="24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <line x1="12" x2="12" y1="20" y2="10" />
-      <line x1="18" x2="18" y1="20" y2="4" />
-      <line x1="6" x2="6" y1="20" y2="16" />
-    </svg>
   );
 }

@@ -438,9 +438,6 @@ export default function EditJobAdvertPage() {
                     <p>
                       <span className="font-medium text-foreground">Current Status:</span> {jobAdvert?.status}
                     </p>
-                    <p>
-                      <span className="font-medium text-foreground">Available Positions:</span> {jobPositions.length}
-                    </p>
                   </div>
                 </div>
               </div>
