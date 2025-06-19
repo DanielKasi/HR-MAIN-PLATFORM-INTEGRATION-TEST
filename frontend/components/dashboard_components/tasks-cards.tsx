@@ -19,11 +19,11 @@ export function TasksCards({branchId}: {branchId: string | null}) {
 
   const fetchTasks = async () => {
     try {
-      const response = await fetchUserTasks();
-      const responseData: ApiTask[] = response.data;
-      const pendingTasks = responseData.filter((task) => task.status === "pending");
+      // const response = await fetchUserTasks();
+      // const responseData: ApiTask[] = response.data;
+      // const pendingTasks = responseData.filter((task) => task.status === "pending");
 
-      setTasks(pendingTasks);
+      // setTasks(pendingTasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
     }
