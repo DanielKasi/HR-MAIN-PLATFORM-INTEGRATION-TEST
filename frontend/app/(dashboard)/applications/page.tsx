@@ -2,6 +2,8 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useSelector } from "react-redux"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -20,7 +22,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Plus, Mail, Phone, MapPin, Calendar, User, Upload, FileText, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { createJobApplication, getJobApplications, getJobPositionAdverts } from "@/lib/utils"
-import type { JobApplication, JobApplicationFormData, IJobPosition } from "@/app/types/types.utils"
+import type { JobApplication, JobApplicationFormData, JobPositionAdvert } from "@/app/types/types.utils"
+import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
@@ -38,16 +41,16 @@ const sourceLabels = {
   other: "Other",
 }
 
-interface ApplicationsPageProps {
-  institutionId?: number
-}
-
-export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPageProps) {
+export default function ApplicationsPage() {
   const [applications, setApplications] = useState<JobApplication[]>([])
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const router = useRouter()
+  const selectedInstitution = useSelector(selectSelectedInstitution)
+  const selectedBranch = useSelector(selectSelectedBranch)
 
   // Form state
   const [formData, setFormData] = useState<
@@ -67,21 +70,28 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
     source: "website",
   })
 
-  const [jobPositions, setJobPositions] = useState<IJobPosition[]>([])
-  const [isLoadingPositions, setIsLoadingPositions] = useState(false)
+  const [jobPositionAdverts, setJobPositionAdverts] = useState<JobPositionAdvert[]>([])
+  const [isLoadingAdverts, setIsLoadingAdverts] = useState(false)
 
-  // Load applications
+  // Check if institution is selected and redirect if not
   useEffect(() => {
+    if (!selectedInstitution || !selectedBranch) {
+      router.push("/dashboard")
+      return
+    }
+
     loadApplications()
-    loadJobPositions()
-  }, [institutionId])
+    loadJobPositionAdverts()
+  }, [selectedInstitution, selectedBranch, router])
 
   const loadApplications = async () => {
+    if (!selectedInstitution) return
+
     setIsLoading(true)
     setError(null)
 
     try {
-      const data = await getJobApplications({ institutionId })
+      const data = await getJobApplications({ institutionId: selectedInstitution.id })
       if (data) {
         setApplications(data)
       } else {
@@ -95,18 +105,20 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
     }
   }
 
-  const loadJobPositions = async () => {
-    setIsLoadingPositions(true)
+  const loadJobPositionAdverts = async () => {
+    if (!selectedInstitution) return
+
+    setIsLoadingAdverts(true)
     try {
-      const data = await getJobPositionAdverts({ institutionId })
+      const data = await getJobPositionAdverts({ institutionId: selectedInstitution.id })
       if (data) {
-        setJobPositions(data)
+        setJobPositionAdverts(data)
       }
     } catch (err: any) {
-      setError(err?.message || "Failed to load job positions")
-      console.error("Failed to load job positions:", err)
+      setError(err?.message || "Failed to load job position adverts")
+      console.error("Failed to load job position adverts:", err)
     } finally {
-      setIsLoadingPositions(false)
+      setIsLoadingAdverts(false)
     }
   }
 
@@ -127,8 +139,18 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (!selectedInstitution || !selectedBranch) {
+      setError("Missing organization or branch information")
+      return
+    }
+
     if (!formData.resume) {
       setError("Resume is required")
+      return
+    }
+
+    if (formData.job_position_advert === 0) {
+      setError("Please select a job position")
       return
     }
 
@@ -147,9 +169,21 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
         country: formData.country || undefined,
       }
 
-      const newApplication = await createJobApplication({ applicationData })
+      // Add debugging logs
+      console.log("Submitting application with institutionId:", selectedInstitution.id)
+      console.log("Application data:", {
+        ...applicationData,
+        resume: applicationData.resume ? `File: ${applicationData.resume.name}` : "No resume",
+        cover_letter: applicationData.cover_letter ? `File: ${applicationData.cover_letter.name}` : "No cover letter",
+      })
+
+      const newApplication = await createJobApplication({
+        institutionId: selectedInstitution.id,
+        applicationData,
+      })
 
       if (newApplication) {
+        console.log("Application created successfully:", newApplication)
         setApplications((prev) => [newApplication, ...prev])
         setIsCreateDialogOpen(false)
 
@@ -169,11 +203,24 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
           source: "website",
         })
       } else {
-        setError("Failed to create application")
+        setError("Failed to create application - API returned null")
       }
     } catch (err: any) {
-      setError(err?.message || "An error occurred while creating the application")
-      console.error(err)
+      console.error("Full error object:", err)
+      console.error("Error response:", err?.response?.data)
+      console.error("Error status:", err?.response?.status)
+
+      // More detailed error message
+      let errorMessage = "An error occurred while creating the application"
+      if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message
+      } else if (err?.response?.data?.error) {
+        errorMessage = err.response.data.error
+      } else if (err?.message) {
+        errorMessage = err.message
+      }
+
+      setError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -187,6 +234,11 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
       hour: "2-digit",
       minute: "2-digit",
     })
+  }
+
+  // Show loading if institution/branch not selected
+  if (!selectedInstitution || !selectedBranch) {
+    return <div>Loading...</div>
   }
 
   if (isLoading) {
@@ -207,7 +259,10 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Job Applications</h1>
-          <p className="text-muted-foreground">Manage and track all job applications</p>
+          <p className="text-muted-foreground">
+            Manage and track all job applications for {selectedBranch.branch_name} -{" "}
+            {selectedInstitution.Institution_name}
+          </p>
         </div>
 
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -239,18 +294,21 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
                     onValueChange={(value) => handleInputChange("job_position_advert", Number.parseInt(value))}
                   >
                     <SelectTrigger>
-                      <SelectValue
-                        placeholder={isLoadingPositions ? "Loading positions..." : "Select a job position"}
-                      />
+                      <SelectValue placeholder={isLoadingAdverts ? "Loading job adverts..." : "Select a job advert"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {jobPositions.map((position) => (
-                        <SelectItem key={position.id} value={position.id.toString()}>
-                          {position.title}
-                          {position.department && ` - ${position.department}`}
-                          {position.location && ` (${position.location})`}
-                        </SelectItem>
-                      ))}
+                      {jobPositionAdverts
+                        .filter((advert) => advert.status === "active") // Only show active adverts
+                        .map((advert) => (
+                          <SelectItem key={advert.id} value={advert.id.toString()}>
+                            Job Advert #{advert.id}
+                            {advert.number_of_employees_expected &&
+                              ` (${advert.number_of_employees_expected} positions)`}
+                            <span className="text-xs text-muted-foreground ml-2">
+                              Expires: {new Date(advert.expiry_date).toLocaleDateString()}
+                            </span>
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -385,6 +443,31 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
                 )}
               </div>
 
+              {/* Organization Info Display */}
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <h4 className="font-medium text-sm mb-3">Application will be created for:</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                  <div className="space-y-2">
+                    <p>
+                      <span className="font-medium text-foreground">Organization:</span>{" "}
+                      {selectedInstitution.Institution_name}
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">Branch:</span> {selectedBranch.branch_name}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <p>
+                      <span className="font-medium text-foreground">Institution ID:</span> {selectedInstitution.id}
+                    </p>
+                    <p>
+                      <span className="font-medium text-foreground">Available Job Adverts:</span>{" "}
+                      {jobPositionAdverts.length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex justify-end space-x-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancel
@@ -446,9 +529,24 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium">
-                          {jobPositions.find((pos) => pos.id === application.job_position_advert)?.title ||
-                            `Position #${application.job_position_advert}`}
+                        <div className="space-y-1">
+                          <div className="font-medium">
+                            {jobPositionAdverts.find((advert) => advert.id === application.job_position_advert)
+                              ? `Job Advert #${application.job_position_advert}`
+                              : `Advert #${application.job_position_advert}`}
+                          </div>
+                          {(() => {
+                            const advert = jobPositionAdverts.find(
+                              (advert) => advert.id === application.job_position_advert,
+                            )
+                            return (
+                              advert && (
+                                <div className="text-xs text-muted-foreground">
+                                  {advert.number_of_employees_expected} positions • {advert.status}
+                                </div>
+                              )
+                            )
+                          })()}
                         </div>
                       </TableCell>
                       <TableCell>

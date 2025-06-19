@@ -261,26 +261,48 @@ export const updateJobPosition = async ({
 
 
 export const createJobApplication = async ({
+  institutionId,
   applicationData,
 }: {
+  institutionId: number
   applicationData: JobApplicationFormData;
 }): Promise<JobApplication | null> => {
   try {
+    console.log(`Making request to: recruitment/institution/${institutionId}/job-application/`)
+    
     const formData = new FormData();
+    
+    // Log what we're appending to FormData
     Object.entries(applicationData).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
+        console.log(`Appending ${key}:`, value instanceof File ? `File: ${value.name}` : value)
         formData.append(key, value as any);
       }
     });
 
-    const response = await apiRequest.post(`recruitment/institution/job-application/`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    // Log FormData contents (for debugging)
+    console.log("FormData entries:")
+    for (let [key, value] of formData.entries()) {
+      console.log(key, value instanceof File ? `File: ${value.name}` : value)
+    }
 
+    const response = await apiRequest.post(
+      `recruitment/institution/${institutionId}/job-application/`, 
+      formData
+    );
+
+    console.log("API Response:", response.data)
     return response.data as JobApplication;
-  } catch (error) {
-    console.error("Failed to create job application", error);
-    return null;
+  } catch (error: any) {
+    console.error("API Error Details:")
+    console.error("- Status:", error?.response?.status)
+    console.error("- Status Text:", error?.response?.statusText)
+    console.error("- Response Data:", error?.response?.data)
+    console.error("- Request URL:", error?.config?.url)
+    console.error("- Full Error:", error)
+    
+    // Re-throw the error so the component can handle it
+    throw error;
   }
 };
 
