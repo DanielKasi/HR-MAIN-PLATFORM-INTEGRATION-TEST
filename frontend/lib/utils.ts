@@ -1,6 +1,6 @@
 import {type ClassValue, clsx} from "clsx";
 import {twMerge} from "tailwind-merge";
-import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData } from "@/app/types/types.utils";
+import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/app/types";
@@ -259,6 +259,93 @@ export const updateJobPosition = async ({
   }
 }
 
+
+export const createJobApplication = async ({
+  applicationData,
+}: {
+  applicationData: JobApplicationFormData;
+}): Promise<JobApplication | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(applicationData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value as any);
+      }
+    });
+
+    const response = await apiRequest.post(`recruitment/institution/job-application/`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    return response.data as JobApplication;
+  } catch (error) {
+    console.error("Failed to create job application", error);
+    return null;
+  }
+};
+
+// Fetch all job applications for a specific institution
+export const getJobApplications = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<JobApplication[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `recruitment/institution/${institutionId}/job-application/`
+    );
+    return response.data as JobApplication[];
+  } catch (error) {
+    console.error("Failed to fetch job applications", error);
+    return null;
+  }
+};
+
+// Fetch a single job application by ID
+export const getJobApplicationById = async ({
+  applicationId,
+}: {
+  applicationId: number;
+}): Promise<JobApplication | null> => {
+  try {
+    const response = await apiRequest.get(`recruitment/job-application/${applicationId}/`);
+    return response.data as JobApplication;
+  } catch (error) {
+    console.error("Failed to fetch job application", error);
+    return null;
+  }
+};
+
+// Update an existing job application
+export const updateJobApplication = async ({
+  applicationId,
+  applicationData,
+}: {
+  applicationId: number;
+  applicationData: Partial<JobApplicationFormData>;
+}): Promise<JobApplication | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(applicationData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value as any);
+      }
+    });
+
+    const response = await apiRequest.patch(
+      `recruitment/job-application/${applicationId}/`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+
+    return response.data as JobApplication;
+  } catch (error) {
+    console.error("Failed to update job application", error);
+    return null;
+  }
+};
 
 
 
