@@ -1,6 +1,6 @@
 import {type ClassValue, clsx} from "clsx";
 import {twMerge} from "tailwind-merge";
-import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, IInterview, EmployeeFormData, User } from "@/app/types/types.utils";
+import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, IInterview, EmployeeFormData, User, IInterviewFormData, IInterviewStage, IInterviewStageFormData } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/app/types";
@@ -355,7 +355,7 @@ export const updateJobApplication = async ({
 
 export const fetchEmployees = async ({institutionId}:{institutionId:number}) =>{
   try {
-    const response = await apiRequest.get(`employee/${institutionId}`)
+    const response = await apiRequest.get(`employee/${institutionId}/employee/`)
     return response.data as IEmployee[]
   } catch (error) {
     return null
@@ -389,6 +389,8 @@ export const createJobPositionAdvert = async ({
     return null;
   }
 };
+
+
 
 // Fetch all job position adverts for a specific institution
 export const getJobPositionAdverts = async ({
@@ -474,6 +476,104 @@ export const getInterviews = async ({ institutionId }: { institutionId: number }
       return null;
     }
   };
+
+
+// Create a new interview for a given institution
+export const createInterview = async ({
+  institutionId,
+  interviewData,
+}: {
+  institutionId: number;
+  interviewData: IInterviewFormData;
+}): Promise<IInterview | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(interviewData).forEach(([key, value]) => {
+      // Only append defined values
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `recruitment/institution/${institutionId}/job-interview/`,
+      formData
+    );
+    return response.data as IInterview;
+  } catch (error) {
+    console.error("Failed to create job interview:", error);
+    return null;
+  }
+};
+
+// Update an existing interview by its ID
+export const updateInterview = async ({
+  interviewId,
+  interviewData,
+}: {
+  interviewId: number;
+  interviewData: Partial<IInterviewFormData>;
+}): Promise<IInterview | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(interviewData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.patch(
+      `recruitment/job-interview/${interviewId}/`,
+      formData
+    );
+    return response.data as IInterview;
+  } catch (error) {
+    console.error("Failed to update job interview:", error);
+    return null;
+  }
+};
+
+
+export const getInterviewStages = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<IInterviewStage[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `recruitment/institution/${institutionId}/interview-stage/`
+    );
+    return response.data as IInterviewStage[];
+  } catch (error) {
+    console.error("Failed to fetch interview stages:", error);
+    return null;
+  }
+};
+
+
+export const createInterviewStage = async ({
+  institutionId,
+  stageData,
+}: {
+  institutionId: number;
+  stageData: IInterviewStageFormData;
+}): Promise<IInterviewStage | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(stageData).forEach(([key, value]) => {
+      formData.append(key, value.toString());
+    });
+
+    const response = await apiRequest.post(
+      `recruitment/institution/${institutionId}/interview-stage/`,
+      formData
+    );
+    return response.data as IInterviewStage;
+  } catch (error) {
+    console.error("Failed to create interview stage:", error);
+    return null;
+  }
+};
 
 // It returns a promise that resolves to an array of IEmployee objects or throws an error ifAdd commentMore actions
 export const getAllEmployees = async ({institutionId}:{institutionId:number}) => {

@@ -1,12 +1,12 @@
 "use client";
 
 import type React from "react";
-import {useState, useEffect} from "react";
-import {useRouter} from "next/navigation";
-import {useSelector} from "react-redux";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -15,8 +15,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Plus,
   Mail,
@@ -35,16 +35,21 @@ import {
   Upload,
   FileText,
   AlertCircle,
+  MoreVertical,
+  Edit,
+  Eye,
 } from "lucide-react";
-import {Alert, AlertDescription} from "@/components/ui/alert";
-import {createJobApplication, getJobApplications, getJobPositionAdverts} from "@/lib/utils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { createJobApplication, getJobApplications, getJobPositionAdverts } from "@/lib/utils";
 import type {
   IJobPosition,
   JobApplication,
   JobApplicationFormData,
   JobPositionAdvert,
 } from "@/app/types/types.utils";
-import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
+import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
@@ -75,7 +80,7 @@ export default function ApplicationsPage() {
 
   // Form state
   const [formData, setFormData] = useState<
-    Omit<JobApplicationFormData, "resume"> & {resume: File | null; cover_letter?: File }
+    Omit<JobApplicationFormData, "resume"> & { resume: File | null; cover_letter?: File }
   >({
     job_position_advert: 0,
     applicant_name: "",
@@ -111,7 +116,7 @@ export default function ApplicationsPage() {
     setError(null);
 
     try {
-      const data = await getJobApplications({institutionId: selectedInstitution.id});
+      const data = await getJobApplications({ institutionId: selectedInstitution.id });
       console.log("Apps", data);
       if (data) {
         setApplications(data);
@@ -131,7 +136,7 @@ export default function ApplicationsPage() {
 
     setIsLoadingAdverts(true);
     try {
-      const data = await getJobPositionAdverts({institutionId: selectedInstitution.id});
+      const data = await getJobPositionAdverts({ institutionId: selectedInstitution.id });
       console.log("Adverts", data);
       if (data) {
         setJobPositionAdverts(data);
@@ -160,6 +165,14 @@ export default function ApplicationsPage() {
       [field]: file,
     }));
   };
+
+  const handleViewApplication = (applicationId: number) => {
+  router.push(`/applications/${applicationId}`)
+}
+
+const handleEditApplication = (applicationId: number) => {
+  router.push(`/applications/${applicationId}/edit`)
+}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -561,6 +574,8 @@ export default function ApplicationsPage() {
                     <TableHead>Source</TableHead>
                     <TableHead>Applied</TableHead>
                     <TableHead>Documents</TableHead>
+                    <TableHead>Actions</TableHead>
+
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -646,6 +661,25 @@ export default function ApplicationsPage() {
                             </Button>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="!bg-white shadow-md shadow-black/20 rounded-md border border-black/20">
+                              <DropdownMenuItem onClick={() => handleViewApplication(application.id)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditApplication(application.id)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Application
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
