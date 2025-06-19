@@ -333,7 +333,7 @@ export default function JobPositionDetailsPage() {
                 <div className="space-y-2">
                   <p>
                     <span className="font-medium text-foreground">Organization:</span>{" "}
-                    {selectedInstitution.Institution_name}
+                    {selectedInstitution.institution_name}
                   </p>
                   <p>
                     <span className="font-medium text-foreground">Branch:</span> {selectedBranch.branch_name}

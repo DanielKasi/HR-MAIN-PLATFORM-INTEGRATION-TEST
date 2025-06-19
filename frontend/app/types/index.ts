@@ -9,15 +9,22 @@ export interface IProductCategoryDetail {
 
 export interface IUserInstitution {
   id: number;
-  Institution_email: string;
+  institution_email: string,
+  approval_date?:string|null,
+  approval_status:string,
+  approval_status_display:string,
   institution_owner_id: number;
-  Institution_name: string;
-  Institution_logo: string | null;
+  institution_name: string;
+  institution_logo: string | null;
   theme_color: null | string;
   branches?: Branch[];
   first_phone_number: string;
   second_phone_number: string;
+  latitude:number,
+  longitude:number,
+  location:string
 }
+
 
 export interface IUnitOfMeasure {
   id: number;

@@ -263,8 +263,12 @@ export const updateJobPosition = async ({
 export const createJobApplication = async ({
   institutionId,
   applicationData,
+<<<<<<< Updated upstream
 }: {
   institutionId: number
+=======
+}: {institutionId:number,
+>>>>>>> Stashed changes
   applicationData: JobApplicationFormData;
 }): Promise<JobApplication | null> => {
   try {
@@ -280,11 +284,15 @@ export const createJobApplication = async ({
       }
     });
 
+<<<<<<< Updated upstream
     // Log FormData contents (for debugging)
     console.log("FormData entries:")
     for (let [key, value] of formData.entries()) {
       console.log(key, value instanceof File ? `File: ${value.name}` : value)
     }
+=======
+    const response = await apiRequest.post(`recruitment/institution/${institutionId}/job-application/`, formData);
+>>>>>>> Stashed changes
 
     const response = await apiRequest.post(
       `recruitment/institution/${institutionId}/job-application/`, 
@@ -356,10 +364,7 @@ export const updateJobApplication = async ({
 
     const response = await apiRequest.patch(
       `recruitment/job-application/${applicationId}/`,
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      }
+      formData
     );
 
     return response.data as JobApplication;
@@ -398,10 +403,7 @@ export const createJobPositionAdvert = async ({
 
     const response = await apiRequest.post(
       `recruitment/institution/${institutionId}/job-advert/`,
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      }
+      formData
     );
 
     return response.data as JobPositionAdvert;
@@ -461,10 +463,7 @@ export const updateJobPositionAdvert = async ({
 
     const response = await apiRequest.patch(
       `recruitment/job-advert/${advertId}/`,
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      }
+      formData
     );
 
     return response.data as JobPositionAdvert;

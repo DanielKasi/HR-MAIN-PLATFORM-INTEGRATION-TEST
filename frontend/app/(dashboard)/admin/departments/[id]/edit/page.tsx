@@ -220,7 +220,7 @@ export default function EditDepartmentPage() {
               <div>
                 <CardTitle className="text-xl">Edit Department</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Update department details for {selectedBranch.branch_name} - {selectedInstitution.Institution_name}
+                  Update department details for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
                 </p>
               </div>
             </div>
@@ -276,7 +276,7 @@ export default function EditDepartmentPage() {
                     </p>
                     <p>
                       <span className="font-medium text-foreground">Organization:</span>{" "}
-                      {selectedInstitution.Institution_name}
+                      {selectedInstitution.institution_name}
                     </p>
                     <p>
                       <span className="font-medium text-foreground">Branch:</span> {selectedBranch.branch_name}

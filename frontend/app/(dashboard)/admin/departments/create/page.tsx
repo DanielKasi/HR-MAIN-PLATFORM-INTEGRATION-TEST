@@ -129,7 +129,7 @@ export default function CreateDepartmentPage() {
               <div>
                 <CardTitle className="text-xl">Create New Department</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Add a new department to {selectedBranch.branch_name} - {selectedInstitution.Institution_name}
+                  Add a new department to {selectedBranch.branch_name} - {selectedInstitution.institution_name}
                 </p>
               </div>
             </div>
@@ -182,7 +182,7 @@ export default function CreateDepartmentPage() {
                   <div className="space-y-2">
                     <p>
                       <span className="font-medium text-foreground">Organization:</span>{" "}
-                      {selectedInstitution.Institution_name}
+                      {selectedInstitution.institution_name}
                     </p>
                     <p>
                       <span className="font-medium text-foreground">Branch:</span> {selectedBranch.branch_name}

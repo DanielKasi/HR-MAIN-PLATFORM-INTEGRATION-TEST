@@ -240,7 +240,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       submenu: [
         {
           title: "Job Adverts",
-          href: "/#2",
+          href: "/job-adverts",
           // requiredPermission: "can_access_gps_monitioning",
         },
         {
@@ -385,8 +385,8 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     }
 
     if (selectedInstitution) {
-      setInstitutionLogo(selectedInstitution.Institution_logo);
-      setInstitutionName(selectedInstitution.Institution_name);
+      setInstitutionLogo(selectedInstitution.institution_logo);
+      setInstitutionName(selectedInstitution.institution_name);
     }
 
     const filtered = navItems
