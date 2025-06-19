@@ -37,3 +37,34 @@ class JobPositionSerializer(serializers.ModelSerializer):
                 "department": obj.reports_to.department.name,
             }
         return None
+
+class JobPositionAdvertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobPositionAdvert
+        fields = [
+            "id",
+            "job_position",
+            "status",
+            "published_date",
+            "expiry_date",
+            "number_of_employees_expected",
+            "extra_information",
+        ]
+
+class JobAdvertApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobAdvertApplication
+        fields = [
+            "id",
+            "job_position_advert",
+            "applicant_name",
+            "applicant_email",
+            "applicant_phone",
+            'resume',
+            "cover_letter",
+            "application_date",
+            "status",
+            "gender",
+            "state",
+            'address',
+            "country",

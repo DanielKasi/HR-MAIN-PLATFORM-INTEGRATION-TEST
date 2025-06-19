@@ -79,3 +79,5 @@ class JobPositionDetailAPI(APIView):
             return Response(
                 {"detail": "Job position not found."}, status=status.HTTP_404_NOT_FOUND
             )
+
+
