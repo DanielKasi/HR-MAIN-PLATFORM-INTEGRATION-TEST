@@ -10,7 +10,7 @@ class InstitutionDocumentSerializer(serializers.ModelSerializer):
         model = InstitutionDocument
         fields = [
             "id",
-            "shop",
+            "institution",
             "document_title",
             "document_file",
             "document_type",
