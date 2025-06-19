@@ -74,7 +74,6 @@ class JobPositionSerializer(serializers.ModelSerializer):
             return {
                 "id": obj.reports_to.id,
                 "name": obj.reports_to.name,
-                "email": obj.reports_to.email,
                 "department": obj.reports_to.department.name,
             }
         return None
