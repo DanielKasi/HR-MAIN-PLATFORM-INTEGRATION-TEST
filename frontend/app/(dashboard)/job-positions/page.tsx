@@ -231,13 +231,13 @@ export default function JobPositionsPage() {
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem
+                      {/* <DropdownMenuItem
                         onClick={() => handleDeleteJobPosition(position.id)}
                         className="text-destructive"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
-                      </DropdownMenuItem>
+                      </DropdownMenuItem> */}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
