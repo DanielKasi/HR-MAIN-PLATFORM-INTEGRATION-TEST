@@ -197,6 +197,34 @@ export default function AdminPage() {
                   ))}
                 </div>
               </div>
+
+              <div className="space-y-4">
+                <Link
+                  href="/admin/departments"
+                  className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+                >
+                  <GitBranch className="w-5 h-5 text-gray-500" />
+                  <span>Departements</span>
+                </Link>
+                {/* We'll keep the branch listing functionality but hide it since it's not in the image */}
+                {/* <div className="hidden">
+                  {branches.map((branch) => (
+                    <div key={branch.id} className="ml-4">
+                      <span>{branch.branch_name}</span>
+                      <div className="mt-1 ml-4">
+                        <Link
+                          href={`/products-mgt/${branch.id}?branchId=${
+                            branch.id
+                          }&branchName=${encodeURIComponent(branch.branch_name)}`}
+                          className="text-blue-500 hover:underline mr-3"
+                        >
+                          Products
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div> */}
+              </div>
             </div>
 
             {/* Institution Management Section */}
