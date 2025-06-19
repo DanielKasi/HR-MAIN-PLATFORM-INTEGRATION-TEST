@@ -16,6 +16,7 @@ import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/se
 import { getJobPositions } from "@/lib/utils"
 import { IJobPosition } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import { formatCurrency } from "@/lib/helpers"
 
 export default function JobPositionsPage() {
   const [jobPositions, setJobPositions] = useState<IJobPosition[]>([])
@@ -156,7 +157,7 @@ export default function JobPositionsPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">
-                ${jobPositions.reduce((sum, pos) => sum + pos.salary, 0).toLocaleString()}
+                ${formatCurrency(jobPositions.reduce((sum, pos) => Number(sum) + Number(pos.salary), 0))}
               </div>
               <p className="text-xs text-muted-foreground">Total Salary Budget</p>
             </CardContent>
