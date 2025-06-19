@@ -1,8 +1,10 @@
 from rest_framework import serializers
+from employee.serializers import EmployeeSerializer
 from users.models import CustomUser
 from users.serializers import CustomUserSerializer
 from .models import Department, Institution, Branch, UserBranch, InstitutionDocument
 import os
+
 
 class InstitutionDocumentSerializer(serializers.ModelSerializer):
 
@@ -33,6 +35,7 @@ class InstitutionDocumentSerializer(serializers.ModelSerializer):
                     f"File type {ext} not allowed. Allowed types: {', '.join(allowed_extensions)}"
                 )
         return value
+
 
 class InstitutionSerializer(serializers.ModelSerializer):
     institution_owner_id = serializers.PrimaryKeyRelatedField(
@@ -90,13 +93,17 @@ class InstitutionSerializer(serializers.ModelSerializer):
         Institution_owner = validated_data.pop("institution_owner_id")
 
         return Institution.objects.create(
-            institution_owner=Institution_owner, created_by=request.user, **validated_data
+            institution_owner=Institution_owner,
+            created_by=request.user,
+            **validated_data,
         )
 
 
 class BranchSerializer(serializers.ModelSerializer):
     institution_name = serializers.SerializerMethodField()
-    institution_logo = serializers.ImageField(source="Institution.Institution_logo", read_only=True)
+    institution_logo = serializers.ImageField(
+        source="Institution.Institution_logo", read_only=True
+    )
 
     class Meta:
         model = Branch
@@ -114,8 +121,13 @@ class BranchSerializer(serializers.ModelSerializer):
             "branch_opening_time",
             "branch_closing_time",
         ]
+
     def get_institution_logo(self, obj):
-        if hasattr(obj, "institution") and obj.institution and obj.institution.institution_logo:
+        if (
+            hasattr(obj, "institution")
+            and obj.institution
+            and obj.institution.institution_logo
+        ):
             return obj.institution.institution_logo.url
         return None
 
@@ -123,7 +135,6 @@ class BranchSerializer(serializers.ModelSerializer):
         if hasattr(obj, "institution") and obj.institution:
             return obj.institution.institution_name
         return None
-
 
     def create(self, validated_data):
         request = self.context.get("request")
@@ -182,6 +193,9 @@ class UserBranchSerializer(serializers.ModelSerializer):
 
 class DepartmentSerializer(serializers.ModelSerializer):
     institution_details = InstitutionSerializer(source="institution", read_only=True)
+    head_of_department_details = EmployeeSerializer(
+        source="head_of_department", read_only=True
+    )
 
     class Meta:
         model = Department
@@ -190,5 +204,7 @@ class DepartmentSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "institution",
+            "head_of_department",
+            "head_of_department_details",
             "institution_details",
         ]
