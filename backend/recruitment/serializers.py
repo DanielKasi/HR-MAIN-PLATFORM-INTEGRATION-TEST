@@ -152,4 +152,8 @@ class JobInterviewSerializer(serializers.ModelSerializer):
             "status",
             "feedback",
             "rating",
+            "interview_type",
+            "location",
+            "interview_time",
+            "additional_notes",
         ]

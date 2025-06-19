@@ -1,5 +1,5 @@
 from django.db import models
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class JobPosition(models.Model):
@@ -37,6 +37,8 @@ class JobPositionAdvert(models.Model):
     expiry_date = models.DateTimeField()
     number_of_employees_expected = models.PositiveIntegerField(blank=True, null=True)
     extra_information = models.TextField(blank=True, null=True)
+
+
 
     def __str__(self):
         return f"{self.job_position.name} - {self.status} ({self.published_date})"
@@ -112,6 +114,11 @@ class JobInterview(models.Model):
         ("cancelled", "Cancelled"),
     ]
 
+    interview_type = [
+        ("online", "Online"),
+        ("in_person", "In Person"),
+    ]
+
     job_position_application = models.ForeignKey(
         JobAdvertApplication,
         on_delete=models.PROTECT,
@@ -122,9 +129,13 @@ class JobInterview(models.Model):
         on_delete=models.PROTECT,
         related_name="interviews",
     )
+    interview_type = models.CharField(max_length=20, choices=interview_type)
     interview_date = models.DateTimeField(default=datetime.now)
+    interview_time = models.TimeField()
+    location = models.CharField(max_length=255)
     feedback = models.TextField(blank=True, null=True)
     rating = models.PositiveIntegerField(blank=True, null=True)
+    additional_notes = models.TextField(blank=True, null=True)
     status = models.CharField(
         max_length=20, choices=status_choices, default="scheduled"
     )
