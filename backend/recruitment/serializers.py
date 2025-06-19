@@ -9,51 +9,6 @@ from recruitment.models import (
 )
 from employee.serializers import EmployeeSerializer
 
-
-class JobPositionSerializer(serializers.ModelSerializer):
-    department_details = DepartmentSerializer(source="department", read_only=True)
-    reports_to_details = serializers.SerializerMethodField()
-
-    class Meta:
-        model = JobPosition
-        fields = [
-            "id",
-            "name",
-            "description",
-            "department",
-            "department_details",
-            "reports_to",
-            "reports_to_details",
-            "contract_template",
-            "offer_letter_template",
-            "salary",
-        ]
-
-    def get_reports_to_details(self, obj):
-        if obj.reports_to:
-            return {
-                "id": obj.reports_to.id,
-                "name": obj.reports_to.name,
-                "email": obj.reports_to.email,
-                "department": obj.reports_to.department.name,
-            }
-        return None
-
-
-class JobPositionAdvertSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = JobPositionAdvert
-        fields = [
-            "id",
-            "job_position",
-            "status",
-            "published_date",
-            "expiry_date",
-            "number_of_employees_expected",
-            "extra_information",
-        ]
-
-
 class JobAdvertApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobAdvertApplication
@@ -73,6 +28,66 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
             "country",
             "source",
         ]
+
+class JobPositionAdvertSerializer(serializers.ModelSerializer):
+    applications = serializers.SerializerMethodField()
+    class Meta:
+        model = JobPositionAdvert
+        fields = [
+            "id",
+            "job_position",
+            "status",
+            "published_date",
+            "expiry_date",
+            "number_of_employees_expected",
+            "extra_information",
+            "applications",
+        ]
+        
+    def get_applications(self, obj):
+        applications = JobAdvertApplication.objects.filter(job_position_advert=obj)
+        return JobAdvertApplicationSerializer(applications, many=True).data    
+
+class JobPositionSerializer(serializers.ModelSerializer):
+    department_details = DepartmentSerializer(source="department", read_only=True)
+    reports_to_details = serializers.SerializerMethodField()
+    job_adverts = serializers.SerializerMethodField()
+
+    class Meta:
+        model = JobPosition
+        fields = [
+            "id",
+            "name",
+            "description",
+            "department",
+            "department_details",
+            "reports_to",
+            "reports_to_details",
+            "contract_template",
+            "offer_letter_template",
+            "salary",
+            "job_adverts",
+        ]
+
+    def get_reports_to_details(self, obj):
+        if obj.reports_to:
+            return {
+                "id": obj.reports_to.id,
+                "name": obj.reports_to.name,
+                "email": obj.reports_to.email,
+                "department": obj.reports_to.department.name,
+            }
+        return None
+    
+    def get_job_adverts(self, obj):
+        adverts = JobPositionAdvert.objects.filter(job_position=obj)
+        return JobPositionAdvertSerializer(adverts, many=True).data
+
+
+
+
+
+
 
 
 class InterviewStageSerializer(serializers.ModelSerializer):
@@ -106,7 +121,7 @@ class JobInterviewSerializer(serializers.ModelSerializer):
             "job_position_application_details",
             "interview_stage",
             "interview_stage_details",
-            "scheduled_date",
+            "interview_date",
             "status",
             "feedback",
             "rating",
