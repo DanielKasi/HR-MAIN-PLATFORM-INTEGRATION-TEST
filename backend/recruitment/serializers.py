@@ -9,12 +9,20 @@ from recruitment.models import (
 )
 from employee.serializers import EmployeeSerializer
 
+class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
+    class Meta:
+        model = JobPosition
+        fields = ["name", "description"]
+
 class JobAdvertApplicationSerializer(serializers.ModelSerializer):
+    job_position_advert_job_details = serializers.SerializerMethodField()
+    positions = serializers.SerializerMethodField()
     class Meta:
         model = JobAdvertApplication
         fields = [
             "id",
             "job_position_advert",
+            "job_position_advert_job_details",
             "applicant_name",
             "applicant_email",
             "applicant_phone",
@@ -27,15 +35,28 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
             "address",
             "country",
             "source",
+            "positions",
         ]
-
+        
+    def get_job_position_advert_job_details(self, obj):
+        job_position = obj.job_position_advert.job_position
+        return {
+            "name": job_position.name,
+            "description": job_position.description
+        }
+        
+    def get_positions(self, obj):
+        return obj.job_position_advert.number_of_employees_expected    
 class JobPositionAdvertSerializer(serializers.ModelSerializer):
-    applications = serializers.SerializerMethodField(read_only= True)
+    applications = serializers.SerializerMethodField(read_only=True)
+    job_position_details = serializers.SerializerMethodField()
+
     class Meta:
         model = JobPositionAdvert
         fields = [
             "id",
             "job_position",
+            "job_position_details",  
             "status",
             "published_date",
             "expiry_date",
@@ -43,10 +64,17 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
             "extra_information",
             "applications",
         ]
-        
+
     def get_applications(self, obj):
         applications = JobAdvertApplication.objects.filter(job_position_advert=obj)
-        return JobAdvertApplicationSerializer(applications, many=True).data    
+        return JobAdvertApplicationSerializer(applications, many=True).data
+
+    def get_job_position_details(self, obj):
+        return {
+            "id": obj.job_position.id,
+            "name": obj.job_position.name,
+            "description": obj.job_position.description,
+        }
 
 class JobPositionSerializer(serializers.ModelSerializer):
     department_details = DepartmentSerializer(source="department", read_only=True)
