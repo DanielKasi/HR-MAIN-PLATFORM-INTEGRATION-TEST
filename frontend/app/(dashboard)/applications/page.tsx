@@ -39,6 +39,7 @@ import {
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {createJobApplication, getJobApplications, getJobPositionAdverts} from "@/lib/utils";
 import type {
+  IJobPosition,
   JobApplication,
   JobApplicationFormData,
   JobPositionAdvert,
@@ -74,14 +75,13 @@ export default function ApplicationsPage() {
 
   // Form state
   const [formData, setFormData] = useState<
-    Omit<JobApplicationFormData, "resume"> & {resume: File | null; cover_letter: File | null}
+    Omit<JobApplicationFormData, "resume"> & {resume: File | null; cover_letter?: File }
   >({
     job_position_advert: 0,
     applicant_name: "",
     applicant_email: "",
     applicant_phone: "",
     resume: null,
-    cover_letter: null,
     status: "new",
     gender: "male",
     state: "",
@@ -190,8 +190,8 @@ export default function ApplicationsPage() {
         applicant_phone: formData.applicant_phone || undefined,
         state: formData.state || undefined,
         application_date: new Date().toISOString(),
-        address: formData.address || undefined,
-        country: formData.country || undefined,
+        address: formData.address || "",
+        country: formData.country || "",
       };
 
       // Add debugging logs
@@ -221,7 +221,7 @@ export default function ApplicationsPage() {
           applicant_email: "",
           applicant_phone: "",
           resume: null,
-          cover_letter: null,
+          cover_letter: undefined,
           status: "new",
           gender: "male",
           state: "",
@@ -288,7 +288,7 @@ export default function ApplicationsPage() {
           <h1 className="text-3xl font-bold">Job Applications</h1>
           <p className="text-muted-foreground">
             Manage and track all job applications for {selectedBranch.branch_name} -{" "}
-            {selectedInstitution.Institution_name}
+            {selectedInstitution.institution_name}
           </p>
         </div>
 
@@ -491,7 +491,7 @@ export default function ApplicationsPage() {
                   <div className="space-y-2">
                     <p>
                       <span className="font-medium text-foreground">Organization:</span>{" "}
-                      {selectedInstitution.Institution_name}
+                      {selectedInstitution.institution_name}
                     </p>
                     <p>
                       <span className="font-medium text-foreground">Branch:</span>{" "}

@@ -19,24 +19,24 @@ export function StatsCards({branchId}: {branchId: string | null}) {
   const fetchStats = async () => {
     setIsLoading(true);
     try {
-      const params = new URLSearchParams();
+      // const params = new URLSearchParams();
 
-      params.append("type", "dashboard_stats");
+      // params.append("type", "dashboard_stats");
 
-      if (branchId) {
-        params.append("branch_id", branchId);
-      } else if (InstitutionId) {
-        params.append("Institution_id", InstitutionId as any);
-      }
+      // if (branchId) {
+      //   params.append("branch_id", branchId);
+      // } else if (InstitutionId) {
+      //   params.append("Institution_id", InstitutionId as any);
+      // }
 
-      const response = await apiGet(`sale/analysis/?${params.toString()}`);
+      // const response = await apiGet(`sale/analysis/?${params.toString()}`);
 
-      setStats({
-        salesToday: response.data?.sales_today?.formatted,
-        transactionsToday: response.data?.transactions_today?.formatted,
-        activeInventory: response.data?.active_inventory?.formatted,
-        lowStockItems: response.data?.low_stock_items?.formatted,
-      });
+      // setStats({
+      //   salesToday: response.data?.sales_today?.formatted,
+      //   transactionsToday: response.data?.transactions_today?.formatted,
+      //   activeInventory: response.data?.active_inventory?.formatted,
+      //   lowStockItems: response.data?.low_stock_items?.formatted,
+      // });
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
     } finally {
