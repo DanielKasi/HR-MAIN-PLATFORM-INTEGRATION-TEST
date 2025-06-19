@@ -170,32 +170,7 @@ export default function AdminPage() {
               <h2 className="text-lg font-semibold mb-6">Branch Management</h2>
               <Separator className="my-6" />
               <div className="flex flex-col items-start justify-center gap-6">
-                <div className="">
-                  <Link
-                    href="/branches"
-                    className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
-                  >
-                    <GitBranch className="w-5 h-5 text-gray-500" />
-                    <span>Branches</span>
-                  </Link>
-                  {/* We'll keep the branch listing functionality but hide it since it's not in the image */}
-                  <div className="hidden">
-                    {branches.map((branch) => (
-                      <div key={branch.id} className="ml-4">
-                        <span>{branch.branch_name}</span>
-                        <div className="mt-1 ml-4">
-                          <Link
-                            href={`/products-mgt/${branch.id}?branchId=${branch.id
-                              }&branchName=${encodeURIComponent(branch.branch_name)}`}
-                            className="text-blue-500 hover:underline mr-3"
-                          >
-                            Products
-                          </Link>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                
 
                 <div className="">
                   <Link
@@ -203,7 +178,7 @@ export default function AdminPage() {
                     className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
                   >
                     <GitBranch className="w-5 h-5 text-gray-500" />
-                    <span>Departements</span>
+                    <span>Departments</span>
                   </Link>
                   {/* We'll keep the branch listing functionality but hide it since it's not in the image */}
 

@@ -69,22 +69,22 @@ export interface DepartmentFormData {
 
 export interface IInstitution {
   id: number;
-  institutionEmail: string;
-  institutionName: string;
-  firstPhoneNumber: string;
-  secondPhoneNumber?: string | null;
-  institutionLogo?: string | null; // ImageField serialized as URL or null
-  institutionOwnerId: number; // ForeignKey as ID
-  themeColor?: string | null;
+  institution_email: string;
+  institution_name: string;
+  first_phone_number: string;
+  second_phone_number?: string | null;
+  institution_logo?: string | null; // ImageField serialized as URL or null
+  institution_owner_id: number; // ForeignKey as ID
+  theme_Color?: string | null;
   location?: string | null;
   latitude?: number | null;
   longitude?: number | null;
-  approvalStatus: string;
-  approvalStatusDisplay: string;
-  approvalDate?: string | null; // ISO date
+  approval_status: string;
+  approval_status_display: string;
+  approval_date?: string | null; // ISO date
   documents: IInstitutionDocument[]; // Embedded serializer
-  documentFiles?: File[]; // Write-only field
-  documentTitles?: string[]; // Write-only field
+  document_files?: File[]; // Write-only field
+  document_titles?: string[]; // Write-only field
 }
 
 export interface IInstitutionDocument {
@@ -98,7 +98,7 @@ export interface IDepartment {
   name: string;
   description?: string | null;
   institution: number; // ForeignKey as ID
-  institutionDetails?: IInstitution | null; // Embedded serializer
+  institution_details?: IInstitution | null; // Embedded serializer
 }
 
 export interface IReportsToDetails {
@@ -113,7 +113,7 @@ export interface IJobPosition {
   name: string;
   description?: string | null;
   department: number; // ForeignKey as ID
-  departmentDetails?: IDepartment | null; // Embedded serializer
+  department_details?: IDepartment | null; // Embedded serializer
   reportsTo?: number | null; // ForeignKey as ID
   reportsToDetails?: IReportsToDetails | null; // SerializerMethodField
   contractTemplate?: string | null; // FileField serialized as URL

@@ -68,22 +68,22 @@ export default function BranchDetailPage() {
   const [editTillIndex, setEditTillIndex] = useState<number | null>(null);
 
   const fetchBranch = async () => {
-    setIsLoading(true);
-    try {
-      const response = await apiRequest.get(`institution/branch/${branchId}/`);
-      if (response.status === 200) {
-        setBranch(response.data);
-        setEditedBranch(response.data);
-      } else {
-        toast.error("Failed to fetch branch details");
-        router.push("/branches");
-      }
-    } catch (error) {
-      toast.error("Error fetching branch details");
-      router.push("/branches");
-    } finally {
-      setIsLoading(false);
-    }
+    // setIsLoading(true);
+    // try {
+    //   const response = await apiRequest.get(`institution/branch/${branchId}/`);
+    //   if (response.status === 200) {
+    //     setBranch(response.data);
+    //     setEditedBranch(response.data);
+    //   } else {
+    //     toast.error("Failed to fetch branch details");
+    //     router.push("/branches");
+    //   }
+    // } catch (error) {
+    //   toast.error("Error fetching branch details");
+    //   router.push("/branches");
+    // } finally {
+    //   setIsLoading(false);
+    // }
   };
 
   useEffect(() => {
