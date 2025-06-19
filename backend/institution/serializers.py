@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from users.models import CustomUser
 from users.serializers import CustomUserSerializer
-from .models import Institution, Branch, UserBranch, InstitutionDocument
+from .models import Department, Institution, Branch, UserBranch, InstitutionDocument
 import os
 
 class InstitutionDocumentSerializer(serializers.ModelSerializer):
@@ -178,3 +178,17 @@ class UserBranchSerializer(serializers.ModelSerializer):
                 "User must be authenticated to create a user branch."
             )
         return UserBranch.objects.create(created_by=request.user, **validated_data)
+
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    institution_details = InstitutionSerializer(source="institution", read_only=True)
+
+    class Meta:
+        model = Department
+        fields = [
+            "id",
+            "name",
+            "description",
+            "institution",
+            "institution_details",
+        ]

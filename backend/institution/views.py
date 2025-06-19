@@ -13,9 +13,10 @@ from utilities.helpers import (
 )
 from users.models import Profile
 
-from .models import Institution, Branch, UserBranch
+from .models import Department, Institution, Branch, UserBranch
 from users.serializers import ProfileSerializer
 from .serializers import (
+    DepartmentSerializer,
     InstitutionSerializer,
     BranchSerializer,
     UserBranchSerializer,
@@ -39,14 +40,17 @@ class InstitutionListAPIView(APIView):
     )
     def post(self, request):
         if Institution.objects.filter(
-            institution_owner__id=request.data.get("institution_owner_id"), institution_name=request.data.get("institution_name")
+            institution_owner__id=request.data.get("institution_owner_id"),
+            institution_name=request.data.get("institution_name"),
         ).exists():
             return Response(
                 {"detail": "User Already has an Institution with the same name."},
-                status=status.HTTP_409_CONFLICT
+                status=status.HTTP_409_CONFLICT,
             )
 
-        serializer = InstitutionSerializer(data=request.data, context={"request": request})
+        serializer = InstitutionSerializer(
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             institution = serializer.save()
             return Response(
@@ -163,7 +167,9 @@ class BranchListAPIView(APIView):
         if request.user.is_staff:
             branches = Branch.objects.all()
         else:
-            branches = Branch.objects.filter(institution__institution_owner=request.user)
+            branches = Branch.objects.filter(
+                institution__institution_owner=request.user
+            )
 
         serializer = BranchSerializer(branches, many=True)
         return Response(serializer.data)
@@ -179,7 +185,10 @@ class BranchDetailAPIView(APIView):
     def get(self, request, branch_id):
         try:
             branch = Branch.objects.get(id=branch_id)
-            if not request.user.is_staff and branch.institution.institution_owner != request.user:
+            if (
+                not request.user.is_staff
+                and branch.institution.institution_owner != request.user
+            ):
                 return Response({"detail": "Access denied."}, status=403)
             serializer = BranchSerializer(branch)
             return Response(serializer.data)
@@ -197,7 +206,10 @@ class BranchDetailAPIView(APIView):
 
         try:
             branch = Branch.objects.get(id=branch_id)
-            if not request.user.is_staff and branch.institution.institution_owner != request.user:
+            if (
+                not request.user.is_staff
+                and branch.institution.institution_owner != request.user
+            ):
                 return Response({"detail": "Access denied."}, status=403)
         except Branch.DoesNotExist:
             return Response({"detail": "Branch not found."}, status=404)
@@ -220,7 +232,10 @@ class BranchDetailAPIView(APIView):
     def delete(self, request, branch_id):
         try:
             branch = Branch.objects.get(id=branch_id)
-            if not request.user.is_staff and branch.institution.institution_owner != request.user:
+            if (
+                not request.user.is_staff
+                and branch.institution.institution_owner != request.user
+            ):
                 return Response({"detail": "Access denied."}, status=403)
             branch.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -355,7 +370,8 @@ class InstitutionUserProfileAPIView(APIView):
                 )
             except Profile.DoesNotExist:
                 return Response(
-                    {"detail": "Institution User not found"}, status=status.HTTP_404_NOT_FOUND
+                    {"detail": "Institution User not found"},
+                    status=status.HTTP_404_NOT_FOUND,
                 )
         return Response(
             {"detail": "User ID is required for updating."},
@@ -430,6 +446,81 @@ class UserBranchDetailAPIView(APIView):
         return Response(
             {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class DepartmentListAPIView(APIView):
+    @extend_schema(
+        request=DepartmentSerializer,
+        responses={201: DepartmentSerializer},
+        description="Create a new department.",
+        summary="Create a new department",
+        tags=["Department Management"],
+    )
+    def post(self, request, institution_id=None):
+        if not institution_id:
+            return Response(
+                {"detail": "Institution ID is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = DepartmentSerializer(data=request.data)
+        if serializer.is_valid():
+            department = serializer.save()
+            return Response(
+                DepartmentSerializer(department).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    @extend_schema(
+        responses={200: DepartmentSerializer(many=True)},
+        description="Retrieve all departments.",
+        summary="Get all departments",
+        tags=["Department Management"],
+    )
+    def get(self, request, institution_id=None):
+        departments = Department.objects.filter(institution_id=institution_id)
+        serializer = DepartmentSerializer(departments, many=True)
+        return Response(serializer.data)
+
+
+class DepartmentDetailAPIView(APIView):
+    @extend_schema(
+        responses={200: DepartmentSerializer},
+        description="Retrieve a department.",
+        summary="Get a department",
+        tags=["Department Management"],
+    )
+    def get(self, request, department_id):
+        try:
+            department = Department.objects.get(id=department_id)
+            serializer = DepartmentSerializer(department)
+            return Response(serializer.data)
+        except Department.DoesNotExist:
+            return Response({"detail": "Department not found."}, status=404)
+
+    @extend_schema(
+        request=DepartmentSerializer,
+        responses={200: DepartmentSerializer},
+        description="Update an existing department.",
+        summary="Update a department",
+        tags=["Department Management"],
+    )
+    def patch(self, request, department_id):
+        try:
+            department = Department.objects.get(id=department_id)
+            serializer = DepartmentSerializer(
+                department, data=request.data, partial=True
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(
+                {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+            )
+        except Department.DoesNotExist:
+            return Response({"detail": "Department not found."}, status=404)
 
 
 # TODO: Make sure a user who does this has permissions to do so

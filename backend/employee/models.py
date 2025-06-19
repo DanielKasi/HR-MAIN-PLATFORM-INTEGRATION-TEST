@@ -1,4 +1,5 @@
 from django.db import models
+from datetime import datetime
 
 class Employee(models.Model):
     """
@@ -17,17 +18,21 @@ class Employee(models.Model):
     )
 
     user  = models.OneToOneField("users.CustomUser", on_delete=models.PROTECT, blank=True, null=True, related_name="employees")
-    first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
-    email = models.EmailField(unique=True)
+    first_name = models.CharField(max_length=30, blank=True, null=True)
+    last_name = models.CharField(max_length=30, blank=True, null=True)
+    email = models.EmailField(unique=True, blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
-    position = models.CharField(max_length=50)
-    department = models.CharField(max_length=50)
-    date_of_birth = models.DateField()
-    date_of_joining = models.DateField()
+    position = models.ForeignKey(
+        "recruitment.JobPosition", on_delete=models.PROTECT, related_name="employees", null=True, blank=True
+    )
+    department = models.ForeignKey(
+        "institution.Department", on_delete=models.PROTECT, blank=True, null=True, related_name="employees"
+    )
+    date_of_birth = models.DateField(blank=True, null=True)
+    date_of_joining = models.DateField(default=datetime.now)
     address = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
     experience = models.PositiveIntegerField(default=0)
     qualifications = models.TextField(blank=True, null=True)
