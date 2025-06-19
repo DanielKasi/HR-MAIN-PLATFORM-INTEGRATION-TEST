@@ -162,24 +162,6 @@ export default function DashboardPage() {
 
             <TasksCards branchId={branchIdToPass} />
             <StatsCards branchId={branchIdToPass} />
-            <SalesChart branchId={branchIdToPass} />
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="md:col-span-2">
-                <RecentTransactions branchId={branchIdToPass} />
-              </div>
-              <div>
-                <TransactionMethods branchId={branchIdToPass} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div className="h-[400px] overflow-auto">
-                <TopSellingProducts branchId={branchIdToPass} />
-              </div>
-              <div className="h-[400px] overflow-auto">
-                <LowStockItems branchId={branchIdToPass} />
-              </div>
-            </div>
           </>
         )}
       </div>

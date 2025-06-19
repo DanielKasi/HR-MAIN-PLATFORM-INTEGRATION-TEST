@@ -213,7 +213,6 @@ export default function DepartmentsPage() {
                     <div>
                       <CardTitle className="text-lg">{department.name}</CardTitle>
                       <Badge variant="secondary" className="text-xs">
-                        ID: {department.id}
                       </Badge>
                     </div>
                   </div>
@@ -241,10 +240,6 @@ export default function DepartmentsPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-sm text-muted-foreground line-clamp-3">{department.description}</p>
-
-                <div className="pt-2 border-t">
-                  <div className="text-xs text-muted-foreground">Institution ID: {department.institution}</div>
-                </div>
               </CardContent>
             </Card>
           ))}
