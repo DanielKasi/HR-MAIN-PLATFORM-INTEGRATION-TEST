@@ -284,7 +284,7 @@ export default function CreateJobPositionPage() {
                       <SelectItem value="0">None</SelectItem>
                       {jobPositions.map((position) => (
                         <SelectItem key={position.id} value={position.id.toString()}>
-                          {position.name} - {position.departmentDetails?.name}
+                          {position.name} - {position.department_details?.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

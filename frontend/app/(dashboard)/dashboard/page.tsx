@@ -160,8 +160,8 @@ export default function DashboardPage() {
               )}
             </div>
 
-            <TasksCards branchId={branchIdToPass} />
-            <StatsCards branchId={branchIdToPass} />
+            {/* <TasksCards branchId={branchIdToPass} />
+            <StatsCards branchId={branchIdToPass} /> */}
           </>
         )}
       </div>

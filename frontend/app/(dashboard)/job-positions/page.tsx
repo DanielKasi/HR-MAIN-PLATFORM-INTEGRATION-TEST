@@ -3,7 +3,19 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
-import { Briefcase, Plus, Search, Filter, MoreVertical, Edit, Trash2, RefreshCw, DollarSign, Users } from "lucide-react"
+import {
+  Briefcase,
+  Plus,
+  Search,
+  Filter,
+  MoreVertical,
+  Edit,
+  Trash2,
+  RefreshCw,
+  DollarSign,
+  Users,
+  Eye,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,7 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getJobPositions } from "@/lib/utils"
-import { IJobPosition } from "@/app/types/types.utils"
+import type { IJobPosition } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import { formatCurrency } from "@/lib/helpers"
 
@@ -74,7 +86,7 @@ export default function JobPositionsPage() {
     (position) =>
       position.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       position.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      position.departmentDetails?.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      position.department_details?.name.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const handleCreateJobPosition = () => {
@@ -88,6 +100,10 @@ export default function JobPositionsPage() {
   const handleDeleteJobPosition = (positionId: number) => {
     // TODO: Implement delete functionality
     toast.success("Job position deletion would be implemented here")
+  }
+
+  const handleViewJobPosition = (positionId: number) => {
+    router.push(`/job-positions/${positionId}`)
   }
 
   if (!selectedInstitution || !selectedBranch) {
@@ -207,7 +223,7 @@ export default function JobPositionsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredJobPositions.map((position) => (
-            <Card key={position.id} className="hover:shadow-md transition-shadow">
+            <Card key={position.id} className="hover:shadow-md transition-shadow cursor-pointer">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
@@ -228,28 +244,32 @@ export default function JobPositionsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleViewJobPosition(position.id)}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleEditJobPosition(position.id)}>
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      {/* <DropdownMenuItem
+                      <DropdownMenuItem
                         onClick={() => handleDeleteJobPosition(position.id)}
                         className="text-destructive"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
-                      </DropdownMenuItem> */}
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-3 cursor-pointer" onClick={() => handleViewJobPosition(position.id)}>
                 <p className="text-sm text-muted-foreground line-clamp-2">{position.description}</p>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Department:</span>
-                    <Badge variant="outline">{position.departmentDetails?.name}</Badge>
+                    <Badge variant="outline">{position.department_details?.name}</Badge>
                   </div>
 
                   <div className="flex items-center justify-between text-sm">
