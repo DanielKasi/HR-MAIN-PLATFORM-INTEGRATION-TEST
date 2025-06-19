@@ -47,7 +47,7 @@ urlpatterns = [
     path("<int:institution_id>/branch", InstitutionBranchAPIView.as_view(), name="institution-branch-list"),
     path("<int:institution_id>/department/", DepartmentListAPIView.as_view(), name="department-list"),
     path(
-        "<int:institution_id>/department/<int:department_id>/",
+        "department/<int:department_id>/",
         DepartmentDetailAPIView.as_view(),
         name="department-detail",
     ),
