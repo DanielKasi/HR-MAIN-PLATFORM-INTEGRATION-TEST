@@ -263,12 +263,8 @@ export const updateJobPosition = async ({
 export const createJobApplication = async ({
   institutionId,
   applicationData,
-<<<<<<< Updated upstream
 }: {
   institutionId: number
-=======
-}: {institutionId:number,
->>>>>>> Stashed changes
   applicationData: JobApplicationFormData;
 }): Promise<JobApplication | null> => {
   

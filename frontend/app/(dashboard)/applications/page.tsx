@@ -81,6 +81,7 @@ export default function ApplicationsPage() {
     applicant_email: "",
     applicant_phone: "",
     resume: null,
+    cover_letter: null,
     status: "new",
     gender: "male",
     state: "",
@@ -94,7 +95,6 @@ export default function ApplicationsPage() {
 
   // Check if institution is selected and redirect if not
   useEffect(() => {
-<<<<<<< Updated upstream
     if (!selectedInstitution || !selectedBranch) {
       router.push("/dashboard");
       return;
@@ -126,7 +126,6 @@ export default function ApplicationsPage() {
     }
   };
 
-<<<<<<< Updated upstream
   const loadJobPositionAdverts = async () => {
     if (!selectedInstitution) return;
 
@@ -165,7 +164,6 @@ export default function ApplicationsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-<<<<<<< Updated upstream
     if (!selectedInstitution || !selectedBranch) {
       setError("Missing organization or branch information");
       return;
@@ -196,7 +194,6 @@ export default function ApplicationsPage() {
         country: formData.country || undefined,
       };
 
-<<<<<<< Updated upstream
       // Add debugging logs
       console.log("Submitting application with institutionId:", selectedInstitution.id);
       console.log("Application data:", {
@@ -224,6 +221,7 @@ export default function ApplicationsPage() {
           applicant_email: "",
           applicant_phone: "",
           resume: null,
+          cover_letter: null,
           status: "new",
           gender: "male",
           state: "",
@@ -334,7 +332,6 @@ export default function ApplicationsPage() {
                       />
                     </SelectTrigger>
                     <SelectContent>
-<<<<<<< Updated upstream
                       {jobPositionAdverts
                         .filter((advert) => advert.status === "active") // Only show active adverts
                         .map((advert) => (
@@ -342,27 +339,11 @@ export default function ApplicationsPage() {
                             <div className="flex flex-col">
                               <span className="font-medium">
                                 {advert.job_position_details?.name || `Job Advert #${advert.id}`}
-                                {advert.number_of_employees_expected &&
-                                  ` (${advert.number_of_employees_expected} positions)`}
                               </span>
-                              <span className="text-xs text-muted-foreground">
-                                {advert.job_position_details?.description}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                Expires: {new Date(advert.expiry_date).toLocaleDateString()}
-                              </span>
+                             
                             </div>
                           </SelectItem>
                         ))}
-=======
-                      {jobPositions.map((position) => (
-                        <SelectItem key={position.id} value={position.id.toString()}>
-                          {position.name}
-                          {position.department && ` - ${position.department}`}
-                          {position.department_details?.institution_details?.location && ` (${position.department_details?.institution_details?.location})`}
-                        </SelectItem>
-                      ))}
->>>>>>> Stashed changes
                     </SelectContent>
                   </Select>
                 </div>
@@ -595,7 +576,6 @@ export default function ApplicationsPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-<<<<<<< Updated upstream
                         <div className="space-y-1">
                           <div className="font-medium">
                             {application.job_position_advert_job_details?.name
