@@ -45,3 +45,31 @@ export enum PERMISSION_CODES {
   CAN_ADD_BRANCH = "can_add_branch",
   CAN_VIEW_ADMIN_PAGE = "can_view_admin_page",
 }
+
+
+
+
+
+
+export interface Department {
+  id: number
+  name: string
+  description: string
+  institution: number
+}
+
+export interface CreateDepartmentData {
+  name: string
+  description: string
+  company_id: number
+  branch_id: number
+}
+
+export interface DepartmentFormData {
+  name: string
+  description: string,
+  institution: number
+}
+
+
+

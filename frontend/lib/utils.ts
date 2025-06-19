@@ -1,7 +1,9 @@
 import {type ClassValue, clsx} from "clsx";
 import {twMerge} from "tailwind-merge";
+import { Department, CreateDepartmentData, DepartmentFormData } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
+import { IEmployee } from "@/app/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -117,3 +119,101 @@ export async function resetPassword(
 
   return response.data;
 }
+
+
+
+
+// Mock departments data
+const mockDepartments: Department[] = [
+  {
+    id: 1,
+    name: "Human Resources",
+    description: "Manages employee relations, recruitment, and HR policies",
+    institution: 1}
+    ,
+  {
+    id: 2,
+    name: "Finance",
+    description: "Handles financial planning, budgeting, and accounting",
+    institution: 1,
+  },
+  {
+    id: 3,
+    name: "Operations",
+    description: "Oversees daily operations and process optimization",
+    institution: 1,
+  },
+]
+
+// export const mockDepartmentApi = {
+//   // Fetch departments for a specific branch
+//   getDepartmentsByBranch: async (branchId: number): Promise<Department[]> => {
+//     // Simulate API delay
+//     await new Promise((resolve) => setTimeout(resolve, 800))
+
+//     // Filter departments by branch_id
+//     return mockDepartments.filter((dept) => dept.branch_id === branchId)
+//   },
+
+//   // Create a new department
+//   createDepartment: async (departmentData: CreateDepartmentData): Promise<Department> => {
+//     // Simulate API delay
+//     await new Promise((resolve, reject) =>{
+//       setTimeout(()=>{resolve("")}, 3000)
+//     })
+
+//     // Create new department with mock data
+//     const newDepartment: Department = {
+//       id: Math.max(...mockDepartments.map((d) => d.id)) + 1,
+//       ...departmentData,
+//     }
+
+//     // Add to mock data (in real app, this would be handled by backend)
+//     mockDepartments.push(newDepartment)
+
+//     return newDepartment
+//   },
+// }
+
+
+export const createDepartment = async ({departmentData}:{departmentData:DepartmentFormData}) =>{
+  try {
+    const response = await apiRequest.post(`institution/${departmentData.institution}/department/`, departmentData )
+    return response.data as Department
+  } catch (error) {
+    return null
+  }
+}
+
+export const updateDepartment = async ({departmentData}:{departmentData:Department}) =>{
+  try {
+    const response = await apiRequest.patch(`department/${departmentData.id}/`, {name:departmentData.name, description:departmentData.description, institution:departmentData.institution} )
+    return response.data as Department
+  } catch (error) {
+    return null
+  }
+}
+
+export const getDepartments = async ({institutionId}:{institutionId:number}) =>{
+  try {
+    const response = await apiRequest.get(`institution/${institutionId}/department/` )
+    return response.data as Department[]
+  } catch (error) {
+    return null
+  }
+}
+
+
+
+export const fetchEmployees = async ({institutionId}:{institutionId:number}) =>{
+  try {
+    const response = await apiRequest.get(`employee/${institutionId}`)
+    return response.data as IEmployee[]
+  } catch (error) {
+    return null
+  }
+}
+
+
+
+

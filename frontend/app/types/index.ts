@@ -324,3 +324,76 @@ export interface ITill {
   name: string;
   branch: number;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+// replace the fields below with whatever your CustomUserSerializer emits
+export interface ICustomUser {
+  id: number;
+  username: string;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  isActive: boolean;
+  dateJoined: string; // ISO datetime
+  // …any other fields your CustomUserSerializer provides
+}
+
+export type MaritalStatus = 'single' | 'married' | 'divorced' | 'widowed';
+
+export interface IEmployee {
+  id: number;
+
+  /** nested serializer */
+  user: ICustomUser | null;
+
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phoneNumber?: string | null;
+
+  /**
+   * Since position & department are FK fields without
+   * nested serializers here, they’ll come through as IDs.
+   */
+  position?: number | null;
+  department?: number | null;
+
+  /** dates as ISO‐strings */
+  dateOfBirth?: string | null;    // e.g. "1985-06-15"
+  dateOfJoining: string;          // defaulted by Django
+
+  address?: string | null;
+  isActive: boolean;
+
+  /** server‐set timestamps */
+  createdAt?: string | null;
+  updatedAt: string;
+
+  experience: number;
+  qualifications?: string | null;
+  skills?: string | null;
+
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
+  emergencyContactRelationship?: string | null;
+
+  maritalStatus: MaritalStatus;
+  childrenCount?: number | null;
+
+  /**
+   * DRF will serialize an ImageField as the URL (string) or null
+   */
+  employeeProfilePicture?: string | null;
+}
+
