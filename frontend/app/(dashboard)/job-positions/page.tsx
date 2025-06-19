@@ -117,7 +117,7 @@ export default function JobPositionsPage() {
         <div>
           <h1 className="text-2xl font-bold">Job Positions</h1>
           <p className="text-muted-foreground">
-            Manage job positions for {selectedBranch.branch_name} - {selectedInstitution.Institution_name}
+            Manage job positions for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
           </p>
         </div>
         <div className="flex items-center gap-2">

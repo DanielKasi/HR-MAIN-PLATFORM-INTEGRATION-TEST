@@ -21,9 +21,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Mail, Phone, MapPin, Calendar, User, Upload, FileText, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+<<<<<<< Updated upstream
 import { createJobApplication, getJobApplications, getJobPositionAdverts } from "@/lib/utils"
 import type { JobApplication, JobApplicationFormData, JobPositionAdvert } from "@/app/types/types.utils"
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
+=======
+import { createJobApplication, getJobApplications, getJobPositionAdverts, getJobPositions } from "@/lib/utils"
+import type { JobApplication, JobApplicationFormData, IJobPosition } from "@/app/types/types.utils"
+import { useSelector } from "react-redux"
+import { selectSelectedInstitution } from "@/store/auth/selectors"
+>>>>>>> Stashed changes
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
@@ -41,12 +48,17 @@ const sourceLabels = {
   other: "Other",
 }
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 export default function ApplicationsPage() {
   const [applications, setApplications] = useState<JobApplication[]>([])
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null);
+  const selectedInstitution = useSelector(selectSelectedInstitution)
 
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
@@ -54,14 +66,13 @@ export default function ApplicationsPage() {
 
   // Form state
   const [formData, setFormData] = useState<
-    Omit<JobApplicationFormData, "resume"> & { resume: File | null; cover_letter: File | null }
+    Omit<JobApplicationFormData,  "resume"> & { resume: File | null; cover_letter?: File  }
   >({
     job_position_advert: 0,
     applicant_name: "",
     applicant_email: "",
     applicant_phone: "",
     resume: null,
-    cover_letter: null,
     status: "new",
     gender: "male",
     state: "",
@@ -75,6 +86,7 @@ export default function ApplicationsPage() {
 
   // Check if institution is selected and redirect if not
   useEffect(() => {
+<<<<<<< Updated upstream
     if (!selectedInstitution || !selectedBranch) {
       router.push("/dashboard")
       return
@@ -87,11 +99,26 @@ export default function ApplicationsPage() {
   const loadApplications = async () => {
     if (!selectedInstitution) return
 
+=======
+    if(selectedInstitution){
+      setFormData(prev => ({...prev, institution_id:selectedInstitution.id}))
+      loadApplications()
+      loadJobPositions()
+    }
+  }, [selectedInstitution])
+
+  const loadApplications = async () => {
+    if(!selectedInstitution){return}
+>>>>>>> Stashed changes
     setIsLoading(true)
     setError(null)
 
     try {
+<<<<<<< Updated upstream
       const data = await getJobApplications({ institutionId: selectedInstitution.id })
+=======
+      const data = await getJobApplications({ institutionId:selectedInstitution.id })
+>>>>>>> Stashed changes
       if (data) {
         setApplications(data)
       } else {
@@ -105,12 +132,22 @@ export default function ApplicationsPage() {
     }
   }
 
+<<<<<<< Updated upstream
   const loadJobPositionAdverts = async () => {
     if (!selectedInstitution) return
 
     setIsLoadingAdverts(true)
     try {
       const data = await getJobPositionAdverts({ institutionId: selectedInstitution.id })
+=======
+  const loadJobPositions = async () => {
+    if(!selectedInstitution){
+      return
+    }
+    setIsLoadingPositions(true)
+    try {
+      const data = await getJobPositions({ institutionId:selectedInstitution.id })
+>>>>>>> Stashed changes
       if (data) {
         setJobPositionAdverts(data)
       }
@@ -139,8 +176,12 @@ export default function ApplicationsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+<<<<<<< Updated upstream
     if (!selectedInstitution || !selectedBranch) {
       setError("Missing organization or branch information")
+=======
+    if(!selectedInstitution){
+>>>>>>> Stashed changes
       return
     }
 
@@ -165,10 +206,11 @@ export default function ApplicationsPage() {
         applicant_phone: formData.applicant_phone || undefined,
         state: formData.state || undefined,
         application_date: new Date().toISOString(),
-        address: formData.address || undefined,
-        country: formData.country || undefined,
+        address: formData.address || "",
+        country: formData.country || "",
       }
 
+<<<<<<< Updated upstream
       // Add debugging logs
       console.log("Submitting application with institutionId:", selectedInstitution.id)
       console.log("Application data:", {
@@ -181,6 +223,9 @@ export default function ApplicationsPage() {
         institutionId: selectedInstitution.id,
         applicationData,
       })
+=======
+      const newApplication = await createJobApplication({ applicationData, institutionId:selectedInstitution.id })
+>>>>>>> Stashed changes
 
       if (newApplication) {
         console.log("Application created successfully:", newApplication)
@@ -194,7 +239,6 @@ export default function ApplicationsPage() {
           applicant_email: "",
           applicant_phone: "",
           resume: null,
-          cover_letter: null,
           status: "new",
           gender: "male",
           state: "",
@@ -297,6 +341,7 @@ export default function ApplicationsPage() {
                       <SelectValue placeholder={isLoadingAdverts ? "Loading job adverts..." : "Select a job advert"} />
                     </SelectTrigger>
                     <SelectContent>
+<<<<<<< Updated upstream
                       {jobPositionAdverts
                         .filter((advert) => advert.status === "active") // Only show active adverts
                         .map((advert) => (
@@ -309,6 +354,15 @@ export default function ApplicationsPage() {
                             </span>
                           </SelectItem>
                         ))}
+=======
+                      {jobPositions.map((position) => (
+                        <SelectItem key={position.id} value={position.id.toString()}>
+                          {position.name}
+                          {position.department && ` - ${position.department}`}
+                          {position.department_details?.institution_details?.location && ` (${position.department_details?.institution_details?.location})`}
+                        </SelectItem>
+                      ))}
+>>>>>>> Stashed changes
                     </SelectContent>
                   </Select>
                 </div>
@@ -529,6 +583,7 @@ export default function ApplicationsPage() {
                         </div>
                       </TableCell>
                       <TableCell>
+<<<<<<< Updated upstream
                         <div className="space-y-1">
                           <div className="font-medium">
                             {jobPositionAdverts.find((advert) => advert.id === application.job_position_advert)
@@ -547,6 +602,11 @@ export default function ApplicationsPage() {
                               )
                             )
                           })()}
+=======
+                        <div className="font-medium">
+                          {jobPositions.find((pos) => pos.id === application.job_position_advert)?.name ||
+                            `Position #${application.job_position_advert}`}
+>>>>>>> Stashed changes
                         </div>
                       </TableCell>
                       <TableCell>

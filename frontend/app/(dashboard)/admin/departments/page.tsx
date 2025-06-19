@@ -99,7 +99,7 @@ export default function DepartmentsPage() {
         <div>
           <h1 className="text-2xl font-bold">Departments</h1>
           <p className="text-muted-foreground">
-            Manage departments for {selectedBranch.branch_name} - {selectedInstitution.Institution_name}
+            Manage departments for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -154,7 +154,7 @@ export default function DepartmentsPage() {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">{selectedInstitution.Institution_name}</div>
+              <div className="text-2xl font-bold">{selectedInstitution.institution_name}</div>
               <p className="text-xs text-muted-foreground">Current Organization</p>
             </CardContent>
           </Card>
