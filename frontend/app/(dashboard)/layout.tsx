@@ -245,12 +245,12 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         },
         {
           title: "Applications",
-          href: "/#3",
+          href: "/applications",
           // requiredPermission: "can_access_gps_device_management",
         },
         {
           title: "Interviews",
-          href: "/#4",
+          href: "/job-interviews",
           // requiredPermission: "can_access_gps_reports",
         },
       ],
