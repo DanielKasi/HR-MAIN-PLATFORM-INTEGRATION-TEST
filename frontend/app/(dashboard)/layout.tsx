@@ -240,17 +240,17 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       submenu: [
         {
           title: "Job Adverts",
-          href: "/job-adverts",
+          href: "/#2",
           // requiredPermission: "can_access_gps_monitioning",
         },
         {
           title: "Applications",
-          href: "/applications",
+          href: "/#3",
           // requiredPermission: "can_access_gps_device_management",
         },
         {
           title: "Interviews",
-          href: "/interviews",
+          href: "/#4",
           // requiredPermission: "can_access_gps_reports",
         },
       ],
@@ -269,12 +269,12 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       submenu: [
         {
           title: "Profile",
-          href: "/profile",
+          href: "/#5",
           // requiredPermission: "can_access_valuation_requests",
         },
         {
           title: "All Employees",
-          href: "/valuation-instructions",
+          href: "/#6",
           // requiredPermission: "can_access_valuation_instructions",
         }
       ],
@@ -690,7 +690,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
 
         {/* Dashboard Content */}
         <div className="p-6 h-mainContentHeight overflow-y-auto">
-          {isMounted && canViewThisGuide && InstitutionId && (
+          {/* {isMounted && canViewThisGuide && InstitutionId && (
             <>
               {!isSetupComplete() && (
                 <div className="mb-8 p-6 bg-white rounded-lg shadow">
@@ -757,7 +757,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                 </div>
               )}
             </>
-          )}
+          )} */}
 
           {children}
         </div>

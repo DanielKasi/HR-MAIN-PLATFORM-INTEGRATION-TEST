@@ -172,6 +172,18 @@ export const getJobPositions = async ({ institutionId }: { institutionId: number
   }
 }
 
+export const getJobPosition = async ({jobPositionId}:{jobPositionId:number}) =>{
+  try {
+    const response = await apiRequest.get(`recruitment/job-position/${jobPositionId}/`)
+    return response.data as IJobPosition
+  } catch (error) {
+    console.error("Error fetching job position:", error)
+    return null
+  }
+}
+
+
+
 export const createJobPosition = async ({
   institutionId,
   jobPositionData,
@@ -205,6 +217,44 @@ export const createJobPosition = async ({
     return response.data as IJobPosition
   } catch (error) {
     console.error("Error creating job position:", error)
+    return null
+  }
+}
+
+
+export const updateJobPosition = async ({
+  jobPositionId,
+  jobPositionData,
+}: {
+  jobPositionId: number
+  jobPositionData: CreateJobPositionData
+}) => {
+  try {
+    const formData = new FormData()
+
+    // Add text fields
+    formData.append("name", jobPositionData.name)
+    if (jobPositionData.description) {
+      formData.append("description", jobPositionData.description)
+    }
+    formData.append("department", jobPositionData.department.toString())
+    if (jobPositionData.reports_to) {
+      formData.append("reports_to", jobPositionData.reports_to.toString())
+    }
+    formData.append("salary", jobPositionData.salary.toString())
+
+    // Add file fields
+    if (jobPositionData.contract_template) {
+      formData.append("contract_template", jobPositionData.contract_template)
+    }
+    if (jobPositionData.offer_letter_template) {
+      formData.append("offer_letter_template", jobPositionData.offer_letter_template)
+    }
+
+    const response = await apiRequest.patch(`recruitment/job-position/${jobPositionId}/`, formData)
+    return response.data as IJobPosition
+  } catch (error) {
+    console.error("Error updating job position:", error)
     return null
   }
 }
@@ -296,6 +346,7 @@ export const updateJobApplication = async ({
     return null;
   }
 };
+
 
 
 export const fetchEmployees = async ({institutionId}:{institutionId:number}) =>{

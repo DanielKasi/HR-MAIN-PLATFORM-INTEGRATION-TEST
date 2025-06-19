@@ -226,360 +226,363 @@ export default function BranchesPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Branches</h1>
-          <p className="text-muted-foreground">Manage your business locations</p>
-        </div>
-        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_ADD_BRANCH}>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Branch
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
-              <DialogHeader>
-                <DialogTitle>Add New Branch</DialogTitle>
-                <DialogDescription>Create a new branch record.</DialogDescription>
-              </DialogHeader>
-              <ScrollArea className="flex-1 pr-4">
-                <div className="grid gap-4 py-4">
-                  {[
-                    "branch_name",
-                    "branch_phone_number",
-                    "branch_email",
-                    "branch_opening_time",
-                    "branch_closing_time",
-                  ].map((field) => (
-                    <div key={field} className="grid grid-cols-4 items-center gap-4">
-                      <Label className="text-right" htmlFor={field}>
-                        {field
-                          .split("_")
-                          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                          .join(" ")}
-                      </Label>
-                      <Input
-                        className="col-span-3"
-                        id={field}
-                        value={(newBranch as any)[field]}
-                        onChange={(e) =>
-                          setNewBranch({
-                            ...newBranch,
-                            [field]: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  ))}
-                  <div key="branch_location" className="grid grid-cols-4 items-start gap-4">
-                    <Label className="text-right pt-2" htmlFor="branch_location">
-                      Location
-                    </Label>
-                    <div className="col-span-3 flex flex-col gap-2">
-                      <LocationAutocomplete
-                        placeholder="Search for a location..."
-                        value={newBranch.branch_location}
-                        onChange={(location) =>
-                          setNewBranch((prev) => ({
-                            ...prev,
-                            branch_location: location,
-                          }))
-                        }
-                        onCoordinatesChange={(lat, lon) =>
-                          setNewBranch((prev) => ({
-                            ...prev,
-                            branch_latitude: lat,
-                            branch_longitude: lon,
-                          }))
-                        }
-                      />
-                      {newBranch.branch_location && (
-                        <div className="text-sm text-muted-foreground break-words border rounded-md p-2 bg-muted/30">
-                          {newBranch.branch_location}
-                        </div>
-                      )}
-                      <Button
-                        className="self-start mt-1 flex items-center"
-                        disabled={gettingCurrentLocation}
-                        size="sm"
-                        type="button"
-                        variant="outline"
-                        onClick={getCurrentLocation}
-                      >
-                        {gettingCurrentLocation ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <MapPin className="mr-2 h-4 w-4" />
-                        )}
-                        Get Current Location
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </ScrollArea>
-              <DialogFooter className="pt-4">
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleAddBranch}>Save Branch</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </ProtectedComponent>
-      </div>
 
-      {errorMessage && (
-        <div className="mb-4 p-3 text-sm font-medium text-white bg-red-500 rounded-md flex items-center">
-          <span className="mr-2">⚠️</span> {errorMessage}
-        </div>
-      )}
+    <>
+    </>
+    // <div className="flex flex-col gap-4">
+    //   <div className="flex items-center justify-between">
+    //     <div>
+    //       <h1 className="text-2xl font-bold tracking-tight">Branches</h1>
+    //       <p className="text-muted-foreground">Manage your business locations</p>
+    //     </div>
+    //     <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_ADD_BRANCH}>
+    //       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+    //         <DialogTrigger asChild>
+    //           <Button>
+    //             <Plus className="mr-2 h-4 w-4" />
+    //             Add Branch
+    //           </Button>
+    //         </DialogTrigger>
+    //         <DialogContent className="max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
+    //           <DialogHeader>
+    //             <DialogTitle>Add New Branch</DialogTitle>
+    //             <DialogDescription>Create a new branch record.</DialogDescription>
+    //           </DialogHeader>
+    //           <ScrollArea className="flex-1 pr-4">
+    //             <div className="grid gap-4 py-4">
+    //               {[
+    //                 "branch_name",
+    //                 "branch_phone_number",
+    //                 "branch_email",
+    //                 "branch_opening_time",
+    //                 "branch_closing_time",
+    //               ].map((field) => (
+    //                 <div key={field} className="grid grid-cols-4 items-center gap-4">
+    //                   <Label className="text-right" htmlFor={field}>
+    //                     {field
+    //                       .split("_")
+    //                       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    //                       .join(" ")}
+    //                   </Label>
+    //                   <Input
+    //                     className="col-span-3"
+    //                     id={field}
+    //                     value={(newBranch as any)[field]}
+    //                     onChange={(e) =>
+    //                       setNewBranch({
+    //                         ...newBranch,
+    //                         [field]: e.target.value,
+    //                       })
+    //                     }
+    //                   />
+    //                 </div>
+    //               ))}
+    //               <div key="branch_location" className="grid grid-cols-4 items-start gap-4">
+    //                 <Label className="text-right pt-2" htmlFor="branch_location">
+    //                   Location
+    //                 </Label>
+    //                 <div className="col-span-3 flex flex-col gap-2">
+    //                   <LocationAutocomplete
+    //                     placeholder="Search for a location..."
+    //                     value={newBranch.branch_location}
+    //                     onChange={(location) =>
+    //                       setNewBranch((prev) => ({
+    //                         ...prev,
+    //                         branch_location: location,
+    //                       }))
+    //                     }
+    //                     onCoordinatesChange={(lat, lon) =>
+    //                       setNewBranch((prev) => ({
+    //                         ...prev,
+    //                         branch_latitude: lat,
+    //                         branch_longitude: lon,
+    //                       }))
+    //                     }
+    //                   />
+    //                   {newBranch.branch_location && (
+    //                     <div className="text-sm text-muted-foreground break-words border rounded-md p-2 bg-muted/30">
+    //                       {newBranch.branch_location}
+    //                     </div>
+    //                   )}
+    //                   <Button
+    //                     className="self-start mt-1 flex items-center"
+    //                     disabled={gettingCurrentLocation}
+    //                     size="sm"
+    //                     type="button"
+    //                     variant="outline"
+    //                     onClick={getCurrentLocation}
+    //                   >
+    //                     {gettingCurrentLocation ? (
+    //                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+    //                     ) : (
+    //                       <MapPin className="mr-2 h-4 w-4" />
+    //                     )}
+    //                     Get Current Location
+    //                   </Button>
+    //                 </div>
+    //               </div>
+    //             </div>
+    //           </ScrollArea>
+    //           <DialogFooter className="pt-4">
+    //             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+    //               Cancel
+    //             </Button>
+    //             <Button onClick={handleAddBranch}>Save Branch</Button>
+    //           </DialogFooter>
+    //         </DialogContent>
+    //       </Dialog>
+    //     </ProtectedComponent>
+    //   </div>
 
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle>Branch Management</CardTitle>
-          <CardDescription>Manage your organisation branches</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-1 items-center gap-2">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  className="w-full pl-8"
-                  placeholder="Search branches..."
-                  type="search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <Badge className="ml-2" variant="outline">
-                {filteredBranches.length} {filteredBranches.length === 1 ? "branch" : "branches"}
-              </Badge>
-            </div>
-          </div>
+    //   {errorMessage && (
+    //     <div className="mb-4 p-3 text-sm font-medium text-white bg-red-500 rounded-md flex items-center">
+    //       <span className="mr-2">⚠️</span> {errorMessage}
+    //     </div>
+    //   )}
 
-          <div className="rounded-md border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead>Branch</TableHead>
-                  <TableHead className="hidden md:table-cell">Location</TableHead>
-                  <TableHead className="text-right">Phone Number</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Operating Time</TableHead>
-                  <TableHead>Tills</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell className="h-24 text-center" colSpan={5}>
-                      <div className="flex items-center justify-center">
-                        <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                        <span>Loading branches...</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : filteredBranches.length === 0 ? (
-                  <TableRow>
-                    <TableCell className="h-24 text-center" colSpan={5}>
-                      {searchQuery ? (
-                        <div className="flex flex-col items-center justify-center text-muted-foreground">
-                          <Search className="h-8 w-8 mb-2" />
-                          <p>No branches found matching "{searchQuery}"</p>
-                          <Button
-                            className="mt-2"
-                            variant="link"
-                            onClick={() => setSearchQuery("")}
-                          >
-                            Clear search
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-muted-foreground">
-                          <p>No branches found</p>
-                          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_ADD_BRANCH}>
-                            <Button
-                              className="mt-2"
-                              variant="link"
-                              onClick={() => setIsAddDialogOpen(true)}
-                            >
-                              Add your first branch
-                            </Button>
-                          </ProtectedComponent>
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredBranches.map((branch) => (
-                    <TableRow key={branch.id} className="group">
-                      <TableCell className="font-medium">{branch.branch_name}</TableCell>
-                      <TableCell className="hidden md:table-cell max-w-xs">
-                        <div className="flex items-start">
-                          <MapPin className="mr-2 h-4 w-4 mt-1 flex-shrink-0 text-muted-foreground" />
-                          <span className="truncate" title={branch.branch_location}>
-                            {branch.branch_location}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">{branch.branch_phone_number}</TableCell>
-                      <TableCell>{branch.branch_email}</TableCell>
-                      <TableCell>
-                        Opens: {branch.branch_opening_time}, Closes: {branch.branch_closing_time}
-                      </TableCell>
-                      <TableCell>{branch.tills.length}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2 opacity-70 group-hover:opacity-100">
-                          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
-                            <Button
-                              className="h-8 w-8"
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => {
-                                router.push(`/branches/${branch.id}`);
-                              }}
-                            >
-                              <Eye className="h-4 w-4" />
-                              <span className="sr-only">View</span>
-                            </Button>
-                          </ProtectedComponent>
-                          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
-                            <Button
-                              className="h-8 w-8"
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => {
-                                setEditBranch(branch);
-                                setIsEditDialogOpen(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                              <span className="sr-only">Edit</span>
-                            </Button>
-                          </ProtectedComponent>
-                          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_BRANCH}>
-                            <Button
-                              className="h-8 w-8 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => handleDeleteBranch(branch.id)}
-                            >
-                              <Trash className="h-4 w-4" />
-                              <span className="sr-only">Delete</span>
-                            </Button>
-                          </ProtectedComponent>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+    //   <Card className="shadow-sm">
+    //     <CardHeader className="pb-3">
+    //       <CardTitle>Branch Management</CardTitle>
+    //       <CardDescription>Manage your organisation branches</CardDescription>
+    //     </CardHeader>
+    //     <CardContent>
+    //       <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    //         <div className="flex flex-1 items-center gap-2">
+    //           <div className="relative flex-1 max-w-md">
+    //             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+    //             <Input
+    //               className="w-full pl-8"
+    //               placeholder="Search branches..."
+    //               type="search"
+    //               value={searchQuery}
+    //               onChange={(e) => setSearchQuery(e.target.value)}
+    //             />
+    //           </div>
+    //           <Badge className="ml-2" variant="outline">
+    //             {filteredBranches.length} {filteredBranches.length === 1 ? "branch" : "branches"}
+    //           </Badge>
+    //         </div>
+    //       </div>
 
-      {/* Edit Branch Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Edit Branch</DialogTitle>
-            <DialogDescription>Edit branch details.</DialogDescription>
-          </DialogHeader>
-          {editBranch && (
-            <ScrollArea className="flex-1 pr-4">
-              <div className="grid gap-4 py-4">
-                {[
-                  "branch_name",
-                  "branch_phone_number",
-                  "branch_email",
-                  "branch_opening_time",
-                  "branch_closing_time",
-                ].map((field) => (
-                  <div key={field} className="grid grid-cols-4 items-center gap-4">
-                    <Label className="text-right" htmlFor={`edit-${field}`}>
-                      {field
-                        .split("_")
-                        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                        .join(" ")}
-                    </Label>
-                    <Input
-                      className="col-span-3"
-                      id={`edit-${field}`}
-                      value={(editBranch as any)[field]}
-                      onChange={(e) =>
-                        setEditBranch({
-                          ...editBranch,
-                          [field]: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                ))}
-                <div key="branch_location" className="grid grid-cols-4 items-start gap-4">
-                  <Label className="text-right pt-2" htmlFor="edit-branch_location">
-                    Location
-                  </Label>
-                  <div className="col-span-3 flex flex-col gap-2">
-                    <LocationAutocomplete
-                      value={editBranch?.branch_location || ""}
-                      onChange={(location) =>
-                        setEditBranch((prev) =>
-                          prev ? {...prev, branch_location: location} : prev,
-                        )
-                      }
-                      onCoordinatesChange={(lat, lon) =>
-                        setEditBranch((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                branch_latitude: lat,
-                                branch_longitude: lon,
-                              }
-                            : prev,
-                        )
-                      }
-                      placeholder="Search for a location..."
-                    />
+    //       <div className="rounded-md border overflow-hidden">
+    //         <Table>
+    //           <TableHeader>
+    //             <TableRow className="bg-muted/50">
+    //               <TableHead>Branch</TableHead>
+    //               <TableHead className="hidden md:table-cell">Location</TableHead>
+    //               <TableHead className="text-right">Phone Number</TableHead>
+    //               <TableHead>Email</TableHead>
+    //               <TableHead>Operating Time</TableHead>
+    //               <TableHead>Tills</TableHead>
+    //               <TableHead className="text-center">Actions</TableHead>
+    //             </TableRow>
+    //           </TableHeader>
+    //           <TableBody>
+    //             {isLoading ? (
+    //               <TableRow>
+    //                 <TableCell className="h-24 text-center" colSpan={5}>
+    //                   <div className="flex items-center justify-center">
+    //                     <Loader2 className="h-6 w-6 animate-spin mr-2" />
+    //                     <span>Loading branches...</span>
+    //                   </div>
+    //                 </TableCell>
+    //               </TableRow>
+    //             ) : filteredBranches.length === 0 ? (
+    //               <TableRow>
+    //                 <TableCell className="h-24 text-center" colSpan={5}>
+    //                   {searchQuery ? (
+    //                     <div className="flex flex-col items-center justify-center text-muted-foreground">
+    //                       <Search className="h-8 w-8 mb-2" />
+    //                       <p>No branches found matching "{searchQuery}"</p>
+    //                       <Button
+    //                         className="mt-2"
+    //                         variant="link"
+    //                         onClick={() => setSearchQuery("")}
+    //                       >
+    //                         Clear search
+    //                       </Button>
+    //                     </div>
+    //                   ) : (
+    //                     <div className="flex flex-col items-center justify-center text-muted-foreground">
+    //                       <p>No branches found</p>
+    //                       <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_ADD_BRANCH}>
+    //                         <Button
+    //                           className="mt-2"
+    //                           variant="link"
+    //                           onClick={() => setIsAddDialogOpen(true)}
+    //                         >
+    //                           Add your first branch
+    //                         </Button>
+    //                       </ProtectedComponent>
+    //                     </div>
+    //                   )}
+    //                 </TableCell>
+    //               </TableRow>
+    //             ) : (
+    //               filteredBranches.map((branch) => (
+    //                 <TableRow key={branch.id} className="group">
+    //                   <TableCell className="font-medium">{branch.branch_name}</TableCell>
+    //                   <TableCell className="hidden md:table-cell max-w-xs">
+    //                     <div className="flex items-start">
+    //                       <MapPin className="mr-2 h-4 w-4 mt-1 flex-shrink-0 text-muted-foreground" />
+    //                       <span className="truncate" title={branch.branch_location}>
+    //                         {branch.branch_location}
+    //                       </span>
+    //                     </div>
+    //                   </TableCell>
+    //                   <TableCell className="text-right">{branch.branch_phone_number}</TableCell>
+    //                   <TableCell>{branch.branch_email}</TableCell>
+    //                   <TableCell>
+    //                     Opens: {branch.branch_opening_time}, Closes: {branch.branch_closing_time}
+    //                   </TableCell>
+    //                   <TableCell>{branch.tills.length}</TableCell>
+    //                   <TableCell className="text-right">
+    //                     <div className="flex justify-end gap-2 opacity-70 group-hover:opacity-100">
+    //                       <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
+    //                         <Button
+    //                           className="h-8 w-8"
+    //                           size="icon"
+    //                           variant="ghost"
+    //                           onClick={() => {
+    //                             router.push(`/branches/${branch.id}`);
+    //                           }}
+    //                         >
+    //                           <Eye className="h-4 w-4" />
+    //                           <span className="sr-only">View</span>
+    //                         </Button>
+    //                       </ProtectedComponent>
+    //                       <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
+    //                         <Button
+    //                           className="h-8 w-8"
+    //                           size="icon"
+    //                           variant="ghost"
+    //                           onClick={() => {
+    //                             setEditBranch(branch);
+    //                             setIsEditDialogOpen(true);
+    //                           }}
+    //                         >
+    //                           <Edit className="h-4 w-4" />
+    //                           <span className="sr-only">Edit</span>
+    //                         </Button>
+    //                       </ProtectedComponent>
+    //                       <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_BRANCH}>
+    //                         <Button
+    //                           className="h-8 w-8 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+    //                           size="icon"
+    //                           variant="ghost"
+    //                           onClick={() => handleDeleteBranch(branch.id)}
+    //                         >
+    //                           <Trash className="h-4 w-4" />
+    //                           <span className="sr-only">Delete</span>
+    //                         </Button>
+    //                       </ProtectedComponent>
+    //                     </div>
+    //                   </TableCell>
+    //                 </TableRow>
+    //               ))
+    //             )}
+    //           </TableBody>
+    //         </Table>
+    //       </div>
+    //     </CardContent>
+    //   </Card>
 
-                    {editBranch.branch_location && (
-                      <div className="text-sm text-muted-foreground break-words border rounded-md p-2 bg-muted/30">
-                        {editBranch.branch_location}
-                      </div>
-                    )}
-                    <Button
-                      className="self-start mt-1 flex items-center"
-                      disabled={gettingCurrentLocation}
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                      onClick={getCurrentLocation}
-                    >
-                      {gettingCurrentLocation ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <MapPin className="mr-2 h-4 w-4" />
-                      )}
-                      Get Current Location
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </ScrollArea>
-          )}
-          <DialogFooter className="pt-4">
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditBranch}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+    //   {/* Edit Branch Dialog */}
+    //   <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+    //     <DialogContent className="max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
+    //       <DialogHeader>
+    //         <DialogTitle>Edit Branch</DialogTitle>
+    //         <DialogDescription>Edit branch details.</DialogDescription>
+    //       </DialogHeader>
+    //       {editBranch && (
+    //         <ScrollArea className="flex-1 pr-4">
+    //           <div className="grid gap-4 py-4">
+    //             {[
+    //               "branch_name",
+    //               "branch_phone_number",
+    //               "branch_email",
+    //               "branch_opening_time",
+    //               "branch_closing_time",
+    //             ].map((field) => (
+    //               <div key={field} className="grid grid-cols-4 items-center gap-4">
+    //                 <Label className="text-right" htmlFor={`edit-${field}`}>
+    //                   {field
+    //                     .split("_")
+    //                     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    //                     .join(" ")}
+    //                 </Label>
+    //                 <Input
+    //                   className="col-span-3"
+    //                   id={`edit-${field}`}
+    //                   value={(editBranch as any)[field]}
+    //                   onChange={(e) =>
+    //                     setEditBranch({
+    //                       ...editBranch,
+    //                       [field]: e.target.value,
+    //                     })
+    //                   }
+    //                 />
+    //               </div>
+    //             ))}
+    //             <div key="branch_location" className="grid grid-cols-4 items-start gap-4">
+    //               <Label className="text-right pt-2" htmlFor="edit-branch_location">
+    //                 Location
+    //               </Label>
+    //               <div className="col-span-3 flex flex-col gap-2">
+    //                 <LocationAutocomplete
+    //                   value={editBranch?.branch_location || ""}
+    //                   onChange={(location) =>
+    //                     setEditBranch((prev) =>
+    //                       prev ? {...prev, branch_location: location} : prev,
+    //                     )
+    //                   }
+    //                   onCoordinatesChange={(lat, lon) =>
+    //                     setEditBranch((prev) =>
+    //                       prev
+    //                         ? {
+    //                             ...prev,
+    //                             branch_latitude: lat,
+    //                             branch_longitude: lon,
+    //                           }
+    //                         : prev,
+    //                     )
+    //                   }
+    //                   placeholder="Search for a location..."
+    //                 />
+
+    //                 {editBranch.branch_location && (
+    //                   <div className="text-sm text-muted-foreground break-words border rounded-md p-2 bg-muted/30">
+    //                     {editBranch.branch_location}
+    //                   </div>
+    //                 )}
+    //                 <Button
+    //                   className="self-start mt-1 flex items-center"
+    //                   disabled={gettingCurrentLocation}
+    //                   size="sm"
+    //                   type="button"
+    //                   variant="outline"
+    //                   onClick={getCurrentLocation}
+    //                 >
+    //                   {gettingCurrentLocation ? (
+    //                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+    //                   ) : (
+    //                     <MapPin className="mr-2 h-4 w-4" />
+    //                   )}
+    //                   Get Current Location
+    //                 </Button>
+    //               </div>
+    //             </div>
+    //           </div>
+    //         </ScrollArea>
+    //       )}
+    //       <DialogFooter className="pt-4">
+    //         <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+    //           Cancel
+    //         </Button>
+    //         <Button onClick={handleEditBranch}>Save Changes</Button>
+    //       </DialogFooter>
+    //     </DialogContent>
+    //   </Dialog>
+    // </div>
   );
 }
