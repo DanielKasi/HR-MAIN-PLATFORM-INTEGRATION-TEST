@@ -121,7 +121,7 @@ class JobInterviewSerializer(serializers.ModelSerializer):
             "job_position_application_details",
             "interview_stage",
             "interview_stage_details",
-            "scheduled_date",
+            "interview_date",
             "status",
             "feedback",
             "rating",
