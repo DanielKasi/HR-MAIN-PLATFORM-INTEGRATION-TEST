@@ -71,5 +71,36 @@ export interface DepartmentFormData {
   institution: number
 }
 
+export interface JobApplication {
+  id: number
+  job_position_advert: number
+  applicant_name: string
+  applicant_email: string
+  applicant_phone: string
+  resume: string
+  cover_letter: string
+  application_date: string
+  status: "new" | "reviewed" | "shortlisted" | "rejected" | "passed"
+  gender: "male" | "female"
+  state: string
+  address: string
+  country: string
+  source: "website" | "referral" | "job_board" | "social_media" | "other"
+}
 
+export interface JobApplicationFormData {
+  job_position_advert: number
+  applicant_name: string
+  applicant_email: string
+  applicant_phone?: string
+  resume: File
+  cover_letter?: File
+  application_date?: string
+  status?: "new" | "reviewed" | "shortlisted" | "rejected" | "passed"
+  gender: "male" | "female"
+  state?: string
+  address: string
+  country: string
+  source?: "website" | "referral" | "job_board" | "social_media" | "other"
+}
 
