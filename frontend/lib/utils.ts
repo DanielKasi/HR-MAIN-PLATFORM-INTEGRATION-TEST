@@ -1,6 +1,6 @@
 import {type ClassValue, clsx} from "clsx";
 import {twMerge} from "tailwind-merge";
-import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData } from "@/app/types/types.utils";
+import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/app/types";
@@ -359,5 +359,96 @@ export const fetchEmployees = async ({institutionId}:{institutionId:number}) =>{
 }
 
 
+export const createJobPositionAdvert = async ({
+  institutionId,
+  advertData,
+}: {
+  institutionId: number;
+  advertData: JobPositionAdvertFormData;
+}): Promise<JobPositionAdvert | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(advertData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
 
+    const response = await apiRequest.post(
+      `recruitment/institution/${institutionId}/job-advert/`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+
+    return response.data as JobPositionAdvert;
+  } catch (error) {
+    console.error("Failed to create job position advert", error);
+    return null;
+  }
+};
+
+// Fetch all job position adverts for a specific institution
+export const getJobPositionAdverts = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<JobPositionAdvert[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `recruitment/institution/${institutionId}/job-advert/`
+    );
+    return response.data as JobPositionAdvert[];
+  } catch (error) {
+    console.error("Failed to fetch job position adverts", error);
+    return null;
+  }
+};
+
+// Fetch a single job position advert by ID
+export const getJobPositionAdvertById = async ({
+  advertId,
+}: {
+  advertId: number;
+}): Promise<JobPositionAdvert | null> => {
+  try {
+    const response = await apiRequest.get(`recruitment/job-advert/${advertId}/`);
+    return response.data as JobPositionAdvert;
+  } catch (error) {
+    console.error("Failed to fetch job position advert", error);
+    return null;
+  }
+};
+
+// Update an existing job position advert
+export const updateJobPositionAdvert = async ({
+  advertId,
+  advertData,
+}: {
+  advertId: number;
+  advertData: Partial<JobPositionAdvertFormData>;
+}): Promise<JobPositionAdvert | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(advertData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.patch(
+      `recruitment/job-advert/${advertId}/`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+
+    return response.data as JobPositionAdvert;
+  } catch (error) {
+    console.error("Failed to update job position advert", error);
+    return null;
+  }
+};
 

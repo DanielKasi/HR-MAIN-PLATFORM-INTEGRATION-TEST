@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Mail, Phone, MapPin, Calendar, User, Upload, FileText, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { createJobApplication, getJobApplications, getJobPositions } from "@/lib/utils"
+import { createJobApplication, getJobApplications, getJobPositionAdverts } from "@/lib/utils"
 import type { JobApplication, JobApplicationFormData, IJobPosition } from "@/app/types/types.utils"
 
 const statusColors = {
@@ -98,7 +98,7 @@ export default function ApplicationsPage({ institutionId = 1 }: ApplicationsPage
   const loadJobPositions = async () => {
     setIsLoadingPositions(true)
     try {
-      const data = await getJobPositions({ institutionId })
+      const data = await getJobPositionAdverts({ institutionId })
       if (data) {
         setJobPositions(data)
       }
