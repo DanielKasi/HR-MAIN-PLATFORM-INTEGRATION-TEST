@@ -397,3 +397,4 @@ export interface IEmployee {
   employeeProfilePicture?: string | null;
 }
 
+
