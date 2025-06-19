@@ -230,6 +230,15 @@ export interface IEmployee {
   children_count?: number | null;
   employee_profile_picture?: string | null;
 }
+
+export interface IInterviewStageFormData {
+  job_position_advert: number;
+  name: string;
+  level: number;
+  interviewer: number;
+}
+
+
 export interface IInterviewStage{
   id: number;
   job_position_advert: number;
@@ -238,6 +247,7 @@ export interface IInterviewStage{
   interviewer: number;
   interviewer_details?: IEmployee;
 }
+
 
 export interface IInterview {
   id: number;
@@ -280,5 +290,16 @@ export interface EmployeeFormData {
   marital_status: string; // Changed from maritalStatus
   children_count: number; // Changed from childrenCount and string to number
   employee_profile_picture: File | null; // Changed from profilePicture
+}
+
+
+
+export interface IInterviewFormData {
+  job_position_application: number;
+  interview_stage: number;
+  interview_date: string;           // e.g. "2025-07-01T10:00:00Z"
+  status?: string;                  // e.g. "scheduled", "completed", etc.
+  feedback?: string;
+  rating?: number;
 }
 

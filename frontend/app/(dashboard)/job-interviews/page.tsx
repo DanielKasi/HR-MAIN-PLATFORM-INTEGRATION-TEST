@@ -168,7 +168,7 @@ export default function InterviewsPage() {
         <div>
           <h1 className="text-2xl font-bold">Interviews</h1>
           <p className="text-muted-foreground">
-            Manage interviews for {selectedBranch.branch_name} - {selectedInstitution.Institution_name}
+            Manage interviews for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -296,9 +296,7 @@ export default function InterviewsPage() {
                       <CardTitle className="text-lg">
                         {interview.job_position_application_details?.applicant_name}
                       </CardTitle>
-                      <Badge variant="secondary" className="text-xs">
-                        ID: {interview.id}
-                      </Badge>
+                      
                     </div>
                   </div>
                   <DropdownMenu>
