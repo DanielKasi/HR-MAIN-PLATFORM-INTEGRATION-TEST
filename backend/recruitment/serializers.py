@@ -30,7 +30,7 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
         ]
 
 class JobPositionAdvertSerializer(serializers.ModelSerializer):
-    applications = serializers.SerializerMethodField()
+    applications = serializers.SerializerMethodField(read_only= True)
     class Meta:
         model = JobPositionAdvert
         fields = [
@@ -51,7 +51,7 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
 class JobPositionSerializer(serializers.ModelSerializer):
     department_details = DepartmentSerializer(source="department", read_only=True)
     reports_to_details = serializers.SerializerMethodField()
-    job_adverts = serializers.SerializerMethodField()
+    job_adverts = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = JobPosition
