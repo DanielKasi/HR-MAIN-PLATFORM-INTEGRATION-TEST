@@ -1,3 +1,6 @@
+import { ReactNode } from "react";
+import { IUser } from ".";
+
 export enum CUSTOM_CODES {
   BLOCKED_BY_ADMIN = "BLOCKED_BY_ADMIN",
   SELF_CREATED_UNVERIFIED = "SELF_CREATED_UNVERIFIED",
@@ -146,7 +149,6 @@ export interface CreateJobPositionData {
 
 export interface JobApplication {
   job_position_advert_job_details: any;
-  job_position_advert_job_details: any;
   positions: ReactNode;
   id: number
   job_position_advert: number
@@ -200,4 +202,51 @@ export interface JobPositionAdvertFormData {
   expiry_date: string; // ISO datetime string
   number_of_employees_expected?: number;
   extra_information?: string;
+}
+
+
+export interface IEmployee {
+  id: number;
+  user: IUser;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+  position: number; 
+  department: number;
+  date_of_birth: string; 
+  date_of_joining: string;
+  address: string;
+  is_active: boolean;
+  created_at: string; 
+  updated_at: string;
+  experience: number;
+  qualifications?: string | null; 
+  skills?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  emergency_contact_relationship: string;
+  marital_status: string; 
+  children_count?: number | null;
+  employee_profile_picture?: string | null;
+}
+export interface IInterviewStage{
+  id: number;
+  job_position_advert: number; 
+  name: string;
+  level: number;
+  interviewer: number; 
+  interviewer_details?: IEmployee;
+}
+
+export interface IInterview {
+  id: number;
+  job_position_application: number; 
+  job_position_application_details?: JobApplication | null; 
+  interview_stage: number; 
+  interview_stage_details?: IInterviewStage | null;
+  interview_date: string;
+  status: string;
+  feedback?: string | null;
+  rating?: number | null;
 }

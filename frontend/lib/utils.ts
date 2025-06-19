@@ -1,6 +1,6 @@
 import {type ClassValue, clsx} from "clsx";
 import {twMerge} from "tailwind-merge";
-import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData } from "@/app/types/types.utils";
+import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, IInterview } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/app/types";
@@ -450,3 +450,27 @@ export const updateJobPositionAdvert = async ({
   }
 };
 
+
+export const getInterviews = async ({ institutionId }: { institutionId: number }) => {
+    try {
+      const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-interview/`)
+      return response.data as IInterview[]
+    } catch (error) {
+      console.error("Error fetching job interviews:", error)
+      return null
+    }
+  }
+  
+  export const getInterviewById = async ({
+    interviewId,
+  }: {
+    interviewId: number;
+  }): Promise<IInterview | null> => {
+    try {
+      const response = await apiRequest.get(`recruitment/job-interview/${interviewId}/`);
+      return response.data as IInterview;
+    } catch (error) {
+      console.error("Failed to fetch job position advert", error);
+      return null;
+    }
+  };
