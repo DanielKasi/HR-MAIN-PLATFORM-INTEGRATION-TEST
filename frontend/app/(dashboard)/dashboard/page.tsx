@@ -316,7 +316,7 @@ const QuickActions = () => {
         {actions.map((action, index) => (
           <button
             key={index}
-            className={`${action.color} text-white p-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 hover:transform hover:scale-105 transition-transform`}
+            className={`${action.color} text-white p-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 hover:transform hover:scale-105`}
           >
             <action.icon className="h-4 w-4" />
             {action.title}
