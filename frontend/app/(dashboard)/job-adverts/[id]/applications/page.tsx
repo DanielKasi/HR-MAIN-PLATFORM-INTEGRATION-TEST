@@ -185,11 +185,11 @@ export default function JobAdvertApplicationsPage() {
   }
 
   const handleViewApplication = (applicationId: number) => {
-    router.push(`/job-applications/${applicationId}`)
+    router.push(`/applications/${applicationId}`)
   }
 
   const handleEditApplication = (applicationId: number) => {
-    router.push(`/job-applications/${applicationId}/edit`)
+    router.push(`/applications/${applicationId}/edit`)
   }
 
   const handleBack = () => {

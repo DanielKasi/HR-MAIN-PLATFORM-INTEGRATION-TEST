@@ -352,6 +352,22 @@ export const updateJobApplication = async ({
 };
 
 
+export const updateJobApplicationStatus = async ({applicationId, status}:{applicationId:number, status:string}): Promise<JobApplication | null> => {
+  try {
+    const formData = new FormData();
+    formData.append("status", status);
+
+      const response = await apiRequest.patch(
+      `recruitment/job-application/${applicationId}/`,
+      formData
+    );
+
+    return response.data as JobApplication;
+  } catch (error) {
+    console.error("Failed to update job application", error);
+    return null;
+  }
+}
 
 export const fetchEmployees = async ({institutionId}:{institutionId:number}) =>{
   try {
@@ -653,8 +669,3 @@ export const createEmployee = async ({
 
 
 
-export const updateJobApplicationStatus = async ({applicationId, status}:{applicationId:number, status:string}) =>{
-  
-
-
-}
