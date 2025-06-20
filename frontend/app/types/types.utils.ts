@@ -365,6 +365,46 @@ export interface IRoleFormData {
   permissions_details: string[]; // List of permission codes
 }
 
+export interface IOnBoarding {
+  applicant_name: any;
+  id: number;
+  application: number;
+  attended: boolean;
+  remarks: string | null;
+  status: 'initial' | 'training' | 'issued_contract' | 'declined_offer' | 'accepted_offer';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IOnBoardingFormData {
+  application?: number;
+  attended?: boolean;
+  remarks?: string;
+  status?: 'initial' | 'training' | 'issued_contract' | 'declined_offer' | 'accepted_offer';
+}
+
+// Bulk Onboarding Types
+export interface IBulkOnBoardingRequest {
+  application_ids: number[];
+}
+
+export interface IBulkOnBoardingSkipped {
+  application_id: number;
+  reason: string;
+}
+
+export interface IBulkOnBoardingSummary {
+  total_requested: number;
+  created_count: number;
+  skipped_count: number;
+}
+
+export interface IBulkOnBoardingResponse {
+  created: IOnBoarding[];
+  skipped: IBulkOnBoardingSkipped[];
+  summary: IBulkOnBoardingSummary;
+}
+
 export interface IInterviewFormData {
   job_position_application: number;
   interview_stage: number;
