@@ -91,7 +91,7 @@ export function LocationAutocomplete({
         setOptions([]);
       }
     } catch (error) {
-      console.error("Error fetching location suggestions:", error);
+      console.log("Error fetching location suggestions:", error);
       setOptions([]);
     } finally {
       setLoading(false);
@@ -123,7 +123,7 @@ export function LocationAutocomplete({
         )}&apiKey=12a8608da7914f4c96cbbc76c7ca954c&limit=1`,
       );
 
-      console.log("Response from Geoapify:", response);
+      // console.log("Response from Geoapify:", response);
 
       if (!response.ok) throw new Error("Failed to get coordinates");
 
@@ -136,7 +136,7 @@ export function LocationAutocomplete({
         onCoordinatesChange?.(lat.toString(), lon.toString());
       }
     } catch (error) {
-      console.error("Failed to get coordinates from selected location:", error);
+      console.log("Failed to get coordinates from selected location:", error);
     }
   };
 
@@ -181,7 +181,7 @@ export function LocationAutocomplete({
             throw new Error("No address found for your location");
           }
         } catch (error) {
-          console.error("Error getting current location:", error);
+          // console.error("Error getting current location:", error);
           toast({
             title: "Error getting location",
             description:
@@ -193,7 +193,7 @@ export function LocationAutocomplete({
         }
       },
       (error) => {
-        console.error("Geolocation error:", error);
+        // console.error("Geolocation error:", error);
         let errorMessage = "Failed to get your location";
 
         switch (error.code) {

@@ -42,14 +42,14 @@ function* login({
     yield put(setRefreshToken(loginResponse.tokens.refresh));
     yield put(setUserAction(loginResponse.user));
 
-    if (loginResponse.InstitutionsAttached.length) {
-      yield put(setAttachedInstitutions(loginResponse.InstitutionsAttached));
-      yield put(setSelectedInstitution(loginResponse.InstitutionsAttached[0]));
+    if (loginResponse.institution_attached.length) {
+      yield put(setAttachedInstitutions(loginResponse.institution_attached));
+      yield put(setSelectedInstitution(loginResponse.institution_attached[0]));
       if (
-        loginResponse.InstitutionsAttached[0].branches &&
-        loginResponse.InstitutionsAttached[0].branches.length
+        loginResponse.institution_attached[0].branches &&
+        loginResponse.institution_attached[0].branches.length
       ) {
-        yield put(setSelectedBranch(loginResponse.InstitutionsAttached[0].branches[0]));
+        yield put(setSelectedBranch(loginResponse.institution_attached[0].branches[0]));
       }
     }
   } catch (error: any) {

@@ -30,7 +30,7 @@ class Employee(models.Model):
 
     user  = models.OneToOneField("users.CustomUser", on_delete=models.PROTECT, blank=True, null=True, related_name="employees")
     email = models.EmailField(unique=True, blank=True, null=True)
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
     position = models.ForeignKey(
         "recruitment.JobPosition", on_delete=models.PROTECT, related_name="employees", null=True, blank=True
     )
@@ -47,7 +47,7 @@ class Employee(models.Model):
     qualifications = models.TextField(blank=True, null=True)
     skills = models.TextField(blank=True, null=True)
     emergency_contact_name = models.CharField(max_length=50, blank=True, null=True)
-    emergency_contact_phone = models.CharField(max_length=15, blank=True, null=True)
+    emergency_contact_phone = models.CharField(max_length=20, blank=True, null=True)
     emergency_contact_relationship = models.CharField(max_length=30, blank=True, null=True)
     marital_status = models.CharField(max_length=10, choices=choices, default='single')
     children_count = models.PositiveIntegerField(default=0, blank=True, null=True)

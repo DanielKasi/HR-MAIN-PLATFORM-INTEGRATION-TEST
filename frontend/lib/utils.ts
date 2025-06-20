@@ -3,7 +3,7 @@ import {twMerge} from "tailwind-merge";
 import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, IInterview, EmployeeFormData, User, IInterviewFormData, IInterviewStage, IInterviewStageFormData, IBulkOnBoardingResponse, IBulkOnBoardingRequest, IOnBoarding, IOnBoardingFormData } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
-import { IEmployee } from "@/app/types";
+import { IEmployee } from "@/app/types/types.utils";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -75,7 +75,7 @@ export interface LoginResponse {
     is_password_verified: boolean;
     is_staff: boolean;
   };
-  Institutions_attached?: any[];
+  institution_attached?: any[];
 }
 
 /**
