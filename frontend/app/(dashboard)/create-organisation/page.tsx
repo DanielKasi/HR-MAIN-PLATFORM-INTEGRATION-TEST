@@ -213,15 +213,17 @@ export default function CreateOrganisationWizard() {
     dispatch(setRefreshToken(loginResponse.tokens.refresh));
     dispatch(setUserAction(loginResponse.user));
 
-    if (loginResponse.institutionsAttached.length) {
-      const defaultSelectedInstitution = loginResponse.institutionsAttached.find(
+    console.log("\n\n Refreshed with response : ", loginResponse)
+
+    if (loginResponse.institution_attached.length) {
+      const defaultSelectedInstitution = loginResponse.institution_attached.find(
         (institution) =>
           institution.institution_name === formData.institutionName &&
           institution.first_phone_number === formData.firstPhoneNumber,
       );
-      dispatch(setAttachedInstitutions(loginResponse.institutionsAttached));
+      dispatch(setAttachedInstitutions(loginResponse.institution_attached));
       dispatch(
-        setSelectedInstitution(defaultSelectedInstitution || loginResponse.institutionsAttached[0]),
+        setSelectedInstitution(defaultSelectedInstitution || loginResponse.institution_attached[0]),
       );
       if (
         defaultSelectedInstitution &&
@@ -229,8 +231,8 @@ export default function CreateOrganisationWizard() {
         defaultSelectedInstitution.branches.length
       ) {
         dispatch(setSelectedBranch(defaultSelectedInstitution.branches[0]));
-      } else if (loginResponse.institutionsAttached[0].branches?.length) {
-        dispatch(setSelectedBranch(loginResponse.institutionsAttached[0].branches[0]));
+      } else if (loginResponse.institution_attached[0].branches?.length) {
+        dispatch(setSelectedBranch(loginResponse.institution_attached[0].branches[0]));
       }
     }
   };
@@ -275,22 +277,22 @@ export default function CreateOrganisationWizard() {
       const validDocuments = formData.documents.filter(
         (doc) => doc.file && doc.title && doc.title.trim(),
       );
-      console.log("Valid documents count:", validDocuments.length);
+      // console.log("Valid documents count:", validDocuments.length);
 
-      if (validDocuments.length > 0) {
-        // Append document files and titles
-        validDocuments.forEach((doc) => {
-          if (doc.file && doc.title) {
-            console.log(`Adding document: ${doc.title} - ${doc.file.name}`);
-            formdata.append("document_files", doc.file);
-            formdata.append("document_titles", doc.title.trim());
-          }
-        });
-      }
+      // if (validDocuments.length > 0) {
+      //   // Append document files and titles
+      //   validDocuments.forEach((doc) => {
+      //     if (doc.file && doc.title) {
+      //       console.log(`Adding document: ${doc.title} - ${doc.file.name}`);
+      //       formdata.append("document_files", doc.file);
+      //       formdata.append("document_titles", doc.title.trim());
+      //     }
+      //   });
+      // }
       // Important: We don't add empty document fields at all if there are no valid documents
 
       // Log the complete form data
-      console.log("=== Complete FormData Contents ===");
+      // console.log("=== Complete FormData Contents ===");
       for (const [key, value] of formdata.entries()) {
         if (value instanceof File) {
           console.log(`${key}: File - ${value.name} (${value.size} bytes, ${value.type})`);
@@ -307,7 +309,7 @@ export default function CreateOrganisationWizard() {
       console.log("API Response:", response.status, response.data);
 
       if (response.status === 200 || response.status === 201) {
-        console.log("Institution created successfully:", response.data);
+        // console.log("Institution created successfully:", response.data);
 
         // Refresh user data to get updated institutions
         try {
@@ -321,20 +323,18 @@ export default function CreateOrganisationWizard() {
               },
             },
           );
-          const responseData = {
-            ...fetchedUserResponse.data,
-            institutionsAttached: fetchedUserResponse.data.institutions_attached,
-          } as LoginResponse;
+          const responseData = fetchedUserResponse.data as LoginResponse;
 
           handleUserRefresh(responseData);
         } catch (refreshError) {
+          console.log(refreshError)
           toast.error(
             "Organisation created, but failed to refresh user data. Please log out and log in again.",
           );
           dispatch(logoutStart());
         }
 
-        toast.success("Organisation created successfully! It's now pending approval.");
+        // toast.success("Organisation created successfully! It's now pending approval.");
         // setIsCreated(true);
       }
     } catch (error: any) {

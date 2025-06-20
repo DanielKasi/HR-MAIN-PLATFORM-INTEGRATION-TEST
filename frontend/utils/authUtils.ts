@@ -10,7 +10,7 @@ export type LoginResponse = {
     refresh: string;
   };
   user: IUser;
-  InstitutionsAttached: IUserInstitution[];
+  institution_attached: IUserInstitution[];
 };
 
 export const loginWithEmailAndPassword = async (email: string, password: string) => {

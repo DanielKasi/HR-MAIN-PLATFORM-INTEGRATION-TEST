@@ -18,6 +18,7 @@ import createWebStorage from "redux-persist/lib/storage/createWebStorage";
 
 import rootReducer, {RootState} from "@/store/rootReducer";
 import rootSaga from "@/store/rootSaga";
+import { clearStateIfStructureChanged } from "./storeUtils";
 
 const createNoopStorage = () => {
   return {
@@ -62,6 +63,8 @@ export type AppDispatch = ReturnType<typeof configureAppStore>["dispatch"];
 export const configureAppStore = () => {
   // Create the saga middleware
   const sagaMiddleware = createSagaMiddleware();
+
+  clearStateIfStructureChanged();
 
   // Configure the store
   const store = configureStore({

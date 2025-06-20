@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import {useState, useEffect} from "react";
-import {useRouter} from "next/navigation";
-import {usePathname} from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -17,16 +17,16 @@ import {
   Shield,
 } from "lucide-react";
 import Image from "next/image";
-import {useSelector} from "react-redux";
-import {useDispatch} from "react-redux";
-import {Icon} from "@iconify/react";
+import { useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
+import { Icon } from "@iconify/react";
 
-import {IUserInstitution} from "../types";
-import {PERMISSION_CODES} from "../types/types.utils";
+import { IUserInstitution } from "../types";
+import { PERMISSION_CODES } from "../types/types.utils";
 
-import {useSetupProgress} from "@/components/guide";
-import {selectAttachedInstitutions, selectTemporaryPermissions} from "@/store/auth/selectors";
-import {Button} from "@/components/ui/button";
+import { useSetupProgress } from "@/components/guide";
+import { selectAttachedInstitutions, selectTemporaryPermissions } from "@/store/auth/selectors";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,9 +42,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {useMobile} from "@/hooks/use-mobile";
-import {InstitutionBranchSelector} from "@/components/institution-branch-selector";
-import {TaskNotification} from "@/components/task-notification";
+import { useMobile } from "@/hooks/use-mobile";
+import { InstitutionBranchSelector } from "@/components/institution-branch-selector";
+import { TaskNotification } from "@/components/task-notification";
 import Modules from "@/components/modules";
 import {
   selectAccessToken,
@@ -59,11 +59,12 @@ import {
   logoutStart,
 } from "@/store/auth/actions";
 import FixedLoader from "@/components/fixed-loader";
-import {selectSidebarOpened} from "@/store/miscellaneous/selectors";
-import {toggleSideBarAction} from "@/store/miscellaneous/actions";
-import {hasPermission} from "@/lib/helpers";
+import { selectSidebarOpened } from "@/store/miscellaneous/selectors";
+import { toggleSideBarAction } from "@/store/miscellaneous/actions";
+import { hasPermission } from "@/lib/helpers";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import apiRequest from "@/lib/apiRequest";
+import CreateOrganisationWizard from "./create-organisation/page";
 
 export function hexToHSL(hex: string) {
   hex = hex.replace("#", "");
@@ -119,7 +120,7 @@ interface NavItem {
   requiredPermission?: string;
 }
 
-export default function DashboardLayout({children}: {children: React.ReactNode}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isMobile = useMobile();
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
@@ -137,7 +138,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const [InstitutionId, setInstitutionId] = useState<string | null>(null);
   const InstitutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
 
-  const {getCompletionPercentage, isSetupComplete, getNextStep} = useSetupProgress(
+  const { getCompletionPercentage, isSetupComplete, getNextStep } = useSetupProgress(
     InstitutionId || undefined,
   );
 
@@ -203,7 +204,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         role = "Owner";
       } else if (Array.isArray(userData.roles) && userData.roles.length > 0) {
         // Get the first matched role name, formatted
-        const matchingRole = userData.roles.find((r: {name: string}) => !!r.name);
+        const matchingRole = userData.roles.find((r: { name: string }) => !!r.name);
 
         if (matchingRole) {
           // Format role to "Title Case"
@@ -397,7 +398,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             (subItem) => !subItem.requiredPermission || hasPermission(subItem.requiredPermission),
           );
 
-          return {...item, submenu: filteredSubmenu};
+          return { ...item, submenu: filteredSubmenu };
         }
 
         return item;
@@ -486,9 +487,8 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
       <div
-        className={`${
-          sidebarExpanded ? "w-[250px]" : "w-16"
-        } bg-white border-r transition-all duration-300 flex flex-col justify-between`}
+        className={`${sidebarExpanded ? "w-[250px]" : "w-16"
+          } bg-white border-r transition-all duration-300 flex flex-col justify-between`}
       >
         <div>
           <div className="p-4 flex items-center gap-2">
@@ -514,11 +514,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                 <div key={idx}>
                   <div
                     className={`
-          ${
-            pathname === item.href || pathname.startsWith(item.href + "/")
-              ? "bg-sidebar-selected text-white"
-              : "text-gray-600 hover:bg-sidebar-hover hover:bg-opacity-20"
-          }
+          ${pathname === item.href || pathname.startsWith(item.href + "/")
+                        ? "bg-sidebar-selected text-white"
+                        : "text-gray-600 hover:bg-sidebar-hover hover:bg-opacity-20"
+                      }
           rounded-lg p-3 flex items-center gap-3 cursor-pointer transition-colors mb-1`}
                     onClick={() => handleMenuItemClick(item)}
                   >
@@ -529,9 +528,8 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                     {item.submenu && item.submenu.length > 0 && (
                       <div className={`${sidebarExpanded ? "block" : "hidden"}`}>
                         <ChevronDown
-                          className={`h-4 w-4 transition-transform duration-300 ${
-                            openSubmenu === item.title ? "rotate-180" : ""
-                          }`}
+                          className={`h-4 w-4 transition-transform duration-300 ${openSubmenu === item.title ? "rotate-180" : ""
+                            }`}
                         />
                       </div>
                     )}
@@ -544,11 +542,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                           key={subitem.href}
                           className={`
                   px-4 py-2 rounded-lg cursor-pointer transition-colors
-                  ${
-                    pathname === subitem.href
-                      ? "bg-sidebar-hover bg-opacity-30 text-sidebar-selected font-medium"
-                      : "hover:bg-sidebar-hover hover:bg-opacity-20"
-                  }
+                  ${pathname === subitem.href
+                              ? "bg-sidebar-hover bg-opacity-30 text-sidebar-selected font-medium"
+                              : "hover:bg-sidebar-hover hover:bg-opacity-20"
+                            }
                 `}
                           onClick={() => router.push(subitem.href)}
                         >
@@ -579,9 +576,8 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             }}
           >
             <ChevronLeft
-              className={`h-5 w-5 text-white transition-transform duration-300 ${
-                sidebarExpanded ? "" : "rotate-180"
-              }`}
+              className={`h-5 w-5 text-white transition-transform duration-300 ${sidebarExpanded ? "" : "rotate-180"
+                }`}
             />
           </div>
 
@@ -759,7 +755,13 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             </>
           )} */}
 
-          {children}
+          {selectedInstitution ?
+            <>
+              {children}
+            </> :
+            <CreateOrganisationWizard />
+          }
+
         </div>
       </div>
       {userIsLoading && <FixedLoader />}
