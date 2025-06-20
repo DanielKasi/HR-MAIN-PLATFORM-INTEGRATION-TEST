@@ -366,7 +366,7 @@ export interface IRoleFormData {
 }
 
 export interface IOnBoarding {
-  applicant_name: any;
+  application_details: JobApplication;
   id: number;
   application: number;
   attended: boolean;

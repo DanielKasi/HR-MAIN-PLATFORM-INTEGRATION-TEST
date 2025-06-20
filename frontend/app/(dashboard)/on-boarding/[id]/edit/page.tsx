@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -20,23 +20,21 @@ import { toast } from "sonner"
 
 const onboardingSchema = z.object({
   remarks: z.string().optional(),
-  status: z.enum(["initial", "in_progress", "completed", "cancelled"]),
+  status: z.enum(["initial", "training", "issued_contract", "declined_offer", "accepted_offer"]),
 })
 
-type OnboardingFormData = z.infer<typeof onboardingSchema>
 
-interface EditOnboardingFormProps {
-  onboardingId: number
-}
 
-export default function EditOnboardingForm({ onboardingId }: EditOnboardingFormProps) {
+export default function EditOnboardingForm() {
   const [isLoading, setIsLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const params = useParams();
+  const onboardingId = params.id as unknown as number;
   const [onboarding, setOnboarding] = useState<IOnBoarding | null>(null)
 
   const router = useRouter()
 
-  const form = useForm<OnboardingFormData>({
+  const form = useForm<IOnBoardingFormData>({
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
       remarks: "",
@@ -72,7 +70,7 @@ export default function EditOnboardingForm({ onboardingId }: EditOnboardingFormP
     }
   }
 
-  const onSubmit = async (data: OnboardingFormData) => {
+  const onSubmit = async (data: IOnBoardingFormData) => {
     try {
       setIsSubmitting(true)
 
@@ -88,7 +86,7 @@ export default function EditOnboardingForm({ onboardingId }: EditOnboardingFormP
 
       if (result) {
         toast.success("Onboarding record updated successfully")
-        router.push("/onboarding")
+        router.push("/on-boarding")
       } else {
         toast.error("Failed to update onboarding record")
       }
@@ -121,7 +119,7 @@ export default function EditOnboardingForm({ onboardingId }: EditOnboardingFormP
         <div>
           <h1 className="text-2xl font-bold">Edit Onboarding</h1>
           <p className="text-muted-foreground">
-            Update onboarding details for {onboarding.applicant_name?.applicant_name}
+            Update onboarding details for {onboarding.application_details.applicant_name}
           </p>
         </div>
         <Button variant="outline" onClick={() => router.push("/on-boarding")}>
@@ -137,20 +135,20 @@ export default function EditOnboardingForm({ onboardingId }: EditOnboardingFormP
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label className="text-sm font-medium">Name</Label>
-            <p className="text-sm text-muted-foreground">{onboarding.applicant_name?.applicant_name || "N/A"}</p>
+            <p className="text-sm text-muted-foreground">{onboarding.application_details.applicant_name || "N/A"}</p>
           </div>
           <div>
             <Label className="text-sm font-medium">Email</Label>
-            <p className="text-sm text-muted-foreground">{onboarding.applicant_name?.applicant_email || "N/A"}</p>
+            <p className="text-sm text-muted-foreground">{onboarding.application_details.applicant_email || "N/A"}</p>
           </div>
           <div>
             <Label className="text-sm font-medium">Phone</Label>
-            <p className="text-sm text-muted-foreground">{onboarding.applicant_name?.applicant_phone || "N/A"}</p>
+            <p className="text-sm text-muted-foreground">{onboarding.application_details.applicant_phone || "N/A"}</p>
           </div>
           <div>
             <Label className="text-sm font-medium">Position</Label>
             <p className="text-sm text-muted-foreground">
-              {onboarding.applicant_name?.job_position_advert_job_details || "N/A"}
+              {onboarding.application_details.job_position_advert_job_details.name || "N/A"}
             </p>
           </div>
         </CardContent>
@@ -171,17 +169,18 @@ export default function EditOnboardingForm({ onboardingId }: EditOnboardingFormP
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} defaultValue={"training"}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="initial">Initial</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="training">Training</SelectItem>
+                          <SelectItem value="issued_contract">Issued Contract</SelectItem>
+                          <SelectItem value="declined_offer">Declined Offer</SelectItem>
+                          <SelectItem value="accepted_offer">Accepted Offer</SelectItem>
+                          
                         </SelectContent>
                       </Select>
                       <FormMessage />

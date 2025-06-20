@@ -259,7 +259,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     },
     {
       title: "Onboarding",
-      href: "#",
+      href: "/on-boarding",
       icon: <Icon height="24" icon="hugeicons:inbox-download" width="24" />,
       // requiredPermission: "can_view_orders",
     },
