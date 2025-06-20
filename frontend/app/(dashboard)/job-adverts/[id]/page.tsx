@@ -121,6 +121,10 @@ export default function JobAdvertDetailsPage() {
     router.push(`/job-adverts/${jobAdvertId}/applications`)
   }
 
+  const handleViewInterviews = () => {
+    router.push(`/job-adverts/${jobAdvertId}/interviews`)
+  }
+
   const handleCloseAdvert = async () => {
     if (!jobAdvert) return
 
@@ -259,6 +263,15 @@ export default function JobAdvertDetailsPage() {
                   >
                     <User className="h-4 w-4" />
                     {applicationsCount} Applications
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleViewInterviews}
+                    className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <User className="h-4 w-4" />
+                     {/* {jobAdvert.interviews.length} Interviews */}
                   </Button>
                 </div>
                 <div className="flex items-center gap-2 mt-2">

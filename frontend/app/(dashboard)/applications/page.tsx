@@ -824,13 +824,13 @@ return (
                       <TableCell>
                         <div className="space-y-1">
                           <Button variant="link" size="sm" className="h-auto p-0" asChild>
-                            <a href={application.resume} target="_blank" rel="noopener noreferrer">
+                            <a href={`${process.env.NEXT_PUBLIC_URL|| 'http://127.0.0.1:8000'}${application.resume}`} target="_blank" rel="noopener noreferrer">
                               Resume
                             </a>
                           </Button>
                           {application.cover_letter && (
                             <Button variant="link" size="sm" className="h-auto p-0" asChild>
-                              <a href={application.cover_letter} target="_blank" rel="noopener noreferrer">
+                              <a href={`${process.env.NEXT_PUBLIC_URL|| 'http://127.0.0.1:8000'}${application.cover_letter}`} target="_blank" rel="noopener noreferrer">
                                 Cover Letter
                               </a>
                             </Button>

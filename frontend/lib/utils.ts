@@ -283,7 +283,7 @@ export const createJobApplication = async ({
       formData
     );
 
-    console.log("API Response:", response.data)
+   
     return response.data as JobApplication;
 };
 
