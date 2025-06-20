@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useSelector } from "react-redux"
-import { Megaphone, ArrowLeft, Edit, Calendar, Briefcase, Building2, DollarSign, User, FileText } from "lucide-react"
+import { Megaphone, ArrowLeft, Edit, Calendar, Briefcase, Building2, DollarSign, User, FileText, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,16 +12,15 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Separator } from "@/components/ui/separator"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { getJobPositionAdvertById, getJobPosition } from "@/lib/utils"
+import { getJobPositionAdvertById, getJobPosition, updateJobPositionAdvert } from "@/lib/utils"
 import type { JobPositionAdvert, IJobPosition, JobAdvertStatus } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import { formatCurrency } from "@/lib/helpers"
 
 const getStatusColor = (status: JobAdvertStatus) => {
   switch (status) {
     case "active":
       return "bg-green-100 text-green-800 border-green-200"
-    case "archived":
-      return "bg-gray-100 text-gray-800 border-gray-200"
     case "expired":
       return "bg-red-100 text-red-800 border-red-200"
     case "closed":
@@ -50,6 +49,8 @@ export default function JobAdvertDetailsPage() {
   const [jobPosition, setJobPosition] = useState<IJobPosition | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
+  const [applicationsCount, setApplicationsCount] = useState<number>(0)
+  const [isClosing, setIsClosing] = useState(false)
 
   const router = useRouter()
   const params = useParams()
@@ -78,19 +79,27 @@ export default function JobAdvertDetailsPage() {
       setIsLoading(true)
       setError("")
 
-      const fetchedJobAdvert = await getJobPositionAdvertById({ advertId:jobAdvertId })
+      const fetchedJobAdvert = await  getJobPositionAdvertById({ advertId:jobAdvertId })
 
-      if (fetchedJobAdvert) {
+      if(!fetchedJobAdvert){
+        return null
+      }
+
+      const fetchedApplications = fetchedJobAdvert.applications
+
         setJobAdvert(fetchedJobAdvert)
 
         // Fetch job position details
         const fetchedJobPosition = await getJobPosition({ jobPositionId: fetchedJobAdvert.job_position })
         if (fetchedJobPosition) {
           setJobPosition(fetchedJobPosition)
-        }
       } else {
         setError("Job advert not found")
         toast.error("Job advert not found")
+      }
+
+      if (fetchedApplications) {
+        setApplicationsCount(fetchedApplications.length)
       }
     } catch (err) {
       setError("Failed to fetch job advert details")
@@ -106,6 +115,35 @@ export default function JobAdvertDetailsPage() {
 
   const handleEdit = () => {
     router.push(`/job-adverts/${jobAdvertId}/edit`)
+  }
+
+  const handleViewApplications = () => {
+    router.push(`/job-adverts/${jobAdvertId}/applications`)
+  }
+
+  const handleCloseAdvert = async () => {
+    if (!jobAdvert) return
+
+    try {
+      setIsClosing(true)
+
+      const updatedAdvert = await updateJobPositionAdvert({
+        advertId: jobAdvert.id,
+        advertData: { status: "closed" },
+      })
+
+      if (updatedAdvert) {
+        setJobAdvert(updatedAdvert)
+        toast.success("Job advert closed successfully!")
+      } else {
+        toast.error("Failed to close job advert")
+      }
+    } catch (error) {
+      console.error("Error closing job advert:", error)
+      toast.error("Failed to close job advert")
+    } finally {
+      setIsClosing(false)
+    }
   }
 
   if (!selectedInstitution || !selectedBranch) {
@@ -178,26 +216,54 @@ export default function JobAdvertDetailsPage() {
             <ArrowLeft className="h-4 w-4" />
             Back to Job Adverts
           </Button>
-          <Button onClick={handleEdit} className="flex items-center gap-2">
-            <Edit className="h-4 w-4" />
-            Edit Advert
-          </Button>
+          <div className="flex items-center gap-2">
+            {jobAdvert.status !== "closed" && (
+              <Button
+                variant="outline"
+                onClick={handleCloseAdvert}
+                disabled={isClosing}
+                className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
+              >
+                {isClosing ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    Closing...
+                  </>
+                ) : (
+                  <>
+                    <X className="h-4 w-4" />
+                    Close Advert
+                  </>
+                )}
+              </Button>
+            )}
+            <Button onClick={handleEdit} className="flex items-center gap-2">
+              <Edit className="h-4 w-4" />
+              Edit Advert
+            </Button>
+          </div>
         </div>
 
         {/* Main Details Card */}
         <Card>
           <CardHeader>
             <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Megaphone className="h-6 w-6 text-primary" />
+              <div>
+                <div className="flex items-center gap-3">
+                  <CardTitle className="text-2xl">{jobPosition?.name || "Job Advertisement"}</CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleViewApplications}
+                    className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <User className="h-4 w-4" />
+                    {applicationsCount} Applications
+                  </Button>
                 </div>
-                <div>
-                  <CardTitle className="text-2xl">Job Advert #{jobAdvert.id}</CardTitle>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge className={`${getStatusColor(jobAdvert.status)}`}>{jobAdvert.status.toUpperCase()}</Badge>
-                    {expired && <Badge variant="destructive">EXPIRED</Badge>}
-                  </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge className={`${getStatusColor(jobAdvert.status)}`}>{jobAdvert.status.toUpperCase()}</Badge>
+                  {expired && <Badge variant="destructive">EXPIRED</Badge>}
                 </div>
               </div>
               <div className="text-right">
@@ -223,8 +289,8 @@ export default function JobAdvertDetailsPage() {
                     <div className="flex items-center justify-between">
                       <h4 className="text-xl font-semibold">{jobPosition.name}</h4>
                       <div className="flex items-center gap-1 text-lg font-bold text-green-600">
-                        <DollarSign className="h-4 w-4" />
-                        {jobPosition.salary.toLocaleString()}
+                        UGX {" "}
+                        {formatCurrency(jobPosition.salary)}
                       </div>
                     </div>
                     {jobPosition.description && (
@@ -248,10 +314,6 @@ export default function JobAdvertDetailsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div>
-                    <p className="text-sm font-medium">Advert ID</p>
-                    <p className="text-sm text-muted-foreground">{jobAdvert.id}</p>
-                  </div>
                   <div>
                     <p className="text-sm font-medium">Status</p>
                     <Badge className={`text-xs ${getStatusColor(jobAdvert.status)}`}>
@@ -291,10 +353,6 @@ export default function JobAdvertDetailsPage() {
                     <div>
                       <p className="text-sm font-medium">Department</p>
                       <p className="text-sm text-muted-foreground">{jobPosition.department_details?.name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Department ID</p>
-                      <p className="text-sm text-muted-foreground">{jobPosition.department}</p>
                     </div>
                     {jobPosition.reportsToDetails ? (
                       <>
@@ -387,10 +445,11 @@ export default function JobAdvertDetailsPage() {
                 </div>
                 <div className="space-y-2">
                   <p>
-                    <span className="font-medium text-foreground">Institution ID:</span> {selectedInstitution.id}
+                    <span className="font-medium text-foreground">Applications:</span> {applicationsCount}
                   </p>
                   <p>
-                    <span className="font-medium text-foreground">Job Position ID:</span> {jobAdvert.job_position}
+                    <span className="font-medium text-foreground">Expected Employees:</span>{" "}
+                    {jobAdvert.number_of_employees_expected || "Not specified"}
                   </p>
                 </div>
               </div>

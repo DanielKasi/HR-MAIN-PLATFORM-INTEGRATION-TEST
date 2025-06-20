@@ -1,0 +1,20 @@
+INTERVIEW CANCELLED
+
+Dear {{ applicant_name }},
+
+We regret to inform you that we need to cancel your scheduled interview for the position of:
+{{ job_title }}
+
+Stage: {{ interview_stage }}
+
+We sincerely apologize for any inconvenience this may cause. We understand that you may have made arrangements for this interview.
+
+We will be in touch with you soon regarding rescheduling or next steps in the recruitment process.
+
+Thank you for your understanding and continued interest in joining our team.
+
+If you have any questions or concerns, please don't hesitate to contact us.
+
+Best regards,
+HR Team
+{{ company_name }}
