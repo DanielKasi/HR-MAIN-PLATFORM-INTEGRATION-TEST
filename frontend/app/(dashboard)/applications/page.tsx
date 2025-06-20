@@ -1,30 +1,19 @@
-"use client";
+"use client"
 
-import type React from "react";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DialogTrigger } from "@/components/ui/dialog"
+
+import type React from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useSelector } from "react-redux"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Plus,
   Mail,
@@ -41,20 +30,20 @@ import {
   X,
   Users,
   Check,
-} from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { createJobApplication, getJobApplications, getJobPositionAdverts, updateJobApplicationStatus } from "@/lib/utils";
-import type {
-  IJobPosition,
-  JobApplication,
-  JobApplicationFormData,
-  JobPositionAdvert,
-} from "@/app/types/types.utils";
-import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
-import { Checkbox } from "@/components/ui/checkbox";
+} from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  createJobApplication,
+  getJobApplications,
+  getJobPositionAdverts,
+  updateJobApplicationStatus,
+} from "@/lib/utils"
+import type { JobApplication, JobApplicationFormData, JobPositionAdvert } from "@/app/types/types.utils"
+import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { toast } from "sonner"
+import { Checkbox } from "@/components/ui/checkbox"
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
@@ -62,7 +51,7 @@ const statusColors = {
   shortlisted: "bg-green-100 text-green-800",
   rejected: "bg-red-100 text-red-800",
   passed: "bg-purple-100 text-purple-800",
-};
+}
 
 const sourceLabels = {
   website: "Website",
@@ -70,22 +59,24 @@ const sourceLabels = {
   job_board: "Job Board",
   social_media: "Social Media",
   other: "Other",
-};
+}
 
 export default function ApplicationsPage() {
-  const [applications, setApplications] = useState<JobApplication[]>([]);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [filteredApplications, setFilteredApplications] = useState<JobApplication[]>([]);
-  const [selectedApplications, setSelectedApplications] = useState<number[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [applications, setApplications] = useState<JobApplication[]>([])
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [filteredApplications, setFilteredApplications] = useState<JobApplication[]>([])
+  const [selectedApplications, setSelectedApplications] = useState<number[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [isBulkShortlisting, setIsBulkShortlisting] = useState(false)
+  const [individualLoadingStates, setIndividualLoadingStates] = useState<Record<number, boolean>>({})
 
-  const router = useRouter();
-  const selectedInstitution = useSelector(selectSelectedInstitution);
-  const selectedBranch = useSelector(selectSelectedBranch);
+  const router = useRouter()
+  const selectedInstitution = useSelector(selectSelectedInstitution)
+  const selectedBranch = useSelector(selectSelectedBranch)
 
   // Form state
   const [formData, setFormData] = useState<
@@ -102,124 +93,120 @@ export default function ApplicationsPage() {
     address: "",
     country: "",
     source: "website",
-  });
+  })
 
-  const [jobPositionAdverts, setJobPositionAdverts] = useState<JobPositionAdvert[]>([]);
-  const [isLoadingAdverts, setIsLoadingAdverts] = useState(false);
+  const [jobPositionAdverts, setJobPositionAdverts] = useState<JobPositionAdvert[]>([])
+  const [isLoadingAdverts, setIsLoadingAdverts] = useState(false)
 
   // Check if institution is selected and redirect if not
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
-      router.push("/dashboard");
-      return;
+      router.push("/dashboard")
+      return
     }
 
-    loadApplications();
-    loadJobPositionAdverts();
-  }, [selectedInstitution, selectedBranch, router]);
-
+    loadApplications()
+    loadJobPositionAdverts()
+  }, [selectedInstitution, selectedBranch, router])
 
   useEffect(() => {
-    let filtered = applications;
+    let filtered = applications
     if (searchTerm) {
       filtered = filtered.filter(
         (app) =>
           app.applicant_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           app.applicant_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
           (app.applicant_phone && app.applicant_phone.toLowerCase().includes(searchTerm.toLowerCase())),
-      );
+      )
     }
     if (statusFilter !== "all") {
-      filtered = filtered.filter((app) => app.status === statusFilter);
+      filtered = filtered.filter((app) => app.status === statusFilter)
     }
-    setFilteredApplications(filtered);
-  }, [applications, searchTerm, statusFilter]);
+    setFilteredApplications(filtered)
+  }, [applications, searchTerm, statusFilter])
 
   const loadApplications = async () => {
-    if (!selectedInstitution) return;
+    if (!selectedInstitution) return
 
-    setIsLoading(true);
-    setError(null);
+    setIsLoading(true)
+    setError(null)
 
     try {
-      const data = await getJobApplications({ institutionId: selectedInstitution.id });
-      console.log("Apps", data);
+      const data = await getJobApplications({ institutionId: selectedInstitution.id })
+      console.log("Apps", data)
       if (data) {
-        setApplications(data);
+        setApplications(data)
       } else {
-        setError("Failed to load applications");
+        setError("Failed to load applications")
       }
     } catch (err: any) {
-      setError(err?.message || "An error occurred while loading applications");
-      console.error(err);
+      setError(err?.message || "An error occurred while loading applications")
+      console.error(err)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const loadJobPositionAdverts = async () => {
-    if (!selectedInstitution) return;
+    if (!selectedInstitution) return
 
-    setIsLoadingAdverts(true);
+    setIsLoadingAdverts(true)
     try {
-      const data = await getJobPositionAdverts({ institutionId: selectedInstitution.id });
-      console.log("Adverts", data);
+      const data = await getJobPositionAdverts({ institutionId: selectedInstitution.id })
+      console.log("Adverts", data)
       if (data) {
-        setJobPositionAdverts(data);
+        setJobPositionAdverts(data)
       }
     } catch (err: any) {
-      setError(err?.message || "Failed to load job position adverts");
-      console.error("Failed to load job position adverts:", err);
+      setError(err?.message || "Failed to load job position adverts")
+      console.error("Failed to load job position adverts:", err)
     } finally {
-      setIsLoadingAdverts(false);
+      setIsLoadingAdverts(false)
     }
-  };
+  }
 
-  const handleInputChange = (
-    field: keyof typeof formData,
-    value: string | number | File | null,
-  ) => {
+  const handleInputChange = (field: keyof typeof formData, value: string | number | File | null) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
-    }));
-  };
+    }))
+  }
 
   const handleFileChange = (field: "resume" | "cover_letter", file: File | null) => {
     setFormData((prev) => ({
       ...prev,
       [field]: file,
-    }));
-  };
+    }))
+  }
 
   const handleViewApplication = (applicationId: number) => {
-  router.push(`/applications/${applicationId}`)
-}
+    router.push(`/applications/${applicationId}`)
+  }
 
-const handleEditApplication = (applicationId: number) => {
-  router.push(`/applications/${applicationId}/edit`)
-}
+  const handleEditApplication = (applicationId: number) => {
+    router.push(`/applications/${applicationId}/edit`)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!selectedInstitution || !selectedBranch) {
-      setError("Missing organization or branch information");
-      return;
+      setError("Missing organization or branch information")
+      return
     }
 
     if (!formData.resume) {
-      setError("Resume is required");
-      return;
+      setError("Resume is required")
+      return
     }
 
     if (formData.job_position_advert === 0) {
-      setError("Please select a job position");
-      return;
+      setError("Please select a job position")
+      return
     }
 
-    setIsSubmitting(true);
-    setError(null);
+    setIsSubmitting(true)
+    setError(null)
 
     try {
       const applicationData: JobApplicationFormData = {
@@ -231,27 +218,25 @@ const handleEditApplication = (applicationId: number) => {
         application_date: new Date().toISOString(),
         address: formData.address || "",
         country: formData.country || "",
-      };
+      }
 
       // Add debugging logs
-      console.log("Submitting application with institutionId:", selectedInstitution.id);
+      console.log("Submitting application with institutionId:", selectedInstitution.id)
       console.log("Application data:", {
         ...applicationData,
         resume: applicationData.resume ? `File: ${applicationData.resume.name}` : "No resume",
-        cover_letter: applicationData.cover_letter
-          ? `File: ${applicationData.cover_letter.name}`
-          : "No cover letter",
-      });
+        cover_letter: applicationData.cover_letter ? `File: ${applicationData.cover_letter.name}` : "No cover letter",
+      })
 
       const newApplication = await createJobApplication({
         institutionId: selectedInstitution.id,
         applicationData,
-      });
+      })
 
       if (newApplication) {
-        console.log("Application created successfully:", newApplication);
-        setApplications((prev) => [newApplication, ...prev]);
-        setIsCreateDialogOpen(false);
+        console.log("Application created successfully:", newApplication)
+        setApplications((prev) => [newApplication, ...prev])
+        setIsCreateDialogOpen(false)
 
         // Reset form
         setFormData({
@@ -267,82 +252,96 @@ const handleEditApplication = (applicationId: number) => {
           address: "",
           country: "",
           source: "website",
-        });
+        })
       } else {
-        setError("Failed to create application - API returned null");
+        setError("Failed to create application - API returned null")
       }
     } catch (err: any) {
-      console.error("Full error object:", err);
-      console.error("Error response:", err?.response?.data);
-      console.error("Error status:", err?.response?.status);
+      console.error("Full error object:", err)
+      console.error("Error response:", err?.response?.data)
+      console.error("Error status:", err?.response?.status)
 
       // More detailed error message
-      let errorMessage = "An error occurred while creating the application";
+      let errorMessage = "An error occurred while creating the application"
       if (err?.response?.data?.message) {
-        errorMessage = err.response.data.message;
+        errorMessage = err.response.data.message
       } else if (err?.response?.data?.error) {
-        errorMessage = err.response.data.error;
+        errorMessage = err.response.data.error
       } else if (err?.message) {
-        errorMessage = err.message;
+        errorMessage = err.message
       }
 
-      setError(errorMessage);
+      setError(errorMessage)
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
-
+  }
 
   const handleSelectApplication = (applicationId: number, checked: boolean) => {
-  if (checked) {
-    setSelectedApplications((prev) => [...prev, applicationId]);
-  } else {
-    setSelectedApplications((prev) => prev.filter((id) => id !== applicationId));
+    if (checked) {
+      setSelectedApplications((prev) => [...prev, applicationId])
+    } else {
+      setSelectedApplications((prev) => prev.filter((id) => id !== applicationId))
+    }
   }
-};                                                                                                                                                                                                              
-  
-
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedApplications(filteredApplications.map((app) => app.id));
+      setSelectedApplications(filteredApplications.map((app) => app.id))
     } else {
-      setSelectedApplications([]);
+      setSelectedApplications([])
     }
-  };
-
+  }
 
   const handleBulkAction = async (action: "shortlisted" | "reviewed") => {
     if (selectedApplications.length === 0) {
-      toast.error("Please select applications first");
-      return;
+      toast.error("Please select applications first")
+      return
     }
+
+    if (action === "shortlisted") {
+      setIsBulkShortlisting(true)
+    }
+
     try {
       const promises = selectedApplications.map((applicationId) =>
         updateJobApplicationStatus({ applicationId, status: action }),
-      );
-      await Promise.all(promises);
+      )
+      await Promise.all(promises)
       setApplications((prev) =>
         prev.map((app) => (selectedApplications.includes(app.id) ? { ...app, status: action } : app)),
-      );
-      setSelectedApplications([]);
-      toast.success(`${selectedApplications.length} applications updated to ${action}`);
+      )
+      setSelectedApplications([])
+      toast.success(`${selectedApplications.length} applications updated to ${action}`)
     } catch (error) {
-      toast.error("Failed to update applications");
+      toast.error("Failed to update applications")
+    } finally {
+      if (action === "shortlisted") {
+        setIsBulkShortlisting(false)
+      }
     }
-  };
+  }
 
-  const handleIndividualAction = async (applicationId: number, action: "new" | "reviewed" | "shortlisted" | "rejected" | "passed") => {
-    try {
-      await updateJobApplicationStatus({ applicationId, status: action });
-      setApplications((prev) =>
-        prev.map((app) => (app.id === applicationId ? { ...app, status: action } : app)),
-      );
-      toast.success(`Application ${action} successfully`);
-    } catch (error) {
-      toast.error(`Failed to ${action} application`);
+  const handleIndividualAction = async (
+    applicationId: number,
+    action: "new" | "reviewed" | "shortlisted" | "rejected" | "passed",
+  ) => {
+    if (action === "shortlisted") {
+      setIndividualLoadingStates((prev) => ({ ...prev, [applicationId]: true }))
     }
-  };
+
+    try {
+      await updateJobApplicationStatus({ applicationId, status: action })
+      setApplications((prev) => prev.map((app) => (app.id === applicationId ? { ...app, status: action } : app)))
+      toast.success(`Application ${action} successfully`)
+    } catch (error) {
+      toast.error(`Failed to ${action} application`)
+    } finally {
+      if (action === "shortlisted") {
+        setIndividualLoadingStates((prev) => ({ ...prev, [applicationId]: false }))
+      }
+    }
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -351,12 +350,12 @@ const handleEditApplication = (applicationId: number) => {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    });
-  };
+    })
+  }
 
   // Show loading if institution/branch not selected
   if (!selectedInstitution || !selectedBranch) {
-    return <div>Loading...</div>;
+    return <div>Loading...</div>
   }
 
   if (isLoading) {
@@ -369,13 +368,13 @@ const handleEditApplication = (applicationId: number) => {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
-return (
+  return (
     <div className="w-full py-8 space-y-6">
       <div className="flex items-center justify-between">
-        <div>                                                                                                                                                                                 
+        <div>
           <h1 className="text-3xl font-bold">Job Applications</h1>
           <p className="text-muted-foreground">
             Manage and track all job applications for {selectedBranch.branch_name} -{" "}
@@ -389,12 +388,10 @@ return (
               Create Application
             </Button>
           </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Application</DialogTitle>
-              <DialogDescription>
-                Fill in the details to create a new job application.
-              </DialogDescription>
+              <DialogDescription>Fill in the details to create a new job application.</DialogDescription>
             </DialogHeader>
 
             {error && (
@@ -410,16 +407,10 @@ return (
                   <Label htmlFor="job_position_advert">Job Position *</Label>
                   <Select
                     value={formData.job_position_advert.toString()}
-                    onValueChange={(value) =>
-                      handleInputChange("job_position_advert", Number.parseInt(value))
-                    }
+                    onValueChange={(value) => handleInputChange("job_position_advert", Number.parseInt(value))}
                   >
                     <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          isLoadingAdverts ? "Loading job adverts..." : "Select a job advert"
-                        }
-                      />
+                      <SelectValue placeholder={isLoadingAdverts ? "Loading job adverts..." : "Select a job advert"} />
                     </SelectTrigger>
                     <SelectContent>
                       {jobPositionAdverts
@@ -430,7 +421,6 @@ return (
                               <span className="font-medium">
                                 {advert.job_position_details?.name || `Job Advert #${advert.id}`}
                               </span>
-
                             </div>
                           </SelectItem>
                         ))}
@@ -472,10 +462,7 @@ return (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="gender">Gender *</Label>
-                  <Select
-                    value={formData.gender}
-                    onValueChange={(value) => handleInputChange("gender", value)}
-                  >
+                  <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -487,10 +474,7 @@ return (
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="source">Source</Label>
-                  <Select
-                    value={formData.source}
-                    onValueChange={(value) => handleInputChange("source", value)}
-                  >
+                  <Select value={formData.source} onValueChange={(value) => handleInputChange("source", value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -584,14 +568,12 @@ return (
                       {selectedInstitution.institution_name}
                     </p>
                     <p>
-                      <span className="font-medium text-foreground">Branch:</span>{" "}
-                      {selectedBranch.branch_name}
+                      <span className="font-medium text-foreground">Branch:</span> {selectedBranch.branch_name}
                     </p>
                   </div>
                   <div className="space-y-2">
                     <p>
-                      <span className="font-medium text-foreground">Institution ID:</span>{" "}
-                      {selectedInstitution.id}
+                      <span className="font-medium text-foreground">Institution ID:</span> {selectedInstitution.id}
                     </p>
                     <p>
                       <span className="font-medium text-foreground">Available Job Adverts:</span>{" "}
@@ -602,11 +584,7 @@ return (
               </div>
 
               <div className="flex justify-end space-x-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreateDialogOpen(false)}
-                >
+                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
@@ -658,10 +636,20 @@ return (
                   size="sm"
                   variant="outline"
                   onClick={() => handleBulkAction("shortlisted")}
+                  disabled={isBulkShortlisting}
                   className="text-green-600 border-green-200 hover:bg-green-50"
                 >
-                  <Check className="h-4 w-4 mr-2" />
-                  Shortlist
+                  {isBulkShortlisting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2" />
+                      Shortlisting...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 mr-2" />
+                      Shortlist
+                    </>
+                  )}
                 </Button>
                 <Button
                   size="sm"
@@ -713,8 +701,8 @@ return (
                 <Button
                   variant="outline"
                   onClick={() => {
-                    setSearchTerm("");
-                    setStatusFilter("all");
+                    setSearchTerm("")
+                    setStatusFilter("all")
                   }}
                   className="mt-2"
                 >
@@ -730,8 +718,7 @@ return (
                     <TableHead className="w-12">
                       <Checkbox
                         checked={
-                          filteredApplications.length > 0 &&
-                          selectedApplications.length === filteredApplications.length
+                          filteredApplications.length > 0 && selectedApplications.length === filteredApplications.length
                         }
                         onCheckedChange={handleSelectAll}
                       />
@@ -752,10 +739,14 @@ return (
                   {filteredApplications.map((application) => (
                     <TableRow key={application.id}>
                       <TableCell>
-                        <Checkbox
-                          checked={selectedApplications.includes(application.id)}
-                          onCheckedChange={(checked) => handleSelectApplication(application.id, checked as boolean)}
-                        />
+                        {application.status !== "shortlisted" ? (
+                          <Checkbox
+                            checked={selectedApplications.includes(application.id)}
+                            onCheckedChange={(checked) => handleSelectApplication(application.id, checked as boolean)}
+                          />
+                        ) : (
+                          <div className="w-4 h-4" /> // Empty space to maintain table alignment
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
@@ -769,11 +760,10 @@ return (
                       <TableCell>
                         <div className="space-y-1">
                           <div className="font-medium">
-                            {application.job_position_advert_job_details?.name || `Advert #${application.job_position_advert}`}
+                            {application.job_position_advert_job_details?.name ||
+                              `Advert #${application.job_position_advert}`}
                           </div>
-                          <div className="text-xs text-muted-foreground">
-                            {application.positions} positions
-                          </div>
+                          <div className="text-xs text-muted-foreground">{application.positions} positions</div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -824,13 +814,21 @@ return (
                       <TableCell>
                         <div className="space-y-1">
                           <Button variant="link" size="sm" className="h-auto p-0" asChild>
-                            <a href={`${process.env.NEXT_PUBLIC_URL|| 'http://127.0.0.1:8000'}${application.resume}`} target="_blank" rel="noopener noreferrer">
+                            <a
+                              href={`${process.env.NEXT_PUBLIC_URL || "http://127.0.0.1:8000"}${application.resume}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
                               Resume
                             </a>
                           </Button>
                           {application.cover_letter && (
                             <Button variant="link" size="sm" className="h-auto p-0" asChild>
-                              <a href={`${process.env.NEXT_PUBLIC_URL|| 'http://127.0.0.1:8000'}${application.cover_letter}`} target="_blank" rel="noopener noreferrer">
+                              <a
+                                href={`${process.env.NEXT_PUBLIC_URL || "http://127.0.0.1:8000"}${application.cover_letter}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
                                 Cover Letter
                               </a>
                             </Button>
@@ -844,7 +842,10 @@ return (
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="!bg-white shadow-md shadow-black/20 rounded-md border border-black/20">
+                          <DropdownMenuContent
+                            align="end"
+                            className="!bg-white shadow-md shadow-black/20 rounded-md border border-black/20"
+                          >
                             <DropdownMenuItem onClick={() => handleViewApplication(application.id)}>
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
@@ -853,6 +854,24 @@ return (
                               <Edit className="h-4 w-4 mr-2" />
                               Edit Application
                             </DropdownMenuItem>
+                            {application.status !== "shortlisted" && application.status !== "rejected" && (
+                              <DropdownMenuItem
+                                onClick={() => handleIndividualAction(application.id, "shortlisted")}
+                                disabled={individualLoadingStates[application.id]}
+                              >
+                                {individualLoadingStates[application.id] ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2" />
+                                    Shortlisting...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Check className="h-4 w-4 mr-2" />
+                                    Shortlist
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                            )}
                             {application.status !== "rejected" && (
                               <DropdownMenuItem onClick={() => handleIndividualAction(application.id, "rejected")}>
                                 <X className="h-4 w-4 mr-2" />
@@ -871,5 +890,5 @@ return (
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
