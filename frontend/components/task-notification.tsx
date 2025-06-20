@@ -152,9 +152,9 @@ export function TaskNotification() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          className={`bg-gray-100 rounded-full flex items-center hover:bg-sidebar-hover justify-center relative transition-all duration-300 ease-in-out hover:bg-gray-200`}
+          className={`bg-transparent size-10 rounded-full flex items-center justify-center relative transition-all duration-300 ease-in-out hover:bg-gray-200`}
         >
-          <Bell className="h-5 w-5 text-gray-600 hover:bg-sidebar-hover transition-colors duration-200" />
+          <Bell className="h-7 w-7 text-black hover:bg-gray-200 transition-colors duration-200" />
           {tasks.length > 0 && (
             <div className="absolute top-0 right-0 w-2 h-2 bg-sidebar-selected rounded-full" />
           )}

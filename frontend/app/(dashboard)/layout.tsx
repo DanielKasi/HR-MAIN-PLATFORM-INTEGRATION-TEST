@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  ShoppingCart,
+  Building,
   Package2,
   FileBarChart,
   ChevronDown,
@@ -15,6 +15,7 @@ import {
   User,
   LogOut,
   Shield,
+  Building2,
 } from "lucide-react";
 import Image from "next/image";
 import { useSelector } from "react-redux";
@@ -147,7 +148,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // State for Institution data
   const [InstitutionLogo, setInstitutionLogo] = useState<string | null>(null);
-  const [InstitutionName, setInstitutionName] = useState("SUPERMARKET NAME");
+  const [InstitutionName, setInstitutionName] = useState("BAIFAM HR");
 
   // State for filtered nav items
   const [filteredNavItems, setFilteredNavItems] = useState<NavItem[]>([]);
@@ -502,7 +503,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   width={32}
                 />
               ) : (
-                <ShoppingCart className="text-white h-5 w-5" />
+                <Building2 className="text-white h-5 w-5" />
               )}
             </div>
             {sidebarExpanded && <span className="font-bold text-gray-800">{InstitutionName}</span>}
@@ -566,7 +567,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Header */}
         <div className="bg-white p-2 flex justify-between items-center border-b">
           <div
-            className="!w-8 !min-w-8 !min-h-8 !h-8 !inline-flex bg-sidebar-selected rounded-lg items-center justify-center cursor-pointer hover:bg-sidebar-selected/80 active:bg-sidebar-selected/80 transition-all duration-200"
+            className="w-8 h-8 bg-black rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-860 active:bg-sidebar-selected/80 transition-all duration-200"
             onClick={() => {
               // When collapsing, make sure to close any open submenu
               if (sidebarExpanded && openSubmenu !== null) {
@@ -581,7 +582,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             />
           </div>
 
-          <h1 className="text-xl font-semibold text-gray-600 ml-8">BAIFAM HR SYSTEM</h1>
+          <h1 className="text-xl font-semibold text-gray-600 ml-8"></h1>
 
           <div className="flex-1 flex justify-center">
             {/* Assuming InstitutionBranchSelector is a custom component, we'll wrap it to add hover effects */}
@@ -617,14 +618,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
 
             {/* Assuming TaskNotification is a custom component, we'll add a className prop */}
-            <div className="rounded-lg  hover:bg-opacity-20  active:bg-opacity-30 transition-all duration-200 p-2">
+            <div className="rounded-full  hover:bg-opacity-20  active:bg-opacity-30 transition-all duration-200 p-2">
               <TaskNotification />
             </div>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <div className="flex items-center gap-2 bg-gray-200 rounded-lg px-3 py-1 cursor-pointer hover:bg-sidebar-hover hover:bg-opacity-30 active:bg-sidebar-hover active:bg-opacity-40 transition-all duration-200">
-                  <div className="w-8 h-8 bg-gray-300 rounded-lg flex items-center justify-center">
+                <div className="flex items-center gap-2  rounded-full px-2 py-2 cursor-pointer hover:bg-gray-200 hover:bg-opacity-30 active:bg-gray-400 active:bg-opacity-40 transition-all duration-200">
+                  <div className="w-9 h-9 bg-gray-300 rounded-full flex items-center justify-center">
                     {userInitials}
                   </div>
                   <div className="hidden md:block">
@@ -638,13 +639,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 align="end"
                 className="rounded-xl p-1 shadow-lg border border-gray-200"
               >
-                <DropdownMenuItem className="rounded-lg hover:bg-sidebar-hover hover:bg-opacity-20 active:bg-sidebar-hover active:bg-opacity-30 transition-all duration-200 focus:bg-sidebar-hover focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2">
+                <DropdownMenuItem className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2">
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
                 {isMounted && canViewSettings && (
                   <DropdownMenuItem
-                    className="rounded-lg hover:bg-sidebar-hover hover:bg-opacity-20 active:bg-sidebar-hover active:bg-opacity-30 transition-all duration-200 focus:bg-sidebar-hover focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
+                    className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
                     onClick={() => router.push("/settings")}
                   >
                     <Settings className="mr-2 h-4 w-4" />
@@ -653,7 +654,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
                 <DropdownMenuSeparator className="my-1" />
                 <DropdownMenuItem
-                  className="rounded-lg hover:bg-sidebar-hover hover:bg-opacity-20 active:bg-sidebar-hover active:bg-opacity-30 transition-all duration-200 focus:bg-sidebar-hover focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
+                  className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
                   onClick={handleLogoutClick}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
