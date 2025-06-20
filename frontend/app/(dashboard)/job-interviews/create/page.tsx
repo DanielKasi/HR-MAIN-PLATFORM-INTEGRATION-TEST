@@ -38,6 +38,9 @@ export default function CreateInterviewPage() {
     job_position_application: 0,
     interview_stage: 0,
     interview_date: "",
+    location: "",
+    interview_time: "",
+    interview_type: "",
     status: "scheduled",
     feedback: "",
     rating: undefined,
@@ -56,7 +59,7 @@ export default function CreateInterviewPage() {
     name: "",
     level: 1,
     interviewer: 0,
-    job_position_advert:0,
+    job_position_advert: 0,
   })
   const [stageErrors, setStageErrors] = useState<any>({})
 
@@ -73,9 +76,9 @@ export default function CreateInterviewPage() {
     fetchInitialData()
   }, [selectedInstitution, selectedBranch, router])
 
-  useEffect(()=>{
-    if(selectedApplication){
-        setStageFormData(prev => ({...prev, job_position_advert:selectedApplication.job_position_advert}))
+  useEffect(() => {
+    if (selectedApplication) {
+      setStageFormData(prev => ({ ...prev, job_position_advert: selectedApplication.job_position_advert }))
     }
   }, [selectedApplication])
 
@@ -156,6 +159,11 @@ export default function CreateInterviewPage() {
       }
     }
 
+    // Location validation
+    if (!formData.location || formData.location.trim() === "") {
+      newErrors.location = "Interview location is required"
+    }
+
     // Rating validation (if provided)
     if (formData.rating !== undefined && formData.rating !== null) {
       const rating = Number(formData.rating)
@@ -181,8 +189,9 @@ export default function CreateInterviewPage() {
       toast.error("Missing organization information")
       return
     }
-    if(!selectedApplication){
-        toast.error("No selected application"); return
+    if (!selectedApplication) {
+      toast.error("No selected application")
+      return
     }
 
     // Validate stage form
@@ -222,7 +231,7 @@ export default function CreateInterviewPage() {
           name: "",
           level: 1,
           interviewer: 0,
-          job_position_advert:selectedApplication.job_position_advert
+          job_position_advert: selectedApplication.job_position_advert
         })
         setStageErrors({})
         setIsCreateStageDialogOpen(false)
@@ -266,6 +275,9 @@ export default function CreateInterviewPage() {
         job_position_application: formData.job_position_application,
         interview_stage: formData.interview_stage,
         interview_date: formData.interview_date,
+        location: formData.location,
+        interview_time: formData.interview_time,
+        interview_type: formData.interview_type,
         status: formData.status || "scheduled",
         feedback: formData.feedback || undefined,
         rating: formData.rating || undefined,
@@ -467,7 +479,6 @@ export default function CreateInterviewPage() {
 
                         <div onClick={(e) => e.stopPropagation()}>
                           <form onSubmit={handleCreateStage} className="space-y-4">
-                            {/* All form fields remain the same */}
                             <div className="space-y-2">
                               <Label htmlFor="stage_name">Stage Name *</Label>
                               <Input
@@ -575,6 +586,58 @@ export default function CreateInterviewPage() {
                   <p className="text-xs text-muted-foreground">Must be a future date and time</p>
                 </div>
 
+                {/* Interview Location */}
+                <div className="space-y-2">
+                  <Label htmlFor="location" className="text-sm font-medium">
+                    Interview Location *
+                  </Label>
+                  <Input
+                    id="location"
+                    type="text"
+                    value={formData.location}
+                    onChange={(e) => updateFormData("location", e.target.value)}
+                    className={errors.location ? "border-destructive" : ""}
+                    placeholder="e.g., Zoom, Google Meet, In-person at office"
+                  />
+                  {errors.location && (
+                    <p className="text-sm text-destructive">{errors.location}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">Specify if interview is in-person or virtual</p>
+                </div>
+
+                {/* Interview Time */}
+                <div className="space-y-2">
+                  <Label htmlFor="interview_time" className="text-sm font-medium">
+                    Interview Time
+                  </Label>
+                  <Input
+                    id="interview_time"
+                    type="time"
+                    value={formData.interview_time}
+                    onChange={(e) => updateFormData("interview_time", e.target.value)}
+                    className={errors.interview_time ? "border-destructive" : ""}
+                    placeholder="e.g., 10:00 AM"
+                  />
+                </div>
+
+                {/* Interview Type */}
+                <div className="space-y-2">
+                  <Label htmlFor="interview_type" className="text-sm font-medium">
+                    Interview Type
+                  </Label>
+                  <Select
+                    value={formData.interview_type}
+                    onValueChange={(value) => updateFormData("interview_type", value)}
+                  >
+                    <SelectTrigger className={errors.interview_type ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Select interview type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="online">Online</SelectItem>
+                      <SelectItem value="in_person">In Person</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Organization Info Display */}
