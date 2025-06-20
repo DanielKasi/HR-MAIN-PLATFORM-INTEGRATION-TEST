@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
 import {
   Users,
-  Plus,
   Search,
   Filter,
   MoreVertical,
@@ -60,48 +59,6 @@ export default function OnboardPage() {
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const selectedBranch = useSelector(selectSelectedBranch)
 
-  // Helper function to safely get string values from potentially nested objects
-  const getStringValue = (obj: any, ...keys: string[]): string => {
-    if (!obj) return ""
-
-    for (const key of keys) {
-      const value = obj[key]
-      if (typeof value === "string" && value.trim()) {
-        return value
-      }
-    }
-    return ""
-  }
-
-  // Helper function to get applicant name
-  const getApplicantName = (applicantData: any): string => {
-    if (!applicantData) return "N/A"
-    return getStringValue(applicantData, "name", "applicant_name") || "N/A"
-  }
-
-  // Helper function to get applicant email
-  const getApplicantEmail = (applicantData: any): string => {
-    if (!applicantData) return "N/A"
-    return getStringValue(applicantData, "email", "applicant_email") || "N/A"
-  }
-
-  // Helper function to get job description
-  const getJobDescription = (applicantData: any): string => {
-    if (!applicantData) return "N/A"
-    return getStringValue(applicantData, "description", "job_position_advert_job_details") || "N/A"
-  }
-
-  // Helper function to get phone
-  const getApplicantPhone = (applicantData: any): string => {
-    if (!applicantData) return "N/A"
-    return getStringValue(applicantData, "phone", "applicant_phone") || "N/A"
-  }
-
-  // Helper function to get address
-  const getApplicantAddress = (applicantData: any): string => {
-    if (!applicantData) return "N/A"
-    return getStringValue(applicantData, "address") || "N/A"
-  }
 
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
@@ -126,6 +83,7 @@ export default function OnboardPage() {
       const fetchedOnboardings = await getOnBoardings({ institutionId: selectedInstitution.id })
 
       if (fetchedOnboardings) {
+        console.log("\n\n Fetched onboardings : ", fetchedOnboardings)
         setOnboardings(fetchedOnboardings)
       } else {
         setError("Failed to fetch onboarding records. Please try again.")
@@ -145,9 +103,9 @@ export default function OnboardPage() {
   }
 
   const filteredOnboardings = onboardings.filter((onboarding) => {
-    const name = getApplicantName(onboarding.applicant_name).toLowerCase()
-    const email = getApplicantEmail(onboarding.applicant_name).toLowerCase()
-    const jobDesc = getJobDescription(onboarding.applicant_name).toLowerCase()
+    const name = onboarding.application_details.applicant_name
+    const email = onboarding.application_details.applicant_email
+    const jobDesc = onboarding.application_details.job_position_advert_job_details.description
     const status = (onboarding.status || "").toLowerCase()
     const searchLower = searchTerm.toLowerCase()
 
@@ -160,10 +118,11 @@ export default function OnboardPage() {
   })
 
   const handleCreateOnboarding = () => {
-    router.push("/onboarding/create")
+    router.push("/on-boarding/create")
   }
 
   const handleEditOnboarding = (onboardingId: number) => {
+    console.log("\n\nHandling edit on boarding id : ", onboardingId)
     router.push(`/on-boarding/${onboardingId}/edit`)
   }
 
@@ -184,7 +143,7 @@ export default function OnboardPage() {
   }
 
   const handleViewOnboarding = (onboardingId: number) => {
-    router.push(`/onboarding/${onboardingId}`)
+    router.push(`/on-boarding/${onboardingId}`)
   }
 
   const getStatusIcon = (status: string) => {
@@ -357,12 +316,12 @@ export default function OnboardPage() {
                 ? "No onboarding records match your search criteria."
                 : "Get started by creating your first onboarding record."}
             </p>
-            {!searchTerm && (
+            {/* {!searchTerm && (
               <Button onClick={handleCreateOnboarding} className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
                 Create First Onboarding
               </Button>
-            )}
+            )} */}
           </div>
         ) : (
           <Table>
@@ -380,11 +339,11 @@ export default function OnboardPage() {
             </TableHeader>
             <TableBody>
               {filteredOnboardings.map((onboarding) => {
-                const applicantName = getApplicantName(onboarding.applicant_name)
-                const applicantEmail = getApplicantEmail(onboarding.applicant_name)
-                const jobDescription = getJobDescription(onboarding.applicant_name)
-                const applicantPhone = getApplicantPhone(onboarding.applicant_name)
-                const applicantAddress = getApplicantAddress(onboarding.applicant_name)
+                const applicantName = onboarding.application_details.applicant_name
+                const applicantEmail = onboarding.application_details.applicant_email
+                const jobDescription = onboarding.application_details.job_position_advert_job_details.description
+                const applicantPhone = onboarding.application_details.applicant_phone
+                const applicantAddress = onboarding.application_details.address
 
                 return (
                   <TableRow
@@ -409,7 +368,7 @@ export default function OnboardPage() {
                         <div>
                           <div className="font-medium text-sm">{jobDescription}</div>
                           <div className="text-xs text-muted-foreground">
-                            {getStringValue(onboarding.applicant_name, "positions") || "N/A"}
+                            {onboarding.application_details.positions || "N/A"}
                           </div>
                         </div>
                       </div>
