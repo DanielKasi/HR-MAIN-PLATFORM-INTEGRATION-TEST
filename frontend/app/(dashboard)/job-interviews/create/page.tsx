@@ -30,7 +30,7 @@ import {
   createInterviewStage,
   fetchEmployees,
 } from "@/lib/utils"
-import type { IInterviewFormData, JobApplication, IInterviewStage, IInterviewStageFormData } from "@/app/types/types.utils"
+import type { JobApplication, IInterviewStage, IInterviewStageFormData, IInterview, IInterviewFormData, IEmployee } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
 export default function CreateInterviewPage() {
@@ -51,10 +51,10 @@ export default function CreateInterviewPage() {
   const [selectedStage, setSelectedStage] = useState<IInterviewStage | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [errors, setErrors] = useState<Partial<Record<keyof IInterviewFormData, string>>>({})
+  const [errors, setErrors] = useState<Partial<Record<keyof IInterview, string>>>({})
   const [isCreateStageDialogOpen, setIsCreateStageDialogOpen] = useState(false)
   const [isCreatingStage, setIsCreatingStage] = useState(false)
-  const [employees, setEmployees] = useState<any[]>([])
+  const [employees, setEmployees] = useState<IEmployee[]>([])
   const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
     name: "",
     level: 1,
@@ -115,7 +115,7 @@ export default function CreateInterviewPage() {
     }
   }
 
-  const updateFormData = (field: keyof IInterviewFormData, value: any) => {
+  const updateFormData = (field: keyof IInterview, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     // Clear error when user starts typing
     if (errors[field]) {
@@ -136,7 +136,7 @@ export default function CreateInterviewPage() {
   }
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<Record<keyof IInterviewFormData, string>> = {}
+    const newErrors: Partial<Record<keyof IInterview, string>> = {}
 
     // Application validation
     if (!formData.job_position_application || formData.job_position_application === 0) {
@@ -521,7 +521,7 @@ export default function CreateInterviewPage() {
                                     <SelectItem key={employee.id} value={employee.id.toString()}>
                                       <div className="flex items-center gap-2">
                                         <User className="h-4 w-4" />
-                                        {employee.first_name} {employee.last_name}
+                                        {employee.user.fullname}
                                       </div>
                                     </SelectItem>
                                   ))}
