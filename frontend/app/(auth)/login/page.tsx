@@ -49,7 +49,7 @@ export default function LoginPage() {
   }, [currentUser]);
 
   useEffect(() => {
-    if (authError) {
+    return () => {
       dispatch(clearAuthError());
     }
   }, [dispatch]);

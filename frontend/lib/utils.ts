@@ -75,7 +75,7 @@ export interface LoginResponse {
     is_password_verified: boolean;
     is_staff: boolean;
   };
-  Institutions_attached?: any[];
+  institution_attached?: any[];
 }
 
 /**
