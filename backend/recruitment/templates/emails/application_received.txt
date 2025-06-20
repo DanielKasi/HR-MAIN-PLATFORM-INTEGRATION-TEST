@@ -1,0 +1,28 @@
+APPLICATION RECEIVED SUCCESSFULLY
+
+Dear {{ applicant_name }},
+
+Thank you for your application! We have successfully received your application for the following position:
+
+POSITION DETAILS:
+Job Title: {{ job_title }}
+Company: {{ company_name }}
+Application Date: {{ application_date|date:"F d, Y" }}
+
+Your application is now being reviewed by our recruitment team. We will contact you if your qualifications match our requirements.
+
+WHAT HAPPENS NEXT:
+- Our team will review your application and resume
+- If you are shortlisted, we will contact you within the next few days
+- Please keep an eye on your email for further updates
+
+If you have any questions about your application or the recruitment process, please don't hesitate to contact us.
+
+Thank you for your interest in joining our team!
+
+Best regards,
+{{ company_name }}
+Human Resources Team
+
+---
+Note: This is an automated message. Please do not reply directly to this email. If you need assistance, please contact our HR department.
