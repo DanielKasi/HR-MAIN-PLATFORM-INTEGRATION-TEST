@@ -328,3 +328,8 @@ export const fetchMarketPlaceOrders = async () => {
 
 export const getInstitutionById = async (InstitutionId: number) =>
   await apiRequest.get(`institution/${InstitutionId}/`);
+
+
+export const downloadFile = (filePath: string, fileName: string) => {
+    window.open(`${process.env.NEXT_BASE_URL|| 'http://127.0.0.1:8000'}${filePath}`, "_blank")
+  }

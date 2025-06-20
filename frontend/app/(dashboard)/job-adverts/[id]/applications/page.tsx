@@ -34,6 +34,7 @@ import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/se
 import { getJobPositionAdvertById, updateJobApplicationStatus } from "@/lib/utils"
 import type { JobApplication, JobPositionAdvert } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import { downloadFile } from "@/lib/helpers"
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800 border-blue-200",
@@ -206,16 +207,7 @@ export default function JobAdvertApplicationsPage() {
     })
   }
 
-  const downloadFile = (filePath: string, fileName: string) => {
-    // Create a temporary anchor element and trigger download
-    const link = document.createElement("a")
-    link.href = filePath
-    link.download = fileName
-    link.target = "_blank"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+  
 
   if (!selectedInstitution || !selectedBranch) {
     return <div>Loading...</div>

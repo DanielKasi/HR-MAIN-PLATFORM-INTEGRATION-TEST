@@ -569,7 +569,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {/* Header */}
         <div className="bg-white p-2 flex justify-between items-center border-b">
           <div
-            className="w-8 h-8 bg-sidebar-selected rounded-lg flex items-center justify-center cursor-pointer hover:bg-sidebar-selected/80 active:bg-sidebar-selected/80 transition-all duration-200"
+            className="!w-8 !min-w-8 !min-h-8 !h-8 !inline-flex bg-sidebar-selected rounded-lg items-center justify-center cursor-pointer hover:bg-sidebar-selected/80 active:bg-sidebar-selected/80 transition-all duration-200"
             onClick={() => {
               // When collapsing, make sure to close any open submenu
               if (sidebarExpanded && openSubmenu !== null) {
