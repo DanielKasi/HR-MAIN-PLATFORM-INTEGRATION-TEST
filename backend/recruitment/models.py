@@ -97,14 +97,53 @@ class JobAdvertApplication(models.Model):
         return f"{self.applicant_name} - {self.job_position_advert.job_position.name} ({self.status})"
 
     def save(self, *args, **kwargs):
+        is_new_application = self.pk is None
+        
         if self.pk:
             old_instance = JobAdvertApplication.objects.get(pk=self.pk)
             old_status = old_instance.status
             
             if old_status != 'shortlisted' and self.status == 'shortlisted':
+                super().save(*args, **kwargs)
                 self.send_shortlist_email()
+                return
         
         super().save(*args, **kwargs)
+        
+        # Send confirmation email for new applications
+        if is_new_application:
+            self.send_application_received_email()
+
+    def send_application_received_email(self):
+        """Send confirmation email when application is received"""
+        try:
+            subject = f"Application Received - {self.job_position_advert.job_position.name}"
+            
+            # Template context
+            context = {
+                'applicant_name': self.applicant_name,
+                'job_title': self.job_position_advert.job_position.name,
+                'company_name': self.job_position_advert.job_position.department.institution.institution_name,
+                'application_date': self.application_date,
+                'application': self,
+            }
+            
+            html_message = render_to_string('emails/application_received.html', context)
+            plain_message = render_to_string('emails/application_received.txt', context)
+
+            send_mail(
+                subject=subject,
+                message=plain_message,  # Plain text version
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[self.applicant_email],
+                html_message=html_message,  # HTML version
+                fail_silently=False,
+            )
+            
+            print(f"Application received email sent to {self.applicant_email}")
+            
+        except Exception as e:
+            print(f"Error sending application received email to {self.applicant_email}: {str(e)}")
 
     def send_shortlist_email(self):
         """Send email notification when applicant is shortlisted"""
@@ -119,9 +158,7 @@ class JobAdvertApplication(models.Model):
                 'application': self,  
             }
             
-
             html_message = render_to_string('emails/shortlist_notification.html', context)
-            
             plain_message = render_to_string('emails/shortlist_notification.txt', context)
 
             send_mail(
@@ -137,7 +174,6 @@ class JobAdvertApplication(models.Model):
             
         except Exception as e:
             print(f"Error sending shortlist email to {self.applicant_email}: {str(e)}")
-
 class InterviewStage(models.Model):
     job_position_advert = models.ForeignKey(
         JobPositionAdvert, on_delete=models.PROTECT, related_name="interview_stages"
