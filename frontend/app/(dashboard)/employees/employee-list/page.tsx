@@ -34,7 +34,7 @@ import {
 import { IUserInstitution } from "@/app/types"
 import Link from "next/link"
 
-// Updated interface to match your API response
+// Updated interface to match your actual API response
 interface Employee {
   id: number
   user: {
@@ -48,7 +48,7 @@ interface Employee {
     roles: string
     branches: string
     permissions: string
-  }
+  } | null
   first_name: string
   last_name: string
   email: string
@@ -56,12 +56,17 @@ interface Employee {
   position: {
     id: number
     name: string
+    department_id?: number
   }
-  department : number
-  department_details: {
+  department: {
     id: number
     name: string
+    institution_id: number
   }
+  roles: Array<{
+    id: number
+    name: string
+  }>
   date_of_birth: string
   date_of_joining: string
   address: string
@@ -90,17 +95,22 @@ interface Position {
   name: string
 }
 
+interface Role {
+  id: number
+  name: string
+}
+
 // Helper function to get full name
 const getFullName = (employee: Employee) => {
   return `${employee.first_name} ${employee.last_name}`.trim()
 }
 
-// Helper function to get department name from API data
+// Updated helper function to get department name from API data
 const getDepartmentName = (employee: Employee) => {
-  if (employee.department_details && employee.department_details.name) {
-    return employee.department_details.name;
+  if (employee.department && employee.department.name) {
+    return employee.department.name;
   }
-  return `Department ${employee.department}`
+  return `Department ${employee.department?.id || 'Unknown'}`
 }
 
 // Helper function to get position name from API data
@@ -111,18 +121,28 @@ const getPositionName = (employee: Employee) => {
   return `Position ${employee.position?.id || 'Unknown'}`
 }
 
+// Helper function to get role names
+const getRoleNames = (employee: Employee) => {
+  if (employee.roles && employee.roles.length > 0) {
+    return employee.roles.map(role => role.name).join(', ');
+  }
+  return 'No roles assigned'
+}
+
 interface EmployeeTableProps {
   employees: Employee[]
   onDelete: (id: number) => void
   onUpdate: (employee: Employee) => void
   departments: Department[]
   positions: Position[]
+  roles: Role[]
 }
 
 function EmployeeViewModal({ employee }: { employee: Employee }) {
   const fullName = getFullName(employee)
   const departmentName = getDepartmentName(employee)
   const positionName = getPositionName(employee)
+  const roleNames = getRoleNames(employee)
 
   return (
     <DialogContent className="max-w-2xl">
@@ -170,6 +190,13 @@ function EmployeeViewModal({ employee }: { employee: Employee }) {
             </p>
           </div>
           <div>
+            <Label className="text-sm font-medium text-muted-foreground">Roles</Label>
+            <p className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              {roleNames}
+            </p>
+          </div>
+          <div>
             <Label className="text-sm font-medium text-muted-foreground">Status</Label>
             <Badge
               className={employee.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
@@ -186,7 +213,7 @@ function EmployeeViewModal({ employee }: { employee: Employee }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Date of Birth</Label>
-              <p>{new Date(employee.date_of_birth).toLocaleDateString()}</p>
+              <p>{employee.date_of_birth ? new Date(employee.date_of_birth).toLocaleDateString() : "Not provided"}</p>
             </div>
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Date of Joining</Label>
@@ -211,17 +238,19 @@ function EmployeeUpdateModal({
   employee,
   onUpdate,
   departments,
-  positions
+  positions,
+  roles
 }: {
   employee: Employee
   onUpdate: (employee: Employee) => void
   departments: Department[]
   positions: Position[]
+  roles: Role[]
 }) {
   const [formData, setFormData] = useState<Employee>({
     ...employee,
     position: employee.position || { id: 1, name: "" },
-    department: employee.department || 1,
+    department: employee.department || { id: 1, name: "", institution_id: 1 },
     phone_number: employee.phone_number || "",
     address: employee.address || "",
     qualifications: employee.qualifications || "",
@@ -230,22 +259,39 @@ function EmployeeUpdateModal({
     emergency_contact_phone: employee.emergency_contact_phone || "",
     emergency_contact_relationship: employee.emergency_contact_relationship || "",
     marital_status: employee.marital_status || "",
-    employee_profile_picture: employee.employee_profile_picture || ""
+    employee_profile_picture: employee.employee_profile_picture || "",
+    roles: employee.roles || []
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    const selectedDepartment = departments.find(d => d.id === formData.department)
+    const selectedDepartment = departments.find(d => d.id === formData.department.id)
     const selectedPosition = positions.find(p => p.id === formData.position.id)
 
     const updatedEmployee = {
       ...formData,
-      department_details: selectedDepartment || formData.department_details,
+      department: selectedDepartment ? {
+        id: selectedDepartment.id,
+        name: selectedDepartment.name,
+        institution_id: formData.department.institution_id
+      } : formData.department,
       position: selectedPosition || formData.position
     }
 
     onUpdate(updatedEmployee)
+  }
+
+  // Handle role selection
+  const handleRoleChange = (roleId: string) => {
+    const selectedRole = roles.find(r => r.id.toString() === roleId)
+    if (selectedRole) {
+      // For now, replacing with single role. You can modify this for multiple roles
+      setFormData({
+        ...formData,
+        roles: [selectedRole]
+      })
+    }
   }
 
   return (
@@ -294,8 +340,20 @@ function EmployeeUpdateModal({
           <div>
             <Label htmlFor="department">Department</Label>
             <Select
-              value={formData.department.toString()}
-              onValueChange={(value) => setFormData({ ...formData, department: parseInt(value) })}
+              value={formData.department.id.toString()}
+              onValueChange={(value) => {
+                const selectedDept = departments.find(d => d.id.toString() === value)
+                if (selectedDept) {
+                  setFormData({
+                    ...formData,
+                    department: {
+                      id: selectedDept.id,
+                      name: selectedDept.name,
+                      institution_id: formData.department.institution_id
+                    }
+                  })
+                }
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -333,6 +391,32 @@ function EmployeeUpdateModal({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Role Selection */}
+          <div>
+            <Label htmlFor="role">Role</Label>
+            <Select
+              value={formData.roles.length > 0 ? formData.roles[0].id.toString() : ""}
+              onValueChange={handleRoleChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                {roles.map((role) => (
+                  <SelectItem key={role.id} value={role.id.toString()}>
+                    {role.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formData.roles.length > 0 && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Current: {formData.roles.map(r => r.name).join(', ')}
+              </p>
+            )}
+          </div>
+
           <div>
             <Label htmlFor="is_active">Status</Label>
             <Select
@@ -356,6 +440,35 @@ function EmployeeUpdateModal({
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
             />
           </div>
+
+          {/* Additional fields */}
+          <div>
+            <Label htmlFor="experience">Experience (Years)</Label>
+            <Input
+              id="experience"
+              type="number"
+              min="0"
+              value={formData.experience}
+              onChange={(e) => setFormData({ ...formData, experience: parseInt(e.target.value) || 0 })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="qualifications">Qualifications</Label>
+            <Input
+              id="qualifications"
+              value={formData.qualifications}
+              onChange={(e) => setFormData({ ...formData, qualifications: e.target.value })}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Label htmlFor="skills">Skills</Label>
+            <Input
+              id="skills"
+              value={formData.skills}
+              onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+              placeholder="e.g., JavaScript, Python, Project Management"
+            />
+          </div>
         </div>
         <DialogFooter>
           <Button type="submit">Update Employee</Button>
@@ -365,7 +478,7 @@ function EmployeeUpdateModal({
   )
 }
 
-function EmployeeTable({ employees, onDelete, onUpdate, departments, positions }: EmployeeTableProps) {
+function EmployeeTable({ employees, onDelete, onUpdate, departments, positions, roles }: EmployeeTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [departmentFilter, setDepartmentFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -423,6 +536,8 @@ function EmployeeTable({ employees, onDelete, onUpdate, departments, positions }
       Operations: "bg-orange-100 text-orange-800",
       Design: "bg-indigo-100 text-indigo-800",
       Product: "bg-red-100 text-red-800",
+      "IT department": "bg-blue-100 text-blue-800",
+      "Accounting": "bg-yellow-100 text-yellow-800",
     }
     return colors[department] || "bg-gray-100 text-gray-800"
   }
@@ -500,7 +615,12 @@ function EmployeeTable({ employees, onDelete, onUpdate, departments, positions }
               ) : (
                 paginatedEmployees.map((employee) => (
                   <div key={employee.id} className="grid grid-cols-6 gap-4 p-4 border-b hover:bg-gray-50">
-                    <div className="font-medium">{getFullName(employee)}</div>
+                    <Link
+                      href={`/employees/profile/${employee.id}`}
+                      className="font-medium cursor-pointer hover:text-blue-600 hover:underline transition-colors"
+                    >
+                      {getFullName(employee)}
+                    </Link>
                     <div>
                       <Badge variant="outline" className={getDepartmentColor(getDepartmentName(employee))}>
                         {getDepartmentName(employee)}
@@ -533,6 +653,7 @@ function EmployeeTable({ employees, onDelete, onUpdate, departments, positions }
                             onUpdate={onUpdate}
                             departments={departments}
                             positions={positions}
+                            roles={roles}
                           />
                         </Dialog>
 
@@ -616,6 +737,7 @@ export default function Component() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [positions, setPositions] = useState<Position[]>([])
+  const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -647,23 +769,15 @@ export default function Component() {
 
       try {
         setLoading(true);
-        console.log('Loading employees for institution ID:', InstitutionId);
-
         const institutionIdNumber = parseInt(InstitutionId);
-        console.log('Parsed institution ID to number:', institutionIdNumber);
-
         const data = await getAllEmployees({ institutionId: institutionIdNumber });
-
         if (data) {
-          console.log('Successfully loaded employees:', data);
           setEmployees(data);
           setError(null); // Clear any previous errors
         } else {
-          console.log('No employee data returned from API');
           setError("No employee data available");
         }
       } catch (err) {
-        console.error("Detailed error loading employees:", err);
         setError("Failed to load employees");
       } finally {
         setLoading(false);
@@ -673,30 +787,56 @@ export default function Component() {
     loadEmployees();
   }, [InstitutionId, InstitutionsAttached]);
 
-  // TODO: Add these API endpoints
-  // Load departments and positions when component mounts
+  // Extract departments, positions, and roles from employee data
   useEffect(() => {
-    const loadDepartmentsAndPositions = async () => {
-      if (!InstitutionId) return;
+    if (employees.length > 0) {
+      // Extract unique departments, positions, and roles from employee data
+      const uniqueDepartments: Department[] = [];
+      const uniquePositions: Position[] = [];
+      const uniqueRoles: Role[] = [];
 
-      try {
-        // TODO: Replace with your actual API endpoints
-        // const departmentsData = await getDepartments({ institutionId: parseInt(InstitutionId) });
-        // const positionsData = await getPositions({ institutionId: parseInt(InstitutionId) });
+      employees.forEach(employee => {
+        // Extract department
+        if (employee.department && employee.department.id && employee.department.name) {
+          const existingDept = uniqueDepartments.find(d => d.id === employee.department.id);
+          if (!existingDept) {
+            uniqueDepartments.push({
+              id: employee.department.id,
+              name: employee.department.name
+            });
+          }
+        }
 
-        // setDepartments(departmentsData);
-        // setPositions(positionsData);
+        // Extract position
+        if (employee.position && employee.position.id && employee.position.name) {
+          const existingPos = uniquePositions.find(p => p.id === employee.position.id);
+          if (!existingPos) {
+            uniquePositions.push({
+              id: employee.position.id,
+              name: employee.position.name
+            });
+          }
+        }
 
-        // Temporary empty arrays until you add the endpoints
-        setDepartments([]);
-        setPositions([]);
-      } catch (err) {
-        console.error("Error loading departments and positions:", err);
-      }
-    };
+        // Extract roles
+        if (employee.roles && employee.roles.length > 0) {
+          employee.roles.forEach(role => {
+            const existingRole = uniqueRoles.find(r => r.id === role.id);
+            if (!existingRole) {
+              uniqueRoles.push({
+                id: role.id,
+                name: role.name
+              });
+            }
+          });
+        }
+      });
 
-    loadDepartmentsAndPositions();
-  }, [InstitutionId]);
+      setDepartments(uniqueDepartments);
+      setPositions(uniquePositions);
+      setRoles(uniqueRoles);
+    }
+  }, [employees]);
 
   const handleDelete = async (id: number) => {
     try {
@@ -756,6 +896,7 @@ export default function Component() {
           onUpdate={handleUpdate}
           departments={departments}
           positions={positions}
+          roles={roles}
         />
       </div>
     </div>

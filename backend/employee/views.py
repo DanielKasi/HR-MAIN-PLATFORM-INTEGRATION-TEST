@@ -40,7 +40,7 @@ class EmployeeListAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-                
+
 
 
 
@@ -67,14 +67,13 @@ class EmployeeDetailAPIView(APIView):
             )
 
 
-
 class EmployeeCreateAPIView(APIView):
     permission_classes = [AllowAny]
 
     @extend_schema(
         request=EmployeeSerializer,
         responses={201: EmployeeSerializer, 400: "Bad Request"},
-        description="Create a new employee.",
+        description="Create a new employee with user account and roles.",
         summary="Create Employee",
         tags=["Employee Management"],
     )
@@ -97,7 +96,6 @@ class EmployeeCreateAPIView(APIView):
             employee.user.is_password_verified = False
             employee.user.save()
 
-            # Create token and send password link
             token = create_and_institution_token(
                 user=employee.user, purpose="registration", expiry_minutes=15
             )

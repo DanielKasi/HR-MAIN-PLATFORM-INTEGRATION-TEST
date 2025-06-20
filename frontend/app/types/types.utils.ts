@@ -272,35 +272,92 @@ export interface User {
 
 export interface EmployeeFormData {
   user: User;
-  first_name: string; // Added - endpoint expects this
-  last_name: string; // Added - endpoint expects thisAdd commentMore actions
-  email: string; // Duplicate of user.email - endpoint requires both
-  phone_number: string; // Changed from phoneNumber
-  position: number; // Changed from string to number
-  department: number; // Changed from string to number
-  date_of_birth: string; // Changed from dateOfBirth
-  date_of_joining: string; // Changed from dateOfJoining
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+  position: number;
+  department: number;
+  date_of_birth: string;
+  date_of_joining: string;
   address: string;
-  is_active: boolean; // Changed from isActive
-  experience: number; // Changed from string to number
+  is_active: boolean;
+  experience: number;
   qualifications: string;
   skills: string;
-  emergency_contact_name: string; // Changed from emergencyContactName
-  emergency_contact_phone: string; // Changed from emergencyContactPhone
-  emergency_contact_relationship: string; // Changed from emergencyContactRelationship
-  marital_status: string; // Changed from maritalStatus
-  children_count: number; // Changed from childrenCount and string to number
-  employee_profile_picture: File | null; // Changed from profilePicture
+  emergency_contact_name: string; 
+  emergency_contact_phone: string;
+  emergency_contact_relationship: string;
+  marital_status: string;
+  children_count: number;
+  employee_profile_picture: File | null;
+}
+
+export interface IRoleResponse {
+  id: number
+  name: string
+  description: string
+  institution: number
+  permissions_details: string
+}
+
+// Interface for Department response
+export interface IDepartmentResponse {
+  id: number
+  name: string
+  description: string
+  institution: number
+  institution_details: {
+    id: number
+    institution_email: string
+    institution_name: string
+    first_phone_number: string
+    second_phone_number: string
+    institution_logo: string
+    institution_owner_id: number
+    theme_color: string
+    location: string
+    latitude: number
+    longitude: number
+    approval_status: string
+    approval_status_display: string
+    approval_date: string
+    documents: any[]
+  }
+}
+
+// Interface for Job Position response
+export interface IJobPositionResponse {
+  id: number
+  name: string
+  description: string
+  department: number
+  department_details: {
+    id: number
+    name: string
+    description: string
+    institution: number
+    institution_details: any
+  }
+  reports_to: number
+  reports_to_details: string
+  contract_template: string
+  offer_letter_template: string
+  salary: string
+  job_adverts: string
 }
 
 
-
-export interface IInterviewFormData {
-  job_position_application: number;
-  interview_stage: number;
-  interview_date: string;           // e.g. "2025-07-01T10:00:00Z"
-  status?: string;                  // e.g. "scheduled", "completed", etc.
-  feedback?: string;
-  rating?: number;
+export interface IRole {
+  id: number;
+  name: string;
+  description: string;
+  institution: number; // ForeignKey as ID
+  permissions_details: string[]; // List of permission codes
 }
-
+export interface IRoleFormData {
+  name: string;
+  description: string;
+  institution: number; // ForeignKey as ID
+  permissions_details: string[]; // List of permission codes
+}
