@@ -29,9 +29,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Checkbox } from "@/components/ui/checkbox"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { getInterviews } from "@/lib/utils"
+import { getInterviews, bulkCreateOnBoarding } from "@/lib/utils"
 import type { IInterview } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
@@ -41,6 +42,8 @@ export default function InterviewsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [error, setError] = useState("")
+  const [selectedInterviews, setSelectedInterviews] = useState<number[]>([])
+  const [isOnboarding, setIsOnboarding] = useState(false)
 
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
@@ -168,12 +171,57 @@ export default function InterviewsPage() {
       .slice(0, 2)
   }
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedInterviews(filteredInterviews.map((interview) => interview.id))
+    } else {
+      setSelectedInterviews([])
+    }
+  }
+
+  const handleSelectInterview = (interviewId: number, checked: boolean) => {
+    if (checked) {
+      setSelectedInterviews((prev) => [...prev, interviewId])
+    } else {
+      setSelectedInterviews((prev) => prev.filter((id) => id !== interviewId))
+    }
+  }
+
+  const handleBulkOnboard = async () => {
+    const selectedInterviewsData = filteredInterviews.filter((interview) => selectedInterviews.includes(interview.id))
+
+    const applicationIds = selectedInterviewsData
+      .map((interview) => interview.job_position_application_details?.id)
+      .filter((id) => id !== undefined) as number[]
+
+    if (applicationIds.length === 0) {
+      toast.error("No valid applications found for selected interviews")
+      return
+    }
+
+    setIsOnboarding(true)
+    try {
+      const result = await bulkCreateOnBoarding({ applicationIds })
+      if (result) {
+        toast.success(`Successfully onboarded ${applicationIds.length} candidates`)
+        setSelectedInterviews([])
+        router.push("/on-boarding")
+      } else {
+        toast.error("Failed to onboard candidates")
+      }
+    } catch (error) {
+      toast.error("Failed to onboard candidates")
+    } finally {
+      setIsOnboarding(false)
+    }
+  }
+
   if (!selectedInstitution || !selectedBranch) {
     return <div>Loading...</div>
   }
 
   return (
-    <div className="w-full h-full p-6 space-y-6">
+    <div className="w-full h-full p-2 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -183,6 +231,18 @@ export default function InterviewsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {selectedInterviews.length > 0 && (
+            <Button
+              onClick={handleBulkOnboard}
+              disabled={isOnboarding}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+            >
+              <Users className="h-4 w-4" />
+              {isOnboarding
+                ? "Onboarding..."
+                : `Onboard ${selectedInterviews.length} Candidate${selectedInterviews.length > 1 ? "s" : ""}`}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -297,6 +357,13 @@ export default function InterviewsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]">
+                  <Checkbox
+                    checked={selectedInterviews.length === filteredInterviews.length && filteredInterviews.length > 0}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Select all interviews"
+                  />
+                </TableHead>
                 <TableHead>Applicant</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Stage</TableHead>
@@ -311,9 +378,16 @@ export default function InterviewsPage() {
               {filteredInterviews.map((interview) => (
                 <TableRow
                   key={interview.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className={`cursor-pointer hover:bg-muted/50 ${selectedInterviews.includes(interview.id) ? "bg-muted/30" : ""}`}
                   onClick={() => handleViewInterview(interview.id)}
                 >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={selectedInterviews.includes(interview.id)}
+                      onCheckedChange={(checked) => handleSelectInterview(interview.id, checked as boolean)}
+                      aria-label={`Select interview for ${interview.job_position_application_details?.applicant_name}`}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">

@@ -1,6 +1,6 @@
 import {type ClassValue, clsx} from "clsx";
 import {twMerge} from "tailwind-merge";
-import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, IInterview, EmployeeFormData, User, IInterviewFormData, IInterviewStage, IInterviewStageFormData } from "@/app/types/types.utils";
+import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, IInterview, EmployeeFormData, User, IInterviewFormData, IInterviewStage, IInterviewStageFormData, IBulkOnBoardingResponse, IBulkOnBoardingRequest, IOnBoarding, IOnBoardingFormData } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/app/types";
@@ -687,5 +687,106 @@ export const getEmployeeDetailId = async ({
 };
 
 
+export const getOnBoardings = async ({ institutionId }: { institutionId: number }) => {
+  try {
+    const response = await apiRequest.get(`on-boarding/${institutionId}/`)
+    return response.data as IOnBoarding[]
+  } catch (error) {
+    console.error("Error fetching onboarding records:", error)
+    return null
+  }
+}
 
+// Get onboarding record by ID
+export const getOnBoardingById = async ({
+  onboardingId,
+}: {
+  onboardingId: number;
+}): Promise<IOnBoarding | null> => {
+  try {
+    const response = await apiRequest.get(`on-boarding/${onboardingId}/`);
+    return response.data as IOnBoarding;
+  } catch (error) {
+    console.error("Failed to fetch onboarding record", error);
+    return null;
+  }
+};
+
+// Create a new onboarding record
+export const createOnBoarding = async ({
+  institutionId,
+  onboardingData,
+}: {
+  onboardingData: IOnBoardingFormData;
+  institutionId: number;
+}): Promise<IOnBoarding | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(onboardingData).forEach(([key, value]) => {
+      // Only append defined values
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `on-boarding/${institutionId}/`,
+      formData
+    );
+    return response.data as IOnBoarding;
+  } catch (error) {
+    console.error("Failed to create onboarding record:", error);
+    return null;
+  }
+};
+
+// Update an existing onboarding record by its ID
+export const updateOnBoarding = async ({
+  onboardingId,
+  onboardingData,
+}: {
+  onboardingId: number;
+  onboardingData: Partial<IOnBoardingFormData>;
+}): Promise<IOnBoarding | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(onboardingData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.patch(
+      `on-boarding/${onboardingId}/`,
+      formData
+    );
+    return response.data as IOnBoarding;
+  } catch (error) {
+    console.error("Failed to update onboarding record:", error);
+    return null;
+  }
+};
+
+// Bulk create onboarding records
+export const bulkCreateOnBoarding = async ({
+  applicationIds,
+}: {
+  applicationIds: number[];
+}): Promise<IBulkOnBoardingResponse | null> => {
+  try {
+    const requestData: IBulkOnBoardingRequest = {
+      application_ids: applicationIds
+    };
+
+    const response = await apiRequest.post(
+      `on-boarding/bulk-create/`,
+      requestData,
+      
+    );
+    return response.data as IBulkOnBoardingResponse;
+  } catch (error) {
+    console.error("Failed to bulk create onboarding records:", error);
+    return null;
+  }
+};
 

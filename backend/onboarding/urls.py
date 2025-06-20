@@ -3,7 +3,7 @@ from .views import BulkOnBoardingCreateAPI, OnBoardingListAPI, OnBoardingDetailA
 
 urlpatterns = [
     path(
-        "onboarding/<int:institution_id>/",
+        "<int:institution_id>/",
         OnBoardingListAPI.as_view(),
         name="onboarding-list-create",
     ),

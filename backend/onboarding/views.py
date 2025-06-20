@@ -2,7 +2,7 @@
 
 from recruitment.models import JobAdvertApplication
 from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema
@@ -76,7 +76,7 @@ class OnBoardingDetailAPI(APIView):
 
 
 class BulkOnBoardingCreateAPI(APIView):
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     @extend_schema(
         request={
