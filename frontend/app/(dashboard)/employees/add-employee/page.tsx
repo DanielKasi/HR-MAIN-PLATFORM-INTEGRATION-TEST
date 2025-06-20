@@ -1,42 +1,57 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Separator } from "@/components/ui/separator"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Upload, User, X, Loader2 } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useSelector } from "react-redux"
-import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
-import { createEmployee } from "@/lib/utils" // Import your helper function
-import { EmployeeFormData } from "@/app/types/types.utils"
-import { IUserInstitution, IJobPosition, IDepartment } from "@/app/types/types.utils"
+import type React from "react";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/components/ui/use-toast"; // Import useToast hook
+import { Upload, User, X, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
+import { createEmployee, getRoles, getPositions, getDepartments } from "@/lib/utils";
+import { EmployeeFormData, IRole, IDepartment, IJobPosition } from "@/app/types/types.utils";
+import { IUserInstitution } from "@/app/types";
 
+// Marital status options
+const maritalStatusOptions = [
+  { value: "single", label: "Single" },
+  { value: "married", label: "Married" },
+  { value: "divorced", label: "Divorced" },
+  { value: "widowed", label: "Widowed" },
+];
 
 export default function AddEmployeeForm() {
-  const router = useRouter()
-  const selectedInstitution = useSelector(selectSelectedInstitution)
-  const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
+  const router = useRouter();
+  const { toast } = useToast(); // Initialize toast hook
+  const selectedInstitution = useSelector(selectSelectedInstitution);
+  const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
 
-  const [institutionId, setInstitutionId] = useState<number | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
-  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
+  const [institutionId, setInstitutionId] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // State for dropdown data
+  const [roles, setRoles] = useState<IRole[]>([]);
+  const [positions, setPositions] = useState<IJobPosition[]>([]);
+  const [departments, setDepartments] = useState<IDepartment[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  // Form data structure
   const [formData, setFormData] = useState<EmployeeFormData>({
     user: {
       email: "",
       fullname: "",
       password: "",
       roles_ids: [],
-      permissions: ""
+      permissions: "string",
     },
     first_name: "",
     last_name: "",
@@ -57,216 +72,259 @@ export default function AddEmployeeForm() {
     marital_status: "single",
     children_count: 0,
     employee_profile_picture: null,
-  })
+  });
 
-  const [previewUrl, setPreviewUrl] = useState<string>("")
-  const [uploadError, setUploadError] = useState<string | null>(null)
-  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
   // Set institution ID
   useEffect(() => {
     if (selectedInstitution) {
-      setInstitutionId(selectedInstitution.id)
+      setInstitutionId(selectedInstitution.id);
     } else if (institutionsAttached && institutionsAttached.length > 0) {
-      setInstitutionId(institutionsAttached[0].id)
+      setInstitutionId(institutionsAttached[0].id);
     }
-  }, [institutionsAttached, selectedInstitution])
+  }, [institutionsAttached, selectedInstitution]);
+
+  // Load dropdown data
+  useEffect(() => {
+    const loadDropdownData = async () => {
+      if (!institutionId) {
+        console.log("No institution ID available");
+        return;
+      }
+
+      console.log("Loading data for institution:", institutionId);
+      setLoadingData(true);
+
+      try {
+        const [rolesData, positionsData, departmentsData] = await Promise.all([
+          getRoles({ institutionId }),
+          getPositions({ institutionId }),
+          getDepartments({ institutionId }),
+        ]);
+
+        setRoles(Array.isArray(rolesData) ? rolesData : []);
+        setPositions(Array.isArray(positionsData) ? positionsData : []);
+        setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
+      } catch (error) {
+        setSubmitError("Failed to load form data. Please refresh the page.");
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    loadDropdownData();
+  }, [institutionId]);
 
   const handleInputChange = (field: string, value: string | boolean | File | null | number | number[]) => {
     if (field.startsWith("user.")) {
-      const userField = field.replace("user.", "")
+      const userField = field.replace("user.", "");
       setFormData((prev) => ({
         ...prev,
         user: {
           ...prev.user,
-          [userField]: value
-        }
-      }))
+          [userField]: value,
+        },
+      }));
     } else {
-      setFormData((prev) => ({ ...prev, [field]: value }))
+      setFormData((prev) => ({ ...prev, [field]: value }));
     }
-  }
+  };
 
   // Sync email fields
   useEffect(() => {
     if (formData.email !== formData.user.email) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         user: {
           ...prev.user,
-          email: prev.email
-        }
-      }))
+          email: prev.email,
+        },
+      }));
     }
-  }, [formData.email])
+  }, [formData.email]);
 
-  // Sync fullname from first_name and last_name
+  // Sync fullname
   useEffect(() => {
-    const fullname = `${formData.first_name} ${formData.last_name}`.trim()
+    const fullname = `${formData.first_name} ${formData.last_name}`.trim();
     if (fullname !== formData.user.fullname) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         user: {
           ...prev.user,
-          fullname: fullname
-        }
-      }))
+          fullname: fullname,
+        },
+      }));
     }
-  }, [formData.first_name, formData.last_name])
+  }, [formData.first_name, formData.last_name]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (!file) {
-      setUploadError("No file selected")
-      setUploadSuccess(null)
-      return
+      setUploadError("No file selected");
+      setUploadSuccess(null);
+      return;
     }
 
-    // Validate file type (JPEG, PNG, GIF, WebP)
-    const validImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+    const validImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!validImageTypes.includes(file.type)) {
-      setUploadError("Please upload a valid image (JPEG, PNG, GIF, or WebP)")
-      setUploadSuccess(null)
-      return
+      setUploadError("Please upload a valid image (JPEG, PNG, GIF, or WebP)");
+      setUploadSuccess(null);
+      return;
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+    const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      setUploadError("Image size exceeds 5MB limit")
-      setUploadSuccess(null)
-      return
+      setUploadError("Image size exceeds 5MB limit");
+      setUploadSuccess(null);
+      return;
     }
 
-    // Clean up previous preview URL
     if (previewUrl) {
-      URL.revokeObjectURL(previewUrl)
+      URL.revokeObjectURL(previewUrl);
     }
 
-    // Set new file and preview
     try {
-      handleInputChange("employee_profile_picture", file)
-      const url = URL.createObjectURL(file)
-      setPreviewUrl(url)
-      setUploadError(null)
-      setUploadSuccess("Image uploaded successfully")
+      handleInputChange("employee_profile_picture", file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setUploadError(null);
+      setUploadSuccess("Image uploaded successfully");
     } catch (error) {
-      setUploadError("Failed to process image")
-      setUploadSuccess(null)
-      console.error("Image processing error:", error)
+      setUploadError("Failed to process image");
+      setUploadSuccess(null);
+      console.error("Image processing error:", error);
     }
-  }
+  };
 
   const handleRemoveImage = () => {
     if (previewUrl) {
-      URL.revokeObjectURL(previewUrl)
+      URL.revokeObjectURL(previewUrl);
     }
-    setPreviewUrl("")
-    handleInputChange("employee_profile_picture", null)
-    setUploadError(null)
-    setUploadSuccess(null)
+    setPreviewUrl("");
+    handleInputChange("employee_profile_picture", null);
+    setUploadError(null);
+    setUploadSuccess(null);
 
-    // Clear the file input
-    const fileInput = document.getElementById("profilePicture") as HTMLInputElement
+    const fileInput = document.getElementById("profilePicture") as HTMLInputElement;
     if (fileInput) {
-      fileInput.value = ""
+      fileInput.value = "";
     }
-  }
+  };
 
-  // Clean up preview URL on component unmount
   useEffect(() => {
     return () => {
       if (previewUrl) {
-        URL.revokeObjectURL(previewUrl)
+        URL.revokeObjectURL(previewUrl);
       }
-    }
-  }, [previewUrl])
+    };
+  }, [previewUrl]);
 
   const validateForm = (): boolean => {
-    const requiredFields = [
-      'first_name',
-      'last_name',
-      'email',
-      'position',
-      'department',
-      'date_of_joining'
-    ]
+    const requiredFields = ["first_name", "last_name", "email", "position", "department", "date_of_joining"];
 
     for (const field of requiredFields) {
       if (!formData[field as keyof EmployeeFormData] || formData[field as keyof EmployeeFormData] === 0) {
-        setSubmitError(`Please fill in the ${field.replace('_', ' ')} field`)
-        return false
+        setSubmitError(`Please fill in the ${field.replace("_", " ")} field`);
+        return false;
       }
     }
 
-    // Validate user fields
     if (!formData.user.password) {
-      setSubmitError("Please provide a password for the user account")
-      return false
+      setSubmitError("Please provide a password for the user account");
+      return false;
     }
 
     if (formData.user.roles_ids.length === 0) {
-      setSubmitError("Please select at least one role")
-      return false
+      setSubmitError("Please select at least one role");
+      return false;
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setSubmitError("Please enter a valid email address")
-      return false
+      setSubmitError("Please enter a valid email address");
+      return false;
     }
 
-    return true
-  }
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!institutionId) {
-      setSubmitError("No institution selected")
-      return
+      setSubmitError("No institution selected");
+      return;
     }
 
     if (!validateForm()) {
-      return
+      return;
     }
 
-    setIsSubmitting(true)
-    setSubmitError(null)
-    setSubmitSuccess(null)
+    setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
-      console.log("Submitting employee data:", formData)
+      console.log("Submitting employee data:", formData);
+
+      const dataToSubmit = {
+        ...formData,
+        employee_profile_picture: null, // Temporarily remove file to test CORS
+      };
 
       const result = await createEmployee({
         institutionId,
-        employeeData: formData
-      })
+        employeeData: dataToSubmit,
+      });
 
       if (result) {
-        setSubmitSuccess("Employee created successfully!")
-        console.log("Employee created:", result)
+        // Show success toast
+        toast({
+          title: "Success!",
+          description: "Employee has been created successfully and added to the system.",
+          variant: "default",
+          duration: 4000,
+        });
 
-        // Redirect to employee list after a short delay
-        setTimeout(() => {
-          router.push("/employees/employee-list")
-        }, 2000)
+        // Navigate immediately without delay
+        router.push("/employees/employee-list");
       } else {
-        setSubmitError("Failed to create employee. Please try again.")
+        setSubmitError("Failed to create employee. Please try again.");
       }
     } catch (error: any) {
-      console.error("Error creating employee:", error)
-      setSubmitError(error.message || "An unexpected error occurred")
+      console.error("Error creating employee:", error);
+
+      // Show error toast
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create employee. Please try again.",
+        variant: "destructive",
+        duration: 5000,
+      });
+
+      setSubmitError(error.message || "An unexpected error occurred");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
+  };
+
+  if (loadingData) {
+    return (
+      <div className="min-h-screen bg-gray-100 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+          <p className="mt-2 text-gray-600">Loading form data...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-5xl mx-auto">
-        <Card className="bg-white shadow-lg">
+    <div className="min-h-screen bg-gray-100 p-4 overflow-hidden">
+      <div className="max-w-5xl mx-auto h-full">
+        <Card className="bg-white shadow-lg h-full">
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between sticky top-0 bg-white z-10 border-b">
             <div className="mb-4 sm:mb-0">
               <CardTitle className="text-2xl">Add New Employee</CardTitle>
@@ -276,16 +334,10 @@ export default function AddEmployeeForm() {
               <Button variant="outline" className="w-full sm:w-auto">Back to Employee List</Button>
             </Link>
           </CardHeader>
-          <CardContent className="p-6">
-            {/* Success/Error Messages */}
+          <CardContent className="p-6 overflow-y-auto">
             {submitError && (
               <div className="mb-6 p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
                 {submitError}
-              </div>
-            )}
-            {submitSuccess && (
-              <div className="mb-6 p-4 border border-green-300 bg-green-50 text-green-700 rounded-md">
-                {submitSuccess}
               </div>
             )}
 
@@ -330,53 +382,6 @@ export default function AddEmployeeForm() {
                 </div>
                 {uploadError && <p className="text-red-500 text-sm text-center">{uploadError}</p>}
                 {uploadSuccess && <p className="text-green-500 text-sm text-center">{uploadSuccess}</p>}
-              </div>
-
-              <Separator />
-
-              {/* User Account Information */}
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold">User Account Details</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="userPassword">Password *</Label>
-                    <Input
-                      id="userPassword"
-                      type="password"
-                      value={formData.user.password}
-                      onChange={(e) => handleInputChange("user.password", e.target.value)}
-                      placeholder="Enter password"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="userRoles">Roles *</Label>
-                    <Select
-                      value={formData.user.roles_ids.length > 0 ? formData.user.roles_ids[0].toString() : ""}
-                      onValueChange={(value) => handleInputChange("user.roles_ids", [parseInt(value)])}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {roles.map((role) => (
-                          <SelectItem key={role.id} value={role.id.toString()}>
-                            {role.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="userPermissions">Permissions</Label>
-                    <Input
-                      id="userPermissions"
-                      value={formData.user.permissions}
-                      onChange={(e) => handleInputChange("user.permissions", e.target.value)}
-                      placeholder="Additional permissions"
-                    />
-                  </div>
-                </div>
               </div>
 
               <Separator />
@@ -484,36 +489,44 @@ export default function AddEmployeeForm() {
                   <div className="space-y-2">
                     <Label htmlFor="position">Position *</Label>
                     <Select
-                      value={formData.position.toString()}
+                      value={formData.position > 0 ? formData.position.toString() : ""}
                       onValueChange={(value) => handleInputChange("position", parseInt(value))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select position" />
                       </SelectTrigger>
                       <SelectContent>
-                        {positions.map((position) => (
-                          <SelectItem key={position.id} value={position.id.toString()}>
-                            {position.name}
-                          </SelectItem>
-                        ))}
+                        {Array.isArray(positions) && positions.length > 0 ? (
+                          positions.map((position) => (
+                            <SelectItem key={position.id} value={position.id.toString()}>
+                              {position.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="px-2 py-1.5 text-sm text-gray-500">No positions available</div>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="department">Department *</Label>
                     <Select
-                      value={formData.department.toString()}
+                      value={formData.department > 0 ? formData.department.toString() : ""}
                       onValueChange={(value) => handleInputChange("department", parseInt(value))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select department" />
                       </SelectTrigger>
                       <SelectContent>
-                        {departments.map((department) => (
-                          <SelectItem key={department.id} value={department.id.toString()}>
-                            {department.name}
-                          </SelectItem>
-                        ))}
+                        {Array.isArray(departments) && departments.length > 0 ? (
+                          departments.map((department) => (
+                            <SelectItem key={department.id} value={department.id.toString()}>
+                              {department.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="px-2 py-1.5 text-sm text-gray-500">No departments available</div>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -564,6 +577,62 @@ export default function AddEmployeeForm() {
                     onCheckedChange={(checked) => handleInputChange("is_active", checked as boolean)}
                   />
                   <Label htmlFor="isActive">Active Employee</Label>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* User Account Information */}
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold">User Account Information</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="userRoles">Roles *</Label>
+                    <Select
+                      value={formData.user.roles_ids.length > 0 ? formData.user.roles_ids[0].toString() : ""}
+                      onValueChange={(value) => handleInputChange("user.roles_ids", [parseInt(value)])}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.isArray(roles) && roles.length > 0 ? (
+                          roles.map((role) => (
+                            <SelectItem key={role.id} value={role.id.toString()}>
+                              {role.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="px-2 py-1.5 text-sm text-gray-500">
+                            No roles available (Count: {roles.length})
+                          </div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="userPassword">Password *</Label>
+                    <Input
+                      id="userPassword"
+                      type="password"
+                      value={formData.user.password}
+                      onChange={(e) => handleInputChange("user.password", e.target.value)}
+                      placeholder="Enter password"
+                      required
+                    />
+                    <p className="text-xs text-gray-500">
+                      Note: Backend may override this with a generated password
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="userPermissions">Permissions</Label>
+                    <Input
+                      id="userPermissions"
+                      value={formData.user.permissions}
+                      onChange={(e) => handleInputChange("user.permissions", e.target.value)}
+                      placeholder="Additional permissions"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -632,5 +701,5 @@ export default function AddEmployeeForm() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
