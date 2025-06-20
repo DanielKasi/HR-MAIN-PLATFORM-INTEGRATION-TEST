@@ -134,7 +134,7 @@ class Branch(models.Model):
         return (
             self.branch_location
             + " - "
-            + self.institution.name
+            + self.institution.institution_name
             + " - "
             + self.branch_name
         )
