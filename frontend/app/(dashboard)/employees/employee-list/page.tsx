@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Icon } from "@iconify/react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import {
@@ -33,6 +34,7 @@ import {
 } from "@/store/auth/selectors";
 import { IUserInstitution } from "@/app/types"
 import Link from "next/link"
+import FixedLoader from "@/components/fixed-loader"
 
 // Updated interface to match your actual API response
 interface Employee {
@@ -449,76 +451,80 @@ function EmployeeTable({ employees, onDelete, onUpdate, departments, positions, 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Employee Management ({filteredEmployees.length} employees)</span>
-          <Link href="/employees/add-employee">
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add Employee
-            </Button>
-          </Link>
-        </CardTitle>
-
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mt-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search employees, departments, positions, or emails..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+        <div className="flex flex-col sm:flex-row justify-between w-full">
+          <CardTitle className=" flex items-center gap-2">
+            <span className="text-3xl font-bold">Employees ({filteredEmployees.length})</span>
+          </CardTitle>
+          
+          <div className="flex items-center mb-4 sm:mb-0 sm:w-auto">
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Filter by department" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Departments</SelectItem>
+                {uniqueDepartments.map((department) => (
+                  <SelectItem key={department} value={department}>
+                    {department}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-
-          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filter by department" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Departments</SelectItem>
-              {uniqueDepartments.map((department) => (
-                <SelectItem key={department} value={department}>
-                  {department}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
+          
+          <div className="flex items-center justify-between gap-4 w-full sm:w-auto">
+            <div className="relative w-[300px]">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-12 rounded-2xl"
+              />
+            </div>
+            <Link href="/employees/add-employee">
+              <Button className="flex items-center gap-2 h-12 rounded-2xl">
+                <Plus className="h-4 w-4" />
+                Add Employee
+              </Button>
+            </Link>
+          </div>
         </div>
       </CardHeader>
 
       <CardContent>
-        <div className="rounded-md border">
+        <div className="mt-4 w-full border-none">
           <div className="w-full">
-            <div className="bg-gray-50 border-b">
-              <div className="grid grid-cols-6 gap-4 p-4 font-medium">
+            <div className="border-b-2 border-gray-200">
+              <div className="grid grid-cols-[300px_300px_400px_200px_auto_auto] gap-4 py-4 font-medium">
                 <div>Name</div>
                 <div>Department</div>
                 <div>Email</div>
                 <div>Job Position</div>
-                <div>Status</div>
-                <div className="w-[150px]">Actions</div>
+                <div className="">Status</div>
+                <div className="text-right">Actions</div>
               </div>
             </div>
-            <div>
+            <div className="mt-2">
               {paginatedEmployees.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No employees found matching your criteria
                 </div>
               ) : (
                 paginatedEmployees.map((employee) => (
-                  <div key={employee.id} className="grid grid-cols-6 gap-4 p-4 border-b hover:bg-gray-50">
+                  <div key={employee.id} className="grid grid-cols-[300px_300px_400px_200px_auto_auto] gap-4 py-4 border-b border-gray-100">
                     <Link
                       href={`/employees/profile/${employee.id}`}
                       className="font-medium cursor-pointer hover:text-blue-600 hover:underline transition-colors"
@@ -535,24 +541,24 @@ function EmployeeTable({ employees, onDelete, onUpdate, departments, positions, 
                         {getDepartmentName(employee)}
                       </Badge>
                     </div>
-                    <div className="text-sm">{employee.email}</div>
+                    <div className="text-md">{employee.email}</div>
                     <div>{getPositionName(employee)}</div>
-                    <div>{getStatusBadge(employee.is_active)}</div>
+                    <div className="">{getStatusBadge(employee.is_active)}</div>
                     <div>
-                      <div className="flex items-center gap-1">
+                      <div className="float-right flex items-center gap-5 justify-center">
                         {/* View Button */}
                         <Link href={`/employees/profile/${employee.id}`}>
-                          <Button variant="ghost" size="sm" title="View Details">
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <button title="View Details" className="text-gray-900">
+                          <Icon icon="hugeicons:view" width="24" height="24" />
+                          </button>
                         </Link>
 
                         {/* Update Button */}
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="ghost" size="sm" title="Update Employee">
-                              <Edit className="h-4 w-4" />
-                            </Button>
+                            <button title="Update Employee" className="text-gray-900">
+                            <Icon icon="hugeicons:pencil-edit-01" width="24" height="24" />
+                            </button>
                           </DialogTrigger>
                           <EmployeeUpdateModal
                             employee={employee}
@@ -566,14 +572,12 @@ function EmployeeTable({ employees, onDelete, onUpdate, departments, positions, 
                         {/* Delete Button */}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
+                            <button 
                               title="Delete Employee"
                               className="text-red-600 hover:text-red-700"
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                              <Icon icon="hugeicons:delete-02" width="24" height="24" />
+                            </button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
@@ -766,12 +770,10 @@ export default function Component() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading employees...</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center relative">
+        <FixedLoader fixed={false}  />
       </div>
+
     )
   }
 
@@ -789,12 +791,12 @@ export default function Component() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="h-full overflow-y-scroll bg-white w-full rounded-xl scrollbar-hide border-none">
       <div className="w-full">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Management System</h1>
+        {/* <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Employees</h1>
           <p className="text-muted-foreground">Manage your organization's employees efficiently</p>
-        </div>
+        </div> */}
 
         <EmployeeTable
           employees={employees}

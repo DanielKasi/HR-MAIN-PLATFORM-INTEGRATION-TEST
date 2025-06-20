@@ -477,7 +477,7 @@ export default function CreateOrganisationWizard() {
               </Label>
               <Textarea
                 id="description"
-                placeholder="Tell us about your supermarket..."
+                placeholder="Tell us about your company..."
                 value={formData.description}
                 onChange={(e) => updateFormData("description", e.target.value)}
                 rows={3}
