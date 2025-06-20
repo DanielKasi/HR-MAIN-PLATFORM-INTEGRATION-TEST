@@ -1,5 +1,8 @@
 from django.db import models
 from datetime import datetime, timezone
+from django.core.mail import send_mail
+from django.conf import settings
+from django.template.loader import render_to_string
 
 
 class JobPosition(models.Model):
@@ -93,6 +96,47 @@ class JobAdvertApplication(models.Model):
     def __str__(self):
         return f"{self.applicant_name} - {self.job_position_advert.job_position.name} ({self.status})"
 
+    def save(self, *args, **kwargs):
+        if self.pk:
+            old_instance = JobAdvertApplication.objects.get(pk=self.pk)
+            old_status = old_instance.status
+            
+            if old_status != 'shortlisted' and self.status == 'shortlisted':
+                self.send_shortlist_email()
+        
+        super().save(*args, **kwargs)
+
+    def send_shortlist_email(self):
+        """Send email notification when applicant is shortlisted"""
+        try:
+            subject = f"Congratulations! You've been shortlisted for {self.job_position_advert.job_position.name}"
+            
+            # Template context
+            context = {
+                'applicant_name': self.applicant_name,
+                'job_title': self.job_position_advert.job_position.name,
+                'company_name': self.job_position_advert.job_position.department.institution.institution_name,
+                'application': self,  
+            }
+            
+
+            html_message = render_to_string('emails/shortlist_notification.html', context)
+            
+            plain_message = render_to_string('emails/shortlist_notification.txt', context)
+
+            send_mail(
+                subject=subject,
+                message=plain_message,  # Plain text version
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[self.applicant_email],
+                html_message=html_message,  # HTML version
+                fail_silently=False,
+            )
+            
+            print(f"Shortlist email sent to {self.applicant_email}")
+            
+        except Exception as e:
+            print(f"Error sending shortlist email to {self.applicant_email}: {str(e)}")
 
 class InterviewStage(models.Model):
     job_position_advert = models.ForeignKey(
