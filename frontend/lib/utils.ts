@@ -689,7 +689,7 @@ export const getEmployeeDetailId = async ({
 
 export const getOnBoardings = async ({ institutionId }: { institutionId: number }) => {
   try {
-    const response = await apiRequest.get(`on-boarding/${institutionId}/`)
+    const response = await apiRequest.get(`on-boarding/list/${institutionId}/`)
     return response.data as IOnBoarding[]
   } catch (error) {
     console.error("Error fetching onboarding records:", error)
