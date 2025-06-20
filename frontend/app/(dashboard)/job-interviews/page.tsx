@@ -234,7 +234,7 @@ export default function InterviewsPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">
-                {interviews.filter(i => i.rating).reduce((sum, i) => sum + (i.rating || 0), 0) / 
+                {interviews.filter(i => i.rating).reduce((sum, i) => sum + (i.rating || 0), 0) /
                  interviews.filter(i => i.rating).length || 0}/10
               </div>
               <p className="text-xs text-muted-foreground">Avg Rating</p>
@@ -296,7 +296,7 @@ export default function InterviewsPage() {
                       <CardTitle className="text-lg">
                         {interview.job_position_application_details?.applicant_name}
                       </CardTitle>
-                      
+
                     </div>
                   </div>
                   <DropdownMenu>
