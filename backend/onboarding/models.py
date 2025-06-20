@@ -28,3 +28,6 @@ class OnBoarding(models.Model):
 
     def __str__(self):
         return f"OnBoarding for {self.application.applicant_name}"
+
+    
+    

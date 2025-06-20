@@ -18,8 +18,6 @@ class Employee(models.Model):
     )
 
     user  = models.OneToOneField("users.CustomUser", on_delete=models.PROTECT, blank=True, null=True, related_name="employees")
-    first_name = models.CharField(max_length=30, blank=True, null=True)
-    last_name = models.CharField(max_length=30, blank=True, null=True)
     email = models.EmailField(unique=True, blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     position = models.ForeignKey(
