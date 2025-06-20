@@ -355,7 +355,7 @@ export default function HRDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="w-full px-4 py-6 ">
         <div className="space-y-6">
           <WelcomeCard />
 

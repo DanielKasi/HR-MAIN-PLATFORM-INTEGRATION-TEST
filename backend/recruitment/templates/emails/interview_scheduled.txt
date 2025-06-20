@@ -1,0 +1,41 @@
+INTERVIEW SCHEDULED
+
+Dear {{ applicant_name }},
+
+Great news! We have scheduled your interview for the position of:
+{{ job_title }}
+
+INTERVIEW DETAILS:
+=================
+Stage: {{ interview_stage }}
+Date: {{ interview_date }}
+Time: {{ interview_time }}
+Type: {{ interview_type }}
+Location: {{ location }}
+
+IMPORTANT: Please confirm your attendance by replying to this email or contacting our HR team. If you need to reschedule, please let us know as soon as possible.
+
+{% if interview_type == "Online" %}
+TIPS FOR ONLINE INTERVIEW:
+- Test your internet connection and camera beforehand
+- Find a quiet, well-lit space for the interview
+- Join the meeting 5-10 minutes early
+- Have a backup plan (phone number) in case of technical issues
+{% else %}
+TIPS FOR IN-PERSON INTERVIEW:
+- Plan to arrive 10-15 minutes early
+- Bring copies of your resume and any required documents
+- Dress professionally and appropriately
+- Research directions to our office beforehand
+{% endif %}
+
+We're looking forward to meeting you and learning more about your qualifications and interest in joining our team.
+
+If you have any questions or concerns, please don't hesitate to contact us.
+
+Best regards,
+HR Team
+{{ company_name }}
+
+---
+Please confirm your attendance by replying to this email.

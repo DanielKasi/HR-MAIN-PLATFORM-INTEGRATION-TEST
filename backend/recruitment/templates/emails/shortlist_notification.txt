@@ -1,0 +1,25 @@
+CONGRATULATIONS! You've been shortlisted!
+
+Dear {{ applicant_name }},
+
+We are delighted to inform you that you have been SHORTLISTED for the position of:
+
+{{ job_title }}
+
+We were impressed with your application and believe you have the qualifications and experience we're looking for.
+
+WHAT HAPPENS NEXT?
+- Our HR team will contact you within the next few business days
+- We'll provide you with details about the next stage of the interview process  
+- Please keep an eye on your email and phone for our communication
+
+In the meantime, if you have any questions or need to update your contact information, please don't hesitate to reach out to us.
+
+We look forward to speaking with you soon!
+
+Best regards,
+HR Team
+{{ company_name }}
+
+---
+This is an automated message. Please do not reply directly to this email.
