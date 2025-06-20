@@ -3,6 +3,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema
+from django.db.models import Sum, Q
+from django.db.models.functions import Coalesce
 
 from .serializers import InterviewStageSerializer, JobAdvertApplicationSerializer, JobInterviewSerializer, JobPositionAdvertSerializer, JobPositionSerializer
 from .models import InterviewStage, JobAdvertApplication, JobInterview, JobPosition, JobPositionAdvert
@@ -143,7 +145,6 @@ class JobPositionAdvertDetailAPI(APIView):
             return Response({"detail": "Not found."}, status=404)
 
 
-
 class JobAdvertApplicationListAPI(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -159,7 +160,6 @@ class JobAdvertApplicationListAPI(APIView):
             serializer.save()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
-
 
     @extend_schema(
         responses={200: JobAdvertApplicationSerializer(many=True)},
@@ -205,7 +205,6 @@ class JobAdvertApplicationDetailAPI(APIView):
             return Response(serializer.errors, status=400)
         except JobAdvertApplication.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
-
 
 
 class InterviewStageListAPI(APIView):
@@ -270,7 +269,6 @@ class InterviewStageDetailAPI(APIView):
             return Response({"detail": "Not found."}, status=404)
 
 
-
 class JobInterviewListAPI(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -288,16 +286,31 @@ class JobInterviewListAPI(APIView):
         return Response(serializer.errors, status=400)
 
     @extend_schema(
-        responses={200: JobInterviewSerializer(many=True)},
-        summary="List Job Interviews",
+        responses={200: dict},
+        summary="List Job Interviews with Cumulative Rating",
         tags=["Recruitment"]
     )
     def get(self, request, institution_id):
         interviews = JobInterview.objects.filter(
             job_position_application__job_position_advert__job_position__department__institution_id=institution_id
-        )
-        serializer = JobInterviewSerializer(interviews, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        ).annotate(
+            # Calculate cumulative rating for each application across all their interviews
+            cumulative_rating=Coalesce(
+                Sum('job_position_application__interviews__rating', 
+                    filter=Q(job_position_application__interviews__rating__isnull=False)), 
+                0
+            )
+        ).order_by('-cumulative_rating', '-created_at')  # Default order by cumulative rating desc
+        
+        # Serialize interviews and add cumulative rating to response
+        interview_data = []
+        for interview in interviews:
+            serializer = JobInterviewSerializer(interview)
+            interview_dict = serializer.data
+            interview_dict['cumulative_rating'] = interview.cumulative_rating
+            interview_data.append(interview_dict)
+        
+        return Response(interview_data, status=status.HTTP_200_OK)
 
 class JobInterviewDetailAPI(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -315,7 +328,6 @@ class JobInterviewDetailAPI(APIView):
         except JobInterview.DoesNotExist:
             return Response({"detail": "Job interview not found."}, status=status.HTTP_404_NOT_FOUND)
 
-
     @extend_schema(
         request=JobInterviewSerializer,
         responses={200: JobInterviewSerializer},
@@ -332,3 +344,8 @@ class JobInterviewDetailAPI(APIView):
             return Response(serializer.errors, status=400)
         except JobInterview.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
+
+
+
+
+

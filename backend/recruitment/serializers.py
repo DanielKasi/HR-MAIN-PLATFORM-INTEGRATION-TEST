@@ -42,7 +42,8 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
         job_position = obj.job_position_advert.job_position
         return {
             "name": job_position.name,
-            "description": job_position.description
+            "description": job_position.description,
+            "job_posted_date": obj.job_position_advert.published_date,
         }
         
     def get_positions(self, obj):
@@ -152,4 +153,8 @@ class JobInterviewSerializer(serializers.ModelSerializer):
             "status",
             "feedback",
             "rating",
+            "interview_type",
+            "location",
+            "interview_time",
+            "additional_notes",
         ]

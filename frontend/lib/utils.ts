@@ -1,6 +1,6 @@
 import {type ClassValue, clsx} from "clsx";
 import {twMerge} from "tailwind-merge";
-import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, IInterview } from "@/app/types/types.utils";
+import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, IInterview, EmployeeFormData, User, IInterviewFormData, IInterviewStage, IInterviewStageFormData } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/app/types";
@@ -267,10 +267,10 @@ export const createJobApplication = async ({
   institutionId: number
   applicationData: JobApplicationFormData;
 }): Promise<JobApplication | null> => {
-  
-    
+
+
     const formData = new FormData();
-    
+
     // Log what we're appending to FormData
     Object.entries(applicationData).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
@@ -283,7 +283,7 @@ export const createJobApplication = async ({
 
 
     const response = await apiRequest.post(
-      `recruitment/institution/${institutionId}/job-application/`, 
+      `recruitment/institution/${institutionId}/job-application/`,
       formData
     );
 
@@ -352,10 +352,26 @@ export const updateJobApplication = async ({
 };
 
 
+export const updateJobApplicationStatus = async ({applicationId, status}:{applicationId:number, status:string}): Promise<JobApplication | null> => {
+  try {
+    const formData = new FormData();
+    formData.append("status", status);
+
+      const response = await apiRequest.patch(
+      `recruitment/job-application/${applicationId}/`,
+      formData
+    );
+
+    return response.data as JobApplication;
+  } catch (error) {
+    console.error("Failed to update job application", error);
+    return null;
+  }
+}
 
 export const fetchEmployees = async ({institutionId}:{institutionId:number}) =>{
   try {
-    const response = await apiRequest.get(`employee/${institutionId}`)
+    const response = await apiRequest.get(`employee/${institutionId}/employee/`)
     return response.data as IEmployee[]
   } catch (error) {
     return null
@@ -390,6 +406,8 @@ export const createJobPositionAdvert = async ({
   }
 };
 
+
+
 // Fetch all job position adverts for a specific institution
 export const getJobPositionAdverts = async ({
   institutionId,
@@ -421,6 +439,8 @@ export const getJobPositionAdvertById = async ({
     return null;
   }
 };
+
+
 
 // Update an existing job position advert
 export const updateJobPositionAdvert = async ({
@@ -460,7 +480,7 @@ export const getInterviews = async ({ institutionId }: { institutionId: number }
       return null
     }
   }
-  
+
   export const getInterviewById = async ({
     interviewId,
   }: {
@@ -474,3 +494,178 @@ export const getInterviews = async ({ institutionId }: { institutionId: number }
       return null;
     }
   };
+
+
+// Create a new interview for a given institution
+export const createInterview = async ({
+  institutionId,
+  interviewData,
+}: {
+  institutionId: number;
+  interviewData: IInterviewFormData;
+}): Promise<IInterview | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(interviewData).forEach(([key, value]) => {
+      // Only append defined values
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `recruitment/institution/${institutionId}/job-interview/`,
+      formData
+    );
+    return response.data as IInterview;
+  } catch (error) {
+    console.error("Failed to create job interview:", error);
+    return null;
+  }
+};
+
+// Update an existing interview by its ID
+export const updateInterview = async ({
+  interviewId,
+  interviewData,
+}: {
+  interviewId: number;
+  interviewData: Partial<IInterviewFormData>;
+}): Promise<IInterview | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(interviewData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.patch(
+      `recruitment/job-interview/${interviewId}/`,
+      formData
+    );
+    return response.data as IInterview;
+  } catch (error) {
+    console.error("Failed to update job interview:", error);
+    return null;
+  }
+};
+
+
+export const getInterviewStages = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<IInterviewStage[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `recruitment/institution/${institutionId}/interview-stage/`
+    );
+    return response.data as IInterviewStage[];
+  } catch (error) {
+    console.error("Failed to fetch interview stages:", error);
+    return null;
+  }
+};
+
+
+export const createInterviewStage = async ({
+  institutionId,
+  stageData,
+}: {
+  institutionId: number;
+  stageData: IInterviewStageFormData;
+}): Promise<IInterviewStage | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(stageData).forEach(([key, value]) => {
+      formData.append(key, value.toString());
+    });
+
+    const response = await apiRequest.post(
+      `recruitment/institution/${institutionId}/interview-stage/`,
+      formData
+    );
+    return response.data as IInterviewStage;
+  } catch (error) {
+    console.error("Failed to create interview stage:", error);
+    return null;
+  }
+};
+
+// It returns a promise that resolves to an array of IEmployee objects or throws an error ifAdd commentMore actions
+export const getAllEmployees = async ({institutionId}:{institutionId:number}) => {
+  try {
+    const endpoint = `employee/${institutionId}/employee/`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IEmployee[];
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const createEmployee = async ({
+  institutionId,
+  employeeData,
+}: {
+  institutionId: number;
+  employeeData: EmployeeFormData;
+}): Promise<EmployeeFormData | null> => {
+  try {
+    const formData = new FormData();
+
+    // Append institutionId
+    formData.append("institutionId", institutionId.toString());
+
+    // Handle nested user object
+    if (employeeData.user && typeof employeeData.user === 'object') {
+      Object.entries(employeeData.user).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (key === 'roles_ids' && Array.isArray(value)) {
+            // Handle array - you might need to stringify or handle differently based on your backend
+            formData.append(`user.${key}`, JSON.stringify(value));
+          } else {
+            formData.append(`user.${key}`, value.toString());
+          }
+        }
+      });
+    }
+
+    // Handle other fields
+    Object.entries(employeeData).forEach(([key, value]) => {
+      if (key === "user") {
+        // Already handled above
+        return;
+      }
+
+      if (key === "employee_profile_picture" && value instanceof File) {
+        formData.append(key, value);
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `/employee/employee/create`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    if (!response.data || typeof response.data !== "object") {
+      throw new Error("Invalid response format");
+    }
+
+    return response.data as EmployeeFormData;
+  } catch (error: any) {
+    console.error("Failed to create employee:", error.message || error);
+    return null;
+  }
+};
+
+
+

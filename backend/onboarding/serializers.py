@@ -13,7 +13,7 @@ class OnBoardingSerializer(serializers.ModelSerializer):
             "id",
             "application",
             "applicant_name",
-            "attended",
+            "accepted_to_work",
             "remarks",
             "status",
             "created_at",

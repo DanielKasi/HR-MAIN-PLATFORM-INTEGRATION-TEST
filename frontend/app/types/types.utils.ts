@@ -148,8 +148,8 @@ export interface CreateJobPositionData {
 
 
 export interface JobApplication {
-  job_position_advert_job_details: any;
-  positions: ReactNode;
+  job_position_advert_job_details: {name:string, description:string, job_posted_date: string};
+  positions: number;
   id: number
   job_position_advert: number
   applicant_name: string
@@ -193,6 +193,7 @@ export interface JobPositionAdvert {
   expiry_date: string; // ISO datetime string
   number_of_employees_expected?: number | null;
   extra_information?: string | null;
+  applications:JobApplication[]
 }
 
 // For creating/updating job adverts
@@ -212,41 +213,94 @@ export interface IEmployee {
   last_name: string;
   email: string;
   phone_number: string;
-  position: number; 
+  position: number;
   department: number;
-  date_of_birth: string; 
+  date_of_birth: string;
   date_of_joining: string;
   address: string;
   is_active: boolean;
-  created_at: string; 
+  created_at: string;
   updated_at: string;
   experience: number;
-  qualifications?: string | null; 
+  qualifications?: string | null;
   skills?: string | null;
   emergency_contact_name?: string | null;
   emergency_contact_phone?: string | null;
   emergency_contact_relationship: string;
-  marital_status: string; 
+  marital_status: string;
   children_count?: number | null;
   employee_profile_picture?: string | null;
 }
-export interface IInterviewStage{
-  id: number;
-  job_position_advert: number; 
+
+export interface IInterviewStageFormData {
+  job_position_advert: number;
   name: string;
   level: number;
-  interviewer: number; 
+  interviewer: number;
+}
+
+
+export interface IInterviewStage{
+  id: number;
+  job_position_advert: number;
+  name: string;
+  level: number;
+  interviewer: number;
   interviewer_details?: IEmployee;
 }
 
+
 export interface IInterview {
   id: number;
-  job_position_application: number; 
-  job_position_application_details?: JobApplication | null; 
-  interview_stage: number; 
+  job_position_application: number;
+  job_position_application_details?: JobApplication | null;
+  interview_stage: number;
   interview_stage_details?: IInterviewStage | null;
   interview_date: string;
   status: string;
   feedback?: string | null;
   rating?: number | null;
 }
+
+export interface User {
+  email: string;
+  fullname: string;
+  password: string;
+  roles_ids: number[];
+  permissions: string;
+}
+
+export interface EmployeeFormData {
+  user: User;
+  first_name: string; // Added - endpoint expects this
+  last_name: string; // Added - endpoint expects thisAdd commentMore actions
+  email: string; // Duplicate of user.email - endpoint requires both
+  phone_number: string; // Changed from phoneNumber
+  position: number; // Changed from string to number
+  department: number; // Changed from string to number
+  date_of_birth: string; // Changed from dateOfBirth
+  date_of_joining: string; // Changed from dateOfJoining
+  address: string;
+  is_active: boolean; // Changed from isActive
+  experience: number; // Changed from string to number
+  qualifications: string;
+  skills: string;
+  emergency_contact_name: string; // Changed from emergencyContactName
+  emergency_contact_phone: string; // Changed from emergencyContactPhone
+  emergency_contact_relationship: string; // Changed from emergencyContactRelationship
+  marital_status: string; // Changed from maritalStatus
+  children_count: number; // Changed from childrenCount and string to number
+  employee_profile_picture: File | null; // Changed from profilePicture
+}
+
+
+
+export interface IInterviewFormData {
+  job_position_application: number;
+  interview_stage: number;
+  interview_date: string;           // e.g. "2025-07-01T10:00:00Z"
+  status?: string;                  // e.g. "scheduled", "completed", etc.
+  feedback?: string;
+  rating?: number;
+}
+

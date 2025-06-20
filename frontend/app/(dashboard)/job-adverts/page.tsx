@@ -26,7 +26,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Skeleton } from "@/components/ui/skeleton"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { getJobPositionAdverts } from "@/lib/utils"
+import { getJobPositionAdverts, updateJobPositionAdvert } from "@/lib/utils"
 import type { JobPositionAdvert, JobAdvertStatus } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
@@ -57,12 +57,13 @@ const isExpired = (expiryDate: string) => {
   return new Date(expiryDate) < new Date()
 }
 
-export default function JobAdvertsPage() {
+export default function () {
   const [jobAdverts, setJobAdverts] = useState<JobPositionAdvert[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [error, setError] = useState("")
+  const [isClosed, setIsClosing] = useState(false);
 
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
@@ -121,10 +122,34 @@ export default function JobAdvertsPage() {
     router.push(`/job-adverts/${advertId}/edit`)
   }
 
-  const handleDeleteJobAdvert = (advertId: number) => {
+  const handleArchiveJobAdvert = (advertId: number) => {
     // TODO: Implement delete functionality
     toast.success("Job advert deletion would be implemented here")
   }
+
+    const advertId = async ({advertId}:{advertId:number}) => {
+      if (!advertId) return
+  
+      try {
+        setIsClosing(true)
+  
+        const updatedAdvert = await updateJobPositionAdvert({
+          advertId: advertId,
+          advertData: { status: "closed" },
+        })
+  
+        if (updatedAdvert) {
+          toast.success("Job advert closed successfully!")
+        } else {
+          toast.error("Failed to close job advert")
+        }
+      } catch (error) {
+        console.error("Error closing job advert:", error)
+        toast.error("Failed to close job advert")
+      } finally {
+        setIsClosing(false)
+      }
+    }
 
   const handleViewJobAdvert = (advertId: number) => {
     router.push(`/job-adverts/${advertId}`)
@@ -284,9 +309,9 @@ export default function JobAdvertsPage() {
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDeleteJobAdvert(advert.id)} className="text-destructive">
+                      <DropdownMenuItem onClick={() => handleArchiveJobAdvert(advert.id)} className="text-destructive">
                         <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
+                        Close
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -297,9 +322,9 @@ export default function JobAdvertsPage() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground flex items-center gap-1">
                       <Briefcase className="h-3 w-3" />
-                      Position ID:
+                      Position:
                     </span>
-                    <span className="font-medium">{advert.job_position}</span>
+                    <span className="font-medium">{advert.job_position_details.name}</span>
                   </div>
 
                   <div className="flex items-center justify-between text-sm">
