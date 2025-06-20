@@ -45,7 +45,7 @@ const config: Config = {
         },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
+        ring: "#FE5D26",
         chart: {
           "1": "hsl(var(--chart-1))",
           "2": "hsl(var(--chart-2))",
@@ -62,15 +62,15 @@ const config: Config = {
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
-          hover: "hsl(var(--sidebar-hover))",
-          selected: "hsl(var(--sidebar-selected))",
+          hover: "#FE5D26",
+          selected: "#FE5D26",
         },
       },
       height: {
         mainContentHeight: "90svh",
       },
       borderRadius: {
-        lg: "var(--radius)",
+        lg: "12px",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
