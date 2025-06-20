@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Scheduled</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .title {
+            color: #007bff;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .job-title {
+            color: #28a745;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .interview-details {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+        .detail-row {
+            display: flex;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .detail-label {
+            font-weight: bold;
+            min-width: 120px;
+            color: #555;
+        }
+        .detail-value {
+            color: #333;
+        }
+        .icon {
+            margin-right: 8px;
+        }
+        .important-note {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .preparation-tips {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .company-signature {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">📅 Interview Scheduled</div>
+        </div>
+        
+        <div class="content">
+            <p>Dear <strong>{{ applicant_name }}</strong>,</p>
+            
+            <p>Great news! We have scheduled your interview for the position of:</p>
+            <p class="job-title">{{ job_title }}</p>
+            
+            <div class="interview-details">
+                <h3 style="margin-top: 0; color: #2196f3;">📋 Interview Details</h3>
+                
+                <div class="detail-row">
+                    <span class="detail-label">📍 Stage:</span>
+                    <span class="detail-value">{{ interview_stage }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">📅 Date:</span>
+                    <span class="detail-value">{{ interview_date }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">🕐 Time:</span>
+                    <span class="detail-value">{{ interview_time }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">💻 Type:</span>
+                    <span class="detail-value">{{ interview_type }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">📍 Location:</span>
+                    <span class="detail-value">{{ location }}</span>
+                </div>
+            </div>
+            
+            <div class="important-note">
+                <strong>⚠️ Important:</strong> Please confirm your attendance by replying to this email or contacting our HR team. If you need to reschedule, please let us know as soon as possible.
+            </div>
+            
+            {% if interview_type == "Online" %}
+            <div class="preparation-tips">
+                <h4>💡 Tips for Online Interview:</h4>
+                <ul>
+                    <li>Test your internet connection and camera beforehand</li>
+                    <li>Find a quiet, well-lit space for the interview</li>
+                    <li>Join the meeting 5-10 minutes early</li>
+                    <li>Have a backup plan (phone number) in case of technical issues</li>
+                </ul>
+            </div>
+            {% else %}
+            <div class="preparation-tips">
+                <h4>💡 Tips for In-Person Interview:</h4>
+                <ul>
+                    <li>Plan to arrive 10-15 minutes early</li>
+                    <li>Bring copies of your resume and any required documents</li>
+                    <li>Dress professionally and appropriately</li>
+                    <li>Research directions to our office beforehand</li>
+                </ul>
+            </div>
+            {% endif %}
+            
+            <p>We're looking forward to meeting you and learning more about your qualifications and interest in joining our team.</p>
+            
+            <p>If you have any questions or concerns, please don't hesitate to contact us.</p>
+        </div>
+        
+        <div class="footer">
+            <div class="company-signature">
+                Best regards,<br>
+                HR Team<br>
+                {{ company_name }}
+            </div>
+            
+            <p><em>Please confirm your attendance by replying to this email.</em></p>
+        </div>
+    </div>
+</body>
+</html>
