@@ -36,6 +36,7 @@ import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/se
 import { getJobApplicationById } from "@/lib/utils"
 import type { JobApplication } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import { downloadFile } from "@/lib/helpers"
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
@@ -163,10 +164,7 @@ export default function ApplicationViewPage() {
       .slice(0, 2)
   }
 
-  const downloadFile = (filePath: string, fileName: string) => {
-    // TODO: Implement file download functionality
-    window.open(filePath, "_blank")
-  }
+
 
   if (!selectedInstitution || !selectedBranch) {
     return <div>Loading...</div>
