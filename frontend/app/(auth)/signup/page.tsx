@@ -107,14 +107,14 @@ export default function SignupPage() {
   );
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-muted/40">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-2">
+    <div className="flex h-screen w-full items-center justify-center">
+      <Card className="w-full max-w-md border-none">
+        <CardHeader className="space-y-1 border-none">
+          {/* <div className="flex items-center justify-center mb-2">
             <ShoppingCart className="h-10 w-10 text-primary" />
-          </div>
-          <CardTitle className="text-2xl text-center">Create an Account</CardTitle>
-          <CardDescription className="text-center">
+          </div> */}
+          <CardTitle className="text-2xl text-center font-bold">Create an Account</CardTitle>
+          <CardDescription className="text-center   text-base">
             Enter your details to sign up for BAIFAM HR SYSTEM
           </CardDescription>
         </CardHeader>
@@ -122,7 +122,7 @@ export default function SignupPage() {
           <CardContent className="grid gap-4">
             {errorMessage && <div className="text-red-500 text-center mt-2">{errorMessage}</div>}
             <div className="grid gap-2">
-              <Label htmlFor="fullname">Full Name</Label>
+              <Label htmlFor="fullname" className="font-medium   text-sm">Full Name</Label>
               <Input
                 required
                 id="fullname"
@@ -130,10 +130,11 @@ export default function SignupPage() {
                 type="text"
                 value={fullname}
                 onChange={(e) => setFullname(e.target.value)}
+                  
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="font-medium   text-sm">Email</Label>
               <Input
                 required
                 id="email"
@@ -141,11 +142,12 @@ export default function SignupPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                  
               />
             </div>
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="font-medium   text-sm">Password</Label>
               </div>
               <div className="relative">
                 <Input
@@ -155,6 +157,7 @@ export default function SignupPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                    
                 />
                 <Button
                   className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
@@ -171,7 +174,7 @@ export default function SignupPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="confirm-password">Confirm Password</Label>
+                <Label htmlFor="confirm-password" className="font-medium   text-sm">Confirm Password</Label>
                 <div className="relative">
                   <Input
                     required
@@ -180,6 +183,7 @@ export default function SignupPage() {
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                      
                   />
                   <Button
                     className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
@@ -232,12 +236,12 @@ export default function SignupPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col">
-            <Button className="w-full" disabled={isSubmitting || !isPasswordValid} type="submit">
+            <Button className="w-full h-12 rounded-xl" disabled={isSubmitting || !isPasswordValid} type="submit">
               {isSubmitting ? "Signing up..." : "Sign Up"}
             </Button>
             <p className="mt-4 text-center text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link className="text-primary underline hover:text-primary/90" href="/login">
+              <Link className="text-primary underline hover:text-primary/90 h-12 rounded-xl" href="/login">
                 Sign in
               </Link>
             </p>
