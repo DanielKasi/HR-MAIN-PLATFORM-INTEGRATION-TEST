@@ -267,11 +267,11 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       icon: <Package2 className="h-5 w-5" />,
       // requiredPermission: "can_access_valuation",
       submenu: [
-        {
-          title: "Profile",
-          href: "/employees/profile",
-          // requiredPermission: "can_access_valuation_requests",
-        },
+        // {
+        //   title: "Profile",
+        //   href: "/employees/profile",
+        //   // requiredPermission: "can_access_valuation_requests",
+        // },
         {
           title: "All Employees",
           href: "/employees/employee-list",
