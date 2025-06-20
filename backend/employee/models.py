@@ -1,5 +1,16 @@
 from django.db import models
 from datetime import datetime
+from institution.utils import generate_compliant_password
+from utilities.helpers import (
+    build_password_link,
+    create_and_institution_otp,
+    send_password_link_to_user,
+    create_and_institution_token,
+)
+
+from django.db import models
+from datetime import datetime
+
 
 class Employee(models.Model):
     """
@@ -43,4 +54,61 @@ class Employee(models.Model):
     employee_profile_picture = models.ImageField(upload_to='employee_pictures/', blank=True, null=True)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} - {self.position}"
+        return f"{self.user.fullname}  - {self.position}"
+
+    def should_generate_password(self):
+        """
+        Check if password should be generated for this employee.
+        Returns True if user is not the institution owner.
+        """
+        if not self.user or not self.position or not self.position.department:
+            return False
+        
+        try:
+            institution_owner = self.position.department.institution.institution_owner
+            return self.user != institution_owner
+        except AttributeError:
+            # Handle case where institution or institution_owner doesn't exist
+            return False
+
+    def generate_and_set_password(self):
+        """Generate and set a compliant password for the user."""
+        
+        random_password = generate_compliant_password()
+        self.user.set_password(random_password)
+        self.user.is_password_verified = False
+        self.user.save()
+        return random_password
+
+    def create_password_token_and_send_link(self, request):
+        """Create token and send password link to user."""
+        
+        token = create_and_institution_token(
+            user=self.user, purpose="registration", expiry_minutes=15
+        )
+        password_link = build_password_link(request=request, token=token)
+        send_password_link_to_user(user=self.user, link=password_link)
+        return True
+
+    def setup_employee_password(self, request):
+        """
+        Complete password setup process for new employees.
+        Only applies if user is not the institution owner.
+        """
+        if not self.should_generate_password():
+            return {"success": False, "reason": "Institution owner or invalid data"}
+        
+        try:
+            # Generate and set password
+            password = self.generate_and_set_password()
+            
+            # Create token and send password link
+            link_sent = self.create_password_token_and_send_link(request)
+            
+            return {
+                "success": True, 
+                "password_generated": bool(password),
+                "link_sent": link_sent
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}

@@ -7,13 +7,7 @@ from rest_framework.permissions import AllowAny
 from drf_spectacular.utils import extend_schema
 from .serializers import EmployeeSerializer
 from .models import Employee
-from institution.utils import generate_compliant_password
-from utilities.helpers import (
-    build_password_link,
-    create_and_institution_otp,
-    send_password_link_to_user,
-    create_and_institution_token,
-)
+
 
 class EmployeeListAPIView(APIView):
     permission_classes = [AllowAny]
@@ -79,28 +73,13 @@ class EmployeeCreateAPIView(APIView):
     )
     def post(self, request):
         """Create a new employee for a specific institution."""
-        # Generate random password for the user
-        random_password = generate_compliant_password()
-
-        # Make data mutable and add password to user data
-        mutable_data = request.data.copy()
-        user_data = mutable_data.get("user", {})
-        user_data["password"] = random_password
-        mutable_data["user"] = user_data
-
-        serializer = EmployeeSerializer(data=mutable_data)
+        
+        serializer = EmployeeSerializer(data=request.data)
         if serializer.is_valid():
             employee = serializer.save()
-
-            # Set password verification status
-            employee.user.is_password_verified = False
-            employee.user.save()
-
-            token = create_and_institution_token(
-                user=employee.user, purpose="registration", expiry_minutes=15
-            )
-            password_link = build_password_link(request=request, token=token)
-            send_password_link_to_user(user=employee.user, link=password_link)
+            
+            # Setup password for non-owner employees
+            employee.setup_employee_password(request)
 
             return Response(
                 EmployeeSerializer(employee).data, status=status.HTTP_201_CREATED

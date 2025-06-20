@@ -1,3 +1,4 @@
 from django.contrib import admin
+from .models import OnBoarding
 
-# Register your models here.
+admin.site.register(OnBoarding)
