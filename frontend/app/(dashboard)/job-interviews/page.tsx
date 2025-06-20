@@ -173,7 +173,10 @@ export default function InterviewsPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedInterviews(filteredInterviews.map((interview) => interview.id))
+      const completedInterviews = filteredInterviews
+        .filter((interview) => interview.status === "completed")
+        .map((interview) => interview.id)
+      setSelectedInterviews(completedInterviews)
     } else {
       setSelectedInterviews([])
     }
@@ -359,16 +362,18 @@ export default function InterviewsPage() {
               <TableRow>
                 <TableHead className="w-[50px]">
                   <Checkbox
-                    checked={selectedInterviews.length === filteredInterviews.length && filteredInterviews.length > 0}
+                    checked={
+                      filteredInterviews.filter((i) => i.status === "completed").length > 0 &&
+                      selectedInterviews.length === filteredInterviews.filter((i) => i.status === "completed").length
+                    }
                     onCheckedChange={handleSelectAll}
-                    aria-label="Select all interviews"
+                    aria-label="Select all completed interviews"
                   />
                 </TableHead>
                 <TableHead>Applicant</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Stage</TableHead>
                 <TableHead>Interview Date</TableHead>
-                <TableHead>Interviewer</TableHead>
                 <TableHead>Rating</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead className="w-[50px]">Actions</TableHead>
@@ -382,11 +387,15 @@ export default function InterviewsPage() {
                   onClick={() => handleViewInterview(interview.id)}
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      checked={selectedInterviews.includes(interview.id)}
-                      onCheckedChange={(checked) => handleSelectInterview(interview.id, checked as boolean)}
-                      aria-label={`Select interview for ${interview.job_position_application_details?.applicant_name}`}
-                    />
+                    {interview.status === "completed" ? (
+                      <Checkbox
+                        checked={selectedInterviews.includes(interview.id)}
+                        onCheckedChange={(checked) => handleSelectInterview(interview.id, checked as boolean)}
+                        aria-label={`Select interview for ${interview.job_position_application_details?.applicant_name}`}
+                      />
+                    ) : (
+                      <div className="w-4 h-4" /> // Empty space to maintain table alignment
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -418,12 +427,7 @@ export default function InterviewsPage() {
                       {formatDate(interview.interview_date)}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {interview.interview_stage_details?.interviewer_details?.first_name}{" "}
-                      {interview.interview_stage_details?.interviewer_details?.last_name}
-                    </div>
-                  </TableCell>
+                
                   <TableCell>
                     {interview.rating ? (
                       <div className="flex items-center gap-1">
