@@ -138,102 +138,6 @@ interface EmployeeTableProps {
   roles: Role[]
 }
 
-function EmployeeViewModal({ employee }: { employee: Employee }) {
-  const fullName = getFullName(employee)
-  const departmentName = getDepartmentName(employee)
-  const positionName = getPositionName(employee)
-  const roleNames = getRoleNames(employee)
-
-  return (
-    <DialogContent className="max-w-2xl">
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <User className="h-5 w-5" />
-          Employee Details - {fullName}
-        </DialogTitle>
-      </DialogHeader>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
-            <p className="text-lg font-semibold">{fullName}</p>
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Email Address</Label>
-            <p className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              {employee.email}
-            </p>
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Phone</Label>
-            <p>{employee.phone_number || "Not provided"}</p>
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Address</Label>
-            <p>{employee.address || "Not provided"}</p>
-          </div>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Department</Label>
-            <p className="flex items-center gap-2">
-              <Building className="h-4 w-4" />
-              {departmentName}
-            </p>
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Job Position</Label>
-            <p className="flex items-center gap-2">
-              <Briefcase className="h-4 w-4" />
-              {positionName}
-            </p>
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Roles</Label>
-            <p className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              {roleNames}
-            </p>
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Status</Label>
-            <Badge
-              className={employee.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
-            >
-              {employee.is_active ? "Active" : "Inactive"}
-            </Badge>
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Experience</Label>
-            <p>{employee.experience} years</p>
-          </div>
-        </div>
-        <div className="col-span-1 md:col-span-2 pt-4 border-t">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Date of Birth</Label>
-              <p>{employee.date_of_birth ? new Date(employee.date_of_birth).toLocaleDateString() : "Not provided"}</p>
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Date of Joining</Label>
-              <p>{new Date(employee.date_of_joining).toLocaleDateString()}</p>
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Qualifications</Label>
-              <p>{employee.qualifications || "Not provided"}</p>
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Skills</Label>
-              <p>{employee.skills || "Not provided"}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </DialogContent>
-  )
-}
-
 function EmployeeUpdateModal({
   employee,
   onUpdate,
@@ -618,6 +522,11 @@ function EmployeeTable({ employees, onDelete, onUpdate, departments, positions, 
                     <Link
                       href={`/employees/profile/${employee.id}`}
                       className="font-medium cursor-pointer hover:text-blue-600 hover:underline transition-colors"
+                      onClick={() => {
+                        console.log('Navigating to employee profile:', employee.id);
+                        // Store employee data in localStorage as backup
+                        localStorage.setItem(`employee_${employee.id}`, JSON.stringify(employee));
+                      }}
                     >
                       {getFullName(employee)}
                     </Link>
@@ -632,14 +541,11 @@ function EmployeeTable({ employees, onDelete, onUpdate, departments, positions, 
                     <div>
                       <div className="flex items-center gap-1">
                         {/* View Button */}
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="ghost" size="sm" title="View Details">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <EmployeeViewModal employee={employee} />
-                        </Dialog>
+                        <Link href={`/employees/profile/${employee.id}`}>
+                          <Button variant="ghost" size="sm" title="View Details">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
 
                         {/* Update Button */}
                         <Dialog>
