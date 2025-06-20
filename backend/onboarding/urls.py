@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import OnBoardingListAPI, OnBoardingDetailAPI
+from .views import BulkOnBoardingCreateAPI, OnBoardingListAPI, OnBoardingDetailAPI
 
 urlpatterns = [
     path(
@@ -12,4 +12,5 @@ urlpatterns = [
         OnBoardingDetailAPI.as_view(),
         name="onboarding-detail",
     ),
+    path('onboarding/bulk-create/', BulkOnBoardingCreateAPI.as_view(), name='bulk-onboarding-create'),
 ]

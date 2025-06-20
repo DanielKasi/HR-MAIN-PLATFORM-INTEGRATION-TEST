@@ -13,7 +13,6 @@ import {
   Trash2,
   RefreshCw,
   Calendar,
-  User,
   Eye,
   Star,
   Clock,
@@ -23,11 +22,13 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getInterviews } from "@/lib/utils"
@@ -91,8 +92,12 @@ export default function InterviewsPage() {
       interview.job_position_application_details?.applicant_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       interview.job_position_application_details?.applicant_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       interview.interview_stage_details?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      interview.interview_stage_details?.interviewer_details?.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      interview.interview_stage_details?.interviewer_details?.last_name.toLowerCase().includes(searchTerm.toLowerCase()),
+      interview.interview_stage_details?.interviewer_details?.first_name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      interview.interview_stage_details?.interviewer_details?.last_name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()),
   )
 
   const handleCreateInterview = () => {
@@ -150,11 +155,17 @@ export default function InterviewsPage() {
 
   const getRatingStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        className={`h-3 w-3 ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
-      />
+      <Star key={i} className={`h-3 w-3 ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
     ))
+  }
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
   }
 
   if (!selectedInstitution || !selectedBranch) {
@@ -217,25 +228,22 @@ export default function InterviewsPage() {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">
-                {interviews.filter(i => i.status === "completed").length}
-              </div>
+              <div className="text-2xl font-bold">{interviews.filter((i) => i.status === "completed").length}</div>
               <p className="text-xs text-muted-foreground">Completed</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">
-                {interviews.filter(i => i.status === "scheduled").length}
-              </div>
+              <div className="text-2xl font-bold">{interviews.filter((i) => i.status === "scheduled").length}</div>
               <p className="text-xs text-muted-foreground">Scheduled</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">
-                {interviews.filter(i => i.rating).reduce((sum, i) => sum + (i.rating || 0), 0) /
-                 interviews.filter(i => i.rating).length || 0}/10
+                {interviews.filter((i) => i.rating).reduce((sum, i) => sum + (i.rating || 0), 0) /
+                  interviews.filter((i) => i.rating).length || 0}
+                /10
               </div>
               <p className="text-xs text-muted-foreground">Avg Rating</p>
             </CardContent>
@@ -250,149 +258,162 @@ export default function InterviewsPage() {
         </div>
       )}
 
-      {/* Interviews Grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-full" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-1/2 mb-2" />
-                <Skeleton className="h-4 w-2/3" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : filteredInterviews.length === 0 ? (
-        <Card className="p-12 text-center">
-          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No interviews found</h3>
-          <p className="text-muted-foreground mb-4">
-            {searchTerm
-              ? "No interviews match your search criteria."
-              : "Get started by scheduling your first interview."}
-          </p>
-          {!searchTerm && (
-            <Button onClick={handleCreateInterview} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Schedule First Interview
-            </Button>
-          )}
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredInterviews.map((interview) => (
-            <Card key={interview.id} className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">
-                        {interview.job_position_application_details?.applicant_name}
-                      </CardTitle>
-
-                    </div>
+      {/* Interviews Table */}
+      <Card>
+        {isLoading ? (
+          <div className="p-6">
+            <div className="space-y-4">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-[200px]" />
+                    <Skeleton className="h-4 w-[150px]" />
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleViewInterview(interview.id)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleEditInterview(interview.id)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDeleteInterview(interview.id)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Skeleton className="h-6 w-[80px]" />
+                  <Skeleton className="h-4 w-[120px]" />
+                  <Skeleton className="h-8 w-8" />
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3 cursor-pointer" onClick={() => handleViewInterview(interview.id)}>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Status:</span>
-                    <div className="flex items-center gap-1">
-                      {getStatusIcon(interview.status)}
-                      <Badge variant={getStatusBadgeVariant(interview.status)}>
-                        {interview.status}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Stage:</span>
-                    <Badge variant="outline">{interview.interview_stage_details?.name}</Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      Date:
-                    </span>
-                    <span className="font-medium text-xs">
-                      {formatDate(interview.interview_date)}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Interviewer:</span>
-                    <span className="font-medium text-xs">
-                      {interview.interview_stage_details?.interviewer_details?.first_name} {" "}
-                      {interview.interview_stage_details?.interviewer_details?.last_name}
-                    </span>
-                  </div>
-
-                  {interview.rating && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Rating:</span>
-                      <div className="flex items-center gap-1">
-                        <div className="flex">
-                          {getRatingStars(Math.round(interview.rating / 2))}
+              ))}
+            </div>
+          </div>
+        ) : filteredInterviews.length === 0 ? (
+          <div className="p-12 text-center">
+            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No interviews found</h3>
+            <p className="text-muted-foreground mb-4">
+              {searchTerm
+                ? "No interviews match your search criteria."
+                : "Get started by scheduling your first interview."}
+            </p>
+            {!searchTerm && (
+              <Button onClick={handleCreateInterview} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Schedule First Interview
+              </Button>
+            )}
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Applicant</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Stage</TableHead>
+                <TableHead>Interview Date</TableHead>
+                <TableHead>Interviewer</TableHead>
+                <TableHead>Rating</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead className="w-[50px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredInterviews.map((interview) => (
+                <TableRow
+                  key={interview.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleViewInterview(interview.id)}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="text-xs">
+                          {getInitials(interview.job_position_application_details?.applicant_name || "NA")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">{interview.job_position_application_details?.applicant_name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {interview.job_position_application_details?.applicant_email}
                         </div>
-                        <span className="text-xs ml-1">{interview.rating}/10</span>
                       </div>
                     </div>
-                  )}
-                </div>
-
-                {interview.feedback && (
-                  <div className="pt-2 border-t">
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium">Feedback:</span> {interview.feedback}
-                    </p>
-                  </div>
-                )}
-
-                <div className="pt-2 border-t">
-                  <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                    <div>Email: {interview.job_position_application_details?.applicant_email}</div>
-                    <div>Phone: {interview.job_position_application_details?.applicant_phone}</div>
-                    <div>Location: {interview.job_position_application_details?.address}, {interview.job_position_application_details?.state}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(interview.status)}
+                      <Badge variant={getStatusBadgeVariant(interview.status)}>{interview.status}</Badge>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{interview.interview_stage_details?.name}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1 text-sm">
+                      <Calendar className="h-3 w-3 text-muted-foreground" />
+                      {formatDate(interview.interview_date)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      {interview.interview_stage_details?.interviewer_details?.first_name}{" "}
+                      {interview.interview_stage_details?.interviewer_details?.last_name}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {interview.rating ? (
+                      <div className="flex items-center gap-1">
+                        <div className="flex">{getRatingStars(Math.round(interview.rating / 2))}</div>
+                        <span className="text-xs ml-1">{interview.rating}/10</span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-xs text-muted-foreground">
+                      <div>{interview.job_position_application_details?.applicant_phone}</div>
+                      <div className="truncate max-w-[120px]">
+                        {interview.job_position_application_details?.address},{" "}
+                        {interview.job_position_application_details?.state}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleViewInterview(interview.id)
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEditInterview(interview.id)
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteInterview(interview.id)
+                          }}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Card>
     </div>
   )
 }
