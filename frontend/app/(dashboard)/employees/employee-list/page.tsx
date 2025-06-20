@@ -102,7 +102,7 @@ interface Role {
 
 // Helper function to get full name
 const getFullName = (employee: Employee) => {
-  return `${employee.first_name} ${employee.last_name}`.trim()
+  return `${employee.user?.fullname}`.trim()
 }
 
 // Updated helper function to get department name from API data

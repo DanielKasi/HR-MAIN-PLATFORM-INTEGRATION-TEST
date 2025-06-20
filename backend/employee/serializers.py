@@ -14,8 +14,6 @@ class EmployeeSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "user",
-            "first_name",
-            "last_name",
             "email",
             "phone_number",
             "position",
