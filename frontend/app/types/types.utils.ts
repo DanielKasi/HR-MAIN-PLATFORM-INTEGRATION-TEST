@@ -193,6 +193,7 @@ export interface JobPositionAdvert {
   expiry_date: string; // ISO datetime string
   number_of_employees_expected?: number | null;
   extra_information?: string | null;
+  applications:JobApplication[]
 }
 
 // For creating/updating job adverts

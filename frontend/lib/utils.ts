@@ -424,6 +424,8 @@ export const getJobPositionAdvertById = async ({
   }
 };
 
+
+
 // Update an existing job position advert
 export const updateJobPositionAdvert = async ({
   advertId,
@@ -648,3 +650,11 @@ export const createEmployee = async ({
     return null;
   }
 };
+
+
+
+export const updateJobApplicationStatus = async ({applicationId, status}:{applicationId:number, status:string}) =>{
+  
+
+
+}

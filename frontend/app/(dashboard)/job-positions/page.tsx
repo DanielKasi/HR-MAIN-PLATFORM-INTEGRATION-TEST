@@ -274,10 +274,10 @@ export default function JobPositionsPage() {
 
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground flex items-center gap-1">
-                      <DollarSign className="h-3 w-3" />
+                      UGX {" "}
                       Salary:
                     </span>
-                    <span className="font-medium">${position.salary.toLocaleString()}</span>
+                    <span className="font-medium">${formatCurrency(position.salary.toLocaleString())}</span>
                   </div>
 
                   {position.reportsToDetails && (
