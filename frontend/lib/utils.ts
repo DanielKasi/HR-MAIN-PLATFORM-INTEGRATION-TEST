@@ -278,10 +278,6 @@ export const createJobApplication = async ({
         formData.append(key, value as any);
       }
     });
-
-
-
-
     const response = await apiRequest.post(
       `recruitment/institution/${institutionId}/job-application/`,
       formData
@@ -593,58 +589,84 @@ export const createEmployee = async ({
 }: {
   institutionId: number;
   employeeData: EmployeeFormData;
-}): Promise<EmployeeFormData | null> => {
+}): Promise<any | null> => {
   try {
-    const formData = new FormData();
+    const hasFile = employeeData.employee_profile_picture instanceof File;
+    if (hasFile) {
+      const formData = new FormData();
+      formData.append("institutionId", institutionId.toString());
+      Object.entries(employeeData).forEach(([key, value]) => {
+        if (key === "user") {
+          return;
+        }
 
-    // Append institutionId
-    formData.append("institutionId", institutionId.toString());
-
-    // Handle nested user object
-    if (employeeData.user && typeof employeeData.user === 'object') {
-      Object.entries(employeeData.user).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (key === 'roles_ids' && Array.isArray(value)) {
-            // Handle array - you might need to stringify or handle differently based on your backend
-            formData.append(`user.${key}`, JSON.stringify(value));
-          } else {
-            formData.append(`user.${key}`, value.toString());
-          }
+        if (key === "employee_profile_picture" && value instanceof File) {
+          formData.append(key, value);
+        } else if (value !== undefined && value !== null && value !== "") {
+          formData.append(key, value.toString());
         }
       });
+      const response = await apiRequest.post(`/employee/employee/create/`, formData);
+      return response.data;
+    } else {
+      const requestData = {
+        institutionId,
+        ...employeeData,
+        employee_profile_picture: undefined,
+      };
+      const cleanData = JSON.parse(JSON.stringify(requestData));
+      const response = await apiRequest.post(`/employee/employee/create/`, cleanData);
+      return response.data;
     }
-
-    // Handle other fields
-    Object.entries(employeeData).forEach(([key, value]) => {
-      if (key === "user") {
-        // Already handled above
-        return;
-      }
-
-      if (key === "employee_profile_picture" && value instanceof File) {
-        formData.append(key, value);
-      } else if (value !== undefined && value !== null) {
-        formData.append(key, value.toString());
-      }
-    });
-
-    const response = await apiRequest.post(
-      `/employee/employee/create`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
-
-    if (!response.data || typeof response.data !== "object") {
-      throw new Error("Invalid response format");
-    }
-
-    return response.data as EmployeeFormData;
   } catch (error: any) {
-    console.error("Failed to create employee:", error.message || error);
+    throw error;
+  }
+};
+
+
+// Helper function to get roles for an institution
+export const getRoles = async ({ institutionId }: { institutionId: number }) => {
+  try {
+    const response = await apiRequest.get(`user/role/?Institution_id=${institutionId}`)
+    if (response.data && response.data.results) {
+      return response.data.results || []
+    }
+    return Array.isArray(response.data) ? response.data : []
+  } catch (error) {
+    console.error("Error fetching roles:", error)
+    return []
+  }
+}
+
+// Helper function to get positions for an institution
+export const getPositions = async ({ institutionId }: { institutionId: number }): Promise<IJobPosition[]> => {
+  try {
+    const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`)
+    console.log("Positions response:", response.data)
+    return response.data || []
+  } catch (error) {
+    console.error("Error fetching positions:", error)
+    return []
+  }
+}
+
+
+// Fetch a single employee by ID
+export const getEmployeeDetailId = async ({
+  applicationId,
+  employeeId,
+}: {
+  applicationId: number;
+  employeeId: number;
+
+}): Promise<EmployeeFormData | null> => {
+  try {
+    const response = await apiRequest.get(`/employee/employee/${employeeId}/${applicationId}/`);
+    return response.data as EmployeeFormData;
+  } catch (error) {
+    console.error("Failed to fetch job application", error);
     return null;
   }
 };
+
+

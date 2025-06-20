@@ -269,7 +269,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       submenu: [
         {
           title: "Profile",
-          href: "#5",
+          href: "/employees/profile",
           // requiredPermission: "can_access_valuation_requests",
         },
         {
