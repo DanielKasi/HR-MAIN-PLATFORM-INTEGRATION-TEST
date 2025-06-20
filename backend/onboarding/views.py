@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema
 from django.db import transaction
+from rest_framework import serializers
 
 from .models import OnBoarding
 from .serializers import OnBoardingSerializer
@@ -90,39 +91,22 @@ class BulkOnBoardingCreateAPI(APIView):
             'required': ['application_ids']
         },
         responses={
-            201: {
-                'type': 'object',
-                'properties': {
-                    'created': {
-                        'type': 'array',
-                        'items': OnBoardingSerializer
-                    },
-                    'skipped': {
-                        'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'properties': {
-                                'application_id': {'type': 'integer'},
-                                'reason': {'type': 'string'}
-                            }
-                        }
-                    },
-                    'summary': {
-                        'type': 'object',
-                        'properties': {
-                            'total_requested': {'type': 'integer'},
-                            'created_count': {'type': 'integer'},
-                            'skipped_count': {'type': 'integer'}
-                        }
-                    }
+            201: serializers.Serializer( 
+                'BulkOnBoardingResponse',
+                {
+                    'created': OnBoardingSerializer(many=True),
+                    'skipped': serializers.ListSerializer(
+                        child=serializers.DictField()
+                    ),
+                    'summary': serializers.DictField()
                 }
-            },
-            400: {
-                'type': 'object',
-                'properties': {
-                    'error': {'type': 'string'}
+            ),
+            400: serializers.Serializer(
+                'ErrorResponse',
+                {
+                    'error': serializers.CharField()
                 }
-            }
+            )
         },
         summary="Bulk Create Onboarding Records",
         description="Create onboarding records for multiple applications with initial status",

@@ -12,5 +12,5 @@ urlpatterns = [
         OnBoardingDetailAPI.as_view(),
         name="onboarding-detail",
     ),
-    path('onboarding/bulk-create/', BulkOnBoardingCreateAPI.as_view(), name='bulk-onboarding-create'),
+    path('bulk-create/', BulkOnBoardingCreateAPI.as_view(), name='bulk-onboarding-create'),
 ]
