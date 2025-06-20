@@ -676,17 +676,15 @@ export const getEmployeeDetailId = async ({
 }: {
   applicationId: number;
   employeeId: number;
-
-}): Promise<EmployeeFormData | null> => {
+}): Promise<EmployeeFormData | null> => {  // Changed return type from EmployeeFormData to Employee
   try {
     const response = await apiRequest.get(`/employee/employee/${employeeId}/${applicationId}/`);
-    return response.data as EmployeeFormData;
+    return response.data as EmployeeFormData;  // Changed casting
   } catch (error) {
-    console.error("Failed to fetch job application", error);
+    console.error("Failed to fetch employee details", error);
     return null;
   }
 };
-
 
 
 

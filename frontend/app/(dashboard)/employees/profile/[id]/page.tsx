@@ -25,7 +25,7 @@ import {
   ArrowLeft,
 } from "lucide-react"
 import Link from "next/link"
-import { getEmployeeDetailId } from "@/lib/utils"
+import { getEmployeeDetailId, getAllEmployees } from "@/lib/utils"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
 import { IUserInstitution } from "@/app/types"
 
@@ -118,27 +118,68 @@ export default function EmployeeProfilePage() {
     }
   }, [selectedInstitution, institutionsAttached])
 
-  // Fetch employee data
+  // Fetch employee data with fallback methods
   useEffect(() => {
     const fetchEmployee = async () => {
-      if (!institutionId || !employeeId) return
+      if (!institutionId || !employeeId) {
+        console.log('Missing institutionId or employeeId:', { institutionId, employeeId })
+        return
+      }
 
       try {
         setLoading(true)
-        const data = await getEmployeeDetailId({
-          institutionId: institutionId,
-          employeeId: parseInt(employeeId),
-        })
+        setError(null)
+
+        console.log('Fetching employee with ID:', employeeId, 'for institution:', institutionId)
+
+        // Get all employees and find the specific one
+        let data = null
+        console.log('Fetching employee from all employees list')
+        try {
+          const allEmployees = await getAllEmployees({ institutionId: institutionId })
+          if (allEmployees && Array.isArray(allEmployees)) {
+            data = allEmployees.find(emp => emp.id === parseInt(employeeId))
+            console.log('Found employee in all employees list:', data)
+          }
+        } catch (getAllError) {
+          console.log('Failed to get employees list:', getAllError)
+
+          // Fallback: Try the specific employee detail API if getAllEmployees fails
+          try {
+            data = await getEmployeeDetailId({
+              applicationId: institutionId,
+              employeeId: parseInt(employeeId),
+            })
+            console.log('Employee detail API response:', data)
+          } catch (apiError) {
+            console.log('Employee detail API also failed:', apiError)
+          }
+        }
+
+        // Method 3: Check localStorage backup
+        if (!data) {
+          console.log('Trying localStorage backup')
+          try {
+            const localData = localStorage.getItem(`employee_${employeeId}`)
+            if (localData) {
+              data = JSON.parse(localData)
+              console.log('Found employee in localStorage:', data)
+            }
+          } catch (localError) {
+            console.log('localStorage retrieval failed:', localError)
+          }
+        }
 
         if (data) {
           setEmployee(data)
-          setError(null)
+          console.log('Successfully loaded employee:', data)
         } else {
-          setError("Employee not found")
+          setError(`Employee with ID ${employeeId} not found`)
+          console.log('Employee not found with any method')
         }
       } catch (err) {
-        setError("Failed to load employee details")
         console.error("Error fetching employee:", err)
+        setError("Failed to load employee details")
       } finally {
         setLoading(false)
       }
@@ -147,12 +188,24 @@ export default function EmployeeProfilePage() {
     fetchEmployee()
   }, [institutionId, employeeId])
 
+  // Debug information
+  useEffect(() => {
+    console.log('Profile page debug info:', {
+      employeeId,
+      institutionId,
+      selectedInstitution,
+      institutionsAttached: institutionsAttached?.length || 0,
+      employee: employee?.id || 'none',
+    })
+  }, [employeeId, institutionId, selectedInstitution, institutionsAttached, employee])
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading employee profile...</p>
+          <p className="mt-2 text-sm text-gray-500">Employee ID: {employeeId}</p>
         </div>
       </div>
     )
@@ -161,11 +214,26 @@ export default function EmployeeProfilePage() {
   if (error || !employee) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md">
           <p className="text-red-600 mb-4">{error || "Employee not found"}</p>
-          <Link href="/employees">
-            <Button>Back to Employees</Button>
-          </Link>
+          <p className="text-sm text-gray-500 mb-4">
+            Employee ID: {employeeId} | Institution ID: {institutionId}
+          </p>
+          <div className="space-y-2">
+            <Link href="/employees/employee-list">
+              <Button>Back to Employees</Button>
+            </Link>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setLoading(true)
+                setError(null)
+                window.location.reload()
+              }}
+            >
+              Retry
+            </Button>
+          </div>
         </div>
       </div>
     )
@@ -176,7 +244,7 @@ export default function EmployeeProfilePage() {
       <div className="w-full py-8 px-4 sm:px-6 lg:px-8">
         {/* Back button */}
         <div className="mb-6">
-          <Link href="/employees">
+          <Link href="/employees/employee-list">
             <Button variant="outline" className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back to Employees
