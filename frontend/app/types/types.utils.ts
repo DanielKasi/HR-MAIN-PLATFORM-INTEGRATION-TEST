@@ -260,6 +260,9 @@ export interface IInterview {
   status: string;
   feedback?: string | null;
   rating?: number | null;
+  location: string,
+  interview_time: string,
+  interview_type: string,
 }
 
 export interface User {
@@ -360,4 +363,16 @@ export interface IRoleFormData {
   description: string;
   institution: number; // ForeignKey as ID
   permissions_details: string[]; // List of permission codes
+}
+
+export interface IInterviewFormData {
+  job_position_application: number;
+  interview_stage: number;
+  interview_date: string;           
+  feedback?: string;
+  rating?: number;
+  location: string,
+  interview_time: string,
+  interview_type: string,
+  status: string;
 }
