@@ -368,7 +368,7 @@ export interface IRoleFormData {
 }
 
 export interface IOnBoarding {
-  application_details: JobApplication;
+  application_name: JobApplication;
   id: number;
   application: number;
   attended: boolean;
@@ -402,9 +402,13 @@ export interface IBulkOnBoardingSummary {
 }
 
 export interface IBulkOnBoardingResponse {
-  created: IOnBoarding[];
-  skipped: IBulkOnBoardingSkipped[];
-  summary: IBulkOnBoardingSummary;
+  created: IOnBoarding[]
+  skipped: any[]
+  summary: {
+    created_count: number
+    skipped_count: number
+    total_requested: number
+  }
 }
 
 export interface IInterviewFormData {

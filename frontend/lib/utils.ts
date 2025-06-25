@@ -718,7 +718,6 @@ export const getEmployeeDetailId = async ({
     const response = await apiRequest.get(`/employee/employee/${employeeId}/${applicationId}/`);
     return response.data as EmployeeFormData;  // Changed casting
   } catch (error) {
-    console.error("Failed to fetch employee details", error);
     return null;
   }
 };
@@ -726,7 +725,7 @@ export const getEmployeeDetailId = async ({
 
 export const getOnBoardings = async ({ institutionId }: { institutionId: number }) => {
   try {
-    const response = await apiRequest.get(`on-boarding/list/${institutionId}/`)
+    const response = await apiRequest.get(`on-boarding/${institutionId}/`)
     return response.data as IOnBoarding[]
   } catch (error) {
     console.error("Error fetching onboarding records:", error)
@@ -777,7 +776,8 @@ export const createOnBoarding = async ({
   }
 };
 
-// Update an existing onboarding record by its ID
+
+
 export const updateOnBoarding = async ({
   onboardingId,
   onboardingData,
@@ -786,16 +786,9 @@ export const updateOnBoarding = async ({
   onboardingData: Partial<IOnBoardingFormData>;
 }): Promise<IOnBoarding | null> => {
   try {
-    const formData = new FormData();
-    Object.entries(onboardingData).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        formData.append(key, value.toString());
-      }
-    });
-
     const response = await apiRequest.patch(
-      `on-boarding/${onboardingId}/`,
-      formData
+      `on-boarding/record/${onboardingId}/`,
+      onboardingData 
     );
     return response.data as IOnBoarding;
   } catch (error) {
