@@ -193,7 +193,8 @@ export interface JobPositionAdvert {
   expiry_date: string; // ISO datetime string
   number_of_employees_expected?: number | null;
   extra_information?: string | null;
-  applications:JobApplication[]
+  applications:JobApplication[];
+  interview_stages: JobApplication[]
 }
 
 // For creating/updating job adverts
@@ -247,6 +248,7 @@ export interface IInterviewStage{
   level: number;
   interviewer: number;
   interviewer_details?: IEmployee;
+  candidates_count: number;
 }
 
 
@@ -416,3 +418,5 @@ export interface IInterviewFormData {
   interview_type: string,
   status: string;
 }
+
+
