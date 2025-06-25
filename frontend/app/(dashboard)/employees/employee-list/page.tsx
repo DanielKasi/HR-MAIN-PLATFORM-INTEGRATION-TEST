@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Mail, Building, User, Briefcase, Plus } from "lucide-react"
 import { getAllEmployees } from "@/lib/utils"
-import { updateEmployee } from "@/lib/updateEmployee"
 import {useSelector} from "react-redux";
 import {selectAttachedInstitutions, selectTemporaryPermissions} from "@/store/auth/selectors";
 import {
@@ -144,17 +143,13 @@ function EmployeeUpdateModal({
   onUpdate,
   departments,
   positions,
-  roles,
-  updateLoading,
-  updateError,
+  roles
 }: {
   employee: Employee
   onUpdate: (employee: Employee) => void
   departments: Department[]
   positions: Position[]
   roles: Role[]
-  updateLoading: boolean
-  updateError: string | null
 }) {
   const [formData, setFormData] = useState<Employee>({
     ...employee,
@@ -380,12 +375,7 @@ function EmployeeUpdateModal({
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit" disabled={updateLoading}>
-          {updateLoading ? 'Updating...' : 'Update Employee'}
-        </Button>
-        {updateError && (
-          <p className="text-red-500 text-sm mt-2">{updateError}</p>
-        )}
+          <Button type="submit">Update Employee</Button>
         </DialogFooter>
       </form>
     </DialogContent>
@@ -570,8 +560,6 @@ function EmployeeTable({ employees, onDelete, onUpdate, departments, positions, 
                             departments={departments}
                             positions={positions}
                             roles={roles}
-                            updateLoading={updateLoading}
-                            updateError={updateError}
                           />
                         </Dialog>
 
@@ -658,9 +646,6 @@ export default function Component() {
   const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  // For update modal
-  const [updateLoading, setUpdateLoading] = useState(false)
-  const [updateError, setUpdateError] = useState<string | null>(null)
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const [InstitutionId, setInstitutionId] = useState<string | null>(null);
   const InstitutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
@@ -784,36 +769,11 @@ export default function Component() {
 
   const handleUpdate = async (updatedEmployee: Employee) => {
     try {
-      setUpdateLoading(true);
-      setUpdateError(null);
-      // Call the updateEmployee API
-      const institutionIdNumber = InstitutionId ? parseInt(InstitutionId) : null;
-      if (!institutionIdNumber) throw new Error("No institution selected");
-      const result = await updateEmployee({
-        institutionId: institutionIdNumber,
-        employeeId: updatedEmployee.id,
-        employeeData: updatedEmployee,
-      });
-      if (result) {
-        // Map result to Employee shape if needed
-        const mapped = {
-          ...result,
-          position: typeof result.position === 'number'
-            ? { id: result.position, name: '' }
-            : result.position,
-          department: typeof result.department === 'number'
-            ? { id: result.department, name: '', institution_id: 0 }
-            : result.department,
-          roles: Array.isArray(result.roles) && typeof result.roles[0] === 'object'
-            ? result.roles
-            : (result.roles || []).map((roleId: number) => ({ id: roleId, name: '' })),
-        };
-        setEmployees(employees.map((emp) => (emp.id === updatedEmployee.id ? mapped : emp)));
-      }
-    } catch (err: any) {
-      setUpdateError(err.message || "Failed to update employee");
-    } finally {
-      setUpdateLoading(false);
+      // TODO: Add your update API call here
+      // await updateEmployee(updatedEmployee)
+      setEmployees(employees.map((emp) => (emp.id === updatedEmployee.id ? updatedEmployee : emp)))
+    } catch (err) {
+      console.error("Error updating employee:", err)
     }
   }
 
