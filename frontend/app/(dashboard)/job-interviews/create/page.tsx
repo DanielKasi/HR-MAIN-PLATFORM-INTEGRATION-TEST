@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Plus, Users, ArrowLeft, Check, User, Building } from "lucide-react"
+import { Plus, Users, ArrowLeft, Check, User, Building, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import {
@@ -33,9 +34,13 @@ import {
 import type { JobApplication, IInterviewStage, IInterviewStageFormData, IInterview, IInterviewFormData, IEmployee } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
+interface MultiInterviewFormData extends Omit<IInterviewFormData, 'job_position_application'> {
+  selected_applications: number[]
+}
+
 export default function CreateInterviewPage() {
-  const [formData, setFormData] = useState<IInterviewFormData>({
-    job_position_application: 0,
+  const [formData, setFormData] = useState<MultiInterviewFormData>({
+    selected_applications: [],
     interview_stage: 0,
     interview_date: "",
     location: "",
@@ -47,11 +52,12 @@ export default function CreateInterviewPage() {
   })
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([])
   const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([])
-  const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null)
+  const [selectedApplications, setSelectedApplications] = useState<JobApplication[]>([])
   const [selectedStage, setSelectedStage] = useState<IInterviewStage | null>(null)
+  const [selectedJobPosition, setSelectedJobPosition] = useState<string>("")
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [errors, setErrors] = useState<Partial<Record<keyof IInterview, string>>>({})
+  const [errors, setErrors] = useState<any>({})
   const [isCreateStageDialogOpen, setIsCreateStageDialogOpen] = useState(false)
   const [isCreatingStage, setIsCreatingStage] = useState(false)
   const [employees, setEmployees] = useState<IEmployee[]>([])
@@ -67,6 +73,21 @@ export default function CreateInterviewPage() {
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const selectedBranch = useSelector(selectSelectedBranch)
 
+  // Group applications by job position
+  const groupedApplications = jobApplications.reduce((acc, app) => {
+    const jobId = app.job_position_advert
+    const jobName = app.job_position_advert_job_details?.name || 'Unknown Position'
+    
+    if (!acc[jobId]) {
+      acc[jobId] = {
+        jobName,
+        applications: []
+      }
+    }
+    acc[jobId].applications.push(app)
+    return acc
+  }, {} as Record<number, { jobName: string; applications: JobApplication[] }>)
+
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
       router.push("/dashboard")
@@ -77,10 +98,12 @@ export default function CreateInterviewPage() {
   }, [selectedInstitution, selectedBranch, router])
 
   useEffect(() => {
-    if (selectedApplication) {
-      setStageFormData(prev => ({ ...prev, job_position_advert: selectedApplication.job_position_advert }))
+    // Update stage form data when applications are selected
+    if (selectedApplications.length > 0) {
+      const firstApp = selectedApplications[0]
+      setStageFormData(prev => ({ ...prev, job_position_advert: firstApp.job_position_advert }))
     }
-  }, [selectedApplication])
+  }, [selectedApplications])
 
   const fetchInitialData = async () => {
     if (!selectedInstitution) return
@@ -115,17 +138,60 @@ export default function CreateInterviewPage() {
     }
   }
 
-  const updateFormData = (field: keyof IInterview, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }))
+  const handleJobPositionSelect = (jobPositionId: string) => {
+    setSelectedJobPosition(jobPositionId)
+    // Clear selected applications when job position changes
+    setSelectedApplications([])
+    setFormData(prev => ({ ...prev, selected_applications: [] }))
+    
+    // Clear job position error
+    if (errors.job_position) {
+      setErrors((prev: any) => ({ ...prev, job_position: undefined }))
+    }
+  }
+
+  const handleApplicationToggle = (application: JobApplication) => {
+    const isSelected = selectedApplications.some(app => app.id === application.id)
+    
+    if (isSelected) {
+      // Remove application
+      const newSelectedApps = selectedApplications.filter(app => app.id !== application.id)
+      setSelectedApplications(newSelectedApps)
+      setFormData(prev => ({
+        ...prev,
+        selected_applications: newSelectedApps.map(app => app.id)
+      }))
+    } else {
+      // Add application
+      const newSelectedApps = [...selectedApplications, application]
+      setSelectedApplications(newSelectedApps)
+      setFormData(prev => ({
+        ...prev,
+        selected_applications: newSelectedApps.map(app => app.id)
+      }))
     }
 
-    // Update selected application when job_position_application changes
-    if (field === "job_position_application") {
-      const application = jobApplications.find((app) => app.id === Number(value))
-      setSelectedApplication(application || null)
+    // Clear applications error
+    if (errors.selected_applications) {
+      setErrors((prev: any) => ({ ...prev, selected_applications: undefined }))
+    }
+  }
+
+  const removeSelectedApplication = (applicationId: number) => {
+    const newSelectedApps = selectedApplications.filter(app => app.id !== applicationId)
+    setSelectedApplications(newSelectedApps)
+    setFormData(prev => ({
+      ...prev,
+      selected_applications: newSelectedApps.map(app => app.id)
+    }))
+  }
+
+  const updateFormData = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev: any) => ({ ...prev, [field]: undefined }))
     }
 
     // Update selected stage when interview_stage changes
@@ -136,11 +202,16 @@ export default function CreateInterviewPage() {
   }
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<Record<keyof IInterview, string>> = {}
+    const newErrors: any = {}
 
-    // Application validation
-    if (!formData.job_position_application || formData.job_position_application === 0) {
-      newErrors.job_position_application = "Please select a job application"
+    // Job position validation
+    if (!selectedJobPosition) {
+      newErrors.job_position = "Please select a job position"
+    }
+
+    // Applications validation
+    if (formData.selected_applications.length === 0) {
+      newErrors.selected_applications = "Please select at least one applicant"
     }
 
     // Interview stage validation
@@ -183,14 +254,14 @@ export default function CreateInterviewPage() {
 
   const handleCreateStage = async (e: React.FormEvent) => {
     e.preventDefault()
-    e.stopPropagation() // Prevent event from bubbling to parent form
+    e.stopPropagation()
 
     if (!selectedInstitution) {
       toast.error("Missing organization information")
       return
     }
-    if (!selectedApplication) {
-      toast.error("No selected application")
+    if (selectedApplications.length === 0) {
+      toast.error("No selected applications")
       return
     }
 
@@ -220,10 +291,7 @@ export default function CreateInterviewPage() {
       })
 
       if (newStage) {
-        // Add the new stage to the list
         setInterviewStages((prev) => [...prev, newStage])
-
-        // Select the newly created stage
         updateFormData("interview_stage", newStage.id)
 
         // Reset stage form
@@ -231,7 +299,7 @@ export default function CreateInterviewPage() {
           name: "",
           level: 1,
           interviewer: 0,
-          job_position_advert: selectedApplication.job_position_advert
+          job_position_advert: selectedApplications[0]?.job_position_advert || 0
         })
         setStageErrors({})
         setIsCreateStageDialogOpen(false)
@@ -271,32 +339,39 @@ export default function CreateInterviewPage() {
     setIsSubmitting(true)
 
     try {
-      const createData: IInterviewFormData = {
-        job_position_application: formData.job_position_application,
-        interview_stage: formData.interview_stage,
-        interview_date: formData.interview_date,
-        location: formData.location,
-        interview_time: formData.interview_time,
-        interview_type: formData.interview_type,
-        status: formData.status || "scheduled",
-        feedback: formData.feedback || undefined,
-        rating: formData.rating || undefined,
-      }
+      // Create interviews for each selected application
+      const interviewPromises = formData.selected_applications.map(async (applicationId) => {
+        const createData: IInterviewFormData = {
+          job_position_application: applicationId,
+          interview_stage: formData.interview_stage,
+          interview_date: formData.interview_date,
+          location: formData.location,
+          interview_time: formData.interview_time,
+          interview_type: formData.interview_type,
+          status: formData.status || "scheduled",
+          feedback: formData.feedback || undefined,
+          rating: formData.rating || undefined,
+        }
 
-      const newInterview = await createInterview({
-        institutionId: selectedInstitution.id,
-        interviewData: createData,
+        return createInterview({
+          institutionId: selectedInstitution.id,
+          interviewData: createData,
+        })
       })
 
-      if (newInterview) {
-        toast.success("Interview scheduled successfully!")
+      const results = await Promise.all(interviewPromises)
+      const successCount = results.filter(result => result !== null).length
+      const failureCount = results.length - successCount
+
+      if (successCount > 0) {
+        toast.success(`${successCount} interview(s) scheduled successfully!${failureCount > 0 ? ` ${failureCount} failed.` : ''}`)
         router.push("/job-interviews")
       } else {
-        toast.error("Failed to schedule interview. Please try again.")
+        toast.error("Failed to schedule any interviews. Please try again.")
       }
     } catch (error) {
-      console.error("Error creating interview:", error)
-      toast.error("Failed to schedule interview. Please try again.")
+      console.error("Error creating interviews:", error)
+      toast.error("Failed to schedule interviews. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -314,7 +389,7 @@ export default function CreateInterviewPage() {
       tomorrow.setHours(10, 0, 0, 0)
       setFormData((prev) => ({
         ...prev,
-        interview_date: tomorrow.toISOString().slice(0, 16), // Format for datetime-local input
+        interview_date: tomorrow.toISOString().slice(0, 16),
       }))
     }
   }, [formData.interview_date])
@@ -347,7 +422,7 @@ export default function CreateInterviewPage() {
               <div>
                 <CardTitle className="text-xl">Schedule New Interview</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Schedule an interview for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
+                  Schedule interviews for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
                 </p>
               </div>
             </div>
@@ -355,31 +430,94 @@ export default function CreateInterviewPage() {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Selected Application Info */}
-              {selectedApplication && (
-                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                  <h4 className="font-medium text-sm mb-2 text-blue-800">Selected Applicant</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-700">
-                    <div>
-                      <p>
-                        <span className="font-medium">Name:</span> {selectedApplication.applicant_name}
-                      </p>
-                      <p>
-                        <span className="font-medium">Email:</span> {selectedApplication.applicant_email}
-                      </p>
-                    </div>
-                    <div>
-                      <p>
-                        <span className="font-medium">Phone:</span> {selectedApplication.applicant_phone}
-                      </p>
-                      <div className="inline-block">
-                        <span className="font-medium">Status:</span>
-                        <Badge variant="outline" className="ml-1 capitalize">
-                          {selectedApplication.status}
-                        </Badge>
+              {/* Job Position Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="job_position" className="text-sm font-medium">
+                  Job Position *
+                </Label>
+                <Select
+                  value={selectedJobPosition}
+                  onValueChange={handleJobPositionSelect}
+                >
+                  <SelectTrigger className={errors.job_position ? "border-destructive" : ""}>
+                    <SelectValue placeholder="Select a job position" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(groupedApplications).map(([jobId, { jobName, applications }]) => (
+                      <SelectItem key={jobId} value={jobId}>
+                        <div className="flex items-center gap-2">
+                          <Building className="h-4 w-4" />
+                          {jobName} ({applications.length} applicant{applications.length !== 1 ? 's' : ''})
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.job_position && (
+                  <p className="text-sm text-destructive">{errors.job_position}</p>
+                )}
+              </div>
+
+              {/* Applicant Selection */}
+              {selectedJobPosition && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      Select Applicants * ({groupedApplications[Number(selectedJobPosition)]?.applications.length || 0} available)
+                    </Label>
+                    <div className="border rounded-lg p-4 max-h-60 overflow-y-auto">
+                      <div className="space-y-3">
+                        {groupedApplications[Number(selectedJobPosition)]?.applications.map((application) => (
+                          <div key={application.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50">
+                            <Checkbox
+                              id={`app-${application.id}`}
+                              checked={selectedApplications.some(app => app.id === application.id)}
+                              onCheckedChange={() => handleApplicationToggle(application)}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <User className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">{application.applicant_name}</span>
+                                <Badge variant="outline" className="capitalize">
+                                  {application.status}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-muted-foreground space-y-1">
+                                <p>Email: {application.applicant_email}</p>
+                                <p>Phone: {application.applicant_phone}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
+                    {errors.selected_applications && (
+                      <p className="text-sm text-destructive">{errors.selected_applications}</p>
+                    )}
                   </div>
+
+                  {/* Selected Applicants Summary */}
+                  {selectedApplications.length > 0 && (
+                    <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                      <h4 className="font-medium text-sm mb-3 text-blue-800">
+                        Selected Applicants ({selectedApplications.length})
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedApplications.map((app) => (
+                          <Badge key={app.id} variant="secondary" className="flex items-center gap-1">
+                            {app.applicant_name}
+                            <button
+                              type="button"
+                              onClick={() => removeSelectedApplication(app.id)}
+                              className="ml-1 hover:bg-destructive/20 rounded-full p-1"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -411,35 +549,6 @@ export default function CreateInterviewPage() {
 
               {/* Form Fields - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Job Application */}
-                <div className="space-y-2">
-                  <Label htmlFor="job_position_application" className="text-sm font-medium">
-                    Job Application *
-                  </Label>
-                  <Select
-                    value={formData.job_position_application.toString()}
-                    onValueChange={(value) => updateFormData("job_position_application", Number(value))}
-                  >
-                    <SelectTrigger className={errors.job_position_application ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select a job application" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {jobApplications.map((application) => (
-                        <SelectItem key={application.id} value={application.id.toString()}>
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4" />
-                            {application.applicant_name} -{" "}
-                            {application.job_position_advert_job_details?.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.job_position_application && (
-                    <p className="text-sm text-destructive">{errors.job_position_application}</p>
-                  )}
-                </div>
-
                 {/* Interview Stage */}
                 <div className="space-y-2">
                   <Label htmlFor="interview_stage" className="text-sm font-medium">
@@ -580,7 +689,7 @@ export default function CreateInterviewPage() {
                     value={formData.interview_date}
                     onChange={(e) => updateFormData("interview_date", e.target.value)}
                     className={errors.interview_date ? "border-destructive" : ""}
-                    min={new Date().toISOString().slice(0, 16)} // Prevent past dates
+                    min={new Date().toISOString().slice(0, 16)}
                   />
                   {errors.interview_date && <p className="text-sm text-destructive">{errors.interview_date}</p>}
                   <p className="text-xs text-muted-foreground">Must be a future date and time</p>
@@ -661,6 +770,12 @@ export default function CreateInterviewPage() {
                     <p>
                       <span className="font-medium text-foreground">Available Stages:</span> {interviewStages.length}
                     </p>
+                    {selectedApplications.length > 0 && (
+                      <p>
+                        <span className="font-medium text-foreground">Selected Applicants:</span>{" "}
+                        {selectedApplications.length}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -678,18 +793,18 @@ export default function CreateInterviewPage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || selectedApplications.length === 0}
                   className="flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
                   {isSubmitting ? (
                     <>
                       <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      Scheduling...
+                      Scheduling {selectedApplications.length} interview{selectedApplications.length !== 1 ? 's' : ''}...
                     </>
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      Schedule Interview
+                      Schedule {selectedApplications.length} Interview{selectedApplications.length !== 1 ? 's' : ''}
                     </>
                   )}
                 </Button>

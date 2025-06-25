@@ -548,6 +548,44 @@ export const updateInterview = async ({
 };
 
 
+export const updateCandidateStageeFeedback = async ({
+  candidateId,
+  stageId,
+  feedback,
+  rating,
+}: {
+  candidateId: number;
+  stageId: number;
+  feedback: string;
+  rating: number;
+}): Promise<any> => {
+  try {
+    // First find the interview for this candidate in this stage
+    const interviewsResponse = await apiRequest.get(
+      `recruitment/interviews/?job_position_application=${candidateId}&interview_stage=${stageId}`
+    );
+    
+    if (!interviewsResponse.data.results || interviewsResponse.data.results.length === 0) {
+      throw new Error('No interview found for this candidate in this stage');
+    }
+    
+    const interviewId = interviewsResponse.data.results[0].id;
+    
+    const formData = new FormData();
+    formData.append('feedback', feedback);
+    formData.append('rating', rating.toString());
+
+    const response = await apiRequest.patch(
+      `recruitment/job-interview/${interviewId}/`,
+      formData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Failed to update candidate feedback:", error);
+    return null;
+  }
+};
+
 export const getInterviewStages = async ({
   institutionId,
 }: {
@@ -563,7 +601,6 @@ export const getInterviewStages = async ({
     return null;
   }
 };
-
 
 export const createInterviewStage = async ({
   institutionId,
