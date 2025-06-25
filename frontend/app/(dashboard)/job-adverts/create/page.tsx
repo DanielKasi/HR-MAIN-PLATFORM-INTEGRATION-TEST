@@ -57,7 +57,6 @@ export default function CreateJobAdvertPage() {
         toast.error("Failed to load job positions")
       }
     } catch (error) {
-      console.error("Error fetching job positions:", error)
       toast.error("Failed to load job positions")
     } finally {
       setIsLoading(false)
@@ -134,7 +133,6 @@ export default function CreateJobAdvertPage() {
         toast.error("Failed to create job advert. Please try again.")
       }
     } catch (error) {
-      console.error("Error creating job advert:", error)
       toast.error("Failed to create job advert. Please try again.")
     } finally {
       setIsSubmitting(false)
@@ -145,7 +143,6 @@ export default function CreateJobAdvertPage() {
     router.back()
   }
 
-  // Set default expiry date to 30 days from now
   useEffect(() => {
     if (!formData.expiry_date) {
       const defaultExpiryDate = new Date()

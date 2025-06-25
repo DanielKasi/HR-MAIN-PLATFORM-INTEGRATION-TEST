@@ -8,7 +8,7 @@ urlpatterns = [
         name="onboarding-list-create",
     ),
     path(
-        "<int:onboarding_id>/",
+        "record/<int:onboarding_id>/",
         OnBoardingDetailAPI.as_view(),
         name="onboarding-detail",
     ),

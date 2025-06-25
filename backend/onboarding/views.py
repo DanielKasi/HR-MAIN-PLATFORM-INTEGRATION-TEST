@@ -41,8 +41,16 @@ class OnBoardingListAPI(APIView):
         return Response(serializer.data, status=200)
 
 
+
 class OnBoardingDetailAPI(APIView):
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser] 
+
+    def get(self, request, onboarding_id):
+        print(f"GET method called with onboarding_id: {onboarding_id}")
+        # ... your existing code
+
+    def patch(self, request, onboarding_id):
+        print(f"PATCH method called with onboarding_id: {onboarding_id}")
 
     @extend_schema(
         responses={200: OnBoardingSerializer},

@@ -47,8 +47,8 @@ import {
   Plus
 } from "lucide-react"
 import { toast } from "sonner"
-import type { JobPositionAdvert, IInterviewFormData, IInterview } from "@/app/types/types.utils"
-import { getJobPositionAdvertById, updateInterview, getInterviews, createInterview } from "@/lib/utils"
+import type { JobPositionAdvert, IInterviewFormData, IInterview, IOnBoarding, IBulkOnBoardingResponse, IBulkOnBoardingRequest } from "@/app/types/types.utils"
+import { getJobPositionAdvertById, updateInterview, getInterviews, createInterview, bulkCreateOnBoarding } from "@/lib/utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 
@@ -997,6 +997,58 @@ const StageCandidatesContent = ({
     setIsProgressionDialogOpen(true)
   }
 
+  const handleBulkOnboard = async () => {
+    if (selectedCandidates.length === 0) {
+      toast.error('Please select candidates to onboard')
+      return
+    }
+
+    try {
+      // Get the selected candidates data
+      const candidatesToOnboard = filteredCandidates.filter(c => selectedCandidates.includes(c.id))
+      
+      // Extract application IDs for the bulk onboarding API
+      const applicationIds = candidatesToOnboard.map(candidate => candidate.id)
+
+      console.log('Attempting to onboard candidates with IDs:', applicationIds)
+
+      // Call the bulk onboarding API
+      const result = await bulkCreateOnBoarding({ applicationIds })
+
+      console.log('Onboarding API response:', result)
+
+      if (result) {
+        const createdCount = result.summary?.created_count || result.created?.length || 0
+        const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0
+        
+        if (createdCount > 0) {
+          if (skippedCount === 0) {
+            toast.success(`Successfully onboarded ${createdCount} candidate(s)`)
+          } else {
+            toast.warning(`${createdCount} candidates onboarded successfully, ${skippedCount} were skipped`)
+          }
+          
+          setSelectedCandidates([])
+          // Refresh data to reflect any status changes
+          await refreshStageData()
+        } else {
+          // No candidates were successfully onboarded
+          toast.error(`No candidates were onboarded successfully. ${skippedCount} were skipped.`)
+          if (result.skipped && result.skipped.length > 0) {
+            console.log('Skipped applications:', result.skipped)
+          }
+        }
+      } else {
+        console.error('Onboarding API returned null response')
+        toast.error('Failed to onboard candidates - API returned no response')
+      }
+
+    } catch (error) {
+      console.error('Error onboarding candidates:', error)
+      toast.error(`Failed to onboard candidates: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
   const handleBulkScheduleFirst = () => {
     const candidatesData = filteredCandidates.filter(c => selectedCandidates.includes(c.id))
     setCandidatesToSchedule(candidatesData)
@@ -1157,6 +1209,39 @@ const StageCandidatesContent = ({
     }
   }
 
+  const handleIndividualOnboard = async (candidate: Candidate) => {
+    try {
+      console.log('Attempting to onboard individual candidate:', candidate.id)
+      
+      // Use the bulk onboarding function for individual candidates too
+      const result = await bulkCreateOnBoarding({ applicationIds: [candidate.id] })
+
+      console.log('Individual onboarding API response:', result)
+
+      if (result) {
+        const createdCount = result.summary?.created_count || result.created?.length || 0
+        
+        if (createdCount > 0) {
+          // Refresh data to reflect any status changes
+          await refreshStageData()
+          return { success: true }
+        } else {
+          const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0
+          if (skippedCount > 0) {
+            throw new Error('Candidate was skipped - may already be onboarded')
+          } else {
+            throw new Error('Failed to onboard candidate - unknown error')
+          }
+        }
+      } else {
+        throw new Error('Failed to onboard candidate - API returned no response')
+      }
+    } catch (error) {
+      console.error('Error onboarding candidate:', error)
+      throw error
+    }
+  }
+
   const openFeedbackDialog = (candidate: Candidate) => {
     setSelectedCandidate(candidate)
     setIsFeedbackDialogOpen(true)
@@ -1237,6 +1322,15 @@ const StageCandidatesContent = ({
                     className="text-gray-600"
                   >
                     Clear Selection
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleBulkOnboard}
+                    className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Onboard Selected
                   </Button>
                   {nextStage && (
                     <Button
@@ -1402,6 +1496,22 @@ const StageCandidatesContent = ({
                               </DropdownMenuItem>
                               
                               <DropdownMenuSeparator />
+
+                              <DropdownMenuItem 
+                                onClick={async () => {
+                                  try {
+                                    await handleIndividualOnboard(candidate);
+                                    toast.success(`${candidate.applicant_name} onboarded successfully`);
+                                  } catch (error) {
+                                    console.error('Failed to onboard candidate:', error);
+                                    toast.error(`Failed to onboard ${candidate.applicant_name}`);
+                                  }
+                                }}
+                                className="text-purple-600"
+                              >
+                                <Users className="h-4 w-4 mr-2" />
+                                Onboard Candidate
+                              </DropdownMenuItem>
                               
                               {nextStage && candidate.feedback && candidate.rating && (
                                 <>
