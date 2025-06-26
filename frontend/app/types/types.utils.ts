@@ -277,19 +277,25 @@ export interface User {
 
 export interface EmployeeFormData {
   user: User;
-  id: number
+  id: number;
   email: string;
   phone_number: string;
   position: number;
   department: number;
+  work_type: number;           // Added
+  employee_type: number;       // Added
   date_of_birth: string;
   date_of_joining: string;
   address: string;
+  country: string;             // Added
+  nin: string;                 // Added
+  bank: string;                // Added
+  bank_account_number: string; // Added
   is_active: boolean;
   experience: number;
   qualifications: string;
   skills: string;
-  emergency_contact_name: string; 
+  emergency_contact_name: string;
   emergency_contact_phone: string;
   emergency_contact_relationship: string;
   marital_status: string;
@@ -303,9 +309,15 @@ export interface EmployeeFormState {
   phone_number: string;
   position: number;
   department: number;
+  work_type: number;           // Added
+  employee_type: number;       // Added
   date_of_birth: string;
   date_of_joining: string;
   address: string;
+  country: string;             // Added
+  nin: string;                 
+  bank: string;                
+  bank_account_number: string; 
   is_active: boolean;
   experience: number;
   qualifications: string;
@@ -317,7 +329,6 @@ export interface EmployeeFormState {
   children_count: number;
   employee_profile_picture: File | null;
 }
-
 export interface IRoleResponse {
   id: number
   name: string
@@ -444,3 +455,33 @@ export interface IInterviewFormData {
 }
 
 
+export interface IWorkTypeFormData {
+  name: string;
+  code: string;
+  description: string;
+}
+
+export interface IEmployeeTypeFormData {
+  name: string;
+  code: string;
+  description: string;
+}
+
+
+export interface IWorkType {
+  id: number;
+  name: string;
+  code?: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface IEmployeeType {
+  id: number;
+  name: string;
+  code?: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}

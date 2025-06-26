@@ -1,6 +1,11 @@
 import {type ClassValue, clsx} from "clsx";
 import {twMerge} from "tailwind-merge";
-import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, IInterview, EmployeeFormData, User, IInterviewFormData, IInterviewStage, IInterviewStageFormData, IBulkOnBoardingResponse, IBulkOnBoardingRequest, IOnBoarding, IOnBoardingFormData } from "@/app/types/types.utils";
+import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, 
+  CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, 
+  IInterview, EmployeeFormData, User, IInterviewFormData, IInterviewStage, IInterviewStageFormData,
+   IBulkOnBoardingResponse, IBulkOnBoardingRequest, IOnBoarding, IOnBoardingFormData, IEmployeeTypeFormData  , IWorkType,
+   IWorkTypeFormData, IEmployeeType,
+  } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/app/types/types.utils";
@@ -699,7 +704,7 @@ export const updateEmployee = async ({
       }
     });
     
-    const response = await apiRequest.patch(`/employee/employee/${employeeId}/update/`, formData);
+    const response = await apiRequest.patch(`/employee/${employeeId}/update/`, formData);
     return response.data;
   } catch (error: any) {
     throw new Error("Failed to update employee. Please try again.");
@@ -712,7 +717,7 @@ export const getEmployeeById = async ({
   employeeId: number;
 }): Promise<any | null> => {
   try {
-    const response = await apiRequest.get(`/employee/employee/${employeeId}/`);
+    const response = await apiRequest.get(`/employee/${employeeId}/`);
     return response.data;
   } catch (error: any) {
     throw new Error(
@@ -760,7 +765,7 @@ export const getEmployeeDetailId = async ({
   employeeId: number;
 }): Promise<EmployeeFormData | null> => {  // Changed return type from EmployeeFormData to Employee
   try {
-    const response = await apiRequest.get(`/employee/employee/${employeeId}/${applicationId}/`);
+    const response = await apiRequest.get(`/employee/${employeeId}/${applicationId}/`);
     return response.data as EmployeeFormData;  // Changed casting
   } catch (error) {
     return null;
@@ -865,3 +870,87 @@ export const bulkCreateOnBoarding = async ({
   }
 };
 
+
+export const createWorkType = async ({
+  institutionId,
+  workTypeData,
+}: {
+  institutionId: number;
+  workTypeData: IWorkTypeFormData;
+}): Promise<IWorkType | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(workTypeData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `employee/work-types/`,
+      formData
+    );
+    return response.data as IWorkType;
+  } catch (error) {
+    console.error("Failed to create work type:", error);
+    return null;
+  }
+};
+
+export const createEmployeeType = async ({
+  institutionId,
+  employeeTypeData,
+}: {
+  institutionId: number;
+  employeeTypeData: IEmployeeTypeFormData;
+}): Promise<IEmployeeType | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(employeeTypeData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `employee/employee-types/`,
+      formData
+    );
+    return response.data as IEmployeeType;
+  } catch (error) {
+    console.error("Failed to create employee type:", error);
+    return null;
+  }
+};
+
+export const getWorkTypes = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<IWorkType[]> => {
+  try {
+    const response = await apiRequest.get(
+      `employee/work-types/`
+    );
+    return response.data as IWorkType[];
+  } catch (error) {
+    console.error("Failed to fetch work types:", error);
+    return [];
+  }
+};
+
+export const getEmployeeTypes = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<IEmployeeType[]> => {
+  try {
+    const response = await apiRequest.get(
+      `employee/employee-types/`
+    );
+    return response.data as IEmployeeType[];
+  } catch (error) {
+    console.error("Failed to fetch employee types:", error);
+    return [];
+  }
+};

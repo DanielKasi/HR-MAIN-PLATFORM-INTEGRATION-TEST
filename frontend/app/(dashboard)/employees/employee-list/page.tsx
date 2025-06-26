@@ -30,7 +30,6 @@ import {
 import { IUserInstitution } from "@/app/types"
 import { User, EmployeeFormData } from "@/app/types/types.utils"
 import Link from "next/link"
-import FixedLoader from "@/components/fixed-loader"
 
 // Interface for getAllEmployees API response with additional nested objects
 interface EmployeeFromAPI {
@@ -80,37 +79,44 @@ interface EmployeeFromAPI {
   updated_at: string
 }
 
+// Union type to handle both data structures
 type EmployeeData = EmployeeFromAPI | EmployeeFormData
 
+// Helper function to check if data is EmployeeFromAPI type
 const isEmployeeFromAPI = (data: EmployeeData): data is EmployeeFromAPI => {
   return 'created_at' in data && typeof data.position === 'object' && data.position !== null && 'name' in data.position;
 };
 
+// Helper function to get full name
 const getFullName = (employee: EmployeeData) => {
   return employee.user?.fullname || employee.email || 'Unknown Employee'
 }
 
+// Updated helper function to get department name from API data
 const getDepartmentName = (employee: EmployeeData) => {
   if (isEmployeeFromAPI(employee) && employee.department && employee.department.name) {
     return employee.department.name;
   }
-
+  // For EmployeeFormData, department is just an ID
   if (!isEmployeeFromAPI(employee)) {
     return `Department ${employee.department || 'Unknown'}`
   }
   return `Department ${isEmployeeFromAPI(employee) ? employee.department?.id : 'Unknown'}`
 }
 
+// Helper function to get position name from API data
 const getPositionName = (employee: EmployeeData) => {
   if (isEmployeeFromAPI(employee) && employee.position && employee.position.name) {
     return employee.position.name;
   }
+  // For EmployeeFormData, position is just an ID
   if (!isEmployeeFromAPI(employee)) {
     return `Position ${employee.position || 'Unknown'}`
   }
   return `Position ${isEmployeeFromAPI(employee) ? employee.position?.id : 'Unknown'}`
 }
 
+// Helper function to get role names
 const getRoleNames = (employee: EmployeeData) => {
   if (isEmployeeFromAPI(employee) && employee.roles && employee.roles.length > 0) {
     return employee.roles.map(role => role.name).join(', ');
@@ -201,72 +207,58 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
         </CardTitle>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row justify-between w-full">
-          <CardTitle className=" flex items-center gap-2">
-            <span className="text-3xl font-bold">Employees ({filteredEmployees.length})</span>
-          </CardTitle>
-          
-          <div className="flex items-center mb-4 sm:mb-0 sm:w-auto">
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filter by department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
-                {uniqueDepartments.map((department) => (
-                  <SelectItem key={department} value={department}>
-                    {department}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="flex flex-col sm:flex-row gap-4 mt-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search employees, departments, positions, or emails..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="flex items-center justify-between gap-4 w-full sm:w-auto">
-            <div className="relative w-[300px]">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-12 rounded-2xl"
-              />
-            </div>
-            <Link href="/employees/add-employee">
-              <Button className="flex items-center gap-2 h-12 rounded-2xl">
-                <Plus className="h-4 w-4" />
-                Add Employee
-              </Button>
-            </Link>
-          </div>
+          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by department" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Departments</SelectItem>
+              {uniqueDepartments.map((department) => (
+                <SelectItem key={department} value={department}>
+                  {department}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
 
       <CardContent>
-        <div className="mt-4 w-full border-none">
+        <div className="rounded-md border">
           <div className="w-full">
-            <div className="border-b-2 border-gray-200">
-              <div className="grid grid-cols-[300px_300px_400px_200px_auto_auto] gap-4 py-4 font-medium">
+            <div className="bg-gray-50 border-b">
+              <div className="grid grid-cols-6 gap-4 p-4 font-medium">
                 <div>Name</div>
                 <div>Department</div>
                 <div>Email</div>
                 <div>Job Position</div>
-                <div className="">Status</div>
-                <div className="text-right">Actions</div>
+                <div>Status</div>
+                <div className="w-[150px]">Actions</div>
               </div>
             </div>
-            <div className="mt-2">
+            <div>
               {paginatedEmployees.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No employees found matching your criteria
@@ -290,11 +282,11 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
                         {getDepartmentName(employee)}
                       </Badge>
                     </div>
-                    <div className="text-md">{employee.email}</div>
+                    <div className="text-sm">{employee.email}</div>
                     <div>{getPositionName(employee)}</div>
-                    <div className="">{getStatusBadge(employee.is_active)}</div>
+                    <div>{getStatusBadge(employee.is_active)}</div>
                     <div>
-                      <div className="float-right flex items-center gap-5 justify-center">
+                      <div className="flex items-center gap-1">
                         {/* View Button */}
                         <Link href={`/employees/profile/${employee.id || 'unknown'}`}>
                           <Button variant="ghost" size="sm" title="View Details">
@@ -318,12 +310,14 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
                         {/* Delete Button */}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <button 
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               title="Delete Employee"
                               className="text-red-600 hover:text-red-700"
                             >
-                              <Icon icon="hugeicons:delete-02" width="24" height="24" />
-                            </button>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
@@ -464,12 +458,12 @@ export default function Component() {
   }
 
   return (
-    <div className="h-full overflow-y-scroll bg-white w-full rounded-xl scrollbar-hide border-none">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="w-full">
-        {/* <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Employees</h1>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Management System</h1>
           <p className="text-muted-foreground">Manage your organization's employees efficiently</p>
-        </div> */}
+        </div>
 
         <EmployeeTable
           employees={employees}
