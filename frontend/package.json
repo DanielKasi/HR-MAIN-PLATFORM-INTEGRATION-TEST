@@ -80,7 +80,7 @@
     "reselect": "^5.1.1",
     "shepherd.js": "^14.5.0",
     "sonner": "^1.7.1",
-    "tailwind-merge": "^2.5.5",
+    "tailwind-merge": "^2.6.0",
     "tailwind-scrollbar-hide": "^4.0.0",
     "tailwind-variants": "^1.0.0",
     "tailwindcss-animate": "^1.0.7",
