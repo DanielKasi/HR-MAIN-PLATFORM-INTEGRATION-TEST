@@ -277,8 +277,6 @@ export interface User {
 
 export interface EmployeeFormData {
   user: User;
-  first_name: string;
-  last_name: string;
   email: string;
   phone_number: string;
   position: number;
@@ -291,6 +289,27 @@ export interface EmployeeFormData {
   qualifications: string;
   skills: string;
   emergency_contact_name: string; 
+  emergency_contact_phone: string;
+  emergency_contact_relationship: string;
+  marital_status: string;
+  children_count: number;
+  employee_profile_picture: File | null;
+}
+
+export interface EmployeeFormState {
+  fullname: string;
+  email: string;
+  phone_number: string;
+  position: number;
+  department: number;
+  date_of_birth: string;
+  date_of_joining: string;
+  address: string;
+  is_active: boolean;
+  experience: number;
+  qualifications: string;
+  skills: string;
+  emergency_contact_name: string;
   emergency_contact_phone: string;
   emergency_contact_relationship: string;
   marital_status: string;

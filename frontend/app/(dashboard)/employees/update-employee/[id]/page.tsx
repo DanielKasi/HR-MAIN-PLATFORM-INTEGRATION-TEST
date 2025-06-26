@@ -10,15 +10,87 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useToast } from "@/components/ui/use-toast"; // Import useToast hook
-import { Upload, User, X, Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { Upload, User, X, Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
-import { createEmployee, getPositions, getDepartments } from "@/lib/utils";
-import { EmployeeFormData, EmployeeFormState, IDepartment, IJobPosition } from "@/app/types/types.utils";
+import { getEmployeeById, updateEmployee, getPositions, getDepartments } from "@/lib/utils";
+import { IDepartment, IJobPosition } from "@/app/types/types.utils";
 import { IUserInstitution } from "@/app/types";
+
+// Employee interface matching your API response
+interface Employee {
+  id: number;
+  user: {
+    id: number;
+    email: string;
+    fullname: string;
+    is_active: boolean;
+    is_email_verified: boolean;
+    is_password_verified: boolean;
+    is_staff: boolean;
+    roles: string;
+    branches: string;
+    permissions: string;
+  } | null;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+  position: {
+    id: number;
+    name: string;
+    department_id?: number;
+  };
+  department: {
+    id: number;
+    name: string;
+    institution_id: number;
+  };
+  roles: Array<{
+    id: number;
+    name: string;
+  }>;
+  date_of_birth: string;
+  date_of_joining: string;
+  address: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  experience: number;
+  qualifications: string;
+  skills: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+  emergency_contact_relationship: string;
+  marital_status: string;
+  children_count: number;
+  employee_profile_picture: string;
+}
+
+// Form state interface
+interface EmployeeUpdateFormState {
+  fullname: string;
+  email: string;
+  phone_number: string;
+  position: number;
+  department: number;
+  date_of_birth: string;
+  date_of_joining: string;
+  address: string;
+  is_active: boolean;
+  experience: number;
+  qualifications: string;
+  skills: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+  emergency_contact_relationship: string;
+  marital_status: string;
+  children_count: number;
+  employee_profile_picture: File | null;
+}
 
 // Marital status options
 const maritalStatusOptions = [
@@ -28,30 +100,34 @@ const maritalStatusOptions = [
   { value: "widowed", label: "Widowed" },
 ];
 
-export default function AddEmployeeForm() {
+export default function UpdateEmployeePage() {
   const router = useRouter();
-  const { toast } = useToast(); // Initialize toast hook
+  const params = useParams();
+  const employeeId = params?.id as string;
+  const { toast } = useToast();
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
 
   const [institutionId, setInstitutionId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [employee, setEmployee] = useState<Employee | null>(null);
 
   // State for dropdown data
   const [positions, setPositions] = useState<IJobPosition[]>([]);
   const [departments, setDepartments] = useState<IDepartment[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // Frontend form state - what the component manages
-  const [formData, setFormData] = useState<EmployeeFormState>({
+  // Form state
+  const [formData, setFormData] = useState<EmployeeUpdateFormState>({
     fullname: "",
     email: "",
     phone_number: "",
     position: 0,
     department: 0,
     date_of_birth: "",
-    date_of_joining: new Date().toISOString().split("T")[0],
+    date_of_joining: "",
     address: "",
     is_active: true,
     experience: 0,
@@ -78,18 +154,76 @@ export default function AddEmployeeForm() {
     }
   }, [institutionsAttached, selectedInstitution]);
 
+  // Load employee data
+  useEffect(() => {
+    const loadEmployee = async () => {
+      if (!employeeId) return;
+
+      try {
+        setIsLoading(true);
+        
+        // Try to get from API first, fallback to localStorage
+        let employeeData: Employee | null = null;
+        
+        try {
+          employeeData = await getEmployeeById({ employeeId: parseInt(employeeId) });
+        } catch (error) {
+          // Fallback to localStorage
+          const storedEmployee = localStorage.getItem(`employee_${employeeId}`);
+          if (storedEmployee) {
+            employeeData = JSON.parse(storedEmployee);
+          }
+        }
+
+        if (employeeData) {
+          setEmployee(employeeData);
+          
+          // Populate form with employee data
+          setFormData({
+            fullname: employeeData.user?.fullname || "",
+            email: employeeData.email,
+            phone_number: employeeData.phone_number || "",
+            position: employeeData.position?.id || 0,
+            department: employeeData.department?.id || 0,
+            date_of_birth: employeeData.date_of_birth || "",
+            date_of_joining: employeeData.date_of_joining || "",
+            address: employeeData.address || "",
+            is_active: employeeData.is_active,
+            experience: employeeData.experience || 0,
+            qualifications: employeeData.qualifications || "",
+            skills: employeeData.skills || "",
+            emergency_contact_name: employeeData.emergency_contact_name || "",
+            emergency_contact_phone: employeeData.emergency_contact_phone || "",
+            emergency_contact_relationship: employeeData.emergency_contact_relationship || "",
+            marital_status: employeeData.marital_status || "single",
+            children_count: employeeData.children_count || 0,
+            employee_profile_picture: null,
+          });
+
+          // Set preview URL if employee has profile picture
+          if (employeeData.employee_profile_picture) {
+            setPreviewUrl(employeeData.employee_profile_picture);
+          }
+        } else {
+          setSubmitError("Employee not found");
+        }
+      } catch (error) {
+        setSubmitError("Failed to load employee data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadEmployee();
+  }, [employeeId]);
+
   // Load dropdown data
   useEffect(() => {
     const loadDropdownData = async () => {
-      if (!institutionId) {
-        console.log("No institution ID available");
-        return;
-      }
-
-      console.log("Loading data for institution:", institutionId);
-      setLoadingData(true);
+      if (!institutionId) return;
 
       try {
+        setLoadingData(true);
         const [positionsData, departmentsData] = await Promise.all([
           getPositions({ institutionId }),
           getDepartments({ institutionId }),
@@ -107,7 +241,7 @@ export default function AddEmployeeForm() {
     loadDropdownData();
   }, [institutionId]);
 
-  const handleInputChange = (field: string, value: string | boolean | File | null | number | number[]) => {
+  const handleInputChange = (field: string, value: string | boolean | File | null | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -133,14 +267,12 @@ export default function AddEmployeeForm() {
       return;
     }
 
-    if (previewUrl) {
+    if (previewUrl && !previewUrl.startsWith('http')) {
       URL.revokeObjectURL(previewUrl);
     }
 
     try {
-      console.log("Setting file in formData:", file);
       handleInputChange("employee_profile_picture", file);
-      console.log("File set in formData, new value:", file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
       setUploadError(null);
@@ -148,12 +280,11 @@ export default function AddEmployeeForm() {
     } catch (error) {
       setUploadError("Failed to process image");
       setUploadSuccess(null);
-      console.error("Image processing error:", error);
     }
   };
 
   const handleRemoveImage = () => {
-    if (previewUrl) {
+    if (previewUrl && !previewUrl.startsWith('http')) {
       URL.revokeObjectURL(previewUrl);
     }
     setPreviewUrl("");
@@ -167,19 +298,11 @@ export default function AddEmployeeForm() {
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
-
   const validateForm = (): boolean => {
     const requiredFields = ["fullname", "email", "position", "department", "date_of_joining"];
 
     for (const field of requiredFields) {
-      if (!formData[field as keyof EmployeeFormState] || formData[field as keyof EmployeeFormState] === 0) {
+      if (!formData[field as keyof EmployeeUpdateFormState] || formData[field as keyof EmployeeUpdateFormState] === 0) {
         setSubmitError(`Please fill in the ${field.replace("_", " ")} field`);
         return false;
       }
@@ -197,8 +320,8 @@ export default function AddEmployeeForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!institutionId) {
-      setSubmitError("No institution selected");
+    if (!employeeId) {
+      setSubmitError("Missing required information");
       return;
     }
 
@@ -210,21 +333,12 @@ export default function AddEmployeeForm() {
     setSubmitError(null);
 
     try {
-      console.log("Submitting employee data:", formData);
-      console.log("Profile picture file:", formData.employee_profile_picture);
-      console.log("Profile picture type:", typeof formData.employee_profile_picture);
-      console.log("Is File instance:", formData.employee_profile_picture instanceof File);
-
-      // Transform frontend form state to backend EmployeeFormData format
-      const dataToSubmit: EmployeeFormData = {
+      // Transform form data to match API expectations
+      const updateData = {
         user: {
           fullname: formData.fullname,
           email: formData.email,
-          // No password needed - Django will generate it
-          // No roles_ids needed initially - Django will handle defaults
-          // No permissions needed initially - Django will handle defaults
         },
-        // Copy all employee fields
         email: formData.email,
         phone_number: formData.phone_number,
         position: formData.position,
@@ -241,39 +355,36 @@ export default function AddEmployeeForm() {
         emergency_contact_relationship: formData.emergency_contact_relationship,
         marital_status: formData.marital_status,
         children_count: formData.children_count,
-        employee_profile_picture: formData.employee_profile_picture, // Include the actual file or null
+        employee_profile_picture: formData.employee_profile_picture,
       };
 
-      console.log("Data being sent to createEmployee:", dataToSubmit);
-
-      const result = await createEmployee({
-        institutionId,
-        employeeData: dataToSubmit,
+      const result = await updateEmployee({
+        employeeId: parseInt(employeeId),
+        employeeData: updateData,
       });
 
-      console.log("createEmployee result:", result);
-
       if (result) {
-        // Show success toast
         toast({
           title: "Success!",
-          description: "Employee has been created successfully and added to the system.",
+          description: "Employee has been updated successfully.",
           variant: "default",
           duration: 4000,
         });
 
-        // Navigate immediately without delay
+        // Clean up localStorage
+        localStorage.removeItem(`employee_${employeeId}`);
+        
+        // Navigate back to employee list
         router.push("/employees/employee-list");
       } else {
-        setSubmitError("Failed to create employee. Please try again.");
+        setSubmitError("Failed to update employee. Please try again.");
       }
     } catch (error: any) {
-      console.error("Error creating employee:", error);
+      console.error("Error updating employee:", error);
 
-      // Show error toast
       toast({
         title: "Error",
-        description: error.message || "Failed to create employee. Please try again.",
+        description: error.message || "Failed to update employee. Please try again.",
         variant: "destructive",
         duration: 5000,
       });
@@ -284,12 +395,33 @@ export default function AddEmployeeForm() {
     }
   };
 
-  if (loadingData) {
+  useEffect(() => {
+    return () => {
+      if (previewUrl && !previewUrl.startsWith('http')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  if (isLoading || loadingData) {
     return (
       <div className="min-h-screen bg-gray-100 p-4 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-          <p className="mt-2 text-gray-600">Loading form data...</p>
+          <p className="mt-2 text-gray-600">Loading employee data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!employee) {
+    return (
+      <div className="min-h-screen bg-gray-100 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Employee not found</p>
+          <Link href="/employees/employee-list">
+            <Button>Back to Employee List</Button>
+          </Link>
         </div>
       </div>
     );
@@ -301,11 +433,18 @@ export default function AddEmployeeForm() {
         <Card className="bg-white shadow-lg h-full">
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between sticky top-0 bg-white z-10 border-b">
             <div className="mb-4 sm:mb-0">
-              <CardTitle className="text-2xl">Add New Employee</CardTitle>
-              <CardDescription>Fill in the employee details to add them to the system</CardDescription>
+              <CardTitle className="text-2xl flex items-center gap-2">
+                <ArrowLeft className="h-5 w-5" />
+                Update Employee
+              </CardTitle>
+              <CardDescription>
+                Update {employee.user?.fullname || employee.email}'s information
+              </CardDescription>
             </div>
             <Link href="/employees/employee-list" className="w-full sm:w-auto">
-              <Button variant="outline" className="w-full sm:w-auto">Back to Employee List</Button>
+              <Button variant="outline" className="w-full sm:w-auto">
+                Back to Employee List
+              </Button>
             </Link>
           </CardHeader>
           <CardContent className="p-6 overflow-y-auto">
@@ -591,16 +730,16 @@ export default function AddEmployeeForm() {
                 </Link>
                 <Button
                   type="submit"
-                  className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                  className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Employee...
+                      Updating Employee...
                     </>
                   ) : (
-                    "Add Employee"
+                    "Update Employee"
                   )}
                 </Button>
               </div>
