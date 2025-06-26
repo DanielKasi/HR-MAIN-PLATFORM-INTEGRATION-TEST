@@ -163,7 +163,7 @@ class EmployeeAttendance(models.Model):
     date = models.DateField(auto_now_add=True)
     check_in_time = models.TimeField(null=True, blank=True)
     check_out_time = models.TimeField(null=True, blank=True)
-    status = models.CharField(max_length=20, choices=[("present", "Present"), ("absent", "Absent"), ("leave", "Leave")], default="present")
+    status = models.CharField(max_length=20, choices=[("approved", "Approved"), ("rejected", "Rejected"), ("pending", "Pending")], default="pending")
     
     def str(self):
         return f"{self.employee.user.fullname} - {self.date} - {self.status}"
