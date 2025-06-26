@@ -1,11 +1,6 @@
 import {type ClassValue, clsx} from "clsx";
 import {twMerge} from "tailwind-merge";
-import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, 
-  CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, 
-  IInterview, EmployeeFormData, User, IInterviewFormData, IInterviewStage, IInterviewStageFormData,
-   IBulkOnBoardingResponse, IBulkOnBoardingRequest, IOnBoarding, IOnBoardingFormData, IEmployeeTypeFormData  , IWorkType,
-   IWorkTypeFormData, IEmployeeType,
-  } from "@/app/types/types.utils";
+import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, IInterview, EmployeeFormData, User, IInterviewFormData, IInterviewStage, IInterviewStageFormData, IBulkOnBoardingResponse, IBulkOnBoardingRequest, IOnBoarding, IOnBoardingFormData, DisciplineType, DisciplinaryAction } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/app/types/types.utils";
@@ -870,87 +865,126 @@ export const bulkCreateOnBoarding = async ({
   }
 };
 
-
-export const createWorkType = async ({
-  institutionId,
-  workTypeData,
-}: {
-  institutionId: number;
-  workTypeData: IWorkTypeFormData;
-}): Promise<IWorkType | null> => {
+export const getDisciplineTypes = async (): Promise<DisciplineType[] | null> => {
   try {
-    const formData = new FormData();
-    Object.entries(workTypeData).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        formData.append(key, value.toString());
-      }
-    });
-
-    const response = await apiRequest.post(
-      `employee/work-types/`,
-      formData
-    );
-    return response.data as IWorkType;
+    const response = await apiRequest.get("discipline-types/");
+    return response.data as DisciplineType[];
   } catch (error) {
-    console.error("Failed to create work type:", error);
+    console.error("Error fetching discipline types:", error);
     return null;
   }
 };
 
-export const createEmployeeType = async ({
-  institutionId,
-  employeeTypeData,
+export const getDisciplineTypeById = async ({
+  id,
 }: {
-  institutionId: number;
-  employeeTypeData: IEmployeeTypeFormData;
-}): Promise<IEmployeeType | null> => {
+  id: number;
+}): Promise<DisciplineType | null> => {
   try {
-    const formData = new FormData();
-    Object.entries(employeeTypeData).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        formData.append(key, value.toString());
-      }
-    });
-
-    const response = await apiRequest.post(
-      `employee/employee-types/`,
-      formData
-    );
-    return response.data as IEmployeeType;
+    const response = await apiRequest.get(`discipline-types/${id}/`);
+    return response.data as DisciplineType;
   } catch (error) {
-    console.error("Failed to create employee type:", error);
+    console.error("Error fetching discipline type by ID:", error);
     return null;
   }
 };
 
-export const getWorkTypes = async ({
-  institutionId,
-}: {
-  institutionId: number;
-}): Promise<IWorkType[]> => {
+export const createDisciplineType = async (
+  data: Omit<DisciplineType, "id" | "created_at">
+): Promise<DisciplineType | null> => {
   try {
-    const response = await apiRequest.get(
-      `employee/work-types/`
-    );
-    return response.data as IWorkType[];
+    const response = await apiRequest.post("discipline-types/", data);
+    return response.data as DisciplineType;
   } catch (error) {
-    console.error("Failed to fetch work types:", error);
-    return [];
+    console.error("Error creating discipline type:", error);
+    return null;
   }
 };
 
-export const getEmployeeTypes = async ({
-  institutionId,
+export const updateDisciplineType = async ({
+  id,
+  data,
 }: {
-  institutionId: number;
-}): Promise<IEmployeeType[]> => {
+  id: number;
+  data: Partial<Omit<DisciplineType, "id" | "created_at">>;
+}): Promise<DisciplineType | null> => {
   try {
-    const response = await apiRequest.get(
-      `employee/employee-types/`
-    );
-    return response.data as IEmployeeType[];
+    const response = await apiRequest.patch(`discipline-types/${id}/`, data);
+    return response.data as DisciplineType;
   } catch (error) {
-    console.error("Failed to fetch employee types:", error);
-    return [];
+    console.error("Error updating discipline type:", error);
+    return null;
+  }
+};
+
+export const deleteDisciplineType = async (id: number): Promise<boolean> => {
+  try {
+    await apiRequest.delete(`discipline-types/${id}/`);
+    return true;
+  } catch (error) {
+    console.error("Error deleting discipline type:", error);
+    return false;
+  }
+};
+
+export const getDisciplinaryActions = async (): Promise<DisciplinaryAction[] | null> => {
+  try {
+    const response = await apiRequest.get("disciplinary-actions/");
+    return response.data as DisciplinaryAction[];
+  } catch (error) {
+    console.error("Error fetching disciplinary actions:", error);
+    return null;
+  }
+};
+
+export const getDisciplinaryActionById = async ({
+  id,
+}: {
+  id: number;
+}): Promise<DisciplinaryAction | null> => {
+  try {
+    const response = await apiRequest.get(`disciplinary-actions/${id}/`);
+    return response.data as DisciplinaryAction;
+  } catch (error) {
+    console.error("Error fetching disciplinary action by ID:", error);
+    return null;
+  }
+};
+
+export const createDisciplinaryAction = async (
+  data: Omit<DisciplinaryAction, "id" | "created_at" | "updated_at" | "reported_date">
+): Promise<DisciplinaryAction | null> => {
+  try {
+    const response = await apiRequest.post("disciplinary-actions/", data);
+    return response.data as DisciplinaryAction;
+  } catch (error) {
+    console.error("Error creating disciplinary action:", error);
+    return null;
+  }
+};
+
+export const updateDisciplinaryAction = async ({
+  id,
+  data,
+}: {
+  id: number;
+  data: Partial<DisciplinaryAction>;
+}): Promise<DisciplinaryAction | null> => {
+  try {
+    const response = await apiRequest.patch(`disciplinary-actions/${id}/`, data);
+    return response.data as DisciplinaryAction;
+  } catch (error) {
+    console.error("Error updating disciplinary action:", error);
+    return null;
+  }
+};
+
+export const deleteDisciplinaryAction = async (id: number): Promise<boolean> => {
+  try {
+    await apiRequest.delete(`disciplinary-actions/${id}/`);
+    return true;
+  } catch (error) {
+    console.error("Error deleting disciplinary action:", error);
+    return false;
   }
 };
