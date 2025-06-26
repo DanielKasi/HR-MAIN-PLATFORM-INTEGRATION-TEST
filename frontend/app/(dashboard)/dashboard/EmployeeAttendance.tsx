@@ -87,7 +87,7 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, sear
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Attendance ({employees.length})</span>
+          <span className="mb-2">Attendance ({employees.length})</span>
         </CardTitle>
         {/* Search */}
         <div className="flex flex-col gap-4 mt-4">
