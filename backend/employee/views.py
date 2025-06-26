@@ -1,5 +1,6 @@
 from django.shortcuts import render
 
+from institution.models import Branch, UserBranch
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -9,6 +10,7 @@ from .serializers import EmployeeSerializer
 from .models import Employee
 from rest_framework.parsers import MultiPartParser, FormParser
 from institution.utils import generate_compliant_password
+from employee.service import EmployeeBranchService
 
 class EmployeeListAPIView(APIView):
     permission_classes = [AllowAny]
@@ -231,3 +233,250 @@ class EmployeeDeleteAPIView(APIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Employee.DoesNotExist:
             return Response({"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+
+class EmployeeBranchManagementAPIView(APIView):
+    """New view for managing employee-branch relationships"""
+    
+    @extend_schema(
+        request={
+            'type': 'object',
+            'properties': {
+                'employee_id': {'type': 'integer'},
+                'branches': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'branch_id': {'type': 'integer'},
+                            'is_default': {'type': 'boolean'}
+                        }
+                    }
+                }
+            }
+        },
+        responses={200: 'Employee attached to branches successfully'},
+        description="Attach an employee to one or multiple branches",
+        summary="Attach employee to branches",
+        tags=["Employee Management"],
+    )
+    def post(self, request):
+        """Attach employee to multiple branches"""
+        try:
+            employee_id = request.data.get('employee_id')
+            branches_data = request.data.get('branches', [])
+            
+            employee = Employee.objects.get(id=employee_id)
+            
+            
+            # Validate and prepare branch data
+            processed_branches = []
+            for branch_data in branches_data:
+                branch = Branch.objects.get(id=branch_data['branch_id'])
+                
+                
+                processed_branches.append({
+                    'branch': branch,
+                    'is_default': branch_data.get('is_default', False)
+                })
+            
+            # Use service layer (recommended) or inline logic
+            if hasattr(self, '_use_service_layer'):  
+                user_branches = EmployeeBranchService.attach_employee_to_multiple_branches(
+                    employee=employee,
+                    branches_data=processed_branches,
+                    created_by=request.user
+                )
+                summary = EmployeeBranchService.get_employee_branch_summary(employee)
+            else:
+                # Inline logic (if you don't want services.py)
+                user_branches = self._attach_employee_to_branches_inline(
+                    employee, processed_branches, request.user
+                )
+                summary = self._get_employee_branch_summary_inline(employee)
+            
+            return Response({
+                'message': 'Employee attached to branches successfully',
+                'data': summary
+            }, status=status.HTTP_200_OK)
+            
+        except Employee.DoesNotExist:
+            return Response({'error': 'Employee not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Branch.DoesNotExist:
+            return Response({'error': 'One or more branches not found'}, status=status.HTTP_404_NOT_FOUND)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    
+    # INLINE METHODS (if you don't want to use services.py)
+    def _attach_employee_to_branches_inline(self, employee, branches_data, created_by):
+        """Inline method to attach employee to branches"""
+        user_branches = []
+        default_count = sum(1 for bd in branches_data if bd.get('is_default', False))
+        
+        if default_count > 1:
+            raise ValueError("Only one branch can be set as default")
+        
+        if default_count == 0 and branches_data:
+            branches_data[0]['is_default'] = True
+        
+        with transaction.atomic():
+            for branch_data in branches_data:
+                user_branch, created = UserBranch.objects.get_or_create(
+                    user=employee.user,
+                    branch=branch_data['branch'],
+                    defaults={
+                        'is_default': branch_data.get('is_default', False),
+                        'created_by': created_by
+                    }
+                )
+                
+                if not created and branch_data.get('is_default', False):
+                    user_branch.is_default = True
+                    user_branch.save()
+                
+                user_branches.append(user_branch)
+        
+        return user_branches
+    
+    def _get_employee_branch_summary_inline(self, employee):
+        """Inline method to get employee branch summary"""
+        if not employee.user:
+            return {'branches': [], 'default_branch': None, 'payroll_branch': None}
+        
+        user_branches = UserBranch.objects.filter(user=employee.user).select_related('branch')
+        
+        branches = []
+        default_branch = None
+        
+        for ub in user_branches:
+            branch_info = {
+                'id': ub.branch.id,
+                'name': ub.branch.branch_name,
+                'location': ub.branch.branch_location,
+                'is_default': ub.is_default,
+                'attached_date': ub.created_at
+            }
+            branches.append(branch_info)
+            
+            if ub.is_default:
+                default_branch = branch_info
+        
+        return {
+            'branches': branches,
+            'default_branch': default_branch,
+            'payroll_branch': {
+                'id': employee.payroll_branch.id if employee.payroll_branch else None,
+                'name': employee.payroll_branch.branch_name if employee.payroll_branch else None,
+            } if employee.payroll_branch else None
+        }
+
+class EmployeeBranchDetailAPIView(APIView):
+    """Manage individual employee-branch relationships"""
+    
+    @extend_schema(
+        responses={200: 'Employee branches retrieved successfully'},
+        description="Get all branches for a specific employee",
+        summary="Get employee branches",
+        tags=["Employee Management"],
+    )
+    def get(self, request, employee_id):
+        """Get all branches for a specific employee"""
+        try:
+            employee = Employee.objects.get(id=employee_id)
+            
+            
+            
+            # Use service layer or inline method
+            if hasattr(self, '_use_service_layer'):
+                summary = EmployeeBranchService.get_employee_branch_summary(employee)
+            else:
+                summary = self._get_employee_branch_summary_inline(employee)
+            
+            return Response({
+                'message': 'Employee branches retrieved successfully',
+                'data': summary
+            }, status=status.HTTP_200_OK)
+            
+        except Employee.DoesNotExist:
+            return Response({'error': 'Employee not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    @extend_schema(
+        request={
+            'type': 'object',
+            'properties': {
+                'branch_id': {'type': 'integer'}
+            }
+        },
+        responses={200: 'Default branch updated successfully'},
+        description="Set a specific branch as default for an employee",
+        summary="Set employee default branch",
+        tags=["Employee Management"],
+    )
+    def patch(self, request, employee_id):
+        """Set default branch for employee"""
+        try:
+            employee = Employee.objects.get(id=employee_id)
+            branch_id = request.data.get('branch_id')
+            
+            if not branch_id:
+                return Response({'error': 'branch_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            branch = Branch.objects.get(id=branch_id)
+            
+            
+            # Check if employee is attached to this branch
+            try:
+                user_branch = UserBranch.objects.get(user=employee.user, branch=branch)
+                user_branch.is_default = True
+                user_branch.save()  # This will trigger payroll_branch update
+                
+                summary = self._get_employee_branch_summary_inline(employee)
+                
+                return Response({
+                    'message': 'Default branch updated successfully',
+                    'data': summary
+                }, status=status.HTTP_200_OK)
+                
+            except UserBranch.DoesNotExist:
+                return Response({'error': 'Employee is not attached to this branch'}, 
+                              status=status.HTTP_400_BAD_REQUEST)
+            
+        except Employee.DoesNotExist:
+            return Response({'error': 'Employee not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Branch.DoesNotExist:
+            return Response({'error': 'Branch not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    
+    
+    def _get_employee_branch_summary_inline(self, employee):
+        """Inline method to get employee branch summary"""
+        if not employee.user:
+            return {'branches': [], 'default_branch': None, 'payroll_branch': None}
+        
+        user_branches = UserBranch.objects.filter(user=employee.user).select_related('branch')
+        
+        branches = []
+        default_branch = None
+        
+        for ub in user_branches:
+            branch_info = {
+                'id': ub.branch.id,
+                'name': ub.branch.branch_name,
+                'location': ub.branch.branch_location,
+                'is_default': ub.is_default,
+                'attached_date': ub.created_at
+            }
+            branches.append(branch_info)
+            
+            if ub.is_default:
+                default_branch = branch_info
+        
+        return {
+            'branches': branches,
+            'default_branch': default_branch,
+            'payroll_branch': {
+                'id': employee.payroll_branch.id if employee.payroll_branch else None,
+                'name': employee.payroll_branch.branch_name if employee.payroll_branch else None,
+            } if employee.payroll_branch else None
+        }
