@@ -277,18 +277,25 @@ export interface User {
 
 export interface EmployeeFormData {
   user: User;
+  id: number;
   email: string;
   phone_number: string;
   position: number;
   department: number;
+  work_type: number;           // Added
+  employee_type: number;       // Added
   date_of_birth: string;
   date_of_joining: string;
   address: string;
+  country: string;             // Added
+  nin: string;                 // Added
+  bank: string;                // Added
+  bank_account_number: string; // Added
   is_active: boolean;
   experience: number;
   qualifications: string;
   skills: string;
-  emergency_contact_name: string; 
+  emergency_contact_name: string;
   emergency_contact_phone: string;
   emergency_contact_relationship: string;
   marital_status: string;
@@ -302,9 +309,15 @@ export interface EmployeeFormState {
   phone_number: string;
   position: number;
   department: number;
+  work_type: number;           // Added
+  employee_type: number;       // Added
   date_of_birth: string;
   date_of_joining: string;
   address: string;
+  country: string;             // Added
+  nin: string;                 
+  bank: string;                
+  bank_account_number: string; 
   is_active: boolean;
   experience: number;
   qualifications: string;
@@ -316,7 +329,6 @@ export interface EmployeeFormState {
   children_count: number;
   employee_profile_picture: File | null;
 }
-
 export interface IRoleResponse {
   id: number
   name: string
@@ -442,46 +454,34 @@ export interface IInterviewFormData {
   status: string;
 }
 
-export type Severity = 'low' | 'medium' | 'high' | 'critical';
-export type DisciplinaryStatus = 'pending' | 'in_progress' | 'completed' | 'dismissed';
 
-export interface DisciplineType {
-  id: number;
+export interface IWorkTypeFormData {
   name: string;
+  code: string;
   description: string;
-  severity: Severity;
-  is_active: boolean;
-  created_at: string; // ISO date string
 }
 
-export interface DisciplinaryAction {
-  id: number;
-
-  // Foreign Keys (you may replace these with full objects if needed)
-  employee: number;
-  discipline_type: number;
-
-  // Dates
-  incident_date: string;     // YYYY-MM-DD
-  reported_date: string;     // YYYY-MM-DD (auto)
-  resolution_date?: string | null;
-  follow_up_date?: string | null;
-
-  // Details
+export interface IEmployeeTypeFormData {
+  name: string;
+  code: string;
   description: string;
-  evidence: string;
+}
 
-  // Processing
-  reported_by: number;
-  assigned_to?: number | null;
-  status: DisciplinaryStatus;
 
-  // Resolution
-  action_taken: string;
-  follow_up_required: boolean;
+export interface IWorkType {
+  id: number;
+  name: string;
+  code?: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
-  // Metadata
-  created_at: string;
-  updated_at: string;
-  notes: string;
+export interface IEmployeeType {
+  id: number;
+  name: string;
+  code?: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
 }

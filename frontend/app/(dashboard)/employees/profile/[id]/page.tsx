@@ -25,12 +25,14 @@ import {
   ArrowLeft,
 } from "lucide-react"
 import Link from "next/link"
-import { getEmployeeDetailId, getAllEmployees } from "@/lib/utils"
+import { getAllEmployees } from "@/lib/utils"
+import apiRequest from "@/lib/apiRequest"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
 import { IUserInstitution } from "@/app/types"
+import { EmployeeFormData } from "@/app/types/types.utils"
 
-// Employee interface (same as in your table)
-interface Employee {
+
+interface EmployeeFromAPI {
   id: number
   user: {
     id: number
@@ -44,8 +46,6 @@ interface Employee {
     branches: string
     permissions: string
   } | null
-  first_name: string
-  last_name: string
   email: string
   phone_number: string
   position: {
@@ -66,8 +66,6 @@ interface Employee {
   date_of_joining: string
   address: string
   is_active: boolean
-  created_at: string
-  updated_at: string
   experience: number
   qualifications: string
   skills: string
@@ -77,7 +75,12 @@ interface Employee {
   marital_status: string
   children_count: number
   employee_profile_picture: string
+  created_at: string
+  updated_at: string
 }
+
+// Union type to handle both data structures
+type EmployeeData = EmployeeFromAPI | EmployeeFormData
 
 const formatDate = (dateString: string) => {
   if (!dateString) return "Not provided"
@@ -98,18 +101,89 @@ const getMaritalStatusLabel = (status: string) => {
   return statusMap[status] || status
 }
 
+// Helper function to check if data is from getAllEmployees API (has expanded objects)
+const isEmployeeFromAPI = (data: EmployeeData): data is EmployeeFromAPI => {
+  return typeof data.position === 'object' && 
+         data.position !== null && 
+         'name' in data.position;
+}
+
+// Helper function to get employee name
+const getEmployeeName = (employee: EmployeeData) => {
+  if (employee.user?.fullname) {
+    return employee.user.fullname;
+  }
+  return employee.email || 'Unknown Employee';
+}
+
+// Helper function to get profile picture URL
+const getProfilePictureUrl = (employee: EmployeeData) => {
+  const picture = employee.employee_profile_picture;
+  
+  if (!picture || picture instanceof File) {
+    return null;
+  }
+  
+  const pictureStr = picture as string;
+  
+  if (pictureStr.startsWith('http://') || pictureStr.startsWith('https://')) {
+    return pictureStr;
+  }
+  
+  if (pictureStr.startsWith('/')) {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    return `${baseUrl}${pictureStr}`;
+  }
+  
+  if (pictureStr.includes('.')) {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    return `${baseUrl}/media/${pictureStr}`;
+  }
+  
+  return null;
+}
+
+// Helper function to get initials for avatar
+const getEmployeeInitials = (employee: EmployeeData) => {
+  if (employee.user?.fullname) {
+    const names = employee.user.fullname.split(' ').filter(name => name.length > 0);
+    if (names.length >= 2) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    } else if (names.length === 1) {
+      return names[0][0]?.toUpperCase() || 'E';
+    }
+  }
+  return employee.email?.[0]?.toUpperCase() || 'E';
+}
+
+// Helper function to get position name
+const getPositionName = (employee: EmployeeData) => {
+  if (isEmployeeFromAPI(employee)) {
+    return employee.position?.name || "Position not assigned";
+  }
+  return "Position not assigned";
+}
+
+// Helper function to get department name
+const getDepartmentName = (employee: EmployeeData) => {
+  if (isEmployeeFromAPI(employee)) {
+    return employee.department?.name || "Department not assigned";
+  }
+  return "Department not assigned";
+}
+
 export default function EmployeeProfilePage() {
   const params = useParams()
   const employeeId = params.id as string
-  const [employee, setEmployee] = useState<Employee | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [employee, setEmployee] = useState<EmployeeData | null>(null)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
   const [institutionId, setInstitutionId] = useState<number | null>(null)
 
-  // Set institution ID
+  
   useEffect(() => {
     if (selectedInstitution) {
       setInstitutionId(selectedInstitution.id)
@@ -118,107 +192,63 @@ export default function EmployeeProfilePage() {
     }
   }, [selectedInstitution, institutionsAttached])
 
-  // Fetch employee data with fallback methods
+ 
   useEffect(() => {
     const fetchEmployee = async () => {
       if (!institutionId || !employeeId) {
-        console.log('Missing institutionId or employeeId:', { institutionId, employeeId })
         return
       }
 
       try {
-        setLoading(true)
         setError(null)
 
-        console.log('Fetching employee with ID:', employeeId, 'for institution:', institutionId)
-
-        // Get all employees and find the specific one
         let data = null
-        console.log('Fetching employee from all employees list')
+
         try {
           const allEmployees = await getAllEmployees({ institutionId: institutionId })
           if (allEmployees && Array.isArray(allEmployees)) {
             data = allEmployees.find(emp => emp.id === parseInt(employeeId))
-            console.log('Found employee in all employees list:', data)
           }
         } catch (getAllError) {
-          console.log('Failed to get employees list:', getAllError)
-
-          // Fallback: Try the specific employee detail API if getAllEmployees fails
           try {
-            data = await getEmployeeDetailId({
-              applicationId: institutionId,
-              employeeId: parseInt(employeeId),
-            })
-            console.log('Employee detail API response:', data)
+            const response = await apiRequest.get(`/employee/employee/${employeeId}/${institutionId}/`)
+            data = response.data
           } catch (apiError) {
-            console.log('Employee detail API also failed:', apiError)
+            console.error('API request failed:', apiError)
           }
         }
 
-        // Method 3: Check localStorage backup
+        // Final fallback to localStorage
         if (!data) {
-          console.log('Trying localStorage backup')
           try {
             const localData = localStorage.getItem(`employee_${employeeId}`)
             if (localData) {
               data = JSON.parse(localData)
-              console.log('Found employee in localStorage:', data)
             }
           } catch (localError) {
-            console.log('localStorage retrieval failed:', localError)
+            console.error('localStorage failed:', localError)
           }
         }
 
         if (data) {
           setEmployee(data)
-          console.log('Successfully loaded employee:', data)
         } else {
           setError(`Employee with ID ${employeeId} not found`)
-          console.log('Employee not found with any method')
         }
       } catch (err) {
         console.error("Error fetching employee:", err)
         setError("Failed to load employee details")
-      } finally {
-        setLoading(false)
       }
     }
 
     fetchEmployee()
   }, [institutionId, employeeId])
 
-  // Debug information
-  useEffect(() => {
-    console.log('Profile page debug info:', {
-      employeeId,
-      institutionId,
-      selectedInstitution,
-      institutionsAttached: institutionsAttached?.length || 0,
-      employee: employee?.id || 'none',
-    })
-  }, [employeeId, institutionId, selectedInstitution, institutionsAttached, employee])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading employee profile...</p>
-          <p className="mt-2 text-sm text-gray-500">Employee ID: {employeeId}</p>
-        </div>
-      </div>
-    )
-  }
-
   if (error || !employee) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md">
           <p className="text-red-600 mb-4">{error || "Employee not found"}</p>
-          <p className="text-sm text-gray-500 mb-4">
-            Employee ID: {employeeId} | Institution ID: {institutionId}
-          </p>
           <div className="space-y-2">
             <Link href="/employees/employee-list">
               <Button>Back to Employees</Button>
@@ -226,7 +256,6 @@ export default function EmployeeProfilePage() {
             <Button
               variant="outline"
               onClick={() => {
-                setLoading(true)
                 setError(null)
                 window.location.reload()
               }}
@@ -261,10 +290,13 @@ export default function EmployeeProfilePage() {
             <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
               <div className="relative">
                 <Avatar className="w-32 h-32 shadow-lg">
-                  <AvatarImage src={employee.employee_profile_picture || "/placeholder.svg"} alt="Profile picture" />
-                  <AvatarFallback className="text-2xl bg-green-100 text-green-700">
-                    {employee.first_name?.[0]}
-                    {employee.last_name?.[0]}
+                  <AvatarImage 
+                    src={getProfilePictureUrl(employee) || "/placeholder.svg"} 
+                    alt="Profile picture"
+                    className="object-cover w-full h-full rounded-full"
+                  />
+                  <AvatarFallback className="text-2xl bg-orange-100 text-orange-700">
+                    {getEmployeeInitials(employee)}
                   </AvatarFallback>
                 </Avatar>
               </div>
@@ -272,19 +304,19 @@ export default function EmployeeProfilePage() {
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-6">
                   <div>
                     <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                      {employee.first_name} {employee.last_name}
+                      {getEmployeeName(employee)}
                     </h1>
-                    <p className="text-xl text-green-600 font-semibold mb-1">{employee.position?.name || "Position not assigned"}</p>
-                    <p className="text-lg text-gray-600">{employee.department?.name || "Department not assigned"}</p>
+                    <p className="text-xl text-orange-600 font-semibold mb-1">{getPositionName(employee)}</p>
+                    <p className="text-lg text-gray-600">{getDepartmentName(employee)}</p>
                   </div>
                   <div className="flex items-center space-x-3 mt-6 md:mt-0">
                     <Badge
                       variant={employee.is_active ? "default" : "secondary"}
-                      className={employee.is_active ? "bg-green-100 text-green-800 border-green-200" : ""}
+                      className={employee.is_active ? "bg-orange-100 text-orange-800 border-orange-200" : ""}
                     >
                       {employee.is_active ? "Active" : "Inactive"}
                     </Badge>
-                    <Button className="bg-green-600 hover:bg-green-700 text-white">
+                    <Button className="bg-orange-600 hover:bg-orange-700 text-white">
                       <Edit className="w-4 h-4 mr-2" />
                       Edit Profile
                     </Button>
@@ -292,26 +324,26 @@ export default function EmployeeProfilePage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border">
-                    <div className="p-2 bg-green-100 rounded-full">
-                      <Mail className="w-4 h-4 text-green-600" />
+                    <div className="p-2 bg-orange-100 rounded-full">
+                      <Mail className="w-4 h-4 text-orange-600" />
                     </div>
                     <span className="text-gray-700">{employee.email}</span>
                   </div>
                   <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border">
-                    <div className="p-2 bg-green-100 rounded-full">
-                      <Phone className="w-4 h-4 text-green-600" />
+                    <div className="p-2 bg-orange-100 rounded-full">
+                      <Phone className="w-4 h-4 text-orange-600" />
                     </div>
                     <span className="text-gray-700">{employee.phone_number || "Not provided"}</span>
                   </div>
                   <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border">
-                    <div className="p-2 bg-green-100 rounded-full">
-                      <Calendar className="w-4 h-4 text-green-600" />
+                    <div className="p-2 bg-orange-100 rounded-full">
+                      <Calendar className="w-4 h-4 text-orange-600" />
                     </div>
                     <span className="text-gray-700">Joined {formatDate(employee.date_of_joining)}</span>
                   </div>
                   <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border">
-                    <div className="p-2 bg-green-100 rounded-full">
-                      <Briefcase className="w-4 h-4 text-green-600" />
+                    <div className="p-2 bg-orange-100 rounded-full">
+                      <Briefcase className="w-4 h-4 text-orange-600" />
                     </div>
                     <span className="text-gray-700">{employee.experience} years experience</span>
                   </div>
@@ -324,8 +356,8 @@ export default function EmployeeProfilePage() {
             {/* Personal Information */}
             <div className="space-y-6">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-100 rounded-full">
-                  <User className="w-5 h-5 text-green-600" />
+                <div className="p-2 bg-orange-100 rounded-full">
+                  <User className="w-5 h-5 text-orange-600" />
                 </div>
                 <h2 className="text-xl font-semibold text-gray-800">Personal Information</h2>
               </div>
@@ -337,7 +369,7 @@ export default function EmployeeProfilePage() {
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Marital Status</label>
                   <div className="flex items-center space-x-2">
-                    <Heart className="w-4 h-4 text-green-500" />
+                    <Heart className="w-4 h-4 text-orange-500" />
                     <span className="text-gray-900 font-medium">
                       {getMaritalStatusLabel(employee.marital_status)}
                     </span>
@@ -346,7 +378,7 @@ export default function EmployeeProfilePage() {
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Children</label>
                   <div className="flex items-center space-x-2">
-                    <Baby className="w-4 h-4 text-green-500" />
+                    <Baby className="w-4 h-4 text-orange-500" />
                     <span className="text-gray-900 font-medium">{employee.children_count}</span>
                   </div>
                 </div>
@@ -354,7 +386,7 @@ export default function EmployeeProfilePage() {
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Address</label>
                 <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg border">
-                  <MapPin className="w-5 h-5 text-green-600 mt-0.5" />
+                  <MapPin className="w-5 h-5 text-orange-600 mt-0.5" />
                   <p className="text-gray-900 leading-relaxed">{employee.address || "Not provided"}</p>
                 </div>
               </div>
@@ -365,19 +397,19 @@ export default function EmployeeProfilePage() {
             {/* Work Information */}
             <div className="space-y-6">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-100 rounded-full">
-                  <Building className="w-5 h-5 text-green-600" />
+                <div className="p-2 bg-orange-100 rounded-full">
+                  <Building className="w-5 h-5 text-orange-600" />
                 </div>
                 <h2 className="text-xl font-semibold text-gray-800">Work Information</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Position</label>
-                  <p className="text-gray-900 font-medium">{employee.position?.name || "Not assigned"}</p>
+                  <p className="text-gray-900 font-medium">{getPositionName(employee)}</p>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Department</label>
-                  <p className="text-gray-900 font-medium">{employee.department?.name || "Not assigned"}</p>
+                  <p className="text-gray-900 font-medium">{getDepartmentName(employee)}</p>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Experience</label>
@@ -394,7 +426,7 @@ export default function EmployeeProfilePage() {
                   <div className="inline-flex">
                     <Badge
                       variant={employee.is_active ? "default" : "secondary"}
-                      className={`px-4 py-2 text-sm ${employee.is_active ? "bg-green-100 text-green-800 border-green-200" : ""}`}
+                      className={`px-4 py-2 text-sm ${employee.is_active ? "bg-orange-100 text-orange-800 border-orange-200" : ""}`}
                     >
                       {employee.is_active ? "Active Employee" : "Inactive Employee"}
                     </Badge>
@@ -408,8 +440,8 @@ export default function EmployeeProfilePage() {
             {/* Emergency Contact */}
             <div className="space-y-6">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-100 rounded-full">
-                  <Users className="w-5 h-5 text-green-600" />
+                <div className="p-2 bg-orange-100 rounded-full">
+                  <Users className="w-5 h-5 text-orange-600" />
                 </div>
                 <h2 className="text-xl font-semibold text-gray-800">Emergency Contact</h2>
               </div>
@@ -421,7 +453,7 @@ export default function EmployeeProfilePage() {
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Phone Number</label>
                   <div className="flex items-center space-x-2">
-                    <Phone className="w-4 h-4 text-green-600" />
+                    <Phone className="w-4 h-4 text-orange-600" />
                     <span className="text-gray-900 font-medium">{employee.emergency_contact_phone || "Not provided"}</span>
                   </div>
                 </div>
@@ -437,15 +469,15 @@ export default function EmployeeProfilePage() {
             {/* Professional Details */}
             <div className="space-y-6">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-100 rounded-full">
-                  <GraduationCap className="w-5 h-5 text-green-600" />
+                <div className="p-2 bg-orange-100 rounded-full">
+                  <GraduationCap className="w-5 h-5 text-orange-600" />
                 </div>
                 <h2 className="text-xl font-semibold text-gray-800">Professional Details</h2>
               </div>
               <div className="space-y-6">
                 <div className="space-y-3">
                   <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide flex items-center space-x-2">
-                    <Award className="w-4 h-4 text-green-600" />
+                    <Award className="w-4 h-4 text-orange-600" />
                     <span>Qualifications</span>
                   </label>
                   <div className="p-4 bg-gray-50 rounded-lg border">
@@ -460,7 +492,7 @@ export default function EmployeeProfilePage() {
                         <Badge
                           key={index}
                           variant="outline"
-                          className="px-3 py-1 text-xs bg-green-50 text-green-700 border-green-200"
+                          className="px-3 py-1 text-xs bg-orange-50 text-orange-700 border-orange-200"
                         >
                           {skill.trim()}
                         </Badge>
@@ -481,11 +513,15 @@ export default function EmployeeProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Account Created</label>
-                  <p className="text-gray-900 font-medium">{formatDate(employee.created_at)}</p>
+                  <p className="text-gray-900 font-medium">
+                    {(isEmployeeFromAPI(employee) && employee.created_at) ? formatDate(employee.created_at) : "Not available"}
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Last Updated</label>
-                  <p className="text-gray-900 font-medium">{formatDate(employee.updated_at)}</p>
+                  <p className="text-gray-900 font-medium">
+                    {(isEmployeeFromAPI(employee) && employee.updated_at) ? formatDate(employee.updated_at) : "Not available"}
+                  </p>
                 </div>
               </div>
             </div>

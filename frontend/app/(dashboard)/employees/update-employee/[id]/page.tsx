@@ -368,13 +368,11 @@ export default function UpdateEmployeePage() {
           title: "Success!",
           description: "Employee has been updated successfully.",
           variant: "default",
-          duration: 4000,
+          duration: 3000,
         });
 
-        // Clean up localStorage
         localStorage.removeItem(`employee_${employeeId}`);
         
-        // Navigate back to employee list
         router.push("/employees/employee-list");
       } else {
         setSubmitError("Failed to update employee. Please try again.");
