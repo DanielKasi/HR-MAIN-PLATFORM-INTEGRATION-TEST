@@ -31,20 +31,23 @@ interface Stat {
 
 interface EmployeeAttendanceProps {
   employees: Employee[];
-  attendance: AttendanceRecord[];
-  setAttendance: React.Dispatch<React.SetStateAction<AttendanceRecord[]>>;
   search: string;
   setSearch: (val: string) => void;
   stats: Stat[];
+  selectedDate: string;
+  setSelectedDate: (date: string) => void;
 }
 
-const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, attendance, setAttendance, search, setSearch, stats }) => {
-  // LocalStorage key per day
-  const todayKey = `attendance_${new Date().toISOString().slice(0, 10)}`;
+const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, search, setSearch, stats, selectedDate, setSelectedDate }) => {
 
-  // Load attendance from localStorage on mount and when employees change
+  // Attendance state (internal)
+  const [attendance, setAttendance] = React.useState<AttendanceRecord[]>([]);
+  // Key for localStorage
+  const storageKey = `attendance_${selectedDate}`;
+
+  // Load attendance from localStorage on mount and when employees or selectedDate change
   React.useEffect(() => {
-    const saved = localStorage.getItem(todayKey);
+    const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -58,15 +61,15 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, atte
     // Otherwise, initialize to empty attendance for each employee
     setAttendance(employees.map(emp => ({ employeeId: emp.id, checkIn: null, checkOut: null })));
     // eslint-disable-next-line
-  }, [employees]);
+  }, [employees, storageKey]);
 
-  // Save attendance to localStorage whenever it changes
+  // Save attendance to localStorage whenever it changes (for selected date)
   React.useEffect(() => {
     if (attendance && attendance.length > 0) {
-      localStorage.setItem(todayKey, JSON.stringify(attendance));
+      localStorage.setItem(storageKey, JSON.stringify(attendance));
     }
     // eslint-disable-next-line
-  }, [attendance]);
+  }, [attendance, storageKey]);
 
   const handleCheckIn = (id: number) => {
     setAttendance(prev => prev.map(record =>
@@ -84,7 +87,7 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, atte
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Attendance ({employees.length})</span>
+          <span className="mb-2">Attendance ({employees.length})</span>
         </CardTitle>
         {/* Search */}
         <div className="flex flex-col gap-4 mt-4">
@@ -99,6 +102,15 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, atte
                 className="pl-10"
               />
             </div>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={e => setSelectedDate(e.target.value)}
+              className="border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+              style={{ minWidth: 140 }}
+              max={new Date().toISOString().slice(0, 10)}
+              title="Filter by date"
+            />
             <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 text-gray-700 shadow-sm">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707l-6.414 6.414A1 1 0 0013 13v5a1 1 0 01-1.447.894l-2-1A1 1 0 019 17v-4a1 1 0 00-.293-.707L2.293 6.707A1 1 0 012 6V4z" /></svg>
               Filter
@@ -121,7 +133,8 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, atte
       <CardContent>
         <div className="rounded-md border">
           <div className="bg-gray-50 border-b">
-            <div className="grid grid-cols-5 gap-4 p-4 font-medium">
+            <div className="grid grid-cols-6 gap-4 p-4 font-medium">
+              <div>Date</div>
               <div>Name</div>
               <div>Department</div>
               <div>Email</div>
@@ -138,7 +151,8 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, atte
               employees.map(emp => {
                 const record = attendance.find(r => r.employeeId === emp.id);
                 return (
-                  <div key={emp.id} className="grid grid-cols-5 gap-4 p-4 border-b hover:bg-gray-50 items-center">
+                  <div key={emp.id} className="grid grid-cols-6 gap-4 p-4 border-b hover:bg-gray-50 items-center">
+                    <div>{selectedDate}</div>
                     <div className="flex flex-col">
                       <span className="font-semibold text-gray-900">{emp.name}</span>
                       <span className="text-xs text-gray-400 font-normal">{emp.department}</span>
@@ -159,26 +173,34 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, atte
                       {record?.checkIn ? (
                         <Badge className="bg-green-100 text-green-800">{record.checkIn}</Badge>
                       ) : (
-                        <button
-                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold"
-                          onClick={() => setAttendance(prev => prev.map(record => record.employeeId === emp.id ? { ...record, checkIn: getCurrentTime() } : record))}
-                        >
-                          Check In
-                        </button>
+                        isToday(selectedDate) ? (
+                          <button
+                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold"
+                            onClick={() => setAttendance(prev => prev.map(record => record.employeeId === emp.id ? { ...record, checkIn: getCurrentTime() } : record))}
+                          >
+                            Check In
+                          </button>
+                        ) : (
+                          <span className="text-gray-400 text-lg">–</span>
+                        )
                       )}
                     </div>
                     <div>
                       {record?.checkOut ? (
                         <Badge className="bg-purple-100 text-purple-800">{record.checkOut}</Badge>
                       ) : (
-                        <button
-                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-semibold"
-                          onClick={() => setAttendance(prev => prev.map(record => record.employeeId === emp.id ? { ...record, checkOut: getCurrentTime() } : record))}
-                          disabled={!record?.checkIn}
-                          style={{ opacity: record?.checkIn ? 1 : 0.5 }}
-                        >
-                          Check Out
-                        </button>
+                        isToday(selectedDate) ? (
+                          <button
+                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-semibold"
+                            onClick={() => setAttendance(prev => prev.map(record => record.employeeId === emp.id ? { ...record, checkOut: getCurrentTime() } : record))}
+                            disabled={!record?.checkIn}
+                            style={{ opacity: record?.checkIn ? 1 : 0.5 }}
+                          >
+                            Check Out
+                          </button>
+                        ) : (
+                          <span className="text-gray-400 text-lg">–</span>
+                        )
                       )}
                     </div>
                   </div>
@@ -191,5 +213,13 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, atte
     </Card>
   );
 };
+
+function isToday(dateString: string) {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  return dateString === `${yyyy}-${mm}-${dd}`;
+}
 
 export default EmployeeAttendance;

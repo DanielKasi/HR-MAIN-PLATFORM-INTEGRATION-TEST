@@ -5,6 +5,9 @@ import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition,
   IInterview, EmployeeFormData, User, IInterviewFormData, IInterviewStage, IInterviewStageFormData,
    IBulkOnBoardingResponse, IBulkOnBoardingRequest, IOnBoarding, IOnBoardingFormData, IEmployeeTypeFormData  , IWorkType,
    IWorkTypeFormData, IEmployeeType,
+   EmployeeBranchSummary,
+   AttachBranchesPayload,
+   SetDefaultBranchPayload,
   } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -954,3 +957,44 @@ export const getEmployeeTypes = async ({
     return [];
   }
 };
+
+export const attachEmployeeToBranches = async (
+  payload: AttachBranchesPayload
+): Promise<EmployeeBranchSummary | null> => {
+  try {
+    const response = await apiRequest.post("branches/attach/", payload);
+    return response.data.data as EmployeeBranchSummary;
+  } catch (error) {
+    console.error("Error attaching employee to branches:", error);
+    return null;
+  }
+};
+
+// 📌 Get Branches for a Specific Employee
+export const getEmployeeBranches = async (
+  employeeId: number
+): Promise<EmployeeBranchSummary | null> => {
+  try {
+    const response = await apiRequest.get(`${employeeId}/branches/`);
+    return response.data.data as EmployeeBranchSummary;
+  } catch (error) {
+    console.error("Error fetching branches for employee:", error);
+    return null;
+  }
+};
+
+// 📌 Set Default Branch for Employee
+export const setDefaultBranch = async (
+  employeeId: number,
+  data: SetDefaultBranchPayload
+): Promise<EmployeeBranchSummary | null> => {
+  try {
+    const response = await apiRequest.patch(`${employeeId}/branches/`, data);
+    return response.data.data as EmployeeBranchSummary;
+  } catch (error) {
+    console.error("Error setting default branch:", error);
+    return null;
+  }
+};
+
+

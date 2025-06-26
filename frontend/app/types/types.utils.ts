@@ -467,7 +467,7 @@ export interface IEmployeeTypeFormData {
   description: string;
 }
 
-
+// Response interfaces (what you get back from the API)
 export interface IWorkType {
   id: number;
   name: string;
@@ -484,4 +484,46 @@ export interface IEmployeeType {
   description?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface BranchSummary {
+  id: number;
+  name: string;
+  location: string;
+  is_default?: boolean;
+  attached_date?: string;
+}
+
+export interface PayrollBranch {
+  id: number;
+  name: string;
+  location: string;
+}
+
+export interface EmployeeBranchSummary {
+  branches: BranchSummary[];
+  default_branch: BranchSummary | null;
+  payroll_branch: PayrollBranch | null;
+}
+
+export interface UserBranch {
+  id: number;
+  user_id: number;
+  user_email: string;
+  branch_id: number;
+  branch_name: string;
+  is_default: boolean;
+  created_at: string;
+}
+
+export interface AttachBranchesPayload {
+  employee_id: number;
+  branches: {
+    branch_id: number;
+    is_default?: boolean;
+  }[];
+}
+
+export interface SetDefaultBranchPayload {
+  branch_id: number;
 }
