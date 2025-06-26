@@ -403,8 +403,21 @@ export default function Component() {
         const institutionIdNumber = parseInt(InstitutionId);
         const data = await getAllEmployees({ institutionId: institutionIdNumber });
         if (data) {
-          setEmployees(data);
-          setError(null); // Clear any previous errors
+          // Map IEmployee[] to Employee[]
+          const employeesArray = (data as any[]).map(emp => ({
+            ...emp,
+            position: typeof emp.position === 'number'
+              ? { id: emp.position, name: '' }
+              : emp.position,
+            department: typeof emp.department === 'number'
+              ? { id: emp.department, name: '', institution_id: 0 }
+              : emp.department,
+            roles: Array.isArray(emp.roles) && typeof emp.roles[0] === 'object'
+              ? emp.roles
+              : (emp.roles || []).map((roleId: number) => ({ id: roleId, name: '' })),
+          }));
+          setEmployees(employeesArray);
+          setError(null);
         } else {
           setError("No employee data available");
         }
