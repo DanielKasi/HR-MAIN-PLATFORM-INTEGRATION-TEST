@@ -1,3 +1,5 @@
 from django.contrib import admin
+from .models import DisciplinaryAction, DisciplineType
 
-# Register your models here.
+admin.site.register(DisciplinaryAction)
+admin.site.register(DisciplineType)
