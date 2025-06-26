@@ -1,0 +1,508 @@
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.decorators import api_view
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.db import transaction
+from datetime import datetime
+from decimal import Decimal
+
+from .models import LeaveApplication, LeaveBalance, LeavePolicy, LeaveType
+from .serializers import LeaveApplicationSerializer, LeaveBalanceSerializer, LeavePolicySerializer, LeaveTypeSerializer
+from .utils import LeaveCalculator, LeaveBalanceManager
+from employee.models import Employee
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+
+
+@extend_schema(tags=["Leave Types"])
+class LeaveTypeListCreateAPIView(APIView):
+    @extend_schema(
+        summary="List all leave types",
+        responses={200: LeaveTypeSerializer(many=True)}
+    )
+    def get(self, request):
+        queryset = LeaveType.objects.filter(is_active=True)
+        serializer = LeaveTypeSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Create a new leave type",
+        request=LeaveTypeSerializer,
+        responses={201: LeaveTypeSerializer}
+    )
+    def post(self, request):
+        serializer = LeaveTypeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["Leave Types"])
+class LeaveTypeDetailAPIView(APIView):
+    @extend_schema(
+        summary="Retrieve a leave type by ID",
+        responses={200: LeaveTypeSerializer}
+    )
+    def get(self, request, pk):
+        leave_type = get_object_or_404(LeaveType, pk=pk)
+        serializer = LeaveTypeSerializer(leave_type)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Partially update a leave type",
+        request=LeaveTypeSerializer,
+        responses={200: LeaveTypeSerializer}
+    )
+    def patch(self, request, pk):
+        leave_type = get_object_or_404(LeaveType, pk=pk)
+        serializer = LeaveTypeSerializer(leave_type, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        summary="Delete a leave type",
+        responses={204: None}
+    )
+    def delete(self, request, pk):
+        leave_type = get_object_or_404(LeaveType, pk=pk)
+        leave_type.is_active = False
+        leave_type.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Leave Balances"])
+class LeaveBalanceListCreateAPIView(APIView):
+    @extend_schema(
+        summary="List all leave balances",
+        parameters=[
+            OpenApiParameter(name='employee_id', type=int, location=OpenApiParameter.QUERY),
+            OpenApiParameter(name='year', type=int, location=OpenApiParameter.QUERY),
+        ],
+        responses={200: LeaveBalanceSerializer(many=True)}
+    )
+    def get(self, request):
+        queryset = LeaveBalance.objects.select_related('employee', 'leave_type').all()
+        
+        employee_id = request.query_params.get('employee_id')
+        year = request.query_params.get('year')
+        
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+        if year:
+            queryset = queryset.filter(year=year)
+            
+        serializer = LeaveBalanceSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Create a new leave balance record",
+        request=LeaveBalanceSerializer,
+        responses={201: LeaveBalanceSerializer}
+    )
+    def post(self, request):
+        serializer = LeaveBalanceSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["Leave Balances"])
+class LeaveBalanceDetailAPIView(APIView):
+    @extend_schema(
+        summary="Retrieve a leave balance by ID",
+        responses={200: LeaveBalanceSerializer}
+    )
+    def get(self, request, pk):
+        balance = get_object_or_404(LeaveBalance, pk=pk)
+        serializer = LeaveBalanceSerializer(balance)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Partially update a leave balance",
+        request=LeaveBalanceSerializer,
+        responses={200: LeaveBalanceSerializer}
+    )
+    def patch(self, request, pk):
+        balance = get_object_or_404(LeaveBalance, pk=pk)
+        serializer = LeaveBalanceSerializer(balance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        summary="Delete a leave balance",
+        responses={204: None}
+    )
+    def delete(self, request, pk):
+        balance = get_object_or_404(LeaveBalance, pk=pk)
+        balance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Leave Applications"])
+class LeaveApplicationListCreateAPIView(APIView):
+    @extend_schema(
+        summary="List all leave applications",
+        parameters=[
+            OpenApiParameter(name='employee_id', type=int, location=OpenApiParameter.QUERY),
+            OpenApiParameter(name='status', type=str, location=OpenApiParameter.QUERY),
+            OpenApiParameter(name='leave_type_id', type=int, location=OpenApiParameter.QUERY),
+        ],
+        responses={200: LeaveApplicationSerializer(many=True)}
+    )
+    def get(self, request):
+        queryset = LeaveApplication.objects.select_related('employee', 'leave_type', 'approved_by').all()
+        
+        employee_id = request.query_params.get('employee_id')
+        status_filter = request.query_params.get('status')
+        leave_type_id = request.query_params.get('leave_type_id')
+        
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        if leave_type_id:
+            queryset = queryset.filter(leave_type_id=leave_type_id)
+            
+        serializer = LeaveApplicationSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Create a new leave application",
+        request=LeaveApplicationSerializer,
+        responses={
+            201: LeaveApplicationSerializer,
+            400: OpenApiExample(
+                "Validation Error",
+                value={"error": "Insufficient leave balance"}
+            )
+        }
+    )
+    def post(self, request):
+        serializer = LeaveApplicationSerializer(data=request.data)
+        if serializer.is_valid():
+            with transaction.atomic():
+                # Calculate total days
+                start_date = serializer.validated_data['start_date']
+                end_date = serializer.validated_data['end_date']
+                duration_type = serializer.validated_data.get('duration_type', 'full_day')
+                
+                total_days = LeaveCalculator.calculate_leave_days(
+                    start_date, end_date, duration_type
+                )
+                
+                # Check eligibility
+                employee = serializer.validated_data['employee']
+                leave_type = serializer.validated_data['leave_type']
+                
+                is_eligible, message = LeaveCalculator.check_leave_eligibility(
+                    employee, leave_type, start_date, total_days
+                )
+                
+                if not is_eligible:
+                    return Response(
+                        {'error': message}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                # Save application with calculated days
+                application = serializer.save(total_days=total_days)
+                
+                # Update pending balance
+                try:
+                    balance = LeaveBalance.objects.get(
+                        employee=employee,
+                        leave_type=leave_type,
+                        year=start_date.year
+                    )
+                    balance.pending_days += total_days
+                    balance.save()
+                except LeaveBalance.DoesNotExist:
+                    return Response(
+                        {'error': 'No leave balance found for this year'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                return Response(
+                    LeaveApplicationSerializer(application).data, 
+                    status=status.HTTP_201_CREATED
+                )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["Leave Applications"])
+class LeaveApplicationDetailAPIView(APIView):
+    @extend_schema(
+        summary="Retrieve a leave application by ID",
+        responses={200: LeaveApplicationSerializer}
+    )
+    def get(self, request, pk):
+        application = get_object_or_404(LeaveApplication, pk=pk)
+        serializer = LeaveApplicationSerializer(application)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Partially update a leave application",
+        request=LeaveApplicationSerializer,
+        responses={200: LeaveApplicationSerializer}
+    )
+    def patch(self, request, pk):
+        application = get_object_or_404(LeaveApplication, pk=pk)
+        
+        # Prevent updating approved/rejected applications
+        if application.status in ['approved', 'rejected']:
+            return Response(
+                {'error': 'Cannot modify approved or rejected applications'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        serializer = LeaveApplicationSerializer(application, data=request.data, partial=True)
+        if serializer.is_valid():
+            with transaction.atomic():
+                # If dates are being updated, recalculate days
+                if 'start_date' in request.data or 'end_date' in request.data:
+                    start_date = serializer.validated_data.get('start_date', application.start_date)
+                    end_date = serializer.validated_data.get('end_date', application.end_date)
+                    duration_type = serializer.validated_data.get('duration_type', application.duration_type)
+                    
+                    new_total_days = LeaveCalculator.calculate_leave_days(
+                        start_date, end_date, duration_type
+                    )
+                    
+                    # Update balance
+                    try:
+                        balance = LeaveBalance.objects.get(
+                            employee=application.employee,
+                            leave_type=application.leave_type,
+                            year=application.start_date.year
+                        )
+                        # Adjust pending days
+                        balance.pending_days -= application.total_days
+                        balance.pending_days += new_total_days
+                        balance.save()
+                    except LeaveBalance.DoesNotExist:
+                        pass
+                    
+                    serializer.validated_data['total_days'] = new_total_days
+                
+                serializer.save()
+                return Response(serializer.data)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        summary="Delete a leave application",
+        responses={204: None}
+    )
+    def delete(self, request, pk):
+        application = get_object_or_404(LeaveApplication, pk=pk)
+        
+        if application.status != 'pending':
+            return Response(
+                {'error': 'Can only delete pending applications'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        with transaction.atomic():
+            # Update balance
+            try:
+                balance = LeaveBalance.objects.get(
+                    employee=application.employee,
+                    leave_type=application.leave_type,
+                    year=application.start_date.year
+                )
+                balance.pending_days -= application.total_days
+                balance.save()
+            except LeaveBalance.DoesNotExist:
+                pass
+            
+            application.delete()
+        
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Leave Applications"])
+class LeaveApplicationApprovalAPIView(APIView):
+    @extend_schema(
+        summary="Approve or reject a leave application",
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'action': {'type': 'string', 'enum': ['approve', 'reject']},
+                    'rejection_reason': {'type': 'string', 'required': False}
+                },
+                'required': ['action']
+            }
+        },
+        responses={200: LeaveApplicationSerializer}
+    )
+    def post(self, request, pk):
+        application = get_object_or_404(LeaveApplication, pk=pk)
+        action = request.data.get('action')
+        
+        if application.status != 'pending':
+            return Response(
+                {'error': 'Application is not pending'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if action not in ['approve', 'reject']:
+            return Response(
+                {'error': 'Invalid action'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        with transaction.atomic():
+            if action == 'approve':
+                application.status = 'approved'
+                application.approved_by = request.user
+                application.approved_at = timezone.now()
+                
+                # Update balance
+                LeaveBalanceManager.update_balance_on_approval(application)
+                
+            else:  # reject
+                application.status = 'rejected'
+                application.rejection_reason = request.data.get('rejection_reason', '')
+                
+                # Update balance
+                LeaveBalanceManager.update_balance_on_rejection(application)
+            
+            application.save()
+            
+            serializer = LeaveApplicationSerializer(application)
+            return Response(serializer.data)
+
+
+@extend_schema(tags=["Leave Policies"])
+class LeavePolicyListCreateAPIView(APIView):
+    @extend_schema(
+        summary="List all leave policies",
+        responses={200: LeavePolicySerializer(many=True)}
+    )
+    def get(self, request):
+        queryset = LeavePolicy.objects.select_related('leave_type').filter(is_active=True)
+        serializer = LeavePolicySerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Create a new leave policy",
+        request=LeavePolicySerializer,
+        responses={201: LeavePolicySerializer}
+    )
+    def post(self, request):
+        serializer = LeavePolicySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["Leave Policies"])
+class LeavePolicyDetailAPIView(APIView):
+    @extend_schema(
+        summary="Retrieve a leave policy by ID",
+        responses={200: LeavePolicySerializer}
+    )
+    def get(self, request, pk):
+        policy = get_object_or_404(LeavePolicy, pk=pk)
+        serializer = LeavePolicySerializer(policy)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Partially update a leave policy",
+        request=LeavePolicySerializer,
+        responses={200: LeavePolicySerializer}
+    )
+    def patch(self, request, pk):
+        policy = get_object_or_404(LeavePolicy, pk=pk)
+        serializer = LeavePolicySerializer(policy, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        summary="Delete a leave policy",
+        responses={204: None}
+    )
+    def delete(self, request, pk):
+        policy = get_object_or_404(LeavePolicy, pk=pk)
+        policy.is_active = False
+        policy.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# Utility endpoints
+@extend_schema(tags=["Leave Management"])
+@api_view(['POST'])
+def initialize_yearly_balances(request):
+    """Initialize leave balances for all employees for a given year"""
+    year = request.data.get('year', timezone.now().year)
+    created_count = LeaveBalanceManager.initialize_yearly_balances(year)
+    return Response({
+        'message': f'Initialized {created_count} leave balance records for year {year}'
+    })
+
+
+@extend_schema(tags=["Leave Management"])
+@api_view(['POST'])
+def carry_forward_leaves(request):
+    """Carry forward unused leaves from one year to another"""
+    from_year = request.data.get('from_year')
+    to_year = request.data.get('to_year')
+    
+    if not from_year or not to_year:
+        return Response(
+            {'error': 'Both from_year and to_year are required'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    carried_count = LeaveBalanceManager.carry_forward_leaves(from_year, to_year)
+    return Response({
+        'message': f'Carried forward {carried_count} leave balances from {from_year} to {to_year}'
+    })
+
+
+@extend_schema(tags=["Leave Management"])
+@api_view(['GET'])
+def employee_leave_summary(request, employee_id):
+    """Get leave summary for a specific employee"""
+    employee = get_object_or_404(Employee, pk=employee_id)
+    year = request.query_params.get('year', timezone.now().year)
+    
+    balances = LeaveBalance.objects.filter(
+        employee=employee,
+        year=year
+    ).select_related('leave_type')
+    
+    applications = LeaveApplication.objects.filter(
+        employee=employee,
+        start_date__year=year
+    ).select_related('leave_type')
+    
+    summary = {
+        'employee': {
+            'id': employee.id,
+            'name': employee.user.fullname,
+        },
+        'year': year,
+        'balances': LeaveBalanceSerializer(balances, many=True).data,
+        'applications': LeaveApplicationSerializer(applications, many=True).data,
+        'statistics': {
+            'total_applications': applications.count(),
+            'pending_applications': applications.filter(status='pending').count(),
+            'approved_applications': applications.filter(status='approved').count(),
+            'rejected_applications': applications.filter(status='rejected').count(),
+        }
+    }
+    
+    return Response(summary)

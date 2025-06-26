@@ -61,7 +61,7 @@ class DisciplinaryAction(models.Model):
     notes = models.TextField(blank=True, help_text="Any additional notes or comments")
     
     def __str__(self):
-        return f"{self.employee.get_full_name()} - {self.discipline_type.name} ({self.incident_date})"
+        return f"{self.employee.user.fullname} - {self.discipline_type.name} ({self.incident_date})"
     
     class Meta:
         ordering = ['-incident_date', '-created_at']        

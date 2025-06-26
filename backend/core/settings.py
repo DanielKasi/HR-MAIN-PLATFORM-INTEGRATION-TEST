@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "onboarding",
     "recruitment",
     "discipline",
+    "leave_mgt",
 ]
 
 MIDDLEWARE = [
