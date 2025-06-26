@@ -20,6 +20,7 @@ import {
 // HR Dashboard Components
 import { useSelector } from "react-redux";
 import { selectUser } from "@/store/auth/selectors";
+import EmployeeAttendance from "./EmployeeAttendance";
 
 const WelcomeCard = () => {
   const userData = useSelector(selectUser);
