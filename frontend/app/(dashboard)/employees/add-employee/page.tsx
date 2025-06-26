@@ -344,7 +344,7 @@ export default function AddEmployeeForm() {
                     onChange={handleFileChange}
                     className="hidden"
                   />
-                  <Label htmlFor="profilePicture" className="cursor-pointer">
+                  <Label htmlFor="profilePicture" className="cursor-pointer">Profile Picture *
                     <Button type="button" variant="outline" className="flex items-center space-x-2" asChild>
                       <span>
                         <Upload className="w-4 h-4" />
@@ -363,7 +363,7 @@ export default function AddEmployeeForm() {
               {/* Personal Information */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Personal Information</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="fullname">Full Name *</Label>
                     <Input
@@ -386,7 +386,7 @@ export default function AddEmployeeForm() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                    <Label htmlFor="phoneNumber">Phone Number *</Label>
                     <Input
                       id="phoneNumber"
                       value={formData.phone_number}
@@ -395,7 +395,7 @@ export default function AddEmployeeForm() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                    <Label htmlFor="dateOfBirth">Date of Birth *</Label>
                     <Input
                       id="dateOfBirth"
                       type="date"
@@ -404,7 +404,7 @@ export default function AddEmployeeForm() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="maritalStatus">Marital Status</Label>
+                    <Label htmlFor="maritalStatus">Marital Status *</Label>
                     <Select
                       value={formData.marital_status}
                       onValueChange={(value) => handleInputChange("marital_status", value)}
@@ -422,7 +422,7 @@ export default function AddEmployeeForm() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="childrenCount">Number of Children</Label>
+                    <Label htmlFor="childrenCount">Number of Children *</Label>
                     <Input
                       id="childrenCount"
                       type="number"
@@ -433,7 +433,7 @@ export default function AddEmployeeForm() {
                     />
                   </div>
                   <div className="space-y-2 sm:col-span-2 lg:col-span-1">
-                    <Label htmlFor="address">Address</Label>
+                    <Label htmlFor="address">Address *</Label>
                     <Input
                       id="address"
                       value={formData.address}
@@ -449,7 +449,7 @@ export default function AddEmployeeForm() {
               {/* Work Information */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Work Information</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="position">Position *</Label>
                     <Select
@@ -505,7 +505,7 @@ export default function AddEmployeeForm() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="experience">Experience (Years)</Label>
+                    <Label htmlFor="experience">Experience (Years) *</Label>
                     <Input
                       id="experience"
                       type="number"
@@ -516,7 +516,7 @@ export default function AddEmployeeForm() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="qualifications">Qualifications</Label>
+                    <Label htmlFor="qualifications">Qualifications *</Label>
                     <Input
                       id="qualifications"
                       value={formData.qualifications}
@@ -525,7 +525,7 @@ export default function AddEmployeeForm() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="skills">Skills</Label>
+                    <Label htmlFor="skills">Skills *</Label>
                     <Input
                       id="skills"
                       value={formData.skills}
@@ -540,7 +540,7 @@ export default function AddEmployeeForm() {
                     checked={formData.is_active}
                     onCheckedChange={(checked) => handleInputChange("is_active", checked as boolean)}
                   />
-                  <Label htmlFor="isActive">Active Employee</Label>
+                  <Label htmlFor="isActive">Active Employee *</Label>
                 </div>
               </div>
 
@@ -549,9 +549,9 @@ export default function AddEmployeeForm() {
               {/* Emergency Contact */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Emergency Contact</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="emergencyContactName">Contact Name</Label>
+                    <Label htmlFor="emergencyContactName">Contact Name *</Label>
                     <Input
                       id="emergencyContactName"
                       value={formData.emergency_contact_name}
@@ -560,7 +560,7 @@ export default function AddEmployeeForm() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="emergencyContactPhone">Contact Phone</Label>
+                    <Label htmlFor="emergencyContactPhone">Contact Phone *</Label>
                     <Input
                       id="emergencyContactPhone"
                       value={formData.emergency_contact_phone}
@@ -569,7 +569,7 @@ export default function AddEmployeeForm() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="emergencyContactRelationship">Relationship</Label>
+                    <Label htmlFor="emergencyContactRelationship">Relationship *</Label>
                     <Input
                       id="emergencyContactRelationship"
                       value={formData.emergency_contact_relationship}
