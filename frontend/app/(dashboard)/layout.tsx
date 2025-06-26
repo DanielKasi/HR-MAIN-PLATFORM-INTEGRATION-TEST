@@ -269,15 +269,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       icon: <Icon icon="hugeicons:user-multiple-02" width="24" height="24" />,
       // requiredPermission: "can_access_valuation",
       submenu: [
-        // {
-        //   title: "Profile",
-        //   href: "/employees/profile",
-        //   // requiredPermission: "can_access_valuation_requests",
-        // },
         {
           title: "All Employees",
           href: "/employees/employee-list",
           // requiredPermission: "can_access_valuation_instructions",
+        },
+        {
+          title: "Attendance",
+          href: "/employees/attendance",
+          // requiredPermission: "can_access_attendance",
         }
       ],
     },

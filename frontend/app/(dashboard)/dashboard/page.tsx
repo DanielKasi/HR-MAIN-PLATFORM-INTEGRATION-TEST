@@ -20,10 +20,11 @@ import {
 // HR Dashboard Components
 import { useSelector } from "react-redux";
 import { selectUser } from "@/store/auth/selectors";
+import EmployeeAttendance from "./EmployeeAttendance";
 
 const WelcomeCard = () => {
   const userData = useSelector(selectUser);
-  const now = new Date("2025-06-26T10:43:54+03:00");
+  const now = new Date();
   const hour = now.getHours();
 
   let greeting = "Hello";
