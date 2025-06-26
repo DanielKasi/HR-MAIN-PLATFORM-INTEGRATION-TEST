@@ -497,3 +497,35 @@ export interface DisciplinaryAction {
   updated_at: string;
   notes: string;
 }
+
+
+export interface IWorkTypeFormData {
+  name: string;
+  code: string;
+  description: string;
+}
+
+export interface IEmployeeTypeFormData {
+  name: string;
+  code: string;
+  description: string;
+}
+
+// Response interfaces (what you get back from the API)
+export interface IWorkType {
+  id: number;
+  name: string;
+  code?: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface IEmployeeType {
+  id: number;
+  name: string;
+  code?: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}

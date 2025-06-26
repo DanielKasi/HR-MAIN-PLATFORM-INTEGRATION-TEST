@@ -278,6 +278,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           title: "Attendance",
           href: "/employees/attendance",
           // requiredPermission: "can_access_attendance",
+        },
+         {
+          title: "Discipline",
+          href: "/employees/discipline",
+          // requiredPermission: "can_access_attendance",
         }
       ],
     },
