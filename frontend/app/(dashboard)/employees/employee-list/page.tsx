@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Icon } from "@iconify/react"
 import { Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import { getAllEmployees } from "@/lib/utils"
 import {useSelector} from "react-redux";

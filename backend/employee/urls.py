@@ -8,8 +8,12 @@ from .views import (
     EmployeeListAPIView,
     EmployeeDetailAPIView,
     EmployeeCreateAPIView,
+    EmployeeTypeDetailAPIView,
+    EmployeeTypeListCreateAPIView,
     EmployeeUpdateAPIView,
     EmployeeDeleteAPIView,
+    WorkTypeDetailAPIView,
+    WorkTypeListCreateAPIView,
 )
 
 urlpatterns = [
@@ -22,4 +26,9 @@ urlpatterns = [
     path('branches/attach/', EmployeeBranchManagementAPIView.as_view(), name='attach-employee-branches'),
     path('attendance/', EmployeeAttendanceListCreateAPIView.as_view(), name='attendance-list-create'),
     path('attendance/<int:pk>/', EmployeeAttendanceDetailAPIView.as_view(), name='attendance-detail'),
+    path('employee-types/', EmployeeTypeListCreateAPIView.as_view(), name='employee-type-list-create'),
+    path('employee-types/<int:pk>/', EmployeeTypeDetailAPIView.as_view(), name='employee-type-detail'),
+
+    path('work-types/', WorkTypeListCreateAPIView.as_view(), name='work-type-list-create'),
+    path('work-types/<int:pk>/', WorkTypeDetailAPIView.as_view(), name='work-type-detail'),
 ]
