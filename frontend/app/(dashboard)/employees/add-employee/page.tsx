@@ -209,7 +209,7 @@ export default function AddEmployeeForm() {
 
     try {
       const newWorkType = await createWorkType({
-        institutionId,
+        institutionId: institutionId ?? 0,
         workTypeData: workTypeFormData,
       });
 
@@ -254,7 +254,7 @@ export default function AddEmployeeForm() {
 
     try {
       const newEmployeeType = await createEmployeeType({
-        institutionId,
+        institutionId: institutionId ?? 0,
         employeeTypeData: employeeTypeFormData,
       });
 
