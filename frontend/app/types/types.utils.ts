@@ -270,9 +270,9 @@ export interface IInterview {
 export interface User {
   email: string;
   fullname: string;
-  password: string;
-  roles_ids: number[];
-  permissions: string;
+  password?: string;  
+  roles_ids?: number[]; 
+  permissions?: string;
 }
 
 export interface EmployeeFormData {
