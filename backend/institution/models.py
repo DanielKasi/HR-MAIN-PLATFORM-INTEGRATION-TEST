@@ -164,16 +164,41 @@ class UserBranch(models.Model):
         unique_together = ["user", "branch"]
         verbose_name = "User Branch"
         verbose_name_plural = "User Branches"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user'],
+                condition=models.Q(is_default=True),
+                name='unique_default_branch_per_user'
+            )
+        ]
 
     def save(self, *args, **kwargs):
+        # Ensure only one default branch per user
         if self.is_default:
-            UserBranch.objects.filter(user=self.user, is_default=True).update(
-                is_default=False
-            )
-
+            UserBranch.objects.filter(
+                user=self.user, 
+                is_default=True
+            ).exclude(id=self.id).update(is_default=False)
+        
         super().save(*args, **kwargs)
+        
+        # Update employee payroll_branch after saving
+        self._update_employee_payroll_branch()
+    
+    def _update_employee_payroll_branch(self):
+        """Update employee's payroll_branch if this is the default branch"""
+        if self.is_default:
+            from employee.models import Employee
+            try:
+                employee = Employee.objects.get(user=self.user)
+                employee.payroll_branch = self.branch
+                employee.save(update_fields=['payroll_branch'])
+            except Employee.DoesNotExist:
+                pass
 
-    def __str__(self):
+
+
+    def str(self):
         return self.user.email + " - " + self.branch.branch_location
 
 

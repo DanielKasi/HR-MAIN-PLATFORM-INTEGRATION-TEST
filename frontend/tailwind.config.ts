@@ -67,7 +67,7 @@ const config: Config = {
         },
       },
       height: {
-        mainContentHeight: "90svh",
+        mainContentHeight: "94%",
       },
       borderRadius: {
         lg: "12px",
@@ -98,7 +98,10 @@ const config: Config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    require("tailwind-scrollbar-hide"),
+  ],
 };
 
 export default config;

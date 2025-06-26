@@ -232,12 +232,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     {
       title: "Dashboard",
       href: "/dashboard",
-      icon: <LayoutDashboard className="h-5 w-5" />,
+      icon: <Icon icon="hugeicons:dashboard-browsing" width="24" height="24" />,
     },
     {
       title: "Recruitment",
       href: "#1",
-      icon: <Package2 className="h-5 w-5" />,
+      icon: <Icon icon="hugeicons:user-add-02" width="24" height="24" />,
       // requiredPermission: "can_access_valuation",
       submenu: [
         {
@@ -266,7 +266,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     {
       title: "Employees",
       href: "#1",
-      icon: <Package2 className="h-5 w-5" />,
+      icon: <Icon icon="hugeicons:user-multiple-02" width="24" height="24" />,
       // requiredPermission: "can_access_valuation",
       submenu: [
         // {
@@ -492,8 +492,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           } bg-white border-r transition-all duration-300 flex flex-col justify-between`}
       >
         <div>
-          <div className="p-4 flex items-center gap-2">
-            <div className="w-8 h-8 bg-sidebar-selected rounded-md flex items-center justify-center">
+          <div className="py-3 px-2 flex items-center gap-2 border-b-2 border-gray-50">
+            <div className="size-11 bg-sidebar-selected text-white rounded-xl flex items-center justify-center">
               {InstitutionLogo ? (
                 <Image
                   alt="Institution Logo"
@@ -503,7 +503,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   width={32}
                 />
               ) : (
-                <Building2 className="text-white h-5 w-5" />
+                <Icon icon="hugeicons:building-05" width="24" height="24" />
               )}
             </div>
             {sidebarExpanded && <span className="font-bold text-gray-800">{InstitutionName}</span>}
@@ -524,7 +524,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   >
                     <div className="flex items-center gap-3 flex-1">
                       {item.icon}
-                      {sidebarExpanded && <span>{item.title}</span>}
+                      {sidebarExpanded && <span className="text-base">{item.title}</span>}
                     </div>
                     {item.submenu && item.submenu.length > 0 && (
                       <div className={`${sidebarExpanded ? "block" : "hidden"}`}>
@@ -542,12 +542,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <div
                           key={subitem.href}
                           className={`
-                  px-4 py-2 rounded-lg cursor-pointer transition-colors
-                  ${pathname === subitem.href
+                            px-4 py-2 rounded-lg cursor-pointer transition-colors text-base font-light text-gray-500
+                            ${pathname === subitem.href
                               ? "bg-sidebar-hover bg-opacity-30 text-sidebar-selected font-medium"
                               : "hover:bg-sidebar-hover hover:bg-opacity-20"
                             }
-                `}
+                          `}
                           onClick={() => router.push(subitem.href)}
                         >
                           {subitem.title}
@@ -565,7 +565,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
         {/* Header */}
-        <div className="bg-white p-2 flex justify-between items-center border-b">
+        <div className="bg-white p-2 flex justify-between items-center">
           <div
             className="w-8 h-8 bg-black rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-860 active:bg-sidebar-selected/80 transition-all duration-200"
             onClick={() => {
@@ -591,22 +591,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_MODULES}>
-            <div className="rounded-lg hover:bg-opacity-20 active:bg-opacity-30 transition-all duration-200 p-2">
-              <Modules />
-            </div>
-          </ProtectedComponent>
+          
 
           <div className="flex items-center gap-4">
+            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_MODULES}>
+              <div className="">
+                <Modules />
+              </div>
+            </ProtectedComponent>
             {isMounted && canViewAdmin && (
               <button
-                className={`flex items-center rounded-lg bg-transparent active:bg-gray-200 relative px-2 py-2 hover`}
+                className= "text-gray-900 bg-white hover:bg-gray-100 rounded-full p-3 relative"
                 id="admin"
                 onClick={() => router.push("/admin")}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
               >
-                <Shield className="h-5 w-5 text-gray-600 hover:text-blue-500 transition-colors duration-200" />
+                <Icon icon="hugeicons:shield-01" width="24" height="24"/>
                 {isHovered && (
                   <span
                     className={`text-gray-100 px-3 py-1 rounded-sm z-10 bg-gray-600 text-sm font-medium overflow-hidden transition-all duration-300 ease-in-out absolute -top-2 -right-1`}
@@ -618,7 +619,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
 
             {/* Assuming TaskNotification is a custom component, we'll add a className prop */}
-            <div className="rounded-full  hover:bg-opacity-20  active:bg-opacity-30 transition-all duration-200 p-2">
+            <div className="">
               <TaskNotification />
             </div>
 
@@ -686,7 +687,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </Dialog>
 
         {/* Dashboard Content */}
-        <div className="p-6 h-mainContentHeight overflow-y-auto">
+        <div className="px-4 pt-4 h-mainContentHeight overflow-y-auto">
           {/* {isMounted && canViewThisGuide && InstitutionId && (
             <>
               {!isSetupComplete() && (

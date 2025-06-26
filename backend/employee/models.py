@@ -10,6 +10,23 @@ from utilities.helpers import (
 
 from django.db import models
 from datetime import datetime
+from institution.models import Branch, UserBranch
+
+class EmployeeType(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+    code = models.CharField(max_length=10, unique=True, blank=True, null=True)
+    
+    def str(self):
+        return self.name
+    
+class WorkType(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+    code = models.CharField(max_length=10, unique=True, blank=True, null=True)
+    
+    def str(self):
+        return self.name    
 
 
 class Employee(models.Model):
@@ -37,9 +54,14 @@ class Employee(models.Model):
     department = models.ForeignKey(
         "institution.Department", on_delete=models.PROTECT, blank=True, null=True, related_name="employees"
     )
+    payroll_branch = models.ForeignKey(Branch, on_delete=models.PROTECT, blank=True, null=True, related_name="payroll_employees")
     date_of_birth = models.DateField(blank=True, null=True)
     date_of_joining = models.DateField(default=datetime.now)
     address = models.TextField(blank=True, null=True)
+    country = models.CharField(max_length=50, blank=True, null=True)
+    nin = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    bank = models.CharField(max_length=50, blank=True, null=True)
+    bank_account_number = models.CharField(max_length=20, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -53,8 +75,31 @@ class Employee(models.Model):
     children_count = models.PositiveIntegerField(default=0, blank=True, null=True)
     employee_profile_picture = models.ImageField(upload_to='employee_pictures/', blank=True, null=True)
 
-    def __str__(self):
+    def str(self):
         return f"{self.user.fullname}  - {self.position}"
+    
+    def save(self, *args, **kwargs):
+        # Auto-set payroll_branch to default branch if not set
+        if self.user and not self.payroll_branch:
+            self.payroll_branch = self.get_default_branch()
+        
+        super().save(*args, **kwargs)
+    
+    def get_default_branch(self):
+        """Get the default branch for this employee"""
+        try:
+            user_branch = UserBranch.objects.get(user=self.user, is_default=True)
+            return user_branch.branch
+        except UserBranch.DoesNotExist:
+            return None
+    
+    def get_all_branches(self):
+        """Get all branches this employee is attached to"""
+        return Branch.objects.filter(attached_users__user=self.user)
+    
+    def is_attached_to_branch(self, branch):
+        """Check if employee is attached to a specific branch"""
+        return UserBranch.objects.filter(user=self.user, branch=branch).exists()
 
     def should_generate_password(self):
         """
@@ -112,3 +157,13 @@ class Employee(models.Model):
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
+
+class EmployeeAttendance(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name="attendance_records")
+    date = models.DateField(auto_now_add=True)
+    check_in_time = models.TimeField(null=True, blank=True)
+    check_out_time = models.TimeField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=[("approved", "Approved"), ("rejected", "Rejected"), ("pending", "Pending")], default="pending")
+    
+    def str(self):
+        return f"{self.employee.user.fullname} - {self.date} - {self.status}"

@@ -663,7 +663,7 @@ export const createEmployee = async ({
       }
     });
     
-    const response = await apiRequest.post(`/employee/employee/create/`, formData);
+    const response = await apiRequest.post(`/employee/create/`, formData);
     return response.data;
   } catch (error: any) {
     throw new Error(

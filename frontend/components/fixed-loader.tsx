@@ -1,6 +1,7 @@
 "use client";
 
 import {Loader2} from "lucide-react";
+import {Icon} from "@iconify/react";
 
 type FixedLoaderProps = {
   className?: string;
@@ -12,7 +13,8 @@ const FixedLoader = ({className, fixed = true}: FixedLoaderProps) => {
       className={`${className} inset-0 ${fixed ? "fixed" : "absolute"} z-50 bg-gray-500/10 flex items-center justify-center`}
     >
       <span className="mx-auto">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        
+        <Icon icon="icomoon-free:spinner10" width="16" height="16" className="h-8 w-8 animate-spin text-primary"/>
       </span>
     </div>
   );
