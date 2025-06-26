@@ -1,8 +1,20 @@
-from .models import Employee, EmployeeAttendance
+from .models import Employee, EmployeeAttendance, EmployeeType, WorkType
 from rest_framework import serializers
 from users.serializers import CustomUserSerializer
 
+class EmployeeTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeType
+        fields = '__all__'
 
+
+
+class WorkTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkType
+        fields = '__all__'
+
+    
 class EmployeeSerializer(serializers.ModelSerializer):
     user = CustomUserSerializer()
     department_details = serializers.SerializerMethodField()
