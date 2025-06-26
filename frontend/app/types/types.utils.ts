@@ -322,6 +322,7 @@ export interface EmployeeFormState {
   experience: number;
   qualifications: string;
   skills: string;
+  selected_branches: number[]; // Added for multi-branch selection
   emergency_contact_name: string;
   emergency_contact_phone: string;
   emergency_contact_relationship: string;
