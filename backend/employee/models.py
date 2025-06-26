@@ -85,6 +85,9 @@ class Employee(models.Model):
         # Auto-set payroll_branch to default branch if not set
         if self.user and not self.payroll_branch:
             self.payroll_branch = self.get_default_branch()
+
+        if self.position and hasattr(self.position, 'salary'):
+            self.salary = self.position.salary    
         
         super().save(*args, **kwargs)
     
