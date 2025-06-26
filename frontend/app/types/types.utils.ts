@@ -442,4 +442,46 @@ export interface IInterviewFormData {
   status: string;
 }
 
+export type Severity = 'low' | 'medium' | 'high' | 'critical';
+export type DisciplinaryStatus = 'pending' | 'in_progress' | 'completed' | 'dismissed';
 
+export interface DisciplineType {
+  id: number;
+  name: string;
+  description: string;
+  severity: Severity;
+  is_active: boolean;
+  created_at: string; // ISO date string
+}
+
+export interface DisciplinaryAction {
+  id: number;
+
+  // Foreign Keys (you may replace these with full objects if needed)
+  employee: number;
+  discipline_type: number;
+
+  // Dates
+  incident_date: string;     // YYYY-MM-DD
+  reported_date: string;     // YYYY-MM-DD (auto)
+  resolution_date?: string | null;
+  follow_up_date?: string | null;
+
+  // Details
+  description: string;
+  evidence: string;
+
+  // Processing
+  reported_by: number;
+  assigned_to?: number | null;
+  status: DisciplinaryStatus;
+
+  // Resolution
+  action_taken: string;
+  follow_up_required: boolean;
+
+  // Metadata
+  created_at: string;
+  updated_at: string;
+  notes: string;
+}

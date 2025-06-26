@@ -76,7 +76,7 @@ class Employee(models.Model):
     marital_status = models.CharField(max_length=10, choices=choices, default='single')
     children_count = models.PositiveIntegerField(default=0, blank=True, null=True)
     employee_profile_picture = models.ImageField(upload_to='employee_pictures/', blank=True, null=True)
-    salary = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    salary = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, null=True, blank=True)
 
     def str(self):
         return f"{self.user.fullname}  - {self.position}"
