@@ -23,7 +23,7 @@ import { selectUser } from "@/store/auth/selectors";
 
 const WelcomeCard = () => {
   const userData = useSelector(selectUser);
-  const now = new Date("2025-06-26T10:43:54+03:00");
+  const now = new Date();
   const hour = now.getHours();
 
   let greeting = "Hello";
