@@ -524,7 +524,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   >
                     <div className="flex items-center gap-3 flex-1">
                       {item.icon}
-                      {sidebarExpanded && <span>{item.title}</span>}
+                      {sidebarExpanded && <span className="text-base">{item.title}</span>}
                     </div>
                     {item.submenu && item.submenu.length > 0 && (
                       <div className={`${sidebarExpanded ? "block" : "hidden"}`}>
@@ -542,12 +542,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <div
                           key={subitem.href}
                           className={`
-                  px-4 py-2 rounded-lg cursor-pointer transition-colors
-                  ${pathname === subitem.href
+                            px-4 py-2 rounded-lg cursor-pointer transition-colors text-base font-light text-gray-500
+                            ${pathname === subitem.href
                               ? "bg-sidebar-hover bg-opacity-30 text-sidebar-selected font-medium"
                               : "hover:bg-sidebar-hover hover:bg-opacity-20"
                             }
-                `}
+                          `}
                           onClick={() => router.push(subitem.href)}
                         >
                           {subitem.title}
