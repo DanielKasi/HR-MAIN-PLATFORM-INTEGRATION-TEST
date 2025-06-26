@@ -77,6 +77,7 @@ class OnBoarding(models.Model):
                 date_of_joining=timezone.now().date(),
                 is_active=True,
                 department=self.application.job_position_advert.job_position.department,
+                salary=self.application.job_position_advert.job_position.salary,
             )
             
             print(f"Employee record created for {self.application.applicant_name}")
