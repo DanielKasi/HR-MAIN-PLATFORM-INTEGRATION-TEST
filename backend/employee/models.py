@@ -169,7 +169,30 @@ class EmployeeAttendance(models.Model):
     date = models.DateField(auto_now_add=True)
     check_in_time = models.TimeField(null=True, blank=True)
     check_out_time = models.TimeField(null=True, blank=True)
-    status = models.CharField(max_length=20, choices=[("approved", "Approved"), ("rejected", "Rejected"), ("pending", "Pending")], default="pending")
-    
-    def str(self):
+    status = models.CharField(
+        max_length=20,
+        choices=[("approved", "Approved"), ("rejected", "Rejected"), ("pending", "Pending")],
+        default="pending"
+    )
+    overtime_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, null=True, blank=True)
+
+    def __str__(self):
         return f"{self.employee.user.fullname} - {self.date} - {self.status}"
+
+    def calculate_overtime_hours(self):
+        if self.check_out_time and self.employee and self.employee.payroll_branch:
+            branch_end_time = self.employee.payroll_branch.end_time
+            from datetime import datetime
+
+            datetime_checkout = datetime.combine(self.date, self.check_out_time)
+            datetime_end = datetime.combine(self.date, branch_end_time)
+
+            if datetime_checkout > datetime_end:
+                overtime_duration = datetime_checkout - datetime_end
+                return round(overtime_duration.total_seconds() / 3600, 2)
+        return 0.0
+
+    def save(self, *args, **kwargs):
+        # Calculate and store overtime_hours before saving
+        self.overtime_hours = self.calculate_overtime_hours()
+        super().save(*args, **kwargs)
