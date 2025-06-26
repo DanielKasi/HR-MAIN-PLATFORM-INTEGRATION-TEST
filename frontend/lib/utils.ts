@@ -626,12 +626,12 @@ export const createInterviewStage = async ({
   }
 };
 
-// It returns a promise that resolves to an array of IEmployee objects or throws an error ifAdd commentMore actions
+
 export const getAllEmployees = async ({institutionId}:{institutionId:number}) => {
   try {
     const endpoint = `employee/${institutionId}/employee/`;
     const response = await apiRequest.get(endpoint);
-    return response.data as IEmployee[];
+    return response.data as EmployeeFormData[];
   } catch (error) {
     throw error;
   }

@@ -277,6 +277,7 @@ export interface User {
 
 export interface EmployeeFormData {
   user: User;
+  id: number
   email: string;
   phone_number: string;
   position: number;

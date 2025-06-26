@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useToast } from "@/components/ui/use-toast"; // Import useToast hook
+import { useToast } from "@/components/ui/use-toast"; 
 import { Upload, User, X, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -20,7 +20,6 @@ import { createEmployee, getPositions, getDepartments } from "@/lib/utils";
 import { EmployeeFormData, EmployeeFormState, IDepartment, IJobPosition } from "@/app/types/types.utils";
 import { IUserInstitution } from "@/app/types";
 
-// Marital status options
 const maritalStatusOptions = [
   { value: "single", label: "Single" },
   { value: "married", label: "Married" },
@@ -30,7 +29,7 @@ const maritalStatusOptions = [
 
 export default function AddEmployeeForm() {
   const router = useRouter();
-  const { toast } = useToast(); // Initialize toast hook
+  const { toast } = useToast();
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
 
@@ -38,12 +37,10 @@ export default function AddEmployeeForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // State for dropdown data
   const [positions, setPositions] = useState<IJobPosition[]>([]);
   const [departments, setDepartments] = useState<IDepartment[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
+  const [loadingData, setLoadingData] = useState(false);
 
-  // Frontend form state - what the component manages
   const [formData, setFormData] = useState<EmployeeFormState>({
     fullname: "",
     email: "",
@@ -69,7 +66,6 @@ export default function AddEmployeeForm() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
-  // Set institution ID
   useEffect(() => {
     if (selectedInstitution) {
       setInstitutionId(selectedInstitution.id);
@@ -78,16 +74,11 @@ export default function AddEmployeeForm() {
     }
   }, [institutionsAttached, selectedInstitution]);
 
-  // Load dropdown data
   useEffect(() => {
     const loadDropdownData = async () => {
       if (!institutionId) {
-        console.log("No institution ID available");
         return;
       }
-
-      console.log("Loading data for institution:", institutionId);
-      setLoadingData(true);
 
       try {
         const [positionsData, departmentsData] = await Promise.all([
@@ -99,8 +90,6 @@ export default function AddEmployeeForm() {
         setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
       } catch (error) {
         setSubmitError("Failed to load form data. Please refresh the page.");
-      } finally {
-        setLoadingData(false);
       }
     };
 
@@ -138,9 +127,7 @@ export default function AddEmployeeForm() {
     }
 
     try {
-      console.log("Setting file in formData:", file);
       handleInputChange("employee_profile_picture", file);
-      console.log("File set in formData, new value:", file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
       setUploadError(null);
@@ -148,7 +135,6 @@ export default function AddEmployeeForm() {
     } catch (error) {
       setUploadError("Failed to process image");
       setUploadSuccess(null);
-      console.error("Image processing error:", error);
     }
   };
 
@@ -210,21 +196,12 @@ export default function AddEmployeeForm() {
     setSubmitError(null);
 
     try {
-      console.log("Submitting employee data:", formData);
-      console.log("Profile picture file:", formData.employee_profile_picture);
-      console.log("Profile picture type:", typeof formData.employee_profile_picture);
-      console.log("Is File instance:", formData.employee_profile_picture instanceof File);
-
-      // Transform frontend form state to backend EmployeeFormData format
       const dataToSubmit: EmployeeFormData = {
+        id: 0, // Will be assigned by backend
         user: {
           fullname: formData.fullname,
           email: formData.email,
-          // No password needed - Django will generate it
-          // No roles_ids needed initially - Django will handle defaults
-          // No permissions needed initially - Django will handle defaults
         },
-        // Copy all employee fields
         email: formData.email,
         phone_number: formData.phone_number,
         position: formData.position,
@@ -241,36 +218,26 @@ export default function AddEmployeeForm() {
         emergency_contact_relationship: formData.emergency_contact_relationship,
         marital_status: formData.marital_status,
         children_count: formData.children_count,
-        employee_profile_picture: formData.employee_profile_picture, // Include the actual file or null
+        employee_profile_picture: formData.employee_profile_picture,
       };
-
-      console.log("Data being sent to createEmployee:", dataToSubmit);
 
       const result = await createEmployee({
         institutionId,
         employeeData: dataToSubmit,
       });
 
-      console.log("createEmployee result:", result);
-
       if (result) {
-        // Show success toast
         toast({
           title: "Success!",
           description: "Employee has been created successfully and added to the system.",
           variant: "default",
           duration: 4000,
         });
-
-        // Navigate immediately without delay
         router.push("/employees/employee-list");
       } else {
         setSubmitError("Failed to create employee. Please try again.");
       }
     } catch (error: any) {
-      console.error("Error creating employee:", error);
-
-      // Show error toast
       toast({
         title: "Error",
         description: error.message || "Failed to create employee. Please try again.",
@@ -283,17 +250,6 @@ export default function AddEmployeeForm() {
       setIsSubmitting(false);
     }
   };
-
-  if (loadingData) {
-    return (
-      <div className="min-h-screen bg-gray-100 p-4 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-          <p className="mt-2 text-gray-600">Loading form data...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 overflow-hidden">
