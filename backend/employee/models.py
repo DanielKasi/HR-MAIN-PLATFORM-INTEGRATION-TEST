@@ -56,6 +56,8 @@ class Employee(models.Model):
     )
     payroll_branch = models.ForeignKey(Branch, on_delete=models.PROTECT, blank=True, null=True, related_name="payroll_employees")
     date_of_birth = models.DateField(blank=True, null=True)
+    work_type = models.ForeignKey(WorkType, on_delete=models.PROTECT, blank=True, null=True, related_name="employees")
+    employee_type = models.ForeignKey(EmployeeType, on_delete=models.PROTECT, blank=True, null=True, related_name="employees")
     date_of_joining = models.DateField(default=datetime.now)
     address = models.TextField(blank=True, null=True)
     country = models.CharField(max_length=50, blank=True, null=True)
@@ -74,6 +76,7 @@ class Employee(models.Model):
     marital_status = models.CharField(max_length=10, choices=choices, default='single')
     children_count = models.PositiveIntegerField(default=0, blank=True, null=True)
     employee_profile_picture = models.ImageField(upload_to='employee_pictures/', blank=True, null=True)
+    salary = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def str(self):
         return f"{self.user.fullname}  - {self.position}"

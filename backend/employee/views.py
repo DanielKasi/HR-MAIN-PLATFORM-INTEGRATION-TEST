@@ -6,8 +6,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from drf_spectacular.utils import extend_schema
-from .serializers import EmployeeAttendanceSerializer, EmployeeSerializer
-from .models import Employee, EmployeeAttendance
+from .serializers import EmployeeAttendanceSerializer, EmployeeSerializer, EmployeeTypeSerializer, WorkTypeSerializer
+from .models import Employee, EmployeeAttendance, EmployeeType, WorkType
 from rest_framework.parsers import MultiPartParser, FormParser
 from institution.utils import generate_compliant_password
 from employee.service import EmployeeBranchService
@@ -334,6 +334,10 @@ class EmployeeBranchManagementAPIView(APIView):
             employee_id = request.data.get('employee_id')
             branches_data = request.data.get('branches', [])
             
+            # Debug logging
+            print(f"DEBUG: employee_id = {employee_id}")
+            print(f"DEBUG: branches_data = {branches_data}")
+            
             # Validate required fields
             if not employee_id:
                 return Response(
@@ -348,39 +352,68 @@ class EmployeeBranchManagementAPIView(APIView):
                 )
             
             # Get employee or return 404
-            employee = get_object_or_404(Employee, id=employee_id)
+            try:
+                employee = Employee.objects.get(id=employee_id)
+                print(f"DEBUG: Found employee = {employee}")
+            except Employee.DoesNotExist:
+                return Response(
+                    {'error': f'Employee with id {employee_id} not found'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Check if employee has a user
+            if not employee.user:
+                return Response(
+                    {'error': 'Employee must have a user account to be attached to branches'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             
             # Validate and prepare branch data
             processed_branches = []
-            for branch_data in branches_data:
+            for i, branch_data in enumerate(branches_data):
+                print(f"DEBUG: Processing branch_data[{i}] = {branch_data}")
+                
                 if 'branch_id' not in branch_data:
                     return Response(
-                        {'error': 'branch_id is required for each branch'}, 
+                        {'error': f'branch_id is required for branch at index {i}'}, 
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
-                branch = get_object_or_404(Branch, id=branch_data['branch_id'])
+                try:
+                    branch = Branch.objects.get(id=branch_data['branch_id'])
+                    print(f"DEBUG: Found branch = {branch}")
+                except Branch.DoesNotExist:
+                    return Response(
+                        {'error': f'Branch with id {branch_data["branch_id"]} not found'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
                 
                 processed_branches.append({
                     'branch': branch,
                     'is_default': branch_data.get('is_default', False)
                 })
             
+            print(f"DEBUG: processed_branches = {processed_branches}")
+            
             # Use service layer if available, otherwise use inline logic
             try:
                 # Try to use service layer first
+                from .services import EmployeeBranchService  # Make sure import is correct
                 user_branches = EmployeeBranchService.attach_employee_to_multiple_branches(
                     employee=employee,
                     branches_data=processed_branches,
                     created_by=request.user
                 )
                 summary = EmployeeBranchService.get_employee_branch_summary(employee)
-            except NameError:
+                print("DEBUG: Used service layer successfully")
+            except (ImportError, NameError, AttributeError) as service_error:
+                print(f"DEBUG: Service layer not available: {service_error}")
                 # Fall back to inline logic if service doesn't exist
                 user_branches = self._attach_employee_to_branches_inline(
                     employee, processed_branches, request.user
                 )
                 summary = self._get_employee_branch_summary_inline(employee)
+                print("DEBUG: Used inline logic successfully")
             
             return Response({
                 'message': 'Employee attached to branches successfully',
@@ -388,17 +421,25 @@ class EmployeeBranchManagementAPIView(APIView):
             }, status=status.HTTP_200_OK)
             
         except ValueError as e:
+            print(f"DEBUG: ValueError: {str(e)}")
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            print(f"DEBUG: Unexpected error: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return Response(
-                {'error': 'An unexpected error occurred'}, 
+                {'error': f'An unexpected error occurred: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
     def _attach_employee_to_branches_inline(self, employee, branches_data, created_by):
         """Inline method to attach employee to branches"""
+        print(f"DEBUG: _attach_employee_to_branches_inline called with {len(branches_data)} branches")
+        
         user_branches = []
         default_count = sum(1 for bd in branches_data if bd.get('is_default', False))
+        
+        print(f"DEBUG: default_count = {default_count}")
         
         # Validate default branch logic
         if default_count > 1:
@@ -407,51 +448,78 @@ class EmployeeBranchManagementAPIView(APIView):
         # If no default is specified, make the first branch default
         if default_count == 0 and branches_data:
             branches_data[0]['is_default'] = True
+            print("DEBUG: Set first branch as default")
         
-        with transaction.atomic():
-            # Clear existing default branches if we're setting a new default
-            if any(bd.get('is_default', False) for bd in branches_data):
-                UserBranch.objects.filter(
-                    user=employee.user, 
-                    is_default=True
-                ).update(is_default=False)
-            
-            for branch_data in branches_data:
-                user_branch, created = UserBranch.objects.get_or_create(
-                    user=employee.user,
-                    branch=branch_data['branch'],
-                    defaults={
-                        'is_default': branch_data.get('is_default', False),
-                        'created_by': created_by
-                    }
-                )
+        try:
+            with transaction.atomic():
+                # Clear existing default branches if we're setting a new default
+                if any(bd.get('is_default', False) for bd in branches_data):
+                    cleared = UserBranch.objects.filter(
+                        user=employee.user, 
+                        is_default=True
+                    ).update(is_default=False)
+                    print(f"DEBUG: Cleared {cleared} existing default branches")
                 
-                # Update existing record if needed
-                if not created:
-                    user_branch.is_default = branch_data.get('is_default', False)
-                    user_branch.save()
+                for i, branch_data in enumerate(branches_data):
+                    print(f"DEBUG: Processing branch {i}: {branch_data}")
+                    
+                    user_branch, created = UserBranch.objects.get_or_create(
+                        user=employee.user,
+                        branch=branch_data['branch'],
+                        defaults={
+                            'is_default': branch_data.get('is_default', False),
+                            'created_by': created_by
+                        }
+                    )
+                    
+                    print(f"DEBUG: UserBranch {'created' if created else 'found'}: {user_branch.id}")
+                    
+                    # Update existing record if needed
+                    if not created:
+                        user_branch.is_default = branch_data.get('is_default', False)
+                        user_branch.save()
+                        print(f"DEBUG: Updated existing UserBranch {user_branch.id}")
+                    
+                    user_branches.append(user_branch)
                 
-                user_branches.append(user_branch)
+                # Update employee's payroll_branch to the default branch
+                default_branch = next((bd['branch'] for bd in branches_data if bd.get('is_default')), None)
+                if default_branch:
+                    employee.payroll_branch = default_branch
+                    employee.save(update_fields=['payroll_branch'])
+                    print(f"DEBUG: Updated employee payroll_branch to {default_branch}")
         
+        except Exception as e:
+            print(f"DEBUG: Error in transaction: {str(e)}")
+            raise
+        
+        print(f"DEBUG: Successfully created/updated {len(user_branches)} UserBranch records")
         return user_branches
     
     def _get_employee_branch_summary_inline(self, employee):
         """Inline method to get employee branch summary"""
+        print(f"DEBUG: _get_employee_branch_summary_inline called for employee {employee.id}")
+        
         if not employee.user:
+            print("DEBUG: Employee has no user")
             return {'branches': [], 'default_branch': None, 'payroll_branch': None}
         
         user_branches = UserBranch.objects.filter(
             user=employee.user
         ).select_related('branch').order_by('-is_default', 'branch__branch_name')
         
+        print(f"DEBUG: Found {user_branches.count()} user branches")
+        
         branches = []
         default_branch = None
         
-        for ub in user_branches:
+        for i, ub in enumerate(user_branches):
+            print(f"DEBUG: Processing UserBranch {i}: {ub.id}, default={ub.is_default}")
+            
             branch_info = {
                 'id': ub.branch.id,
                 'name': ub.branch.branch_name,
-                'location': ub.branch.branch_location,
+                'location': getattr(ub.branch, 'branch_location', ''),  # Safe access
                 'is_default': ub.is_default,
                 'attached_date': ub.created_at.isoformat() if ub.created_at else None
             }
@@ -459,15 +527,26 @@ class EmployeeBranchManagementAPIView(APIView):
             
             if ub.is_default:
                 default_branch = branch_info
+                print(f"DEBUG: Found default branch: {default_branch}")
         
-        return {
+        # Handle payroll branch safely
+        payroll_branch = None
+        if employee.payroll_branch:
+            payroll_branch = {
+                'id': employee.payroll_branch.id,
+                'name': employee.payroll_branch.branch_name,
+                'location': getattr(employee.payroll_branch, 'branch_location', ''),
+            }
+            print(f"DEBUG: Payroll branch: {payroll_branch}")
+        
+        summary = {
             'branches': branches,
             'default_branch': default_branch,
-            'payroll_branch': {
-                'id': employee.payroll_branch.id if employee.payroll_branch else None,
-                'name': employee.payroll_branch.branch_name if employee.payroll_branch else None,
-            } if employee.payroll_branch else None
+            'payroll_branch': payroll_branch
         }
+        
+        print(f"DEBUG: Final summary: {summary}")
+        return summary
 
 
 class EmployeeBranchDetailAPIView(APIView):
@@ -724,3 +803,124 @@ class EmployeeAttendanceDetailAPIView(APIView):
         record = self.get_object(pk)
         record.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)        
+    
+@extend_schema(tags=["Employee Type"])
+class EmployeeTypeListCreateAPIView(APIView):
+    @extend_schema(
+        responses=EmployeeTypeSerializer(many=True),
+        description="Get list of all employee types"
+    )
+    def get(self, request):
+        data = EmployeeType.objects.all()
+        serializer = EmployeeTypeSerializer(data, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=EmployeeTypeSerializer,
+        responses=EmployeeTypeSerializer,
+        description="Create a new employee type"
+    )
+    def post(self, request):
+        serializer = EmployeeTypeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["Employee Type"])
+class EmployeeTypeDetailAPIView(APIView):
+    def get_object(self, pk):
+        return get_object_or_404(EmployeeType, pk=pk)
+
+    @extend_schema(
+        responses=EmployeeTypeSerializer,
+        description="Get an employee type by ID"
+    )
+    def get(self, request, pk):
+        obj = self.get_object(pk)
+        serializer = EmployeeTypeSerializer(obj)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=EmployeeTypeSerializer,
+        responses=EmployeeTypeSerializer,
+        description="Update an employee type"
+    )
+    def patch(self, request, pk):
+        obj = self.get_object(pk)
+        serializer = EmployeeTypeSerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        description="Delete an employee type",
+        responses={204: None}
+    )
+    def delete(self, request, pk):
+        obj = self.get_object(pk)
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+@extend_schema(tags=["Work Type"])
+class WorkTypeListCreateAPIView(APIView):
+    @extend_schema(
+        responses=WorkTypeSerializer(many=True),
+        description="Get list of all work types"
+    )
+    def get(self, request):
+        data = WorkType.objects.all()
+        serializer = WorkTypeSerializer(data, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=WorkTypeSerializer,
+        responses=WorkTypeSerializer,
+        description="Create a new work type"
+    )
+    def post(self, request):
+        serializer = WorkTypeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["Work Type"])
+class WorkTypeDetailAPIView(APIView):
+    def get_object(self, pk):
+        return get_object_or_404(WorkType, pk=pk)
+
+    @extend_schema(
+        responses=WorkTypeSerializer,
+        description="Get a work type by ID"
+    )
+    def get(self, request, pk):
+        obj = self.get_object(pk)
+        serializer = WorkTypeSerializer(obj)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=WorkTypeSerializer,
+        responses=WorkTypeSerializer,
+        description="Update a work type"
+    )
+    def patch(self, request, pk):
+        obj = self.get_object(pk)
+        serializer = WorkTypeSerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        description="Delete a work type",
+        responses={204: None}
+    )
+    def delete(self, request, pk):
+        obj = self.get_object(pk)
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
