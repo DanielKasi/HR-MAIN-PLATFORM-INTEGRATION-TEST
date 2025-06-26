@@ -23,10 +23,8 @@ const onboardingSchema = z.object({
   status: z.enum(["initial", "training", "issued_contract", "declined_offer", "accepted_offer"]),
 })
 
-
-
 export default function EditOnboardingForm() {
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false);
   const params = useParams();
   const onboardingId = params.id as unknown as number;
@@ -48,7 +46,6 @@ export default function EditOnboardingForm() {
 
   const fetchOnboarding = async () => {
     try {
-      setIsLoading(true)
       const data = await getOnBoardingById({ onboardingId })
 
       if (data) {
@@ -64,9 +61,6 @@ export default function EditOnboardingForm() {
       }
     } catch (error) {
       toast.error("Failed to load onboarding record")
-
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -96,13 +90,6 @@ export default function EditOnboardingForm() {
       setIsSubmitting(false)
     }
   }
-  if (isLoading) {
-    return (
-      <div className="w-full h-full p-6 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    )
-  }
 
   if (!onboarding) {
     return (
@@ -119,7 +106,7 @@ export default function EditOnboardingForm() {
         <div>
           <h1 className="text-2xl font-bold">Edit Onboarding</h1>
           <p className="text-muted-foreground">
-            Update onboarding details for {onboarding.application_details.applicant_name}
+            Update onboarding details for {onboarding.application_name?.applicant_name || "Unknown Applicant"}
           </p>
         </div>
         <Button variant="outline" onClick={() => router.push("/on-boarding")}>
@@ -135,20 +122,20 @@ export default function EditOnboardingForm() {
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label className="text-sm font-medium">Name</Label>
-            <p className="text-sm text-muted-foreground">{onboarding.application_details.applicant_name || "N/A"}</p>
+            <p className="text-sm text-muted-foreground">{onboarding.application_name?.applicant_name || "N/A"}</p>
           </div>
           <div>
             <Label className="text-sm font-medium">Email</Label>
-            <p className="text-sm text-muted-foreground">{onboarding.application_details.applicant_email || "N/A"}</p>
+            <p className="text-sm text-muted-foreground">{onboarding.application_name?.applicant_email || "N/A"}</p>
           </div>
           <div>
             <Label className="text-sm font-medium">Phone</Label>
-            <p className="text-sm text-muted-foreground">{onboarding.application_details.applicant_phone || "N/A"}</p>
+            <p className="text-sm text-muted-foreground">{onboarding.application_name?.applicant_phone || "N/A"}</p>
           </div>
           <div>
             <Label className="text-sm font-medium">Position</Label>
             <p className="text-sm text-muted-foreground">
-              {onboarding.application_details.job_position_advert_job_details.name || "N/A"}
+              {onboarding.application_name?.job_position_advert_job_details?.name || "N/A"}
             </p>
           </div>
         </CardContent>

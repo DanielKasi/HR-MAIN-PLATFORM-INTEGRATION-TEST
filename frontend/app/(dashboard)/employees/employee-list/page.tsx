@@ -28,11 +28,11 @@ import {
   selectSelectedInstitution,
 } from "@/store/auth/selectors";
 import { IUserInstitution } from "@/app/types"
+import { User, EmployeeFormData } from "@/app/types/types.utils"
 import Link from "next/link"
-import FixedLoader from "@/components/fixed-loader"
 
-// Updated interface to match your actual API response
-interface Employee {
+// Interface for getAllEmployees API response with additional nested objects
+interface EmployeeFromAPI {
   id: number
   user: {
     id: number
@@ -46,8 +46,6 @@ interface Employee {
     branches: string
     permissions: string
   } | null
-  first_name: string
-  last_name: string
   email: string
   phone_number: string
   position: {
@@ -68,8 +66,6 @@ interface Employee {
   date_of_joining: string
   address: string
   is_active: boolean
-  created_at: string
-  updated_at: string
   experience: number
   qualifications: string
   skills: string
@@ -79,39 +75,57 @@ interface Employee {
   marital_status: string
   children_count: number
   employee_profile_picture: string
+  created_at: string
+  updated_at: string
 }
 
+// Union type to handle both data structures
+type EmployeeData = EmployeeFromAPI | EmployeeFormData
+
+// Helper function to check if data is EmployeeFromAPI type
+const isEmployeeFromAPI = (data: EmployeeData): data is EmployeeFromAPI => {
+  return 'created_at' in data && typeof data.position === 'object' && data.position !== null && 'name' in data.position;
+};
+
 // Helper function to get full name
-const getFullName = (employee: Employee) => {
-  return `${employee.user?.fullname}`.trim()
+const getFullName = (employee: EmployeeData) => {
+  return employee.user?.fullname || employee.email || 'Unknown Employee'
 }
 
 // Updated helper function to get department name from API data
-const getDepartmentName = (employee: Employee) => {
-  if (employee.department && employee.department.name) {
+const getDepartmentName = (employee: EmployeeData) => {
+  if (isEmployeeFromAPI(employee) && employee.department && employee.department.name) {
     return employee.department.name;
   }
-  return `Department ${employee.department?.id || 'Unknown'}`
+  // For EmployeeFormData, department is just an ID
+  if (!isEmployeeFromAPI(employee)) {
+    return `Department ${employee.department || 'Unknown'}`
+  }
+  return `Department ${isEmployeeFromAPI(employee) ? employee.department?.id : 'Unknown'}`
 }
 
 // Helper function to get position name from API data
-const getPositionName = (employee: Employee) => {
-  if (employee.position && employee.position.name) {
+const getPositionName = (employee: EmployeeData) => {
+  if (isEmployeeFromAPI(employee) && employee.position && employee.position.name) {
     return employee.position.name;
   }
-  return `Position ${employee.position?.id || 'Unknown'}`
+  // For EmployeeFormData, position is just an ID
+  if (!isEmployeeFromAPI(employee)) {
+    return `Position ${employee.position || 'Unknown'}`
+  }
+  return `Position ${isEmployeeFromAPI(employee) ? employee.position?.id : 'Unknown'}`
 }
 
 // Helper function to get role names
-const getRoleNames = (employee: Employee) => {
-  if (employee.roles && employee.roles.length > 0) {
+const getRoleNames = (employee: EmployeeData) => {
+  if (isEmployeeFromAPI(employee) && employee.roles && employee.roles.length > 0) {
     return employee.roles.map(role => role.name).join(', ');
   }
   return 'No roles assigned'
 }
 
 interface EmployeeTableProps {
-  employees: Employee[]
+  employees: EmployeeData[]
   onDelete: (id: number) => void
 }
 
@@ -157,7 +171,7 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
 
   const getStatusBadge = (isActive: boolean) => {
     return isActive ? (
-      <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
+      <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Active</Badge>
     ) : (
       <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Inactive</Badge>
     )
@@ -167,7 +181,7 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
     const colors: Record<string, string> = {
       Engineering: "bg-blue-100 text-blue-800",
       Marketing: "bg-purple-100 text-purple-800",
-      Sales: "bg-green-100 text-green-800",
+      Sales: "bg-orange-100 text-orange-800",
       HR: "bg-pink-100 text-pink-800",
       Finance: "bg-yellow-100 text-yellow-800",
       Operations: "bg-orange-100 text-orange-800",
@@ -182,87 +196,83 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
   return (
     <Card>
       <CardHeader>
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row justify-between w-full">
-          <CardTitle className=" flex items-center gap-2">
-            <span className="text-3xl font-bold">Employees ({filteredEmployees.length})</span>
-          </CardTitle>
-          
-          <div className="flex items-center mb-4 sm:mb-0 sm:w-auto">
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filter by department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
-                {uniqueDepartments.map((department) => (
-                  <SelectItem key={department} value={department}>
-                    {department}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <CardTitle className="flex items-center justify-between">
+          <span>Employee Management ({filteredEmployees.length} employees)</span>
+          <Link href="/employees/add-employee">
+            <Button className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700">
+              <Plus className="h-4 w-4" />
+              Add Employee
+            </Button>
+          </Link>
+        </CardTitle>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 mt-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search employees, departments, positions, or emails..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
-          
-          <div className="flex items-center justify-between gap-4 w-full sm:w-auto">
-            <div className="relative w-[300px]">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-12 rounded-2xl"
-              />
-            </div>
-            <Link href="/employees/add-employee">
-              <Button className="flex items-center gap-2 h-12 rounded-2xl">
-                <Plus className="h-4 w-4" />
-                Add Employee
-              </Button>
-            </Link>
-          </div>
+
+          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by department" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Departments</SelectItem>
+              {uniqueDepartments.map((department) => (
+                <SelectItem key={department} value={department}>
+                  {department}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
 
       <CardContent>
-        <div className="mt-4 w-full border-none">
+        <div className="rounded-md border">
           <div className="w-full">
-            <div className="border-b-2 border-gray-200">
-              <div className="grid grid-cols-[300px_300px_400px_200px_auto_auto] gap-4 py-4 font-medium">
+            <div className="bg-gray-50 border-b">
+              <div className="grid grid-cols-6 gap-4 p-4 font-medium">
                 <div>Name</div>
                 <div>Department</div>
                 <div>Email</div>
                 <div>Job Position</div>
-                <div className="">Status</div>
-                <div className="text-right">Actions</div>
+                <div>Status</div>
+                <div className="w-[150px]">Actions</div>
               </div>
             </div>
-            <div className="mt-2">
+            <div>
               {paginatedEmployees.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No employees found matching your criteria
                 </div>
               ) : (
                 paginatedEmployees.map((employee) => (
-                  <div key={employee.id} className="grid grid-cols-[300px_300px_400px_200px_auto_auto] gap-4 py-4 border-b border-gray-100">
+                  <div key={employee.id || Math.random()} className="grid grid-cols-6 gap-4 p-4 border-b hover:bg-gray-50">
                     <Link
-                      href={`/employees/profile/${employee.id}`}
-                      className="font-medium cursor-pointer hover:text-blue-600 hover:underline transition-colors"
+                      href={`/employees/profile/${employee.id || 'unknown'}`}
+                      className="font-medium cursor-pointer hover:text-orange-600 hover:underline transition-colors"
                       onClick={() => {
                         console.log('Navigating to employee profile:', employee.id);
                         // Store employee data in localStorage as backup
-                        localStorage.setItem(`employee_${employee.id}`, JSON.stringify(employee));
+                        localStorage.setItem(`employee_${employee.id || 'unknown'}`, JSON.stringify(employee));
                       }}
                     >
                       {getFullName(employee)}
@@ -272,24 +282,24 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
                         {getDepartmentName(employee)}
                       </Badge>
                     </div>
-                    <div className="text-md">{employee.email}</div>
+                    <div className="text-sm">{employee.email}</div>
                     <div>{getPositionName(employee)}</div>
-                    <div className="">{getStatusBadge(employee.is_active)}</div>
+                    <div>{getStatusBadge(employee.is_active)}</div>
                     <div>
-                      <div className="float-right flex items-center gap-5 justify-center">
+                      <div className="flex items-center gap-1">
                         {/* View Button */}
-                        <Link href={`/employees/profile/${employee.id}`}>
-                          <button title="View Details" className="text-gray-900">
-                          <Icon icon="hugeicons:view" width="24" height="24" />
-                          </button>
+                        <Link href={`/employees/profile/${employee.id || 'unknown'}`}>
+                          <Button variant="ghost" size="sm" title="View Details">
+                            <Eye className="h-4 w-4" />
+                          </Button>
                         </Link>
 
                         {/* Update Button - Now navigates to update page */}
                         <Link 
-                          href={`/employees/update-employee/${employee.id}`}
+                          href={`/employees/update-employee/${employee.id || 'unknown'}`}
                           onClick={() => {
                             // Store employee data in localStorage for the update page
-                            localStorage.setItem(`employee_${employee.id}`, JSON.stringify(employee));
+                            localStorage.setItem(`employee_${employee.id || 'unknown'}`, JSON.stringify(employee));
                           }}
                         >
                           <Button variant="ghost" size="sm" title="Update Employee">
@@ -300,12 +310,14 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
                         {/* Delete Button */}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <button 
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               title="Delete Employee"
                               className="text-red-600 hover:text-red-700"
                             >
-                              <Icon icon="hugeicons:delete-02" width="24" height="24" />
-                            </button>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
@@ -317,7 +329,7 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => onDelete(employee.id)}
+                                onClick={() => employee.id && onDelete(employee.id)}
                                 className="bg-red-600 hover:bg-red-700"
                               >
                                 Delete
@@ -372,8 +384,8 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
 }
 
 export default function Component() {
-  const [employees, setEmployees] = useState<Employee[]>([])
-  const [loading, setLoading] = useState(true)
+  const [employees, setEmployees] = useState<EmployeeData[]>([])
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const [InstitutionId, setInstitutionId] = useState<string | null>(null);
@@ -405,23 +417,10 @@ export default function Component() {
       try {
         setLoading(true);
         const institutionIdNumber = parseInt(InstitutionId);
-        const data = await getAllEmployees({ institutionId: institutionIdNumber });
-        if (data) {
-          // Map IEmployee[] to Employee[]
-          const employeesArray = (data as any[]).map(emp => ({
-            ...emp,
-            position: typeof emp.position === 'number'
-              ? { id: emp.position, name: '' }
-              : emp.position,
-            department: typeof emp.department === 'number'
-              ? { id: emp.department, name: '', institution_id: 0 }
-              : emp.department,
-            roles: Array.isArray(emp.roles) && typeof emp.roles[0] === 'object'
-              ? emp.roles
-              : (emp.roles || []).map((roleId: number) => ({ id: roleId, name: '' })),
-          }));
-          setEmployees(employeesArray);
-          setError(null);
+        const result = await getAllEmployees({ institutionId: institutionIdNumber });
+        if (result && Array.isArray(result)) {
+          setEmployees(result);
+          setError(null); // Clear any previous errors
         } else {
           setError("No employee data available");
         }
@@ -445,15 +444,6 @@ export default function Component() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center relative">
-        <FixedLoader fixed={false}  />
-      </div>
-
-    )
-  }
-
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
@@ -468,12 +458,12 @@ export default function Component() {
   }
 
   return (
-    <div className="h-full overflow-y-scroll bg-white w-full rounded-xl scrollbar-hide border-none">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="w-full">
-        {/* <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Employees</h1>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Management System</h1>
           <p className="text-muted-foreground">Manage your organization's employees efficiently</p>
-        </div> */}
+        </div>
 
         <EmployeeTable
           employees={employees}

@@ -9,6 +9,8 @@ from rest_framework.permissions import AllowAny
 from drf_spectacular.utils import extend_schema
 from .serializers import EmployeeAttendanceSerializer, EmployeeSerializer, EmployeeTypeSerializer, WorkTypeSerializer
 from .models import Employee, EmployeeAttendance, EmployeeType, WorkType
+from .serializers import EmployeeAttendanceSerializer, EmployeeSerializer, EmployeeTypeSerializer, WorkTypeSerializer
+from .models import Employee, EmployeeAttendance, EmployeeType, WorkType
 from rest_framework.parsers import MultiPartParser, FormParser
 from institution.utils import generate_compliant_password
 from employee.service import EmployeeBranchService
@@ -307,7 +309,7 @@ class EmployeeBranchManagementAPIView(APIView):
                 branch_id = branch_data.get('branch_id')
                 if not branch_id:
                     return Response(
-                        {'error': 'branch_id is required for each branch'}, 
+                        {'error': f'branch_id is required for branch at index {i}'}, 
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
@@ -335,7 +337,11 @@ class EmployeeBranchManagementAPIView(APIView):
             print(f"DEBUG: Unexpected error: {str(e)}")
             import traceback
             traceback.print_exc()
+            print(f"DEBUG: Unexpected error: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return Response(
+                {'error': f'An unexpected error occurred: {str(e)}'}, 
                 {'error': f'An unexpected error occurred: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
@@ -352,6 +358,7 @@ class EmployeeBranchManagementAPIView(APIView):
         # If no default specified, make first one default
         if default_count == 0 and branches_data:
             branches_data[0]['is_default'] = True
+            print("DEBUG: Set first branch as default")
         
         user_branches = []
         
@@ -405,10 +412,14 @@ class EmployeeBranchManagementAPIView(APIView):
             user=employee.user
         ).select_related('branch').order_by('-is_default', 'branch__branch_name')
         
+        print(f"DEBUG: Found {user_branches.count()} user branches")
+        
         branches = []
         default_branch = None
         
-        for ub in user_branches:
+        for i, ub in enumerate(user_branches):
+            print(f"DEBUG: Processing UserBranch {i}: {ub.id}, default={ub.is_default}")
+            
             branch_info = {
                 'id': ub.branch.id,
                 'name': ub.branch.branch_name,
@@ -718,6 +729,128 @@ class EmployeeAttendanceDetailAPIView(APIView):
         record = self.get_object(pk)
         record.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)        
+    
+@extend_schema(tags=["Employee Type"])
+class EmployeeTypeListCreateAPIView(APIView):
+    @extend_schema(
+        responses=EmployeeTypeSerializer(many=True),
+        description="Get list of all employee types"
+    )
+    def get(self, request):
+        data = EmployeeType.objects.all()
+        serializer = EmployeeTypeSerializer(data, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=EmployeeTypeSerializer,
+        responses=EmployeeTypeSerializer,
+        description="Create a new employee type"
+    )
+    def post(self, request):
+        serializer = EmployeeTypeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["Employee Type"])
+class EmployeeTypeDetailAPIView(APIView):
+    def get_object(self, pk):
+        return get_object_or_404(EmployeeType, pk=pk)
+
+    @extend_schema(
+        responses=EmployeeTypeSerializer,
+        description="Get an employee type by ID"
+    )
+    def get(self, request, pk):
+        obj = self.get_object(pk)
+        serializer = EmployeeTypeSerializer(obj)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=EmployeeTypeSerializer,
+        responses=EmployeeTypeSerializer,
+        description="Update an employee type"
+    )
+    def patch(self, request, pk):
+        obj = self.get_object(pk)
+        serializer = EmployeeTypeSerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        description="Delete an employee type",
+        responses={204: None}
+    )
+    def delete(self, request, pk):
+        obj = self.get_object(pk)
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+@extend_schema(tags=["Work Type"])
+class WorkTypeListCreateAPIView(APIView):
+    @extend_schema(
+        responses=WorkTypeSerializer(many=True),
+        description="Get list of all work types"
+    )
+    def get(self, request):
+        data = WorkType.objects.all()
+        serializer = WorkTypeSerializer(data, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=WorkTypeSerializer,
+        responses=WorkTypeSerializer,
+        description="Create a new work type"
+    )
+    def post(self, request):
+        serializer = WorkTypeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["Work Type"])
+class WorkTypeDetailAPIView(APIView):
+    def get_object(self, pk):
+        return get_object_or_404(WorkType, pk=pk)
+
+    @extend_schema(
+        responses=WorkTypeSerializer,
+        description="Get a work type by ID"
+    )
+    def get(self, request, pk):
+        obj = self.get_object(pk)
+        serializer = WorkTypeSerializer(obj)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=WorkTypeSerializer,
+        responses=WorkTypeSerializer,
+        description="Update a work type"
+    )
+    def patch(self, request, pk):
+        obj = self.get_object(pk)
+        serializer = WorkTypeSerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        description="Delete a work type",
+        responses={204: None}
+    )
+    def delete(self, request, pk):
+        obj = self.get_object(pk)
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
     
 @extend_schema(tags=["Employee Type"])
 class EmployeeTypeListCreateAPIView(APIView):
