@@ -355,7 +355,7 @@ export default function AddEmployeeForm() {
                   <p className="text-xs text-gray-500 mt-2">Max size: 5MB. Formats: JPEG, PNG, GIF, WebP</p>
                 </div>
                 {uploadError && <p className="text-red-500 text-sm text-center">{uploadError}</p>}
-                {uploadSuccess && <p className="text-green-500 text-sm text-center">{uploadSuccess}</p>}
+                {uploadSuccess && <p className="text-orange-500 text-sm text-center">{uploadSuccess}</p>}
               </div>
 
               <Separator />
@@ -363,7 +363,9 @@ export default function AddEmployeeForm() {
               {/* Personal Information */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Personal Information</h3>
+
                 <div className="grid grid-cols-1 gap-4">
+
                   <div className="space-y-2">
                     <Label htmlFor="fullname">Full Name *</Label>
                     <Input
@@ -449,7 +451,9 @@ export default function AddEmployeeForm() {
               {/* Work Information */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Work Information</h3>
+
                 <div className="grid grid-cols-1 gap-4">
+
                   <div className="space-y-2">
                     <Label htmlFor="position">Position *</Label>
                     <Select
@@ -549,7 +553,9 @@ export default function AddEmployeeForm() {
               {/* Emergency Contact */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Emergency Contact</h3>
+
                 <div className="grid grid-cols-1 gap-4">
+
                   <div className="space-y-2">
                     <Label htmlFor="emergencyContactName">Contact Name *</Label>
                     <Input
@@ -591,7 +597,7 @@ export default function AddEmployeeForm() {
                 </Link>
                 <Button
                   type="submit"
-                  className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                  className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
