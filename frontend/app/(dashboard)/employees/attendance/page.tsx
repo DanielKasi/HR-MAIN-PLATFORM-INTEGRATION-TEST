@@ -15,6 +15,7 @@ const AttendancePage = () => {
     checkIn: string | null;
     checkOut: string | null;
   }[]>([]);
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -113,11 +114,11 @@ const AttendancePage = () => {
         </div>
         <EmployeeAttendance
           employees={filteredEmployees}
-          attendance={attendance}
-          setAttendance={setAttendance}
           search={search}
           setSearch={setSearch}
           stats={stats}
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
         />
       </div>
     </div>
