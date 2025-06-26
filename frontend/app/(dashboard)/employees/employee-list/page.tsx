@@ -7,10 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Icon } from "@iconify/react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,15 +19,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Mail, Building, User, Briefcase, Plus } from "lucide-react"
+import { Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import { getAllEmployees } from "@/lib/utils"
 import {useSelector} from "react-redux";
-import {selectAttachedInstitutions, selectTemporaryPermissions} from "@/store/auth/selectors";
+import {selectAttachedInstitutions} from "@/store/auth/selectors";
 import {
-  selectAccessToken,
   selectSelectedInstitution,
-  selectUser,
-  selectUserLoading,
 } from "@/store/auth/selectors";
 import { IUserInstitution } from "@/app/types"
 import Link from "next/link"
@@ -86,22 +80,6 @@ interface Employee {
   employee_profile_picture: string
 }
 
-// Interfaces for dropdown data
-interface Department {
-  id: number
-  name: string
-}
-
-interface Position {
-  id: number
-  name: string
-}
-
-interface Role {
-  id: number
-  name: string
-}
-
 // Helper function to get full name
 const getFullName = (employee: Employee) => {
   return `${employee.user?.fullname}`.trim()
@@ -134,257 +112,9 @@ const getRoleNames = (employee: Employee) => {
 interface EmployeeTableProps {
   employees: Employee[]
   onDelete: (id: number) => void
-  onUpdate: (employee: Employee) => void
-  departments: Department[]
-  positions: Position[]
-  roles: Role[]
 }
 
-function EmployeeUpdateModal({
-  employee,
-  onUpdate,
-  departments,
-  positions,
-  roles
-}: {
-  employee: Employee
-  onUpdate: (employee: Employee) => void
-  departments: Department[]
-  positions: Position[]
-  roles: Role[]
-}) {
-  const [formData, setFormData] = useState<Employee>({
-    ...employee,
-    position: employee.position || { id: 1, name: "" },
-    department: employee.department || { id: 1, name: "", institution_id: 1 },
-    phone_number: employee.phone_number || "",
-    address: employee.address || "",
-    qualifications: employee.qualifications || "",
-    skills: employee.skills || "",
-    emergency_contact_name: employee.emergency_contact_name || "",
-    emergency_contact_phone: employee.emergency_contact_phone || "",
-    emergency_contact_relationship: employee.emergency_contact_relationship || "",
-    marital_status: employee.marital_status || "",
-    employee_profile_picture: employee.employee_profile_picture || "",
-    roles: employee.roles || []
-  })
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    const selectedDepartment = departments.find(d => d.id === formData.department.id)
-    const selectedPosition = positions.find(p => p.id === formData.position.id)
-
-    const updatedEmployee = {
-      ...formData,
-      department: selectedDepartment ? {
-        id: selectedDepartment.id,
-        name: selectedDepartment.name,
-        institution_id: formData.department.institution_id
-      } : formData.department,
-      position: selectedPosition || formData.position
-    }
-
-    onUpdate(updatedEmployee)
-  }
-
-  // Handle role selection
-  const handleRoleChange = (roleId: string) => {
-    const selectedRole = roles.find(r => r.id.toString() === roleId)
-    if (selectedRole) {
-      // For now, replacing with single role. You can modify this for multiple roles
-      setFormData({
-        ...formData,
-        roles: [selectedRole]
-      })
-    }
-  }
-
-  return (
-    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>Update Employee - {getFullName(employee)}</DialogTitle>
-      </DialogHeader>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="first_name">First Name</Label>
-            <Input
-              id="first_name"
-              value={formData.first_name}
-              onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="last_name">Last Name</Label>
-            <Input
-              id="last_name"
-              value={formData.last_name}
-              onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="phone_number">Phone</Label>
-            <Input
-              id="phone_number"
-              value={formData.phone_number}
-              onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label htmlFor="department">Department</Label>
-            <Select
-              value={formData.department.id.toString()}
-              onValueChange={(value) => {
-                const selectedDept = departments.find(d => d.id.toString() === value)
-                if (selectedDept) {
-                  setFormData({
-                    ...formData,
-                    department: {
-                      id: selectedDept.id,
-                      name: selectedDept.name,
-                      institution_id: formData.department.institution_id
-                    }
-                  })
-                }
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {departments.map((dept) => (
-                  <SelectItem key={dept.id} value={dept.id.toString()}>
-                    {dept.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="position">Position</Label>
-            <Select
-              value={formData.position.id?.toString() || ""}
-              onValueChange={(value) => {
-                const selectedPosition = positions.find(p => p.id.toString() === value)
-                setFormData({
-                  ...formData,
-                  position: selectedPosition || { id: parseInt(value), name: "" }
-                })
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {positions.map((pos) => (
-                  <SelectItem key={pos.id} value={pos.id.toString()}>
-                    {pos.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Role Selection */}
-          <div>
-            <Label htmlFor="role">Role</Label>
-            <Select
-              value={formData.roles.length > 0 ? formData.roles[0].id.toString() : ""}
-              onValueChange={handleRoleChange}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                {roles.map((role) => (
-                  <SelectItem key={role.id} value={role.id.toString()}>
-                    {role.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {formData.roles.length > 0 && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Current: {formData.roles.map(r => r.name).join(', ')}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="is_active">Status</Label>
-            <Select
-              value={formData.is_active.toString()}
-              onValueChange={(value) => setFormData({ ...formData, is_active: value === "true" })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="true">Active</SelectItem>
-                <SelectItem value="false">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="address">Address</Label>
-            <Input
-              id="address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            />
-          </div>
-
-          {/* Additional fields */}
-          <div>
-            <Label htmlFor="experience">Experience (Years)</Label>
-            <Input
-              id="experience"
-              type="number"
-              min="0"
-              value={formData.experience}
-              onChange={(e) => setFormData({ ...formData, experience: parseInt(e.target.value) || 0 })}
-            />
-          </div>
-          <div>
-            <Label htmlFor="qualifications">Qualifications</Label>
-            <Input
-              id="qualifications"
-              value={formData.qualifications}
-              onChange={(e) => setFormData({ ...formData, qualifications: e.target.value })}
-            />
-          </div>
-          <div className="md:col-span-2">
-            <Label htmlFor="skills">Skills</Label>
-            <Input
-              id="skills"
-              value={formData.skills}
-              onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
-              placeholder="e.g., JavaScript, Python, Project Management"
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button type="submit">Update Employee</Button>
-        </DialogFooter>
-      </form>
-    </DialogContent>
-  )
-}
-
-function EmployeeTable({ employees, onDelete, onUpdate, departments, positions, roles }: EmployeeTableProps) {
+function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [departmentFilter, setDepartmentFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -553,21 +283,18 @@ function EmployeeTable({ employees, onDelete, onUpdate, departments, positions, 
                           </button>
                         </Link>
 
-                        {/* Update Button */}
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <button title="Update Employee" className="text-gray-900">
-                            <Icon icon="hugeicons:pencil-edit-01" width="24" height="24" />
-                            </button>
-                          </DialogTrigger>
-                          <EmployeeUpdateModal
-                            employee={employee}
-                            onUpdate={onUpdate}
-                            departments={departments}
-                            positions={positions}
-                            roles={roles}
-                          />
-                        </Dialog>
+                        {/* Update Button - Now navigates to update page */}
+                        <Link 
+                          href={`/employees/update-employee/${employee.id}`}
+                          onClick={() => {
+                            // Store employee data in localStorage for the update page
+                            localStorage.setItem(`employee_${employee.id}`, JSON.stringify(employee));
+                          }}
+                        >
+                          <Button variant="ghost" size="sm" title="Update Employee">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
 
                         {/* Delete Button */}
                         <AlertDialog>
@@ -645,9 +372,6 @@ function EmployeeTable({ employees, onDelete, onUpdate, departments, positions, 
 
 export default function Component() {
   const [employees, setEmployees] = useState<Employee[]>([])
-  const [departments, setDepartments] = useState<Department[]>([])
-  const [positions, setPositions] = useState<Position[]>([])
-  const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -682,8 +406,21 @@ export default function Component() {
         const institutionIdNumber = parseInt(InstitutionId);
         const data = await getAllEmployees({ institutionId: institutionIdNumber });
         if (data) {
-          setEmployees(data);
-          setError(null); // Clear any previous errors
+          // Map IEmployee[] to Employee[]
+          const employeesArray = (data as any[]).map(emp => ({
+            ...emp,
+            position: typeof emp.position === 'number'
+              ? { id: emp.position, name: '' }
+              : emp.position,
+            department: typeof emp.department === 'number'
+              ? { id: emp.department, name: '', institution_id: 0 }
+              : emp.department,
+            roles: Array.isArray(emp.roles) && typeof emp.roles[0] === 'object'
+              ? emp.roles
+              : (emp.roles || []).map((roleId: number) => ({ id: roleId, name: '' })),
+          }));
+          setEmployees(employeesArray);
+          setError(null);
         } else {
           setError("No employee data available");
         }
@@ -697,57 +434,6 @@ export default function Component() {
     loadEmployees();
   }, [InstitutionId, InstitutionsAttached]);
 
-  // Extract departments, positions, and roles from employee data
-  useEffect(() => {
-    if (employees.length > 0) {
-      // Extract unique departments, positions, and roles from employee data
-      const uniqueDepartments: Department[] = [];
-      const uniquePositions: Position[] = [];
-      const uniqueRoles: Role[] = [];
-
-      employees.forEach(employee => {
-        // Extract department
-        if (employee.department && employee.department.id && employee.department.name) {
-          const existingDept = uniqueDepartments.find(d => d.id === employee.department.id);
-          if (!existingDept) {
-            uniqueDepartments.push({
-              id: employee.department.id,
-              name: employee.department.name
-            });
-          }
-        }
-
-        // Extract position
-        if (employee.position && employee.position.id && employee.position.name) {
-          const existingPos = uniquePositions.find(p => p.id === employee.position.id);
-          if (!existingPos) {
-            uniquePositions.push({
-              id: employee.position.id,
-              name: employee.position.name
-            });
-          }
-        }
-
-        // Extract roles
-        if (employee.roles && employee.roles.length > 0) {
-          employee.roles.forEach(role => {
-            const existingRole = uniqueRoles.find(r => r.id === role.id);
-            if (!existingRole) {
-              uniqueRoles.push({
-                id: role.id,
-                name: role.name
-              });
-            }
-          });
-        }
-      });
-
-      setDepartments(uniqueDepartments);
-      setPositions(uniquePositions);
-      setRoles(uniqueRoles);
-    }
-  }, [employees]);
-
   const handleDelete = async (id: number) => {
     try {
       // TODO: Add your delete API call here
@@ -755,16 +441,6 @@ export default function Component() {
       setEmployees(employees.filter((emp) => emp.id !== id))
     } catch (err) {
       console.error("Error deleting employee:", err)
-    }
-  }
-
-  const handleUpdate = async (updatedEmployee: Employee) => {
-    try {
-      // TODO: Add your update API call here
-      // await updateEmployee(updatedEmployee)
-      setEmployees(employees.map((emp) => (emp.id === updatedEmployee.id ? updatedEmployee : emp)))
-    } catch (err) {
-      console.error("Error updating employee:", err)
     }
   }
 
@@ -801,10 +477,6 @@ export default function Component() {
         <EmployeeTable
           employees={employees}
           onDelete={handleDelete}
-          onUpdate={handleUpdate}
-          departments={departments}
-          positions={positions}
-          roles={roles}
         />
       </div>
     </div>

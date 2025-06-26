@@ -548,6 +548,44 @@ export const updateInterview = async ({
 };
 
 
+export const updateCandidateStageeFeedback = async ({
+  candidateId,
+  stageId,
+  feedback,
+  rating,
+}: {
+  candidateId: number;
+  stageId: number;
+  feedback: string;
+  rating: number;
+}): Promise<any> => {
+  try {
+    // First find the interview for this candidate in this stage
+    const interviewsResponse = await apiRequest.get(
+      `recruitment/interviews/?job_position_application=${candidateId}&interview_stage=${stageId}`
+    );
+    
+    if (!interviewsResponse.data.results || interviewsResponse.data.results.length === 0) {
+      throw new Error('No interview found for this candidate in this stage');
+    }
+    
+    const interviewId = interviewsResponse.data.results[0].id;
+    
+    const formData = new FormData();
+    formData.append('feedback', feedback);
+    formData.append('rating', rating.toString());
+
+    const response = await apiRequest.patch(
+      `recruitment/job-interview/${interviewId}/`,
+      formData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Failed to update candidate feedback:", error);
+    return null;
+  }
+};
+
 export const getInterviewStages = async ({
   institutionId,
 }: {
@@ -563,7 +601,6 @@ export const getInterviewStages = async ({
     return null;
   }
 };
-
 
 export const createInterviewStage = async ({
   institutionId,
@@ -609,38 +646,83 @@ export const createEmployee = async ({
   employeeData: EmployeeFormData;
 }): Promise<any | null> => {
   try {
-    const hasFile = employeeData.employee_profile_picture instanceof File;
-    if (hasFile) {
-      const formData = new FormData();
-      formData.append("institutionId", institutionId.toString());
-      Object.entries(employeeData).forEach(([key, value]) => {
-        if (key === "user") {
-          return;
-        }
-
-        if (key === "employee_profile_picture" && value instanceof File) {
-          formData.append(key, value);
-        } else if (value !== undefined && value !== null && value !== "") {
-          formData.append(key, value.toString());
-        }
-      });
-      const response = await apiRequest.post(`/employee/employee/create/`, formData);
-      return response.data;
-    } else {
-      const requestData = {
-        institutionId,
-        ...employeeData,
-        employee_profile_picture: undefined,
-      };
-      const cleanData = JSON.parse(JSON.stringify(requestData));
-      const response = await apiRequest.post(`/employee/employee/create/`, cleanData);
-      return response.data;
+    const formData = new FormData();
+    formData.append("institutionId", institutionId.toString());
+    
+    if (employeeData.user) {
+      formData.append("user.fullname", employeeData.user.fullname);
+      formData.append("user.email", employeeData.user.email);
     }
+    
+    Object.entries(employeeData).forEach(([key, value]) => {
+      if (key === "user") return;
+      if (key === "employee_profile_picture" && value instanceof File) {
+        formData.append(key, value);
+      } else if (value !== undefined && value !== null && value !== "") {
+        formData.append(key, value.toString());
+      }
+    });
+    
+    const response = await apiRequest.post(`/employee/employee/create/`, formData);
+    return response.data;
   } catch (error: any) {
-    throw error;
+    throw new Error(
+      error.response?.data?.detail || 
+      error.response?.data?.message || 
+      error.message || 
+      "Failed to create employee"
+    );
   }
 };
 
+export const updateEmployee = async ({
+  employeeId,
+  employeeData,
+}: {
+  employeeId: number;
+  employeeData: any;
+}): Promise<any | null> => {
+  try {
+    const formData = new FormData();
+    
+    if (employeeData.user) {
+      formData.append("user.fullname", employeeData.user.fullname);
+      formData.append("user.email", employeeData.user.email);
+    }
+    
+    Object.entries(employeeData).forEach(([key, value]) => {
+      if (key === "user") return;
+      if (key === "employee_profile_picture" && value instanceof File) {
+        formData.append(key, value);
+      } else if (value !== undefined && value !== null && value !== "") {
+        formData.append(key, value.toString());
+      }
+    });
+    
+    const response = await apiRequest.patch(`/employee/employee/${employeeId}/update/`, formData);
+    return response.data;
+  } catch (error: any) {
+    throw new Error("Failed to update employee. Please try again.");
+  }
+};
+
+export const getEmployeeById = async ({
+  employeeId,
+}: {
+  employeeId: number;
+}): Promise<any | null> => {
+  try {
+    const response = await apiRequest.get(`/employee/employee/${employeeId}/`);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.detail || 
+      error.response?.data?.message || 
+      error.message || 
+      "Failed to fetch employee"
+    );
+  }
+};
 
 // Helper function to get roles for an institution
 export const getRoles = async ({ institutionId }: { institutionId: number }) => {
@@ -681,7 +763,6 @@ export const getEmployeeDetailId = async ({
     const response = await apiRequest.get(`/employee/employee/${employeeId}/${applicationId}/`);
     return response.data as EmployeeFormData;  // Changed casting
   } catch (error) {
-    console.error("Failed to fetch employee details", error);
     return null;
   }
 };
@@ -689,7 +770,7 @@ export const getEmployeeDetailId = async ({
 
 export const getOnBoardings = async ({ institutionId }: { institutionId: number }) => {
   try {
-    const response = await apiRequest.get(`on-boarding/list/${institutionId}/`)
+    const response = await apiRequest.get(`on-boarding/${institutionId}/`)
     return response.data as IOnBoarding[]
   } catch (error) {
     console.error("Error fetching onboarding records:", error)
@@ -740,7 +821,8 @@ export const createOnBoarding = async ({
   }
 };
 
-// Update an existing onboarding record by its ID
+
+
 export const updateOnBoarding = async ({
   onboardingId,
   onboardingData,
@@ -749,16 +831,9 @@ export const updateOnBoarding = async ({
   onboardingData: Partial<IOnBoardingFormData>;
 }): Promise<IOnBoarding | null> => {
   try {
-    const formData = new FormData();
-    Object.entries(onboardingData).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        formData.append(key, value.toString());
-      }
-    });
-
     const response = await apiRequest.patch(
-      `on-boarding/${onboardingId}/`,
-      formData
+      `on-boarding/record/${onboardingId}/`,
+      onboardingData 
     );
     return response.data as IOnBoarding;
   } catch (error) {

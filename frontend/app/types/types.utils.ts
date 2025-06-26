@@ -193,7 +193,8 @@ export interface JobPositionAdvert {
   expiry_date: string; // ISO datetime string
   number_of_employees_expected?: number | null;
   extra_information?: string | null;
-  applications:JobApplication[]
+  applications:JobApplication[];
+  interview_stages: JobApplication[]
 }
 
 // For creating/updating job adverts
@@ -247,6 +248,7 @@ export interface IInterviewStage{
   level: number;
   interviewer: number;
   interviewer_details?: IEmployee;
+  candidates_count: number;
 }
 
 
@@ -268,15 +270,13 @@ export interface IInterview {
 export interface User {
   email: string;
   fullname: string;
-  password: string;
-  roles_ids: number[];
-  permissions: string;
+  password?: string;  
+  roles_ids?: number[]; 
+  permissions?: string;
 }
 
 export interface EmployeeFormData {
   user: User;
-  first_name: string;
-  last_name: string;
   email: string;
   phone_number: string;
   position: number;
@@ -289,6 +289,27 @@ export interface EmployeeFormData {
   qualifications: string;
   skills: string;
   emergency_contact_name: string; 
+  emergency_contact_phone: string;
+  emergency_contact_relationship: string;
+  marital_status: string;
+  children_count: number;
+  employee_profile_picture: File | null;
+}
+
+export interface EmployeeFormState {
+  fullname: string;
+  email: string;
+  phone_number: string;
+  position: number;
+  department: number;
+  date_of_birth: string;
+  date_of_joining: string;
+  address: string;
+  is_active: boolean;
+  experience: number;
+  qualifications: string;
+  skills: string;
+  emergency_contact_name: string;
   emergency_contact_phone: string;
   emergency_contact_relationship: string;
   marital_status: string;
@@ -366,7 +387,7 @@ export interface IRoleFormData {
 }
 
 export interface IOnBoarding {
-  application_details: JobApplication;
+  application_name: JobApplication;
   id: number;
   application: number;
   attended: boolean;
@@ -400,9 +421,13 @@ export interface IBulkOnBoardingSummary {
 }
 
 export interface IBulkOnBoardingResponse {
-  created: IOnBoarding[];
-  skipped: IBulkOnBoardingSkipped[];
-  summary: IBulkOnBoardingSummary;
+  created: IOnBoarding[]
+  skipped: any[]
+  summary: {
+    created_count: number
+    skipped_count: number
+    total_requested: number
+  }
 }
 
 export interface IInterviewFormData {
@@ -416,3 +441,5 @@ export interface IInterviewFormData {
   interview_type: string,
   status: string;
 }
+
+

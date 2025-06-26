@@ -14,6 +14,7 @@ class OnBoardingSerializer(serializers.ModelSerializer):
             "application",
             "applicant_name",
             "remarks",
+            "attended",
             "status",
             "created_at",
             "updated_at",
