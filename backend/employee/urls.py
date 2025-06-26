@@ -1,6 +1,8 @@
 
 from django.urls import path
 from .views import (
+    EmployeeAttendanceDetailAPIView,
+    EmployeeAttendanceListCreateAPIView,
     EmployeeBranchDetailAPIView,
     EmployeeBranchManagementAPIView,
     EmployeeListAPIView,
@@ -18,4 +20,6 @@ urlpatterns = [
     path("<int:employee_id>/delete/", EmployeeDeleteAPIView.as_view(), name="delete-employee"),
     path('<int:employee_id>/branches/', EmployeeBranchDetailAPIView.as_view(), name='employee-branches'),
     path('branches/attach/', EmployeeBranchManagementAPIView.as_view(), name='attach-employee-branches'),
+    path('attendance/', EmployeeAttendanceListCreateAPIView.as_view(), name='attendance-list-create'),
+    path('attendance/<int:pk>/', EmployeeAttendanceDetailAPIView.as_view(), name='attendance-detail'),
 ]
