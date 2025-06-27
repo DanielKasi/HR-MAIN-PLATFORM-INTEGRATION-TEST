@@ -1,6 +1,6 @@
 
 from employee.serializers import EmployeeSerializer
-from users.serializers import CustomUserSerializer
+# from users.serializers import CustomUserSerializer
 from rest_framework import serializers
 from .models import DisciplineType, DisciplinaryAction
 from employee.models import Employee
@@ -19,12 +19,10 @@ class DisciplinaryActionSerializer(serializers.ModelSerializer):
         queryset=Employee.objects.all(),
     )
     reported_by = serializers.PrimaryKeyRelatedField(
-        queryset=CustomUser.objects.all(),
-        source='reported_by.user'
+        queryset=Employee.objects.all(),
     )
     assigned_to = serializers.PrimaryKeyRelatedField(
-        queryset=CustomUser.objects.all(),
-        source='assigned_to.user',
+        queryset=Employee.objects.all(),
         allow_null=True,
         required=False
     )
@@ -37,6 +35,6 @@ class DisciplinaryActionSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         rep['discipline_type'] = DisciplineTypeSerializer(instance.discipline_type).data
         rep['employee'] = EmployeeSerializer(instance.employee).data
-        rep['reported_by'] = CustomUserSerializer(instance.reported_by).data
-        rep['assigned_to'] = CustomUserSerializer(instance.assigned_to).data if instance.assigned_to else None
+        rep['reported_by'] = EmployeeSerializer(instance.reported_by).data
+        rep['assigned_to'] = EmployeeSerializer(instance.assigned_to).data if instance.assigned_to else None
         return rep
