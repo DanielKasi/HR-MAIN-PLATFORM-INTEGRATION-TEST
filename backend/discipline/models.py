@@ -44,8 +44,8 @@ class DisciplinaryAction(models.Model):
     evidence = models.TextField(blank=True, help_text="Any supporting evidence or documentation")
     
     # Processing
-    reported_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='reported_disciplines')
-    assigned_to = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, 
+    reported_by = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='reported_disciplines')
+    assigned_to = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, 
                                    related_name='assigned_disciplines')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     
@@ -59,9 +59,10 @@ class DisciplinaryAction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     notes = models.TextField(blank=True, help_text="Any additional notes or comments")
-    
+
     def __str__(self):
-        return f"{self.employee.get_full_name()} - {self.discipline_type.name} ({self.incident_date})"
+        employee_name = self.employee.user.fullname if (self.employee.user and hasattr(self.employee.user, 'fullname')) else str(self.employee)
+        return f"{employee_name} - {self.discipline_type.name} ({self.incident_date})"
     
     class Meta:
         ordering = ['-incident_date', '-created_at']        

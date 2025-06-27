@@ -4,10 +4,9 @@ import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition,
   CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, 
   IInterview, EmployeeFormData, User, IInterviewFormData, IInterviewStage, IInterviewStageFormData,
    IBulkOnBoardingResponse, IBulkOnBoardingRequest, IOnBoarding, IOnBoardingFormData, IEmployeeTypeFormData  , IWorkType,
-   IWorkTypeFormData, IEmployeeType,
-   EmployeeBranchSummary,
-   AttachBranchesPayload,
-   SetDefaultBranchPayload,
+   IWorkTypeFormData, IEmployeeType,EmployeeBranchSummary,AttachBranchesPayload,SetDefaultBranchPayload,
+   DisciplinaryActionForm, DisciplinaryActionRequest, DisciplinaryActionResponse, convertFormToApiRequest,
+   DisciplineTypeForm, DisciplineTypeResponse, convertDisciplineTypeFormToApiRequest, DisciplinaryActionAPIResponse
   } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -997,3 +996,99 @@ export const setDefaultBranch = async (
   }
 };
 
+
+
+export const createDisciplinaryAction = async ({
+  disciplinaryActionData,
+}: {
+  disciplinaryActionData: DisciplinaryActionForm;
+}): Promise<DisciplinaryActionResponse | null> => {
+  try {
+    const apiData = convertFormToApiRequest(disciplinaryActionData);
+    const response = await apiRequest.post(
+      `discipline/disciplinary-actions/`,
+      apiData
+    );
+    return response.data as DisciplinaryActionResponse;
+  } catch (error) {
+    if (error.response?.status === 400) {
+      const errorData = error.response.data;
+      if (typeof errorData === 'object' && errorData !== null) {
+        const errorMessages = Object.entries(errorData)
+          .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+          .join('; ');
+        throw new Error(`Validation errors: ${errorMessages}`);
+      }
+    }
+    return null;
+  }
+};
+
+
+export const createDisciplineType = async ({
+  disciplineTypeData,
+}: {
+  disciplineTypeData: DisciplineTypeForm;
+}): Promise<DisciplineTypeResponse | null> => {
+  try {
+    const apiData = convertDisciplineTypeFormToApiRequest(disciplineTypeData);
+    
+    const formData = new FormData();
+    
+    // Append all the discipline type fields
+    Object.entries(apiData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `discipline/discipline-types/`, // Adjust endpoint as needed
+      formData
+    );
+    
+    return response.data as DisciplineTypeResponse;
+  } catch (error) {
+    console.error("Failed to create discipline type:", error);
+    
+    if (error.response?.status === 400) {
+      const errorData = error.response.data;
+      if (errorData?.name && errorData.name.includes('already exists')) {
+        throw new Error('A discipline type with this name already exists');
+      }
+    }
+    
+    return null;
+  }
+};
+
+
+export const getDisciplineTypes = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<DisciplineTypeResponse[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `discipline/discipline-types/?institution=${institutionId}`
+    );
+    
+    return response.data as DisciplineTypeResponse[];
+  } catch (error) {
+    console.error("Failed to fetch discipline types:", error);
+    return null;
+  }
+};
+
+export const getDisciplinaryActions = async (): Promise<DisciplinaryActionAPIResponse[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `discipline/disciplinary-actions`
+    );
+    
+    return response.data as DisciplinaryActionAPIResponse[];
+  } catch (error) {
+    console.error("Failed to fetch disciplinary actions:", error);
+    return null;
+  }
+};
