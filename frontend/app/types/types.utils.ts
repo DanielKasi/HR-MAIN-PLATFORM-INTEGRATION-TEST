@@ -803,3 +803,24 @@ export const transformDisciplinaryActionData = (apiData: DisciplinaryActionAPIRe
     notes: action.notes,
   }))
 }
+
+
+export interface IDisciplinaryAction {
+  id: number
+  employee: { id: number; user?: { fullname?: string }; email?: string; phone_number?: string; position?: any }
+  discipline_type: { id: number; name: string; description?: string; severity: "low" | "medium" | "high" | "critical"; is_active?: boolean }
+  incident_date: string
+  description: string
+  evidence?: string
+  reported_by: { id: number; user?: { fullname?: string }; email?: string; phone_number?: string; position?: any }
+  assigned_to?: { id: number; user?: { fullname?: string }; email?: string; phone_number?: string; position?: any }
+  status: "pending" | "in_progress" | "completed" | "dismissed"
+  action_taken?: string
+  resolution_date?: string
+  follow_up_required: boolean
+  follow_up_date?: string
+  notes?: string
+  created_at?: string
+  updated_at?: string
+  reported_date?: string
+}

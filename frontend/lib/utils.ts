@@ -6,7 +6,8 @@ import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition,
    IBulkOnBoardingResponse, IBulkOnBoardingRequest, IOnBoarding, IOnBoardingFormData, IEmployeeTypeFormData  , IWorkType,
    IWorkTypeFormData, IEmployeeType,EmployeeBranchSummary,AttachBranchesPayload,SetDefaultBranchPayload,
    DisciplinaryActionForm, DisciplinaryActionRequest, DisciplinaryActionResponse, convertFormToApiRequest,
-   DisciplineTypeForm, DisciplineTypeResponse, convertDisciplineTypeFormToApiRequest, DisciplinaryActionAPIResponse
+   DisciplineTypeForm, DisciplineTypeResponse, convertDisciplineTypeFormToApiRequest, DisciplinaryActionAPIResponse,IDisciplinaryAction
+
   } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -1088,7 +1089,54 @@ export const getDisciplinaryActions = async (): Promise<DisciplinaryActionAPIRes
     
     return response.data as DisciplinaryActionAPIResponse[];
   } catch (error) {
-    console.error("Failed to fetch disciplinary actions:", error);
     return null;
   }
 };
+
+export const updateDisciplinaryAction = async ({ 
+  disciplinaryActionId, 
+  disciplinaryActionData,
+}: { 
+  disciplinaryActionId: number; 
+  disciplinaryActionData: Partial<DisciplinaryActionForm>;
+}): Promise<IDisciplinaryAction | null> => {
+  try {
+    const response = await apiRequest.patch(
+      `discipline/disciplinary-actions/${disciplinaryActionId}/`,
+      disciplinaryActionData
+    );
+    return response.data as IDisciplinaryAction;
+  } catch (error) {
+    return null;
+  }
+}
+
+export const getDisciplinaryActionById = async ({ 
+  disciplinaryActionId, 
+}: { 
+  disciplinaryActionId: number; 
+}): Promise<IDisciplinaryAction | null> => {
+  try {
+    const response = await apiRequest.get(
+      `discipline/disciplinary-actions/${disciplinaryActionId}/`
+    );
+    return response.data as IDisciplinaryAction;
+  } catch (error) {
+    return null;
+  }
+}
+
+export const deleteDisciplinaryAction = async ({ 
+  disciplinaryActionId, 
+}: { 
+  disciplinaryActionId: number; 
+}): Promise<boolean> => {
+  try {
+    await apiRequest.delete(
+      `discipline/disciplinary-actions/${disciplinaryActionId}/`
+    );
+    return true;
+  } catch (error) {
+    return false;
+  }
+}

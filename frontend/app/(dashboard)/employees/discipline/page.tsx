@@ -13,6 +13,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -34,8 +35,8 @@ import {
   Loader2,
   RefreshCw,
 } from "lucide-react"
-import { getDisciplinaryActions } from "@/lib/utils" 
-import { transformDisciplinaryActionData } from "@/app/types/types.utils" 
+import { getDisciplinaryActions, deleteDisciplinaryAction } from "@/lib/utils"
+import { transformDisciplinaryActionData } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
 interface DisciplinaryAction {
@@ -59,29 +60,33 @@ interface DisciplinaryAction {
 }
 
 interface DisciplinaryActionsTableProps {
-  formRoute?: string // Route to navigate to for creating new actions
+  formRoute?: string
 }
 
-export default function DisciplinaryActionsTable({ 
-  formRoute = "/employees/discipline/create"
+export default function DisciplinaryActionsTable({
+  formRoute = "/employees/discipline/create",
 }: DisciplinaryActionsTableProps) {
   const router = useRouter()
-  
+
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [severityFilter, setSeverityFilter] = useState("all")
   const [selectedAction, setSelectedAction] = useState<DisciplinaryAction | null>(null)
   const [disciplinaryActions, setDisciplinaryActions] = useState<DisciplinaryAction[]>([])
   const [isLoading, setIsLoading] = useState(true)
-
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [actionToDelete, setActionToDelete] = useState<string | null>(null)
 
   const fetchDisciplinaryActions = async () => {
     setIsLoading(true)
     try {
       const fetchedActions = await getDisciplinaryActions()
+      console.log("Fetched disciplinary actions:", fetchedActions)
       const transformedActions = transformDisciplinaryActionData(fetchedActions)
+      console.log("Transformed disciplinary actions:", transformedActions)
       setDisciplinaryActions(transformedActions)
     } catch (error) {
+      console.error("Error fetching disciplinary actions:", error)
       toast.error("Failed to load disciplinary actions")
       setDisciplinaryActions([])
     } finally {
@@ -96,6 +101,42 @@ export default function DisciplinaryActionsTable({
   const handleRefresh = async () => {
     await fetchDisciplinaryActions()
     toast.success("Disciplinary actions refreshed")
+  }
+
+  const handleDeleteAction = async () => {
+    if (!actionToDelete) return
+    setIsLoading(true)
+    try {
+      const idAsNumber = parseInt(actionToDelete, 10)
+      if (isNaN(idAsNumber)) {
+        throw new Error("Invalid disciplinary action ID")
+      }
+      console.log("Deleting disciplinary action with ID:", idAsNumber)
+      const success = await deleteDisciplinaryAction({ disciplinaryActionId: idAsNumber })
+      if (success) {
+        toast.success("Disciplinary action deleted successfully")
+        setDisciplinaryActions(prev => prev.filter(action => action.id !== actionToDelete))
+      } else {
+        toast.error("Failed to delete disciplinary action")
+      }
+    } catch (error: any) {
+      console.error("Error deleting disciplinary action:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      })
+      toast.error("Failed to delete disciplinary action")
+    } finally {
+      setIsLoading(false)
+      setIsDeleteDialogOpen(false)
+      setActionToDelete(null)
+    }
+  }
+
+  const openDeleteDialog = (actionId: string) => {
+    console.log("Opening delete confirmation for action ID:", actionId)
+    setActionToDelete(actionId)
+    setIsDeleteDialogOpen(true)
   }
 
   const getSeverityColor = (severity: string) => {
@@ -147,7 +188,8 @@ export default function DisciplinaryActionsTable({
     const matchesSearch =
       action.employee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       action.discipline_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (action.employee_department && action.employee_department.toLowerCase().includes(searchTerm.toLowerCase()))
+      (action.employee_department &&
+        action.employee_department.toLowerCase().includes(searchTerm.toLowerCase()))
     const matchesStatus = statusFilter === "all" || action.status === statusFilter
     const matchesSeverity = severityFilter === "all" || action.discipline_severity === severityFilter
 
@@ -155,14 +197,14 @@ export default function DisciplinaryActionsTable({
   })
 
   const handleAddNewAction = () => {
-    router.push("discipline/create-disciplinary-action")
+    router.push("/employees/discipline/create-disciplinary-action")
   }
 
   const handleEditAction = (actionId: string) => {
-    router.push(`${formRoute}?edit=${actionId}`)
+    console.log("Navigating to edit action with ID:", actionId)
+    router.push(`/employees/discipline/update-disciplinary-action/${actionId}/`)
   }
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
@@ -182,13 +224,10 @@ export default function DisciplinaryActionsTable({
   }
 
   return (
-          <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
-      {/* Header */}
+    <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Disciplinary Actions</h1>
       </div>
-
-      {/* Main Table Card */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -197,19 +236,11 @@ export default function DisciplinaryActionsTable({
               <CardDescription>Complete overview of disciplinary actions across all departments</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={isLoading}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
                 Refresh
               </Button>
-              <Button 
-                onClick={handleAddNewAction}
-                className="bg-green-600 hover:bg-green-700"
-              >
+              <Button onClick={handleAddNewAction} className="bg-green-600 hover:bg-green-700">
                 <Plus className="h-4 w-4 mr-2" />
                 Add New Action
               </Button>
@@ -217,7 +248,6 @@ export default function DisciplinaryActionsTable({
           </div>
         </CardHeader>
         <CardContent>
-          {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -253,8 +283,6 @@ export default function DisciplinaryActionsTable({
               </SelectContent>
             </Select>
           </div>
-
-          {/* Table */}
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -274,7 +302,6 @@ export default function DisciplinaryActionsTable({
                     <TableCell>
                       <div>
                         <div className="font-medium">{action.employee_name}</div>
-                        {/* Only show department if it exists and is not empty */}
                         {action.employee_department && action.employee_department.trim() && (
                           <div className="text-sm text-muted-foreground">{action.employee_department}</div>
                         )}
@@ -334,7 +361,10 @@ export default function DisciplinaryActionsTable({
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
+                          <DropdownMenuItem 
+                            onClick={() => openDeleteDialog(action.id)}
+                            className="text-red-600"
+                          >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </DropdownMenuItem>
@@ -346,20 +376,56 @@ export default function DisciplinaryActionsTable({
               </TableBody>
             </Table>
           </div>
-
-          {/* Empty State */}
+          <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+            setIsDeleteDialogOpen(open)
+            if (!open) setActionToDelete(null)
+          }}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Confirm Deletion</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete the disciplinary action for{" "}
+                  {actionToDelete && disciplinaryActions.find(action => action.id === actionToDelete)?.employee_name || "this employee"}
+                  {" "}({actionToDelete && disciplinaryActions.find(action => action.id === actionToDelete)?.discipline_type || "this type"})?
+                  This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsDeleteDialogOpen(false)
+                    setActionToDelete(null)
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteAction}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           {filteredActions.length === 0 && !isLoading && (
             <div className="text-center py-8 text-muted-foreground">
-              {disciplinaryActions.length === 0 
+              {disciplinaryActions.length === 0
                 ? "No disciplinary actions found. Click 'Add New Action' to create your first one."
-                : "No disciplinary actions found matching your criteria."
-              }
+                : "No disciplinary actions found matching your criteria."}
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* Detail View Dialog */}
       {selectedAction && (
         <Dialog open={!!selectedAction} onOpenChange={() => setSelectedAction(null)}>
           <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
@@ -377,7 +443,6 @@ export default function DisciplinaryActionsTable({
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Employee</Label>
                   <p className="text-lg font-semibold">{selectedAction.employee_name}</p>
-                  {/* Only show department if it exists and is not empty */}
                   {selectedAction.employee_department && selectedAction.employee_department.trim() && (
                     <p className="text-sm text-muted-foreground">{selectedAction.employee_department}</p>
                   )}
