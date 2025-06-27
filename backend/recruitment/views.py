@@ -337,6 +337,7 @@ class JobInterviewDetailAPI(APIView):
     def patch(self, request, interview_id):
         try:
             interview = JobInterview.objects.get(id=interview_id)
+            print("am here")
             serializer = JobInterviewSerializer(interview, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()

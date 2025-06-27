@@ -18,12 +18,35 @@ import {
 } from "lucide-react";
 
 // HR Dashboard Components
-const WelcomeCard = () => (
-  <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
-    <h2 className="text-2xl font-bold mb-2">Welcome back!</h2>
-    <p className="opacity-90">Here's your HR dashboard overview for today</p>
-  </div>
-);
+import { useSelector } from "react-redux";
+import { selectUser } from "@/store/auth/selectors";
+import EmployeeAttendance from "./EmployeeAttendance";
+
+const WelcomeCard = () => {
+  const userData = useSelector(selectUser);
+  const now = new Date();
+  const hour = now.getHours();
+
+  let greeting = "Hello";
+  if (hour >= 5 && hour < 12) {
+    greeting = "Good morning";
+  } else if (hour >= 12 && hour < 17) {
+    greeting = "Good afternoon";
+  } else if (hour >= 17 && hour < 22) {
+    greeting = "Good evening";
+  } else {
+    greeting = "Hello";
+  }
+
+  const fullName = userData?.fullname || "User";
+
+  return (
+    <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
+      <h2 className="text-2xl font-bold mb-2">{greeting} {fullName}</h2>
+      <p className="opacity-90">Here's your HR dashboard overview for today</p>
+    </div>
+  );
+};
 
 const StatsCards = ({ departmentId }: { departmentId: string }) => {
   const [stats, setStats] = useState({
@@ -107,8 +130,8 @@ const StatsCards = ({ departmentId }: { departmentId: string }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       {statsData.map((stat, index) => (
-        <div key={index} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
+        <div key={index} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
             <div className={`p-3 rounded-lg ${stat.color}`}>
               <stat.icon className="h-6 w-6" />
             </div>
@@ -120,7 +143,7 @@ const StatsCards = ({ departmentId }: { departmentId: string }) => {
             </div>
           </div>
           <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
-          <p className="text-sm text-gray-600 mb-2">{stat.title}</p>
+          <p className="text-sm text-gray-600 mb-1">{stat.title}</p>
           <p className="text-xs text-gray-500">{stat.change}</p>
         </div>
       ))}

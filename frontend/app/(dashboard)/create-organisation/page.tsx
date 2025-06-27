@@ -72,12 +72,12 @@ const STEPS = [
   {
     id: 1,
     title: "Organisation Info",
-    description: "Basic details about your supermarket",
+    description: "Basic details about your organisation",
   },
   {
     id: 2,
     title: "Location Details",
-    description: "Where is your supermarket located",
+    description: "Where is your organisation located",
   },
   {id: 3, title: "Documents", description: "Upload required documents"},
 ];
@@ -338,7 +338,7 @@ export default function CreateOrganisationWizard() {
         // setIsCreated(true);
       }
     } catch (error: any) {
-      toast.error("Failed to create supermarket. Please try again.");
+      toast.error("Failed to create organisation. Please try again.");
 
       if (error.response) {
         toast.error(
@@ -423,7 +423,7 @@ export default function CreateOrganisationWizard() {
                 <Input
                   id="institutionEmail"
                   type="email"
-                  placeholder="contact@ecosupermarket.com"
+                  placeholder="contact@ecoorganisation.com"
                   value={formData.institutionEmail}
                   onChange={(e) => updateFormData("institutionEmail", e.target.value)}
                   className="pl-10"
@@ -477,7 +477,7 @@ export default function CreateOrganisationWizard() {
               </Label>
               <Textarea
                 id="description"
-                placeholder="Tell us about your supermarket..."
+                placeholder="Tell us about your company..."
                 value={formData.description}
                 onChange={(e) => updateFormData("description", e.target.value)}
                 rows={3}
@@ -498,7 +498,7 @@ export default function CreateOrganisationWizard() {
                   updateFormData("latitude", lat);
                   updateFormData("longitude", lon);
                 }}
-                placeholder="Search for your supermarket location..."
+                placeholder="Search for your organisation location..."
                 showCurrentLocationButton={true}
               />
               {formData.latitude && formData.longitude && (
@@ -514,7 +514,7 @@ export default function CreateOrganisationWizard() {
                 <div>
                   <h4 className="font-medium text-sm">Location Tips</h4>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Make sure to select the exact location of your supermarket. This will help
+                    Make sure to select the exact location of your organisation. This will help
                     customers find you easily and enable location-based features.
                   </p>
                 </div>
@@ -530,7 +530,7 @@ export default function CreateOrganisationWizard() {
               <div>
                 <Label className="text-sm font-medium">Documents (Optional)</Label>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Upload any required documents for your supermarket registration
+                  Upload any required documents for your organisation registration
                 </p>
               </div>
               <Button

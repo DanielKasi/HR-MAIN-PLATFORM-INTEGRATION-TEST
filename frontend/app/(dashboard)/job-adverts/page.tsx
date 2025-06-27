@@ -144,7 +144,6 @@ export default function () {
           toast.error("Failed to close job advert")
         }
       } catch (error) {
-        console.error("Error closing job advert:", error)
         toast.error("Failed to close job advert")
       } finally {
         setIsClosing(false)

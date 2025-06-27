@@ -8,6 +8,7 @@ from recruitment.models import (
     JobInterview,
 )
 from employee.serializers import EmployeeSerializer
+from django.db.models import Q, Count
 
 class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
     class Meta:
@@ -48,9 +49,51 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
         
     def get_positions(self, obj):
         return obj.job_position_advert.number_of_employees_expected    
+    
+class InterviewStageSerializer(serializers.ModelSerializer):
+    interviewer_details = EmployeeSerializer(source="interviewer", read_only=True)
+    candidates = serializers.SerializerMethodField(read_only=True)
+    candidates_count = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = InterviewStage
+        fields = [
+            "id",
+            "job_position_advert",
+            "name",
+            "level",
+            "interviewer",
+            "interviewer_details",
+            "candidates_count",
+            "candidates",
+        ]
+
+    def get_candidates(self, obj):
+        # Get interviews scheduled for this stage
+        scheduled_interviews = JobInterview.objects.filter(
+            interview_stage=obj,
+            status='scheduled'
+        ).select_related('job_position_application')
+
+        # Get corresponding job applications from the interviews
+        applications = [interview.job_position_application for interview in scheduled_interviews]
+
+        # Serialize the job applications
+        return JobAdvertApplicationSerializer(applications, many=True, context=self.context).data
+
+    def get_candidates_count(self, obj):
+        return JobInterview.objects.filter(
+            interview_stage=obj,
+            status='scheduled'
+        ).count()
+
+
+    
+    
 class JobPositionAdvertSerializer(serializers.ModelSerializer):
     applications = serializers.SerializerMethodField(read_only=True)
     job_position_details = serializers.SerializerMethodField()
+    interview_stages = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = JobPositionAdvert
@@ -64,12 +107,20 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
             "number_of_employees_expected",
             "extra_information",
             "applications",
+            "interview_stages",
         ]
 
     def get_applications(self, obj):
         applications = JobAdvertApplication.objects.filter(job_position_advert=obj)
         return JobAdvertApplicationSerializer(applications, many=True).data
-
+    
+    def get_interview_stages(self, obj):
+        interview_stages = InterviewStage.objects.filter(
+            job_position_advert=obj
+        )
+        return InterviewStageSerializer(interview_stages, many=True, context=self.context).data
+    
+    
     def get_job_position_details(self, obj):
         return {
             "id": obj.job_position.id,
@@ -114,23 +165,6 @@ class JobPositionSerializer(serializers.ModelSerializer):
 
 
 
-
-
-
-
-class InterviewStageSerializer(serializers.ModelSerializer):
-    interviewer_details = EmployeeSerializer(source="interviewer", read_only=True)
-
-    class Meta:
-        model = InterviewStage
-        fields = [
-            "id",
-            "job_position_advert",
-            "name",
-            "level",
-            "interviewer",
-            "interviewer_details",
-        ]
 
 
 class JobInterviewSerializer(serializers.ModelSerializer):

@@ -10,17 +10,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useToast } from "@/components/ui/use-toast"; // Import useToast hook
-import { Upload, User, X, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast"; 
+import { Upload, User, X, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
-import { createEmployee, getRoles, getPositions, getDepartments } from "@/lib/utils";
-import { EmployeeFormData, IRole, IDepartment, IJobPosition } from "@/app/types/types.utils";
+import { createEmployee, getPositions, getDepartments, createWorkType, createEmployeeType, getWorkTypes, getEmployeeTypes } from "@/lib/utils";
+import { EmployeeFormData, EmployeeFormState, IDepartment, IJobPosition, IWorkType, IEmployeeType, IWorkTypeFormData, IEmployeeTypeFormData } from "@/app/types/types.utils";
 import { IUserInstitution } from "@/app/types";
 
-// Marital status options
 const maritalStatusOptions = [
   { value: "single", label: "Single" },
   { value: "married", label: "Married" },
@@ -30,7 +31,7 @@ const maritalStatusOptions = [
 
 export default function AddEmployeeForm() {
   const router = useRouter();
-  const { toast } = useToast(); // Initialize toast hook
+  const { toast } = useToast();
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
 
@@ -38,30 +39,46 @@ export default function AddEmployeeForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // State for dropdown data
-  const [roles, setRoles] = useState<IRole[]>([]);
   const [positions, setPositions] = useState<IJobPosition[]>([]);
   const [departments, setDepartments] = useState<IDepartment[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
+  const [workTypes, setWorkTypes] = useState<IWorkType[]>([]);
+  const [employeeTypes, setEmployeeTypes] = useState<IEmployeeType[]>([]);
+  const [loadingData, setLoadingData] = useState(false);
 
-  // Form data structure
-  const [formData, setFormData] = useState<EmployeeFormData>({
-    user: {
-      email: "",
-      fullname: "",
-      password: "",
-      roles_ids: [],
-      permissions: "string",
-    },
-    first_name: "",
-    last_name: "",
+  // Modal states
+  const [isWorkTypeModalOpen, setIsWorkTypeModalOpen] = useState(false);
+  const [isEmployeeTypeModalOpen, setIsEmployeeTypeModalOpen] = useState(false);
+  const [isAddingWorkType, setIsAddingWorkType] = useState(false);
+  const [isAddingEmployeeType, setIsAddingEmployeeType] = useState(false);
+
+  // Form data for modals
+  const [workTypeFormData, setWorkTypeFormData] = useState<IWorkTypeFormData>({
+    name: "",
+    description: "",
+    code: "",
+  });
+
+  const [employeeTypeFormData, setEmployeeTypeFormData] = useState<IEmployeeTypeFormData>({
+    name: "",
+    description: "",
+    code: "",
+  });
+
+  const [formData, setFormData] = useState<EmployeeFormState>({
+    fullname: "",
     email: "",
     phone_number: "",
     position: 0,
     department: 0,
+    work_type: 0,
+    employee_type: 0,
     date_of_birth: "",
     date_of_joining: new Date().toISOString().split("T")[0],
     address: "",
+    country: "",
+    nin: "",
+    bank: "",
+    bank_account_number: "",
     is_active: true,
     experience: 0,
     qualifications: "",
@@ -78,7 +95,6 @@ export default function AddEmployeeForm() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
-  // Set institution ID
   useEffect(() => {
     if (selectedInstitution) {
       setInstitutionId(selectedInstitution.id);
@@ -87,31 +103,26 @@ export default function AddEmployeeForm() {
     }
   }, [institutionsAttached, selectedInstitution]);
 
-  // Load dropdown data
   useEffect(() => {
     const loadDropdownData = async () => {
       if (!institutionId) {
-        console.log("No institution ID available");
         return;
       }
 
-      console.log("Loading data for institution:", institutionId);
-      setLoadingData(true);
-
       try {
-        const [rolesData, positionsData, departmentsData] = await Promise.all([
-          getRoles({ institutionId }),
+        const [positionsData, departmentsData, workTypesData, employeeTypesData] = await Promise.all([
           getPositions({ institutionId }),
           getDepartments({ institutionId }),
+          getWorkTypes({ institutionId }),
+          getEmployeeTypes({ institutionId }),
         ]);
 
-        setRoles(Array.isArray(rolesData) ? rolesData : []);
         setPositions(Array.isArray(positionsData) ? positionsData : []);
         setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
+        setWorkTypes(Array.isArray(workTypesData) ? workTypesData : []);
+        setEmployeeTypes(Array.isArray(employeeTypesData) ? employeeTypesData : []);
       } catch (error) {
         setSubmitError("Failed to load form data. Please refresh the page.");
-      } finally {
-        setLoadingData(false);
       }
     };
 
@@ -119,46 +130,8 @@ export default function AddEmployeeForm() {
   }, [institutionId]);
 
   const handleInputChange = (field: string, value: string | boolean | File | null | number | number[]) => {
-    if (field.startsWith("user.")) {
-      const userField = field.replace("user.", "");
-      setFormData((prev) => ({
-        ...prev,
-        user: {
-          ...prev.user,
-          [userField]: value,
-        },
-      }));
-    } else {
-      setFormData((prev) => ({ ...prev, [field]: value }));
-    }
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
-
-  // Sync email fields
-  useEffect(() => {
-    if (formData.email !== formData.user.email) {
-      setFormData((prev) => ({
-        ...prev,
-        user: {
-          ...prev.user,
-          email: prev.email,
-        },
-      }));
-    }
-  }, [formData.email]);
-
-  // Sync fullname
-  useEffect(() => {
-    const fullname = `${formData.first_name} ${formData.last_name}`.trim();
-    if (fullname !== formData.user.fullname) {
-      setFormData((prev) => ({
-        ...prev,
-        user: {
-          ...prev.user,
-          fullname: fullname,
-        },
-      }));
-    }
-  }, [formData.first_name, formData.last_name]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -195,7 +168,6 @@ export default function AddEmployeeForm() {
     } catch (error) {
       setUploadError("Failed to process image");
       setUploadSuccess(null);
-      console.error("Image processing error:", error);
     }
   };
 
@@ -222,24 +194,104 @@ export default function AddEmployeeForm() {
     };
   }, [previewUrl]);
 
+  // Handle Work Type Modal
+  const handleAddWorkType = async () => {
+    if (!workTypeFormData.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Work type name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAddingWorkType(true);
+
+    try {
+      const newWorkType = await createWorkType({
+        institutionId: institutionId ?? 0,
+        workTypeData: workTypeFormData,
+      });
+
+      if (newWorkType) {
+        setWorkTypes(prev => [...prev, newWorkType]);
+        setFormData(prev => ({ ...prev, work_type: newWorkType.id }));
+        
+        setWorkTypeFormData({ name: "", description: "", code: "" });
+        setIsWorkTypeModalOpen(false);
+        
+        toast({
+          title: "Success",
+          description: "Work type added successfully",
+          variant: "default",
+        });
+      } else {
+        throw new Error("Failed to create work type");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add work type",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingWorkType(false);
+    }
+  };
+
+  // Handle Employee Type Modal
+  const handleAddEmployeeType = async () => {
+    if (!employeeTypeFormData.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Employee type name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAddingEmployeeType(true);
+
+    try {
+      const newEmployeeType = await createEmployeeType({
+        institutionId: institutionId ?? 0,
+        employeeTypeData: employeeTypeFormData,
+      });
+
+      if (newEmployeeType) {
+        setEmployeeTypes(prev => [...prev, newEmployeeType]);
+        setFormData(prev => ({ ...prev, employee_type: newEmployeeType.id }));
+        
+        setEmployeeTypeFormData({ name: "", description: "", code: "" });
+        setIsEmployeeTypeModalOpen(false);
+        
+        toast({
+          title: "Success",
+          description: "Employee type added successfully",
+          variant: "default",
+        });
+      } else {
+        throw new Error("Failed to create employee type");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add employee type",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingEmployeeType(false);
+    }
+  };
+
   const validateForm = (): boolean => {
-    const requiredFields = ["first_name", "last_name", "email", "position", "department", "date_of_joining"];
+    const requiredFields = ["fullname", "email", "position", "department", "date_of_joining"];
 
     for (const field of requiredFields) {
-      if (!formData[field as keyof EmployeeFormData] || formData[field as keyof EmployeeFormData] === 0) {
+      if (!formData[field as keyof EmployeeFormState] || formData[field as keyof EmployeeFormState] === 0) {
         setSubmitError(`Please fill in the ${field.replace("_", " ")} field`);
         return false;
       }
-    }
-
-    if (!formData.user.password) {
-      setSubmitError("Please provide a password for the user account");
-      return false;
-    }
-
-    if (formData.user.roles_ids.length === 0) {
-      setSubmitError("Please select at least one role");
-      return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -267,11 +319,35 @@ export default function AddEmployeeForm() {
     setSubmitError(null);
 
     try {
-      console.log("Submitting employee data:", formData);
-
-      const dataToSubmit = {
-        ...formData,
-        employee_profile_picture: null, // Temporarily remove file to test CORS
+      const dataToSubmit: EmployeeFormData = {
+        id: 0, // Will be assigned by backend
+        user: {
+          fullname: formData.fullname,
+          email: formData.email,
+        },
+        email: formData.email,
+        phone_number: formData.phone_number,
+        position: formData.position,
+        department: formData.department,
+        work_type: formData.work_type,
+        employee_type: formData.employee_type,
+        date_of_birth: formData.date_of_birth,
+        date_of_joining: formData.date_of_joining,
+        address: formData.address,
+        country: formData.country,
+        nin: formData.nin,
+        bank: formData.bank,
+        bank_account_number: formData.bank_account_number,
+        is_active: formData.is_active,
+        experience: formData.experience,
+        qualifications: formData.qualifications,
+        skills: formData.skills,
+        emergency_contact_name: formData.emergency_contact_name,
+        emergency_contact_phone: formData.emergency_contact_phone,
+        emergency_contact_relationship: formData.emergency_contact_relationship,
+        marital_status: formData.marital_status,
+        children_count: formData.children_count,
+        employee_profile_picture: formData.employee_profile_picture,
       };
 
       const result = await createEmployee({
@@ -280,23 +356,17 @@ export default function AddEmployeeForm() {
       });
 
       if (result) {
-        // Show success toast
         toast({
           title: "Success!",
           description: "Employee has been created successfully and added to the system.",
           variant: "default",
           duration: 4000,
         });
-
-        // Navigate immediately without delay
         router.push("/employees/employee-list");
       } else {
         setSubmitError("Failed to create employee. Please try again.");
       }
     } catch (error: any) {
-      console.error("Error creating employee:", error);
-
-      // Show error toast
       toast({
         title: "Error",
         description: error.message || "Failed to create employee. Please try again.",
@@ -309,17 +379,6 @@ export default function AddEmployeeForm() {
       setIsSubmitting(false);
     }
   };
-
-  if (loadingData) {
-    return (
-      <div className="min-h-screen bg-gray-100 p-4 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-          <p className="mt-2 text-gray-600">Loading form data...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 overflow-hidden">
@@ -391,22 +450,12 @@ export default function AddEmployeeForm() {
                 <h3 className="text-lg font-semibold">Personal Information</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name *</Label>
+                    <Label htmlFor="fullname">Full Name *</Label>
                     <Input
-                      id="firstName"
-                      value={formData.first_name}
-                      onChange={(e) => handleInputChange("first_name", e.target.value)}
-                      placeholder="Enter first name"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name *</Label>
-                    <Input
-                      id="lastName"
-                      value={formData.last_name}
-                      onChange={(e) => handleInputChange("last_name", e.target.value)}
-                      placeholder="Enter last name"
+                      id="fullname"
+                      value={formData.fullname}
+                      onChange={(e) => handleInputChange("fullname", e.target.value)}
+                      placeholder="Enter full name"
                       required
                     />
                   </div>
@@ -468,13 +517,31 @@ export default function AddEmployeeForm() {
                       placeholder="0"
                     />
                   </div>
-                  <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+                  <div className="space-y-2">
                     <Label htmlFor="address">Address</Label>
                     <Input
                       id="address"
                       value={formData.address}
                       onChange={(e) => handleInputChange("address", e.target.value)}
                       placeholder="Enter full address"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="country">Country</Label>
+                    <Input
+                      id="country"
+                      value={formData.country}
+                      onChange={(e) => handleInputChange("country", e.target.value)}
+                      placeholder="Enter country"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nin">National ID Number (NIN)</Label>
+                    <Input
+                      id="nin"
+                      value={formData.nin}
+                      onChange={(e) => handleInputChange("nin", e.target.value)}
+                      placeholder="Enter national ID number"
                     />
                   </div>
                 </div>
@@ -530,6 +597,217 @@ export default function AddEmployeeForm() {
                       </SelectContent>
                     </Select>
                   </div>
+                  
+                  {/* Work Type with Add Button */}
+                  <div className="space-y-2">
+                    <Label htmlFor="workType">Work Type</Label>
+                    <div className="flex gap-2">
+                      <Select
+                        value={formData.work_type > 0 ? formData.work_type.toString() : ""}
+                        onValueChange={(value) => handleInputChange("work_type", parseInt(value))}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select work type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.isArray(workTypes) && workTypes.length > 0 ? (
+                            workTypes.map((workType) => (
+                              <SelectItem key={workType.id} value={workType.id.toString()}>
+                                {workType.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="px-2 py-1.5 text-sm text-gray-500">No work types available</div>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <Dialog open={isWorkTypeModalOpen} onOpenChange={setIsWorkTypeModalOpen}>
+                        <DialogTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="shrink-0"
+                            title="Add new work type"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                          <DialogHeader>
+                            <DialogTitle>Add New Work Type</DialogTitle>
+                            <DialogDescription>
+                              Create a new work type to add to your institution.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="workTypeName">Name *</Label>
+                              <Input
+                                id="workTypeName"
+                                value={workTypeFormData.name}
+                                onChange={(e) => setWorkTypeFormData(prev => ({ ...prev, name: e.target.value }))}
+                                placeholder="Enter work type name"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="workTypeCode">Code</Label>
+                              <Input
+                                id="workTypeCode"
+                                value={workTypeFormData.code}
+                                onChange={(e) => setWorkTypeFormData(prev => ({ ...prev, code: e.target.value }))}
+                                placeholder="Enter work type code (optional)"
+                                maxLength={10}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="workTypeDescription">Description</Label>
+                              <Textarea
+                                id="workTypeDescription"
+                                value={workTypeFormData.description}
+                                onChange={(e) => setWorkTypeFormData(prev => ({ ...prev, description: e.target.value }))}
+                                placeholder="Enter work type description (optional)"
+                                rows={3}
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setIsWorkTypeModalOpen(false);
+                                setWorkTypeFormData({ name: "", description: "", code: "" });
+                              }}
+                              disabled={isAddingWorkType}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={handleAddWorkType}
+                              disabled={isAddingWorkType || !workTypeFormData.name.trim()}
+                            >
+                              {isAddingWorkType ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Adding...
+                                </>
+                              ) : (
+                                "Add Work Type"
+                              )}
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
+
+                  {/* Employee Type with Add Button */}
+                  <div className="space-y-2">
+                    <Label htmlFor="employeeType">Employee Type</Label>
+                    <div className="flex gap-2">
+                      <Select
+                        value={formData.employee_type > 0 ? formData.employee_type.toString() : ""}
+                        onValueChange={(value) => handleInputChange("employee_type", parseInt(value))}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select employee type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.isArray(employeeTypes) && employeeTypes.length > 0 ? (
+                            employeeTypes.map((employeeType) => (
+                              <SelectItem key={employeeType.id} value={employeeType.id.toString()}>
+                                {employeeType.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="px-2 py-1.5 text-sm text-gray-500">No employee types available</div>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <Dialog open={isEmployeeTypeModalOpen} onOpenChange={setIsEmployeeTypeModalOpen}>
+                        <DialogTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="shrink-0"
+                            title="Add new employee type"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                          <DialogHeader>
+                            <DialogTitle>Add New Employee Type</DialogTitle>
+                            <DialogDescription>
+                              Create a new employee type to add to your institution.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="employeeTypeName">Name *</Label>
+                              <Input
+                                id="employeeTypeName"
+                                value={employeeTypeFormData.name}
+                                onChange={(e) => setEmployeeTypeFormData(prev => ({ ...prev, name: e.target.value }))}
+                                placeholder="Enter employee type name"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="employeeTypeCode">Code</Label>
+                              <Input
+                                id="employeeTypeCode"
+                                value={employeeTypeFormData.code}
+                                onChange={(e) => setEmployeeTypeFormData(prev => ({ ...prev, code: e.target.value }))}
+                                placeholder="Enter employee type code (optional)"
+                                maxLength={10}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="employeeTypeDescription">Description</Label>
+                              <Textarea
+                                id="employeeTypeDescription"
+                                value={employeeTypeFormData.description}
+                                onChange={(e) => setEmployeeTypeFormData(prev => ({ ...prev, description: e.target.value }))}
+                                placeholder="Enter employee type description (optional)"
+                                rows={3}
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setIsEmployeeTypeModalOpen(false);
+                                setEmployeeTypeFormData({ name: "", description: "", code: "" });
+                              }}
+                              disabled={isAddingEmployeeType}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={handleAddEmployeeType}
+                              disabled={isAddingEmployeeType || !employeeTypeFormData.name.trim()}
+                            >
+                              {isAddingEmployeeType ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Adding...
+                                </>
+                              ) : (
+                                "Add Employee Type"
+                              )}
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="dateOfJoining">Date of Joining *</Label>
                     <Input
@@ -582,55 +860,27 @@ export default function AddEmployeeForm() {
 
               <Separator />
 
-              {/* User Account Information */}
+              {/* Financial Information */}
               <div className="space-y-6">
-                <h3 className="text-lg font-semibold">User Account Information</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <h3 className="text-lg font-semibold">Financial Information</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="userRoles">Roles *</Label>
-                    <Select
-                      value={formData.user.roles_ids.length > 0 ? formData.user.roles_ids[0].toString() : ""}
-                      onValueChange={(value) => handleInputChange("user.roles_ids", [parseInt(value)])}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.isArray(roles) && roles.length > 0 ? (
-                          roles.map((role) => (
-                            <SelectItem key={role.id} value={role.id.toString()}>
-                              {role.name}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <div className="px-2 py-1.5 text-sm text-gray-500">
-                            No roles available (Count: {roles.length})
-                          </div>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="userPassword">Password *</Label>
+                    <Label htmlFor="bank">Bank</Label>
                     <Input
-                      id="userPassword"
-                      type="password"
-                      value={formData.user.password}
-                      onChange={(e) => handleInputChange("user.password", e.target.value)}
-                      placeholder="Enter password"
-                      required
+                      id="bank"
+                      value={formData.bank}
+                      onChange={(e) => handleInputChange("bank", e.target.value)}
+                      placeholder="Enter bank name"
                     />
-                    <p className="text-xs text-gray-500">
-                      Note: Backend may override this with a generated password
-                    </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="userPermissions">Permissions</Label>
+                    <Label htmlFor="bankAccountNumber">Bank Account Number</Label>
                     <Input
-                      id="userPermissions"
-                      value={formData.user.permissions}
-                      onChange={(e) => handleInputChange("user.permissions", e.target.value)}
-                      placeholder="Additional permissions"
+                      id="bankAccountNumber"
+                      value={formData.bank_account_number}
+                      onChange={(e) => handleInputChange("bank_account_number", e.target.value)}
+                      placeholder="Enter bank account number"
                     />
                   </div>
                 </div>

@@ -193,7 +193,8 @@ export interface JobPositionAdvert {
   expiry_date: string; // ISO datetime string
   number_of_employees_expected?: number | null;
   extra_information?: string | null;
-  applications:JobApplication[]
+  applications:JobApplication[];
+  interview_stages: JobApplication[]
 }
 
 // For creating/updating job adverts
@@ -247,6 +248,7 @@ export interface IInterviewStage{
   level: number;
   interviewer: number;
   interviewer_details?: IEmployee;
+  candidates_count: number;
 }
 
 
@@ -268,27 +270,32 @@ export interface IInterview {
 export interface User {
   email: string;
   fullname: string;
-  password: string;
-  roles_ids: number[];
-  permissions: string;
+  password?: string;  
+  roles_ids?: number[]; 
+  permissions?: string;
 }
 
 export interface EmployeeFormData {
   user: User;
-  first_name: string;
-  last_name: string;
+  id: number;
   email: string;
   phone_number: string;
   position: number;
   department: number;
+  work_type: number;           // Added
+  employee_type: number;       // Added
   date_of_birth: string;
   date_of_joining: string;
   address: string;
+  country: string;             // Added
+  nin: string;                 // Added
+  bank: string;                // Added
+  bank_account_number: string; // Added
   is_active: boolean;
   experience: number;
   qualifications: string;
   skills: string;
-  emergency_contact_name: string; 
+  emergency_contact_name: string;
   emergency_contact_phone: string;
   emergency_contact_relationship: string;
   marital_status: string;
@@ -296,6 +303,32 @@ export interface EmployeeFormData {
   employee_profile_picture: File | null;
 }
 
+export interface EmployeeFormState {
+  fullname: string;
+  email: string;
+  phone_number: string;
+  position: number;
+  department: number;
+  work_type: number;           // Added
+  employee_type: number;       // Added
+  date_of_birth: string;
+  date_of_joining: string;
+  address: string;
+  country: string;             // Added
+  nin: string;                 
+  bank: string;                
+  bank_account_number: string; 
+  is_active: boolean;
+  experience: number;
+  qualifications: string;
+  skills: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+  emergency_contact_relationship: string;
+  marital_status: string;
+  children_count: number;
+  employee_profile_picture: File | null;
+}
 export interface IRoleResponse {
   id: number
   name: string
@@ -366,7 +399,7 @@ export interface IRoleFormData {
 }
 
 export interface IOnBoarding {
-  application_details: JobApplication;
+  application_name: JobApplication;
   id: number;
   application: number;
   attended: boolean;
@@ -400,9 +433,13 @@ export interface IBulkOnBoardingSummary {
 }
 
 export interface IBulkOnBoardingResponse {
-  created: IOnBoarding[];
-  skipped: IBulkOnBoardingSkipped[];
-  summary: IBulkOnBoardingSummary;
+  created: IOnBoarding[]
+  skipped: any[]
+  summary: {
+    created_count: number
+    skipped_count: number
+    total_requested: number
+  }
 }
 
 export interface IInterviewFormData {
@@ -415,4 +452,78 @@ export interface IInterviewFormData {
   interview_time: string,
   interview_type: string,
   status: string;
+}
+
+
+export interface IWorkTypeFormData {
+  name: string;
+  code: string;
+  description: string;
+}
+
+export interface IEmployeeTypeFormData {
+  name: string;
+  code: string;
+  description: string;
+}
+
+// Response interfaces (what you get back from the API)
+export interface IWorkType {
+  id: number;
+  name: string;
+  code?: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface IEmployeeType {
+  id: number;
+  name: string;
+  code?: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BranchSummary {
+  id: number;
+  name: string;
+  location: string;
+  is_default?: boolean;
+  attached_date?: string;
+}
+
+export interface PayrollBranch {
+  id: number;
+  name: string;
+  location: string;
+}
+
+export interface EmployeeBranchSummary {
+  branches: BranchSummary[];
+  default_branch: BranchSummary | null;
+  payroll_branch: PayrollBranch | null;
+}
+
+export interface UserBranch {
+  id: number;
+  user_id: number;
+  user_email: string;
+  branch_id: number;
+  branch_name: string;
+  is_default: boolean;
+  created_at: string;
+}
+
+export interface AttachBranchesPayload {
+  employee_id: number;
+  branches: {
+    branch_id: number;
+    is_default?: boolean;
+  }[];
+}
+
+export interface SetDefaultBranchPayload {
+  branch_id: number;
 }

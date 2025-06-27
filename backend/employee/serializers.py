@@ -1,8 +1,20 @@
-from .models import Employee
+from .models import Employee, EmployeeAttendance, EmployeeType, WorkType
 from rest_framework import serializers
 from users.serializers import CustomUserSerializer
 
+class EmployeeTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeType
+        fields = '__all__'
 
+
+
+class WorkTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkType
+        fields = '__all__'
+
+    
 class EmployeeSerializer(serializers.ModelSerializer):
     user = CustomUserSerializer()
     department_details = serializers.SerializerMethodField()
@@ -120,3 +132,15 @@ class EmployeeSerializer(serializers.ModelSerializer):
         data.pop('position_details', None)
 
         return data
+    
+class EmployeeAttendanceSerializer(serializers.ModelSerializer):
+    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
+
+    class Meta:
+        model = EmployeeAttendance
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['employee'] = EmployeeSerializer(instance.employee).data
+        return rep

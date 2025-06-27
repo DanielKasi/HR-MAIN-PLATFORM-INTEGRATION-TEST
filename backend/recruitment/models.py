@@ -174,6 +174,8 @@ class JobAdvertApplication(models.Model):
             
         except Exception as e:
             print(f"Error sending shortlist email to {self.applicant_email}: {str(e)}")
+
+
 class InterviewStage(models.Model):
     job_position_advert = models.ForeignKey(
         JobPositionAdvert, on_delete=models.PROTECT, related_name="interview_stages"

@@ -25,6 +25,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { ConfirmationDialog } from "@/components/confirmation-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -33,7 +34,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { getJobApplicationById } from "@/lib/utils"
+import { getJobApplicationById, updateJobApplicationStatus } from "@/lib/utils"
 import type { JobApplication } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import { downloadFile } from "@/lib/helpers"
@@ -55,6 +56,19 @@ const sourceLabels = {
 }
 
 export default function ApplicationViewPage() {
+  const [showShortlistConfirm, setShowShortlistConfirm] = useState(false);
+  // ...
+  // Handler for shortlisting
+  const handleShortlist = async () => {
+    if (!application) return;
+    try {
+      await updateJobApplicationStatus({ applicationId: application.id, status: "shortlisted" });
+      setApplication({ ...application, status: "shortlisted" });
+      toast.success("Application shortlisted successfully");
+    } catch (error) {
+      toast.error("Failed to shortlist application");
+    }
+  }
   const [application, setApplication] = useState<JobApplication | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
@@ -382,10 +396,10 @@ export default function ApplicationViewPage() {
                         {application.job_position_advert_job_details. || "N/A"}
                       </p>
                     </div> */}
-                    <div>
+                    {/* <div>
                       <label className="text-sm font-medium text-muted-foreground">Job Advert ID</label>
                       <p className="text-sm mt-1">#{application.job_position_advert}</p>
-                    </div>
+                    </div> */}
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Available Positions</label>
                       <p className="text-sm mt-1">{application.positions || "N/A"}</p>
@@ -476,18 +490,36 @@ export default function ApplicationViewPage() {
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Application
               </Button>
-              <Button className="w-full justify-start" variant="outline">
+              {/* <Button className="w-full justify-start" variant="outline">
                 <Mail className="h-4 w-4 mr-2" />
                 Send Email
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Phone className="h-4 w-4 mr-2" />
-                Schedule Call
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <UserCheck className="h-4 w-4 mr-2" />
-                Shortlist
-              </Button>
+              </Button> */}
+              {application?.status !== "shortlisted" && (
+                <Button className="w-full justify-start" variant="outline">
+                  <Phone className="h-4 w-4 mr-2" />
+                  Schedule Call
+                </Button>
+              )}
+              {application?.status !== "shortlisted" && (
+                <>
+                  <Button className="w-full justify-start" variant="outline" onClick={() => setShowShortlistConfirm(true)}>
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    Shortlist
+                  </Button>
+                  <ConfirmationDialog
+                    isOpen={showShortlistConfirm}
+                    onClose={() => setShowShortlistConfirm(false)}
+                    onConfirm={async () => {
+                      setShowShortlistConfirm(false);
+                      await handleShortlist();
+                    }}
+                    title="Shortlist Application"
+                    description="Are you sure you want to shortlist this application? This action cannot be undone."
+                    confirmText="Shortlist"
+                    cancelText="Cancel"
+                  />
+                </>
+              )}
               <Separator />
               <Button className="w-full justify-start text-destructive" variant="outline" onClick={handleDelete}>
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -502,14 +534,7 @@ export default function ApplicationViewPage() {
               <CardTitle className="text-lg">Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Application ID</span>
-                <span className="text-sm font-medium">#{application.id}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Job Advert ID</span>
-                <span className="text-sm font-medium">#{application.job_position_advert}</span>
-              </div>
+              
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Status</span>
                 <Badge variant={getStatusBadgeVariant(application.status)}>{application.status}</Badge>

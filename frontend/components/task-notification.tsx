@@ -7,6 +7,7 @@ import {Bell} from "lucide-react";
 import {useRouter} from "next/navigation";
 import {formatDistanceToNow} from "date-fns";
 import {useSelector} from "react-redux";
+import {Icon} from "@iconify/react";
 
 import {Button} from "@/components/ui/button";
 import {
@@ -151,14 +152,12 @@ export function TaskNotification() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          className={`bg-transparent size-10 rounded-full flex items-center justify-center relative transition-all duration-300 ease-in-out hover:bg-gray-200`}
-        >
-          <Bell className="h-7 w-7 text-black hover:bg-gray-200 transition-colors duration-200" />
+        <button className=" text-gray-900 rounded-full bg-white hover:bg-gray-100 p-3 border-none outline-none relative">
+          <Icon icon="hugeicons:notification-02" width="24" height="24" />
           {tasks.length > 0 && (
             <div className="absolute top-0 right-0 w-2 h-2 bg-sidebar-selected rounded-full" />
           )}
-        </Button>
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 rounded-xl">
         <DropdownMenuLabel className="flex justify-between items-center">

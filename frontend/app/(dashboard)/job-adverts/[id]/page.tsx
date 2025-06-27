@@ -50,6 +50,7 @@ export default function JobAdvertDetailsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [applicationsCount, setApplicationsCount] = useState<number>(0)
+  const [interviewStagesCount, setInterviewStagesCount] = useState<number>(0)
   const [isClosing, setIsClosing] = useState(false)
 
   const router = useRouter()
@@ -101,6 +102,14 @@ export default function JobAdvertDetailsPage() {
       if (fetchedApplications) {
         setApplicationsCount(fetchedApplications.length)
       }
+
+      const fetchedInterviewStages = fetchedJobAdvert.interview_stages
+
+        setJobAdvert(fetchedJobAdvert)
+
+      if (fetchedInterviewStages) {
+        setInterviewStagesCount(fetchedInterviewStages.length)
+      }
     } catch (err) {
       setError("Failed to fetch job advert details")
       toast.error("Failed to load job advert details")
@@ -121,9 +130,14 @@ export default function JobAdvertDetailsPage() {
     router.push(`/job-adverts/${jobAdvertId}/applications`)
   }
 
+  const handleViewInterviewStages = () => {
+    router.push(`/job-adverts/${jobAdvertId}/interview-stages`)
+  }
+
   const handleViewInterviews = () => {
     router.push(`/job-adverts/${jobAdvertId}/interviews`)
   }
+
 
   const handleCloseAdvert = async () => {
     if (!jobAdvert) return
@@ -267,11 +281,11 @@ export default function JobAdvertDetailsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleViewInterviews}
+                    onClick={handleViewInterviewStages}
                     className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
                   >
                     <User className="h-4 w-4" />
-                     {/* {jobAdvert.interviews.length} Interviews */}
+                     {interviewStagesCount} Interview Stages
                   </Button>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
