@@ -393,6 +393,16 @@ class UserBranchListCreateView(APIView):
         )
         if serializer.is_valid():
             user_branch = serializer.save()
+            
+            from employee.models import Employee
+            try:
+                employee = Employee.objects.get(user=user_branch.user)
+                if user_branch.is_default:
+                    employee.payroll_branch = user_branch.branch
+                    employee.save(update_fields=['payroll_branch'])
+            except Employee.DoesNotExist:
+                pass  
+            
             return Response(
                 UserBranchSerializer(user_branch).data,
                 status=status.HTTP_201_CREATED,
@@ -401,12 +411,7 @@ class UserBranchListCreateView(APIView):
             {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )
 
-    @extend_schema(
-        responses={200: UserBranchSerializer(many=True)},
-        description="Retrieve all user-branch relationships.",
-        summary="Get all user-branch relationships",
-        tags=["User Management"],
-    )
+
     def get(self, request):
         user_branches = UserBranch.objects.all()
         serializer = UserBranchSerializer(user_branches, many=True)

@@ -73,11 +73,13 @@ class OnBoardingDetailAPI(APIView):
     )
     def patch(self, request, onboarding_id):
         try:
+            print("\n\n Attempting path with data : ", request.data)
             onboarding = OnBoarding.objects.get(id=onboarding_id)
             serializer = OnBoardingSerializer(onboarding, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data)
+            print("\n\n Found serializer error : ", serializer.errors)
             return Response(serializer.errors, status=400)
         except OnBoarding.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)

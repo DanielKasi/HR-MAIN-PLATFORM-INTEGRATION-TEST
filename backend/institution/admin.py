@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Institution, Branch
+from .models import Institution, Branch, UserBranch, Department
 
 
 class InstitutionAdmin(admin.ModelAdmin):
@@ -18,3 +18,5 @@ class BranchAdmin(admin.ModelAdmin):
 
 admin.site.register(Branch, BranchAdmin)
 admin.site.register(Institution, InstitutionAdmin)
+admin.site.register(UserBranch)
+admin.site.register(Department)

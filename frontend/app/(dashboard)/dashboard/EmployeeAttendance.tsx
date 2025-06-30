@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { createAttendanceRecord } from "@/lib/utils.attendance";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search } from "lucide-react";
@@ -20,7 +21,8 @@ interface AttendanceRecord {
 
 const getCurrentTime = () => {
   const now = new Date();
-  return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  // Format as hh:mm:ss
+  return now.toTimeString().split(' ')[0]; // "14:15:02"
 };
 
 interface Stat {
@@ -71,17 +73,47 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, sear
     // eslint-disable-next-line
   }, [attendance, storageKey]);
 
-  const handleCheckIn = (id: number) => {
+  const handleCheckIn = async (id: number) => {
+    const now = new Date();
+    const checkInTime = getCurrentTime();
     setAttendance(prev => prev.map(record =>
       record.employeeId === id ? { ...record, checkIn: getCurrentTime() } : record
     ));
+    try {
+      await createAttendanceRecord({
+        employee: id,
+        check_in_time: checkInTime,
+        status: "approved"
+      });
+      // Optionally show a toast/alert
+      // alert('Check-in recorded!');
+    } catch (err) {
+      alert('Failed to record check-in!');
+    }
   };
 
-  const handleCheckOut = (id: number) => {
+  const handleCheckOut = async (id: number) => {
+    const now = new Date();
+    const checkOutTime = getCurrentTime();
     setAttendance(prev => prev.map(record =>
       record.employeeId === id ? { ...record, checkOut: getCurrentTime() } : record
     ));
+    const record = attendance.find(r => r.employeeId === id);
+    const checkInTime = record?.checkIn || "";
+    try {
+      await createAttendanceRecord({
+        employee: id,
+        check_in_time: checkInTime,
+        check_out_time: checkOutTime,
+        status: "approved"
+      });
+      // Optionally show a toast/alert
+      // alert('Check-out recorded!');
+    } catch (err) {
+      alert('Failed to record check-out!');
+    }
   };
+
 
   return (
     <Card>

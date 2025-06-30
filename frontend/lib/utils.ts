@@ -1,6 +1,14 @@
 import {type ClassValue, clsx} from "clsx";
 import {twMerge} from "tailwind-merge";
-import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, IInterview, EmployeeFormData, User, IInterviewFormData, IInterviewStage, IInterviewStageFormData, IBulkOnBoardingResponse, IBulkOnBoardingRequest, IOnBoarding, IOnBoardingFormData } from "@/app/types/types.utils";
+import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, 
+  CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, 
+  IInterview, EmployeeFormData, User, IInterviewFormData, IInterviewStage, IInterviewStageFormData,
+   IBulkOnBoardingResponse, IBulkOnBoardingRequest, IOnBoarding, IOnBoardingFormData, IEmployeeTypeFormData  , IWorkType,
+   IWorkTypeFormData, IEmployeeType,EmployeeBranchSummary,AttachBranchesPayload,SetDefaultBranchPayload,
+   DisciplinaryActionForm, DisciplinaryActionRequest, DisciplinaryActionResponse, convertFormToApiRequest,
+   DisciplineTypeForm, DisciplineTypeResponse, convertDisciplineTypeFormToApiRequest, DisciplinaryActionAPIResponse,IDisciplinaryAction
+
+  } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/app/types/types.utils";
@@ -626,12 +634,12 @@ export const createInterviewStage = async ({
   }
 };
 
-// It returns a promise that resolves to an array of IEmployee objects or throws an error ifAdd commentMore actions
+
 export const getAllEmployees = async ({institutionId}:{institutionId:number}) => {
   try {
     const endpoint = `employee/${institutionId}/employee/`;
     const response = await apiRequest.get(endpoint);
-    return response.data as IEmployee[];
+    return response.data as EmployeeFormData[];
   } catch (error) {
     throw error;
   }
@@ -699,7 +707,7 @@ export const updateEmployee = async ({
       }
     });
     
-    const response = await apiRequest.patch(`/employee/employee/${employeeId}/update/`, formData);
+    const response = await apiRequest.patch(`/employee/${employeeId}/update/`, formData);
     return response.data;
   } catch (error: any) {
     throw new Error("Failed to update employee. Please try again.");
@@ -712,7 +720,7 @@ export const getEmployeeById = async ({
   employeeId: number;
 }): Promise<any | null> => {
   try {
-    const response = await apiRequest.get(`/employee/employee/${employeeId}/`);
+    const response = await apiRequest.get(`/employee/${employeeId}/`);
     return response.data;
   } catch (error: any) {
     throw new Error(
@@ -760,7 +768,7 @@ export const getEmployeeDetailId = async ({
   employeeId: number;
 }): Promise<EmployeeFormData | null> => {  // Changed return type from EmployeeFormData to Employee
   try {
-    const response = await apiRequest.get(`/employee/employee/${employeeId}/${applicationId}/`);
+    const response = await apiRequest.get(`/employee/${employeeId}/${applicationId}/`);
     return response.data as EmployeeFormData;  // Changed casting
   } catch (error) {
     return null;
@@ -865,3 +873,270 @@ export const bulkCreateOnBoarding = async ({
   }
 };
 
+
+export const createWorkType = async ({
+  institutionId,
+  workTypeData,
+}: {
+  institutionId: number;
+  workTypeData: IWorkTypeFormData;
+}): Promise<IWorkType | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(workTypeData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `employee/work-types/`,
+      formData
+    );
+    return response.data as IWorkType;
+  } catch (error) {
+    console.error("Failed to create work type:", error);
+    return null;
+  }
+};
+
+export const createEmployeeType = async ({
+  institutionId,
+  employeeTypeData,
+}: {
+  institutionId: number;
+  employeeTypeData: IEmployeeTypeFormData;
+}): Promise<IEmployeeType | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(employeeTypeData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `employee/employee-types/`,
+      formData
+    );
+    return response.data as IEmployeeType;
+  } catch (error) {
+    console.error("Failed to create employee type:", error);
+    return null;
+  }
+};
+
+export const getWorkTypes = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<IWorkType[]> => {
+  try {
+    const response = await apiRequest.get(
+      `employee/work-types/`
+    );
+    return response.data as IWorkType[];
+  } catch (error) {
+    console.error("Failed to fetch work types:", error);
+    return [];
+  }
+};
+
+export const getEmployeeTypes = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<IEmployeeType[]> => {
+  try {
+    const response = await apiRequest.get(
+      `employee/employee-types/`
+    );
+    return response.data as IEmployeeType[];
+  } catch (error) {
+    console.error("Failed to fetch employee types:", error);
+    return [];
+  }
+};
+
+export const attachEmployeeToBranches = async (
+  payload: AttachBranchesPayload
+): Promise<EmployeeBranchSummary | null> => {
+  try {
+    const response = await apiRequest.post("branches/attach/", payload);
+    return response.data.data as EmployeeBranchSummary;
+  } catch (error) {
+    console.error("Error attaching employee to branches:", error);
+    return null;
+  }
+};
+
+// 📌 Get Branches for a Specific Employee
+export const getEmployeeBranches = async (
+  employeeId: number
+): Promise<EmployeeBranchSummary | null> => {
+  try {
+    const response = await apiRequest.get(`${employeeId}/branches/`);
+    return response.data.data as EmployeeBranchSummary;
+  } catch (error) {
+    console.error("Error fetching branches for employee:", error);
+    return null;
+  }
+};
+
+// 📌 Set Default Branch for Employee
+export const setDefaultBranch = async (
+  employeeId: number,
+  data: SetDefaultBranchPayload
+): Promise<EmployeeBranchSummary | null> => {
+  try {
+    const response = await apiRequest.patch(`${employeeId}/branches/`, data);
+    return response.data.data as EmployeeBranchSummary;
+  } catch (error) {
+    console.error("Error setting default branch:", error);
+    return null;
+  }
+};
+
+
+
+export const createDisciplinaryAction = async ({
+  disciplinaryActionData,
+}: {
+  disciplinaryActionData: DisciplinaryActionForm;
+}): Promise<DisciplinaryActionResponse | null> => {
+  try {
+    const apiData = convertFormToApiRequest(disciplinaryActionData);
+    const response = await apiRequest.post(
+      `discipline/disciplinary-actions/`,
+      apiData
+    );
+    return response.data as DisciplinaryActionResponse;
+  } catch (error) {
+    if (error.response?.status === 400) {
+      const errorData = error.response.data;
+      if (typeof errorData === 'object' && errorData !== null) {
+        const errorMessages = Object.entries(errorData)
+          .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+          .join('; ');
+        throw new Error(`Validation errors: ${errorMessages}`);
+      }
+    }
+    return null;
+  }
+};
+
+
+export const createDisciplineType = async ({
+  disciplineTypeData,
+}: {
+  disciplineTypeData: DisciplineTypeForm;
+}): Promise<DisciplineTypeResponse | null> => {
+  try {
+    const apiData = convertDisciplineTypeFormToApiRequest(disciplineTypeData);
+    
+    const formData = new FormData();
+    
+    // Append all the discipline type fields
+    Object.entries(apiData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `discipline/discipline-types/`, // Adjust endpoint as needed
+      formData
+    );
+    
+    return response.data as DisciplineTypeResponse;
+  } catch (error) {
+    console.error("Failed to create discipline type:", error);
+    
+    if (error.response?.status === 400) {
+      const errorData = error.response.data;
+      if (errorData?.name && errorData.name.includes('already exists')) {
+        throw new Error('A discipline type with this name already exists');
+      }
+    }
+    
+    return null;
+  }
+};
+
+
+export const getDisciplineTypes = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<DisciplineTypeResponse[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `discipline/discipline-types/?institution=${institutionId}`
+    );
+    
+    return response.data as DisciplineTypeResponse[];
+  } catch (error) {
+    console.error("Failed to fetch discipline types:", error);
+    return null;
+  }
+};
+
+export const getDisciplinaryActions = async (): Promise<DisciplinaryActionAPIResponse[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `discipline/disciplinary-actions`
+    );
+    
+    return response.data as DisciplinaryActionAPIResponse[];
+  } catch (error) {
+    return null;
+  }
+};
+
+export const updateDisciplinaryAction = async ({ 
+  disciplinaryActionId, 
+  disciplinaryActionData,
+}: { 
+  disciplinaryActionId: number; 
+  disciplinaryActionData: Partial<DisciplinaryActionForm>;
+}): Promise<IDisciplinaryAction | null> => {
+  try {
+    const response = await apiRequest.patch(
+      `discipline/disciplinary-actions/${disciplinaryActionId}/`,
+      disciplinaryActionData
+    );
+    return response.data as IDisciplinaryAction;
+  } catch (error) {
+    return null;
+  }
+}
+
+export const getDisciplinaryActionById = async ({ 
+  disciplinaryActionId, 
+}: { 
+  disciplinaryActionId: number; 
+}): Promise<IDisciplinaryAction | null> => {
+  try {
+    const response = await apiRequest.get(
+      `discipline/disciplinary-actions/${disciplinaryActionId}/`
+    );
+    return response.data as IDisciplinaryAction;
+  } catch (error) {
+    return null;
+  }
+}
+
+export const deleteDisciplinaryAction = async ({ 
+  disciplinaryActionId, 
+}: { 
+  disciplinaryActionId: number; 
+}): Promise<boolean> => {
+  try {
+    await apiRequest.delete(
+      `discipline/disciplinary-actions/${disciplinaryActionId}/`
+    );
+    return true;
+  } catch (error) {
+    return false;
+  }
+}

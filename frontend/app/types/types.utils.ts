@@ -277,18 +277,25 @@ export interface User {
 
 export interface EmployeeFormData {
   user: User;
+  id: number;
   email: string;
   phone_number: string;
   position: number;
   department: number;
+  work_type: number;           // Added
+  employee_type: number;       // Added
   date_of_birth: string;
   date_of_joining: string;
   address: string;
+  country: string;             // Added
+  nin: string;                 // Added
+  bank: string;                // Added
+  bank_account_number: string; // Added
   is_active: boolean;
   experience: number;
   qualifications: string;
   skills: string;
-  emergency_contact_name: string; 
+  emergency_contact_name: string;
   emergency_contact_phone: string;
   emergency_contact_relationship: string;
   marital_status: string;
@@ -302,13 +309,20 @@ export interface EmployeeFormState {
   phone_number: string;
   position: number;
   department: number;
+  work_type: number;           // Added
+  employee_type: number;       // Added
   date_of_birth: string;
   date_of_joining: string;
   address: string;
+  country: string;             // Added
+  nin: string;                 
+  bank: string;                
+  bank_account_number: string; 
   is_active: boolean;
   experience: number;
   qualifications: string;
   skills: string;
+  selected_branches: number[]; // Added for multi-branch selection
   emergency_contact_name: string;
   emergency_contact_phone: string;
   emergency_contact_relationship: string;
@@ -316,7 +330,6 @@ export interface EmployeeFormState {
   children_count: number;
   employee_profile_picture: File | null;
 }
-
 export interface IRoleResponse {
   id: number
   name: string
@@ -443,3 +456,372 @@ export interface IInterviewFormData {
 }
 
 
+export interface IWorkTypeFormData {
+  name: string;
+  code: string;
+  description: string;
+}
+
+export interface IEmployeeTypeFormData {
+  name: string;
+  code: string;
+  description: string;
+}
+
+// Response interfaces (what you get back from the API)
+export interface IWorkType {
+  id: number;
+  name: string;
+  code?: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface IEmployeeType {
+  id: number;
+  name: string;
+  code?: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BranchSummary {
+  id: number;
+  name: string;
+  location: string;
+  is_default?: boolean;
+  attached_date?: string;
+}
+
+export interface PayrollBranch {
+  id: number;
+  name: string;
+  location: string;
+}
+
+export interface EmployeeBranchSummary {
+  branches: BranchSummary[];
+  default_branch: BranchSummary | null;
+  payroll_branch: PayrollBranch | null;
+}
+
+export interface UserBranch {
+  id: number;
+  user_id: number;
+  user_email: string;
+  branch_id: number;
+  branch_name: string;
+  is_default: boolean;
+  created_at: string;
+}
+
+export interface AttachBranchesPayload {
+  employee_id: number;
+  branches: {
+    branch_id: number;
+    is_default?: boolean;
+  }[];
+}
+
+export interface SetDefaultBranchPayload {
+  branch_id: number;
+}
+
+export interface DisciplinaryActionForm {
+  discipline_type: string 
+  employee: string 
+  reported_by: string 
+  assigned_to: string 
+  incident_date: string
+  description: string
+  evidence: string
+  status: "pending" | "in_progress" | "completed" | "dismissed"
+  action_taken: string
+  resolution_date: string
+  follow_up_required: boolean
+  follow_up_date: string
+  notes: string
+}
+
+export interface DisciplinaryActionRequest {
+  discipline_type: number
+  employee: number
+  reported_by: number
+  assigned_to: number
+  incident_date: string // YYYY-MM-DD format
+  description: string
+  evidence: string
+  status: "pending" | "in_progress" | "completed" | "dismissed"
+  action_taken: string
+  resolution_date: string // YYYY-MM-DD format
+  follow_up_required: boolean
+  follow_up_date: string // YYYY-MM-DD format
+  notes: string
+}
+
+
+export interface DisciplinaryActionResponse extends DisciplinaryActionRequest {
+  id: number
+  created_at: string
+  updated_at: string
+}
+
+
+export function convertFormToApiRequest(formData: DisciplinaryActionForm): DisciplinaryActionRequest {
+  return {
+    discipline_type: parseInt(formData.discipline_type),
+    employee: parseInt(formData.employee),
+    reported_by: parseInt(formData.reported_by),
+    assigned_to: parseInt(formData.assigned_to),
+    incident_date: formData.incident_date,
+    description: formData.description,
+    evidence: formData.evidence,
+    status: formData.status,
+    action_taken: formData.action_taken,
+    resolution_date: formData.resolution_date,
+    follow_up_required: formData.follow_up_required,
+    follow_up_date: formData.follow_up_date,
+    notes: formData.notes,
+  }
+}
+
+
+export interface DisciplineType {
+  id?: number
+  name: string
+  description: string
+  severity: "low" | "medium" | "high" | "critical"
+  is_active: boolean
+  created_at?: string
+}
+
+export interface DisciplineTypeForm {
+  name: string
+  description: string
+  severity: "low" | "medium" | "high" | "critical"
+  is_active: boolean
+}
+
+export interface DisciplineTypeRequest {
+  name: string
+  description: string
+  severity: "low" | "medium" | "high" | "critical"
+  is_active: boolean
+}
+
+export interface DisciplineTypeResponse extends DisciplineTypeRequest {
+  id: number
+  created_at: string
+  updated_at: string
+}
+
+
+export function convertDisciplineTypeFormToApiRequest(formData: DisciplineTypeForm): DisciplineTypeRequest {
+  return {
+    name: formData.name,
+    description: formData.description,
+    severity: formData.severity,
+    is_active: formData.is_active,
+  }
+}
+
+export interface DisciplinaryActionAPIResponse {
+  id: number
+  discipline_type: {
+    id: number
+    name: string
+    description: string
+    severity: "low" | "medium" | "high" | "critical"
+    is_active: boolean
+    created_at: string
+  }
+  employee: {
+    id: number
+    user: {
+      id: number
+      email: string
+      fullname: string
+      is_active: boolean
+      is_email_verified: boolean
+      is_password_verified: boolean
+      is_staff: boolean
+      roles: any[]
+      branches: any[]
+      permissions: any[]
+    }
+    email: string
+    phone_number: string
+    position: {
+      id: number
+      name: string
+      department_id: number
+    }
+    department: {
+      id: number
+      name: string
+      institution_id: number
+    }
+    roles: any[]
+    date_of_birth: string | null
+    date_of_joining: string
+    address: string
+    is_active: boolean
+    created_at: string
+    updated_at: string
+    experience: number
+    qualifications: string | null
+    skills: string | null
+    emergency_contact_name: string | null
+    emergency_contact_phone: string | null
+    emergency_contact_relationship: string | null
+    marital_status: string
+    children_count: number
+    employee_profile_picture: string | null
+  }
+  reported_by: {
+    id: number
+    user: {
+      id: number
+      email: string
+      fullname: string
+      is_active: boolean
+      is_email_verified: boolean
+      is_password_verified: boolean
+      is_staff: boolean
+      roles: any[]
+      branches: any[]
+      permissions: any[]
+    }
+    email: string
+    phone_number: string
+    position: {
+      id: number
+      name: string
+      department_id: number
+    }
+    department: {
+      id: number
+      name: string
+      institution_id: number
+    }
+    roles: any[]
+    date_of_birth: string | null
+    date_of_joining: string
+    address: string
+    is_active: boolean
+    created_at: string
+    updated_at: string
+    experience: number
+    qualifications: string | null
+    skills: string | null
+    emergency_contact_name: string | null
+    emergency_contact_phone: string | null
+    emergency_contact_relationship: string | null
+    marital_status: string
+    children_count: number
+    employee_profile_picture: string | null
+  }
+  assigned_to: {
+    id: number
+    user: {
+      id: number
+      email: string
+      fullname: string
+      is_active: boolean
+      is_email_verified: boolean
+      is_password_verified: boolean
+      is_staff: boolean
+      roles: any[]
+      branches: any[]
+      permissions: any[]
+    }
+    email: string
+    phone_number: string
+    position: {
+      id: number
+      name: string
+      department_id: number
+    }
+    department: {
+      id: number
+      name: string
+      institution_id: number
+    }
+    roles: any[]
+    date_of_birth: string | null
+    date_of_joining: string
+    address: string
+    is_active: boolean
+    created_at: string
+    updated_at: string
+    experience: number
+    qualifications: string | null
+    skills: string | null
+    emergency_contact_name: string | null
+    emergency_contact_phone: string | null
+    emergency_contact_relationship: string | null
+    marital_status: string
+    children_count: number
+    employee_profile_picture: string | null
+  } | null
+  incident_date: string
+  reported_date: string
+  description: string
+  evidence: string
+  status: "pending" | "in_progress" | "completed" | "dismissed"
+  action_taken: string
+  resolution_date: string | null
+  follow_up_required: boolean
+  follow_up_date: string | null
+  created_at: string
+  updated_at: string
+  notes: string
+}
+
+// Updated transform function to extract the names from nested objects
+export const transformDisciplinaryActionData = (apiData: DisciplinaryActionAPIResponse[] | null) => {
+  if (!apiData) return []
+  
+  return apiData.map(action => ({
+    id: action.id.toString(),
+    employee_name: action.employee.user.fullname,
+    employee_department: action.employee.department.name,
+    discipline_type: action.discipline_type.name,
+    discipline_severity: action.discipline_type.severity,
+    incident_date: action.incident_date,
+    reported_date: action.reported_date,
+    description: action.description,
+    evidence: action.evidence,
+    reported_by: action.reported_by.user.fullname,
+    assigned_to: action.assigned_to ? action.assigned_to.user.fullname : 'Unassigned',
+    status: action.status,
+    action_taken: action.action_taken,
+    resolution_date: action.resolution_date || '',
+    follow_up_required: action.follow_up_required,
+    follow_up_date: action.follow_up_date || '',
+    notes: action.notes,
+  }))
+}
+
+
+export interface IDisciplinaryAction {
+  id: number
+  employee: { id: number; user?: { fullname?: string }; email?: string; phone_number?: string; position?: any }
+  discipline_type: { id: number; name: string; description?: string; severity: "low" | "medium" | "high" | "critical"; is_active?: boolean }
+  incident_date: string
+  description: string
+  evidence?: string
+  reported_by: { id: number; user?: { fullname?: string }; email?: string; phone_number?: string; position?: any }
+  assigned_to?: { id: number; user?: { fullname?: string }; email?: string; phone_number?: string; position?: any }
+  status: "pending" | "in_progress" | "completed" | "dismissed"
+  action_taken?: string
+  resolution_date?: string
+  follow_up_required: boolean
+  follow_up_date?: string
+  notes?: string
+  created_at?: string
+  updated_at?: string
+  reported_date?: string
+}
