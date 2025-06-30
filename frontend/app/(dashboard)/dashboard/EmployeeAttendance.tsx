@@ -33,15 +33,15 @@ interface EmployeeAttendanceProps {
   employees: Employee[];
   search: string;
   setSearch: (val: string) => void;
+  attendance: AttendanceRecord[];
+  setAttendance: React.Dispatch<React.SetStateAction<AttendanceRecord[]>>;
   stats: Stat[];
   selectedDate: string;
   setSelectedDate: (date: string) => void;
 }
 
-const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, search, setSearch, stats, selectedDate, setSelectedDate }) => {
+const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, search, setSearch, attendance, setAttendance, stats, selectedDate, setSelectedDate }) => {
 
-  // Attendance state (internal)
-  const [attendance, setAttendance] = React.useState<AttendanceRecord[]>([]);
   // Key for localStorage
   const storageKey = `attendance_${selectedDate}`;
 
@@ -61,7 +61,7 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, sear
     // Otherwise, initialize to empty attendance for each employee
     setAttendance(employees.map(emp => ({ employeeId: emp.id, checkIn: null, checkOut: null })));
     // eslint-disable-next-line
-  }, [employees, storageKey]);
+  }, [employees, storageKey, setAttendance]);
 
   // Save attendance to localStorage whenever it changes (for selected date)
   React.useEffect(() => {
@@ -89,35 +89,8 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, sear
         <CardTitle className="flex items-center justify-between">
           <span className="mb-2">Attendance ({employees.length})</span>
         </CardTitle>
-        {/* Search */}
-        <div className="flex flex-col gap-4 mt-4">
-          <div className="flex flex-row gap-2 w-full items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                type="text"
-                placeholder="Search employees..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={e => setSelectedDate(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-              style={{ minWidth: 140 }}
-              max={new Date().toISOString().slice(0, 10)}
-              title="Filter by date"
-            />
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 text-gray-700 shadow-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707l-6.414 6.414A1 1 0 0013 13v5a1 1 0 01-1.447.894l-2-1A1 1 0 019 17v-4a1 1 0 00-.293-.707L2.293 6.707A1 1 0 012 6V4z" /></svg>
-              Filter
-            </button>
-          </div>
-          {/* Stats cards below search */}
-          <div className="flex flex-wrap gap-4 mt-2">
+          {/* Stats cards above search */}
+          <div className="flex flex-wrap gap-4 mb-16">
             {stats.map((stat, idx) => (
               <div key={idx} className="flex-1 min-w-[160px] max-w-[210px] bg-white rounded-xl border border-gray-200 shadow-sm flex items-center gap-3 px-6 py-4">
                 <div className="text-xl">{stat.icon}</div>
@@ -128,7 +101,31 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, sear
               </div>
             ))}
           </div>
-        </div>
+          {/* Search */}
+          <div className="flex flex-col gap-4 py-4">
+            <div className="flex flex-row gap-2 w-full items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  type="text"
+                  placeholder="Search employees..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={e => setSelectedDate(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-gray-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                style={{ minWidth: 140 }}
+                max={new Date().toISOString().slice(0, 10)}
+                title="Filter by date"
+              />
+              
+            </div>
+          </div>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
@@ -176,7 +173,7 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, sear
                         isToday(selectedDate) ? (
                           <button
                             className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold"
-                            onClick={() => setAttendance(prev => prev.map(record => record.employeeId === emp.id ? { ...record, checkIn: getCurrentTime() } : record))}
+                            onClick={() => handleCheckIn(emp.id)}
                           >
                             Check In
                           </button>
@@ -192,7 +189,7 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, sear
                         isToday(selectedDate) ? (
                           <button
                             className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-semibold"
-                            onClick={() => setAttendance(prev => prev.map(record => record.employeeId === emp.id ? { ...record, checkOut: getCurrentTime() } : record))}
+                            onClick={() => handleCheckOut(emp.id)}
                             disabled={!record?.checkIn}
                             style={{ opacity: record?.checkIn ? 1 : 0.5 }}
                           >
