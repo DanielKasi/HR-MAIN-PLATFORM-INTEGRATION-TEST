@@ -7,7 +7,9 @@ from employee.models import Employee
 class AllowanceType(models.Model):
     """
     Define types of allowances (Housing, Transport, Medical, etc.)
+    
     """
+    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE, related_name='allowance_types')
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
     is_taxable = models.BooleanField(default=True)
@@ -24,6 +26,7 @@ class DeductionType(models.Model):
     """
     Define types of deductions (Tax, NSSF, Health Insurance, etc.)
     """
+    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE, related_name='deduction_types')
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
     is_mandatory = models.BooleanField(default=False)  # e.g., tax is mandatory
@@ -108,6 +111,7 @@ class PayrollPeriod(models.Model):
     """
     Define payroll periods (Monthly, Bi-weekly, etc.)
     """
+    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE, related_name='payroll_periods')
     name = models.CharField(max_length=100)  # e.g., "January 2024", "Week 1 - Jan 2024"
     start_date = models.DateField()
     end_date = models.DateField()
@@ -143,6 +147,14 @@ class Payslip(models.Model):
 
     def __str__(self):
         return f"{self.employee} - {self.payroll_period.name}"
+    
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding  
+
+        super().save(*args, **kwargs)
+
+        if is_new:
+            PayslipItem.generate_payslip_items(self)
 
     def calculate_totals(self):
         """Calculate all payslip totals"""
@@ -197,5 +209,45 @@ class PayslipItem(models.Model):
         return f"{self.payslip} - {self.name}: {self.amount}"
 
     class Meta:
-        ordering = ['item_type', 'name']                   
+        ordering = ['item_type', 'name'] 
+        
+    @staticmethod
+    def generate_payslip_items(payslip):
+        payslip.items.all().delete()
+        items_to_create = []
+
+        for allowance in payslip.employee.allowances.filter(is_active=True):
+            if (allowance.effective_from <= payslip.payroll_period.end_date and 
+                (not allowance.effective_to or allowance.effective_to >= payslip.payroll_period.start_date)):
+                amount = allowance.get_calculated_amount()
+                items_to_create.append(PayslipItem(
+                    payslip=payslip,
+                    item_type='allowance',
+                    name=allowance.allowance_type.name,
+                    amount=amount,
+                    description=f"{allowance.calculation_method}: {allowance.amount if allowance.calculation_method == 'fixed' else f'{allowance.percentage}%'}"
+                ))
+
+        for deduction in payslip.employee.deductions.filter(is_active=True):
+            if (deduction.effective_from <= payslip.payroll_period.end_date and 
+                (not deduction.effective_to or deduction.effective_to >= payslip.payroll_period.start_date)):
+                amount = deduction.get_calculated_amount()
+                items_to_create.append(PayslipItem(
+                    payslip=payslip,
+                    item_type='deduction',
+                    name=deduction.deduction_type.name,
+                    amount=amount,
+                    description=f"{deduction.calculation_method}: {deduction.amount if deduction.calculation_method == 'fixed' else f'{deduction.percentage}%'}"
+                ))
+
+        # if payslip.overtime_amount > 0:
+        #     items_to_create.append(PayslipItem(
+        #         payslip=payslip,
+        #         item_type='overtime',
+        #         name='Overtime Pay',
+        #         amount=payslip.overtime_amount,
+        #         description=f"{payslip.overtime_hours} hours @ {payslip.overtime_rate} per hour"
+        #     ))
+
+        PayslipItem.objects.bulk_create(items_to_create)                      
                      

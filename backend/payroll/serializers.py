@@ -1,0 +1,102 @@
+from employee.serializers import EmployeeSerializer
+from rest_framework import serializers
+from .models import (
+    AllowanceType,
+    DeductionType,
+    EmployeeAllowance,
+    EmployeeDeduction,
+    PayrollPeriod,
+    Payslip,
+    PayslipItem
+)
+from employee.models import Employee
+from institution.models import Institution
+from institution.serializers import InstitutionSerializer
+
+
+class AllowanceTypeSerializer(serializers.ModelSerializer):
+    institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
+    class Meta:
+        model = AllowanceType
+        fields = '__all__'
+        
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['institution'] = InstitutionSerializer(instance.institution).data
+        return rep    
+
+
+class DeductionTypeSerializer(serializers.ModelSerializer):
+    institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
+    class Meta:
+        model = DeductionType
+        fields = '__all__'
+        
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['institution'] = InstitutionSerializer(instance.institution).data
+        return rep     
+
+
+class EmployeeAllowanceSerializer(serializers.ModelSerializer):
+    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
+    allowance_type = serializers.PrimaryKeyRelatedField(queryset=AllowanceType.objects.all())
+
+    class Meta:
+        model = EmployeeAllowance
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['employee'] = EmployeeSerializer(instance.employee).data
+        rep['allowance_type'] = AllowanceTypeSerializer(instance.allowance_type).data
+        return rep
+
+
+class EmployeeDeductionSerializer(serializers.ModelSerializer):
+    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
+    deduction_type = serializers.PrimaryKeyRelatedField(queryset=DeductionType.objects.all())
+
+    class Meta:
+        model = EmployeeDeduction
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['employee'] = EmployeeSerializer(instance.employee).data
+        rep['deduction_type'] = DeductionTypeSerializer(instance.deduction_type).data
+        return rep
+
+
+class PayrollPeriodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PayrollPeriod
+        fields = '__all__'
+
+
+class PayslipSerializer(serializers.ModelSerializer):
+    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
+    payroll_period = serializers.PrimaryKeyRelatedField(queryset=PayrollPeriod.objects.all())
+
+    class Meta:
+        model = Payslip
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['employee'] = EmployeeSerializer(instance.employee).data
+        rep['payroll_period'] = PayrollPeriodSerializer(instance.payroll_period).data
+        return rep
+
+
+class PayslipItemSerializer(serializers.ModelSerializer):
+    payslip = serializers.PrimaryKeyRelatedField(queryset=Payslip.objects.all())
+
+    class Meta:
+        model = PayslipItem
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['payslip'] = PayslipSerializer(instance.payslip).data
+        return rep
