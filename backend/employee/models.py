@@ -1,4 +1,6 @@
+from decimal import Decimal
 from django.db import models
+from django.utils import timezone
 from datetime import datetime
 from institution.utils import generate_compliant_password
 from utilities.helpers import (
@@ -11,6 +13,7 @@ from utilities.helpers import (
 from django.db import models
 from datetime import datetime
 from institution.models import Branch, UserBranch
+
 
 class EmployeeType(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -51,6 +54,12 @@ class Employee(models.Model):
     position = models.ForeignKey(
         "recruitment.JobPosition", on_delete=models.PROTECT, related_name="employees", null=True, blank=True
     )
+    gender = models.CharField(
+        max_length=10,
+        choices=[("male", "Male"), ("female", "Female"), ("other", "Other")],
+        blank=True,
+        null=True,  
+    )
     department = models.ForeignKey(
         "institution.Department", on_delete=models.PROTECT, blank=True, null=True, related_name="employees"
     )
@@ -82,6 +91,7 @@ class Employee(models.Model):
         return f"{self.user.fullname}  - {self.position}"
     
     def save(self, *args, **kwargs):
+        is_new_employee = self.pk is None
         # Auto-set payroll_branch to default branch if not set
         if self.user and not self.payroll_branch:
             self.payroll_branch = self.get_default_branch()
@@ -90,6 +100,100 @@ class Employee(models.Model):
             self.salary = self.position.salary    
         
         super().save(*args, **kwargs)
+        
+        if is_new_employee and self.is_active:
+            self.initialize_leave_balances()
+            
+    def initialize_leave_balances(self, year=None):
+        """Initialize leave balances for this employee for the given year"""
+        if year is None:
+            year = timezone.now().year   
+            
+        from leave_mgt.models import LeaveType, LeaveBalance
+        from leave_mgt.utils import LeaveCalculator  
+        
+        leave_types = LeaveType.objects.filter(is_active=True)
+        
+        created_balances = []     
+        
+        
+        for leave_type in leave_types:
+            if leave_type.gender_specific != 'all':
+                if hasattr(self, 'gender') and self.gender != leave_type.gender_specific:
+                    continue
+                
+            entitlement = LeaveCalculator.calculate_leave_entitlement(
+                self, leave_type, year
+            )  
+            
+            balance, created = LeaveBalance.objects.get_or_create(
+                employee=self,
+                leave_type=leave_type,
+                year=year,
+                defaults={
+                    'allocated_days': entitlement,
+                    'used_days': Decimal('0'),
+                    'pending_days': Decimal('0'),
+                    'carried_forward_days': Decimal('0'),
+                }
+            ) 
+            
+            if created:
+                created_balances.append(balance)
+                
+        return created_balances   
+    
+    def reinitialize_leave_balances(self, year=None):
+        """Reinitialize leave balances for this employee (useful for updates)"""
+        if year is None:
+            year = timezone.now().year
+            
+        from leave_mgt.models import LeaveType, LeaveBalance
+        from leave_mgt.utils import LeaveCalculator
+
+        leave_types = LeaveType.objects.filter(is_active=True)
+        
+        updated_balances = []
+        
+        for leave_type in leave_types:
+            # Skip gender-specific leaves if not applicable
+            if leave_type.gender_specific != 'all':
+                if hasattr(self, 'gender') and self.gender != leave_type.gender_specific:
+                    LeaveBalance.objects.filter(
+                        employee=self,
+                        leave_type=leave_type,
+                        year=year
+                    ).delete()
+                    continue
+            
+            entitlement = LeaveCalculator.calculate_leave_entitlement(
+                self, leave_type, year
+            )
+            
+            balance, created = LeaveBalance.objects.update_or_create(
+                employee=self,
+                leave_type=leave_type,
+                year=year,
+                defaults={
+                    'allocated_days': entitlement,
+                }
+            )
+            
+            if created:
+                balance.used_days = Decimal('0')
+                balance.pending_days = Decimal('0')
+                balance.carried_forward_days = Decimal('0')
+                balance.save()
+            
+            updated_balances.append(balance)
+        
+        return updated_balances 
+    
+    def get_leave_balance_summary(self, year=None):
+        """Get leave balance summary for this employee"""
+        from leave_mgt.utils import LeaveBalanceManager
+        return LeaveBalanceManager.get_employee_balance_summary(self, year)     
+            
     
     def get_default_branch(self):
         """Get the default branch for this employee"""
