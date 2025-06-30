@@ -806,22 +806,223 @@ export const transformDisciplinaryActionData = (apiData: DisciplinaryActionAPIRe
 }
 
 
-export interface IDisciplinaryAction {
-  id: number
-  employee: { id: number; user?: { fullname?: string }; email?: string; phone_number?: string; position?: any }
-  discipline_type: { id: number; name: string; description?: string; severity: "low" | "medium" | "high" | "critical"; is_active?: boolean }
-  incident_date: string
-  description: string
-  evidence?: string
-  reported_by: { id: number; user?: { fullname?: string }; email?: string; phone_number?: string; position?: any }
-  assigned_to?: { id: number; user?: { fullname?: string }; email?: string; phone_number?: string; position?: any }
-  status: "pending" | "in_progress" | "completed" | "dismissed"
-  action_taken?: string
-  resolution_date?: string
-  follow_up_required: boolean
-  follow_up_date?: string
-  notes?: string
-  created_at?: string
-  updated_at?: string
-  reported_date?: string
+export interface LeaveType {
+  name: string;
+  category: "annual" | "sick" | "personal" | "maternity" | "paternity" | "emergency" | "unpaid";
+  description: string;
+  max_days_per_year: number;
+  carry_forward_allowed: boolean;
+  max_carry_forward_days: number;
+  is_active: boolean;
+  requires_document: boolean;
+  gender_specific: "male" | "female" | "none" | null;
+}
+
+
+export interface ILeaveTypeFormData {
+  name: string;
+  category: "annual" | "sick" | "personal" | "maternity" | "paternity" | "emergency" | "unpaid";
+  description: string;
+  max_days_per_year: number;
+  carry_forward_allowed: boolean;
+  max_carry_forward_days: number;
+  is_active: boolean;
+  requires_document: boolean;
+  gender_specific: "male" | "female" | "none" | null;
+}
+
+
+export interface ILeaveType extends LeaveType {
+  id: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+
+
+export interface ILeavePolicy {
+  id?: number | string;
+  leave_type: number; 
+  name: string;
+  description: string;
+  min_notice_days: number;
+  max_consecutive_days: number | null;
+  requires_manager_approval: boolean;
+  requires_hr_approval: boolean;
+  applicable_after_probation_months: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+
+export interface ILeavePolicyFormData {
+  leave_type: number;
+  name: string;
+  description: string;
+  min_notice_days: number;
+  max_consecutive_days: number;
+  requires_manager_approval: boolean;
+  requires_hr_approval: boolean;
+  applicable_after_probation_months: number;
+  is_active?: boolean;
+}
+
+
+export interface ILeavePolicyResponse extends ILeavePolicy {
+  id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+
+export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+
+
+export type DurationType = 'full_day' | 'half_day' | 'multiple_days';
+
+
+export interface ILeaveRequest {
+  id?: number | string;
+  employee: number;
+  leave_type: number;
+  approved_by: number;
+  start_date: string; 
+  end_date: string; 
+  duration_type: DurationType;
+  reason: string;
+  status: LeaveRequestStatus;
+  rejection_reason: string;
+  supporting_document: string;
+  handover_notes: string;
+  created_at?: string; 
+  updated_at?: string; 
+}
+
+
+export interface ILeaveRequestFormData {
+  employee: number;
+  leave_type: number;
+  start_date: string;
+  end_date: string;
+  duration_type: string;
+  reason: string;
+  handover_notes?: string;
+  status?: string;
+  supporting_document?: File | null; 
+}
+
+export interface LeaveRequestWithRelations extends ILeaveRequest {
+  employee_details?: {
+    id: number;
+    name: string;
+    email: string;
+    department?: string;
+    position?: string;
+  };
+  leave_type_details?: {
+    id: number;
+    name: string;
+    category: string;
+    is_active: boolean;
+  };
+  approved_by_details?: {
+    id: number;
+    name: string;
+    email: string;
+    role?: string;
+  };
+  calculated_days?: number; 
+  is_editable?: boolean; 
+}
+
+export interface ILeaveRequestResponse {
+  success: boolean;
+  data: ILeaveRequest | ILeaveRequest[];
+  message?: string;
+  errors?: Record<string, string[]>;
+}
+
+
+export interface ILeaveRequestFilters {
+  employee_id?: number;
+  leave_type_id?: number;
+  status?: LeaveRequestStatus;
+  start_date_from?: string;
+  start_date_to?: string;
+  approved_by?: number;
+  duration_type?: DurationType;
+}
+
+export interface ILeaveBalance {
+  id?: number;
+  employee: number;
+  leave_type: number;
+  allocated_days: number;
+  used_days: number;
+  pending_days: number;
+  remaining_days: number;
+  year: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+
+export interface IAllowanceType {
+  id: number;
+  name: string;
+  description: string;
+  is_taxable: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface IAllowanceTypeFormData {
+  name: string;
+  description: string;
+  is_taxable: boolean;
+  is_active: boolean;
+}
+
+
+export interface IDeductionType {
+  id: number;
+  institution: number;
+  name: string;
+  description: string;
+  is_mandatory: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface IDeductionTypeFormData {
+  name: string;
+  description: string;
+  is_mandatory: boolean;
+  is_active: boolean;
+}
+
+
+export interface IEmployeeAllowance {
+  id: number;
+  employee: number;
+  allowance_type: number;
+  calculation_method: "fixed" | "percentage";
+  amount: string; 
+  percentage: string; 
+  is_active: boolean;
+  effective_from: string; 
+  effective_to: string | null; 
+  created_at: string;
+}
+
+export interface IEmployeeAllowanceFormData {
+  employee: number;
+  allowance_type: number;
+  calculation_method: "fixed" | "percentage";
+  amount: string;
+  percentage: string;
+  is_active: boolean;
+  effective_from: string;
+  effective_to?: string | null; 
 }

@@ -31,7 +31,7 @@ class EmployeeAllowanceAPIView(APIView):
         responses=EmployeeAllowanceSerializer,
         summary="Create a new employee allowance"
     )
-    def post(self, request):
+    def post(self, request, institution_id):
         serializer = EmployeeAllowanceSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -187,7 +187,7 @@ class EmployeeDeductionDetailAPIView(APIView):
 
 
 class AllowanceTypeAPIView(APIView):
-
+    
     @extend_schema(
         summary="List allowance types for an institution",
         responses=AllowanceTypeSerializer(many=True)
@@ -202,13 +202,12 @@ class AllowanceTypeAPIView(APIView):
         responses=AllowanceTypeSerializer,
         summary="Create a new allowance type"
     )
-    def post(self, request):
+    def post(self, request, institution_id): 
         serializer = AllowanceTypeSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(institution_id=institution_id)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class AllowanceTypeDetailAPIView(APIView):
 
@@ -240,6 +239,18 @@ class AllowanceTypeDetailAPIView(APIView):
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @extend_schema(
+        request=AllowanceTypeSerializer,
+        responses=AllowanceTypeSerializer,
+        summary="Create allowance types for an institution"
+    )
+    def post(self, request):
+        serializer = AllowanceTypeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
  
 class DeductionTypeAPIView(APIView):
 
@@ -257,7 +268,7 @@ class DeductionTypeAPIView(APIView):
         responses=DeductionTypeSerializer,
         summary="Create a new deduction type"
     )
-    def post(self, request):
+    def post(self, request, institution_id):
         serializer = DeductionTypeSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()

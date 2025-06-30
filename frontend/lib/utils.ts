@@ -6,8 +6,10 @@ import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition,
    IBulkOnBoardingResponse, IBulkOnBoardingRequest, IOnBoarding, IOnBoardingFormData, IEmployeeTypeFormData  , IWorkType,
    IWorkTypeFormData, IEmployeeType,EmployeeBranchSummary,AttachBranchesPayload,SetDefaultBranchPayload,
    DisciplinaryActionForm, DisciplinaryActionRequest, DisciplinaryActionResponse, convertFormToApiRequest,
-   DisciplineTypeForm, DisciplineTypeResponse, convertDisciplineTypeFormToApiRequest, DisciplinaryActionAPIResponse,IDisciplinaryAction
-
+   DisciplineTypeForm, DisciplineTypeResponse, convertDisciplineTypeFormToApiRequest, DisciplinaryActionAPIResponse,
+   ILeaveRequest, ILeaveRequestFormData, LeaveRequestStatus,LeaveType,ILeaveTypeFormData, ILeaveType,ILeavePolicy, 
+   ILeavePolicyFormData, ILeavePolicyResponse, IAllowanceType, IAllowanceTypeFormData, IDeductionType, IDeductionTypeFormData,
+   IEmployeeAllowance,IEmployeeAllowanceFormData,
   } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -1093,50 +1095,791 @@ export const getDisciplinaryActions = async (): Promise<DisciplinaryActionAPIRes
   }
 };
 
-export const updateDisciplinaryAction = async ({ 
-  disciplinaryActionId, 
-  disciplinaryActionData,
-}: { 
-  disciplinaryActionId: number; 
-  disciplinaryActionData: Partial<DisciplinaryActionForm>;
-}): Promise<IDisciplinaryAction | null> => {
+
+export const createLeaveType = async ({
+  institutionId,
+  leaveTypeData,
+}: {
+  institutionId: number;
+  leaveTypeData: ILeaveTypeFormData;
+}): Promise<ILeaveType | null> => {
   try {
-    const response = await apiRequest.patch(
-      `discipline/disciplinary-actions/${disciplinaryActionId}/`,
-      disciplinaryActionData
+    const formData = new FormData();
+    Object.entries(leaveTypeData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `leave-mgt/leave-types/`,
+      formData
     );
-    return response.data as IDisciplinaryAction;
+    return response.data as ILeaveType;
   } catch (error) {
+    console.error("Failed to create leave type:", error);
     return null;
   }
-}
+};
 
-export const getDisciplinaryActionById = async ({ 
-  disciplinaryActionId, 
-}: { 
-  disciplinaryActionId: number; 
-}): Promise<IDisciplinaryAction | null> => {
+
+
+export const getLeaveTypes = async (institutionId: number): Promise<ILeaveType[]> => {
+  try {
+    const response = await apiRequest.get(`leave-mgt/leave-types/?is_active=true`);
+    return response.data as ILeaveType[];
+  } catch (error) {
+    console.error("Failed to fetch leave types:", error);
+    return [];
+  }
+};
+
+
+
+export const updateLeaveType = async ({
+  leaveTypeId,
+  leaveTypeData,
+}: {
+  leaveTypeId: string | number;
+  leaveTypeData: ILeaveTypeFormData;
+}): Promise<ILeaveType | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(leaveTypeData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.patch(  
+      `leave-mgt/leave-types/${leaveTypeId}/`,
+      formData
+    );
+    return response.data as ILeaveType;
+  } catch (error) {
+    console.error("Failed to update leave type:", error);
+    return null;
+  }
+};
+
+
+export const deleteLeaveType = async ({
+  leaveTypeId,
+}: {
+  leaveTypeId: string | number;
+}): Promise<boolean> => {
+  try {
+    const response = await apiRequest.delete(`leave-mgt/leave-types/${leaveTypeId}/`);
+    
+    // Check if deletion was successful (status 200, 201, 204, etc.)
+    if (response.status >= 200 && response.status < 300) {
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error("Failed to delete leave type:", error);
+    return false;
+  }
+};
+
+
+export const createLeavePolicy = async ({
+  leavePolicyData,
+}: {
+  leavePolicyData: ILeavePolicyFormData;
+}): Promise<ILeavePolicy | null> => {
+  try {
+    const formData = new FormData();
+    
+    // Append all the leave policy data to FormData
+    Object.entries(leavePolicyData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      "leave-mgt/leave-policies/",
+      formData
+    );
+    
+    return response.data as ILeavePolicy;
+  } catch (error) {
+    console.error("Failed to create leave policy:", error);
+    return null;
+  }
+};
+
+
+export const getLeavePolicies = async (institutionId: number): Promise<ILeavePolicy[]> => {
+  try {
+    const response = await apiRequest.get(`leave-mgt/leave-policies/`);
+    return response.data as ILeavePolicy[];
+  } catch (error) {
+    console.error("Failed to fetch leave policies:", error);
+    return [];
+  }
+};
+
+
+export const updateLeavePolicy = async ({
+  leavePolicyId,
+  leavePolicyData,
+}: {
+  leavePolicyId: string | number;
+  leavePolicyData: ILeavePolicyFormData;
+}): Promise<ILeavePolicy | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(leavePolicyData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.patch(
+      `leave-mgt/leave-policies/${leavePolicyId}/`,
+      formData
+    );
+    return response.data as ILeavePolicy;
+  } catch (error) {
+    console.error("Failed to update leave policy:", error);
+    return null;
+  }
+};
+
+
+export const deleteLeavePolicy = async ({
+  leavePolicyId,
+}: {
+  leavePolicyId: string | number;
+}): Promise<boolean> => {
+  try {
+    const response = await apiRequest.delete(`leave-mgt/leave-policies/${leavePolicyId}/`);
+    
+    // 204 means successful deletion (soft delete)
+    return response.status === 204;
+  } catch (error) {
+    console.error("Failed to delete leave policy:", error);
+    return false;
+  }
+};
+
+export const createLeaveApplication = async ({
+  leaveApplicationData,
+}: {
+  leaveApplicationData: ILeaveRequestFormData;
+}): Promise<ILeaveRequest | null> => {
+  try {
+    const formData = new FormData();
+    
+    // Add all form fields
+    Object.entries(leaveApplicationData).forEach(([key, value]) => {
+      if (key === "supporting_document" && value instanceof File) {
+        formData.append(key, value);
+      } else if (value !== undefined && value !== null && value !== "") {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(`/leave-mgt/leave-applications/`, formData);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.detail || 
+      error.response?.data?.message || 
+      error.message || 
+      "Failed to create leave application"
+    );
+  }
+};
+
+export const getLeaveApplications = async (institutionId: number): Promise<ILeaveRequest[]> => {
   try {
     const response = await apiRequest.get(
-      `discipline/disciplinary-actions/${disciplinaryActionId}/`
+      `leave-mgt/leave-applications/`
     );
-    return response.data as IDisciplinaryAction;
+    return Array.isArray(response.data) ? response.data : response.data.results || [];
   } catch (error) {
+    console.error("Failed to fetch leave applications:", error);
+    return [];
+  }
+};
+
+
+export const getLeaveApplication = async ({
+  leaveApplicationId,
+}: {
+  leaveApplicationId: number | string;
+}): Promise<ILeaveRequest | null> => {
+  try {
+    const response = await apiRequest.get(
+      `leave-mgt/leave-applications/${leaveApplicationId}/`
+    );
+    return response.data as ILeaveRequest;
+  } catch (error) {
+    console.error("Failed to fetch leave application:", error);
     return null;
   }
-}
+};
 
-export const deleteDisciplinaryAction = async ({ 
-  disciplinaryActionId, 
-}: { 
-  disciplinaryActionId: number; 
+
+export const updateLeaveApplication = async ({
+  leaveApplicationId,
+  leaveApplicationData,
+}: {
+  leaveApplicationId: string | number;
+  leaveApplicationData: Partial<ILeaveRequestFormData>;
+}): Promise<ILeaveRequest | null> => {
+  try {
+    const formData = new FormData();
+    // Add all form fields
+    Object.entries(leaveApplicationData).forEach(([key, value]) => {
+      if (key === "supporting_document" && value instanceof File) {
+        formData.append(key, value);
+      } else if (value !== undefined && value !== null && value !== "") {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.patch(`/leave-mgt/leave-applications/${leaveApplicationId}/`, formData);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.detail || 
+      error.response?.data?.message || 
+      error.message || 
+      "Failed to update leave application"
+    );
+  }
+};
+
+
+export const deleteLeaveApplication = async ({
+  leaveApplicationId,
+  institutionId,
+}: {
+  leaveApplicationId: number | string;
+  institutionId: number;
 }): Promise<boolean> => {
   try {
     await apiRequest.delete(
-      `discipline/disciplinary-actions/${disciplinaryActionId}/`
+      `leave-mgt/leave-applications/${leaveApplicationId}/`
     );
     return true;
   } catch (error) {
+    console.error("Failed to delete leave application:", error);
     return false;
   }
-}
+};
+
+export const approveRejectLeaveApplication = async ({
+  leaveApplicationId,
+  institutionId,
+  action,
+  rejectionReason,
+  approvedBy,
+}: {
+  leaveApplicationId: number | string;
+  institutionId: number;
+  action: 'approve' | 'reject';
+  rejectionReason?: string;
+  approvedBy?: number;
+}): Promise<ILeaveRequest | null> => {
+  try {
+    const formData = new FormData();
+    
+    formData.append('action', action);
+    
+    if (action === 'reject' && rejectionReason) {
+      formData.append('rejection_reason', rejectionReason);
+    }
+
+    if (approvedBy) {
+      formData.append('approved_by', approvedBy.toString());
+    }
+
+
+    const response = await apiRequest.post(
+      `leave-mgt/leave-applications/${leaveApplicationId}/approval/`,
+      formData
+    );
+    
+    return response.data as ILeaveRequest;
+  } catch (error) {
+    console.error("Failed to approve/reject leave application:", error);
+    return null;
+  }
+};
+
+
+export const getLeaveApplicationsByEmployee = async ({
+  employeeId,
+}: {
+  employeeId: number;
+}): Promise<ILeaveRequest[]> => {
+  try {
+    const response = await apiRequest.get(
+      `leave-mgt/leave-applications/?employee=${employeeId}/`
+    );
+    return Array.isArray(response.data) ? response.data : response.data.results || [];
+  } catch (error) {
+    console.error("Failed to fetch employee leave applications:", error);
+    return [];
+  }
+};
+
+
+export const getLeaveApplicationsByStatus = async ({
+  status,
+}: {
+  status: LeaveRequestStatus;
+  institutionId: number;
+}): Promise<ILeaveRequest[]> => {
+  try {
+    const response = await apiRequest.get(
+      `leave-mgt/leave-applications/?status=${status}`
+    );
+    return Array.isArray(response.data) ? response.data : response.data.results || [];
+  } catch (error) {
+    console.error("Failed to fetch leave applications by status:", error);
+    return [];
+  }
+};
+
+
+export const getPendingLeaveApplications = async (institutionId: number): Promise<ILeaveRequest[]> => {
+  return getLeaveApplicationsByStatus({ status: 'pending', institutionId });
+};
+
+
+export const cancelLeaveApplication = async ({
+  leaveApplicationId,
+  institutionId,
+}: {
+  leaveApplicationId: number | string;
+  institutionId: number;
+}): Promise<ILeaveRequest | null> => {
+  return updateLeaveApplication({
+    leaveApplicationId,
+    institutionId,
+    leaveApplicationData: { status: 'cancelled' },
+  });
+};
+
+
+export const getLeaveApplicationsWithFilters = async ({
+  institutionId,
+  filters,
+}: {
+  institutionId: number;
+  filters?: {
+    employee_id?: number;
+    leave_type_id?: number;
+    status?: LeaveRequestStatus;
+    start_date_from?: string;
+    start_date_to?: string;
+    approved_by?: number;
+    duration_type?: string;
+  };
+}): Promise<ILeaveRequest[]> => {
+  try {
+    let queryString = '';
+    
+    if (filters) {
+      const queryParams: string[] = [];
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          queryParams.push(`${key}=${value}`);
+        }
+      });
+      if (queryParams.length > 0) {
+        queryString = `?${queryParams.join('&')}`;
+      }
+    }
+
+    const response = await apiRequest.get(
+      `leave-mgt/leave-applications/${queryString}`
+    );
+    return Array.isArray(response.data) ? response.data : response.data.results || [];
+  } catch (error) {
+    console.error("Failed to fetch filtered leave applications:", error);
+    return [];
+  }
+};
+
+
+export const bulkApproveRejectLeaveApplications = async ({
+  leaveApplicationIds,
+  institutionId,
+  action,
+  rejectionReason,
+  approvedBy,
+}: {
+  leaveApplicationIds: (number | string)[];
+  institutionId: number;
+  action: 'approve' | 'reject';
+  rejectionReason?: string;
+  approvedBy?: number;
+}): Promise<(ILeaveRequest | null)[]> => {
+  try {
+    const promises = leaveApplicationIds.map(id =>
+      approveRejectLeaveApplication({
+        leaveApplicationId: id,
+        institutionId,
+        action,
+        rejectionReason,
+        approvedBy,
+      })
+    );
+
+    const results = await Promise.allSettled(promises);
+    return results.map(result => 
+      result.status === 'fulfilled' ? result.value : null
+    );
+  } catch (error) {
+    console.error("Failed to bulk process leave applications:", error);
+    return [];
+  }
+};
+
+
+export const createAllowanceType = async ({
+  institutionId,
+  allowanceTypeData,
+}: {
+  institutionId: number;
+  allowanceTypeData: IAllowanceTypeFormData;
+}): Promise<IAllowanceType | null> => {
+  try {
+    const formData = new FormData();
+    
+    Object.entries(allowanceTypeData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    formData.append('institution', institutionId.toString());
+
+    const response = await apiRequest.post(
+      `payroll/${institutionId}/allowance-types/`,
+      formData
+    );
+    
+    return response.data as IAllowanceType;
+  } catch (error) {
+    console.error("Failed to create allowance type:", error);
+    return null;
+  }
+};
+
+export const getAllowanceTypes = async (
+  institutionId: number
+): Promise<IAllowanceType[] | null> => {
+  try {
+    const response = await apiRequest.get(`payroll/${institutionId}/allowance-types/`);
+    return response.data as IAllowanceType[];
+  } catch (error) {
+    console.error("Failed to get allowance types:", error);
+    return null;
+  }
+};
+
+
+export const getAllowanceType = async (
+  id: number
+): Promise<IAllowanceType | null> => {
+  try {
+    const response = await apiRequest.get(`payroll/allowance-types/${id}/`);
+    return response.data as IAllowanceType;
+  } catch (error) {
+    console.error("Failed to get allowance type:", error);
+    return null;
+  }
+};
+
+
+export const updateAllowanceType = async ({
+  id,
+  allowanceTypeData,
+}: {
+  id: number;
+  allowanceTypeData: Partial<IAllowanceTypeFormData>;
+}): Promise<IAllowanceType | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(allowanceTypeData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.patch(
+      `payroll/allowance-types/${id}/`,
+      formData
+    );
+    return response.data as IAllowanceType;
+  } catch (error) {
+    console.error("Failed to update allowance type:", error);
+    return null;
+  }
+};
+
+
+export const deleteAllowanceType = async (
+  id: number
+): Promise<boolean> => {
+  try {
+    await apiRequest.delete(`payroll/allowance-types/${id}/`);
+    return true;
+  } catch (error) {
+    console.error("Failed to delete allowance type:", error);
+    return false;
+  }
+};
+
+
+export const createDeductionType = async ({
+  institutionId,
+  deductionTypeData,
+}: {
+  institutionId: number;
+  deductionTypeData: IDeductionTypeFormData;
+}): Promise<IDeductionType | null> => {
+  try {
+    const formData = new FormData();
+    
+    Object.entries(deductionTypeData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    formData.append('institution', institutionId.toString());
+
+    const response = await apiRequest.post(
+      `payroll/${institutionId}/deduction-types/`,
+      formData
+    );
+    
+    return response.data as IDeductionType;
+  } catch (error) {
+    console.error("Failed to create deduction type:", error);
+    return null;
+  }
+};
+
+
+export const getDeductionTypes = async (
+  institutionId: number
+): Promise<IDeductionType[] | null> => {
+  try {
+    const response = await apiRequest.get(`payroll/${institutionId}/deduction-types/`);
+    return response.data as IDeductionType[];
+  } catch (error) {
+    console.error("Failed to get deduction types:", error);
+    return null;
+  }
+};
+
+
+export const getDeductionType = async (
+  id: number
+): Promise<IDeductionType | null> => {
+  try {
+    const response = await apiRequest.get(`payroll/deduction-types/${id}/`);
+    return response.data as IDeductionType;
+  } catch (error) {
+    console.error("Failed to get deduction type:", error);
+    return null;
+  }
+};
+
+
+export const updateDeductionType = async ({
+  id,
+  deductionTypeData,
+}: {
+  id: number;
+  deductionTypeData: Partial<IDeductionTypeFormData>;
+}): Promise<IDeductionType | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(deductionTypeData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.patch(
+      `payroll/deduction-types/${id}/`,
+      formData
+    );
+    return response.data as IDeductionType;
+  } catch (error) {
+    console.error("Failed to update deduction type:", error);
+    return null;
+  }
+};
+
+
+export const deleteDeductionType = async (
+  id: number
+): Promise<boolean> => {
+  try {
+    await apiRequest.delete(`payroll/deduction-types/${id}/`);
+    return true;
+  } catch (error) {
+    console.error("Failed to delete deduction type:", error);
+    return false;
+  }
+};
+
+
+export const createEmployeeAllowance = async ({
+  institutionId,
+  employeeAllowanceData,
+}: {
+  institutionId: number;
+  employeeAllowanceData: IEmployeeAllowanceFormData;
+}): Promise<IEmployeeAllowance | null> => {
+  try {
+    const formData = new FormData();
+    
+    Object.entries(employeeAllowanceData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `payroll/${institutionId}/employee-allowances/`,
+      formData
+    );
+    
+    return response.data as IEmployeeAllowance;
+  } catch (error) {
+    console.error("Failed to create employee allowance:", error);
+    return null;
+  }
+};
+
+
+export const getEmployeeAllowances = async (
+  institutionId: number
+): Promise<IEmployeeAllowance[] | null> => {
+  try {
+    const response = await apiRequest.get(`payroll/${institutionId}/employee-allowances/`);
+    return response.data as IEmployeeAllowance[];
+  } catch (error) {
+    console.error("Failed to get employee allowances:", error);
+    return null;
+  }
+};
+
+
+export const getEmployeeAllowance = async (
+  id: number
+): Promise<IEmployeeAllowance | null> => {
+  try {
+    const response = await apiRequest.get(`payroll/employee-allowances/${id}/`);
+    return response.data as IEmployeeAllowance;
+  } catch (error) {
+    console.error("Failed to get employee allowance:", error);
+    return null;
+  }
+};
+
+
+export const updateEmployeeAllowance = async ({
+  id,
+  employeeAllowanceData,
+}: {
+  id: number;
+  employeeAllowanceData: Partial<IEmployeeAllowanceFormData>;
+}): Promise<IEmployeeAllowance | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(employeeAllowanceData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.patch(
+      `payroll/employee-allowances/${id}/`,
+      formData
+    );
+    return response.data as IEmployeeAllowance;
+  } catch (error) {
+    console.error("Failed to update employee allowance:", error);
+    return null;
+  }
+};
+
+
+export const deleteEmployeeAllowance = async (
+  id: number
+): Promise<boolean> => {
+  try {
+    await apiRequest.delete(`payroll/employee-allowances/${id}/`);
+    return true;
+  } catch (error) {
+    console.error("Failed to delete employee allowance:", error);
+    return false;
+  }
+};
+
+
+export const getEmployeeAllowancesByEmployee = async ({
+  institutionId,
+  employeeId,
+}: {
+  institutionId: number;
+  employeeId: number;
+}): Promise<IEmployeeAllowance[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `payroll/${institutionId}/employee-allowances/?employee=${employeeId}`
+    );
+    return response.data as IEmployeeAllowance[];
+  } catch (error) {
+    console.error("Failed to get employee allowances by employee:", error);
+    return null;
+  }
+};
+
+
+export const getEmployeeAllowancesByType = async ({
+  institutionId,
+  allowanceTypeId,
+}: {
+  institutionId: number;
+  allowanceTypeId: number;
+}): Promise<IEmployeeAllowance[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `payroll/${institutionId}/employee-allowances/?allowance_type=${allowanceTypeId}`
+    );
+    return response.data as IEmployeeAllowance[];
+  } catch (error) {
+    console.error("Failed to get employee allowances by type:", error);
+    return null;
+  }
+};
+
+
+export const getActiveEmployeeAllowances = async (
+  institutionId: number
+): Promise<IEmployeeAllowance[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `payroll/${institutionId}/employee-allowances/?is_active=true`
+    );
+    return response.data as IEmployeeAllowance[];
+  } catch (error) {
+    console.error("Failed to get active employee allowances:", error);
+    return null;
+  }
+};

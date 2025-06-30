@@ -13,6 +13,7 @@ from .serializers import LeaveApplicationSerializer, LeaveBalanceSerializer, Lea
 from .utils import LeaveCalculator, LeaveBalanceManager
 from employee.models import Employee
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 
 
 @extend_schema(tags=["Leave Types"])
@@ -147,21 +148,27 @@ class LeaveBalanceDetailAPIView(APIView):
 
 @extend_schema(tags=["Leave Applications"])
 class LeaveApplicationListCreateAPIView(APIView):
+    # Support both JSON and FormData for file uploads
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+    
     @extend_schema(
         summary="List all leave applications",
         parameters=[
             OpenApiParameter(name='employee_id', type=int, location=OpenApiParameter.QUERY),
             OpenApiParameter(name='status', type=str, location=OpenApiParameter.QUERY),
             OpenApiParameter(name='leave_type_id', type=int, location=OpenApiParameter.QUERY),
+            OpenApiParameter(name='institutionId', type=int, location=OpenApiParameter.QUERY),
         ],
         responses={200: LeaveApplicationSerializer(many=True)}
     )
     def get(self, request):
         queryset = LeaveApplication.objects.select_related('employee', 'leave_type', 'approved_by').all()
         
+        # Filter parameters
         employee_id = request.query_params.get('employee_id')
         status_filter = request.query_params.get('status')
         leave_type_id = request.query_params.get('leave_type_id')
+        institution_id = request.query_params.get('institutionId')
         
         if employee_id:
             queryset = queryset.filter(employee_id=employee_id)
@@ -169,6 +176,8 @@ class LeaveApplicationListCreateAPIView(APIView):
             queryset = queryset.filter(status=status_filter)
         if leave_type_id:
             queryset = queryset.filter(leave_type_id=leave_type_id)
+        if institution_id:
+            queryset = queryset.filter(employee__institutionId=institution_id)
             
         serializer = LeaveApplicationSerializer(queryset, many=True)
         return Response(serializer.data)
@@ -185,56 +194,85 @@ class LeaveApplicationListCreateAPIView(APIView):
         }
     )
     def post(self, request):
-        serializer = LeaveApplicationSerializer(data=request.data)
-        if serializer.is_valid():
-            with transaction.atomic():
-                # Calculate total days
-                start_date = serializer.validated_data['start_date']
-                end_date = serializer.validated_data['end_date']
-                duration_type = serializer.validated_data.get('duration_type', 'full_day')
-                
-                total_days = LeaveCalculator.calculate_leave_days(
-                    start_date, end_date, duration_type
-                )
-                
-                # Check eligibility
-                employee = serializer.validated_data['employee']
-                leave_type = serializer.validated_data['leave_type']
-                
-                is_eligible, message = LeaveCalculator.check_leave_eligibility(
-                    employee, leave_type, start_date, total_days
-                )
-                
-                if not is_eligible:
-                    return Response(
-                        {'error': message}, 
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                
-                # Save application with calculated days
-                application = serializer.save(total_days=total_days)
-                
-                # Update pending balance
-                try:
-                    balance = LeaveBalance.objects.get(
-                        employee=employee,
-                        leave_type=leave_type,
-                        year=start_date.year
-                    )
-                    balance.pending_days += total_days
-                    balance.save()
-                except LeaveBalance.DoesNotExist:
-                    return Response(
-                        {'error': 'No leave balance found for this year'}, 
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                
-                return Response(
-                    LeaveApplicationSerializer(application).data, 
-                    status=status.HTTP_201_CREATED
-                )
+        def extract_value(data, key):
+            """Extract single value from QueryDict list format"""
+            value = data.get(key)
+            return value[0] if isinstance(value, list) and value else value
         
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Process FormData if multipart, otherwise use data as-is
+        if request.content_type and 'multipart' in request.content_type:
+            final_data = {}
+            for key, value in request.data.items():
+                if key not in ['supporting_document']:  # Handle file separately
+                    final_data[key] = extract_value(request.data, key)
+            
+            # Handle file upload
+            if 'supporting_document' in request.FILES:
+                final_data['supporting_document'] = request.FILES['supporting_document']
+            
+            # Convert data types
+            for field in ['employee', 'leave_type', 'institutionId']:
+                if field in final_data:
+                    try:
+                        final_data[field] = int(final_data[field]) if final_data[field] else None
+                    except (ValueError, TypeError):
+                        final_data[field] = None
+            
+            data_to_serialize = final_data
+        else:
+            data_to_serialize = request.data
+        
+        serializer = LeaveApplicationSerializer(data=data_to_serialize)
+        
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        with transaction.atomic():
+            # Calculate total days
+            start_date = serializer.validated_data['start_date']
+            end_date = serializer.validated_data['end_date']
+            duration_type = serializer.validated_data.get('duration_type', 'full_day')
+            
+            total_days = LeaveCalculator.calculate_leave_days(
+                start_date, end_date, duration_type
+            )
+            
+            # Check eligibility
+            employee = serializer.validated_data['employee']
+            leave_type = serializer.validated_data['leave_type']
+            
+            is_eligible, message = LeaveCalculator.check_leave_eligibility(
+                employee, leave_type, start_date, total_days
+            )
+            
+            if not is_eligible:
+                return Response(
+                    {'error': message}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Save application with calculated days
+            application = serializer.save(total_days=total_days)
+            
+            # Update pending balance
+            try:
+                balance = LeaveBalance.objects.get(
+                    employee=employee,
+                    leave_type=leave_type,
+                    year=start_date.year
+                )
+                balance.pending_days += total_days
+                balance.save()
+            except LeaveBalance.DoesNotExist:
+                return Response(
+                    {'error': 'No leave balance found for this year'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            return Response(
+                LeaveApplicationSerializer(application).data, 
+                status=status.HTTP_201_CREATED
+            )
 
 
 @extend_schema(tags=["Leave Applications"])
@@ -330,6 +368,7 @@ class LeaveApplicationDetailAPIView(APIView):
 
 @extend_schema(tags=["Leave Applications"])
 class LeaveApplicationApprovalAPIView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
     @extend_schema(
         summary="Approve or reject a leave application",
         request={
