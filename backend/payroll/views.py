@@ -196,6 +196,49 @@ class AllowanceTypeAPIView(APIView):
         allowance_types = AllowanceType.objects.filter(institution_id=institution_id)
         serializer = AllowanceTypeSerializer(allowance_types, many=True)
         return Response(serializer.data)
+    
+    @extend_schema(
+        request=AllowanceTypeSerializer,
+        responses=AllowanceTypeSerializer,
+        summary="Create a new allowance type"
+    )
+    def post(self, request):
+        serializer = AllowanceTypeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AllowanceTypeDetailAPIView(APIView):
+
+    @extend_schema(
+        responses=AllowanceTypeSerializer,
+        summary="Retrieve an allowance type by ID"
+    )
+    def get(self, request, pk):
+        instance = get_object_or_404(AllowanceType, pk=pk)
+        serializer = AllowanceTypeSerializer(instance)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=AllowanceTypeSerializer,
+        responses=AllowanceTypeSerializer,
+        summary="Update an allowance type (partial)"
+    )
+    def patch(self, request, pk):
+        instance = get_object_or_404(AllowanceType, pk=pk)
+        serializer = AllowanceTypeSerializer(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(summary="Delete an allowance type")
+    def delete(self, request, pk):
+        instance = get_object_or_404(AllowanceType, pk=pk)
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
  
 class DeductionTypeAPIView(APIView):
@@ -208,6 +251,49 @@ class DeductionTypeAPIView(APIView):
         deduction_types = DeductionType.objects.filter(institution_id=institution_id)
         serializer = DeductionTypeSerializer(deduction_types, many=True)
         return Response(serializer.data)
+    
+    @extend_schema(
+        request=DeductionTypeSerializer,
+        responses=DeductionTypeSerializer,
+        summary="Create a new deduction type"
+    )
+    def post(self, request):
+        serializer = DeductionTypeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DeductionTypeDetailAPIView(APIView):
+
+    @extend_schema(
+        responses=DeductionTypeSerializer,
+        summary="Retrieve a deduction type by ID"
+    )
+    def get(self, request, pk):
+        instance = get_object_or_404(DeductionType, pk=pk)
+        serializer = DeductionTypeSerializer(instance)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=DeductionTypeSerializer,
+        responses=DeductionTypeSerializer,
+        summary="Update a deduction type (partial)"
+    )
+    def patch(self, request, pk):
+        instance = get_object_or_404(DeductionType, pk=pk)
+        serializer = DeductionTypeSerializer(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(summary="Delete a deduction type")
+    def delete(self, request, pk):
+        instance = get_object_or_404(DeductionType, pk=pk)
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 

@@ -69,10 +69,13 @@ class Institution(models.Model):
         return self.approval_status == "approved"
 
     def save(self, *args, **kwargs):
-        # if self.latitude and self.longitude:
-        #     from django.contrib.gis.geos import Point
-        #     self.location_geodjango = Point(float(self.longitude), float(self.latitude))
+        is_new = self.pk is None  
         super().save(*args, **kwargs)
+        
+        
+        if is_new:
+            from payroll.utils import PayrollProcessor  
+            PayrollProcessor.setup_default_payroll_types_for_institution(self)
 
 
 class InstitutionDocument(models.Model):

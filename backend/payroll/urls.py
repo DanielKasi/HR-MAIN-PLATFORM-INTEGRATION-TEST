@@ -9,8 +9,9 @@ urlpatterns = [
     path('employee-deductions/<int:pk>/', EmployeeDeductionDetailAPIView.as_view()),
 
     path('<int:institution_id>/allowance-types/', AllowanceTypeAPIView.as_view(), name='allowance-type-list-create'),
-  
+    path('allowance-types/<int:pk>/', AllowanceTypeDetailAPIView.as_view()),
     path('<int:institution_id>/deduction-types/', DeductionTypeAPIView.as_view(), name='deduction-type-list-create'),
+    path('deduction-types/<int:pk>/', DeductionTypeDetailAPIView.as_view()),
 
 
     path('<int:institution_id>/payroll-periods/', PayrollPeriodAPIView.as_view(), name='payroll-period-list-create'),

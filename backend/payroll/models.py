@@ -10,7 +10,7 @@ class AllowanceType(models.Model):
     
     """
     institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE, related_name='allowance_types')
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     is_taxable = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
@@ -27,7 +27,7 @@ class DeductionType(models.Model):
     Define types of deductions (Tax, NSSF, Health Insurance, etc.)
     """
     institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE, related_name='deduction_types')
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     is_mandatory = models.BooleanField(default=False)  # e.g., tax is mandatory
     is_active = models.BooleanField(default=True)

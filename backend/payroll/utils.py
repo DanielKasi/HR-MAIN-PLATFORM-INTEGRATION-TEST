@@ -1,9 +1,9 @@
 from django.utils import timezone
 from datetime import datetime, timedelta
 from decimal import Decimal
-from .models import PayrollPeriod, Payslip, PayslipItem
+from .models import AllowanceType, DeductionType, PayrollPeriod, Payslip, PayslipItem
 from employee.models import Employee
-
+from institution.models import Institution
 
 class PayrollProcessor:
     """
@@ -123,11 +123,10 @@ class PayrollProcessor:
         PayslipItem.objects.bulk_create(items_to_create)
     
     @staticmethod
-    def setup_default_allowances_and_deductions():
+    def setup_default_payroll_types_for_institution(institution):
         """
-        Create common allowance and deduction types
+        Create default allowance and deduction types for a specific institution
         """
-        from .models import AllowanceType, DeductionType
         
         # Default allowances
         default_allowances = [
@@ -136,28 +135,68 @@ class PayrollProcessor:
             {'name': 'Medical Allowance', 'description': 'Monthly medical allowance', 'is_taxable': False},
             {'name': 'Lunch Allowance', 'description': 'Daily lunch allowance', 'is_taxable': True},
             {'name': 'Bonus', 'description': 'Performance or annual bonus', 'is_taxable': True},
+            {'name': 'Overtime Allowance', 'description': 'Overtime payment allowance', 'is_taxable': True},
+            {'name': 'Communication Allowance', 'description': 'Monthly communication allowance', 'is_taxable': True},
         ]
-        
-        for allowance_data in default_allowances:
-            AllowanceType.objects.get_or_create(
-                name=allowance_data['name'],
-                defaults=allowance_data
-            )
         
         # Default deductions
         default_deductions = [
-            {'name': 'Income Tax', 'description': 'Monthly income tax', 'is_mandatory': True},
-            {'name': 'NSSF', 'description': 'National Social Security Fund', 'is_mandatory': True},
+            {'name': 'Income Tax', 'description': 'Monthly income tax (PAYE)', 'is_mandatory': True},
+            {'name': 'NSSF', 'description': 'National Social Security Fund contribution', 'is_mandatory': True},
             {'name': 'Health Insurance', 'description': 'Monthly health insurance premium', 'is_mandatory': False},
             {'name': 'Loan Repayment', 'description': 'Monthly loan repayment', 'is_mandatory': False},
             {'name': 'Union Dues', 'description': 'Monthly union membership fees', 'is_mandatory': False},
+            {'name': 'Professional Tax', 'description': 'Professional body membership fees', 'is_mandatory': False},
+            {'name': 'Advance Salary', 'description': 'Salary advance repayment', 'is_mandatory': False},
         ]
         
-        for deduction_data in default_deductions:
-            DeductionType.objects.get_or_create(
-                name=deduction_data['name'],
-                defaults=deduction_data
+        created_allowances = []
+        created_deductions = []
+        
+        # Create allowance types
+        for allowance_data in default_allowances:
+            allowance_type, created = AllowanceType.objects.get_or_create(
+                institution=institution,
+                name=allowance_data['name'],
+                defaults={
+                    'description': allowance_data['description'],
+                    'is_taxable': allowance_data['is_taxable'],
+                    'is_active': True,
+                }
             )
+            if created:
+                created_allowances.append(allowance_type)
+        
+        # Create deduction types
+        for deduction_data in default_deductions:
+            deduction_type, created = DeductionType.objects.get_or_create(
+                institution=institution,
+                name=deduction_data['name'],
+                defaults={
+                    'description': deduction_data['description'],
+                    'is_mandatory': deduction_data['is_mandatory'],
+                    'is_active': True,
+                }
+            )
+            if created:
+                created_deductions.append(deduction_type)
+        
+        return {
+            'allowances_created': len(created_allowances),
+            'deductions_created': len(created_deductions),
+            'allowance_types': created_allowances,
+            'deduction_types': created_deductions,
+        }
+
+    @staticmethod  # Fixed: Added @staticmethod decorator
+    def create_institution_with_defaults(**kwargs):
+        """
+        Helper function to create institution with default payroll types
+        """
+        institution = Institution.objects.create(**kwargs)
+        setup_result = PayrollProcessor.setup_default_payroll_types_for_institution(institution)
+        
+        return institution, setup_result
     
     @staticmethod
     def get_employee_payroll_summary(employee, year=None):
