@@ -240,6 +240,18 @@ class AllowanceTypeDetailAPIView(APIView):
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @extend_schema(
+        request=AllowanceTypeSerializer,
+        responses=AllowanceTypeSerializer,
+        summary="Create allowance types for an institution"
+    )
+    def post(self, request):
+        serializer = AllowanceTypeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
  
 class DeductionTypeAPIView(APIView):
 

@@ -207,8 +207,6 @@ export default function DisciplinaryForm() {
       toast.error("Incident date cannot be in the future")
       return false
     }
-
-    console.log("✅ Form validation passed")
     return true
   }
 

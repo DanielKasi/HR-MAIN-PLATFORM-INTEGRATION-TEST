@@ -287,6 +287,55 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ],
     },
 
+     {
+      title: "Leave",
+      href: "#1",
+      icon: <Icon icon="hugeicons:user-multiple-02" width="24" height="24" />,
+      // requiredPermission: "can_access_valuation",
+      submenu: [
+        {
+          title: "Leave Types",
+          href: "/leave/leave-types",
+          // requiredPermission: "can_access_valuation_instructions",
+        },
+        {
+          title: "Leave Policy",
+          href: "/leave/leave-policy",
+          // requiredPermission: "can_access_attendance",
+        },
+         {
+          title: "Leave Application",
+          href: "/leave/leave-application",
+          // requiredPermission: "can_access_attendance",
+        }
+      ],
+    },
+
+     {
+      title: "Payroll",
+      href: "#1",
+      icon: <Icon icon="hugeicons:user-multiple-02" width="24" height="24" />,
+      // requiredPermission: "can_access_valuation",
+      submenu: [
+        {
+          title: "Allowance Types",
+          href: "/payroll/allowance-types",
+          // requiredPermission: "can_access_valuation_instructions",
+        },
+        {
+          title: "Leave Policy",
+          href: "/leave/leave-policy",
+          // requiredPermission: "can_access_attendance",
+        },
+         {
+          title: "Leave Application",
+          href: "/leave/leave-application",
+          // requiredPermission: "can_access_attendance",
+        }
+      ],
+    },
+
+
   ];
 
   const toggleSideBar = () => {
