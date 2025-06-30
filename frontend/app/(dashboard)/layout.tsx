@@ -323,13 +323,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           // requiredPermission: "can_access_valuation_instructions",
         },
         {
-          title: "Leave Policy",
-          href: "/leave/leave-policy",
+          title: "Deduction Types",
+          href: "/payroll/deduction-types",
           // requiredPermission: "can_access_attendance",
         },
          {
-          title: "Leave Application",
-          href: "/leave/leave-application",
+          title: "Employee Allowance",
+          href: "/payroll/employee-allowance",
           // requiredPermission: "can_access_attendance",
         }
       ],

@@ -966,3 +966,63 @@ export interface ILeaveBalance {
   created_at?: string;
   updated_at?: string;
 }
+
+
+export interface IAllowanceType {
+  id: number;
+  name: string;
+  description: string;
+  is_taxable: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface IAllowanceTypeFormData {
+  name: string;
+  description: string;
+  is_taxable: boolean;
+  is_active: boolean;
+}
+
+
+export interface IDeductionType {
+  id: number;
+  institution: number;
+  name: string;
+  description: string;
+  is_mandatory: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface IDeductionTypeFormData {
+  name: string;
+  description: string;
+  is_mandatory: boolean;
+  is_active: boolean;
+}
+
+
+export interface IEmployeeAllowance {
+  id: number;
+  employee: number;
+  allowance_type: number;
+  calculation_method: "fixed" | "percentage";
+  amount: string; 
+  percentage: string; 
+  is_active: boolean;
+  effective_from: string; 
+  effective_to: string | null; 
+  created_at: string;
+}
+
+export interface IEmployeeAllowanceFormData {
+  employee: number;
+  allowance_type: number;
+  calculation_method: "fixed" | "percentage";
+  amount: string;
+  percentage: string;
+  is_active: boolean;
+  effective_from: string;
+  effective_to?: string | null; 
+}

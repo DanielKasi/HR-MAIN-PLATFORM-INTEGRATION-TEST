@@ -17,20 +17,20 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { MoreHorizontal, Edit, Trash2, Loader2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { toast } from "sonner" 
-import { IAllowanceTypeFormData, IAllowanceType } from "@/app/types/types.utils"
-import { createAllowanceType, getAllowanceTypes, updateAllowanceType, deleteAllowanceType } from "@/lib/utils"
+import { toast } from "sonner"
+import { IDeductionTypeFormData, IDeductionType } from "@/app/types/types.utils"
+import { createDeductionType, getDeductionTypes, updateDeductionType, deleteDeductionType } from "@/lib/utils"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
 import { IUserInstitution } from "@/app/types"
 import { useSelector } from "react-redux"
 
-const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institutionId?: number }) => {
-  const [allowanceTypes, setAllowanceTypes] = useState<IAllowanceType[]>([])
+const DeductionTypesComponent = ({ institutionId: propInstitutionId }: { institutionId?: number }) => {
+  const [deductionTypes, setDeductionTypes] = useState<IDeductionType[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [editingAllowanceType, setEditingAllowanceType] = useState<IAllowanceType | null>(null)
-  const [deletingAllowanceType, setDeletingAllowanceType] = useState<IAllowanceType | null>(null)
+  const [editingDeductionType, setEditingDeductionType] = useState<IDeductionType | null>(null)
+  const [deletingDeductionType, setDeletingDeductionType] = useState<IDeductionType | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [institutionId, setInstitutionId] = useState<number | null>(propInstitutionId || null)
@@ -42,7 +42,7 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    is_taxable: true,
+    is_mandatory: false,
     is_active: true,
   })
 
@@ -51,7 +51,7 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
     setFormData({
       name: "",
       description: "",
-      is_taxable: true,
+      is_mandatory: false,
       is_active: true,
     })
   }
@@ -67,34 +67,34 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
     }
   }, [propInstitutionId, institutionsAttached, selectedInstitution])
 
-  // Load allowance types when institution ID is available
+  // Load deduction types when institution ID is available
   useEffect(() => {
-    const fetchAllowanceTypes = async () => {
+    const fetchDeductionTypes = async () => {
       if (!institutionId) {
         return
       }
       
       setIsLoading(true)
       try {
-        const types = await getAllowanceTypes(institutionId)
-        setAllowanceTypes(types || [])
+        const types = await getDeductionTypes(institutionId)
+        setDeductionTypes(types || [])
         
         if (!types || types.length === 0) {
-          console.log("No allowance types found for this institution")
+          console.log("No deduction types found for this institution")
         }
       } catch (error) {
-        console.error("Error fetching allowance types:", error)
-        toast.error("Failed to load allowance types")
-        setAllowanceTypes([])
+        console.error("Error fetching deduction types:", error)
+        toast.error("Failed to load deduction types")
+        setDeductionTypes([])
       } finally {
         setIsLoading(false)
       }
     }
     
-    fetchAllowanceTypes()
+    fetchDeductionTypes()
   }, [institutionId])
 
-  const handleAddAllowanceType = async () => {
+  const handleAddDeductionType = async () => {
     if (!formData.name || !formData.description) {
       toast.error("Please fill in all required fields")
       return
@@ -107,36 +107,36 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
 
     setIsSubmitting(true)
     try {
-      const allowanceTypeData: IAllowanceTypeFormData = {
+      const deductionTypeData: IDeductionTypeFormData = {
         name: formData.name,
         description: formData.description,
-        is_taxable: formData.is_taxable,
+        is_mandatory: formData.is_mandatory,
         is_active: formData.is_active,
       }
 
-      const newAllowanceType = await createAllowanceType({
+      const newDeductionType = await createDeductionType({
         institutionId,
-        allowanceTypeData,
+        deductionTypeData,
       })
 
-      if (newAllowanceType) {
-        setAllowanceTypes([newAllowanceType, ...allowanceTypes])
-        toast.success("Allowance type created successfully")
+      if (newDeductionType) {
+        setDeductionTypes([newDeductionType, ...deductionTypes])
+        toast.success("Deduction type created successfully")
         resetFormData()
         setIsAddDialogOpen(false)
       } else {
-        toast.error("Failed to create allowance type")
+        toast.error("Failed to create deduction type")
       }
     } catch (error: any) {
-      console.error("Error creating allowance type:", error)
-      toast.error(error.message || "An error occurred while creating the allowance type")
+      console.error("Error creating deduction type:", error)
+      toast.error(error.message || "An error occurred while creating the deduction type")
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleUpdateAllowanceType = async () => {
-    if (!editingAllowanceType) return
+  const handleUpdateDeductionType = async () => {
+    if (!editingDeductionType) return
 
     if (!formData.name || !formData.description) {
       toast.error("Please fill in all required fields")
@@ -145,73 +145,73 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
 
     setIsSubmitting(true)
     try {
-      const allowanceTypeData: Partial<IAllowanceTypeFormData> = {
+      const deductionTypeData: Partial<IDeductionTypeFormData> = {
         name: formData.name,
         description: formData.description,
-        is_taxable: formData.is_taxable,
+        is_mandatory: formData.is_mandatory,
         is_active: formData.is_active,
       }
 
-      const updatedAllowanceType = await updateAllowanceType({
-        id: editingAllowanceType.id,
-        allowanceTypeData,
+      const updatedDeductionType = await updateDeductionType({
+        id: editingDeductionType.id,
+        deductionTypeData,
       })
 
-      if (updatedAllowanceType) {
-        const updatedAllowanceTypes = allowanceTypes.map((allowanceType) =>
-          allowanceType.id === editingAllowanceType.id ? updatedAllowanceType : allowanceType,
+      if (updatedDeductionType) {
+        const updatedDeductionTypes = deductionTypes.map((deductionType) =>
+          deductionType.id === editingDeductionType.id ? updatedDeductionType : deductionType,
         )
-        setAllowanceTypes(updatedAllowanceTypes)
-        toast.success("Allowance type updated successfully")
+        setDeductionTypes(updatedDeductionTypes)
+        toast.success("Deduction type updated successfully")
         resetFormData()
         setIsEditDialogOpen(false)
-        setEditingAllowanceType(null)
+        setEditingDeductionType(null)
       } else {
-        toast.error("Failed to update allowance type")
+        toast.error("Failed to update deduction type")
       }
     } catch (error: any) {
-      console.error("Error updating allowance type:", error)
-      toast.error(error.message || "An error occurred while updating the allowance type")
+      console.error("Error updating deduction type:", error)
+      toast.error(error.message || "An error occurred while updating the deduction type")
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleDeleteAllowanceType = async () => {
-    if (!deletingAllowanceType) return
+  const handleDeleteDeductionType = async () => {
+    if (!deletingDeductionType) return
 
     setIsSubmitting(true)
     try {
-      const success = await deleteAllowanceType(deletingAllowanceType.id)
+      const success = await deleteDeductionType(deletingDeductionType.id)
 
       if (success) {
-        setAllowanceTypes(allowanceTypes.filter((allowanceType) => allowanceType.id !== deletingAllowanceType.id))
-        toast.success("Allowance type deleted successfully")
+        setDeductionTypes(deductionTypes.filter((deductionType) => deductionType.id !== deletingDeductionType.id))
+        toast.success("Deduction type deleted successfully")
         setIsDeleteDialogOpen(false)
-        setDeletingAllowanceType(null)
+        setDeletingDeductionType(null)
       } else {
-        toast.error("Failed to delete allowance type")
+        toast.error("Failed to delete deduction type")
       }
     } catch (error: any) {
-      console.error("Error deleting allowance type:", error)
-      toast.error(error.message || "An error occurred while deleting the allowance type")
+      console.error("Error deleting deduction type:", error)
+      toast.error(error.message || "An error occurred while deleting the deduction type")
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleDeleteClick = (allowanceType: IAllowanceType) => {
-    setDeletingAllowanceType(allowanceType)
+  const handleDeleteClick = (deductionType: IDeductionType) => {
+    setDeletingDeductionType(deductionType)
     setIsDeleteDialogOpen(true)
   }
 
-  const handleEditAllowanceType = (allowanceType: IAllowanceType) => {
-    setEditingAllowanceType(allowanceType)
+  const handleEditDeductionType = (deductionType: IDeductionType) => {
+    setEditingDeductionType(deductionType)
     setFormData({
-      name: allowanceType.name,
-      description: allowanceType.description,
-      is_taxable: allowanceType.is_taxable,
-      is_active: allowanceType.is_active,
+      name: deductionType.name,
+      description: deductionType.description,
+      is_mandatory: deductionType.is_mandatory,
+      is_active: deductionType.is_active,
     })
     setIsEditDialogOpen(true)
   }
@@ -227,23 +227,23 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-8">
-      <div className="container py-12 px-8 md:px-8 lg:px-10">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+      <div className="container py-6 px-8 md:px-10 lg:px-16">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Allowance Types</h1>
+          <h1 className="text-2xl font-bold">Deduction Types</h1>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button 
                 className="bg-orange-500 hover:bg-orange-600 text-white"
                 disabled={!institutionId}
               >
-                Add Allowance Type
+                Add Deduction Type
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
-                <DialogTitle>Add Allowance Type</DialogTitle>
-                <DialogDescription>Create a new allowance type to manage employee allowances.</DialogDescription>
+                <DialogTitle>Add Deduction Type</DialogTitle>
+                <DialogDescription>Create a new deduction type to manage employee deductions.</DialogDescription>
               </DialogHeader>
               <div className="grid grid-cols-1 gap-4 py-4">
                 <div className="space-y-2">
@@ -252,7 +252,7 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g., Housing Allowance"
+                    placeholder="e.g., Income Tax"
                     disabled={isSubmitting}
                   />
                 </div>
@@ -263,7 +263,7 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
-                    placeholder="Describe the allowance type..."
+                    placeholder="Describe the deduction type..."
                     disabled={isSubmitting}
                   />
                 </div>
@@ -272,18 +272,18 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        id="is_taxable"
-                        checked={formData.is_taxable}
+                        id="is_mandatory"
+                        checked={formData.is_mandatory}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            is_taxable: e.target.checked,
+                            is_mandatory: e.target.checked,
                           })
                         }
                         disabled={isSubmitting}
                       />
-                      <Label htmlFor="is_taxable" className="text-sm">
-                        Taxable
+                      <Label htmlFor="is_mandatory" className="text-sm">
+                        Mandatory
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -308,7 +308,7 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
               </div>
               <Button
                 className="bg-orange-500 hover:bg-orange-600 text-white"
-                onClick={handleAddAllowanceType}
+                onClick={handleAddDeductionType}
                 disabled={isSubmitting}
               >
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -321,38 +321,38 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-8 w-8 animate-spin" />
-            <span className="ml-2">Loading allowance types...</span>
+            <span className="ml-2">Loading deduction types...</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 mt-8 sm:grid-cols-2 lg:grid-cols-3">
-            {allowanceTypes.length > 0 ? (
-              allowanceTypes.map((allowanceType) => (
+            {deductionTypes.length > 0 ? (
+              deductionTypes.map((deductionType) => (
                 <Card
-                  key={allowanceType.id}
+                  key={deductionType.id}
                   className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200"
                 >
                   <CardHeader className="pb-3 pt-6 px-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <CardTitle className="text-lg font-semibold text-gray-900 mb-2">{allowanceType.name}</CardTitle>
+                        <CardTitle className="text-lg font-semibold text-gray-900 mb-2">{deductionType.name}</CardTitle>
                         <div className="flex gap-2 mt-2">
                           <Badge
                             className={`text-xs font-medium ${
-                              allowanceType.is_active
+                              deductionType.is_active
                                 ? "bg-green-100 text-green-800 border-green-200"
                                 : "bg-gray-100 text-gray-800 border-gray-200"
                             }`}
                           >
-                            {allowanceType.is_active ? "Active" : "Inactive"}
+                            {deductionType.is_active ? "Active" : "Inactive"}
                           </Badge>
                           <Badge
                             className={`text-xs font-medium ${
-                              allowanceType.is_taxable
+                              deductionType.is_mandatory
                                 ? "bg-red-100 text-red-800 border-red-200"
                                 : "bg-blue-100 text-blue-800 border-blue-200"
                             }`}
                           >
-                            {allowanceType.is_taxable ? "Taxable" : "Non-taxable"}
+                            {deductionType.is_mandatory ? "Mandatory" : "Optional"}
                           </Badge>
                         </div>
                       </div>
@@ -364,14 +364,14 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40">
                           <DropdownMenuItem
-                            onClick={() => handleEditAllowanceType(allowanceType)}
+                            onClick={() => handleEditDeductionType(deductionType)}
                             className="cursor-pointer hover:bg-orange-50 focus:bg-orange-50"
                           >
                             <Edit className="h-4 w-4 mr-2 text-orange-600" />
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleDeleteClick(allowanceType)}
+                            onClick={() => handleDeleteClick(deductionType)}
                             className="cursor-pointer hover:bg-red-50 focus:bg-red-50 text-red-600"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
@@ -383,10 +383,10 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
                   </CardHeader>
                   <CardContent className="pt-2 px-4 pb-6">
                     <CardDescription className="text-sm text-gray-600 mb-4 line-clamp-3 leading-relaxed">
-                      {allowanceType.description}
+                      {deductionType.description}
                     </CardDescription>
                     <div className="text-xs text-gray-500 mt-4">
-                      Created: {new Date(allowanceType.created_at).toLocaleDateString()}
+                      Created: {new Date(deductionType.created_at).toLocaleDateString()}
                     </div>
                   </CardContent>
                 </Card>
@@ -394,14 +394,14 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
             ) : (
               <div className="col-span-full flex flex-col items-center justify-center py-12">
                 <div className="text-center">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No allowance types found</h3>
-                  <p className="text-gray-500 mb-4">Get started by creating your first allowance type.</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No deduction types found</h3>
+                  <p className="text-gray-500 mb-4">Get started by creating your first deduction type.</p>
                   <Button
                     onClick={() => setIsAddDialogOpen(true)}
                     className="bg-orange-500 hover:bg-orange-600 text-white"
                     disabled={!institutionId}
                   >
-                    Add Allowance Type
+                    Add Deduction Type
                   </Button>
                 </div>
               </div>
@@ -415,13 +415,13 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
         setIsEditDialogOpen(open)
         if (!open) {
           resetFormData()
-          setEditingAllowanceType(null)
+          setEditingDeductionType(null)
         }
       }}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Edit Allowance Type</DialogTitle>
-            <DialogDescription>Make changes to an existing allowance type.</DialogDescription>
+            <DialogTitle>Edit Deduction Type</DialogTitle>
+            <DialogDescription>Make changes to an existing deduction type.</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-4 py-4">
             <div className="space-y-2">
@@ -430,7 +430,7 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
                 id="edit-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Housing Allowance"
+                placeholder="e.g., Income Tax"
                 disabled={isSubmitting}
               />
             </div>
@@ -441,7 +441,7 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
-                placeholder="Describe the allowance type..."
+                placeholder="Describe the deduction type..."
                 disabled={isSubmitting}
               />
             </div>
@@ -450,18 +450,18 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id="edit-is_taxable"
-                    checked={formData.is_taxable}
+                    id="edit-is_mandatory"
+                    checked={formData.is_mandatory}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        is_taxable: e.target.checked,
+                        is_mandatory: e.target.checked,
                       })
                     }
                     disabled={isSubmitting}
                   />
-                  <Label htmlFor="edit-is_taxable" className="text-sm">
-                    Taxable
+                  <Label htmlFor="edit-is_mandatory" className="text-sm">
+                    Mandatory
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -486,7 +486,7 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
           </div>
           <Button
             className="bg-orange-500 hover:bg-orange-600 text-white"
-            onClick={handleUpdateAllowanceType}
+            onClick={handleUpdateDeductionType}
             disabled={isSubmitting}
           >
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -499,14 +499,14 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
       <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
         setIsDeleteDialogOpen(open)
         if (!open) {
-          setDeletingAllowanceType(null)
+          setDeletingDeductionType(null)
         }
       }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Delete Allowance Type</DialogTitle>
+            <DialogTitle>Delete Deduction Type</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{deletingAllowanceType?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{deletingDeductionType?.name}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end space-x-2 pt-4">
@@ -514,13 +514,13 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
               variant="outline"
               onClick={() => {
                 setIsDeleteDialogOpen(false)
-                setDeletingAllowanceType(null)
+                setDeletingDeductionType(null)
               }}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteAllowanceType} disabled={isSubmitting}>
+            <Button variant="destructive" onClick={handleDeleteDeductionType} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isSubmitting ? "Deleting..." : "Delete"}
             </Button>
@@ -531,4 +531,4 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
   )
 }
 
-export default AllowanceTypesComponent
+export default DeductionTypesComponent
