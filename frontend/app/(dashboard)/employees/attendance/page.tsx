@@ -70,7 +70,7 @@ const AttendancePage = () => {
     [employees, search]
   );
 
-  // Compute stats
+  // Compute stats from attendance state
   const stats = useMemo(() => {
     const total = employees.length;
     const checkedIn = attendance.filter(a => a.checkIn).length;
@@ -116,9 +116,11 @@ const AttendancePage = () => {
           employees={filteredEmployees}
           search={search}
           setSearch={setSearch}
-          stats={stats}
+          attendance={attendance}
+          setAttendance={setAttendance}
           selectedDate={selectedDate}
           setSelectedDate={setSelectedDate}
+          stats={stats}
         />
       </div>
     </div>
