@@ -1,7 +1,6 @@
 "use client";
 
-import type React from "react";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,14 +11,14 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast"; 
+import { useToast } from "@/components/ui/use-toast";
 import { Upload, User, X, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
 import { createEmployee, getPositions, getDepartments, createWorkType, createEmployeeType, getWorkTypes, getEmployeeTypes } from "@/lib/utils";
-import { attachEmployeeBranch } from "@/lib/utils.branch"; // <-- Added
+import { attachEmployeeBranch } from "@/lib/utils.branch";
 import { EmployeeFormData, EmployeeFormState, IDepartment, IJobPosition, IWorkType, IEmployeeType, IWorkTypeFormData, IEmployeeTypeFormData } from "@/app/types/types.utils";
 import { IUserInstitution } from "@/app/types";
 
@@ -30,7 +29,14 @@ const maritalStatusOptions = [
   { value: "widowed", label: "Widowed" },
 ];
 
+const steps = [
+  { id: 1, title: "Personal Information" },
+  { id: 2, title: "Work Information" },
+  { id: 3, title: "Financial Information" },
+];
+
 export default function AddEmployeeForm() {
+  const [currentStep, setCurrentStep] = useState(1);
   const [showBranchDropdown, setShowBranchDropdown] = useState(false);
 
   useEffect(() => {
@@ -40,15 +46,18 @@ export default function AddEmployeeForm() {
         setShowBranchDropdown(false);
       }
     };
+
     if (showBranchDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     } else {
       document.removeEventListener('mousedown', handleClickOutside);
     }
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showBranchDropdown]);
+
   const router = useRouter();
   const { toast } = useToast();
   const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -64,13 +73,11 @@ export default function AddEmployeeForm() {
   const [employeeTypes, setEmployeeTypes] = useState<IEmployeeType[]>([]);
   const [loadingData, setLoadingData] = useState(false);
 
-  // Modal states
   const [isWorkTypeModalOpen, setIsWorkTypeModalOpen] = useState(false);
   const [isEmployeeTypeModalOpen, setIsEmployeeTypeModalOpen] = useState(false);
   const [isAddingWorkType, setIsAddingWorkType] = useState(false);
   const [isAddingEmployeeType, setIsAddingEmployeeType] = useState(false);
 
-  // Form data for modals
   const [workTypeFormData, setWorkTypeFormData] = useState<IWorkTypeFormData>({
     name: "",
     description: "",
@@ -125,9 +132,7 @@ export default function AddEmployeeForm() {
 
   useEffect(() => {
     const loadDropdownData = async () => {
-      if (!institutionId) {
-        return;
-      }
+      if (!institutionId) return;
 
       try {
         const [positionsData, departmentsData, workTypesData, employeeTypesData] = await Promise.all([
@@ -141,8 +146,9 @@ export default function AddEmployeeForm() {
         setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
         setWorkTypes(Array.isArray(workTypesData) ? workTypesData : []);
         setEmployeeTypes(Array.isArray(employeeTypesData) ? employeeTypesData : []);
-      } catch (error) {
-        setSubmitError("Failed to load form data. Please refresh the page.");
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred while loading form data.";
+        setSubmitError(errorMessage);
       }
     };
 
@@ -185,8 +191,9 @@ export default function AddEmployeeForm() {
       setPreviewUrl(url);
       setUploadError(null);
       setUploadSuccess("Image uploaded successfully");
-    } catch (error) {
-      setUploadError("Failed to process image");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred while processing the image.";
+      setUploadError(errorMessage);
       setUploadSuccess(null);
     }
   };
@@ -214,7 +221,6 @@ export default function AddEmployeeForm() {
     };
   }, [previewUrl]);
 
-  // Handle Work Type Modal
   const handleAddWorkType = async () => {
     if (!workTypeFormData.name.trim()) {
       toast({
@@ -236,10 +242,8 @@ export default function AddEmployeeForm() {
       if (newWorkType) {
         setWorkTypes(prev => [...prev, newWorkType]);
         setFormData(prev => ({ ...prev, work_type: newWorkType.id }));
-        
         setWorkTypeFormData({ name: "", description: "", code: "" });
         setIsWorkTypeModalOpen(false);
-        
         toast({
           title: "Success",
           description: "Work type added successfully",
@@ -248,10 +252,11 @@ export default function AddEmployeeForm() {
       } else {
         throw new Error("Failed to create work type");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred while adding work type.";
       toast({
         title: "Error",
-        description: error.message || "Failed to add work type",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -259,7 +264,6 @@ export default function AddEmployeeForm() {
     }
   };
 
-  // Handle Employee Type Modal
   const handleAddEmployeeType = async () => {
     if (!employeeTypeFormData.name.trim()) {
       toast({
@@ -281,10 +285,8 @@ export default function AddEmployeeForm() {
       if (newEmployeeType) {
         setEmployeeTypes(prev => [...prev, newEmployeeType]);
         setFormData(prev => ({ ...prev, employee_type: newEmployeeType.id }));
-        
         setEmployeeTypeFormData({ name: "", description: "", code: "" });
         setIsEmployeeTypeModalOpen(false);
-        
         toast({
           title: "Success",
           description: "Employee type added successfully",
@@ -293,10 +295,11 @@ export default function AddEmployeeForm() {
       } else {
         throw new Error("Failed to create employee type");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred while adding employee type.";
       toast({
         title: "Error",
-        description: error.message || "Failed to add employee type",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -323,6 +326,18 @@ export default function AddEmployeeForm() {
     return true;
   };
 
+  const nextStep = () => {
+    if (currentStep < steps.length) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -340,7 +355,7 @@ export default function AddEmployeeForm() {
 
     try {
       const dataToSubmit: EmployeeFormData = {
-        id: 0, // Will be assigned by backend
+        id: 0,
         user: {
           fullname: formData.fullname,
           email: formData.email,
@@ -376,30 +391,32 @@ export default function AddEmployeeForm() {
       });
 
       if (result && result.id) {
-        // Attach selected branches to employee
         const employeeId = result.id;
         const selectedBranches = Array.isArray(formData.selected_branches) ? formData.selected_branches : [];
-        // Build branches array for API
         const branches = selectedBranches.map((branchId, i) => ({
           branch_id: branchId,
           is_default: i === 0
         }));
+
         try {
           await attachEmployeeBranch({
             employee_id: employeeId,
             branches
           });
+
           toast({
             title: "Success!",
             description: "Employee has been created successfully and added to the system, and branches attached.",
             variant: "default",
             duration: 4000,
           });
+
           router.push("/employees/employee-list");
-        } catch (err) {
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : "An unknown error occurred while attaching branches.";
           toast({
             title: "Error",
-            description: "Employee created, but failed to attach branches.",
+            description: errorMessage,
             variant: "destructive",
             duration: 5000,
           });
@@ -407,86 +424,24 @@ export default function AddEmployeeForm() {
       } else {
         setSubmitError("Failed to create employee. Please try again.");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred while creating the employee.";
       toast({
         title: "Error",
-        description: error.message || "Failed to create employee. Please try again.",
+        description: errorMessage,
         variant: "destructive",
         duration: 5000,
       });
-
-      setSubmitError(error.message || "An unexpected error occurred");
+      setSubmitError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return (
-<div className="min-h-screen bg-gray-100 p-4 overflow-hidden">
-  <div className="max-w-5xl mx-auto h-full">
-    <Card className="bg-white shadow-lg h-full">
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between sticky top-0 bg-white z-10 border-b">
-        <div className="mb-4 sm:mb-0">
-          <CardTitle className="text-2xl">Add New Employee</CardTitle>
-          <CardDescription>Fill in the employee details to add them to the system</CardDescription>
-        </div>
-        <Link href="/employees/employee-list" className="w-full sm:w-auto">
-          <Button variant="outline" className="w-full sm:w-auto">Back to Employee List</Button>
-        </Link>
-      </CardHeader>
-      <CardContent className="p-6 overflow-y-auto">
-        {submitError && (
-          <div className="mb-6 p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
-            {submitError}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Profile Picture Section */}
-          <div className="flex flex-col items-center space-y-4">
-            <div className="relative">
-              <Avatar className="w-24 h-24">
-                <AvatarImage src={previewUrl || "/placeholder.svg"} alt="Profile preview" />
-                <AvatarFallback>
-                  <User className="w-12 h-12" />
-                </AvatarFallback>
-              </Avatar>
-              {previewUrl && (
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-colors"
-                  title="Remove image"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-            <div className="text-center">
-              <Input
-                id="profilePicture"
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <Label htmlFor="profilePicture" className="cursor-pointer">
-                <Button type="button" variant="outline" className="flex items-center space-x-2" asChild>
-                  <span>
-                    <Upload className="w-4 h-4" />
-                    <span>{previewUrl ? "Change Photo" : "Upload Photo"}</span>
-                  </span>
-                </Button>
-              </Label>
-              <p className="text-xs text-gray-500 mt-2">Max size: 5MB. Formats: JPEG, PNG, GIF, WebP</p>
-            </div>
-            {uploadError && <p className="text-red-500 text-sm text-center">{uploadError}</p>}
-            {uploadSuccess && <p className="text-green-500 text-sm text-center">{uploadSuccess}</p>}
-          </div>
-
-          <Separator />
-
-          {/* Personal Information */}
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold">Personal Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -498,7 +453,6 @@ export default function AddEmployeeForm() {
                   onChange={(e) => handleInputChange("fullname", e.target.value)}
                   placeholder="Enter full name"
                   required
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -510,7 +464,6 @@ export default function AddEmployeeForm() {
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   placeholder="Enter email address"
                   required
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -520,7 +473,6 @@ export default function AddEmployeeForm() {
                   value={formData.phone_number}
                   onChange={(e) => handleInputChange("phone_number", e.target.value)}
                   placeholder="Enter phone number"
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -530,7 +482,6 @@ export default function AddEmployeeForm() {
                   type="date"
                   value={formData.date_of_birth}
                   onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -539,7 +490,7 @@ export default function AddEmployeeForm() {
                   value={formData.marital_status}
                   onValueChange={(value) => handleInputChange("marital_status", value)}
                 >
-                  <SelectTrigger className="w-full h-10 px-3 py-2 text-sm border border-gray-300 rounded-md bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select marital status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -551,7 +502,6 @@ export default function AddEmployeeForm() {
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="childrenCount">Number of Children</Label>
                 <Input
@@ -561,7 +511,6 @@ export default function AddEmployeeForm() {
                   value={formData.children_count}
                   onChange={(e) => handleInputChange("children_count", parseInt(e.target.value) || 0)}
                   placeholder="0"
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -571,7 +520,6 @@ export default function AddEmployeeForm() {
                   value={formData.address}
                   onChange={(e) => handleInputChange("address", e.target.value)}
                   placeholder="Enter full address"
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -581,7 +529,6 @@ export default function AddEmployeeForm() {
                   value={formData.country}
                   onChange={(e) => handleInputChange("country", e.target.value)}
                   placeholder="Enter country"
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -591,7 +538,6 @@ export default function AddEmployeeForm() {
                   value={formData.nin}
                   onChange={(e) => handleInputChange("nin", e.target.value)}
                   placeholder="Enter national ID number"
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -601,7 +547,6 @@ export default function AddEmployeeForm() {
                   value={formData.emergency_contact_name}
                   onChange={(e) => handleInputChange("emergency_contact_name", e.target.value)}
                   placeholder="Emergency contact name"
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -611,7 +556,6 @@ export default function AddEmployeeForm() {
                   value={formData.emergency_contact_phone}
                   onChange={(e) => handleInputChange("emergency_contact_phone", e.target.value)}
                   placeholder="Emergency contact phone"
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -621,15 +565,13 @@ export default function AddEmployeeForm() {
                   value={formData.emergency_contact_relationship}
                   onChange={(e) => handleInputChange("emergency_contact_relationship", e.target.value)}
                   placeholder="Relationship to employee"
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
             </div>
           </div>
-
-          <Separator />
-
-          {/* Work Information */}
+        );
+      case 2:
+        return (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold">Work Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -639,11 +581,11 @@ export default function AddEmployeeForm() {
                   value={formData.position > 0 ? formData.position.toString() : ""}
                   onValueChange={(value) => handleInputChange("position", parseInt(value))}
                 >
-                  <SelectTrigger className="w-full h-10 px-3 py-2 text-sm border border-gray-300 rounded-md bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select position" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Array.isArray(positions) && positions.length > 0 ? (
+                    {positions.length > 0 ? (
                       positions.map((position) => (
                         <SelectItem key={position.id} value={position.id.toString()}>
                           {position.name}
@@ -655,18 +597,17 @@ export default function AddEmployeeForm() {
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="department">Department *</Label>
                 <Select
                   value={formData.department > 0 ? formData.department.toString() : ""}
                   onValueChange={(value) => handleInputChange("department", parseInt(value))}
                 >
-                  <SelectTrigger className="w-full h-10 px-3 py-2 text-sm border border-gray-300 rounded-md bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Array.isArray(departments) && departments.length > 0 ? (
+                    {departments.length > 0 ? (
                       departments.map((department) => (
                         <SelectItem key={department.id} value={department.id.toString()}>
                           {department.name}
@@ -678,8 +619,6 @@ export default function AddEmployeeForm() {
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Work Type with Add Button */}
               <div className="space-y-2">
                 <Label htmlFor="workType">Work Type</Label>
                 <div className="flex gap-2">
@@ -687,11 +626,11 @@ export default function AddEmployeeForm() {
                     value={formData.work_type > 0 ? formData.work_type.toString() : ""}
                     onValueChange={(value) => handleInputChange("work_type", parseInt(value))}
                   >
-                    <SelectTrigger className="flex-1 h-10 px-3 py-2 text-sm border border-gray-300 rounded-md bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                    <SelectTrigger>
                       <SelectValue placeholder="Select work type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.isArray(workTypes) && workTypes.length > 0 ? (
+                      {workTypes.length > 0 ? (
                         workTypes.map((workType) => (
                           <SelectItem key={workType.id} value={workType.id.toString()}>
                             {workType.name}
@@ -704,13 +643,7 @@ export default function AddEmployeeForm() {
                   </Select>
                   <Dialog open={isWorkTypeModalOpen} onOpenChange={setIsWorkTypeModalOpen}>
                     <DialogTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0"
-                        title="Add new work type"
-                      >
+                      <Button type="button" variant="outline" size="icon" className="shrink-0" title="Add new work type">
                         <Plus className="w-4 h-4" />
                       </Button>
                     </DialogTrigger>
@@ -729,7 +662,6 @@ export default function AddEmployeeForm() {
                             value={workTypeFormData.name}
                             onChange={(e) => setWorkTypeFormData(prev => ({ ...prev, name: e.target.value }))}
                             placeholder="Enter work type name"
-                            className="border border-gray-300 rounded-md"
                           />
                         </div>
                         <div className="space-y-2">
@@ -740,7 +672,6 @@ export default function AddEmployeeForm() {
                             onChange={(e) => setWorkTypeFormData(prev => ({ ...prev, code: e.target.value }))}
                             placeholder="Enter work type code (optional)"
                             maxLength={10}
-                            className="border border-gray-300 rounded-md"
                           />
                         </div>
                         <div className="space-y-2">
@@ -751,7 +682,6 @@ export default function AddEmployeeForm() {
                             onChange={(e) => setWorkTypeFormData(prev => ({ ...prev, description: e.target.value }))}
                             placeholder="Enter work type description (optional)"
                             rows={3}
-                            className="border border-gray-300 rounded-md"
                           />
                         </div>
                       </div>
@@ -786,8 +716,6 @@ export default function AddEmployeeForm() {
                   </Dialog>
                 </div>
               </div>
-
-              {/* Employee Type with Add Button */}
               <div className="space-y-2">
                 <Label htmlFor="employeeType">Employee Type</Label>
                 <div className="flex gap-2">
@@ -795,11 +723,11 @@ export default function AddEmployeeForm() {
                     value={formData.employee_type > 0 ? formData.employee_type.toString() : ""}
                     onValueChange={(value) => handleInputChange("employee_type", parseInt(value))}
                   >
-                    <SelectTrigger className="flex-1 h-10 px-3 py-2 text-sm border border-gray-300 rounded-md bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                    <SelectTrigger>
                       <SelectValue placeholder="Select employee type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.isArray(employeeTypes) && employeeTypes.length > 0 ? (
+                      {employeeTypes.length > 0 ? (
                         employeeTypes.map((employeeType) => (
                           <SelectItem key={employeeType.id} value={employeeType.id.toString()}>
                             {employeeType.name}
@@ -812,13 +740,7 @@ export default function AddEmployeeForm() {
                   </Select>
                   <Dialog open={isEmployeeTypeModalOpen} onOpenChange={setIsEmployeeTypeModalOpen}>
                     <DialogTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0"
-                        title="Add new employee type"
-                      >
+                      <Button type="button" variant="outline" size="icon" className="shrink-0" title="Add new employee type">
                         <Plus className="w-4 h-4" />
                       </Button>
                     </DialogTrigger>
@@ -837,7 +759,6 @@ export default function AddEmployeeForm() {
                             value={employeeTypeFormData.name}
                             onChange={(e) => setEmployeeTypeFormData(prev => ({ ...prev, name: e.target.value }))}
                             placeholder="Enter employee type name"
-                            className="border border-gray-300 rounded-md"
                           />
                         </div>
                         <div className="space-y-2">
@@ -848,7 +769,6 @@ export default function AddEmployeeForm() {
                             onChange={(e) => setEmployeeTypeFormData(prev => ({ ...prev, code: e.target.value }))}
                             placeholder="Enter employee type code (optional)"
                             maxLength={10}
-                            className="border border-gray-300 rounded-md"
                           />
                         </div>
                         <div className="space-y-2">
@@ -859,7 +779,6 @@ export default function AddEmployeeForm() {
                             onChange={(e) => setEmployeeTypeFormData(prev => ({ ...prev, description: e.target.value }))}
                             placeholder="Enter employee type description (optional)"
                             rows={3}
-                            className="border border-gray-300 rounded-md"
                           />
                         </div>
                       </div>
@@ -894,7 +813,6 @@ export default function AddEmployeeForm() {
                   </Dialog>
                 </div>
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="dateOfJoining">Date of Joining *</Label>
                 <Input
@@ -903,7 +821,6 @@ export default function AddEmployeeForm() {
                   value={formData.date_of_joining}
                   onChange={(e) => handleInputChange("date_of_joining", e.target.value)}
                   required
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -915,7 +832,6 @@ export default function AddEmployeeForm() {
                   value={formData.experience}
                   onChange={(e) => handleInputChange("experience", parseInt(e.target.value) || 0)}
                   placeholder="Years of experience"
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -925,7 +841,6 @@ export default function AddEmployeeForm() {
                   value={formData.qualifications}
                   onChange={(e) => handleInputChange("qualifications", e.target.value)}
                   placeholder="Enter qualifications"
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -935,20 +850,18 @@ export default function AddEmployeeForm() {
                   value={formData.skills}
                   onChange={(e) => handleInputChange("skills", e.target.value)}
                   placeholder="Enter skills"
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
-              {/* Branch Multi-Select Dropdown */}
               <div className="space-y-2">
                 <Label htmlFor="branchMultiSelect">Branch (Multi-Select)</Label>
                 <div className="relative" id="branchMultiSelectDropdown">
                   <button
                     type="button"
                     className="w-full h-10 px-3 py-2 text-sm border border-gray-300 rounded-md bg-background flex justify-between items-center"
-                    onClick={() => setShowBranchDropdown((prev: boolean) => !prev)}
+                    onClick={() => setShowBranchDropdown((prev) => !prev)}
                   >
                     <span>
-                      {Array.isArray(formData.selected_branches) && formData.selected_branches.length > 0
+                      {formData.selected_branches.length > 0
                         ? institutionsAttached
                             .filter((branch) => formData.selected_branches.includes(branch.id))
                             .map((branch) => branch.institution_name)
@@ -965,9 +878,9 @@ export default function AddEmployeeForm() {
                         <label key={branch.id} className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-100">
                           <input
                             type="checkbox"
-                            checked={Array.isArray(formData.selected_branches) && formData.selected_branches.includes(branch.id)}
+                            checked={formData.selected_branches.includes(branch.id)}
                             onChange={(e) => {
-                              const selected = Array.isArray(formData.selected_branches) ? [...formData.selected_branches] : [];
+                              const selected = [...formData.selected_branches];
                               if (e.target.checked) {
                                 if (!selected.includes(branch.id)) selected.push(branch.id);
                               } else {
@@ -988,24 +901,21 @@ export default function AddEmployeeForm() {
                   )}
                 </div>
               </div>
-              {/* End Branch Multi-Select Dropdown */}
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isActive"
-                checked={formData.is_active}
-                onCheckedChange={(checked) => handleInputChange("is_active", checked as boolean)}
-              />
-              <Label htmlFor="isActive">Active Employee</Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isActive"
+                  checked={formData.is_active}
+                  onCheckedChange={(checked) => handleInputChange("is_active", checked)}
+                />
+                <Label htmlFor="isActive">Active Employee</Label>
+              </div>
             </div>
           </div>
-
-          <Separator />
-
-          {/* Financial Information */}
+        );
+      case 3:
+        return (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold">Financial Information</h3>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="bank">Bank</Label>
@@ -1014,7 +924,6 @@ export default function AddEmployeeForm() {
                   value={formData.bank}
                   onChange={(e) => handleInputChange("bank", e.target.value)}
                   placeholder="Enter bank name"
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
               <div className="space-y-2">
@@ -1024,41 +933,101 @@ export default function AddEmployeeForm() {
                   value={formData.bank_account_number}
                   onChange={(e) => handleInputChange("bank_account_number", e.target.value)}
                   placeholder="Enter bank account number"
-                  className="border border-gray-300 rounded-md"
                 />
               </div>
             </div>
           </div>
+        );
+      default:
+        return null;
+    }
+  };
 
-          <Separator />
-
-          {/* Submit Button */}
-          <div className="flex flex-col sm:flex-row justify-end gap-4">
-            <Link href="/employees/employee-list">
-              <Button type="button" variant="outline" className="w-full sm:w-auto" disabled={isSubmitting}>
-                Cancel
-              </Button>
-            </Link>
-            <Button
-              type="submit"
-              className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating Employee...
-                </>
-              ) : (
-                "Add Employee"
-              )}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
-  </div>
-</div>
-
+  return (
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-5xl mx-auto">
+        <Card className="bg-white shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl">Add New Employee</CardTitle>
+            <CardDescription>Fill in the employee details to add them to the system</CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            {submitError && (
+              <div className="mb-6 p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
+                {submitError}
+              </div>
+            )}
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="relative">
+                  <Avatar className="w-24 h-24">
+                    <AvatarImage src={previewUrl || "/placeholder.svg"} alt="Profile preview" />
+                    <AvatarFallback>
+                      <User className="w-12 h-12" />
+                    </AvatarFallback>
+                  </Avatar>
+                  {previewUrl && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-colors"
+                      title="Remove image"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="text-center">
+                  <Input
+                    id="profilePicture"
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <Label htmlFor="profilePicture" className="cursor-pointer">
+                    <Button type="button" variant="outline" className="flex items-center space-x-2" asChild>
+                      <span>
+                        <Upload className="w-4 h-4" />
+                        <span>{previewUrl ? "Change Photo" : "Upload Photo"}</span>
+                      </span>
+                    </Button>
+                  </Label>
+                  <p className="text-xs text-gray-500 mt-2">Max size: 5MB. Formats: JPEG, PNG, GIF, WebP</p>
+                </div>
+                {uploadError && <p className="text-red-500 text-sm text-center">{uploadError}</p>}
+                {uploadSuccess && <p className="text-green-500 text-sm text-center">{uploadSuccess}</p>}
+              </div>
+              <Separator />
+              {renderStep()}
+              <Separator />
+              <div className="flex justify-between">
+                {currentStep > 1 && (
+                  <Button type="button" onClick={prevStep} variant="outline">
+                    Previous
+                  </Button>
+                )}
+                {currentStep < steps.length ? (
+                  <Button type="button" onClick={nextStep} className="bg-orange-600 hover:bg-orange-700 px-6">
+                    Next
+                  </Button>
+                ) : (
+                  <Button type="button" onClick={handleSubmit} className="bg-orange-600 hover:bg-orange-700" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating Employee...
+                      </>
+                    ) : (
+                      "Submit"
+                    )}
+                  </Button>
+                )}
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
