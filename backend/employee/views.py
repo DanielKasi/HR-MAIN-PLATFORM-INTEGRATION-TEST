@@ -678,7 +678,11 @@ class EmployeeAttendanceListCreateAPIView(APIView):
         description="Retrieve all attendance records"
     )
     def get(self, request):
-        records = EmployeeAttendance.objects.all()
+        date = request.query_params.get('date')
+        if date:
+            records = EmployeeAttendance.objects.filter(date=date)
+        else:
+            records = EmployeeAttendance.objects.all()
         serializer = EmployeeAttendanceSerializer(records, many=True)
         return Response(serializer.data)
 
