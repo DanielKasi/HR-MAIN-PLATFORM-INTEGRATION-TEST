@@ -44,75 +44,94 @@ interface EmployeeAttendanceProps {
 
 const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, search, setSearch, attendance, setAttendance, stats, selectedDate, setSelectedDate }) => {
 
-  // Key for localStorage
-  const storageKey = `attendance_${selectedDate}`;
-
-  // Load attendance from localStorage on mount and when employees or selectedDate change
+  // Fetch attendance from backend on mount and when employees or selectedDate change
   React.useEffect(() => {
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
+    async function fetchAttendance() {
       try {
-        const parsed = JSON.parse(saved);
-        // Only restore if the employee IDs match (prevents mismatch on org switch)
-        if (Array.isArray(parsed) && parsed.length === employees.length && parsed.every((r: any) => employees.some(e => e.id === r.employeeId))) {
-          setAttendance(parsed);
-          return;
-        }
-      } catch {}
+        console.log("Fetching attendance for date:", selectedDate);
+        const records = await import("@/lib/utils.attendance").then(mod => mod.fetchAttendanceRecords(selectedDate));
+        console.log("API response:", records);
+        // Map backend records to local AttendanceRecord[]
+        const attendanceMap = new Map<number, { checkIn: string | null, checkOut: string | null }>();
+        records.forEach((rec: any) => {
+          attendanceMap.set(rec.employee.id, {
+            checkIn: rec.check_in_time || null,
+            checkOut: rec.check_out_time || null
+          });
+        });
+        // Always update attendance, even if records is empty
+        setAttendance(employees.map(emp => ({
+          employeeId: emp.id,
+          checkIn: attendanceMap.get(emp.id)?.checkIn || null,
+          checkOut: attendanceMap.get(emp.id)?.checkOut || null
+        })));
+      } catch (err) {
+        setAttendance(employees.map(emp => ({ employeeId: emp.id, checkIn: null, checkOut: null })));
+      }
     }
-    // Otherwise, initialize to empty attendance for each employee
-    setAttendance(employees.map(emp => ({ employeeId: emp.id, checkIn: null, checkOut: null })));
-    // eslint-disable-next-line
-  }, [employees, storageKey, setAttendance]);
-
-  // Save attendance to localStorage whenever it changes (for selected date)
-  React.useEffect(() => {
-    if (attendance && attendance.length > 0) {
-      localStorage.setItem(storageKey, JSON.stringify(attendance));
+    if (employees.length > 0 && selectedDate) {
+      fetchAttendance();
     }
-    // eslint-disable-next-line
-  }, [attendance, storageKey]);
+  }, [employees, selectedDate, setAttendance]);
 
   const handleCheckIn = async (id: number) => {
-    const now = new Date();
     const checkInTime = getCurrentTime();
-    setAttendance(prev => prev.map(record =>
-      record.employeeId === id ? { ...record, checkIn: getCurrentTime() } : record
-    ));
     try {
-      await createAttendanceRecord({
+      await import("@/lib/utils.attendance").then(mod => mod.createAttendanceRecord({
         employee: id,
         check_in_time: checkInTime,
         status: "approved"
+      }));
+      // Refresh attendance from backend
+      const records = await import("@/lib/utils.attendance").then(mod => mod.fetchAttendanceRecords(selectedDate));
+      const attendanceMap = new Map<number, { checkIn: string | null, checkOut: string | null }>();
+      records.forEach((rec: any) => {
+        attendanceMap.set(rec.employee.id, {
+          checkIn: rec.check_in_time || null,
+          checkOut: rec.check_out_time || null
+        });
       });
-      // Optionally show a toast/alert
-      // alert('Check-in recorded!');
+      setAttendance(employees.map(emp => ({
+        employeeId: emp.id,
+        checkIn: attendanceMap.get(emp.id)?.checkIn || null,
+        checkOut: attendanceMap.get(emp.id)?.checkOut || null
+      })));
     } catch (err) {
       alert('Failed to record check-in!');
     }
   };
 
+
   const handleCheckOut = async (id: number) => {
-    const now = new Date();
     const checkOutTime = getCurrentTime();
-    setAttendance(prev => prev.map(record =>
-      record.employeeId === id ? { ...record, checkOut: getCurrentTime() } : record
-    ));
     const record = attendance.find(r => r.employeeId === id);
     const checkInTime = record?.checkIn || "";
     try {
-      await createAttendanceRecord({
+      await import("@/lib/utils.attendance").then(mod => mod.createAttendanceRecord({
         employee: id,
         check_in_time: checkInTime,
         check_out_time: checkOutTime,
         status: "approved"
+      }));
+      // Refresh attendance from backend
+      const records = await import("@/lib/utils.attendance").then(mod => mod.fetchAttendanceRecords(selectedDate));
+      const attendanceMap = new Map<number, { checkIn: string | null, checkOut: string | null }>();
+      records.forEach((rec: any) => {
+        attendanceMap.set(rec.employee.id, {
+          checkIn: rec.check_in_time || null,
+          checkOut: rec.check_out_time || null
+        });
       });
-      // Optionally show a toast/alert
-      // alert('Check-out recorded!');
+      setAttendance(employees.map(emp => ({
+        employeeId: emp.id,
+        checkIn: attendanceMap.get(emp.id)?.checkIn || null,
+        checkOut: attendanceMap.get(emp.id)?.checkOut || null
+      })));
     } catch (err) {
       alert('Failed to record check-out!');
     }
   };
+
 
 
   return (
