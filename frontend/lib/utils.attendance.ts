@@ -19,6 +19,19 @@ export async function fetchAttendanceRecords(date: string) {
   return response.data;
 }
 
+// Fetch attendance records for a specific employee over a date range
+export async function fetchEmployeeAttendanceRecords(employeeId: number, startDate?: string, endDate?: string) {
+  let url = `/employee/attendance/?employee=${employeeId}`;
+  if (startDate) {
+    url += `&start_date=${startDate}`;
+  }
+  if (endDate) {
+    url += `&end_date=${endDate}`;
+  }
+  const response = await apiRequest.get(url);
+  return response.data;
+}
+
 // Update an attendance record by ID
 export async function updateAttendanceRecord(id: number, data: Partial<AttendanceRecordPayload>) {
   const response = await apiRequest.put(`/employee/attendance/${id}/`, data);

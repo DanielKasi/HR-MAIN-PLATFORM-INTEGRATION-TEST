@@ -1883,3 +1883,9 @@ export const getActiveEmployeeAllowances = async (
     return null;
   }
 };
+
+// Fetch a single employee's details
+export async function fetchEmployeeDetail(employeeId: number) {
+  const response = await apiRequest.get(`/employee/${employeeId}/`);
+  return response.data;
+}

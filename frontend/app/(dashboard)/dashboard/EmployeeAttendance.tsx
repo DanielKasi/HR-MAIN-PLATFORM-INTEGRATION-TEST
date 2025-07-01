@@ -202,7 +202,11 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, sear
                   <div key={emp.id} className="grid grid-cols-6 gap-4 p-4 border-b hover:bg-gray-50 items-center">
                     <div>{selectedDate}</div>
                     <div className="flex flex-col">
-                      <span className="font-semibold text-gray-900">{emp.name}</span>
+                      <span className="font-semibold text-gray-900">
+                        <a href={`/employees/attendance/${emp.id}`} className="hover:underline text-blue-600">
+                          {emp.name}
+                        </a>
+                      </span>
                       <span className="text-xs text-gray-400 font-normal">{emp.department}</span>
                     </div>
                     <div>
