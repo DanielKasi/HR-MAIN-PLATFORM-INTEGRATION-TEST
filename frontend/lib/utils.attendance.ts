@@ -21,13 +21,11 @@ export async function fetchAttendanceRecords(date: string) {
 
 // Fetch attendance records for a specific employee over a date range
 export async function fetchEmployeeAttendanceRecords(employeeId: number, startDate?: string, endDate?: string) {
-  let url = `/employee/attendance/?employee=${employeeId}`;
-  if (startDate) {
-    url += `&start_date=${startDate}`;
-  }
-  if (endDate) {
-    url += `&end_date=${endDate}`;
-  }
+  let url = `/employee/${employeeId}/attendance/`;
+  const params = [];
+  if (startDate) params.push(`start_date=${startDate}`);
+  if (endDate) params.push(`end_date=${endDate}`);
+  if (params.length) url += `?${params.join("&")}`;
   const response = await apiRequest.get(url);
   return response.data;
 }

@@ -675,14 +675,15 @@ class EmployeeBranchDetailAPIView(APIView):
 class EmployeeAttendanceListCreateAPIView(APIView):
     @extend_schema(
         responses=EmployeeAttendanceSerializer(many=True),
-        description="Retrieve all attendance records"
+        description="Retrieve all attendance records or for a specific employee if employee_id is provided."
     )
-    def get(self, request):
+    def get(self, request, employee_id=None):
         date = request.query_params.get('date')
+        records = EmployeeAttendance.objects.all()
+        if employee_id is not None:
+            records = records.filter(employee_id=employee_id)
         if date:
-            records = EmployeeAttendance.objects.filter(date=date)
-        else:
-            records = EmployeeAttendance.objects.all()
+            records = records.filter(date=date)
         serializer = EmployeeAttendanceSerializer(records, many=True)
         return Response(serializer.data)
 
@@ -691,7 +692,7 @@ class EmployeeAttendanceListCreateAPIView(APIView):
         responses=EmployeeAttendanceSerializer,
         description="Create a new attendance record"
     )
-    def post(self, request):
+    def post(self, request, employee_id=None):
         serializer = EmployeeAttendanceSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()

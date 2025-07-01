@@ -1,4 +1,3 @@
-
 from django.urls import path
 from .views import (
     EmployeeAttendanceDetailAPIView,
@@ -31,4 +30,5 @@ urlpatterns = [
 
     path('work-types/', WorkTypeListCreateAPIView.as_view(), name='work-type-list-create'),
     path('work-types/<int:pk>/', WorkTypeDetailAPIView.as_view(), name='work-type-detail'),
+    path('<int:employee_id>/attendance/', EmployeeAttendanceListCreateAPIView.as_view(), name='employee-attendance-list'),
 ]
