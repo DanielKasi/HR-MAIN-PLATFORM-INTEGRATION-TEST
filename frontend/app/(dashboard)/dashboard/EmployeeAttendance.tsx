@@ -184,7 +184,6 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, sear
             <div className="grid grid-cols-6 gap-4 p-4 font-medium">
               <div>Date</div>
               <div>Name</div>
-              <div>Department</div>
               <div>Email</div>
               <div>Check In</div>
               <div>Check Out</div>
@@ -208,11 +207,6 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({ employees, sear
                         </a>
                       </span>
                       <span className="text-xs text-gray-400 font-normal">{emp.department}</span>
-                    </div>
-                    <div>
-                      <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                        {emp.department}
-                      </Badge>
                     </div>
                     <div className="text-sm text-blue-600 underline underline-offset-2">
                       {emp.email ? (

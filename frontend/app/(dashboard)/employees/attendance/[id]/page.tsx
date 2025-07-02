@@ -402,7 +402,6 @@ const EmployeeAttendanceHistory = () => {
                   <div>Check Out</div>
                   <div>Work Hours</div>
                   <div>Overtime</div>
-                  <div>Department</div>
                 </div>
               </div>
               <div>
@@ -449,11 +448,6 @@ const EmployeeAttendanceHistory = () => {
                           const overtimeSecs = calculateOvertimeSeconds(record.check_out_time, branchClosingTime, record.date);
                           return overtimeSecs > 0 ? formatDuration(overtimeSecs) : "—";
                         })()}
-                      </div>
-                      <div>
-                        <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                          {record.employee.department.name}
-                        </Badge>
                       </div>
                     </div>
                   ))
