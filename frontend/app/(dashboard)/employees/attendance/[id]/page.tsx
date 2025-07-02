@@ -182,6 +182,13 @@ const EmployeeAttendanceHistory = () => {
     return `${hours}h ${minutes}m`;
   };
 
+  // Helper to set both dates to today
+  const setToday = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    setStartDate(today);
+    setEndDate(today);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
@@ -335,10 +342,7 @@ const EmployeeAttendanceHistory = () => {
               <div className="flex flex-col gap-1 justify-end">
                 <label className="block text-sm font-medium text-gray-700 mb-1">&nbsp;</label>
                 <Button 
-                  onClick={() => {
-                    setStartDate(new Date().toISOString().slice(0, 10));
-                    setEndDate(new Date().toISOString().slice(0, 10));
-                  }}
+                  onClick={setToday}
                   variant="outline"
                   className="w-full h-11 font-semibold"
                 >

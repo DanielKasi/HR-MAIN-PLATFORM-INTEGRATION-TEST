@@ -673,17 +673,35 @@ class EmployeeBranchDetailAPIView(APIView):
     
 @extend_schema(tags=["Employee Attendance"])
 class EmployeeAttendanceListCreateAPIView(APIView):
+    permission_classes = [AllowAny]
     @extend_schema(
         responses=EmployeeAttendanceSerializer(many=True),
         description="Retrieve all attendance records or for a specific employee if employee_id is provided."
     )
     def get(self, request, employee_id=None):
         date = request.query_params.get('date')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        
         records = EmployeeAttendance.objects.all()
+        
+        # Filter by employee if employee_id is provided
         if employee_id is not None:
             records = records.filter(employee_id=employee_id)
+        
+        # Filter by specific date
         if date:
             records = records.filter(date=date)
+        
+        # Filter by date range
+        if start_date:
+            records = records.filter(date__gte=start_date)
+        if end_date:
+            records = records.filter(date__lte=end_date)
+        
+        # Order by date (most recent first)
+        records = records.order_by('-date')
+        
         serializer = EmployeeAttendanceSerializer(records, many=True)
         return Response(serializer.data)
 
@@ -701,6 +719,7 @@ class EmployeeAttendanceListCreateAPIView(APIView):
 
 @extend_schema(tags=["Employee Attendance"])
 class EmployeeAttendanceDetailAPIView(APIView):
+    permission_classes = [AllowAny]
     def get_object(self, pk):
         return get_object_or_404(EmployeeAttendance, pk=pk)
 
