@@ -20,6 +20,7 @@ interface AttendanceRecord {
     user: {
       fullname: string;
       email: string;
+      branches?: { branch_closing_time: string }[];
     };
     department: {
       name: string;
@@ -188,6 +189,33 @@ const EmployeeAttendanceHistory = () => {
     setStartDate(today);
     setEndDate(today);
   };
+
+  // Helper to format duration in h m s
+  function formatDuration(seconds: number) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return `${h > 0 ? h + 'h ' : ''}${m > 0 ? m + 'm ' : ''}${s}s`;
+  }
+
+  // Helper to calculate work hours in seconds
+  function calculateWorkSeconds(checkIn: string | null, checkOut: string | null) {
+    if (!checkIn || !checkOut) return null;
+    const inTime = new Date(`2000-01-01T${checkIn}`);
+    const outTime = new Date(`2000-01-01T${checkOut}`);
+    return Math.max(0, Math.floor((outTime.getTime() - inTime.getTime()) / 1000));
+  }
+
+  // Helper to calculate overtime in seconds
+  function calculateOvertimeSeconds(checkOut: string | null, branchClosingTime: string | null, date: string) {
+    if (!checkOut || !branchClosingTime) return 0;
+    const checkOutDate = new Date(`${date}T${checkOut}`);
+    const closingDate = new Date(`${date}T${branchClosingTime}`);
+    if (checkOutDate > closingDate) {
+      return Math.floor((checkOutDate.getTime() - closingDate.getTime()) / 1000);
+    }
+    return 0;
+  }
 
   if (loading) {
     return (
@@ -367,12 +395,13 @@ const EmployeeAttendanceHistory = () => {
           <CardContent>
             <div className="rounded-md border">
               <div className="bg-gray-50 border-b">
-                <div className="grid grid-cols-6 gap-4 p-4 font-medium text-sm">
+                <div className="grid grid-cols-7 gap-4 p-4 font-medium text-sm">
                   <div>Date</div>
                   <div>Status</div>
                   <div>Check In</div>
                   <div>Check Out</div>
                   <div>Work Hours</div>
+                  <div>Overtime</div>
                   <div>Department</div>
                 </div>
               </div>
@@ -383,7 +412,7 @@ const EmployeeAttendanceHistory = () => {
                   </div>
                 ) : (
                   filteredRecords.map((record) => (
-                    <div key={record.id} className="grid grid-cols-6 gap-4 p-4 border-b hover:bg-gray-50 items-center">
+                    <div key={record.id} className="grid grid-cols-7 gap-4 p-4 border-b hover:bg-gray-50 items-center">
                       <div className="font-medium">
                         {formatDate(record.date)}
                       </div>
@@ -409,7 +438,17 @@ const EmployeeAttendanceHistory = () => {
                         )}
                       </div>
                       <div className="font-medium">
-                        {calculateWorkHours(record.check_in_time, record.check_out_time)}
+                        {(() => {
+                          const secs = calculateWorkSeconds(record.check_in_time, record.check_out_time);
+                          return secs !== null ? formatDuration(secs) : 'N/A';
+                        })()}
+                      </div>
+                      <div className="font-medium">
+                        {(() => {
+                          const branchClosingTime = record.employee.user.branches?.[0]?.branch_closing_time || null;
+                          const overtimeSecs = calculateOvertimeSeconds(record.check_out_time, branchClosingTime, record.date);
+                          return overtimeSecs > 0 ? formatDuration(overtimeSecs) : "—";
+                        })()}
                       </div>
                       <div>
                         <Badge variant="outline" className="bg-blue-100 text-blue-800">
