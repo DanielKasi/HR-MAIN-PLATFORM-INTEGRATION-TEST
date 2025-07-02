@@ -711,11 +711,31 @@ class EmployeeAttendanceListCreateAPIView(APIView):
         description="Create a new attendance record"
     )
     def post(self, request, employee_id=None):
-        serializer = EmployeeAttendanceSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        data = request.data.copy()
+        employee = data.get('employee')
+        date = data.get('date')
+        # If date is not provided, use today
+        from datetime import date as dt_date
+        if not date:
+            date = str(dt_date.today())
+            data['date'] = date
+        
+        # Try to find an existing record for this employee and date
+        existing = EmployeeAttendance.objects.filter(employee=employee, date=date).first()
+        if existing:
+            # Update the existing record (partial update)
+            serializer = EmployeeAttendanceSerializer(existing, data=data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # Create a new record
+            serializer = EmployeeAttendanceSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @extend_schema(tags=["Employee Attendance"])
 class EmployeeAttendanceDetailAPIView(APIView):
