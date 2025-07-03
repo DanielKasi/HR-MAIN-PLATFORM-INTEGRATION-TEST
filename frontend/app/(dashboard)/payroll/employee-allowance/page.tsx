@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
   Info,
   AlertTriangle,
+  FileSpreadsheet,
 } from "lucide-react"
 import { format } from "date-fns"
 
@@ -25,13 +26,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
 
 // Import API functions and interfaces
@@ -48,7 +54,7 @@ import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/a
 import { IUserInstitution } from "@/app/types"
 import { useSelector } from "react-redux"
 
-// API Response interfaces based on actual response
+
 interface ApiEmployee {
   id: number
   user: {
@@ -126,13 +132,13 @@ interface Employee {
   }
 }
 
-// Simplified allowance type interface for display
+
 interface SimpleAllowanceType {
   id: number
   name: string
 }
 
-// Display interface for allowances with employee and type details
+
 interface DisplayEmployeeAllowance {
   id: number
   employee: Employee
@@ -150,19 +156,28 @@ interface EmployeeAllowanceComponentProps {
   institutionId?: number
 }
 
+// Validation result interface
+interface ValidationResult {
+  employee?: string
+  allowance_type?: string
+  amount?: string
+  percentage?: string
+  effective_from?: string
+  effective_to?: string
+  warning?: string
+}
+
 export default function EmployeeAllowanceComponent({ institutionId: propInstitutionId }: EmployeeAllowanceComponentProps) {
   const [allowances, setAllowances] = useState<DisplayEmployeeAllowance[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [allowanceTypes, setAllowanceTypes] = useState<SimpleAllowanceType[]>([])
-  const [loading, setLoading] = useState(true)
-  const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
-  const [isLoadingAllowanceTypes, setIsLoadingAllowanceTypes] = useState(true)
   const [saving, setSaving] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingAllowance, setEditingAllowance] = useState<DisplayEmployeeAllowance | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
   const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all")
+  const [validationErrors, setValidationErrors] = useState<ValidationResult>({})
   
 
   // Redux selectors
@@ -196,11 +211,8 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
   useEffect(() => {
     const fetchAllowanceTypes = async () => {
       if (!institutionId) {
-        setIsLoadingAllowanceTypes(false)
         return
       }
-      
-      setIsLoadingAllowanceTypes(true)
       
       try {
         const types = await getAllowanceTypes(institutionId)
@@ -227,8 +239,6 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
         console.error("Error fetching allowance types:", error)
         setAllowanceTypes([])
         toast.error("Failed to load allowance types")
-      } finally {
-        setIsLoadingAllowanceTypes(false)
       }
     }
 
@@ -239,11 +249,8 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
   useEffect(() => {
     const fetchEmployees = async () => {
       if (!institutionId) {
-        setIsLoadingEmployees(false)
         return
       }
-      
-      setIsLoadingEmployees(true)
       
       try {
         const fetchedEmployees = await getAllEmployees({ institutionId })
@@ -273,23 +280,17 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
         console.error("Error fetching employees:", error)
         setEmployees([])
         toast.error("Failed to load employees")
-      } finally {
-        setIsLoadingEmployees(false)
       }
     }
 
     fetchEmployees()
   }, [institutionId])
 
-  // Load allowances when institution ID is available
   useEffect(() => {
     const fetchAllowances = async () => {
       if (!institutionId) {
-        setLoading(false)
         return
       }
-      
-      setLoading(true)
       
       try {
         const allowancesData = await getEmployeeAllowances(institutionId)
@@ -304,15 +305,43 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
         console.error("Error fetching allowances:", error)
         setAllowances([])
         toast.error("Failed to load allowances")
-      } finally {
-        setLoading(false)
       }
     }
     
     fetchAllowances()
   }, [institutionId, employees])
 
-  // Helper function to convert API data to display data
+  // Validate form and update validation errors
+  useEffect(() => {
+    const errors: ValidationResult = {}
+
+    if (isDialogOpen) {
+      // Only show validation errors for fields that have been interacted with or on submit
+      if (formData.calculation_method === 'fixed') {
+        const amount = parseFloat(formData.amount)
+        if (formData.amount && (isNaN(amount) || amount <= 0)) {
+          errors.amount = 'Please enter a valid fixed amount'
+        }
+      } else {
+        const percentage = parseFloat(formData.percentage)
+        if (formData.percentage && (isNaN(percentage) || percentage <= 0 || percentage > 100)) {
+          errors.percentage = 'Please enter a valid percentage (1-100)'
+        } else if (formData.percentage && percentage > 50) {
+          errors.warning = 'High percentage allowance detected. Please verify this is correct.'
+        }
+      }
+
+      if (formData.effective_from && formData.effective_to) {
+        if (new Date(formData.effective_to) < new Date(formData.effective_from)) {
+          errors.effective_to = 'End date cannot be before start date'
+        }
+      }
+    }
+
+    setValidationErrors(errors)
+  }, [formData, isDialogOpen])
+
+
   const convertToDisplayAllowance = (apiAllowance: any): DisplayEmployeeAllowance => {
   return {
     id: apiAllowance.id,
@@ -352,50 +381,24 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
     return employees.find(emp => emp.id === formData.employee)
   }
 
-  const validateAllowanceForm = () => {
-    const validations = []
-
-    // Basic validations
-    if (!formData.employee) {
-      validations.push({ type: 'error', message: 'Please select an employee' })
-    }
-    if (!formData.allowance_type) {
-      validations.push({ type: 'error', message: 'Please select an allowance type' })
+  const hasValidationErrors = () => {
+    // Check for missing required fields
+    if (!formData.employee || !formData.allowance_type || !formData.effective_from) {
+      return true
     }
 
-    // Amount validations
-    if (formData.calculation_method === 'fixed') {
-      const amount = parseFloat(formData.amount)
-      if (!formData.amount || isNaN(amount) || amount <= 0) {
-        validations.push({ type: 'error', message: 'Please enter a valid fixed amount' })
-      }
-    } else {
-      const percentage = parseFloat(formData.percentage)
-      if (!formData.percentage || isNaN(percentage) || percentage <= 0 || percentage > 100) {
-        validations.push({ type: 'error', message: 'Please enter a valid percentage (1-100)' })
-      }
+    // Check for calculation method specific requirements
+    if (formData.calculation_method === 'fixed' && !formData.amount) {
+      return true
+    }
+    
+    if (formData.calculation_method === 'percentage' && !formData.percentage) {
+      return true
     }
 
-    // Date validations
-    if (!formData.effective_from) {
-      validations.push({ type: 'error', message: 'Please select an effective from date' })
-    }
-
-    if (formData.effective_from && formData.effective_to) {
-      if (new Date(formData.effective_to) < new Date(formData.effective_from)) {
-        validations.push({ type: 'error', message: 'End date cannot be before start date' })
-      }
-    }
-
-    // Warning for high percentage
-    if (formData.calculation_method === 'percentage' && parseFloat(formData.percentage) > 50) {
-      validations.push({ 
-        type: 'warning', 
-        message: 'High percentage allowance detected. Please verify this is correct.' 
-      })
-    }
-
-    return validations
+    // Check for validation errors in the state
+    const errorKeys = Object.keys(validationErrors).filter(key => key !== 'warning')
+    return errorKeys.length > 0
   }
 
   const handleSubmit = async () => {
@@ -404,17 +407,13 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
       return
     }
 
-    const validations = validateAllowanceForm()
-    const errors = validations.filter(v => v.type === 'error')
-    
-    if (errors.length > 0) {
-      toast.error(errors[0].message)
+    if (hasValidationErrors()) {
+      toast.error("Please fix the validation errors before submitting")
       return
     }
 
-    const warnings = validations.filter(v => v.type === 'warning')
-    if (warnings.length > 0) {
-      warnings.forEach(warning => toast.warning(warning.message))
+    if (validationErrors.warning) {
+      toast.warning(validationErrors.warning)
     }
 
     setSaving(true)
@@ -511,6 +510,7 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
       effective_from: "",
       effective_to: "",
     })
+    setValidationErrors({})
   }
 
   const filteredAllowances = allowances.filter((allowance) => {
@@ -537,7 +537,8 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
     setMethodFilter("all")
   }
 
-  const exportData = () => {
+  // Export to CSV function
+  const exportToCSV = () => {
     const csvContent = [
       [
         "Employee",
@@ -574,57 +575,98 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
     window.URL.revokeObjectURL(url)
   }
 
+  // Export to Excel function using HTML table method
+  const exportToExcel = () => {
+    try {
+      // Prepare data for Excel
+      const excelData = filteredAllowances.map((allowance) => ({
+        "Employee Name": allowance.employee.name,
+        "Employee Email": allowance.employee.email,
+        "Allowance Type": allowance.allowance_type.name,
+        "Calculation Method": allowance.calculation_method === "fixed" ? "Fixed Amount" : "Percentage",
+        "Fixed Amount": allowance.calculation_method === "fixed" ? parseFloat(allowance.amount) : "",
+        "Percentage": allowance.calculation_method === "percentage" ? parseFloat(allowance.percentage) : "",
+        "Calculated Amount": getCalculatedAmount(allowance),
+        "Status": allowance.is_active ? "Active" : "Inactive",
+        "Effective From": format(new Date(allowance.effective_from), "yyyy-MM-dd"),
+        "Effective To": allowance.effective_to ? format(new Date(allowance.effective_to), "yyyy-MM-dd") : "",
+        "Created Date": format(new Date(allowance.created_at), "yyyy-MM-dd"),
+      }))
+
+      // Create HTML table
+      const headers = Object.keys(excelData[0] || {})
+      let htmlTable = '<table border="1"><thead><tr>'
+      
+      // Add headers
+      headers.forEach(header => {
+        htmlTable += `<th>${header}</th>`
+      })
+      htmlTable += '</tr></thead><tbody>'
+      
+      // Add data rows
+      excelData.forEach(row => {
+        htmlTable += '<tr>'
+        headers.forEach(header => {
+          const value = row[header as keyof typeof row]
+          htmlTable += `<td>${value}</td>`
+        })
+        htmlTable += '</tr>'
+      })
+      htmlTable += '</tbody></table>'
+
+      // Create Excel file using HTML table method
+      const excelContent = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" 
+              xmlns:x="urn:schemas-microsoft-com:office:excel" 
+              xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta charset="utf-8" />
+          <!--[if gte mso 9]>
+          <xml>
+            <x:ExcelWorkbook>
+              <x:ExcelWorksheets>
+                <x:ExcelWorksheet>
+                  <x:Name>Employee Allowances</x:Name>
+                  <x:WorksheetSource HRef="sheet.htm"/>
+                </x:ExcelWorksheet>
+              </x:ExcelWorksheets>
+            </x:ExcelWorkbook>
+          </xml>
+          <![endif]-->
+        </head>
+        <body>
+          ${htmlTable}
+        </body>
+        </html>
+      `
+
+      // Create blob and download
+      const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `employee-allowances-${format(new Date(), "yyyy-MM-dd")}.xls`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+      
+      toast.success("Excel file downloaded successfully")
+    } catch (error) {
+      console.error("Error exporting to Excel:", error)
+      toast.error("Failed to export Excel file")
+    }
+  }
+
   const getCategoryColor = () => {
     // Simple blue color for all allowance types
     return "bg-blue-50 text-blue-700 border-blue-200"
   }
 
-  // Render validation messages
-  const renderValidationMessages = () => {
-    const validations = validateAllowanceForm()
-    if (validations.length === 0) return null
-
-    return (
-      <div className="space-y-2 md:col-span-2">
-        {validations.map((validation, index) => (
-          <div
-            key={index}
-            className={`flex items-start gap-2 p-3 rounded-lg ${
-              validation.type === 'error'
-                ? 'bg-red-50 border border-red-200'
-                : 'bg-amber-50 border border-amber-200'
-            }`}
-          >
-            {validation.type === 'error' ? (
-              <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-            ) : (
-              <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-            )}
-            <p className={`text-sm font-medium ${
-              validation.type === 'error' ? 'text-red-800' : 'text-amber-800'
-            }`}>
-              {validation.message}
-            </p>
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  if (loading && !institutionId) {
+  if (!institutionId) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading institution data...</span>
-      </div>
-    )
-  }
-
-  if (isLoadingEmployees || isLoadingAllowanceTypes) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading data...</span>
+        <span className="ml-2">No institution selected...</span>
       </div>
     )
   }
@@ -640,15 +682,36 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
               <p className="text-gray-600">Manage employee-specific allowances and benefits</p>
             </div>
             <div className="flex gap-3">
-              <Button
-                onClick={exportData}
-                variant="outline"
-                className="border-orange-200 text-orange-700 hover:bg-orange-50 bg-transparent"
-                disabled={filteredAllowances.length === 0}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Export CSV
-              </Button>
+              {/* Export Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="border-orange-200 text-orange-700 hover:bg-orange-50 bg-transparent"
+                    disabled={filteredAllowances.length === 0}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem
+                    onClick={exportToCSV}
+                    className="cursor-pointer hover:bg-orange-50 focus:bg-orange-50"
+                  >
+                    <Download className="h-4 w-4 mr-2 text-orange-600" />
+                    Export as CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={exportToExcel}
+                    className="cursor-pointer hover:bg-green-50 focus:bg-green-50"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                    Export as Excel
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
                   <Button 
@@ -677,18 +740,15 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
                       <Select 
                         value={formData.employee}
                         onValueChange={(value) => setFormData({ ...formData, employee: value })}
-                        disabled={saving || isLoadingEmployees}
+                        disabled={saving}
                       >
-                        <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
-                          <SelectValue placeholder={isLoadingEmployees ? "Loading employees..." : "Select employee"} />
+                        <SelectTrigger className={`focus:ring-orange-500 focus:border-orange-500 ${
+                          validationErrors.employee ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}>
+                          <SelectValue placeholder="Please select an employee" />
                         </SelectTrigger>
                         <SelectContent>
-                          {isLoadingEmployees ? (
-                            <div className="px-2 py-1.5 text-sm text-gray-500 flex items-center">
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              Loading employees...
-                            </div>
-                          ) : employees.length > 0 ? (
+                          {employees.length > 0 ? (
                             employees.map((emp) => (
                               <SelectItem key={emp.id} value={emp.id}>
                                 <div className="flex flex-col">
@@ -703,6 +763,12 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
                           )}
                         </SelectContent>
                       </Select>
+                      {validationErrors.employee && (
+                        <p className="text-xs text-red-500 mt-1 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {validationErrors.employee}
+                        </p>
+                      )}
                     </div>
                     
                     <div className="space-y-2">
@@ -712,18 +778,15 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
                       <Select 
                         value={formData.allowance_type}
                         onValueChange={(value) => setFormData({ ...formData, allowance_type: value })}
-                        disabled={saving || isLoadingAllowanceTypes}
+                        disabled={saving}
                       >
-                        <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
-                          <SelectValue placeholder={isLoadingAllowanceTypes ? "Loading allowance types..." : "Select allowance type"} />
+                        <SelectTrigger className={`focus:ring-orange-500 focus:border-orange-500 ${
+                          validationErrors.allowance_type ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}>
+                          <SelectValue placeholder="Please select an allowance type" />
                         </SelectTrigger>
                         <SelectContent>
-                          {isLoadingAllowanceTypes ? (
-                            <div className="px-2 py-1.5 text-sm text-gray-500 flex items-center">
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              Loading allowance types...
-                            </div>
-                          ) : allowanceTypes.length > 0 ? (
+                          {allowanceTypes.length > 0 ? (
                             allowanceTypes.map((type) => (
                               <SelectItem key={type.id} value={type.id.toString()}>
                                 {type.name}
@@ -736,11 +799,16 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
                           )}
                         </SelectContent>
                       </Select>
-                      {!isLoadingAllowanceTypes && allowanceTypes.length === 0 && (
+                      {validationErrors.allowance_type ? (
+                        <p className="text-xs text-red-500 mt-1 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {validationErrors.allowance_type}
+                        </p>
+                      ) : allowanceTypes.length === 0 ? (
                         <p className="text-xs text-red-500 mt-1">
                           No allowance types found. Please create allowance types first.
                         </p>
-                      )}
+                      ) : null}
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
@@ -762,49 +830,66 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
                       </Select>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="amount" className="text-sm font-medium">
-                        Fixed Amount
-                      </Label>
-                      <Input
-                        id="amount"
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={formData.amount}
-                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                        disabled={saving || formData.calculation_method === "percentage"}
-                        className="focus:ring-orange-500 focus:border-orange-500"
-                      />
-                      <p className="text-xs text-gray-500">
-                        {formData.calculation_method === "percentage"
-                          ? "Not used for percentage calculation"
-                          : "Fixed allowance amount"}
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="percentage" className="text-sm font-medium">
-                        Percentage
-                      </Label>
-                      <Input
-                        id="percentage"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        placeholder="0.00"
-                        value={formData.percentage}
-                        onChange={(e) => setFormData({ ...formData, percentage: e.target.value })}
-                        disabled={saving || formData.calculation_method === "fixed"}
-                        className="focus:ring-orange-500 focus:border-orange-500"
-                      />
-                      <p className="text-xs text-gray-500">
-                        {formData.calculation_method === "fixed"
-                          ? "Not used for fixed calculation"
-                          : "Percentage of base salary (0-100)"}
-                      </p>
-                    </div>
+                    {/* Conditionally render amount or percentage field based on calculation method */}
+                    {formData.calculation_method === "fixed" ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="amount" className="text-sm font-medium">
+                          Fixed Amount *
+                        </Label>
+                        <Input
+                          id="amount"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={formData.amount}
+                          onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                          disabled={saving}
+                          className={`focus:ring-orange-500 focus:border-orange-500 ${
+                            validationErrors.amount ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
+                        />
+                        {validationErrors.amount ? (
+                          <p className="text-xs text-red-500 mt-1 flex items-center">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            {validationErrors.amount}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-gray-500">
+                            Enter the fixed allowance amount
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label htmlFor="percentage" className="text-sm font-medium">
+                          Percentage *
+                        </Label>
+                        <Input
+                          id="percentage"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          placeholder="0.00"
+                          value={formData.percentage}
+                          onChange={(e) => setFormData({ ...formData, percentage: e.target.value })}
+                          disabled={saving}
+                          className={`focus:ring-orange-500 focus:border-orange-500 ${
+                            validationErrors.percentage ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
+                        />
+                        {validationErrors.percentage ? (
+                          <p className="text-xs text-red-500 mt-1 flex items-center">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            {validationErrors.percentage}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-gray-500">
+                            Percentage of base salary (0-100)
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     <div className="space-y-2">
                       <Label htmlFor="effective_from" className="text-sm font-medium">
@@ -815,9 +900,18 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
                         type="date"
                         value={formData.effective_from}
                         onChange={(e) => setFormData({ ...formData, effective_from: e.target.value })}
-                        className="focus:ring-orange-500 focus:border-orange-500"
+                        className={`focus:ring-orange-500 focus:border-orange-500 ${
+                          validationErrors.effective_from ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}
                         disabled={saving}
+                        placeholder="Please select an effective from date"
                       />
+                      {validationErrors.effective_from && (
+                        <p className="text-xs text-red-500 mt-1 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {validationErrors.effective_from}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -829,10 +923,18 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
                         type="date"
                         value={formData.effective_to}
                         onChange={(e) => setFormData({ ...formData, effective_to: e.target.value })}
-                        className="focus:ring-orange-500 focus:border-orange-500"
+                        className={`focus:ring-orange-500 focus:border-orange-500 ${
+                          validationErrors.effective_to ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}
                         disabled={saving}
                         min={formData.effective_from}
                       />
+                      {validationErrors.effective_to && (
+                        <p className="text-xs text-red-500 mt-1 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {validationErrors.effective_to}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
@@ -861,23 +963,22 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
                           <div className="space-y-1 text-xs text-blue-700">
                             <p>• Name: {getSelectedEmployee()?.name}</p>
                             <p>• Email: {getSelectedEmployee()?.email}</p>
-                            {getSelectedEmployee()?.salary && getSelectedEmployee()?.salary! > 0 && (
-                              <p>• Base Salary: ${getSelectedEmployee()?.salary?.toLocaleString()}</p>
-                            )}
-                            {formData.calculation_method === 'percentage' && 
-                             formData.percentage && 
-                             getSelectedEmployee()?.salary && (
-                              <p>• Calculated Amount: ${((getSelectedEmployee()?.salary || 0) * parseFloat(formData.percentage) / 100).toLocaleString()}</p>
-                            )}
-                            {formData.calculation_method === 'fixed' && formData.amount && (
-                              <p>• Fixed Amount: ${parseFloat(formData.amount).toLocaleString()}</p>
-                            )}
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {renderValidationMessages()}
+                    {/* Warning message for high percentage */}
+                    {validationErrors.warning && (
+                      <div className="md:col-span-2 space-y-2">
+                        <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                          <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                          <p className="text-sm font-medium text-amber-800">
+                            {validationErrors.warning}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <DialogFooter>
@@ -892,7 +993,7 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
                     <Button 
                       onClick={handleSubmit}
                       className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
-                      disabled={saving || !employees.length || !allowanceTypes.length || validateAllowanceForm().filter(v => v.type === 'error').length > 0}
+                      disabled={saving || !employees.length || !allowanceTypes.length || hasValidationErrors()}
                     >
                       {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       {saving ? "Saving..." : editingAllowance ? "Update" : "Create"} Allowance
@@ -937,7 +1038,6 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-600">Total Monthly Cost</p>
                   <p className="text-2xl font-bold text-blue-600">
-                    $
                     {filteredAllowances
                       .filter((a) => a.is_active)
                       .reduce((sum, a) => sum + getCalculatedAmount(a), 0)
@@ -1021,134 +1121,120 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
 
         {/* Results Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mx-2">
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin" />
-              <span className="ml-2">Loading allowances...</span>
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Current Allowances
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                ({filteredAllowances.length} of {allowances.length} records)
+              </span>
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">Overview of all employee allowances and their calculated amounts</p>
+          </div>
+          
+          {filteredAllowances.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No allowances found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {allowances.length === 0 
+                  ? "No allowances have been created yet." 
+                  : "No allowances match your current filters."}
+              </p>
+              {allowances.length > 0 && (
+                <Button onClick={clearAllFilters} variant="outline" className="mt-4 bg-transparent">
+                  Clear Filters
+                </Button>
+              )}
             </div>
           ) : (
-            <>
-              <div className="p-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Current Allowances
-                  <span className="text-sm font-normal text-gray-500 ml-2">
-                    ({filteredAllowances.length} of {allowances.length} records)
-                  </span>
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">Overview of all employee allowances and their calculated amounts</p>
-              </div>
-              
-              {filteredAllowances.length === 0 ? (
-                <div className="text-center py-12">
-                  <Users className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No allowances found</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {allowances.length === 0 
-                      ? "No allowances have been created yet." 
-                      : "No allowances match your current filters."}
-                  </p>
-                  {allowances.length > 0 && (
-                    <Button onClick={clearAllFilters} variant="outline" className="mt-4 bg-transparent">
-                      Clear Filters
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead className="font-semibold text-gray-900">Employee</TableHead>
-                      <TableHead className="font-semibold text-gray-900">Allowance Type</TableHead>
-                      <TableHead className="font-semibold text-gray-900">Method</TableHead>
-                      <TableHead className="font-semibold text-gray-900">Calculated Amount</TableHead>
-                      <TableHead className="font-semibold text-gray-900">Status</TableHead>
-                      <TableHead className="font-semibold text-gray-900">Effective Period</TableHead>
-                      <TableHead className="font-semibold text-gray-900">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredAllowances.map((allowance) => (
-                      <TableRow key={allowance.id} className="hover:bg-gray-50 transition-colors">
-                        <TableCell>
-                          <div>
-                            <div className="font-medium text-gray-900">{allowance.employee.name}</div>
-                            <div className="text-sm text-gray-500">{allowance.employee.email}</div>
-                            
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            className={`${getCategoryColor()} border font-medium`}
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="font-semibold text-gray-900">Employee</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Allowance Type</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Method</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Calculated Amount</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Status</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Effective Period</TableHead>
+                  <TableHead className="font-semibold text-gray-900">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAllowances.map((allowance) => (
+                  <TableRow key={allowance.id} className="hover:bg-gray-50 transition-colors">
+                    <TableCell>
+                      <div>
+                        <div className="font-medium text-gray-900">{allowance.employee.name}</div>
+                        <div className="text-sm text-gray-500">{allowance.employee.email}</div>
+                        
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        className={`${getCategoryColor()} border font-medium`}
+                      >
+                        {allowance.allowance_type.name}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                        {allowance.calculation_method === "fixed" ? "Fixed" : "Percentage"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-lg font-semibold text-orange-600">
+                        {getCalculatedAmount(allowance).toLocaleString()}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={allowance.is_active ? "default" : "secondary"}
+                        className={
+                          allowance.is_active
+                            ? "bg-green-600 hover:bg-green-700 text-white"
+                            : "bg-gray-200 text-gray-700"
+                        }
+                      >
+                        {allowance.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div className="font-medium">From: {format(new Date(allowance.effective_from), "MMM dd, yyyy")}</div>
+                        {allowance.effective_to && (
+                          <div className="text-gray-500">To: {format(new Date(allowance.effective_to), "MMM dd, yyyy")}</div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
+                            <MoreHorizontal className="h-4 w-4 text-gray-600" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem
+                            onClick={() => handleEdit(allowance)}
+                            className="cursor-pointer hover:bg-orange-50 focus:bg-orange-50"
                           >
-                            {allowance.allowance_type.name}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                            {allowance.calculation_method === "fixed" ? (
-                              <DollarSign className="h-3 w-3 text-green-600" />
-                            ) : (
-                              <Percent className="h-3 w-3 text-purple-600" />
-                            )}
-                            {allowance.calculation_method === "fixed" ? "Fixed" : "Percentage"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-lg font-semibold text-orange-600">
-                            ${getCalculatedAmount(allowance).toLocaleString()}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={allowance.is_active ? "default" : "secondary"}
-                            className={
-                              allowance.is_active
-                                ? "bg-green-600 hover:bg-green-700 text-white"
-                                : "bg-gray-200 text-gray-700"
-                            }
+                            <Edit className="h-4 w-4 mr-2 text-orange-600" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(allowance.id)}
+                            className="cursor-pointer hover:bg-red-50 focus:bg-red-50 text-red-600"
                           >
-                            {allowance.is_active ? "Active" : "Inactive"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <div className="font-medium">From: {format(new Date(allowance.effective_from), "MMM dd, yyyy")}</div>
-                            {allowance.effective_to && (
-                              <div className="text-gray-500">To: {format(new Date(allowance.effective_to), "MMM dd, yyyy")}</div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
-                                <MoreHorizontal className="h-4 w-4 text-gray-600" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuItem
-                                onClick={() => handleEdit(allowance)}
-                                className="cursor-pointer hover:bg-orange-50 focus:bg-orange-50"
-                              >
-                                <Edit className="h-4 w-4 mr-2 text-orange-600" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDelete(allowance.id)}
-                                className="cursor-pointer hover:bg-red-50 focus:bg-red-50 text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </div>
       </div>

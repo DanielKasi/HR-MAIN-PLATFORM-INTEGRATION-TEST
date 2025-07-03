@@ -169,7 +169,9 @@ export default function PayslipItems() {
   }
 
   const formatCurrency = (amount: number) => {
-    return `USh ${amount.toLocaleString()}`
+    // Remove unnecessary decimal places
+    const cleanAmount = amount % 1 === 0 ? Math.floor(amount) : amount
+    return `USh ${cleanAmount.toLocaleString()}`
   }
 
   const getTotals = () => {
@@ -218,18 +220,22 @@ export default function PayslipItems() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Header with Back Button and Employee Info */}
+      {/* Back Button - moved above everything */}
+      <div className="flex items-center">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.back()}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Payslips
+        </Button>
+      </div>
+
+      {/* Header with Employee Info */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.back()}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Payslips
-          </Button>
+        <div>
           {payslipInfo ? (
             <div>
               <h1 className="text-2xl font-bold text-gray-900">

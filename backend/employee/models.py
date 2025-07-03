@@ -20,7 +20,7 @@ class EmployeeType(models.Model):
     description = models.TextField(blank=True, null=True)
     code = models.CharField(max_length=10, unique=True, blank=True, null=True)
     
-    def str(self):
+    def __str__(self):
         return self.name
     
 class WorkType(models.Model):
@@ -28,7 +28,7 @@ class WorkType(models.Model):
     description = models.TextField(blank=True, null=True)
     code = models.CharField(max_length=10, unique=True, blank=True, null=True)
     
-    def str(self):
+    def __str__(self):
         return self.name    
 
 
@@ -87,7 +87,7 @@ class Employee(models.Model):
     employee_profile_picture = models.ImageField(upload_to='employee_pictures/', blank=True, null=True)
     salary = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, null=True, blank=True)
 
-    def str(self):
+    def __str__(self):
         return f"{self.user.fullname}  - {self.position}"
     
     def save(self, *args, **kwargs):

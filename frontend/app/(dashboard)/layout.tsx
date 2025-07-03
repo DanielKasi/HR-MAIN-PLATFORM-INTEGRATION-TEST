@@ -5,17 +5,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Building,
-  Package2,
-  FileBarChart,
   ChevronDown,
-  ChevronLeft,
   Settings,
   User,
   LogOut,
   Shield,
-  Building2,
 } from "lucide-react";
 import Image from "next/image";
 import { useSelector } from "react-redux";
@@ -43,6 +37,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useMobile } from "@/hooks/use-mobile";
 import { InstitutionBranchSelector } from "@/components/institution-branch-selector";
 import { TaskNotification } from "@/components/task-notification";
@@ -60,8 +55,6 @@ import {
   logoutStart,
 } from "@/store/auth/actions";
 import FixedLoader from "@/components/fixed-loader";
-import { selectSidebarOpened } from "@/store/miscellaneous/selectors";
-import { toggleSideBarAction } from "@/store/miscellaneous/actions";
 import { hasPermission } from "@/lib/helpers";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import apiRequest from "@/lib/apiRequest";
@@ -124,7 +117,6 @@ interface NavItem {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isMobile = useMobile();
-  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const [userName, setUserName] = useState("");
   const [userInitials, setUserInitials] = useState("U");
   const [userRole, setUserRole] = useState<string | undefined>(undefined);
@@ -133,7 +125,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [canViewSettings, setCanViewSettings] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const sidebarExpanded = useSelector(selectSidebarOpened);
   const [canViewThisGuide, setCanViewThisGuide] = useState(false);
 
   const [InstitutionId, setInstitutionId] = useState<string | null>(null);
@@ -152,11 +143,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // State for filtered nav items
   const [filteredNavItems, setFilteredNavItems] = useState<NavItem[]>([]);
+  const [filteredSettingsItem, setFilteredSettingsItem] = useState<NavItem | null>(null);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const userData = useSelector(selectUser);
   const accessToken = useSelector(selectAccessToken);
-  // const [isLoading, setIsLoading] = useState(false)
   const userIsLoading = useSelector(selectUserLoading);
   const dispatch = useDispatch();
   const router = useRouter();
@@ -173,12 +164,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (selectedInstitution) {
       setInstitutionId(selectedInstitution.id.toString());
     }
-
-    // Get the first Institution ID from attached Institutions
     else if (InstitutionsAttached && InstitutionsAttached.length > 0) {
-      // Convert the numeric ID to a string
       const id = String(InstitutionsAttached[0].id);
-
       setInstitutionId(id);
     }
   }, [InstitutionsAttached, selectedInstitution]);
@@ -200,18 +187,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ) {
       let role = "";
 
-      // Check if user is the Institution owner
       if (selectedInstitution.institution_owner_id === userData.id) {
         role = "Owner";
       } else if (Array.isArray(userData.roles) && userData.roles.length > 0) {
-        // Get the first matched role name, formatted
         const matchingRole = userData.roles.find((r: { name: string }) => !!r.name);
 
         if (matchingRole) {
-          // Format role to "Title Case"
           const formattedRole =
             matchingRole.name.charAt(0).toUpperCase() + matchingRole.name.slice(1).toLowerCase();
-
           role = formattedRole;
         }
       }
@@ -227,119 +210,266 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       dispatch(clearTemporaryPermissions());
     };
   }, []);
-  // Define all navigation items with permissions for submenu items
+
+  // Define all navigation items with permissions for submenu items - keeping original structure
   const navItems: NavItem[] = [
     {
       title: "Dashboard",
       href: "/dashboard",
-      icon: <Icon icon="hugeicons:dashboard-browsing" width="24" height="24" />,
+      icon: <Icon icon="hugeicons:dashboard-browsing" width="20" height="20" />,
     },
     {
       title: "Recruitment",
       href: "#1",
-      icon: <Icon icon="hugeicons:user-add-02" width="24" height="24" />,
-      // requiredPermission: "can_access_valuation",
+      icon: <Icon icon="hugeicons:user-add-02" width="20" height="20" />,
       submenu: [
         {
           title: "Job Adverts",
           href: "/job-adverts",
-          // requiredPermission: "can_access_gps_monitioning",
         },
         {
           title: "Applications",
           href: "/applications",
-          // requiredPermission: "can_access_gps_device_management",
         },
         {
           title: "Interviews",
           href: "/job-interviews",
-          // requiredPermission: "can_access_gps_reports",
         },
       ],
     },
     {
       title: "Onboarding",
       href: "/on-boarding",
-      icon: <Icon height="24" icon="hugeicons:inbox-download" width="24" />,
-      // requiredPermission: "can_view_orders",
+      icon: <Icon height="20" icon="hugeicons:inbox-download" width="20" />,
     },
     {
       title: "Employees",
       href: "#1",
-      icon: <Icon icon="hugeicons:user-multiple-02" width="24" height="24" />,
-      // requiredPermission: "can_access_valuation",
+      icon: <Icon icon="hugeicons:user-multiple-02" width="20" height="20" />,
       submenu: [
         {
           title: "All Employees",
           href: "/employees/employee-list",
-          // requiredPermission: "can_access_valuation_instructions",
         },
         {
           title: "Attendance",
           href: "/employees/attendance",
-          // requiredPermission: "can_access_attendance",
         },
-         {
+        {
           title: "Discipline",
           href: "/employees/discipline",
-          // requiredPermission: "can_access_attendance",
         }
       ],
     },
-
-     {
+    {
       title: "Leave",
       href: "#1",
-      icon: <Icon icon="hugeicons:user-multiple-02" width="24" height="24" />,
-      // requiredPermission: "can_access_valuation",
+      icon: <Icon icon="hugeicons:calendar-03" width="20" height="20" />,
       submenu: [
         {
           title: "Leave Types",
           href: "/leave/leave-types",
-          // requiredPermission: "can_access_valuation_instructions",
         },
         {
           title: "Leave Policy",
           href: "/leave/leave-policy",
-          // requiredPermission: "can_access_attendance",
         },
-         {
+        {
           title: "Leave Application",
           href: "/leave/leave-application",
-          // requiredPermission: "can_access_attendance",
         }
       ],
     },
-
-     {
+    {
       title: "Payroll",
       href: "#1",
-      icon: <Icon icon="hugeicons:user-multiple-02" width="24" height="24" />,
-      // requiredPermission: "can_access_valuation",
+      icon: <Icon icon="hugeicons:dollar-01" width="20" height="20" />,
       submenu: [
         {
           title: "Allowance Types",
           href: "/payroll/allowance-types",
-          // requiredPermission: "can_access_valuation_instructions",
         },
         {
           title: "Deduction Types",
           href: "/payroll/deduction-types",
-          // requiredPermission: "can_access_attendance",
         },
-         {
+        {
           title: "Employee Allowance",
           href: "/payroll/employee-allowance",
-          // requiredPermission: "can_access_attendance",
-        }
+        },
+        {
+          title: "Employee Deductions",
+          href: "/payroll/employee-deductions",
+        },
+        {
+          title: "Payroll Period",
+          href: "/payroll/payroll-period",
+        },
+        {
+          title: "Payslip",
+          href: "/payroll/payslip",
+        },
       ],
     },
-
-
+    // Additional comprehensive modules
+    {
+      title: "Assets",
+      href: "/assets",
+      icon: <Icon icon="hugeicons:package" width="20" height="20" />,
+    },
+    {
+      title: "Help Desk",
+      href: "#1",
+      icon: <Icon icon="hugeicons:help-circle" width="20" height="20" />,
+      submenu: [
+        {
+          title: "Support Tickets",
+          href: "/help-desk/tickets",
+        },
+        {
+          title: "Knowledge Base",
+          href: "/help-desk/knowledge-base",
+        },
+        {
+          title: "FAQs",
+          href: "/help-desk/faqs",
+        },
+        {
+          title: "Contact Support",
+          href: "/help-desk/contact",
+        },
+        {
+          title: "Feedback & Suggestions",
+          href: "/help-desk/feedback",
+        },
+        {
+          title: "Help Desk Reports",
+          href: "/help-desk/reports",
+        },
+      ],
+    },
+    {
+      title: "Reports",
+      href: "#1",
+      icon: <Icon icon="hugeicons:analytics-01" width="20" height="20" />,
+      submenu: [
+        {
+          title: "Employee Reports",
+          href: "/reports/employees",
+        },
+        {
+          title: "Attendance Reports",
+          href: "/reports/attendance",
+        },
+        {
+          title: "Leave Reports",
+          href: "/reports/leave",
+        },
+        {
+          title: "Payroll Reports",
+          href: "/reports/payroll",
+        },
+        {
+          title: "Recruitment Reports",
+          href: "/reports/recruitment",
+        },
+        {
+          title: "Asset Management Reports",
+          href: "/reports/assets",
+        },
+      ],
+    },
+    {
+      title: "Projects",
+      href: "#1",
+      icon: <Icon icon="hugeicons:folder-01" width="20" height="20" />,
+      submenu: [
+        {
+          title: "Project Dashboard",
+          href: "/projects/dashboard",
+        },
+        {
+          title: "Create Project",
+          href: "/projects/create",
+        },
+        {
+          title: "Project Timeline",
+          href: "/projects/timeline",
+        },
+        {
+          title: "Task Management",
+          href: "/projects/tasks",
+        },
+        {
+          title: "Project Reports",
+          href: "/projects/reports",
+        },
+      ],
+    },
+    {
+      title: "Performance",
+      href: "#1",
+      icon: <Icon icon="hugeicons:chart-line-data-01" width="20" height="20" />,
+      submenu: [
+        {
+          title: "Performance Reviews",
+          href: "/performance/reviews",
+        },
+        {
+          title: "Goal Setting",
+          href: "/performance/goals",
+        },
+        {
+          title: "Feedback & Recognition",
+          href: "/performance/feedback",
+        },
+        {
+          title: "Training & Development",
+          href: "/performance/training",
+        },
+        {
+          title: "Competency Management",
+          href: "/performance/competency",
+        },
+        {
+          title: "Performance Reports",
+          href: "/performance/reports",
+        },
+      ],
+    },
   ];
 
-  const toggleSideBar = () => {
-    dispatch(toggleSideBarAction());
+  // Settings item - will be static and always visible
+  const settingsItem: NavItem = {
+    title: "Settings",
+    href: "#1",
+    icon: <Icon icon="hugeicons:settings-02" width="20" height="20" />,
+    submenu: [
+      {
+        title: "General Settings",
+        href: "/settings/general",
+      },
+      {
+        title: "User Management",
+        href: "/settings/users",
+      },
+      {
+        title: "Role Permissions",
+        href: "/settings/permissions",
+      },
+      {
+        title: "Notification Settings",
+        href: "/settings/notifications",
+      },
+      {
+        title: "Integration Settings",
+        href: "/settings/integrations",
+      },
+      {
+        title: "Audit Logs",
+        href: "/settings/audit-logs",
+      },
+    ],
   };
 
   const updateThemeColors = (hexColor: string) => {
@@ -347,49 +477,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     try {
       const hslValue = hexToHSL(hexColor);
-
       if (!hslValue) return;
 
-      // Parse HSL components for calculations
       const [h, s, l] = hslValue.split(" ");
       const hue = h;
       const saturation = s.replace("%", "");
       const lightness = l.replace("%", "");
 
-      // Update primary theme colors
       document.documentElement.style.setProperty("--primary", hslValue);
       document.documentElement.style.setProperty("--ring", hslValue);
 
-      // Create a darker version for primary-hover (for buttons)
       const darkerL = Math.max(parseInt(lightness) - 10, 0);
-
       document.documentElement.style.setProperty(
         "--primary-hover",
         `${hue} ${saturation}% ${darkerL}%`,
       );
 
-      // Set sidebar selected to match primary
       document.documentElement.style.setProperty("--sidebar-selected", hslValue);
 
-      // Create a much lighter version for sidebar hover
-      // Increase lightness by 40%, but cap it at 90%
       const lighterL = Math.min(parseInt(lightness) + 40, 90);
-      // You might also want to reduce saturation for a more pastel look
       const lighterS = Math.max(parseInt(saturation) - 15, 20);
-
       document.documentElement.style.setProperty(
         "--sidebar-hover",
         `${hue} ${lighterS}% ${lighterL}%`,
       );
 
-      // Configure light/dark mode specific adjustments
       if (document.documentElement.classList.contains("dark")) {
         document.documentElement.style.setProperty("--sidebar-background", "217.2 32.6% 17.5%");
-
-        // For dark mode, we might want a different hover adjustment
-        // Slightly lighter but not too light to maintain contrast in dark mode
         const darkModeHoverL = Math.min(parseInt(lightness) + 20, 60);
-
         document.documentElement.style.setProperty(
           "--sidebar-hover",
           `${hue} ${saturation}% ${darkModeHoverL}%`,
@@ -404,31 +519,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     const fallbackColor = "#078c24";
-
     const themeColorToUse = selectedInstitution?.theme_color || fallbackColor;
-
     updateThemeColors(themeColorToUse);
   }, [selectedInstitution]);
 
   useEffect(() => {
-    // Check if user is logged in
     const token = accessToken;
-
     if (!token) {
       router.push("/");
-
       return;
     }
 
     if (userData) {
       try {
         const user = userData;
-
         setUserName(user.fullname || "");
 
         if (user.fullname) {
           const nameParts = user.fullname.split(" ");
-
           if (nameParts.length > 1) {
             setUserInitials(`${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase());
           } else if (nameParts.length === 1) {
@@ -447,40 +555,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const filtered = navItems
       .map((item) => {
-        // For items with submenus, first filter the submenu items
         if (item.submenu && item.submenu.length > 0) {
           const filteredSubmenu = item.submenu.filter(
             (subItem) => !subItem.requiredPermission || hasPermission(subItem.requiredPermission),
           );
-
           return { ...item, submenu: filteredSubmenu };
         }
-
         return item;
       })
       .filter((item) => {
-        // For items with submenus, keep if at least one submenu item remains
         if (item.submenu && item.submenu.length > 0) {
-          return item.submenu.length > 0; // Keep if has accessible submenu items
+          return item.submenu.length > 0;
         }
-
-        // For items without submenus, check their own permission
         return !item.requiredPermission || hasPermission(item.requiredPermission);
       });
 
-    setFilteredNavItems(filtered);
-  }, [router, userData, selectedInstitution, accessToken]); // The 'hasPermission' function called in this effect relies on the user data and the selected Institution as dependencies
+    // Filter settings item separately
+    const processedSettingsItem = (() => {
+      if (settingsItem.submenu && settingsItem.submenu.length > 0) {
+        const filteredSubmenu = settingsItem.submenu.filter(
+          (subItem) => !subItem.requiredPermission || hasPermission(subItem.requiredPermission),
+        );
+        return { ...settingsItem, submenu: filteredSubmenu };
+      }
+      return settingsItem;
+    })();
 
-  const toggleSubmenu = (title: string) => {
-    setOpenSubmenu(openSubmenu === title ? null : title);
-  };
+    setFilteredNavItems(filtered);
+    setFilteredSettingsItem(processedSettingsItem);
+  }, [router, userData, selectedInstitution, accessToken]);
 
   const handleLogoutClick = () => {
     setShowLogoutDialog(true);
   };
 
   const handleLogout = () => {
-    // localStorage.clear();
     dispatch(logoutStart());
   };
 
@@ -493,11 +602,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     try {
       const formData = new FormData();
-
       formData.append("Institution_setup", "true");
-
       await apiRequest.patch(`institution/${InstitutionId}/`, formData);
-
       return true;
     } catch (error) {
       return false;
@@ -506,9 +612,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const handleSkipSetup = async () => {
     setIsSubmitting(true);
-
     const success = await markSetupAsComplete();
-
     setIsSubmitting(false);
     setShowSkipDialog(false);
 
@@ -519,307 +623,203 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
-  // Function to handle menu item clicks
-  const handleMenuItemClick = (item: NavItem) => {
+  const renderNavigationItem = (item: NavItem) => {
+    const isActive = pathname === item.href || (item.submenu && item.submenu.some(sub => pathname === sub.href));
+    
+    const buttonClasses = `flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap ${
+      isActive
+        ? "bg-green-100 text-green-700 hover:bg-green-200"
+        : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+    }`;
+
     if (item.submenu && item.submenu.length > 0) {
-      // When sidebar is collapsed and item has submenu, expand the sidebar first
-      if (!sidebarExpanded) {
-        toggleSideBar();
-        // Set a small timeout to allow the sidebar to expand before opening the submenu
-        setTimeout(() => {
-          toggleSubmenu(item.title);
-        }, 300);
-      } else {
-        toggleSubmenu(item.title);
-      }
-    } else {
-      // If it's a regular menu item with no submenu, navigate to its href
-      router.push(item.href);
+      return (
+        <DropdownMenu key={item.title}>
+          <DropdownMenuTrigger asChild>
+            <Button variant={isActive ? "default" : "ghost"} className={buttonClasses}>
+              {item.icon}
+              <span>{item.title}</span>
+              <ChevronDown className="h-3 w-3 ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48">
+            {item.submenu.map((option, index) => (
+              <div key={option.href}>
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={() => router.push(option.href)}
+                >
+                  {option.title}
+                </DropdownMenuItem>
+                {index === 2 && <DropdownMenuSeparator />}
+              </div>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
     }
+
+    return (
+      <Button 
+        key={item.title} 
+        variant={isActive ? "default" : "ghost"} 
+        className={buttonClasses}
+        onClick={() => router.push(item.href)}
+      >
+        {item.icon}
+        <span>{item.title}</span>
+      </Button>
+    );
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <div
-        className={`${sidebarExpanded ? "w-[250px]" : "w-16"
-          } bg-white border-r transition-all duration-300 flex flex-col justify-between`}
-      >
-        <div>
-          <div className="py-3 px-2 flex items-center gap-2 border-b-2 border-gray-50">
-            <div className="size-11 bg-sidebar-selected text-white rounded-xl flex items-center justify-center">
-              {InstitutionLogo ? (
-                <Image
-                  alt="Institution Logo"
-                  className="object-cover"
-                  height={32}
-                  src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}${InstitutionLogo}`}
-                  width={32}
-                />
-              ) : (
-                <Icon icon="hugeicons:building-05" width="24" height="24" />
-              )}
+    <div className="flex flex-col h-screen bg-gray-100">
+      {/* Header with Logo and User Menu */}
+      <div className="bg-white p-4 flex justify-between items-center border-b">
+        <div className="flex items-center gap-3">
+          <div className="size-11 bg-sidebar-selected text-white rounded-xl flex items-center justify-center">
+            {InstitutionLogo ? (
+              <Image
+                alt="Institution Logo"
+                className="object-cover"
+                height={32}
+                src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}${InstitutionLogo}`}
+                width={32}
+              />
+            ) : (
+              <Icon icon="hugeicons:building-05" width="24" height="24" />
+            )}
+          </div>
+          <span className="font-bold text-gray-800">{InstitutionName}</span>
+        </div>
+
+        <div className="flex-1 flex justify-center">
+          <div className="rounded-lg transition-all duration-200">
+            <InstitutionBranchSelector />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_MODULES}>
+            <div className="">
+              <Modules />
             </div>
-            {sidebarExpanded && <span className="font-bold text-gray-800">{InstitutionName}</span>}
+          </ProtectedComponent>
+          
+          {isMounted && canViewAdmin && (
+            <button
+              className="text-gray-900 bg-white hover:bg-gray-100 rounded-full p-3 relative"
+              id="admin"
+              onClick={() => router.push("/admin")}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+            >
+              <Icon icon="hugeicons:shield-01" width="24" height="24"/>
+              {isHovered && (
+                <span className="text-gray-100 px-3 py-1 rounded-sm z-10 bg-gray-600 text-sm font-medium overflow-hidden transition-all duration-300 ease-in-out absolute -top-2 -right-1">
+                  Admin
+                </span>
+              )}
+            </button>
+          )}
+
+          <div className="">
+            <TaskNotification />
           </div>
 
-          <div className="mt-4">
-            <div className="px-2">
-              {filteredNavItems.map((item, idx) => (
-                <div key={idx}>
-                  <div
-                    className={`
-          ${pathname === item.href || pathname.startsWith(item.href + "/")
-                        ? "bg-sidebar-selected text-white"
-                        : "text-gray-600 hover:bg-sidebar-hover hover:bg-opacity-20"
-                      }
-          rounded-lg p-3 flex items-center gap-3 cursor-pointer transition-colors mb-1`}
-                    onClick={() => handleMenuItemClick(item)}
-                  >
-                    <div className="flex items-center gap-3 flex-1">
-                      {item.icon}
-                      {sidebarExpanded && <span className="text-base">{item.title}</span>}
-                    </div>
-                    {item.submenu && item.submenu.length > 0 && (
-                      <div className={`${sidebarExpanded ? "block" : "hidden"}`}>
-                        <ChevronDown
-                          className={`h-4 w-4 transition-transform duration-300 ${openSubmenu === item.title ? "rotate-180" : ""
-                            }`}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {item.submenu && openSubmenu === item.title && sidebarExpanded && (
-                    <div className="pl-6 text-gray-600 py-2 space-y-1">
-                      {item.submenu.map((subitem) => (
-                        <div
-                          key={subitem.href}
-                          className={`
-                            px-4 py-2 rounded-lg cursor-pointer transition-colors text-base font-light text-gray-500
-                            ${pathname === subitem.href
-                              ? "bg-sidebar-hover bg-opacity-30 text-sidebar-selected font-medium"
-                              : "hover:bg-sidebar-hover hover:bg-opacity-20"
-                            }
-                          `}
-                          onClick={() => router.push(subitem.href)}
-                        >
-                          {subitem.title}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="flex items-center gap-2 rounded-full px-2 py-2 cursor-pointer hover:bg-gray-200 hover:bg-opacity-30 active:bg-gray-400 active:bg-opacity-40 transition-all duration-200">
+                <div className="w-9 h-9 bg-gray-300 rounded-full flex items-center justify-center">
+                  {userInitials}
                 </div>
-              ))}
-            </div>
+                <div className="hidden md:block">
+                  <div className="text-sm font-medium">{userName || "User"}</div>
+                  <div className="text-xs text-gray-500">{userRole || "Staff"}</div>
+                </div>
+                <ChevronDown className="h-4 w-4 hidden md:block" />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="rounded-xl p-1 shadow-lg border border-gray-200">
+              <DropdownMenuItem className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              {isMounted && canViewSettings && (
+                <DropdownMenuItem
+                  className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
+                  onClick={() => router.push("/settings")}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator className="my-1" />
+              <DropdownMenuItem
+                className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
+                onClick={handleLogoutClick}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Logout</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Horizontal Navigation */}
+      <div className="w-full border-b bg-white sticky top-0 z-40">
+        <div className="flex items-center">
+          {/* Scrollable Navigation Items */}
+          <div className="flex-1">
+            <ScrollArea className="w-full whitespace-nowrap">
+              <div className="flex items-center space-x-1 p-4">
+                {filteredNavItems.map(renderNavigationItem)}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+          </div>
+          
+          {/* Static Settings - Always Visible */}
+          <div className="flex-shrink-0 px-4 border-l border-gray-200">
+            {isMounted && canViewSettings && filteredSettingsItem && renderNavigationItem(filteredSettingsItem)}
           </div>
         </div>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Logout</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to log out of your account?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex space-x-2 sm:justify-end">
+            <Button type="button" variant="outline" onClick={handleCancelLogout}>
+              Cancel
+            </Button>
+            <Button type="button" variant="default" onClick={handleLogout}>
+              Logout
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        {/* Header */}
-        <div className="bg-white p-2 flex justify-between items-center">
-          <div
-            className="w-8 h-8 bg-black rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-860 active:bg-sidebar-selected/80 transition-all duration-200"
-            onClick={() => {
-              // When collapsing, make sure to close any open submenu
-              if (sidebarExpanded && openSubmenu !== null) {
-                setOpenSubmenu(null);
-              }
-              toggleSideBar();
-            }}
-          >
-            <ChevronLeft
-              className={`h-5 w-5 text-white transition-transform duration-300 ${sidebarExpanded ? "" : "rotate-180"
-                }`}
-            />
-          </div>
-
-          <h1 className="text-xl font-semibold text-gray-600 ml-8"></h1>
-
-          <div className="flex-1 flex justify-center">
-            {/* Assuming InstitutionBranchSelector is a custom component, we'll wrap it to add hover effects */}
-            <div className="rounded-lg  transition-all duration-200">
-              <InstitutionBranchSelector />
-            </div>
-          </div>
-
-          
-
-          <div className="flex items-center gap-4">
-            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_MODULES}>
-              <div className="">
-                <Modules />
-              </div>
-            </ProtectedComponent>
-            {isMounted && canViewAdmin && (
-              <button
-                className= "text-gray-900 bg-white hover:bg-gray-100 rounded-full p-3 relative"
-                id="admin"
-                onClick={() => router.push("/admin")}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-              >
-                <Icon icon="hugeicons:shield-01" width="24" height="24"/>
-                {isHovered && (
-                  <span
-                    className={`text-gray-100 px-3 py-1 rounded-sm z-10 bg-gray-600 text-sm font-medium overflow-hidden transition-all duration-300 ease-in-out absolute -top-2 -right-1`}
-                  >
-                    Admin
-                  </span>
-                )}
-              </button>
-            )}
-
-            {/* Assuming TaskNotification is a custom component, we'll add a className prop */}
-            <div className="">
-              <TaskNotification />
-            </div>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <div className="flex items-center gap-2  rounded-full px-2 py-2 cursor-pointer hover:bg-gray-200 hover:bg-opacity-30 active:bg-gray-400 active:bg-opacity-40 transition-all duration-200">
-                  <div className="w-9 h-9 bg-gray-300 rounded-full flex items-center justify-center">
-                    {userInitials}
-                  </div>
-                  <div className="hidden md:block">
-                    <div className="text-sm font-medium">{userName || "User"}</div>
-                    <div className="text-xs text-gray-500">{userRole || "Staff"}</div>
-                  </div>
-                  <ChevronDown className="h-4 w-4 hidden md:block" />
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="rounded-xl p-1 shadow-lg border border-gray-200"
-              >
-                <DropdownMenuItem className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2">
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                {isMounted && canViewSettings && (
-                  <DropdownMenuItem
-                    className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
-                    onClick={() => router.push("/settings")}
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator className="my-1" />
-                <DropdownMenuItem
-                  className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
-                  onClick={handleLogoutClick}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Logout</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        {/* Logout Confirmation Dialog */}
-        <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Confirm Logout</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to log out of your account?
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter className="flex space-x-2 sm:justify-end">
-              <Button type="button" variant="outline" onClick={handleCancelLogout}>
-                Cancel
-              </Button>
-              <Button type="button" variant="default" onClick={handleLogout}>
-                Logout
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Dashboard Content */}
-        <div className="px-4 pt-4 h-mainContentHeight overflow-y-auto">
-          {/* {isMounted && canViewThisGuide && InstitutionId && (
-            <>
-              {!isSetupComplete() && (
-                <div className="mb-8 p-6 bg-white rounded-lg shadow">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold">Setup Progress</h2>
-                    {nextStep && (
-                      <div>
-                        <Button
-                          className="px-4"
-                          onClick={() => router.push(nextStep.to_complete_step_page_link)}
-                        >
-                          Continue Setup
-                        </Button>
-
-                        <Button className="ml-2 px-4" onClick={() => setShowSkipDialog(true)}>
-                          Skip
-                        </Button>
-
-                        <Dialog open={showSkipDialog} onOpenChange={setShowSkipDialog}>
-                          <DialogContent className="sm:max-w-md">
-                            <DialogHeader>
-                              <DialogTitle>Skip Setup?</DialogTitle>
-                              <DialogDescription>
-                                Are you sure you want to skip the Institution setup guide? You can
-                                always complete it later.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <DialogFooter className="flex space-x-2 sm:justify-end">
-                              <Button
-                                disabled={isSubmitting}
-                                type="button"
-                                variant="outline"
-                                onClick={() => setShowSkipDialog(false)}
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                disabled={isSubmitting}
-                                type="button"
-                                variant="default"
-                                onClick={handleSkipSetup}
-                              >
-                                {isSubmitting ? "Skipping..." : "Skip Setup"}
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div
-                      className="bg-blue-500 h-2.5 rounded-full"
-                      style={{width: `${completionPercentage}%`}}
-                    />
-                  </div>
-
-                  <div className="mt-2 text-sm text-gray-600">
-                    {`${completionPercentage}% complete. ${
-                      nextStep ? `Next step: ${nextStep.title}` : ""
-                    }`}
-                  </div>
-                </div>
-              )}
-            </>
-          )} */}
-
-          {selectedInstitution ?
+        <div className="px-4 pt-4 h-full overflow-y-auto">
+          {selectedInstitution ? (
             <>
               {children}
-            </> :
+            </>
+          ) : (
             <CreateOrganisationWizard />
-          }
-
+          )}
         </div>
       </div>
+      
       {userIsLoading && <FixedLoader />}
     </div>
   );

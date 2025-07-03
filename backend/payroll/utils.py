@@ -4,6 +4,7 @@ from decimal import Decimal
 from .models import AllowanceType, DeductionType, PayrollPeriod, Payslip, PayslipItem
 from employee.models import Employee
 from institution.models import Institution
+from django.shortcuts import get_object_or_404
 
 class PayrollProcessor:
     """
@@ -39,14 +40,17 @@ class PayrollProcessor:
     @staticmethod
     def generate_payslips_for_period(payroll_period, employee_ids=None):
         """
-        Generate payslips for all active employees in a period
+        Generate payslips for a given payroll period and mark the period as processed.
         """
+        if isinstance(payroll_period, int):
+            payroll_period = get_object_or_404(PayrollPeriod, id=payroll_period)
+
         employees = Employee.objects.filter(is_active=True)
         if employee_ids:
             employees = employees.filter(id__in=employee_ids)
-        
+
         created_payslips = []
-        
+
         for employee in employees:
             payslip, created = Payslip.objects.get_or_create(
                 employee=employee,
@@ -55,15 +59,18 @@ class PayrollProcessor:
                     'basic_salary': employee.salary or 0,
                 }
             )
-            
+
             if created or not payslip.is_paid:
-                # Calculate totals
                 payslip.calculate_totals()
-                # Generate detailed items
                 PayrollProcessor.generate_payslip_items(payslip)
                 created_payslips.append(payslip)
-        
+
+        if created_payslips:
+            payroll_period.is_processed = True
+            payroll_period.save()
+
         return created_payslips
+
     
     @staticmethod
     def generate_payslip_items(payslip):
@@ -108,16 +115,16 @@ class PayrollProcessor:
                 )
         
         # Add overtime if applicable
-        if payslip.overtime_amount > 0:
-            items_to_create.append(
-                PayslipItem(
-                    payslip=payslip,
-                    item_type='overtime',
-                    name='Overtime Pay',
-                    amount=payslip.overtime_amount,
-                    description=f"{payslip.overtime_hours} hours @ {payslip.overtime_rate} per hour"
-                )
-            )
+        # if payslip.overtime_amount > 0:
+        #     items_to_create.append(
+        #         PayslipItem(
+        #             payslip=payslip,
+        #             item_type='overtime',
+        #             name='Overtime Pay',
+        #             amount=payslip.overtime_amount,
+        #             description=f"{payslip.overtime_hours} hours @ {payslip.overtime_rate} per hour"
+        #         )
+        #     )
         
         # Bulk create items
         PayslipItem.objects.bulk_create(items_to_create)

@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
 import { 
   Plus, 
   Edit, 
@@ -50,11 +49,21 @@ interface PayrollPeriodsProps {
   institutionId?: number
 }
 
+// Validation result interface
+interface ValidationResult {
+  name?: string
+  start_date?: string
+  end_date?: string
+  pay_date?: string
+  warning?: string
+}
+
 export default function PayrollPeriods({ institutionId: propInstitutionId }: PayrollPeriodsProps) {
   const [payrollPeriods, setPayrollPeriods] = useState<IPayrollPeriod[]>([])
   const [saving, setSaving] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingPeriod, setEditingPeriod] = useState<IPayrollPeriod | null>(null)
+  const [validationErrors, setValidationErrors] = useState<ValidationResult>({})
 
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<"all" | "processed" | "pending">("all")
@@ -82,9 +91,7 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
     start_date: "",
     end_date: "",
     pay_date: "",
-    is_processed: false,
   })
-
 
   useEffect(() => {
     if (propInstitutionId) {
@@ -95,7 +102,6 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
       setInstitutionId(institutionsAttached[0].id)
     }
   }, [propInstitutionId, institutionsAttached, selectedInstitution])
-
 
   useEffect(() => {
     const fetchPayrollPeriods = async () => {
@@ -131,19 +137,51 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
     }
   }, [formData.start_date, formData.end_date, editingPeriod])
 
-  const validatePayrollForm = () => {
-    const validations = []
+  // Validate form and update validation errors
+  useEffect(() => {
+    const errors: ValidationResult = {}
 
-    if (!institutionId) {
-      validations.push({ type: 'error', message: 'Institution ID is required' })
+    if (isModalOpen) {
+      // Only show validation errors for fields that have been interacted with
+      if (formData.name && formData.name.trim().length < 3) {
+        errors.name = 'Period name must be at least 3 characters long'
+      }
+
+      if (formData.start_date && formData.end_date) {
+        if (new Date(formData.end_date) <= new Date(formData.start_date)) {
+          errors.end_date = 'End date must be after start date'
+        }
+      }
+
+      if (formData.pay_date && formData.end_date) {
+        if (new Date(formData.pay_date) < new Date(formData.end_date)) {
+          errors.pay_date = 'Pay date should typically be after the period end date'
+        }
+      }
+
+      // Duration validation
+      if (formData.start_date && formData.end_date) {
+        const duration = Math.ceil((new Date(formData.end_date).getTime() - new Date(formData.start_date).getTime()) / (1000 * 60 * 60 * 24))
+        if (duration > 365) {
+          errors.warning = 'This period is longer than a year. Please verify the dates are correct.'
+        } else if (duration < 1) {
+          errors.end_date = 'Period must be at least 1 day long'
+        }
+      }
     }
 
-    const formValidation = validatePayrollPeriodFormData(formData)
-    formValidation.errors.forEach(error => {
-      validations.push({ type: 'error', message: error })
-    })
+    setValidationErrors(errors)
+  }, [formData, isModalOpen])
 
-    return validations
+  const hasValidationErrors = () => {
+    // Check for missing required fields
+    if (!formData.name || !formData.start_date || !formData.end_date || !formData.pay_date) {
+      return true
+    }
+
+    // Check for validation errors in the state
+    const errorKeys = Object.keys(validationErrors).filter(key => key !== 'warning')
+    return errorKeys.length > 0
   }
 
   const resetForm = () => {
@@ -152,12 +190,12 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
       start_date: "",
       end_date: "",
       pay_date: "",
-      is_processed: false,
     })
     setEditingPeriod(null)
+    setValidationErrors({})
   }
 
-  const handleInputChange = (field: string, value: string | boolean) => {
+  const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -172,12 +210,13 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
       return
     }
 
-    const validations = validatePayrollForm()
-    const errors = validations.filter(v => v.type === 'error')
-    
-    if (errors.length > 0) {
-      toast.error(errors[0].message)
+    if (hasValidationErrors()) {
+      toast.error("Please fix the validation errors before submitting")
       return
+    }
+
+    if (validationErrors.warning) {
+      toast.warning(validationErrors.warning)
     }
 
     // Check for overlapping periods
@@ -206,7 +245,7 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
         start_date: formData.start_date,
         end_date: formData.end_date,
         pay_date: formData.pay_date,
-        is_processed: formData.is_processed,
+        is_processed: false, // Always false since backend handles this
       }
 
       if (editingPeriod) {
@@ -246,7 +285,6 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
       start_date: period.start_date,
       end_date: period.end_date,
       pay_date: period.pay_date,
-      is_processed: period.is_processed,
     })
     setIsModalOpen(true)
   }
@@ -281,38 +319,6 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
     const diffTime = pay.getTime() - today.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
-  }
-
-  // Render validation messages
-  const renderValidationMessages = () => {
-    const validations = validatePayrollForm()
-    if (validations.length === 0) return null
-
-    return (
-      <div className="space-y-2">
-        {validations.map((validation, index) => (
-          <div
-            key={index}
-            className={`flex items-start gap-2 p-3 rounded-lg ${
-              validation.type === 'error'
-                ? 'bg-red-50 border border-red-200'
-                : 'bg-amber-50 border border-amber-200'
-            }`}
-          >
-            {validation.type === 'error' ? (
-              <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-            ) : (
-              <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-            )}
-            <p className={`text-sm font-medium ${
-              validation.type === 'error' ? 'text-red-800' : 'text-amber-800'
-            }`}>
-              {validation.message}
-            </p>
-          </div>
-        ))}
-      </div>
-    )
   }
 
   if (!institutionId) {
@@ -357,13 +363,20 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
                     <Input
                       id="name"
                       type="text"
-                      placeholder="e.g., January 2024, Week 1 - Jan 2024"
+                      placeholder="Please enter a period name"
                       value={formData.name}
                       onChange={(e) => handleInputChange("name", e.target.value)}
                       disabled={saving}
-                      className="focus:ring-orange-500 focus:border-orange-500"
-                      required
+                      className={`focus:ring-orange-500 focus:border-orange-500 ${
+                        validationErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
                     />
+                    {validationErrors.name && (
+                      <p className="text-xs text-red-500 mt-1 flex items-center">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        {validationErrors.name}
+                      </p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -375,9 +388,16 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
                         value={formData.start_date}
                         onChange={(e) => handleInputChange("start_date", e.target.value)}
                         disabled={saving}
-                        className="focus:ring-orange-500 focus:border-orange-500"
-                        required
+                        className={`focus:ring-orange-500 focus:border-orange-500 ${
+                          validationErrors.start_date ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}
                       />
+                      {validationErrors.start_date && (
+                        <p className="text-xs text-red-500 mt-1 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {validationErrors.start_date}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -389,9 +409,16 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
                         onChange={(e) => handleInputChange("end_date", e.target.value)}
                         disabled={saving}
                         min={formData.start_date}
-                        className="focus:ring-orange-500 focus:border-orange-500"
-                        required
+                        className={`focus:ring-orange-500 focus:border-orange-500 ${
+                          validationErrors.end_date ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}
                       />
+                      {validationErrors.end_date && (
+                        <p className="text-xs text-red-500 mt-1 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {validationErrors.end_date}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -403,24 +430,16 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
                       value={formData.pay_date}
                       onChange={(e) => handleInputChange("pay_date", e.target.value)}
                       disabled={saving}
-                      className="focus:ring-orange-500 focus:border-orange-500"
-                      required
+                      className={`focus:ring-orange-500 focus:border-orange-500 ${
+                        validationErrors.pay_date ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <Label className="text-base font-medium">Mark as Processed</Label>
-                        <p className="text-sm text-gray-500">Indicates if payroll has been processed for this period</p>
-                      </div>
-                      <Switch
-                        checked={formData.is_processed}
-                        onCheckedChange={(checked) => handleInputChange("is_processed", checked)}
-                        className="data-[state=checked]:bg-orange-600"
-                        disabled={saving}
-                      />
-                    </div>
+                    {validationErrors.pay_date && (
+                      <p className="text-xs text-red-500 mt-1 flex items-center">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        {validationErrors.pay_date}
+                      </p>
+                    )}
                   </div>
 
                   {/* Period Summary */}
@@ -435,11 +454,22 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
                         {formData.pay_date && (
                           <p>• Days to pay: {getDaysRemaining(formData.pay_date)} days</p>
                         )}
+                        <p>• Processing Status: Will be automatically managed by the system</p>
                       </div>
                     </div>
                   )}
 
-                  {renderValidationMessages()}
+                  {/* Warning message */}
+                  {validationErrors.warning && (
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                        <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-sm font-medium text-amber-800">
+                          {validationErrors.warning}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   <DialogFooter>
                     <Button 
@@ -453,7 +483,7 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
                     <Button 
                       type="submit" 
                       className="bg-orange-600 hover:bg-orange-700"
-                      disabled={saving || validatePayrollForm().filter(v => v.type === 'error').length > 0}
+                      disabled={saving || hasValidationErrors()}
                     >
                       {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       {saving ? "Saving..." : editingPeriod ? "Update Period" : "Add Period"}

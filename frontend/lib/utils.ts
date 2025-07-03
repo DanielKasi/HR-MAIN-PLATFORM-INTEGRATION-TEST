@@ -9,7 +9,8 @@ import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition,
    DisciplineTypeForm, DisciplineTypeResponse, convertDisciplineTypeFormToApiRequest, DisciplinaryActionAPIResponse,
    ILeaveRequest, ILeaveRequestFormData, LeaveRequestStatus,LeaveType,ILeaveTypeFormData, ILeaveType,ILeavePolicy, 
    ILeavePolicyFormData, ILeavePolicyResponse, IAllowanceType, IAllowanceTypeFormData, IDeductionType, IDeductionTypeFormData,
-   IEmployeeAllowance,IEmployeeAllowanceFormData,
+   IEmployeeAllowance,IEmployeeAllowanceFormData,IEmployeeDeduction, IEmployeeDeductionFormData, IPayrollPeriod, IPayrollPeriodFormData,
+   IPayslipFormData, IPayslip, IPayslipItem
   } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -972,7 +973,7 @@ export const attachEmployeeToBranches = async (
   }
 };
 
-// 📌 Get Branches for a Specific Employee
+
 export const getEmployeeBranches = async (
   employeeId: number
 ): Promise<EmployeeBranchSummary | null> => {
@@ -985,7 +986,6 @@ export const getEmployeeBranches = async (
   }
 };
 
-// 📌 Set Default Branch for Employee
 export const setDefaultBranch = async (
   employeeId: number,
   data: SetDefaultBranchPayload
@@ -1097,10 +1097,8 @@ export const getDisciplinaryActions = async (): Promise<DisciplinaryActionAPIRes
 
 
 export const createLeaveType = async ({
-  institutionId,
   leaveTypeData,
 }: {
-  institutionId: number;
   leaveTypeData: ILeaveTypeFormData;
 }): Promise<ILeaveType | null> => {
   try {
@@ -1273,7 +1271,6 @@ export const createLeaveApplication = async ({
   try {
     const formData = new FormData();
     
-    // Add all form fields
     Object.entries(leaveApplicationData).forEach(([key, value]) => {
       if (key === "supporting_document" && value instanceof File) {
         formData.append(key, value);
@@ -1333,7 +1330,6 @@ export const updateLeaveApplication = async ({
 }): Promise<ILeaveRequest | null> => {
   try {
     const formData = new FormData();
-    // Add all form fields
     Object.entries(leaveApplicationData).forEach(([key, value]) => {
       if (key === "supporting_document" && value instanceof File) {
         formData.append(key, value);
@@ -1462,7 +1458,6 @@ export const cancelLeaveApplication = async ({
 }): Promise<ILeaveRequest | null> => {
   return updateLeaveApplication({
     leaveApplicationId,
-    institutionId,
     leaveApplicationData: { status: 'cancelled' },
   });
 };
@@ -1889,3 +1884,784 @@ export async function fetchEmployeeDetail(employeeId: number) {
   const response = await apiRequest.get(`/employee/${employeeId}/`);
   return response.data;
 }
+
+
+
+export const createEmployeeDeduction = async ({
+  institutionId,
+  employeeDeductionData,
+}: {
+  institutionId: number;
+  employeeDeductionData: IEmployeeDeductionFormData;
+}): Promise<IEmployeeDeduction | null> => {
+  try {
+    const formData = new FormData();
+    
+    Object.entries(employeeDeductionData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `payroll/${institutionId}/employee-deductions/`,
+      formData
+    );
+    
+    return response.data as IEmployeeDeduction;
+  } catch (error) {
+    console.error("Failed to create employee deduction:", error);
+    return null;
+  }
+};
+
+
+export const getEmployeeDeductions = async (
+  institutionId: number
+): Promise<IEmployeeDeduction[] | null> => {
+  try {
+    const response = await apiRequest.get(`payroll/${institutionId}/employee-deductions/`);
+    return response.data as IEmployeeDeduction[];
+  } catch (error) {
+    console.error("Failed to get employee deductions:", error);
+    return null;
+  }
+};
+
+
+export const getEmployeeDeduction = async (
+  id: number
+): Promise<IEmployeeDeduction | null> => {
+  try {
+    const response = await apiRequest.get(`payroll/employee-deductions/${id}/`);
+    return response.data as IEmployeeDeduction;
+  } catch (error) {
+    console.error("Failed to get employee deduction:", error);
+    return null;
+  }
+};
+
+
+export const updateEmployeeDeduction = async ({
+  id,
+  employeeDeductionData,
+}: {
+  id: number;
+  employeeDeductionData: Partial<IEmployeeDeductionFormData>;
+}): Promise<IEmployeeDeduction | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(employeeDeductionData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.patch(
+      `payroll/employee-deductions/${id}/`,
+      formData
+    );
+    return response.data as IEmployeeDeduction;
+  } catch (error) {
+    console.error("Failed to update employee deduction:", error);
+    return null;
+  }
+};
+
+
+export const deleteEmployeeDeduction = async (
+  id: number
+): Promise<boolean> => {
+  try {
+    await apiRequest.delete(`payroll/employee-deductions/${id}/`);
+    return true;
+  } catch (error) {
+    console.error("Failed to delete employee deduction:", error);
+    return false;
+  }
+};
+
+
+export const getEmployeeDeductionsByEmployee = async ({
+  institutionId,
+  employeeId,
+}: {
+  institutionId: number;
+  employeeId: number;
+}): Promise<IEmployeeDeduction[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `payroll/${institutionId}/employee-deductions/?employee=${employeeId}`
+    );
+    return response.data as IEmployeeDeduction[];
+  } catch (error) {
+    console.error("Failed to get employee deductions by employee:", error);
+    return null;
+  }
+};
+
+
+export const getEmployeeDeductionsByType = async ({
+  institutionId,
+  deductionTypeId,
+}: {
+  institutionId: number;
+  deductionTypeId: number;
+}): Promise<IEmployeeDeduction[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `payroll/${institutionId}/employee-deductions/?deduction_type=${deductionTypeId}`
+    );
+    return response.data as IEmployeeDeduction[];
+  } catch (error) {
+    console.error("Failed to get employee deductions by type:", error);
+    return null;
+  }
+};
+
+
+export const getActiveEmployeeDeductions = async (
+  institutionId: number
+): Promise<IEmployeeDeduction[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `payroll/${institutionId}/employee-deductions/?is_active=true`
+    );
+    return response.data as IEmployeeDeduction[];
+  } catch (error) {
+    console.error("Failed to get active employee deductions:", error);
+    return null;
+  }
+};
+
+
+export const getEmployeeDeductionsByDateRange = async ({
+  institutionId,
+  startDate,
+  endDate,
+}: {
+  institutionId: number;
+  startDate: string;
+  endDate: string;
+}): Promise<IEmployeeDeduction[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `payroll/${institutionId}/employee-deductions/?effective_from__gte=${startDate}&effective_from__lte=${endDate}`
+    );
+    return response.data as IEmployeeDeduction[];
+  } catch (error) {
+    console.error("Failed to get employee deductions by date range:", error);
+    return null;
+  }
+};
+
+
+
+export const bulkCreateEmployeeDeductions = async ({
+  institutionId,
+  deductionsData,
+}: {
+  institutionId: number;
+  deductionsData: IEmployeeDeductionFormData[];
+}): Promise<IEmployeeDeduction[] | null> => {
+  try {
+    const response = await apiRequest.post(
+      `payroll/${institutionId}/employee-deductions/bulk/`,
+      { deductions: deductionsData }
+    );
+    return response.data as IEmployeeDeduction[];
+  } catch (error) {
+    console.error("Failed to bulk create employee deductions:", error);
+    return null;
+  }
+};
+
+
+export const calculateDeductionAmount = (
+  deduction: IEmployeeDeduction,
+  employeeSalary?: number
+): number => {
+  if (deduction.calculation_method === "percentage" && employeeSalary) {
+    return (employeeSalary * parseFloat(deduction.percentage)) / 100;
+  }
+  return parseFloat(deduction.amount) || 0;
+};
+
+
+export const validateDeductionFormData = (
+  data: Partial<IEmployeeDeductionFormData>
+): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+
+  if (!data.employee) {
+    errors.push("Employee is required");
+  }
+  
+  if (!data.deduction_type) {
+    errors.push("Deduction type is required");
+  }
+
+  if (!data.effective_from) {
+    errors.push("Effective from date is required");
+  }
+
+  if (data.calculation_method === "fixed") {
+    const amount = parseFloat(data.amount || "0");
+    if (!data.amount || isNaN(amount) || amount <= 0) {
+      errors.push("Valid fixed amount is required");
+    }
+  } else if (data.calculation_method === "percentage") {
+    const percentage = parseFloat(data.percentage || "0");
+    if (!data.percentage || isNaN(percentage) || percentage <= 0 || percentage > 100) {
+      errors.push("Valid percentage (1-100) is required");
+    }
+  }
+
+  if (data.effective_from && data.effective_to) {
+    if (new Date(data.effective_to) < new Date(data.effective_from)) {
+      errors.push("End date cannot be before start date");
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
+
+export const createPayrollPeriod = async ({
+  institutionId,
+  payrollPeriodData,
+}: {
+  institutionId: number;
+  payrollPeriodData: IPayrollPeriodFormData;
+}): Promise<IPayrollPeriod | null> => {
+  try {
+    const formData = new FormData();
+    
+    // Add the institution field
+    formData.append('institution', institutionId.toString());
+    
+    Object.entries(payrollPeriodData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `payroll/${institutionId}/payroll-periods/`,
+      formData
+    );
+    
+    return response.data as IPayrollPeriod;
+  } catch (error) {
+    console.error("Failed to create payroll period:", error);
+    return null;
+  }
+};
+
+export const getPayrollPeriods = async (
+  institutionId: number
+): Promise<IPayrollPeriod[] | null> => {
+  try {
+    const response = await apiRequest.get(`payroll/${institutionId}/payroll-periods/`);
+    return response.data as IPayrollPeriod[];
+  } catch (error) {
+    console.error("Failed to get payroll periods:", error);
+    return null;
+  }
+};
+
+
+export const getPayrollPeriod = async (
+  id: number
+): Promise<IPayrollPeriod | null> => {
+  try {
+    const response = await apiRequest.get(`payroll/payroll-periods/${id}/`);
+    return response.data as IPayrollPeriod;
+  } catch (error) {
+    console.error("Failed to get payroll period:", error);
+    return null;
+  }
+};
+
+
+export const updatePayrollPeriod = async ({
+  id,
+  payrollPeriodData,
+}: {
+  id: number;
+  payrollPeriodData: Partial<IPayrollPeriodFormData>;
+}): Promise<IPayrollPeriod | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(payrollPeriodData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.patch(
+      `payroll/payroll-periods/${id}/`,
+      formData
+    );
+    return response.data as IPayrollPeriod;
+  } catch (error) {
+    console.error("Failed to update payroll period:", error);
+    return null;
+  }
+};
+
+
+export const deletePayrollPeriod = async (
+  id: number
+): Promise<boolean> => {
+  try {
+    await apiRequest.delete(`payroll/payroll-periods/${id}/`);
+    return true;
+  } catch (error) {
+    console.error("Failed to delete payroll period:", error);
+    return false;
+  }
+};
+
+
+export const getCurrentPayrollPeriod = async (
+  institutionId: number
+): Promise<IPayrollPeriod | null> => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const response = await apiRequest.get(
+      `payroll/${institutionId}/payroll-periods/?current_date=${today}`
+    );
+    
+    // Assuming the API returns the current period or we find it from the list
+    const periods = response.data as IPayrollPeriod[];
+    const currentPeriod = periods.find(period => 
+      period.start_date <= today && period.end_date >= today
+    );
+    
+    return currentPeriod || null;
+  } catch (error) {
+    console.error("Failed to get current payroll period:", error);
+    return null;
+  }
+};
+
+
+export const getPayrollPeriodsByStatus = async ({
+  institutionId,
+  isProcessed,
+}: {
+  institutionId: number;
+  isProcessed: boolean;
+}): Promise<IPayrollPeriod[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `payroll/${institutionId}/payroll-periods/?is_processed=${isProcessed}`
+    );
+    return response.data as IPayrollPeriod[];
+  } catch (error) {
+    console.error("Failed to get payroll periods by status:", error);
+    return null;
+  }
+};
+
+
+export const getUnprocessedPayrollPeriods = async (
+  institutionId: number
+): Promise<IPayrollPeriod[] | null> => {
+  return getPayrollPeriodsByStatus({ institutionId, isProcessed: false });
+};
+
+
+export const getProcessedPayrollPeriods = async (
+  institutionId: number
+): Promise<IPayrollPeriod[] | null> => {
+  return getPayrollPeriodsByStatus({ institutionId, isProcessed: true });
+};
+
+
+export const getPayrollPeriodsByDateRange = async ({
+  institutionId,
+  startDate,
+  endDate,
+}: {
+  institutionId: number;
+  startDate: string;
+  endDate: string;
+}): Promise<IPayrollPeriod[] | null> => {
+  try {
+    const response = await apiRequest.get(
+      `payroll/${institutionId}/payroll-periods/?start_date__gte=${startDate}&end_date__lte=${endDate}`
+    );
+    return response.data as IPayrollPeriod[];
+  } catch (error) {
+    console.error("Failed to get payroll periods by date range:", error);
+    return null;
+  }
+};
+
+
+export const markPayrollPeriodAsProcessed = async (
+  id: number
+): Promise<IPayrollPeriod | null> => {
+  return updatePayrollPeriod({
+    id,
+    payrollPeriodData: { is_processed: true }
+  });
+};
+
+
+export const markPayrollPeriodAsUnprocessed = async (
+  id: number
+): Promise<IPayrollPeriod | null> => {
+  return updatePayrollPeriod({
+    id,
+    payrollPeriodData: { is_processed: false }
+  });
+};
+
+
+export const bulkCreatePayrollPeriods = async ({
+  institutionId,
+  periodsData,
+}: {
+  institutionId: number;
+  periodsData: IPayrollPeriodFormData[];
+}): Promise<IPayrollPeriod[] | null> => {
+  try {
+    const response = await apiRequest.post(
+      `payroll/${institutionId}/payroll-periods/bulk/`,
+      { periods: periodsData }
+    );
+    return response.data as IPayrollPeriod[];
+  } catch (error) {
+    console.error("Failed to bulk create payroll periods:", error);
+    return null;
+  }
+};
+
+
+export const validatePayrollPeriodFormData = (
+  data: Partial<IPayrollPeriodFormData>
+): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+
+  if (!data.name || data.name.trim().length === 0) {
+    errors.push("Period name is required");
+  }
+
+  if (!data.start_date) {
+    errors.push("Start date is required");
+  }
+
+  if (!data.end_date) {
+    errors.push("End date is required");
+  }
+
+  if (!data.pay_date) {
+    errors.push("Pay date is required");
+  }
+
+  if (data.start_date && data.end_date) {
+    if (new Date(data.end_date) < new Date(data.start_date)) {
+      errors.push("End date cannot be before start date");
+    }
+  }
+
+  if (data.pay_date && data.end_date) {
+    if (new Date(data.pay_date) < new Date(data.end_date)) {
+      errors.push("Pay date should typically be after or on the end date");
+    }
+  }
+
+  if (data.start_date && data.end_date) {
+    const startDate = new Date(data.start_date);
+    const endDate = new Date(data.end_date);
+    const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysDiff > 31) {
+      errors.push("Warning: Payroll period is longer than 31 days");
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
+
+export const generatePeriodName = (startDate: string, endDate: string): string => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  
+  const startMonth = monthNames[start.getMonth()];
+  const endMonth = monthNames[end.getMonth()];
+  const year = start.getFullYear();
+  
+  if (start.getMonth() === end.getMonth()) {
+    // Same month
+    return `${startMonth} ${year}`;
+  } else {
+    // Different months
+    return `${startMonth} - ${endMonth} ${year}`;
+  }
+};
+
+
+export const checkPeriodOverlap = async ({
+  institutionId,
+  startDate,
+  endDate,
+  excludeId,
+}: {
+  institutionId: number;
+  startDate: string;
+  endDate: string;
+  excludeId?: number;
+}): Promise<{ hasOverlap: boolean; overlappingPeriods: IPayrollPeriod[] }> => {
+  try {
+    const allPeriods = await getPayrollPeriods(institutionId);
+    
+    if (!allPeriods) {
+      return { hasOverlap: false, overlappingPeriods: [] };
+    }
+    
+    const filteredPeriods = excludeId 
+      ? allPeriods.filter(period => period.id !== excludeId)
+      : allPeriods;
+    
+    const overlapping = filteredPeriods.filter(period => {
+      const periodStart = new Date(period.start_date);
+      const periodEnd = new Date(period.end_date);
+      const newStart = new Date(startDate);
+      const newEnd = new Date(endDate);
+      
+      // Check if periods overlap
+      return (newStart <= periodEnd && newEnd >= periodStart);
+    });
+    
+    return {
+      hasOverlap: overlapping.length > 0,
+      overlappingPeriods: overlapping
+    };
+  } catch (error) {
+    console.error("Failed to check period overlap:", error);
+    return { hasOverlap: false, overlappingPeriods: [] };
+  }
+};
+
+
+
+export const createPayslip = async ({
+  institutionId,
+  payslipData,
+}: {
+  institutionId: number;
+  payslipData: IPayslipFormData;
+}): Promise<IPayslip | null> => {
+  try {
+    const formData = new FormData();
+    
+    Object.entries(payslipData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `payroll/${institutionId}/payslips/`,
+      formData
+    );
+    
+    return response.data as IPayslip;
+  } catch (error) {
+    console.error("Failed to create payslip:", error);
+    return null;
+  }
+};
+
+export const createBulkPayslips = async ({
+  institutionId,
+  payrollPeriodId,
+  employeeIds
+}: {
+  institutionId: number;
+  payrollPeriodId: number;
+  employeeIds?: number[];
+}): Promise<IPayslip[] | null> => {
+  try {
+    const requestData = {
+      payroll_period: payrollPeriodId,
+      employee_ids: employeeIds || []
+    };
+
+    const response = await apiRequest.post(
+      `payroll/${institutionId}/payslips/`,
+      requestData  
+    );
+    
+    return response.data as IPayslip[];
+  } catch (error) {
+    console.error("Failed to create bulk payslips:", error);
+    throw error; 
+  }
+};
+
+export const getPayslips = async (
+  institutionId: number,
+  params?: {
+    employee?: number;
+    payroll_period?: number;
+    is_paid?: boolean;
+    page?: number;
+    page_size?: number;
+  }
+): Promise<IPayslip[] | null> => {
+  try {
+    const queryParams = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    
+    const url = `payroll/${institutionId}/payslips/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await apiRequest.get(url);
+    
+    return response.data as IPayslip[];
+  } catch (error) {
+    console.error("Failed to get payslips:", error);
+    return null;
+  }
+};
+
+export const getPayslip = async (
+  id: number
+): Promise<IPayslip | null> => {
+  try {
+    const response = await apiRequest.get(`payroll/payslips/${id}/`);
+    return response.data as IPayslip;
+  } catch (error) {
+    console.error("Failed to get payslip:", error);
+    return null;
+  }
+};
+
+export const updatePayslip = async ({
+  id,
+  payslipData,
+}: {
+  id: number;
+  payslipData: Partial<IPayslipFormData>;
+}): Promise<IPayslip | null> => {
+  try {
+    const formData = new FormData();
+    
+    Object.entries(payslipData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.patch(
+      `payroll/payslips/${id}/`,
+      formData
+    );
+    
+    return response.data as IPayslip;
+  } catch (error) {
+    console.error("Failed to update payslip:", error);
+    return null;
+  }
+};
+
+export const deletePayslip = async (
+  id: number
+): Promise<boolean> => {
+  try {
+    await apiRequest.delete(`payroll/payslips/${id}/`);
+    return true;
+  } catch (error) {
+    console.error("Failed to delete payslip:", error);
+    return false;
+  }
+};
+
+
+export const markPayslipAsPaid = async (
+  id: number,
+  paidDate?: string
+): Promise<IPayslip | null> => {
+  try {
+    const formData = new FormData();
+    formData.append('is_paid', 'true');
+    
+    if (paidDate) {
+      formData.append('paid_date', paidDate);
+    } else {
+      // Use current date if no date provided
+      formData.append('paid_date', new Date().toISOString().split('T')[0]);
+    }
+
+    const response = await apiRequest.patch(
+      `payroll/payslips/${id}/`,
+      formData
+    );
+    
+    return response.data as IPayslip;
+  } catch (error) {
+    console.error("Failed to mark payslip as paid:", error);
+    return null;
+  }
+};
+
+export const getPayslipsByEmployee = async (
+  institutionId: number,
+  employeeId: number
+): Promise<IPayslip[] | null> => {
+  return getPayslips(institutionId, { employee: employeeId });
+};
+
+export const getPayslipsByPayrollPeriod = async (
+  institutionId: number,
+  payrollPeriodId: number
+): Promise<IPayslip[] | null> => {
+  return getPayslips(institutionId, { payroll_period: payrollPeriodId });
+};
+
+export const getUnpaidPayslips = async (
+  institutionId: number
+): Promise<IPayslip[] | null> => {
+  return getPayslips(institutionId, { is_paid: false });
+};
+
+export const getPaidPayslips = async (
+  institutionId: number
+): Promise<IPayslip[] | null> => {
+  return getPayslips(institutionId, { is_paid: true });
+};
+
+
+export const getPayslipItems = async (
+  payslipId: number
+): Promise<IPayslipItem[] | null> => {
+  try {
+    const response = await apiRequest.get(`payroll/payslips/${payslipId}/items/`);
+    return response.data as IPayslipItem[];
+  } catch (error) {
+    console.error("Failed to get payslip items:", error)
+    return null;
+  }
+};
