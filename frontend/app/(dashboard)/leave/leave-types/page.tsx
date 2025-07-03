@@ -18,12 +18,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { MoreHorizontal, Edit, Trash2, Loader2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { createLeaveType, getLeaveTypes, updateLeaveType, deleteLeaveType } from "@/lib/utils" // Import helper functions
-import { ILeaveType, ILeaveTypeFormData } from "@/app/types/types.utils" // Import interfaces
-import { toast } from "sonner" // Assuming you're using sonner for notifications
+import { createLeaveType, getLeaveTypes, updateLeaveType, deleteLeaveType } from "@/lib/utils"
+import { ILeaveType, ILeaveTypeFormData } from "@/app/types/types.utils" 
+import { toast } from "sonner" 
 
 interface LeaveType extends ILeaveType {
-  // Add any additional fields if needed
+
 }
 
 const LEAVE_CATEGORIES = [

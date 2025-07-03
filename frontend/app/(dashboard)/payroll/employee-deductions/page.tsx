@@ -167,6 +167,17 @@ interface EmployeeDeductionComponentProps {
   institutionId?: number
 }
 
+// Validation result interface
+interface ValidationResult {
+  employee?: string
+  deduction_type?: string
+  amount?: string
+  percentage?: string
+  effective_from?: string
+  effective_to?: string
+  warning?: string
+}
+
 export default function EmployeeDeductionComponent({ institutionId: propInstitutionId }: EmployeeDeductionComponentProps) {
   const [deductions, setDeductions] = useState<DisplayEmployeeDeduction[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
@@ -178,6 +189,7 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
   const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all")
+  const [validationErrors, setValidationErrors] = useState<ValidationResult>({})
   
   // Bulk add states
   const [bulkDeductionType, setBulkDeductionType] = useState("")
@@ -328,6 +340,36 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
     
     fetchDeductions()
   }, [institutionId, employees])
+
+  // Validate form and update validation errors
+  useEffect(() => {
+    const errors: ValidationResult = {}
+
+    if (isDialogOpen) {
+      // Only show validation errors for fields that have been interacted with or on submit
+      if (formData.calculation_method === 'fixed') {
+        const amount = parseFloat(formData.amount)
+        if (formData.amount && (isNaN(amount) || amount <= 0)) {
+          errors.amount = 'Please enter a valid fixed amount'
+        }
+      } else {
+        const percentage = parseFloat(formData.percentage)
+        if (formData.percentage && (isNaN(percentage) || percentage <= 0 || percentage > 100)) {
+          errors.percentage = 'Please enter a valid percentage (1-100)'
+        } else if (formData.percentage && percentage > 50) {
+          errors.warning = 'High percentage deduction detected. Please verify this is correct.'
+        }
+      }
+
+      if (formData.effective_from && formData.effective_to) {
+        if (new Date(formData.effective_to) < new Date(formData.effective_from)) {
+          errors.effective_to = 'End date cannot be before start date'
+        }
+      }
+    }
+
+    setValidationErrors(errors)
+  }, [formData, isDialogOpen])
 
   const convertToDisplayDeduction = (apiDeduction: any): DisplayEmployeeDeduction => {
     return {
@@ -556,50 +598,24 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
     return employees.find(emp => emp.id === formData.employee)
   }
 
-  const validateDeductionForm = () => {
-    const validations = []
-
-    // Basic validations
-    if (!formData.employee) {
-      validations.push({ type: 'error', message: 'Please select an employee' })
-    }
-    if (!formData.deduction_type) {
-      validations.push({ type: 'error', message: 'Please select a deduction type' })
+  const hasValidationErrors = () => {
+    // Check for missing required fields
+    if (!formData.employee || !formData.deduction_type || !formData.effective_from) {
+      return true
     }
 
-    // Amount validations
-    if (formData.calculation_method === 'fixed') {
-      const amount = parseFloat(formData.amount)
-      if (!formData.amount || isNaN(amount) || amount <= 0) {
-        validations.push({ type: 'error', message: 'Please enter a valid fixed amount' })
-      }
-    } else {
-      const percentage = parseFloat(formData.percentage)
-      if (!formData.percentage || isNaN(percentage) || percentage <= 0 || percentage > 100) {
-        validations.push({ type: 'error', message: 'Please enter a valid percentage (1-100)' })
-      }
+    // Check for calculation method specific requirements
+    if (formData.calculation_method === 'fixed' && !formData.amount) {
+      return true
+    }
+    
+    if (formData.calculation_method === 'percentage' && !formData.percentage) {
+      return true
     }
 
-    // Date validations
-    if (!formData.effective_from) {
-      validations.push({ type: 'error', message: 'Please select an effective from date' })
-    }
-
-    if (formData.effective_from && formData.effective_to) {
-      if (new Date(formData.effective_to) < new Date(formData.effective_from)) {
-        validations.push({ type: 'error', message: 'End date cannot be before start date' })
-      }
-    }
-
-
-    if (formData.calculation_method === 'percentage' && parseFloat(formData.percentage) > 50) {
-      validations.push({ 
-        type: 'warning', 
-        message: 'High percentage deduction detected. Please verify this is correct.' 
-      })
-    }
-
-    return validations
+    // Check for validation errors in the state
+    const errorKeys = Object.keys(validationErrors).filter(key => key !== 'warning')
+    return errorKeys.length > 0
   }
 
   const handleSubmit = async () => {
@@ -608,17 +624,13 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
       return
     }
 
-    const validations = validateDeductionForm()
-    const errors = validations.filter(v => v.type === 'error')
-    
-    if (errors.length > 0) {
-      toast.error(errors[0].message)
+    if (hasValidationErrors()) {
+      toast.error("Please fix the validation errors before submitting")
       return
     }
 
-    const warnings = validations.filter(v => v.type === 'warning')
-    if (warnings.length > 0) {
-      warnings.forEach(warning => toast.warning(warning.message))
+    if (validationErrors.warning) {
+      toast.warning(validationErrors.warning)
     }
 
     setSaving(true)
@@ -714,6 +726,7 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
       effective_from: "",
       effective_to: "",
     })
+    setValidationErrors({})
   }
 
   const filteredDeductions = deductions.filter((deduction) => {
@@ -861,38 +874,6 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
   const getCategoryColor = () => {
     // Simple red color for all deduction types
     return "bg-red-50 text-red-700 border-red-200"
-  }
-
-
-  const renderValidationMessages = () => {
-    const validations = validateDeductionForm()
-    if (validations.length === 0) return null
-
-    return (
-      <div className="space-y-2 md:col-span-2">
-        {validations.map((validation, index) => (
-          <div
-            key={index}
-            className={`flex items-start gap-2 p-3 rounded-lg ${
-              validation.type === 'error'
-                ? 'bg-red-50 border border-red-200'
-                : 'bg-amber-50 border border-amber-200'
-            }`}
-          >
-            {validation.type === 'error' ? (
-              <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-            ) : (
-              <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-            )}
-            <p className={`text-sm font-medium ${
-              validation.type === 'error' ? 'text-red-800' : 'text-amber-800'
-            }`}>
-              {validation.message}
-            </p>
-          </div>
-        ))}
-      </div>
-    )
   }
 
   if (!institutionId) {
@@ -1223,7 +1204,7 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
                                         </TableCell>
                                         <TableCell>
                                           <span className="font-semibold text-red-700">
-                                            ${calculatedAmount.toLocaleString()}
+                                            {calculatedAmount.toLocaleString()}
                                           </span>
                                         </TableCell>
                                         <TableCell>
@@ -1266,7 +1247,7 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
                 <DialogTrigger asChild>
                   <Button 
                     onClick={openNewDeductionDialog} 
-                    className="bg-orange-600 hover:bg-orange-700 shadow-md"
+                    className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2.5"
                     disabled={!institutionId}
                   >
                     <Plus className="mr-2 h-4 w-4" />
@@ -1292,8 +1273,10 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
                         onValueChange={(value) => setFormData({ ...formData, employee: value })}
                         disabled={saving}
                       >
-                        <SelectTrigger className="focus:ring-red-500 focus:border-red-500">
-                          <SelectValue placeholder="Select employee" />
+                        <SelectTrigger className={`focus:ring-red-500 focus:border-red-500 ${
+                          validationErrors.employee ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}>
+                          <SelectValue placeholder="Please select an employee" />
                         </SelectTrigger>
                         <SelectContent>
                           {employees.length > 0 ? (
@@ -1311,6 +1294,12 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
                           )}
                         </SelectContent>
                       </Select>
+                      {validationErrors.employee && (
+                        <p className="text-xs text-red-500 mt-1 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {validationErrors.employee}
+                        </p>
+                      )}
                     </div>
                     
                     <div className="space-y-2">
@@ -1322,8 +1311,10 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
                         onValueChange={(value) => setFormData({ ...formData, deduction_type: value })}
                         disabled={saving}
                       >
-                        <SelectTrigger className="focus:ring-red-500 focus:border-red-500">
-                          <SelectValue placeholder="Select deduction type" />
+                        <SelectTrigger className={`focus:ring-red-500 focus:border-red-500 ${
+                          validationErrors.deduction_type ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}>
+                          <SelectValue placeholder="Please select a deduction type" />
                         </SelectTrigger>
                         <SelectContent>
                           {deductionTypes.length > 0 ? (
@@ -1339,11 +1330,16 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
                           )}
                         </SelectContent>
                       </Select>
-                      {deductionTypes.length === 0 && (
+                      {validationErrors.deduction_type ? (
+                        <p className="text-xs text-red-500 mt-1 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {validationErrors.deduction_type}
+                        </p>
+                      ) : deductionTypes.length === 0 ? (
                         <p className="text-xs text-red-500 mt-1">
                           No deduction types found. Please create deduction types first.
                         </p>
-                      )}
+                      ) : null}
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
@@ -1355,6 +1351,9 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
                         onValueChange={(value: "fixed" | "percentage") => setFormData({ ...formData, calculation_method: value })}
                         disabled={saving}
                       >
+                        <SelectTrigger className="focus:ring-red-500 focus:border-red-500">
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="fixed">Fixed Amount</SelectItem>
                           <SelectItem value="percentage">Percentage of Salary</SelectItem>
@@ -1362,49 +1361,66 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
                       </Select>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="amount" className="text-sm font-medium">
-                        Fixed Amount
-                      </Label>
-                      <Input
-                        id="amount"
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={formData.amount}
-                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                        disabled={saving || formData.calculation_method === "percentage"}
-                        className="focus:ring-red-500 focus:border-red-500"
-                      />
-                      <p className="text-xs text-gray-500">
-                        {formData.calculation_method === "percentage"
-                          ? "Not used for percentage calculation"
-                          : "Fixed deduction amount"}
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="percentage" className="text-sm font-medium">
-                        Percentage
-                      </Label>
-                      <Input
-                        id="percentage"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        placeholder="0.00"
-                        value={formData.percentage}
-                        onChange={(e) => setFormData({ ...formData, percentage: e.target.value })}
-                        disabled={saving || formData.calculation_method === "fixed"}
-                        className="focus:ring-red-500 focus:border-red-500"
-                      />
-                      <p className="text-xs text-gray-500">
-                        {formData.calculation_method === "fixed"
-                          ? "Not used for fixed calculation"
-                          : "Percentage of base salary (0-100)"}
-                      </p>
-                    </div>
+                    {/* Conditionally render amount or percentage field based on calculation method */}
+                    {formData.calculation_method === "fixed" ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="amount" className="text-sm font-medium">
+                          Fixed Amount *
+                        </Label>
+                        <Input
+                          id="amount"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={formData.amount}
+                          onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                          disabled={saving}
+                          className={`focus:ring-red-500 focus:border-red-500 ${
+                            validationErrors.amount ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
+                        />
+                        {validationErrors.amount ? (
+                          <p className="text-xs text-red-500 mt-1 flex items-center">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            {validationErrors.amount}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-gray-500">
+                            Enter the fixed deduction amount
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label htmlFor="percentage" className="text-sm font-medium">
+                          Percentage *
+                        </Label>
+                        <Input
+                          id="percentage"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          placeholder="0.00"
+                          value={formData.percentage}
+                          onChange={(e) => setFormData({ ...formData, percentage: e.target.value })}
+                          disabled={saving}
+                          className={`focus:ring-red-500 focus:border-red-500 ${
+                            validationErrors.percentage ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
+                        />
+                        {validationErrors.percentage ? (
+                          <p className="text-xs text-red-500 mt-1 flex items-center">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            {validationErrors.percentage}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-gray-500">
+                            Percentage of base salary (0-100)
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     <div className="space-y-2">
                       <Label htmlFor="effective_from" className="text-sm font-medium">
@@ -1415,9 +1431,17 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
                         type="date"
                         value={formData.effective_from}
                         onChange={(e) => setFormData({ ...formData, effective_from: e.target.value })}
-                        className="focus:ring-red-500 focus:border-red-500"
+                        className={`focus:ring-red-500 focus:border-red-500 ${
+                          validationErrors.effective_from ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}
                         disabled={saving}
                       />
+                      {validationErrors.effective_from && (
+                        <p className="text-xs text-red-500 mt-1 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {validationErrors.effective_from}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -1429,10 +1453,18 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
                         type="date"
                         value={formData.effective_to}
                         onChange={(e) => setFormData({ ...formData, effective_to: e.target.value })}
-                        className="focus:ring-red-500 focus:border-red-500"
+                        className={`focus:ring-red-500 focus:border-red-500 ${
+                          validationErrors.effective_to ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}
                         disabled={saving}
                         min={formData.effective_from}
                       />
+                      {validationErrors.effective_to && (
+                        <p className="text-xs text-red-500 mt-1 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {validationErrors.effective_to}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
@@ -1461,6 +1493,14 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
                           <div className="space-y-1 text-xs text-blue-700">
                             <p>• Name: {getSelectedEmployee()?.name}</p>
                             <p>• Email: {getSelectedEmployee()?.email}</p>
+                            {getSelectedEmployee()?.salary && getSelectedEmployee()?.salary! > 0 && (
+                              <p>• Base Salary: ${getSelectedEmployee()?.salary?.toLocaleString()}</p>
+                            )}
+                            {formData.calculation_method === 'percentage' && 
+                             formData.percentage && 
+                             getSelectedEmployee()?.salary && (
+                              <p>• Calculated Amount: ${((getSelectedEmployee()?.salary || 0) * parseFloat(formData.percentage) / 100).toLocaleString()}</p>
+                            )}
                             {formData.calculation_method === 'fixed' && formData.amount && (
                               <p>• Fixed Amount: ${parseFloat(formData.amount).toLocaleString()}</p>
                             )}
@@ -1469,7 +1509,17 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
                       </div>
                     )}
 
-                    {renderValidationMessages()}
+                    {/* Warning message for high percentage */}
+                    {validationErrors.warning && (
+                      <div className="md:col-span-2 space-y-2">
+                        <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                          <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                          <p className="text-sm font-medium text-amber-800">
+                            {validationErrors.warning}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <DialogFooter>
@@ -1484,7 +1534,7 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
                     <Button 
                       onClick={handleSubmit}
                       className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
-                      disabled={saving || !employees.length || !deductionTypes.length || validateDeductionForm().filter(v => v.type === 'error').length > 0}
+                      disabled={saving || !employees.length || !deductionTypes.length || hasValidationErrors()}
                     >
                       {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       {saving ? "Saving..." : editingDeduction ? "Update" : "Create"} Deduction
@@ -1529,7 +1579,6 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-600">Total Monthly Cost</p>
                   <p className="text-2xl font-bold text-blue-600">
-                    $
                     {filteredDeductions
                       .filter((d) => d.is_active)
                       .reduce((sum, d) => sum + getCalculatedAmount(d), 0)
@@ -1669,17 +1718,12 @@ export default function EmployeeDeductionComponent({ institutionId: propInstitut
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                        {deduction.calculation_method === "fixed" ? (
-                          <DollarSign className="h-3 w-3 text-green-600" />
-                        ) : (
-                          <Percent className="h-3 w-3 text-purple-600" />
-                        )}
                         {deduction.calculation_method === "fixed" ? "Fixed" : "Percentage"}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <span className="text-lg font-semibold text-orange-600">
-                        ${getCalculatedAmount(deduction).toLocaleString()}
+                      <span className="text-lg font-semibold text-red-600">
+                        {getCalculatedAmount(deduction).toLocaleString()}
                       </span>
                     </TableCell>
                     <TableCell>

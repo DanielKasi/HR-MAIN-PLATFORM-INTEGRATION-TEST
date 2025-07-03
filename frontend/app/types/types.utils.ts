@@ -1026,3 +1026,101 @@ export interface IEmployeeAllowanceFormData {
   effective_from: string;
   effective_to?: string | null; 
 }
+
+
+export interface IEmployeeDeduction {
+  id: number;
+  employee: number;
+  deduction_type: number;
+  calculation_method: "fixed" | "percentage";
+  amount: string;
+  percentage: string;
+  is_active: boolean;
+  effective_from: string;
+  effective_to: string | null;
+  created_at: string;
+}
+
+export interface IEmployeeDeductionFormData {
+  employee: number;
+  deduction_type: number;
+  calculation_method: "fixed" | "percentage";
+  amount: string;
+  percentage: string;
+  is_active: boolean;
+  effective_from: string;
+  effective_to?: string | null;
+}
+
+
+export interface IPayrollPeriod {
+  id: number;
+  name: string;
+  start_date: string;
+  end_date: string;
+  pay_date: string;
+  is_processed: boolean;
+  created_at: string;
+  institution: number;
+}
+
+export interface IPayrollPeriodFormData {
+  name: string;
+  start_date: string;
+  end_date: string;
+  pay_date: string;
+  is_processed?: boolean;
+}
+
+
+export interface IPayslip {
+  id: number;
+  employee: number;
+  payroll_period: number;
+  basic_salary: string;
+  total_allowances: string;
+  total_deductions: string;
+  gross_salary: string;
+  net_salary: string;
+  days_worked: number;
+  is_paid: boolean;
+  paid_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IPayslipFormData {
+  employee: number;
+  payroll_period: number;
+  basic_salary: string;
+  total_allowances: string;
+  total_deductions: string;
+  gross_salary: string;
+  net_salary: string;
+  days_worked: number;
+  is_paid: boolean;
+  paid_date: string | null;
+}
+
+export interface IPayslipItem {
+  id: number;
+  payslip: {
+    id: number;
+    employee: any;
+    payroll_period: any;
+    basic_salary: string;
+    total_allowances: string;
+    total_deductions: string;
+    gross_salary: string;
+    net_salary: string;
+    days_worked: number;
+    is_paid: boolean;
+    paid_date: string | null;
+    created_at: string;
+    updated_at: string;
+  };
+  item_type: 'allowance' | 'deduction' | 'overtime';
+  name: string;
+  amount: string; 
+  description: string;
+}

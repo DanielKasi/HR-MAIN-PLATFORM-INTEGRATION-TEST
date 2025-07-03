@@ -6,6 +6,8 @@ urlpatterns = [
     path('employee-allowances/<int:pk>/', EmployeeAllowanceDetailAPIView.as_view()),
 
     path('<int:institution_id>/payroll-periods/', PayrollPeriodAPIView.as_view(), name='payroll-period-list-create'),
+    
+    path('<int:institution_id>/employee-deductions/', EmployeeDeductionAPIView.as_view(), name='employee-deductions-list-create'),
     path('employee-deductions/<int:pk>/', EmployeeDeductionDetailAPIView.as_view()),
 
     path('<int:institution_id>/allowance-types/', AllowanceTypeAPIView.as_view(), name='allowance-type-list-create'),
@@ -14,8 +16,11 @@ urlpatterns = [
     path('deduction-types/<int:pk>/', DeductionTypeDetailAPIView.as_view()),
 
 
+   
+
     path('<int:institution_id>/payroll-periods/', PayrollPeriodAPIView.as_view(), name='payroll-period-list-create'),
     path('payroll-periods/<int:pk>/', PayrollPeriodDetailAPIView.as_view()),
+
 
     path('<int:institution_id>/payslips/', PayslipAPIView.as_view(), name='payslip-list-create'),
     path('payslips/<int:pk>/', PayslipDetailAPIView.as_view()),

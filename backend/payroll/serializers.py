@@ -100,3 +100,10 @@ class PayslipItemSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         rep['payslip'] = PayslipSerializer(instance.payslip).data
         return rep
+
+class PayslipGenerationInputSerializer(serializers.Serializer):
+    payroll_period = serializers.IntegerField()  # ID of PayrollPeriod
+    employee_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False
+    )      

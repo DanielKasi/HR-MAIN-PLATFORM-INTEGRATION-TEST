@@ -201,7 +201,7 @@ class UserBranch(models.Model):
 
 
 
-    def str(self):
+    def __str__(self):
         return self.user.email + " - " + self.branch.branch_location
 
 
@@ -227,3 +227,6 @@ class Department(models.Model):
         null=True,
         blank=True,
     )
+
+    def __str__(self):
+        return self.name
