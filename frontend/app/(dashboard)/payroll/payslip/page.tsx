@@ -137,7 +137,7 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
 
-  // Redux selectors
+
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
   const [institutionId, setInstitutionId] = useState<number | null>(propInstitutionId || null)
@@ -146,7 +146,7 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
     payroll_period_id: "",
   })
 
-  // Set institution ID from Redux state
+
   useEffect(() => {
     if (propInstitutionId) {
       setInstitutionId(propInstitutionId)
@@ -227,7 +227,7 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
     fetchPayrollPeriods()
   }, [institutionId])
 
-  // Load payslips when institution ID is available
+
   useEffect(() => {
     const fetchPayslips = async () => {
       if (!institutionId) {
@@ -253,7 +253,7 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
     fetchPayslips()
   }, [institutionId, employees, payrollPeriods])
 
-  // Function to fetch and refresh payslips data
+
   const refreshPayslips = async () => {
     if (!institutionId) return
     
@@ -499,7 +499,7 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
     }
   }
 
-  // Get unique departments from employees
+
   const getDepartments = () => {
     const departments = employees
       .map(emp => emp.department)
@@ -509,7 +509,6 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
     return departments
   }
 
-  // Get unpaid payslips for selected department
   const getUnpaidPayslipsByDepartment = (department: string) => {
     return payslips.filter(payslip => 
       !payslip.is_paid && 
@@ -530,7 +529,6 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
     let errorCount = 0
 
     try {
-      // Process each payslip
       for (const payslip of unpaidPayslips) {
         try {
           const success = await markPayslipAsPaid(payslip.id)
@@ -545,7 +543,7 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
         }
       }
 
-      // Update local state for successful payments
+  
       if (successCount > 0) {
         setPayslips((prev) => 
           prev.map((p) => {
@@ -557,7 +555,7 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
         )
       }
 
-      // Show results
+
       if (successCount > 0 && errorCount === 0) {
         toast.success(`Successfully marked ${successCount} payslips as paid`)
       } else if (successCount > 0 && errorCount > 0) {

@@ -400,7 +400,7 @@ export interface IRoleFormData {
 }
 
 export interface IOnBoarding {
-  application_name: JobApplication;
+  application_details: JobApplication;
   id: number;
   application: number;
   attended: boolean;

@@ -781,7 +781,7 @@ export const getEmployeeDetailId = async ({
 
 export const getOnBoardings = async ({ institutionId }: { institutionId: number }) => {
   try {
-    const response = await apiRequest.get(`on-boarding/${institutionId}/`)
+    const response = await apiRequest.get(`on-boarding/list/${institutionId}/`)
     return response.data as IOnBoarding[]
   } catch (error) {
     console.error("Error fetching onboarding records:", error)
@@ -796,7 +796,7 @@ export const getOnBoardingById = async ({
   onboardingId: number;
 }): Promise<IOnBoarding | null> => {
   try {
-    const response = await apiRequest.get(`on-boarding/${onboardingId}/`);
+    const response = await apiRequest.get(`on-boarding/record/${onboardingId}/`);
     return response.data as IOnBoarding;
   } catch (error) {
     console.error("Failed to fetch onboarding record", error);

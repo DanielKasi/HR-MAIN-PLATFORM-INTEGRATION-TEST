@@ -77,7 +77,7 @@ const ONBOARDING_STAGES = [
   { value: 'initial', label: 'Initial', icon: AlertTriangle, color: 'text-gray-500' },
   { value: 'training', label: 'Training', icon: GraduationCap, color: 'text-blue-500' },
   { value: 'issued_contract', label: 'Contract Issued', icon: FileText, color: 'text-purple-500' },
-  { value: 'accepted_offer', label: 'Offer Accepted', icon: UserCheck, color: 'text-green-500' },
+  { value: 'accepted_offer', label: 'Offer Accepted', icon: UserCheck, color: 'text-orange-500' },
   { value: 'declined_offer', label: 'Offer Declined', icon: UserX, color: 'text-red-500' },
 ] as const
 
@@ -110,7 +110,6 @@ interface BulkUpdateDialogState {
 type BadgeVariant = "default" | "secondary" | "outline" | "destructive"
 
 export default function OnboardPage() {
-  // State
   const [onboardings, setOnboardings] = useState<IOnBoarding[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -180,24 +179,34 @@ export default function OnboardPage() {
   }
 
   const getApplicationData = (onboarding: IOnBoarding) => {
-    const applicationData = (onboarding as any).applicant_name || onboarding.application_name
-    
-    const jobDetails = applicationData?.job_position_advert_job_details
-    const jobName = jobDetails?.name || "N/A"
-    const jobDescription = jobDetails?.description || "N/A"
-    
-    const result = {
-      applicantName: applicationData?.applicant_name || "N/A",
-      applicantEmail: applicationData?.applicant_email || "N/A", 
-      jobDesc: jobName !== "N/A" ? jobName : jobDescription,
-      applicantPhone: applicationData?.applicant_phone || "N/A",
-      applicantAddress: applicationData?.address || "N/A",
-      applicantPositions: applicationData?.positions?.toString() || "N/A"
-    }
+  const applicationData = onboarding.application_details
   
-    
-    return result
+  if (!applicationData) {
+    return {
+      applicantName: "N/A",
+      applicantEmail: "N/A", 
+      jobDesc: "N/A",
+      applicantPhone: "N/A",
+      applicantAddress: "N/A",
+      applicantPositions: "N/A"
+    }
   }
+  
+  const jobDetails = applicationData.job_position_advert_job_details
+  const jobName = jobDetails?.name || "N/A"
+  const jobDescription = jobDetails?.description || "N/A"
+  
+  const result = {
+    applicantName: applicationData.applicant_name || "N/A",
+    applicantEmail: applicationData.applicant_email || "N/A", 
+    jobDesc: jobName !== "N/A" ? jobName : jobDescription,
+    applicantPhone: applicationData.applicant_phone || "N/A",
+    applicantAddress: applicationData.address || "N/A",
+    applicantPositions: applicationData.positions?.toString() || "N/A"
+  }
+
+  return result
+}
 
   const getStatusIcon = (status: IOnBoarding['status']) => {
     const stage = ONBOARDING_STAGES.find(s => s.value === status)
@@ -482,7 +491,7 @@ export default function OnboardPage() {
   }
 
   const handleViewOnboarding = (onboardingId: number) => {
-    router.push(`/on-boarding/${onboardingId}`)
+    router.push(`/on-boarding/${onboardingId}/view`)
   }
 
   // Stats calculations - Fixed to match interface
@@ -804,7 +813,7 @@ export default function OnboardPage() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {onboarding.attended ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <CheckCircle className="h-4 w-4 text-orange-500" />
                         ) : (
                           <XCircle className="h-4 w-4 text-red-500" />
                         )}
