@@ -144,3 +144,15 @@ class EmployeeAttendanceSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         rep['employee'] = EmployeeSerializer(instance.employee).data
         return rep
+
+
+class EmployeeActivationSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=False, allow_blank=True)
+    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    full_name = serializers.CharField(max_length=100, required=True)
+    date_of_birth = serializers.DateField(required=False, allow_null=True)
+    address = serializers.CharField(required=False, allow_blank=True)
+    gender = serializers.ChoiceField(
+        choices=[("male", "Male"), ("female", "Female"), ("other", "Other")],
+        required=False, allow_blank=True
+    )

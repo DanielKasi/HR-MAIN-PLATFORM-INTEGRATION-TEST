@@ -1,9 +1,10 @@
+from employee.models import Employee
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from rest_framework.permissions import AllowAny
 from utilities.helpers import (
     build_password_link,
@@ -11,12 +12,13 @@ from utilities.helpers import (
     send_password_link_to_user,
     create_and_institution_token,
 )
-from users.models import Profile
+from users.models import Profile, System
 
 from .models import Department, Institution, Branch, UserBranch
 from users.serializers import ProfileSerializer
 from .serializers import (
     DepartmentSerializer,
+    InstitutionActivationSerializer,
     InstitutionSerializer,
     BranchSerializer,
     UserBranchSerializer,
@@ -26,7 +28,12 @@ from .utils import generate_compliant_password
 from utilities.pagination import CustomPageNumberPagination
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from django.db.models import Q
+from django.contrib.auth import get_user_model
+import logging
+from django.db import transaction
 
+User = get_user_model()
+logger = logging.getLogger(__name__)
 
 class InstitutionListAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -546,3 +553,240 @@ def delete_user_branch_by_ids(request, user_id, branch_id):
             {"detail": "User-branch relationship not found."},
             status=status.HTTP_404_NOT_FOUND,
         )
+
+@extend_schema(
+        summary="Activate HR System",
+        description="Accepts validated institution, branches, and employee data, then activates the HR system for an external client.",
+        request=InstitutionActivationSerializer,
+        responses={
+            201: OpenApiExample(
+                'Successful Activation',
+                value={
+                    'success': True,
+                    'message': 'HR system activated successfully',
+                    'data': {
+                        'institution': {
+                            'id': 1,
+                            'institution_name': 'Example Institute',
+                            'location': 'Kampala'
+                        },
+                        'branches_created': 2,
+                        'employees_created': 10,
+                        'system_type': 'School',
+                        'system_code': 'SCH-1234'
+                    }
+                },
+                response_only=True
+            ),
+            400: OpenApiExample(
+                'Validation Error',
+                value={
+                    'error': 'Data does not conform to HR system requirements',
+                    'details': {'institution_name': ['This field is required.']},
+                    'message': 'Please ensure your data matches the HR system contract'
+                },
+                response_only=True
+            ),
+            401: OpenApiExample(
+                'Unauthorized',
+                value={
+                    'error': 'API key is required in X-API-Key header'
+                },
+                response_only=True
+            ),
+            500: OpenApiExample(
+                'Server Error',
+                value={
+                    'error': 'Failed to activate HR system',
+                    'details': 'Some internal error occurred'
+                },
+                response_only=True
+            ),
+        },
+        parameters=[
+            OpenApiParameter(
+                name='X-API-Key',
+                location=OpenApiParameter.HEADER,
+                required=True,
+                description='API key for authenticating the external system',
+                type=str
+            )
+        ],
+        tags=['System Activation']
+    )
+class SystemActivationView(APIView):
+    """
+    For activating hr system from the external systems.
+    """
+    def get_system_from_api_key(self, api_key):
+        """"
+        Validate API key and return the system
+        """
+        try:
+            return System.objects.get(api_key=api_key, system_type__is_active=True)
+        except System.DoesNotExist:
+            return None
+        
+    def create_or_get_user(self, employee_data):
+        """Create or get user for employee"""
+        email = employee_data.get('email')
+        full_name = employee_data.get('full_name')
+        phone_number = employee_data.get('phone_number')
+        
+        if email:
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'fullname': full_name,
+                    'phone_number': phone_number,
+                    'is_active': True
+                }
+            )
+            return user
+        return None    
+            
+    def create_institution_and_branches(self, validated_data, owner_user):
+        """Create institution and its branches"""
+        try:
+            # Extract branches data before creating institution
+            branches_data = validated_data.pop('branches', [])
+            employees_data = validated_data.pop('employees', [])
+            
+            # Create institution
+            institution = Institution.objects.create(
+                institution_owner=owner_user,
+                created_by=owner_user,
+                **validated_data
+            )
+            
+            # Create branches
+            created_branches = []
+            for branch_data in branches_data:
+                branch = Branch.objects.create(
+                    institution=institution,
+                    created_by=owner_user,
+                    **branch_data
+                )
+                created_branches.append(branch)
+            
+            return institution, created_branches, employees_data
+            
+        except Exception as e:
+            logger.error(f"Error creating institution and branches: {str(e)}")
+            raise        
+        
+    def create_employees(self, institution, branches, employees_data):
+        """Create employees for the institution"""
+        created_employees = []
+        
+        # Create a mapping of branch locations to branch objects
+        branch_map = {branch.branch_location: branch for branch in branches}
+        
+        for employee_data in employees_data:
+            try:
+                # Get the branch for this employee
+                branch_location = employee_data.get('branch_location')
+                branch = branch_map.get(branch_location)
+                
+                if not branch:
+                    logger.warning(f"Branch not found for location: {branch_location}")
+                    continue
+                
+                # Create or get user for employee
+                employee_user = self.create_or_get_user(employee_data)
+                
+                # Create employee
+                employee = Employee.objects.create(
+                    user=employee_user,
+                    email=employee_data.get('email'),
+                    phone_number=employee_data.get('phone_number'),
+                    gender=employee_data.get('gender'),
+                    date_of_birth=employee_data.get('date_of_birth'),
+                    address=employee_data.get('address'),
+                )
+                
+                created_employees.append(employee)
+                
+            except Exception as e:
+                logger.error(f"Error creating employee: {str(e)}")
+                continue
+        
+        return created_employees  
+    
+    def post(self, request):
+        """Handle HR system activation"""
+        # Get API key from header
+        api_key = request.headers.get('X-API-Key') or request.headers.get('Authorization')
+        
+        if not api_key:
+            return Response({
+                'error': 'API key is required in X-API-Key header'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Clean API key (remove Bearer prefix if present)
+        if api_key.startswith('Bearer '):
+            api_key = api_key[7:]
+        
+        # Validate system
+        system = self.get_system_from_api_key(api_key)
+        if not system:
+            return Response({
+                'error': 'Invalid API key'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Validate request data - strict validation
+        serializer = InstitutionActivationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                'error': 'Data does not conform to HR system requirements',
+                'details': serializer.errors,
+                'message': 'Please ensure your data matches the HR system contract'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            with transaction.atomic():
+                # Get the system owner or create a default user
+                owner_user = getattr(system, 'owner', None)
+                if not owner_user:
+                    # Use the first superuser as default
+                    owner_user = User.objects.filter(is_superuser=True).first()
+                    if not owner_user:
+                        return Response({
+                            'error': 'No system owner available'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+                # Create institution, branches, and get employees data
+                validated_data = serializer.validated_data.copy()
+                institution, branches, employees_data = self.create_institution_and_branches(
+                    validated_data, owner_user
+                )
+                
+                # Create employees
+                employees = self.create_employees(institution, branches, employees_data)
+                
+                # Prepare response
+                response_data = {
+                    'success': True,
+                    'message': 'HR system activated successfully',
+                    'data': {
+                        'institution': {
+                            'id': institution.id,
+                            'institution_name': institution.institution_name,
+                            'location': institution.location
+                        },
+                        'branches_created': len(branches),
+                        'employees_created': len(employees),
+                        'system_type': system.system_type.name,
+                        'system_code': system.code
+                    }
+                }
+                
+                return Response(response_data, status=status.HTTP_201_CREATED)
+                
+        except Exception as e:
+            logger.error(f"Error during system activation: {str(e)}")
+            return Response({
+                'error': 'Failed to activate HR system',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+  

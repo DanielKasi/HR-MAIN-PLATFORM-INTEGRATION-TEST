@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from employee.serializers import EmployeeSerializer
+from employee.serializers import EmployeeActivationSerializer, EmployeeSerializer
 from users.models import CustomUser
 from users.serializers import CustomUserSerializer
 from .models import Department, Institution, Branch, UserBranch, InstitutionDocument
@@ -208,3 +208,15 @@ class DepartmentSerializer(serializers.ModelSerializer):
             # "head_of_department_details",
             "institution_details",
         ]
+
+class BranchActivationSerializer(serializers.Serializer):
+    branch_name = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    branch_location = serializers.CharField(max_length=255, required=True)
+    branch_phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    branch_email = serializers.EmailField(required=False, allow_blank=True)
+    
+class InstitutionActivationSerializer(serializers.Serializer):
+    institution_name = serializers.CharField(max_length=255, required=True)
+    institution_email = serializers.EmailField(required=False, allow_blank=True)
+    branches = BranchActivationSerializer(many=True, required=True)
+    employees = EmployeeActivationSerializer(many=True, required=False)   
