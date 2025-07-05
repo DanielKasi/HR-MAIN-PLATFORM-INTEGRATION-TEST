@@ -20,3 +20,6 @@ def generate_compliant_password(length=12):
     secrets.SystemRandom().shuffle(password_list)
 
     return ''.join(password_list)
+
+
+    

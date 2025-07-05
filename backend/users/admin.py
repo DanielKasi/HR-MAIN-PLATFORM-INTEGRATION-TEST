@@ -9,6 +9,8 @@ from .models import (
     Role,
     RolePermission,
     UserRole,
+    SystemType,
+    System,
 )
 
 
@@ -149,3 +151,5 @@ admin.site.register(Permission, PermissionAdmin)
 admin.site.register(Role, RoleAdmin)
 admin.site.register(RolePermission, RolePermissionAdmin)
 admin.site.register(UserRole, UserRoleAdmin)
+admin.site.register(SystemType)
+admin.site.register(System)

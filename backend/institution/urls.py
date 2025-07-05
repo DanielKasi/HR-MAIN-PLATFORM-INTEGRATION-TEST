@@ -6,6 +6,7 @@ from .views import (
     InstitutionDetailAPIView,
     InstitutionListAPIView,
     InstitutionUserProfileAPIView,
+    SystemActivationView,
     UserProfileListAPIView,
     UserProfileDetailAPIView,
     UserBranchListCreateView,
@@ -51,4 +52,5 @@ urlpatterns = [
         DepartmentDetailAPIView.as_view(),
         name="department-detail",
     ),
+    path('api/activate/', SystemActivationView.as_view(), name='system_activation'),
 ]
