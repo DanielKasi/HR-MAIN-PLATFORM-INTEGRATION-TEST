@@ -21,7 +21,7 @@ class Institution(models.Model):
     institution_logo = models.ImageField(
         upload_to="institutions/images/", blank=True, null=True
     )
-
+    system = models.ForeignKey('users.System', on_delete=models.PROTECT, blank=True, null=True)
     theme_color = models.CharField(max_length=400, blank=True, null=True)
     setup = models.BooleanField(default=False)
 

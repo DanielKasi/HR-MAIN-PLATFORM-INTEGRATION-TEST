@@ -156,3 +156,7 @@ class EmployeeActivationSerializer(serializers.Serializer):
         choices=[("male", "Male"), ("female", "Female"), ("other", "Other")],
         required=False, allow_blank=True
     )
+    # Optional fields for branch and department assignment
+    branch_location = serializers.CharField(max_length=200, required=False, allow_blank=True)
+    department = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    date_of_joining = serializers.DateField(required=False, allow_null=True)

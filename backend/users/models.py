@@ -221,7 +221,7 @@ class System(models.Model):
     code = models.CharField(max_length=100, unique=True)
     system_type = models.ForeignKey(SystemType, on_delete=models.CASCADE)
     description = models.TextField(blank=True, null=True)
-    api_key = models.CharField(max_length=255, blank=True, null=True)
+    api_key = models.CharField(max_length=255, blank=True, null=True, unique=True)
 
     def generate_api_credentials(self):
         """Generate new API key"""
