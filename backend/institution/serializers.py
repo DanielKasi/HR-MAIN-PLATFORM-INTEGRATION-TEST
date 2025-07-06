@@ -237,3 +237,14 @@ class InstitutionActivationSerializer(serializers.Serializer):
     employees = EmployeeActivationSerializer(many=True, required=False)   
     owner = OwnerSerializer(required=True)
     departments = DepartmentActivationSerializer(many=True, required=False)
+
+class ErrorResponseSerializer(serializers.Serializer):
+    error = serializers.CharField()
+    message = serializers.CharField(required=False)
+    details = serializers.JSONField(required=False)
+
+class SuccessResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField()
+    message = serializers.CharField()
+    data = serializers.DictField()    
+  

@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from rest_framework.permissions import AllowAny
 from utilities.helpers import (
     build_password_link,
@@ -19,9 +19,11 @@ from .models import Department, Institution, Branch, UserBranch
 from users.serializers import ProfileSerializer
 from .serializers import (
     DepartmentSerializer,
+    ErrorResponseSerializer,
     InstitutionActivationSerializer,
     InstitutionSerializer,
     BranchSerializer,
+    SuccessResponseSerializer,
     UserBranchSerializer,
 )
 from django.shortcuts import get_object_or_404
@@ -556,65 +558,38 @@ def delete_user_branch_by_ids(request, user_id, branch_id):
         )
 
 @extend_schema(
-        summary="Activate HR System",
-        description="Accepts validated institution, branches, and employee data, then activates the HR system for an external client.",
-        request=InstitutionActivationSerializer,
-        responses={
-            201: OpenApiExample(
-                'Successful Activation',
-                value={
-                    'success': True,
-                    'message': 'HR system activated successfully',
-                    'data': {
-                        'institution': {
-                            'id': 1,
-                            'institution_name': 'Example Institute',
-                            'location': 'Kampala'
-                        },
-                        'branches_created': 2,
-                        'employees_created': 10,
-                        'system_type': 'School',
-                        'system_code': 'SCH-1234'
-                    }
-                },
-                response_only=True
-            ),
-            400: OpenApiExample(
-                'Validation Error',
-                value={
-                    'error': 'Data does not conform to HR system requirements',
-                    'details': {'institution_name': ['This field is required.']},
-                    'message': 'Please ensure your data matches the HR system contract'
-                },
-                response_only=True
-            ),
-            401: OpenApiExample(
-                'Unauthorized',
-                value={
-                    'error': 'API key is required in X-API-Key header'
-                },
-                response_only=True
-            ),
-            500: OpenApiExample(
-                'Server Error',
-                value={
-                    'error': 'Failed to activate HR system',
-                    'details': 'Some internal error occurred'
-                },
-                response_only=True
-            ),
-        },
-        parameters=[
-            OpenApiParameter(
-                name='X-API-Key',
-                location=OpenApiParameter.HEADER,
-                required=True,
-                description='API key for authenticating the external system',
-                type=str
-            )
-        ],
-        tags=['System Activation']
-    )
+    summary="Activate HR System",
+    description="Accepts validated institution, branches, and employee data...",
+    request=InstitutionActivationSerializer,
+    responses={
+        201: OpenApiResponse(
+            response=SuccessResponseSerializer,  # if you define one
+            description="Successful Activation"
+        ),
+        400: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="Validation Error"
+        ),
+        401: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="Unauthorized"
+        ),
+        500: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="Internal Server Error"
+        ),
+    },
+    parameters=[
+        OpenApiParameter(
+            name='X-API-Key',
+            location=OpenApiParameter.HEADER,
+            required=True,
+            description='API key for authenticating the external system',
+            type=str
+        )
+    ],
+    tags=['System Activation']
+)
 class SystemActivationView(APIView):
     """
     For activating hr system from the external systems.
