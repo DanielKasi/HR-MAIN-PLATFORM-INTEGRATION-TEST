@@ -3,15 +3,16 @@ import os
 from django.core.management.base import BaseCommand
 from django.conf import settings
 
-from users.models import Permission, PermissionCategory
+from users.models import Permission, PermissionCategory, SystemType, System
 from workflows.models import WorkflowAction, WorkflowCategory
 
 
 class Command(BaseCommand):
-    help = "Sync permissions, workflows, and marketplace order statuses from JSON files"
+    help = "Sync permissions, workflows, and systems from JSON files"
 
     def handle(self, *args, **kwargs):
         self.sync_permissions()
+        self.sync_systems()
         # self.sync_workflows()
 
     def sync_permissions(self):
@@ -70,6 +71,72 @@ class Command(BaseCommand):
             self.style.NOTICE(f"  🧹 Removed Categories: {deleted_categories}")
         )
         self.stdout.write(self.style.SUCCESS("\n🎉 Permissions synced successfully!"))
+
+    def sync_systems(self):
+        filepath = os.path.join(
+            settings.BASE_DIR, "users", "fixtures", "default_systems.json"
+        )
+        if not os.path.exists(filepath):
+            self.stdout.write(
+                self.style.ERROR(f"Systems file not found at {filepath}")
+            )
+            return
+
+        with open(filepath, "r") as file:
+            systems_data = json.load(file)
+
+        self.stdout.write(self.style.MIGRATE_HEADING("\n⏳ Syncing systems...\n"))
+
+        valid_system_type_names = set()
+        valid_system_codes = set()
+
+        # Sync system types
+        for st_data in systems_data.get("system_types", []):
+            SystemType.objects.update_or_create(
+                name=st_data["name"],
+                defaults={
+                    "description": st_data.get("description", "")
+                },
+            )
+            valid_system_type_names.add(st_data["name"])
+
+        # Sync systems
+        for sys_data in systems_data.get("systems", []):
+            try:
+                system_type = SystemType.objects.get(name=sys_data["system_type"])
+            except SystemType.DoesNotExist:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"Skipping System {sys_data['code']} (unknown type: {sys_data['system_type']})"
+                    )
+                )
+                continue
+
+            System.objects.update_or_create(
+                code=sys_data["code"],
+                defaults={
+                    "description": sys_data.get("description", ""),
+                    "system_type": system_type,
+                },
+            )
+            valid_system_codes.add(sys_data["code"])
+
+        deleted_systems, _ = System.objects.exclude(
+            code__in=valid_system_codes
+        ).delete()
+
+        deleted_system_types, _ = SystemType.objects.exclude(
+            name__in=valid_system_type_names
+        ).delete()
+
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Systems Summary"))
+        self.stdout.write(
+            self.style.NOTICE(f"  🧹 Removed Systems: {deleted_systems}")
+        )
+        self.stdout.write(
+            self.style.NOTICE(f"  🧹 Removed System Types: {deleted_system_types}")
+        )
+        self.stdout.write(self.style.SUCCESS("\n🎉 Systems synced successfully!"))
 
     def sync_workflows(self):
         filepath = os.path.join(

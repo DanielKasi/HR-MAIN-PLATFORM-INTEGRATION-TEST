@@ -1,10 +1,11 @@
+from datetime import datetime
 from employee.models import Employee
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from rest_framework.permissions import AllowAny
 from utilities.helpers import (
     build_password_link,
@@ -18,9 +19,11 @@ from .models import Department, Institution, Branch, UserBranch
 from users.serializers import ProfileSerializer
 from .serializers import (
     DepartmentSerializer,
+    ErrorResponseSerializer,
     InstitutionActivationSerializer,
     InstitutionSerializer,
     BranchSerializer,
+    SuccessResponseSerializer,
     UserBranchSerializer,
 )
 from django.shortcuts import get_object_or_404
@@ -555,65 +558,38 @@ def delete_user_branch_by_ids(request, user_id, branch_id):
         )
 
 @extend_schema(
-        summary="Activate HR System",
-        description="Accepts validated institution, branches, and employee data, then activates the HR system for an external client.",
-        request=InstitutionActivationSerializer,
-        responses={
-            201: OpenApiExample(
-                'Successful Activation',
-                value={
-                    'success': True,
-                    'message': 'HR system activated successfully',
-                    'data': {
-                        'institution': {
-                            'id': 1,
-                            'institution_name': 'Example Institute',
-                            'location': 'Kampala'
-                        },
-                        'branches_created': 2,
-                        'employees_created': 10,
-                        'system_type': 'School',
-                        'system_code': 'SCH-1234'
-                    }
-                },
-                response_only=True
-            ),
-            400: OpenApiExample(
-                'Validation Error',
-                value={
-                    'error': 'Data does not conform to HR system requirements',
-                    'details': {'institution_name': ['This field is required.']},
-                    'message': 'Please ensure your data matches the HR system contract'
-                },
-                response_only=True
-            ),
-            401: OpenApiExample(
-                'Unauthorized',
-                value={
-                    'error': 'API key is required in X-API-Key header'
-                },
-                response_only=True
-            ),
-            500: OpenApiExample(
-                'Server Error',
-                value={
-                    'error': 'Failed to activate HR system',
-                    'details': 'Some internal error occurred'
-                },
-                response_only=True
-            ),
-        },
-        parameters=[
-            OpenApiParameter(
-                name='X-API-Key',
-                location=OpenApiParameter.HEADER,
-                required=True,
-                description='API key for authenticating the external system',
-                type=str
-            )
-        ],
-        tags=['System Activation']
-    )
+    summary="Activate HR System",
+    description="Accepts validated institution, branches, and employee data...",
+    request=InstitutionActivationSerializer,
+    responses={
+        201: OpenApiResponse(
+            response=SuccessResponseSerializer,  # if you define one
+            description="Successful Activation"
+        ),
+        400: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="Validation Error"
+        ),
+        401: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="Unauthorized"
+        ),
+        500: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="Internal Server Error"
+        ),
+    },
+    parameters=[
+        OpenApiParameter(
+            name='X-API-Key',
+            location=OpenApiParameter.HEADER,
+            required=True,
+            description='API key for authenticating the external system',
+            type=str
+        )
+    ],
+    tags=['System Activation']
+)
 class SystemActivationView(APIView):
     """
     For activating hr system from the external systems.
@@ -638,19 +614,39 @@ class SystemActivationView(APIView):
                 email=email,
                 defaults={
                     'fullname': full_name,
-                    'phone_number': phone_number,
                     'is_active': True
                 }
             )
             return user
         return None    
+    
+    def create_departments(self, institution, departments_data, owner_user):
+        """Create departments for the institution"""
+        created_departments = []
+        
+        for dept_data in departments_data:
+            try:
+                department = Department.objects.create(
+                    institution=institution,
+                    name=dept_data.get('name'),
+                    description=dept_data.get('description', ''),
+                    created_by=owner_user
+                )
+                created_departments.append(department)
+            except Exception as e:
+                logger.error(f"Error creating department: {str(e)}")
+                continue
+        
+        return created_departments
             
     def create_institution_and_branches(self, validated_data, owner_user):
         """Create institution and its branches"""
         try:
-            # Extract branches data before creating institution
+            # Extract nested data before creating institution
             branches_data = validated_data.pop('branches', [])
             employees_data = validated_data.pop('employees', [])
+            departments_data = validated_data.pop('departments', [])
+            owner_data = validated_data.pop('owner', {})
             
             # Create institution
             institution = Institution.objects.create(
@@ -669,31 +665,45 @@ class SystemActivationView(APIView):
                 )
                 created_branches.append(branch)
             
-            return institution, created_branches, employees_data
+            # Create departments
+            created_departments = self.create_departments(institution, departments_data, owner_user)
+            
+            return institution, created_branches, created_departments, employees_data, owner_data
             
         except Exception as e:
             logger.error(f"Error creating institution and branches: {str(e)}")
             raise        
         
-    def create_employees(self, institution, branches, employees_data):
+    def create_employees(self, institution, branches, departments, employees_data):
         """Create employees for the institution"""
         created_employees = []
         
         # Create a mapping of branch locations to branch objects
         branch_map = {branch.branch_location: branch for branch in branches}
         
+        # Create a mapping of department names to department objects
+        department_map = {dept.name: dept for dept in departments}
+        
         for employee_data in employees_data:
             try:
-                # Get the branch for this employee
+                # Get the branch for this employee (use first branch if not specified)
                 branch_location = employee_data.get('branch_location')
-                branch = branch_map.get(branch_location)
+                branch = branch_map.get(branch_location) if branch_location else (branches[0] if branches else None)
                 
                 if not branch:
-                    logger.warning(f"Branch not found for location: {branch_location}")
+                    logger.warning(f"No branch available for employee: {employee_data.get('email')}")
                     continue
+                
+                # Get department if specified
+                department_name = employee_data.get('department')
+                department = department_map.get(department_name) if department_name else None
                 
                 # Create or get user for employee
                 employee_user = self.create_or_get_user(employee_data)
+                
+                if not employee_user:
+                    logger.warning(f"Could not create user for employee: {employee_data}")
+                    continue
                 
                 # Create employee
                 employee = Employee.objects.create(
@@ -703,6 +713,9 @@ class SystemActivationView(APIView):
                     gender=employee_data.get('gender'),
                     date_of_birth=employee_data.get('date_of_birth'),
                     address=employee_data.get('address'),
+                    payroll_branch=branch,
+                    department=department,
+                    date_of_joining=employee_data.get('date_of_joining', datetime.now().date()),
                 )
                 
                 created_employees.append(employee)
@@ -711,7 +724,29 @@ class SystemActivationView(APIView):
                 logger.error(f"Error creating employee: {str(e)}")
                 continue
         
-        return created_employees  
+        return created_employees
+    
+    def create_owner_employee(self, owner_user, institution, branches, departments):
+        """Create employee record for the owner"""
+        try:
+            # Use the first branch for the owner
+            branch = branches[0] if branches else None
+            
+            # Create employee record for owner
+            owner_employee = Employee.objects.create(
+                user=owner_user,
+                email=owner_user.email,
+                phone_number=getattr(owner_user, 'phone_number', None),
+                payroll_branch=branch,
+                department=departments[0] if departments else None,
+                date_of_joining=datetime.now().date(),
+            )
+            
+            return owner_employee
+            
+        except Exception as e:
+            logger.error(f"Error creating owner employee: {str(e)}")
+            return None
     
     def post(self, request):
         """Handle HR system activation"""
@@ -745,24 +780,31 @@ class SystemActivationView(APIView):
         
         try:
             with transaction.atomic():
-                # Get the system owner or create a default user
-                owner_user = getattr(system, 'owner', None)
-                if not owner_user:
-                    # Use the first superuser as default
-                    owner_user = User.objects.filter(is_superuser=True).first()
-                    if not owner_user:
-                        return Response({
-                            'error': 'No system owner available'
-                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
-                # Create institution, branches, and get employees data
                 validated_data = serializer.validated_data.copy()
-                institution, branches, employees_data = self.create_institution_and_branches(
+                
+                # Create or get owner user
+                owner_data = validated_data.get('owner', {})
+                owner_user = self.create_or_get_user(owner_data)
+                
+                if not owner_user:
+                    return Response({
+                        'error': 'Owner data is required and must include email'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Create institution, branches, departments, and get employees data
+                institution, branches, departments, employees_data, owner_data = self.create_institution_and_branches(
                     validated_data, owner_user
                 )
                 
+                # Set the system for the institution
+                institution.system = system
+                institution.save()
+                
                 # Create employees
-                employees = self.create_employees(institution, branches, employees_data)
+                employees = self.create_employees(institution, branches, departments, employees_data)
+                
+                # Create owner employee record
+                owner_employee = self.create_owner_employee(owner_user, institution, branches, departments)
                 
                 # Prepare response
                 response_data = {
@@ -772,9 +814,17 @@ class SystemActivationView(APIView):
                         'institution': {
                             'id': institution.id,
                             'institution_name': institution.institution_name,
-                            'location': institution.location
+                            'location': institution.location,
+                            'institution_email': institution.institution_email
+                        },
+                        'owner': {
+                            'id': owner_user.id,
+                            'email': owner_user.email,
+                            'fullname': owner_user.fullname,
+                            'employee_created': owner_employee is not None
                         },
                         'branches_created': len(branches),
+                        'departments_created': len(departments),
                         'employees_created': len(employees),
                         'system_type': system.system_type.name,
                         'system_code': system.code
