@@ -124,7 +124,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [canViewAdmin, setCanViewAdmin] = useState(false);
   const [canViewSettings, setCanViewSettings] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  const [isAdminHovered, setIsAdminHovered] = useState(false);
   const [canViewThisGuide, setCanViewThisGuide] = useState(false);
 
   const [InstitutionId, setInstitutionId] = useState<string | null>(null);
@@ -143,7 +143,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // State for filtered nav items
   const [filteredNavItems, setFilteredNavItems] = useState<NavItem[]>([]);
-  const [filteredSettingsItem, setFilteredSettingsItem] = useState<NavItem | null>(null);
+  const [filteredAdminItem, setFilteredAdminItem] = useState<NavItem | null>(null);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const userData = useSelector(selectUser);
@@ -409,7 +409,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     {
       title: "Performance",
       href: "#1",
-      icon: <Icon icon="hugeicons:chart-line-data-01" width="20" height="20" />,
+      icon: <Icon icon="hugeicons:chart-line-data-01" width="25" height="25" />,
       submenu: [
         {
           title: "Performance Reviews",
@@ -439,37 +439,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     },
   ];
 
-  // Settings item - will be static and always visible
-  const settingsItem: NavItem = {
-    title: "Settings",
-    href: "#1",
-    icon: <Icon icon="hugeicons:settings-02" width="20" height="20" />,
-    submenu: [
-      {
-        title: "General Settings",
-        href: "/settings/general",
-      },
-      {
-        title: "User Management",
-        href: "/settings/users",
-      },
-      {
-        title: "Role Permissions",
-        href: "/settings/permissions",
-      },
-      {
-        title: "Notification Settings",
-        href: "/settings/notifications",
-      },
-      {
-        title: "Integration Settings",
-        href: "/settings/integrations",
-      },
-      {
-        title: "Audit Logs",
-        href: "/settings/audit-logs",
-      },
-    ],
+  // Admin item - will be static and always visible if user has permission
+  const adminItem: NavItem = {
+    title: "Admin",
+    href: "/admin",
+    icon: <Shield className="w-5 h-5" />,
+    requiredPermission: PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD,
   };
 
   const updateThemeColors = (hexColor: string) => {
@@ -570,19 +545,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return !item.requiredPermission || hasPermission(item.requiredPermission);
       });
 
-    // Filter settings item separately
-    const processedSettingsItem = (() => {
-      if (settingsItem.submenu && settingsItem.submenu.length > 0) {
-        const filteredSubmenu = settingsItem.submenu.filter(
-          (subItem) => !subItem.requiredPermission || hasPermission(subItem.requiredPermission),
-        );
-        return { ...settingsItem, submenu: filteredSubmenu };
+    // Filter admin item separately
+    const processedAdminItem = (() => {
+      if (!adminItem.requiredPermission || hasPermission(adminItem.requiredPermission)) {
+        return adminItem;
       }
-      return settingsItem;
+      return null;
     })();
 
     setFilteredNavItems(filtered);
-    setFilteredSettingsItem(processedSettingsItem);
+    setFilteredAdminItem(processedAdminItem);
   }, [router, userData, selectedInstitution, accessToken]);
 
   const handleLogoutClick = () => {
@@ -625,6 +597,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const renderNavigationItem = (item: NavItem) => {
     const isActive = pathname === item.href || (item.submenu && item.submenu.some(sub => pathname === sub.href));
+    
+    // Special handling for admin item
+    if (item.title === "Admin") {
+      return (
+        <div 
+          key={item.title}
+          className="relative"
+          onMouseEnter={() => setIsAdminHovered(true)}
+          onMouseLeave={() => setIsAdminHovered(false)}
+        >
+          <Button 
+            variant={isActive ? "default" : "ghost"} 
+            className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap ${
+              isActive
+                ? "bg-green-100 text-green-700 hover:bg-green-200"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            }`}
+            onClick={() => router.push(item.href)}
+          >
+            {item.icon}
+          </Button>
+          {isAdminHovered && (
+            <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs whitespace-nowrap z-50">
+              Admin
+            </span>
+          )}
+        </div>
+      );
+    }
     
     const buttonClasses = `flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap ${
       isActive
@@ -706,23 +707,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </ProtectedComponent>
           
-          {isMounted && canViewAdmin && (
-            <button
-              className="text-gray-900 bg-white hover:bg-gray-100 rounded-full p-3 relative"
-              id="admin"
-              onClick={() => router.push("/admin")}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-            >
-              <Icon icon="hugeicons:shield-01" width="24" height="24"/>
-              {isHovered && (
-                <span className="text-gray-100 px-3 py-1 rounded-sm z-10 bg-gray-600 text-sm font-medium overflow-hidden transition-all duration-300 ease-in-out absolute -top-2 -right-1">
-                  Admin
-                </span>
-              )}
-            </button>
-          )}
-
           <div className="">
             <TaskNotification />
           </div>
@@ -780,9 +764,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </ScrollArea>
           </div>
           
-          {/* Static Settings - Always Visible */}
+          {/* Static Admin - Always Visible if user has permission */}
           <div className="flex-shrink-0 px-4 border-l border-gray-200">
-            {isMounted && canViewSettings && filteredSettingsItem && renderNavigationItem(filteredSettingsItem)}
+            {isMounted && canViewAdmin && filteredAdminItem && renderNavigationItem(filteredAdminItem)}
           </div>
         </div>
       </div>
