@@ -19,6 +19,7 @@ from .views import (
     ResetPasswordAPIView,
     GoogleAuthURLView,
     GoogleAuthCallbackView,
+    UserDetailsWithInstitutions,
 )
 
 
@@ -63,4 +64,5 @@ urlpatterns = [
     # Continue with Google URLs
     path('auth/google/url/', GoogleAuthURLView.as_view(), name='google_auth_url'),
     path('auth/google/callback/', GoogleAuthCallbackView.as_view(), name='google_auth_callback'),
+    path('details/', UserDetailsWithInstitutions.as_view(), name='user-dets')
 ]
