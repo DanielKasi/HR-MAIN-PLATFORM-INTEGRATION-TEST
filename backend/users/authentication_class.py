@@ -149,29 +149,11 @@ class CrossSystemAuthentication(BaseAuthentication):
         Get user from the system using the access token payload.
         """
         email = access_token_payload.get('email')
-        user_id = access_token_payload.get('user_id')
-        username = access_token_payload.get('username')
         
         # Try to find user by email first (most reliable)
         if email:
             try:
                 user = User.objects.get(email=email)
-                return user
-            except User.DoesNotExist:
-                pass
-        
-        # Try by user_id if provided
-        if user_id:
-            try:
-                user = User.objects.get(id=user_id)
-                return user
-            except User.DoesNotExist:
-                pass
-        
-        # Try by username if provided
-        if username:
-            try:
-                user = User.objects.get(username=username)
                 return user
             except User.DoesNotExist:
                 pass
