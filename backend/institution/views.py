@@ -591,6 +591,7 @@ def delete_user_branch_by_ids(request, user_id, branch_id):
     tags=['System Activation']
 )
 class SystemActivationView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
     """
     For activating hr system from the external systems.
@@ -751,6 +752,8 @@ class SystemActivationView(APIView):
     
     def post(self, request):
         """Handle HR system activation"""
+
+        print("\n\n\n\ Hit system activation endpoint ...\n\n\n ")
         # Get API key from header
         api_key = request.headers.get('X-API-Key') or request.headers.get('Authorization')
         
