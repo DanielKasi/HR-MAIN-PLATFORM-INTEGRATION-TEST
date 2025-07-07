@@ -1,5 +1,6 @@
 access_token_payload = {
-    "email": "jmi.gmail.com",}
+    "email": "jmi.gmail.com",
+}
 x_api_key = "hr_4b3c5f8d-2c1e-4f9a-8b3c-5f8d2c1e4b3c"
 
 if x_api_key is None:
@@ -14,8 +15,4 @@ else:
     pass
 
 
-
 # THERE IS A POSSIBILITY THAT A PERSON WILL HAVE THE SAME CREDENTIALS IN DIFFERENT SYSTEMS AND THEY WANT TO USE THE NON SYSTEM LOGIN
-
-
-     
