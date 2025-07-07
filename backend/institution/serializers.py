@@ -209,14 +209,17 @@ class DepartmentSerializer(serializers.ModelSerializer):
             "institution_details",
         ]
 
+
 class OwnerSerializer(serializers.Serializer):
     email = serializers.EmailField()
     full_name = serializers.CharField(max_length=255)
     phone_number = serializers.CharField(max_length=20, required=False)
     gender = serializers.ChoiceField(
         choices=[("male", "Male"), ("female", "Female"), ("other", "Other")],
-        required=False
+        required=False,
+        allow_blank=True,
     )
+
 
 class BranchActivationSerializer(serializers.Serializer):
     branch_name = serializers.CharField(max_length=100)
@@ -224,27 +227,29 @@ class BranchActivationSerializer(serializers.Serializer):
     branch_phone_number = serializers.CharField(max_length=20, required=False)
     branch_email = serializers.EmailField(required=False)
 
+
 class DepartmentActivationSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100)
     description = serializers.CharField(max_length=500, required=False)
-     
-    
+
+
 class InstitutionActivationSerializer(serializers.Serializer):
     institution_name = serializers.CharField(max_length=255, required=True)
     institution_email = serializers.EmailField(required=False, allow_blank=True)
     location = serializers.CharField(max_length=500, required=False, allow_blank=True)
     branches = BranchActivationSerializer(many=True, required=True)
-    employees = EmployeeActivationSerializer(many=True, required=False)   
+    employees = EmployeeActivationSerializer(many=True, required=False)
     owner = OwnerSerializer(required=True)
     departments = DepartmentActivationSerializer(many=True, required=False)
+
 
 class ErrorResponseSerializer(serializers.Serializer):
     error = serializers.CharField()
     message = serializers.CharField(required=False)
     details = serializers.JSONField(required=False)
 
+
 class SuccessResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField()
     message = serializers.CharField()
-    data = serializers.DictField()    
-  
+    data = serializers.DictField()

@@ -30,6 +30,46 @@ import datetime
 logger = logging.getLogger(__name__)
 
 
+def send_activation_confirmation_email(
+    owner_user, institution, branches, departments, employees
+):
+    """
+    Sends an email to the owner confirming the activation of the institution.
+    """
+
+    try:
+        subject = "Institution Activation Confirmation"
+
+        context = {
+            "owner_user": owner_user,
+            "institution": institution,
+            "branches": branches,
+            "departments": departments,
+            "employees": employees,
+            "year": datetime.datetime.now().year,
+        }
+
+        # Render HTML template
+        html_message = render_to_string(
+            "institutions/emails/activation_confirmation_email.html", context
+        )
+        plain_message = strip_tags(html_message)
+
+        send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[owner_user.email],
+            html_message=html_message,
+        )
+        logger.info(f"Activation confirmation email sent to {owner_user.email}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Error sending activation confirmation email: {e}")
+        return False
+
+
 def permission_required(perm_name):
     def decorator(view_func):
         @wraps(view_func)
@@ -69,9 +109,11 @@ def create_and_institution_otp(user_id, purpose=None, expiry_minutes=15):
 
     return otp
 
+
 def cleanup_existing_otps(user_id, purpose):
     if purpose:
         OneTimePassword.objects.filter(purpose=purpose, is_used=False).delete()
+
 
 def cleanup_expired_otps():
     """
@@ -81,6 +123,7 @@ def cleanup_expired_otps():
     now = timezone.now()
     deleted_count, _ = OneTimePassword.objects.filter(expiry__lt=now).delete()
     return deleted_count
+
 
 def verify_otp(identifier, received_otp):
     otp_hash = hash_otp(identifier, received_otp)
@@ -100,6 +143,7 @@ def verify_otp(identifier, received_otp):
     except OneTimePassword.DoesNotExist:
         logger.warning(f"Invalid OTP attempt with hash: {otp_hash}")
         return False, "Invalid OTP"
+
 
 def send_plain_email(receivers, subject, body, fail_silently=False):
     """
@@ -138,6 +182,7 @@ def send_plain_email(receivers, subject, body, fail_silently=False):
             raise
         return 0
 
+
 def send_otp_to_user(user, otp):
     try:
         subject = "Verify Your Account"
@@ -160,7 +205,6 @@ def send_otp_to_user(user, otp):
         return True
     except Exception as e:
         return False
-
 
 
 def build_password_link(request, token: str) -> str:
@@ -195,7 +239,9 @@ def send_password_link_to_user(user, link):
             "user": user,
             "year": datetime.datetime.now().year,
         }
-        html_message = render_to_string("institutions/emails/signup_link_email.html", context)
+        html_message = render_to_string(
+            "institutions/emails/signup_link_email.html", context
+        )
         plain_message = strip_tags(html_message)
 
         send_mail(
@@ -209,6 +255,7 @@ def send_password_link_to_user(user, link):
     except Exception as e:
         print("Error sending email:", e)
         return False
+
 
 def send_password_reset_link_to_user(user, link):
     try:
