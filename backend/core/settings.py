@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from datetime import timedelta
 from pathlib import Path
 import dj_database_url
+from corsheaders.defaults import default_headers
 
 load_dotenv()
 
@@ -137,6 +138,9 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "x-api-key",
+]
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
