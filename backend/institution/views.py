@@ -591,6 +591,7 @@ def delete_user_branch_by_ids(request, user_id, branch_id):
     tags=['System Activation']
 )
 class SystemActivationView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
     """
     For activating hr system from the external systems.
