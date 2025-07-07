@@ -21,7 +21,9 @@ class Institution(models.Model):
     institution_logo = models.ImageField(
         upload_to="institutions/images/", blank=True, null=True
     )
-    system = models.ForeignKey('users.System', on_delete=models.PROTECT, blank=True, null=True)
+    system = models.ForeignKey(
+        "users.System", on_delete=models.PROTECT, blank=True, null=True
+    )
     theme_color = models.CharField(max_length=400, blank=True, null=True)
     setup = models.BooleanField(default=False)
 
@@ -69,12 +71,12 @@ class Institution(models.Model):
         return self.approval_status == "approved"
 
     def save(self, *args, **kwargs):
-        is_new = self.pk is None  
+        is_new = self.pk is None
         super().save(*args, **kwargs)
-        
-        
+
         if is_new:
-            from payroll.utils import PayrollProcessor  
+            from payroll.utils import PayrollProcessor
+
             PayrollProcessor.setup_default_payroll_types_for_institution(self)
 
 
@@ -169,37 +171,35 @@ class UserBranch(models.Model):
         verbose_name_plural = "User Branches"
         constraints = [
             models.UniqueConstraint(
-                fields=['user'],
+                fields=["user"],
                 condition=models.Q(is_default=True),
-                name='unique_default_branch_per_user'
+                name="unique_default_branch_per_user",
             )
         ]
 
     def save(self, *args, **kwargs):
         # Ensure only one default branch per user
         if self.is_default:
-            UserBranch.objects.filter(
-                user=self.user, 
-                is_default=True
-            ).exclude(id=self.id).update(is_default=False)
-        
+            UserBranch.objects.filter(user=self.user, is_default=True).exclude(
+                id=self.id
+            ).update(is_default=False)
+
         super().save(*args, **kwargs)
-        
+
         # Update employee payroll_branch after saving
         self._update_employee_payroll_branch()
-    
+
     def _update_employee_payroll_branch(self):
         """Update employee's payroll_branch if this is the default branch"""
         if self.is_default:
             from employee.models import Employee
+
             try:
                 employee = Employee.objects.get(user=self.user)
                 employee.payroll_branch = self.branch
-                employee.save(update_fields=['payroll_branch'])
+                employee.save(update_fields=["payroll_branch"])
             except Employee.DoesNotExist:
                 pass
-
-
 
     def __str__(self):
         return self.user.email + " - " + self.branch.branch_location

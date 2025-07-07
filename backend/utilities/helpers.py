@@ -38,21 +38,19 @@ def send_activation_confirmation_email(
     """
 
     try:
-        subject = "Institution Activation Confirmation"
+        subject = "Perrac Module Activation Confirmation"
 
         context = {
             "owner_user": owner_user,
             "institution": institution,
-            "branches": branches,
-            "departments": departments,
-            "employees": employees,
+            "branches": len(branches),
+            "departments": len(departments),
+            "employees": len(employees),
             "year": datetime.datetime.now().year,
         }
 
         # Render HTML template
-        html_message = render_to_string(
-            "institutions/emails/activation_confirmation_email.html", context
-        )
+        html_message = render_to_string("activation-emails/perrac.html", context)
         plain_message = strip_tags(html_message)
 
         send_mail(
@@ -67,7 +65,7 @@ def send_activation_confirmation_email(
 
     except Exception as e:
         logger.error(f"Error sending activation confirmation email: {e}")
-        return False
+        raise e
 
 
 def permission_required(perm_name):
