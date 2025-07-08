@@ -407,11 +407,14 @@ export const createJobPositionAdvert = async ({
     );
 
     return response.data as JobPositionAdvert;
-  } catch (error) {
-    console.error("Failed to create job position advert", error);
-    return null;
+  } catch (error: any) {
+    if (error?.response?.status === 404 || error?.response?.status === 400) {
+      return null;
+    }
+    throw error;
   }
 };
+
 
 
 

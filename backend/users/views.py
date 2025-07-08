@@ -1062,3 +1062,44 @@ class GoogleAuthCallbackView(APIView):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+class UserDetailsWithInstitutions(APIView):
+    """
+    Returns the same response as the login endpoint for an authenticated user.
+    """
+
+    def get(self, request):
+        user = request.user
+
+        if user.user_type == UserType.STAFF:
+            institution_attached = user.institutions_owned.all()
+
+            if not institution_attached:
+                try:
+                    institution_attached = (
+                        [user.profile.institution] if user.profile.institution else []
+                    )
+                except ObjectDoesNotExist:
+                    institution_attached = []
+
+            serializer_context = {"user": user}
+
+            return Response(
+                {
+                    "user": CustomUserSerializer(user).data,
+                    "institution_attached": InstitutionWithBranchesSerializer(
+                        institution_attached,
+                        many=True,
+                        context=serializer_context,
+                    ).data,
+                },
+                status=status.HTTP_200_OK,
+            )
+        
+        return Response(
+            {
+                "detail": "Only staff users are supported in this endpoint.",
+                "custom_code": "UNSUPPORTED_USER_TYPE",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
