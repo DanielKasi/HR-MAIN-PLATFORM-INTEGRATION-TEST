@@ -28,26 +28,16 @@ class EmployeeAllowanceAPIView(APIView):
         return Response(serializer.data)
 
     @extend_schema(
-    request=PayslipGenerationInputSerializer,
-    responses=PayslipSerializer(many=True),
-    summary="Generate payslips for a payroll period"
+        request=EmployeeAllowanceSerializer,
+        responses=EmployeeAllowanceSerializer,
+        summary="Create a new employee allowance"
     )
     def post(self, request, institution_id):
-        input_serializer = PayslipGenerationInputSerializer(data=request.data)
-        if not input_serializer.is_valid():
-            return Response(input_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        payroll_period_id = input_serializer.validated_data['payroll_period']
-        employee_ids = input_serializer.validated_data.get('employee_ids')
-
-        # Get the actual PayrollPeriod instance
-        payroll_period = get_object_or_404(PayrollPeriod, id=payroll_period_id)
-
-        # Generate payslips
-        created_payslips = PayrollProcessor.generate_payslips_for_period(payroll_period, employee_ids)
-
-        output_serializer = PayslipSerializer(created_payslips, many=True)
-        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+        serializer = EmployeeAllowanceSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EmployeeAllowanceDetailAPIView(APIView):
