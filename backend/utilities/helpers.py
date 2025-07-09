@@ -31,18 +31,23 @@ logger = logging.getLogger(__name__)
 
 
 def send_activation_confirmation_email(
-    owner_user, institution, branches, departments, employees
+    owner_fullname, owner_email, institution_name, branches, departments, employees
 ):
     """
     Sends an email to the owner confirming the activation of the institution.
     """
 
+    print(
+        f"This function is called with {owner_fullname}, {owner_email}, {institution_name}, {branches}, {departments}, {employees}"
+    )
+
     try:
         subject = "Perrac Module Activation Confirmation"
 
         context = {
-            "owner_user": owner_user,
-            "institution": institution,
+            "owner_full_name": owner_fullname,
+            "owner_email": owner_email,
+            "institution_name": institution_name,
             "branches": len(branches),
             "departments": len(departments),
             "employees": len(employees),
@@ -57,10 +62,10 @@ def send_activation_confirmation_email(
             subject=subject,
             message=plain_message,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[owner_user.email],
+            recipient_list=[owner_email],
             html_message=html_message,
         )
-        logger.info(f"Activation confirmation email sent to {owner_user.email}")
+        logger.info(f"Activation confirmation email sent to {owner_email}")
         return True
 
     except Exception as e:
