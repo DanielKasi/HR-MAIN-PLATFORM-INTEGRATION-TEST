@@ -824,15 +824,23 @@ class SystemActivationView(APIView):
                 institution.system = system
                 institution.save()
 
-                # Create employees
-                employees = self.create_employees(
-                    institution, branches, departments, employees_data
-                )
+                all_employees = []
 
                 # Create owner employee record
                 owner_employee = self.create_owner_employee(
                     owner_user, institution, branches, departments
                 )
+
+                # Create employees
+                employees = self.create_employees(
+                    institution, branches, departments, employees_data
+                )
+
+                if employees or owner_employee:
+                    if employees:
+                        all_employees.extend(employees)
+                    if owner_employee:
+                        all_employees.append(owner_employee)
 
                 # Prepare response
                 response_data = {
@@ -861,11 +869,12 @@ class SystemActivationView(APIView):
 
                 # Sending email to the owner confirming the activation
                 send_activation_confirmation_email(
-                    owner_user=owner_user,
-                    institution=institution,
+                    owner_fullname=owner_user.fullname,
+                    owner_email=owner_user.email,
+                    institution_name=institution.institution_name,
                     branches=branches,
                     departments=departments,
-                    employees=employees,
+                    employees=all_employees,
                 )
 
                 return Response(response_data, status=status.HTTP_201_CREATED)
