@@ -18,11 +18,15 @@ from .views import (
 
 urlpatterns = [
     path("", InstitutionListAPIView.as_view(), name="institution-management"),
-    path("<int:institution_id>/", InstitutionDetailAPIView.as_view(), name="institution-detail"),
+    path(
+        "<int:institution_id>/",
+        InstitutionDetailAPIView.as_view(),
+        name="institution-detail",
+    ),
     path("branch/", BranchListAPIView.as_view(), name="branch-management"),
-
-    path("branch/<int:branch_id>/", BranchDetailAPIView.as_view(), name="branch-detail"),
-
+    path(
+        "branch/<int:branch_id>/", BranchDetailAPIView.as_view(), name="branch-detail"
+    ),
     path("profile/", UserProfileListAPIView.as_view(), name="user-profile"),
     path(
         "profile/<int:institution_id>/",
@@ -45,12 +49,20 @@ urlpatterns = [
         delete_user_branch_by_ids,
         name="delete-user-branch-by-ids",
     ),
-    path("<int:institution_id>/branch", InstitutionBranchAPIView.as_view(), name="institution-branch-list"),
-    path("<int:institution_id>/department/", DepartmentListAPIView.as_view(), name="department-list"),
+    path(
+        "<int:institution_id>/branch",
+        InstitutionBranchAPIView.as_view(),
+        name="institution-branch-list",
+    ),
+    path(
+        "<int:institution_id>/department/",
+        DepartmentListAPIView.as_view(),
+        name="department-list",
+    ),
     path(
         "department/<int:department_id>/",
         DepartmentDetailAPIView.as_view(),
         name="department-detail",
     ),
-    path('api/activate/', SystemActivationView.as_view(), name='system_activation'),
+    path("api/activate/", SystemActivationView.as_view(), name="system_activation"),
 ]
