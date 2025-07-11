@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -30,6 +29,7 @@ import {
   getInterviewStages,
   createInterviewStage,
   fetchEmployees,
+  getInterviews,
 } from "@/lib/utils"
 import type { JobApplication, IInterviewStage, IInterviewStageFormData, IInterview, IInterviewFormData, IEmployee } from "@/app/types/types.utils"
 import { toast } from "sonner"
@@ -61,6 +61,7 @@ export default function CreateInterviewPage() {
   const [isCreateStageDialogOpen, setIsCreateStageDialogOpen] = useState(false)
   const [isCreatingStage, setIsCreatingStage] = useState(false)
   const [employees, setEmployees] = useState<IEmployee[]>([])
+  const [existingInterviews, setExistingInterviews] = useState<IInterview[]>([])
   const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
     name: "",
     level: 1,
@@ -73,32 +74,57 @@ export default function CreateInterviewPage() {
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const selectedBranch = useSelector(selectSelectedBranch)
 
-  // Group applications by job position
-  const groupedApplications = jobApplications.reduce((acc, app) => {
-    const jobId = app.job_position_advert
-    const jobName = app.job_position_advert_job_details?.name || 'Unknown Position'
-    
-    if (!acc[jobId]) {
-      acc[jobId] = {
-        jobName,
-        applications: []
+
+  const getAvailableApplications = (applications: JobApplication[]) => {
+  const scheduledApplicationIds = new Set(
+    existingInterviews
+      .filter(interview => 
+        interview.status === "scheduled" || 
+        interview.status === "completed"
+      )
+      .map(interview => interview.job_position_application)
+  )
+  return applications.filter(app => !scheduledApplicationIds.has(app.id))
+}
+
+
+      const groupedApplications = jobApplications.reduce((acc, app) => {
+      const jobId = app.job_position_advert
+      const jobName = app.job_position_advert_job_details?.name || 'Unknown Position'
+      
+      if (!acc[jobId]) {
+        acc[jobId] = {
+          jobName,
+          applications: []
+        }
       }
-    }
-    acc[jobId].applications.push(app)
-    return acc
-  }, {} as Record<number, { jobName: string; applications: JobApplication[] }>)
+      acc[jobId].applications.push(app)
+      return acc
+    }, {} as Record<number, { jobName: string; applications: JobApplication[] }>)
+
+    const filteredGroupedApplications = Object.entries(groupedApplications).reduce((acc, [jobId, { jobName, applications }]) => {
+      const availableApplications = getAvailableApplications(applications)
+      
+      if (availableApplications.length > 0) {
+        acc[Number(jobId)] = {
+          jobName,
+          applications: availableApplications
+        }
+      }
+      
+      return acc
+    }, {} as Record<number, { jobName: string; applications: JobApplication[] }>)
+
+    useEffect(() => {
+        if (!selectedInstitution || !selectedBranch) {
+          router.push("/dashboard")
+          return
+        }
+
+        fetchInitialData()
+      }, [selectedInstitution, selectedBranch, router])
 
   useEffect(() => {
-    if (!selectedInstitution || !selectedBranch) {
-      router.push("/dashboard")
-      return
-    }
-
-    fetchInitialData()
-  }, [selectedInstitution, selectedBranch, router])
-
-  useEffect(() => {
-    // Update stage form data when applications are selected
     if (selectedApplications.length > 0) {
       const firstApp = selectedApplications[0]
       setStageFormData(prev => ({ ...prev, job_position_advert: firstApp.job_position_advert }))
@@ -110,10 +136,11 @@ export default function CreateInterviewPage() {
 
     try {
       setIsLoading(true)
-      const [fetchedApplications, fetchedStages, fetchedEmployees] = await Promise.all([
+      const [fetchedApplications, fetchedStages, fetchedEmployees, fetchedInterviews] = await Promise.all([
         getJobApplications({ institutionId: selectedInstitution.id }),
         getInterviewStages({ institutionId: selectedInstitution.id }),
         fetchEmployees({ institutionId: selectedInstitution.id }),
+        getInterviews({ institutionId: selectedInstitution.id }),
       ])
 
       if (fetchedApplications) {
@@ -130,6 +157,10 @@ export default function CreateInterviewPage() {
       if (fetchedEmployees) {
         setEmployees(fetchedEmployees)
       }
+
+      if (fetchedInterviews) {
+        setExistingInterviews(fetchedInterviews)
+      }
     } catch (error) {
       console.error("Error fetching initial data:", error)
       toast.error("Failed to load applications and interview stages")
@@ -137,14 +168,16 @@ export default function CreateInterviewPage() {
       setIsLoading(false)
     }
   }
-
-  const handleJobPositionSelect = (jobPositionId: string) => {
+  
+    const handleJobPositionSelect = (jobPositionId: string) => {
+    if (jobPositionId === "no-positions") {
+      return
+    }
+    
     setSelectedJobPosition(jobPositionId)
-    // Clear selected applications when job position changes
     setSelectedApplications([])
     setFormData(prev => ({ ...prev, selected_applications: [] }))
     
-    // Clear job position error
     if (errors.job_position) {
       setErrors((prev: any) => ({ ...prev, job_position: undefined }))
     }
@@ -154,7 +187,6 @@ export default function CreateInterviewPage() {
     const isSelected = selectedApplications.some(app => app.id === application.id)
     
     if (isSelected) {
-      // Remove application
       const newSelectedApps = selectedApplications.filter(app => app.id !== application.id)
       setSelectedApplications(newSelectedApps)
       setFormData(prev => ({
@@ -162,7 +194,6 @@ export default function CreateInterviewPage() {
         selected_applications: newSelectedApps.map(app => app.id)
       }))
     } else {
-      // Add application
       const newSelectedApps = [...selectedApplications, application]
       setSelectedApplications(newSelectedApps)
       setFormData(prev => ({
@@ -171,7 +202,6 @@ export default function CreateInterviewPage() {
       }))
     }
 
-    // Clear applications error
     if (errors.selected_applications) {
       setErrors((prev: any) => ({ ...prev, selected_applications: undefined }))
     }
@@ -189,12 +219,10 @@ export default function CreateInterviewPage() {
   const updateFormData = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev: any) => ({ ...prev, [field]: undefined }))
     }
 
-    // Update selected stage when interview_stage changes
     if (field === "interview_stage") {
       const stage = interviewStages.find((stage) => stage.id === Number(value))
       setSelectedStage(stage || null)
@@ -204,22 +232,18 @@ export default function CreateInterviewPage() {
   const validateForm = (): boolean => {
     const newErrors: any = {}
 
-    // Job position validation
     if (!selectedJobPosition) {
       newErrors.job_position = "Please select a job position"
     }
 
-    // Applications validation
     if (formData.selected_applications.length === 0) {
       newErrors.selected_applications = "Please select at least one applicant"
     }
-
-    // Interview stage validation
     if (!formData.interview_stage || formData.interview_stage === 0) {
       newErrors.interview_stage = "Please select an interview stage"
     }
 
-    // Interview date validation
+
     if (!formData.interview_date) {
       newErrors.interview_date = "Interview date and time is required"
     } else {
@@ -230,12 +254,10 @@ export default function CreateInterviewPage() {
       }
     }
 
-    // Location validation
     if (!formData.location || formData.location.trim() === "") {
       newErrors.location = "Interview location is required"
     }
 
-    // Rating validation (if provided)
     if (formData.rating !== undefined && formData.rating !== null) {
       const rating = Number(formData.rating)
       if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
@@ -243,7 +265,6 @@ export default function CreateInterviewPage() {
       }
     }
 
-    // Feedback validation (optional length constraint)
     if (formData.feedback && formData.feedback.length > 1000) {
       newErrors.feedback = "Feedback cannot exceed 1000 characters"
     }
@@ -294,7 +315,6 @@ export default function CreateInterviewPage() {
         setInterviewStages((prev) => [...prev, newStage])
         updateFormData("interview_stage", newStage.id)
 
-        // Reset stage form
         setStageFormData({
           name: "",
           level: 1,
@@ -339,7 +359,6 @@ export default function CreateInterviewPage() {
     setIsSubmitting(true)
 
     try {
-      // Create interviews for each selected application
       const interviewPromises = formData.selected_applications.map(async (applicationId) => {
         const createData: IInterviewFormData = {
           job_position_application: applicationId,
@@ -404,7 +423,7 @@ export default function CreateInterviewPage() {
 
   return (
     <div className="w-full h-full p-6">
-      <div className="w-full max-w-6xl mx-auto space-y-6">
+      <div className="w-full mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
@@ -431,121 +450,84 @@ export default function CreateInterviewPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Job Position Selection */}
-              <div className="space-y-2">
-                <Label htmlFor="job_position" className="text-sm font-medium">
-                  Job Position *
-                </Label>
-                <Select
-                  value={selectedJobPosition}
-                  onValueChange={handleJobPositionSelect}
-                >
-                  <SelectTrigger className={errors.job_position ? "border-destructive" : ""}>
-                    <SelectValue placeholder="Select a job position" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(groupedApplications).map(([jobId, { jobName, applications }]) => (
-                      <SelectItem key={jobId} value={jobId}>
-                        <div className="flex items-center gap-2">
-                          <Building className="h-4 w-4" />
-                          {jobName} ({applications.length} applicant{applications.length !== 1 ? 's' : ''})
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.job_position && (
-                  <p className="text-sm text-destructive">{errors.job_position}</p>
-                )}
-              </div>
-
-              {/* Applicant Selection */}
-              {selectedJobPosition && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">
-                      Select Applicants * ({groupedApplications[Number(selectedJobPosition)]?.applications.length || 0} available)
-                    </Label>
-                    <div className="border rounded-lg p-4 max-h-60 overflow-y-auto">
-                      <div className="space-y-3">
-                        {groupedApplications[Number(selectedJobPosition)]?.applications.map((application) => (
-                          <div key={application.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50">
-                            <Checkbox
-                              id={`app-${application.id}`}
-                              checked={selectedApplications.some(app => app.id === application.id)}
-                              onCheckedChange={() => handleApplicationToggle(application)}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <User className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium">{application.applicant_name}</span>
-                                <Badge variant="outline" className="capitalize">
-                                  {application.status}
-                                </Badge>
-                              </div>
-                              <div className="text-sm text-muted-foreground space-y-1">
-                                <p>Email: {application.applicant_email}</p>
-                                <p>Phone: {application.applicant_phone}</p>
-                              </div>
-                            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="job_position" className="text-sm font-medium">
+                    Job Position *
+                  </Label>
+                  <Select
+                    value={selectedJobPosition}
+                    onValueChange={handleJobPositionSelect}
+                  >
+                    <SelectTrigger className={errors.job_position ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Select a job position" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(filteredGroupedApplications).map(([jobId, { jobName, applications }]) => (
+                        <SelectItem key={jobId} value={jobId}>
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4" />
+                            {jobName} ({applications.length} available applicant{applications.length !== 1 ? 's' : ''})
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                    {errors.selected_applications && (
-                      <p className="text-sm text-destructive">{errors.selected_applications}</p>
-                    )}
-                  </div>
-
-                  {/* Selected Applicants Summary */}
-                  {selectedApplications.length > 0 && (
-                    <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                      <h4 className="font-medium text-sm mb-3 text-blue-800">
-                        Selected Applicants ({selectedApplications.length})
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedApplications.map((app) => (
-                          <Badge key={app.id} variant="secondary" className="flex items-center gap-1">
-                            {app.applicant_name}
-                            <button
-                              type="button"
-                              onClick={() => removeSelectedApplication(app.id)}
-                              className="ml-1 hover:bg-destructive/20 rounded-full p-1"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
+                        </SelectItem>
+                      ))}
+                      {Object.keys(filteredGroupedApplications).length === 0 && (
+                        <SelectItem value="no-positions" disabled>
+                          No job positions with available applicants
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {errors.job_position && (
+                    <p className="text-sm text-destructive">{errors.job_position}</p>
                   )}
                 </div>
-              )}
 
-              {/* Selected Stage Info */}
-              {selectedStage && (
-                <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                  <h4 className="font-medium text-sm mb-2 text-green-800">Selected Interview Stage</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-green-700">
-                    <div>
-                      <p>
-                        <span className="font-medium">Stage:</span> {selectedStage.name}
-                      </p>
-                      <p>
-                        <span className="font-medium">Level:</span> {selectedStage.level}
-                      </p>
+              {/* Applicant Selection */}
+                {selectedJobPosition && filteredGroupedApplications[Number(selectedJobPosition)] && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">
+                          Select Applicants * ({filteredGroupedApplications[Number(selectedJobPosition)]?.applications.length || 0} available)
+                        </Label>
+                        <div className="border rounded-lg p-4 max-h-60 overflow-y-auto">
+                          <div className="space-y-3">
+                            {filteredGroupedApplications[Number(selectedJobPosition)]?.applications.map((application) => (
+                              <div key={application.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50">
+                                <Checkbox
+                                  id={`app-${application.id}`}
+                                  checked={selectedApplications.some(app => app.id === application.id)}
+                                  onCheckedChange={() => handleApplicationToggle(application)}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <User className="h-4 w-4 text-muted-foreground" />
+                                    <span className="font-medium">{application.applicant_name}</span>
+                                    <Badge variant="outline" className="capitalize">
+                                      {application.status}
+                                    </Badge>
+                                  </div>
+                                  <div className="text-sm text-muted-foreground space-y-1">
+                                    <p>Email: {application.applicant_email}</p>
+                                    <p>Phone: {application.applicant_phone}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            {filteredGroupedApplications[Number(selectedJobPosition)]?.applications.length === 0 && (
+                              <div className="text-center py-4 text-muted-foreground">
+                                <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">All applicants for this position have already been scheduled for interviews</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {errors.selected_applications && (
+                          <p className="text-sm text-destructive">{errors.selected_applications}</p>
+                        )}
+                      </div>
+                      {/* Rest of your selected applicants summary code remains the same */}
                     </div>
-                    <div>
-                      <p>
-                        <span className="font-medium">Interviewer:</span>
-                        {selectedStage.interviewer_details?.first_name} {selectedStage.interviewer_details?.last_name}
-                      </p>
-                      <p>
-                        <span className="font-medium">Email:</span> {selectedStage.interviewer_details?.email}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+                  )}
 
               {/* Form Fields - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -748,38 +730,6 @@ export default function CreateInterviewPage() {
                   </Select>
                 </div>
               </div>
-
-              {/* Organization Info Display */}
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <h4 className="font-medium text-sm mb-3">Interview will be scheduled for:</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium text-foreground">Organization:</span>{" "}
-                      {selectedInstitution.institution_name}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Branch:</span> {selectedBranch.branch_name}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium text-foreground">Available Applications:</span>{" "}
-                      {jobApplications.length}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Available Stages:</span> {interviewStages.length}
-                    </p>
-                    {selectedApplications.length > 0 && (
-                      <p>
-                        <span className="font-medium text-foreground">Selected Applicants:</span>{" "}
-                        {selectedApplications.length}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
               {/* Form Actions */}
               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
                 <Button

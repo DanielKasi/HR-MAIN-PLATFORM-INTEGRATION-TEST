@@ -36,12 +36,9 @@ import {
   Info,
   AlertTriangle,
   Calendar,
-  Users,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
-
-// Import helper functions and types
 import { 
   createLeaveApplication, 
   getLeaveApplications, 
@@ -52,79 +49,11 @@ import {
   getAllEmployees,
   getLeavePolicies, 
 } from "@/lib/utils"
-import { ILeaveRequest, ILeaveRequestFormData, LeaveRequestStatus, ILeaveType} from "@/app/types/types.utils"
+import { ILeaveRequest, ILeaveRequestFormData, ILeaveType, ILeavePolicy, Employee, LeaveBalance } from "@/app/types/types.utils"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
 import { IUserInstitution } from "@/app/types"
 import { useSelector } from "react-redux"
-
-
-interface LeaveApplicationDisplay {
-  id?: string | number;
-  employee: {
-    id: string;
-    user: {
-      fullname: string;
-      email: string;
-    };
-    employee_id: string;
-  };
-  leave_type: {
-    id: string | number;
-    name: string;
-    category: string;
-  };
-  start_date: string;
-  end_date: string;
-  duration_type?: string;
-  reason: string;
-  handover_notes?: string;
-  status: LeaveRequestStatus;
-  approved_by?: {
-    id: string;
-    fullname: string;
-  };
-  approved_at?: string;
-  rejection_reason?: string;
-  total_days?: number;
-  created_at?: string;
-  updated_at?: string;
-  supporting_document?: string | File | null;
-}
-
-// Employee interface for better type safety
-interface Employee {
-  id: string
-  name: string
-  email: string
-  employee_id?: string
-  user?: {
-    fullname: string
-    email: string
-  }
-}
-
-// Leave Policy interface
-interface LeavePolicy {
-  id: string | number
-  name: string
-  leave_type: {
-    id: string | number
-    name: string
-  }
-  min_notice_days: number
-  max_consecutive_days?: number
-  requires_manager_approval: boolean
-  requires_hr_approval: boolean
-  applicable_after_probation_months: number
-}
-
-// Leave Balance interface
-interface LeaveBalance {
-  leave_type_id: string | number
-  available_days: number
-  used_days: number
-  total_days: number
-}
+import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"
 
 const STATUS_CHOICES = [
   { value: "pending", label: "Pending" },
@@ -140,29 +69,28 @@ const DURATION_TYPES = [
   { value: "hourly", label: "Hourly" },
 ]
 
-const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { institutionId?: number }) => {
-  const [applications, setApplications] = useState<any[]>([])
+const LeaveApplicationComponent = () => {
+  const [applications, setApplications] = useState<ILeaveRequest[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
-  const [leavePolicies, setLeavePolicies] = useState<LeavePolicy[]>([])
+  const [leavePolicies, setLeavePolicies] = useState<ILeavePolicy[]>([])
   const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [editingApplication, setEditingApplication] = useState<LeaveApplicationDisplay | null>(null)
-  const [viewingApplication, setViewingApplication] = useState<LeaveApplicationDisplay | null>(null)
+  const [editingApplication, setEditingApplication] = useState<ILeaveRequest | null>(null)
+  const [viewingApplication, setViewingApplication] = useState<ILeaveRequest | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([])
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
-  const [institutionId, setInstitutionId] = useState<number | null>(propInstitutionId || null)
- 
+
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean
     type: "approve" | "reject" | "delete"
-    applicationId: string
+    applicationId: string | number
     applicationName: string
   }>({
     isOpen: false,
@@ -182,58 +110,87 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     supporting_document: null as File | null,
   })
 
-  // Add a function to refresh applications data
+    const getEmployeeName = (employee: ILeaveRequest['employee']): string => {
+    if (typeof employee === "object" && employee !== null) {
+      return (employee as any).user?.fullname || (employee as any).email || 'Unknown Employee';
+    }
+    return 'Unknown Employee';
+  };
+  const getLeaveTypeName = (leaveType: ILeaveRequest['leave_type']): string => {
+    if (typeof leaveType === "object" && leaveType !== null) {
+      return (leaveType as any).name || 'Unknown Leave Type';
+    }
+    if (typeof leaveType === "number" || typeof leaveType === "string") {
+      const found = leaveTypes.find(type => type.id.toString() === leaveType.toString());
+      return found?.name || 'Unknown Leave Type';
+    }
+    return 'Unknown Leave Type';
+  };
+
+    const getApproverName = (approvedBy: ILeaveRequest['approved_by']): string => {
+      return (approvedBy as any)?.fullname || (approvedBy as any)?.email || 'Not Approved';
+    };
+
+  const renderSupportingDocumentName = (document: string | File | undefined): string => {
+    if (!document) return 'Document';
+    
+    if (typeof document === 'string') {
+      const filename = document.split('/').pop() || document;
+      return filename.split('?')[0];
+    } else if (document instanceof File) {
+      return document.name || 'Document';
+    }
+    
+    return 'Document';
+  };
+
+
   const refreshApplications = async () => {
-    if (!institutionId) return
+    if (!selectedInstitution?.id) return
     
     try {
-      const applicationsData = await getLeaveApplications({ institutionId })
+      const applicationsData = await getLeaveApplications(selectedInstitution?.id)
       setApplications(applicationsData || [])
     } catch (error) {
       toast.error("Error refreshing applications")
     }
   }
 
-  // Calculate days between dates
   const calculateDaysBetween = (startDate: string, endDate: string): number => {
     if (!startDate || !endDate) return 0
     const start = new Date(startDate)
     const end = new Date(endDate)
     const diffTime = Math.abs(end.getTime() - start.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // +1 to include both start and end date
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
     return diffDays
   }
 
-  // Get selected employee details
   const getSelectedEmployee = () => {
     if (!formData.employee) return null
     return employees.find(emp => emp.id === formData.employee)
   }
 
-  // Get selected leave type details
   const getSelectedLeaveType = () => {
     if (!formData.leave_type) return null
     return leaveTypes.find(type => type.id.toString() === formData.leave_type)
   }
 
-  // Get leave policy for selected leave type
   const getSelectedLeavePolicy = () => {
     if (!formData.leave_type) return null
     return leavePolicies.find(policy => 
-      policy.leave_type.id.toString() === formData.leave_type
+      policy.leave_type.toString() === formData.leave_type
     )
   }
 
-  // Get leave balance for selected employee and leave type
+
   const getSelectedLeaveBalance = () => {
     if (!formData.employee || !formData.leave_type) return null
     return leaveBalances.find(balance => 
       balance.leave_type_id.toString() === formData.leave_type
-      // In a real implementation, you'd also filter by employee
     )
   }
 
-  // Validate leave application
+ 
   const validateLeaveApplication = () => {
     const validations = []
     const selectedLeaveType = getSelectedLeaveType()
@@ -241,7 +198,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     const selectedBalance = getSelectedLeaveBalance()
     const requestedDays = calculateDaysBetween(formData.start_date, formData.end_date)
 
-    // Date validations
     if (formData.start_date && formData.end_date) {
       const startDate = new Date(formData.start_date)
       const endDate = new Date(formData.end_date)
@@ -254,7 +210,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
         })
       }
 
-      // Notice period validation
       if (selectedPolicy) {
         const daysDifference = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
         if (daysDifference < selectedPolicy.min_notice_days) {
@@ -265,7 +220,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
         }
       }
 
-      // Consecutive days validation
       if (selectedPolicy?.max_consecutive_days && requestedDays > selectedPolicy.max_consecutive_days) {
         validations.push({
           type: 'error',
@@ -273,7 +227,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
         })
       }
 
-      // Leave balance validation
       if (selectedBalance && requestedDays > selectedBalance.available_days) {
         validations.push({
           type: 'error',
@@ -281,7 +234,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
         })
       }
 
-      // Warning for high usage
       if (selectedBalance && requestedDays > (selectedBalance.available_days * 0.8)) {
         validations.push({
           type: 'warning',
@@ -293,7 +245,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     return validations
   }
 
-  // Get approval requirements info
   const getApprovalInfo = () => {
     const selectedPolicy = getSelectedLeavePolicy()
     if (!selectedPolicy) return null
@@ -310,21 +261,9 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     }
   }
 
-  // Set institution ID from Redux state
-  useEffect(() => {
-    if (propInstitutionId) {
-      setInstitutionId(propInstitutionId)
-    } else if (selectedInstitution?.id) {
-      setInstitutionId(selectedInstitution.id)
-    } else if (institutionsAttached && institutionsAttached.length > 0) {
-      setInstitutionId(institutionsAttached[0].id)
-    }
-  }, [propInstitutionId, institutionsAttached, selectedInstitution])
-
-  // Load employees when institution ID is available
   useEffect(() => {
     const fetchEmployees = async () => {
-      if (!institutionId) {
+      if (!selectedInstitution?.id) {
         setIsLoadingEmployees(false)
         return
       }
@@ -332,7 +271,7 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
       setIsLoadingEmployees(true)
       
       try {
-        const fetchedEmployees = await getAllEmployees({ institutionId })
+        const fetchedEmployees = await getAllEmployees({ institutionId:selectedInstitution?.id })
         
         if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
           const formattedEmployees: Employee[] = fetchedEmployees.map((emp: any) => {
@@ -362,12 +301,11 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     }
 
     fetchEmployees()
-  }, [institutionId])
+  }, [selectedInstitution?.id])
 
-  // Load leave types, policies, and applications when institution ID is available
   useEffect(() => {
     const fetchData = async () => {
-      if (!institutionId) {
+      if (!selectedInstitution?.id) {
         return
       }
       
@@ -375,31 +313,21 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
       
       try {
         const [leaveTypesData, applicationsData, policiesData] = await Promise.all([
-          getLeaveTypes(institutionId),
-          getLeaveApplications({ institutionId }),
-          getLeavePolicies(institutionId), // Fetch policies
+          getLeaveTypes(selectedInstitution?.id),
+          getLeaveApplications(selectedInstitution?.id),
+          getLeavePolicies(selectedInstitution?.id),
         ])
         
-        // Filter to only show active leave types
         const activeLeaveTypes = leaveTypesData?.filter(type => type.is_active !== false) || []
         setLeaveTypes(activeLeaveTypes)
-        
-        // Set applications
         setApplications(applicationsData || [])
-        
-        // Set policies
         setLeavePolicies(policiesData || [])
         
         if (activeLeaveTypes.length === 0) {
           toast.error("No leave types found for this institution")
         }
         
-        // TODO: Fetch leave balances for current user/selected employee
-        // This would typically require an additional API call
-        // setLeaveBalances(await getLeaveBalances({ institutionId, employeeId }))
-        
       } catch (error) {
-        console.error("Error fetching data:", error)
         toast.error("Failed to load data")
         setLeaveTypes([])
         setApplications([])
@@ -410,7 +338,7 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     }
     
     fetchData()
-  }, [institutionId])
+  }, [selectedInstitution?.id])
 
   const handleAddApplication = async () => {
     if (!formData.employee || !formData.leave_type || !formData.start_date || !formData.end_date || !formData.reason) {
@@ -418,7 +346,7 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
       return
     }
 
-    if (!institutionId) {
+    if (!selectedInstitution?.id) {
       toast.error("Institution ID is required")
       return
     }
@@ -443,7 +371,7 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
         leave_type: parseInt(formData.leave_type),
         start_date: formData.start_date,
         end_date: formData.end_date,
-        duration_type: formData.duration_type as any,
+        duration_type: formData.duration_type, 
         reason: formData.reason,
         handover_notes: formData.handover_notes,
         status: 'pending',
@@ -451,32 +379,11 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
       }
 
       const newApplication = await createLeaveApplication({
-        institutionId,
         leaveApplicationData: applicationData,
       })
 
       if (newApplication) {
-        const selectedEmployee = employees.find((emp) => emp.id === formData.employee)
-        const selectedLeaveType = leaveTypes.find((lt) => lt.id.toString() === formData.leave_type)
-        
-        const displayApplication: LeaveApplicationDisplay = {
-          ...newApplication,
-          employee: selectedEmployee ? {
-            id: selectedEmployee.id,
-            user: {
-              fullname: selectedEmployee.name,
-              email: selectedEmployee.email
-            },
-            employee_id: selectedEmployee.employee_id || selectedEmployee.id
-          } : { 
-            id: formData.employee, 
-            user: { fullname: "Unknown", email: "" }, 
-            employee_id: formData.employee 
-          },
-          leave_type: selectedLeaveType || { id: formData.leave_type, name: "Unknown", category: "annual" },
-        }
-        
-        setApplications([displayApplication, ...applications])
+        setApplications([newApplication, ...applications])
         toast.success("Leave application created successfully")
         resetForm()
         setIsAddDialogOpen(false)
@@ -485,15 +392,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
       }
     } catch (error: any) {
       let errorMessage = error.message || "An error occurred while creating the leave application"
-      
-      if (errorMessage.includes("Minimum") && errorMessage.includes("days notice required")) {
-        errorMessage = "Leave applications must be submitted at least 10 days in advance. Please select a start date that is at least 10 days from today."
-      } else if (errorMessage.includes("Insufficient leave balance")) {
-        errorMessage = "You don't have enough leave balance for this request. Please check your available leave days."
-      } else if (errorMessage.includes("No leave balance found")) {
-        errorMessage = "No leave balance found for this year. Please contact HR to set up your leave balance."
-      }
-      
       toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
@@ -508,7 +406,7 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
       return
     }
 
-    if (!institutionId) {
+    if (!selectedInstitution?.id) {
       toast.error("Institution ID is required")
       return
     }
@@ -528,36 +426,19 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
         leave_type: parseInt(formData.leave_type),
         start_date: formData.start_date,
         end_date: formData.end_date,
-        duration_type: formData.duration_type as any,
+        duration_type: formData.duration_type,
         reason: formData.reason,
         handover_notes: formData.handover_notes,
       }
 
       const updatedApplication = await updateLeaveApplication({
         leaveApplicationId: editingApplication.id?.toString() || '',
-        institutionId,
         leaveApplicationData: applicationData,
       })
 
       if (updatedApplication) {
-        const selectedEmployee = employees.find((emp) => emp.id === formData.employee)
-        const selectedLeaveType = leaveTypes.find((lt) => lt.id.toString() === formData.leave_type)
-        
-        const displayApplication: LeaveApplicationDisplay = {
-          ...updatedApplication,
-          employee: selectedEmployee ? {
-            id: selectedEmployee.id,
-            user: {
-              fullname: selectedEmployee.name,
-              email: selectedEmployee.email
-            },
-            employee_id: selectedEmployee.employee_id || selectedEmployee.id
-          } : editingApplication.employee,
-          leave_type: selectedLeaveType || editingApplication.leave_type,
-        }
-
         const updatedApplications = applications.map((app) =>
-          app.id?.toString() === editingApplication.id?.toString() ? displayApplication : app
+          app.id?.toString() === editingApplication.id?.toString() ? updatedApplication : app
         )
         setApplications(updatedApplications)
         toast.success("Leave application updated successfully")
@@ -574,8 +455,8 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     }
   }
 
-  const handleStatusChange = async (id: string, action: 'approve' | 'reject', rejectionReason?: string) => {
-    if (!institutionId) {
+  const handleStatusChange = async (id: string | number, action: 'approve' | 'reject', rejectionReason?: string) => {
+    if (!selectedInstitution?.id) {
       toast.error("Institution ID is required")
       return
     }
@@ -583,23 +464,15 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     setIsSubmitting(true)
     try {
       const updatedApplication = await approveRejectLeaveApplication({
-        leaveApplicationId: id,
+        leaveApplicationId: id,  
+        institutionId:selectedInstitution?.id,         
         action,
         rejectionReason,
       })
 
       if (updatedApplication) {
         const updatedApplications = applications.map((app) =>
-          app.id?.toString() === id.toString()
-            ? {
-                ...app,
-                status: updatedApplication.status || (action === 'approve' ? 'approved' : 'rejected'),
-                approved_by: updatedApplication.approved_by || (action === 'approve' ? 1 : app.approved_by),
-                created_at: updatedApplication.created_at || (action === 'approve' ? new Date().toISOString() : app.created_at),
-                rejection_reason: updatedApplication.rejection_reason || rejectionReason || "",
-                updated_at: updatedApplication.updated_at || new Date().toISOString(),
-              }
-            : app
+          (app.id?.toString() === id.toString()) ? updatedApplication : app
         )
         setApplications(updatedApplications)
         toast.success(`Application ${action}d successfully`)
@@ -608,7 +481,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
         await refreshApplications()
       }
     } catch (error) {
-      console.error(`Error ${action}ing application:`, error)
       toast.error(`An error occurred while ${action}ing the application`)
       await refreshApplications()
     } finally {
@@ -617,13 +489,12 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     setConfirmDialog({ isOpen: false, type: "approve", applicationId: "", applicationName: "" })
   }
 
-  const handleDeleteApplication = async (id: string) => {
-    if (!institutionId) {
+  const handleDeleteApplication = async (id: string | number) => {
+    if (!selectedInstitution?.id) {
       toast.error("Institution ID is required")
       return
     }
 
-    // Check if the application is pending before attempting delete
     const applicationToDelete = applications.find(app => app.id?.toString() === id.toString())
     if (applicationToDelete && applicationToDelete.status !== 'pending') {
       toast.error("Can only delete pending applications")
@@ -633,9 +504,9 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     setIsSubmitting(true)
     try {
       const success = await deleteLeaveApplication({ 
-        leaveApplicationId: id
+        leaveApplicationId: id,  
+        institutionId:selectedInstitution?.id          
       })
-      
       if (success) {
         const filteredApplications = applications.filter((app) => app.id?.toString() !== id.toString())
         setApplications(filteredApplications)
@@ -647,7 +518,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     } catch (error: any) {
       let errorMessage = "An error occurred while deleting the leave application"
       
-      // Handle specific error from backend
       if (error.response?.data?.error) {
         errorMessage = error.response.data.error
       } else if (error.response?.status === 400) {
@@ -662,7 +532,7 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     setConfirmDialog({ isOpen: false, type: "delete", applicationId: "", applicationName: "" })
   }
 
-  const openConfirmDialog = (type: "approve" | "reject" | "delete", applicationId: string, applicationName: string) => {
+  const openConfirmDialog = (type: "approve" | "reject" | "delete", applicationId: string | number, applicationName: string) => {
     setConfirmDialog({
       isOpen: true,
       type,
@@ -681,10 +551,9 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     }
   }
 
-  const handleEditApplication = (application: LeaveApplicationDisplay) => {
+  const handleEditApplication = (application: ILeaveRequest) => {
     setEditingApplication(application)
     
-    // Format dates to YYYY-MM-DD format for date inputs
     const formatDateForInput = (dateString: string) => {
       if (!dateString) return ""
       const date = new Date(dateString)
@@ -692,8 +561,12 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     }
     
     setFormData({
-      employee: application.employee.id.toString(),
-      leave_type: application.leave_type.id.toString(),
+      employee: typeof application.employee === "object" && application.employee !== null
+      ? (application.employee as any).id?.toString() || ""
+      : String(application.employee || ""),
+      leave_type: typeof application.leave_type === "object" && application.leave_type !== null
+      ? (application.leave_type as any).id?.toString() || ""
+      : String(application.leave_type || ""),
       start_date: formatDateForInput(application.start_date),
       end_date: formatDateForInput(application.end_date),
       duration_type: application.duration_type || "full_day",
@@ -705,7 +578,7 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     setIsEditDialogOpen(true)
   }
 
-  const handleViewApplication = (application: LeaveApplicationDisplay) => {
+  const handleViewApplication = (application: ILeaveRequest) => {
     setViewingApplication(application)
     setIsViewDialogOpen(true)
   }
@@ -722,7 +595,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
       supporting_document: null,
     })
     
-    // Also reset the editing state
     setEditingApplication(null)
   }
 
@@ -758,7 +630,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
     return colors[category as keyof typeof colors] || "bg-gray-50 text-gray-700 border-gray-200"
   }
 
-  // Render date fields with validations
   const renderDateFields = (isEdit = false) => {
     const selectedPolicy = getSelectedLeavePolicy()
     const selectedBalance = getSelectedLeaveBalance()
@@ -817,7 +688,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
           )}
         </div>
 
-        {/* Policy Information Panel */}
         {selectedPolicy && (
           <div className="md:col-span-2 space-y-2">
             <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
@@ -838,7 +708,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
           </div>
         )}
 
-        {/* Validation Messages */}
         {validations.length > 0 && (
           <div className="md:col-span-2 space-y-2">
             {validations.map((validation, index) => (
@@ -870,7 +739,7 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
 
   const filteredApplications = applications.filter((app) => statusFilter === "all" || app.status === statusFilter)
 
-  if (isLoading && !institutionId) {
+  if (isLoading && !selectedInstitution?.id) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -908,7 +777,7 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
                 <DialogTrigger asChild>
                   <Button 
                     className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2.5"
-                    disabled={!institutionId}
+                    disabled={!selectedInstitution?.id}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     New Application
@@ -924,44 +793,22 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
                       <Label htmlFor="employee" className="text-sm font-medium">
                         Employee *
                       </Label>
-                      <Select 
+                      <EmployeeSearchableSelect
+                        employees={employees}
                         value={formData.employee}
-                        onValueChange={(value) => setFormData({ ...formData, employee: value })}
+                        onValueChange={(value) => setFormData({ ...formData, employee: value.toString() })}
                         disabled={isSubmitting || isLoadingEmployees}
-                      >
-                        <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
-                          <SelectValue placeholder={isLoadingEmployees ? "Loading employees..." : "Select employee"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {isLoadingEmployees ? (
-                            <div className="px-2 py-1.5 text-sm text-gray-500 flex items-center">
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              Loading employees...
-                            </div>
-                          ) : employees.length > 0 ? (
-                            employees.map((emp) => (
-                              <SelectItem key={emp.id} value={emp.id}>
-                                <div className="flex flex-col">
-                                  <span>{emp.name}</span>
-                                  {emp.employee_id && emp.employee_id !== emp.id && (
-                                    <span className="text-xs text-gray-500">ID: {emp.employee_id}</span>
-                                  )}
-                                </div>
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <div className="px-2 py-1.5 text-sm text-gray-500">
-                              No employees available
-                            </div>
-                          )}
-                        </SelectContent>
-                      </Select>
+                        placeholder="Search and select employee"
+                        isLoading={isLoadingEmployees}
+                        showEmployeeId={true}
+                        showDepartment={false}
+                      />
                       {!isLoadingEmployees && employees.length === 0 && (
                         <p className="text-xs text-red-500 mt-1">
                           No employees found. Please check if employees are registered for this institution.
                         </p>
                       )}
-                    </div>
+                    </div>  
                     <div className="space-y-2">
                       <Label htmlFor="leave_type" className="text-sm font-medium">
                         Leave Type *
@@ -1146,16 +993,19 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
             </TableHeader>
             <TableBody>
               {filteredApplications.map((application) => (
-                <TableRow key={application.id?.toString() || application.employee.id} className="hover:bg-gray-50 transition-colors">
+                <TableRow 
+                    key={application.id?.toString() || (application.employee as any)?.id || `row-${Math.random()}`} 
+                    className="hover:bg-gray-50 transition-colors"
+                  >
                   <TableCell>
                     <div>
-                      <div className="font-medium text-gray-900">{application.employee?.user?.fullname || 'Unknown'}</div>
+                      <div className="font-medium text-gray-900">{getEmployeeName(application.employee)}</div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={`${getCategoryColor(application.leave_type?.category || 'annual')} border font-medium`}>
-                      {application.leave_type?.name || 'Unknown'}
-                    </Badge>
+                    <Badge className={`${getCategoryColor((application.leave_type as any)?.category || 'annual')} border font-medium`}>
+                    {getLeaveTypeName(application.leave_type)}
+                  </Badge>
                   </TableCell>
                   <TableCell>
                     <span className="text-sm font-medium text-gray-900">
@@ -1206,7 +1056,7 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
                             <>
                               <DropdownMenuItem
                                 onClick={() =>
-                                  openConfirmDialog("approve", application.id?.toString() || '', application.employee?.user?.fullname || 'Unknown')
+                                  openConfirmDialog("approve", application.id?.toString() || '', getEmployeeName(application.employee))
                                 }
                                 className="cursor-pointer hover:bg-green-50 focus:bg-green-50 text-green-600"
                                 disabled={isSubmitting}
@@ -1216,7 +1066,7 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() =>
-                                  openConfirmDialog("reject", application.id?.toString() || '', application.employee?.user?.fullname || 'Unknown')
+                                  openConfirmDialog("reject", application.id?.toString() || '', getEmployeeName(application.employee))
                                 }
                                 className="cursor-pointer hover:bg-red-50 focus:bg-red-50 text-red-600"
                                 disabled={isSubmitting}
@@ -1234,7 +1084,7 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() =>
-                                  openConfirmDialog("delete", application.id?.toString() || '', application.employee?.user?.fullname || 'Unknown')
+                                  openConfirmDialog("delete", application.id?.toString() || '', getEmployeeName(application.employee))
                                 }
                                 className="cursor-pointer hover:bg-red-50 focus:bg-red-50 text-red-600"
                                 disabled={isSubmitting}
@@ -1245,7 +1095,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
                             </>
                           )}
                           
-                          {/* Show limited options for non-pending applications */}
                           {application.status !== "pending" && (
                             <>
                               <DropdownMenuItem
@@ -1289,14 +1138,18 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Employee</Label>
-                    <p className="text-sm font-semibold text-gray-900">{viewingApplication.employee?.user?.fullname || 'Unknown'}</p>
+                    <p className="text-sm font-semibold text-gray-900">{getEmployeeName(viewingApplication.employee)}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Leave Type</Label>
                     <Badge
-                      className={`${getCategoryColor(viewingApplication.leave_type?.category || 'annual')} border font-medium mt-1`}
+                      className={`${getCategoryColor(
+                        typeof viewingApplication.leave_type === 'object' && viewingApplication.leave_type !== null
+                          ? (viewingApplication.leave_type as ILeaveType).category
+                          : leaveTypes.find(type => type.id === viewingApplication.leave_type)?.category || 'annual'
+                      )} border font-medium mt-1`}
                     >
-                      {viewingApplication.leave_type?.name || 'Unknown'}
+                      {getLeaveTypeName(viewingApplication.leave_type)}
                     </Badge>
                   </div>
                 </div>
@@ -1323,7 +1176,9 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Total Days</Label>
-                    <p className="text-sm font-semibold text-gray-900">{viewingApplication.total_days || 'N/A'}</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {calculateDaysBetween(viewingApplication.start_date, viewingApplication.end_date) || 'N/A'}
+                    </p>
                   </div>
                 </div>
                 <div>
@@ -1346,30 +1201,28 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
                   </div>
                 )}
                 {viewingApplication?.supporting_document && (
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Supporting Document</Label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <FileText className="h-4 w-4 text-orange-600" />
-                        <span className="text-sm text-gray-900">
-                          {typeof viewingApplication.supporting_document === 'string' 
-                            ? viewingApplication.supporting_document 
-                            : viewingApplication.supporting_document?.name || 'Document'}
-                        </span>
-                        <Button variant="ghost" size="sm" className="h-6 px-2 text-orange-600 hover:bg-orange-100">
-                          <Download className="h-3 w-3" />
-                        </Button>
-                      </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-600">Supporting Document</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <FileText className="h-4 w-4 text-orange-600" />
+                      <span className="text-sm text-gray-900">
+                        {renderSupportingDocumentName(viewingApplication.supporting_document)}
+                      </span>
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-orange-600 hover:bg-orange-100">
+                        <Download className="h-3 w-3" />
+                      </Button>
                     </div>
-                  )}
+                  </div>
+                )}
                 {viewingApplication.approved_by && (
                   <div>
                     <Label className="text-sm font-medium text-gray-600">
                       {viewingApplication.status === "approved" ? "Approved by" : "Processed by"}
                     </Label>
-                    <p className="text-sm font-semibold text-gray-900">{viewingApplication.approved_by.fullname}</p>
-                    {viewingApplication.approved_at && (
+                    <p className="text-sm font-semibold text-gray-900">{getApproverName(viewingApplication.approved_by)}</p>
+                    {viewingApplication.approved_by && (
                       <p className="text-xs text-gray-500">
-                        {new Date(viewingApplication.approved_at).toLocaleString()}
+                        {new Date(viewingApplication.approved_by).toLocaleString()}
                       </p>
                     )}
                   </div>
@@ -1389,7 +1242,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
         <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
           setIsEditDialogOpen(open)
           if (!open) {
-            // Reset form when dialog is closed
             resetForm()
           }
         }}>
@@ -1400,31 +1252,20 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-employee" className="text-sm font-medium">
-                  Employee *
-                </Label>
-                <Select
+              <Label htmlFor="edit-employee" className="text-sm font-medium">
+                Employee *
+              </Label>
+                <EmployeeSearchableSelect
+                  employees={employees}
                   value={formData.employee}
-                  onValueChange={(value) => setFormData({ ...formData, employee: value })}
+                  onValueChange={(value) => setFormData({ ...formData, employee: value.toString() })}
                   disabled={isSubmitting}
-                >
-                  <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
-                    <SelectValue placeholder="Select employee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {employees.map((employee) => (
-                      <SelectItem key={employee.id} value={employee.id}>
-                        <div className="flex flex-col">
-                          <span>{employee.name}</span>
-                          {employee.employee_id && employee.employee_id !== employee.id && (
-                            <span className="text-xs text-gray-500">ID: {employee.employee_id}</span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Search and select employee"
+                  showEmployeeId={true}
+                  showDepartment={false}
+                />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="edit-leave_type" className="text-sm font-medium">
                   Leave Type *
@@ -1519,7 +1360,6 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
                 </p>
               </div>
               
-              {/* Show current file if exists */}
               {editingApplication?.supporting_document && (
                 <div className="md:col-span-2">
                   <div className="p-2 bg-gray-50 rounded-lg border">
@@ -1527,9 +1367,7 @@ const LeaveApplicationComponent = ({ institutionId: propInstitutionId }: { insti
                     <div className="flex items-center gap-2 mt-1">
                       <FileText className="h-4 w-4 text-gray-600" />
                       <span className="text-sm text-gray-700">
-                        {typeof editingApplication.supporting_document === 'string' 
-                          ? editingApplication.supporting_document 
-                          : editingApplication.supporting_document?.name || 'Document'}
+                        {renderSupportingDocumentName(editingApplication.supporting_document)}
                       </span>
                     </div>
                   </div>

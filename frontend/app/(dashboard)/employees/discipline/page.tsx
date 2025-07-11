@@ -81,12 +81,9 @@ export default function DisciplinaryActionsTable({
     setIsLoading(true)
     try {
       const fetchedActions = await getDisciplinaryActions()
-      console.log("Fetched disciplinary actions:", fetchedActions)
       const transformedActions = transformDisciplinaryActionData(fetchedActions)
-      console.log("Transformed disciplinary actions:", transformedActions)
       setDisciplinaryActions(transformedActions)
     } catch (error) {
-      console.error("Error fetching disciplinary actions:", error)
       toast.error("Failed to load disciplinary actions")
       setDisciplinaryActions([])
     } finally {
@@ -111,8 +108,7 @@ export default function DisciplinaryActionsTable({
       if (isNaN(idAsNumber)) {
         throw new Error("Invalid disciplinary action ID")
       }
-      console.log("Deleting disciplinary action with ID:", idAsNumber)
-      const success = await deleteDisciplinaryAction({ disciplinaryActionId: idAsNumber })
+      const success = await deleteDisciplinaryAction(idAsNumber)
       if (success) {
         toast.success("Disciplinary action deleted successfully")
         setDisciplinaryActions(prev => prev.filter(action => action.id !== actionToDelete))
@@ -120,11 +116,6 @@ export default function DisciplinaryActionsTable({
         toast.error("Failed to delete disciplinary action")
       }
     } catch (error: any) {
-      console.error("Error deleting disciplinary action:", {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-      })
       toast.error("Failed to delete disciplinary action")
     } finally {
       setIsLoading(false)
@@ -134,7 +125,6 @@ export default function DisciplinaryActionsTable({
   }
 
   const openDeleteDialog = (actionId: string) => {
-    console.log("Opening delete confirmation for action ID:", actionId)
     setActionToDelete(actionId)
     setIsDeleteDialogOpen(true)
   }
@@ -201,7 +191,6 @@ export default function DisciplinaryActionsTable({
   }
 
   const handleEditAction = (actionId: string) => {
-    console.log("Navigating to edit action with ID:", actionId)
     router.push(`/employees/discipline/update-disciplinary-action/${actionId}/`)
   }
 
@@ -224,7 +213,7 @@ export default function DisciplinaryActionsTable({
   }
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
+    <div className="w-full">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Disciplinary Actions</h1>
       </div>

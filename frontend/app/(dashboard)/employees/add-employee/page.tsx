@@ -945,7 +945,7 @@ export default function AddEmployeeForm() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-full mx-auto">
         <Card className="bg-white shadow-lg">
           <CardHeader>
             <CardTitle className="text-2xl">Add New Employee</CardTitle>
@@ -1002,6 +1002,11 @@ export default function AddEmployeeForm() {
               {renderStep()}
               <Separator />
               <div className="flex justify-between">
+                <Link href="/employees/employee-list">
+                  <Button type="button" variant="outline" className="w-full sm:w-auto" disabled={isSubmitting}>
+                    Cancel
+                  </Button>
+                </Link>
                 {currentStep > 1 && (
                   <Button type="button" onClick={prevStep} variant="outline">
                     Previous
@@ -1011,6 +1016,7 @@ export default function AddEmployeeForm() {
                   <Button type="button" onClick={nextStep} className="bg-orange-600 hover:bg-orange-700 px-6">
                     Next
                   </Button>
+                  
                 ) : (
                   <Button type="button" onClick={handleSubmit} className="bg-orange-600 hover:bg-orange-700" disabled={isSubmitting}>
                     {isSubmitting ? (

@@ -20,7 +20,6 @@ import { getEmployeeById, updateEmployee, getPositions, getDepartments } from "@
 import { IDepartment, IJobPosition } from "@/app/types/types.utils";
 import { IUserInstitution } from "@/app/types";
 
-// Employee interface matching your API response
 interface Employee {
   id: number;
   user: {
@@ -70,7 +69,6 @@ interface Employee {
   employee_profile_picture: string;
 }
 
-// Form state interface
 interface EmployeeUpdateFormState {
   fullname: string;
   email: string;
@@ -92,7 +90,6 @@ interface EmployeeUpdateFormState {
   employee_profile_picture: File | null;
 }
 
-// Marital status options
 const maritalStatusOptions = [
   { value: "single", label: "Single" },
   { value: "married", label: "Married" },
@@ -114,12 +111,10 @@ export default function UpdateEmployeePage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [employee, setEmployee] = useState<Employee | null>(null);
 
-  // State for dropdown data
   const [positions, setPositions] = useState<IJobPosition[]>([]);
   const [departments, setDepartments] = useState<IDepartment[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // Form state
   const [formData, setFormData] = useState<EmployeeUpdateFormState>({
     fullname: "",
     email: "",
@@ -145,7 +140,7 @@ export default function UpdateEmployeePage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
-  // Set institution ID
+
   useEffect(() => {
     if (selectedInstitution) {
       setInstitutionId(selectedInstitution.id);
@@ -154,21 +149,17 @@ export default function UpdateEmployeePage() {
     }
   }, [institutionsAttached, selectedInstitution]);
 
-  // Load employee data
   useEffect(() => {
     const loadEmployee = async () => {
       if (!employeeId) return;
 
       try {
         setIsLoading(true);
-        
-        // Try to get from API first, fallback to localStorage
         let employeeData: Employee | null = null;
         
         try {
           employeeData = await getEmployeeById({ employeeId: parseInt(employeeId) });
         } catch (error) {
-          // Fallback to localStorage
           const storedEmployee = localStorage.getItem(`employee_${employeeId}`);
           if (storedEmployee) {
             employeeData = JSON.parse(storedEmployee);
@@ -178,7 +169,6 @@ export default function UpdateEmployeePage() {
         if (employeeData) {
           setEmployee(employeeData);
           
-          // Populate form with employee data
           setFormData({
             fullname: employeeData.user?.fullname || "",
             email: employeeData.email,
@@ -200,7 +190,6 @@ export default function UpdateEmployeePage() {
             employee_profile_picture: null,
           });
 
-          // Set preview URL if employee has profile picture
           if (employeeData.employee_profile_picture) {
             setPreviewUrl(employeeData.employee_profile_picture);
           }
@@ -217,7 +206,6 @@ export default function UpdateEmployeePage() {
     loadEmployee();
   }, [employeeId]);
 
-  // Load dropdown data
   useEffect(() => {
     const loadDropdownData = async () => {
       if (!institutionId) return;
@@ -333,7 +321,6 @@ export default function UpdateEmployeePage() {
     setSubmitError(null);
 
     try {
-      // Transform form data to match API expectations
       const updateData = {
         user: {
           fullname: formData.fullname,
@@ -378,8 +365,6 @@ export default function UpdateEmployeePage() {
         setSubmitError("Failed to update employee. Please try again.");
       }
     } catch (error: any) {
-      console.error("Error updating employee:", error);
-
       toast({
         title: "Error",
         description: error.message || "Failed to update employee. Please try again.",
@@ -427,7 +412,7 @@ export default function UpdateEmployeePage() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 overflow-hidden">
-      <div className="max-w-5xl mx-auto h-full">
+      <div className="max-w-full mx-auto h-full">
         <Card className="bg-white shadow-lg h-full">
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between sticky top-0 bg-white z-10 border-b">
             <div className="mb-4 sm:mb-0">
@@ -728,7 +713,7 @@ export default function UpdateEmployeePage() {
                 </Link>
                 <Button
                   type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+                  className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (

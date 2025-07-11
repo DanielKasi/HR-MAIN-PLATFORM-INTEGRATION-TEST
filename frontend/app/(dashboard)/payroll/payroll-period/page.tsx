@@ -44,12 +44,12 @@ import { IPayrollPeriod, IPayrollPeriodFormData } from "@/app/types/types.utils"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
 import { IUserInstitution } from "@/app/types"
 import { useSelector } from "react-redux"
+import { select } from "redux-saga/effects"
 
 interface PayrollPeriodsProps {
   institutionId?: number
 }
 
-// Validation result interface
 interface ValidationResult {
   name?: string
   start_date?: string
@@ -58,7 +58,7 @@ interface ValidationResult {
   warning?: string
 }
 
-export default function PayrollPeriods({ institutionId: propInstitutionId }: PayrollPeriodsProps) {
+export default function PayrollPeriods() {
   const [payrollPeriods, setPayrollPeriods] = useState<IPayrollPeriod[]>([])
   const [saving, setSaving] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -72,7 +72,7 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
   // Redux selectors
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
-  const [institutionId, setInstitutionId] = useState<number | null>(propInstitutionId || null)
+  // const [institutionId, setInstitutionId] = useState<number | null>(propInstitutionId || null)
 
   // Filtered payroll periods logic
   const filteredPeriods = payrollPeriods.filter((period) => {
@@ -93,25 +93,39 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
     pay_date: "",
   })
 
-  useEffect(() => {
-    if (propInstitutionId) {
-      setInstitutionId(propInstitutionId)
-    } else if (selectedInstitution?.id) {
-      setInstitutionId(selectedInstitution.id)
-    } else if (institutionsAttached && institutionsAttached.length > 0) {
-      setInstitutionId(institutionsAttached[0].id)
-    }
-  }, [propInstitutionId, institutionsAttached, selectedInstitution])
-
-  useEffect(() => {
+   useEffect(() => {
     const fetchPayrollPeriods = async () => {
-      if (!institutionId) {
+      if (!selectedInstitution?.id) {
         return
       }
       
       try {
-        const periodsData = await getPayrollPeriods(institutionId)
+        const periodsData = await getPayrollPeriods(selectedInstitution?.id)
         
+        if (periodsData && Array.isArray(periodsData)) {
+          setPayrollPeriods(periodsData)
+        } else {
+          setPayrollPeriods([])
+        }
+      } catch (error) {
+        console.warn("Error fetching payroll periods:", error)
+        setPayrollPeriods([])
+        toast.error("Failed to load payroll periods")
+      }
+    }
+    
+    fetchPayrollPeriods()
+  }, [selectedInstitution?.id])
+
+  useEffect(() => {
+    const fetchPayrollPeriods = async () => {
+      if (!selectedInstitution?.id) {
+        return
+      }
+      
+      try {
+        const periodsData = await getPayrollPeriods(selectedInstitution?.id)
+
         if (periodsData && Array.isArray(periodsData)) {
           setPayrollPeriods(periodsData)
         } else {
@@ -125,7 +139,7 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
     }
     
     fetchPayrollPeriods()
-  }, [institutionId])
+  }, [selectedInstitution?.id])
 
   // Auto-generate period name when dates change
   useEffect(() => {
@@ -205,7 +219,7 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!institutionId) {
+    if (!selectedInstitution?.id) {
       toast.error("Institution ID is required")
       return
     }
@@ -222,7 +236,7 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
     // Check for overlapping periods
     try {
       const overlapCheck = await checkPeriodOverlap({
-        institutionId,
+        institutionId: selectedInstitution?.id,
         startDate: formData.start_date,
         endDate: formData.end_date,
         excludeId: editingPeriod?.id
@@ -259,7 +273,7 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
         }
       } else {
         const newPeriod = await createPayrollPeriod({
-          institutionId,
+          institutionId: selectedInstitution?.id,
           payrollPeriodData: formattedData
         })
         if (newPeriod) {
@@ -321,7 +335,7 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
     return diffDays
   }
 
-  if (!institutionId) {
+  if (!selectedInstitution?.id) {
     return (
       <div className="flex justify-center items-center h-64">
         <span className="ml-2">No institution selected...</span>
@@ -345,7 +359,7 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
                 <Button 
                   onClick={resetForm} 
                   className="bg-orange-600 hover:bg-orange-700 shadow-md"
-                  disabled={!institutionId}
+                  disabled={!selectedInstitution?.id}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Period
@@ -441,24 +455,6 @@ export default function PayrollPeriods({ institutionId: propInstitutionId }: Pay
                       </p>
                     )}
                   </div>
-
-                  {/* Period Summary */}
-                  {formData.start_date && formData.end_date && (
-                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <h4 className="text-sm font-medium text-blue-800 mb-2 flex items-center">
-                        <Info className="h-4 w-4 mr-2" />
-                        Period Summary
-                      </h4>
-                      <div className="space-y-1 text-xs text-blue-700">
-                        <p>• Duration: {Math.ceil((new Date(formData.end_date).getTime() - new Date(formData.start_date).getTime()) / (1000 * 60 * 60 * 24))} days</p>
-                        {formData.pay_date && (
-                          <p>• Days to pay: {getDaysRemaining(formData.pay_date)} days</p>
-                        )}
-                        <p>• Processing Status: Will be automatically managed by the system</p>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Warning message */}
                   {validationErrors.warning && (
                     <div className="space-y-2">

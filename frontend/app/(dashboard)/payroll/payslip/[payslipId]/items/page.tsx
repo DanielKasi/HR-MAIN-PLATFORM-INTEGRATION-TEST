@@ -10,9 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { toast } from "sonner"
 
-// Import API functions
 import { getPayslipItems } from "@/lib/utils"
-import { IPayslipItem } from "@/app/types/types.utils"
 
 interface PayslipItemData {
   id: number
@@ -169,7 +167,6 @@ export default function PayslipItems() {
   }
 
   const formatCurrency = (amount: number) => {
-    // Remove unnecessary decimal places
     const cleanAmount = amount % 1 === 0 ? Math.floor(amount) : amount
     return `USh ${cleanAmount.toLocaleString()}`
   }

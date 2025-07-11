@@ -28,7 +28,7 @@ import {
   selectSelectedInstitution,
 } from "@/store/auth/selectors";
 import { IUserInstitution } from "@/app/types"
-import { User, EmployeeFormData } from "@/app/types/types.utils"
+import { EmployeeFormData } from "@/app/types/types.utils"
 import Link from "next/link"
 
 // Interface for getAllEmployees API response with additional nested objects
@@ -197,7 +197,7 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Employee Management ({filteredEmployees.length} employees)</span>
+          <span>Employees ({filteredEmployees.length} employees)</span>
           <Link href="/employees/add-employee">
             <Button className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700">
               <Plus className="h-4 w-4" />
@@ -461,8 +461,7 @@ export default function Component() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="w-full">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Management System</h1>
-          <p className="text-muted-foreground">Manage your organization's employees efficiently</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Employees</h1>
         </div>
 
         <EmployeeTable

@@ -34,18 +34,18 @@ import {
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { createLeavePolicy, getLeavePolicies, updateLeavePolicy, deleteLeavePolicy, getLeaveTypes } from "@/lib/utils"
-import { ILeavePolicy, ILeavePolicyFormData, ILeaveType } from "@/app/types/types.utils"
+import { ILeavePolicyResponse, ILeavePolicyFormData, ILeaveType  } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import { select } from "redux-saga/effects"
+import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
+import { useSelector } from "react-redux"
 
-interface LeavePolicy extends ILeavePolicy {
-  leave_type: {
-    id: string | number
-    name: string
-    category: string
-  }
+
+type LeavePolicy = ILeavePolicyResponse & {
+  leave_type: ILeaveType;
 }
 
-const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
+const LeavePolicyComponent = () => {
   const [policies, setPolicies] = useState<LeavePolicy[]>([])
   const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
@@ -56,7 +56,8 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoadingLeaveTypes, setIsLoadingLeaveTypes] = useState(false)
+  const selectedInstitution = useSelector(selectSelectedInstitution)
+
 
   const [formData, setFormData] = useState({
     name: "",
@@ -69,13 +70,11 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
     applicable_after_probation_months: "",
   })
 
-  // Get selected leave type details
   const getSelectedLeaveType = () => {
     if (!formData.leave_type) return null
     return leaveTypes.find(type => type.id.toString() === formData.leave_type)
   }
 
-  // Check if max consecutive days exceeds leave type limit
   const getMaxDaysValidation = () => {
     const selectedLeaveType = getSelectedLeaveType()
     if (!selectedLeaveType || !formData.max_consecutive_days) return null
@@ -98,21 +97,23 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
     return null
   }
 
-  // Load leave policies and leave types on component mount
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true)
+      setIsLoading(true);
+      if(!selectedInstitution?.id) {
+        return;
+      }
       try {
         const [policiesData, leaveTypesData] = await Promise.all([
-          getLeavePolicies(institutionId),
-          getLeaveTypes(institutionId)
+          getLeavePolicies(selectedInstitution?.id),
+          getLeaveTypes(selectedInstitution?.id)
         ])
         
-        // Filter to only show active policies
-        const activePolicies = policiesData.filter(policy => policy.is_active !== false)
-        setPolicies(activePolicies)
+        const activePolicies = policiesData
+          .filter(policy => policy.is_active !== false && policy.id != null)
+          
+          setPolicies(activePolicies as LeavePolicy[])
         
-        // Filter to only show active leave types
         const activeLeaveTypes = leaveTypesData.filter(type => type.is_active !== false)
         setLeaveTypes(activeLeaveTypes)
       } catch (error) {
@@ -123,7 +124,7 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
     }
     
     fetchData()
-  }, [institutionId])
+  }, [selectedInstitution])
 
   const resetForm = () => {
     setFormData({
@@ -144,7 +145,6 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
       return
     }
 
-    // Validate max consecutive days
     const validation = getMaxDaysValidation()
     if (validation?.type === 'error') {
       toast.error(validation.message)
@@ -166,7 +166,6 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
       }
 
       const newPolicy = await createLeavePolicy({
-        institutionId,
         leavePolicyData: policyData,
       })
 
@@ -182,7 +181,7 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
           }
         }
         
-        setPolicies([...policies, policyWithLeaveType])
+        setPolicies([...policies, policyWithLeaveType as LeavePolicy]);
         toast.success("Leave policy created successfully")
         resetForm()
         setIsAddDialogOpen(false)
@@ -190,7 +189,6 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
         toast.error("Failed to create leave policy")
       }
     } catch (error) {
-      console.error("Error creating leave policy:", error)
       toast.error("An error occurred while creating the leave policy")
     } finally {
       setIsSubmitting(false)
@@ -228,12 +226,10 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
 
       const updatedPolicy = await updateLeavePolicy({
         leavePolicyId: editingPolicy.id,
-        institutionId,
         leavePolicyData: policyData,
       })
 
       if (updatedPolicy) {
-        // Find the selected leave type to add to the updated policy
         const selectedLeaveType = leaveTypes.find(lt => lt.id.toString() === formData.leave_type)
         const policyWithLeaveType = {
           ...updatedPolicy,
@@ -245,7 +241,7 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
         }
 
         const updatedPolicies = policies.map((policy) =>
-          policy.id === editingPolicy.id ? policyWithLeaveType : policy
+          policy.id === editingPolicy.id ? policyWithLeaveType as LeavePolicy : policy
         )
         setPolicies(updatedPolicies)
         toast.success("Leave policy updated successfully")
@@ -256,7 +252,6 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
         toast.error("Failed to update leave policy")
       }
     } catch (error) {
-      console.error("Error updating leave policy:", error)
       toast.error("An error occurred while updating the leave policy")
     } finally {
       setIsSubmitting(false)
@@ -270,7 +265,6 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
     try {
       const success = await deleteLeavePolicy({ 
         leavePolicyId: deletingPolicy.id, 
-        institutionId 
       });
       
       if (success) {
@@ -282,7 +276,6 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
         toast.error("Failed to delete leave policy from database")
       }
     } catch (error) {
-      console.error("Error deleting leave policy:", error)
       toast.error("An error occurred while deleting the leave policy")
     } finally {
       setIsSubmitting(false)
@@ -325,7 +318,6 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
 
       const updatedPolicy = await updateLeavePolicy({
         leavePolicyId: policy.id,
-        institutionId,
         leavePolicyData: policyData,
       })
 
@@ -339,7 +331,6 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
         toast.error("Failed to update policy status")
       }
     } catch (error) {
-      console.error("Error updating policy status:", error)
       toast.error("An error occurred while updating the policy status")
     }
   }
@@ -723,7 +714,6 @@ const LeavePolicyComponent = ({ institutionId }: { institutionId: number }) => {
 
                 {/* Policy Details */}
                 <div className="space-y-3">
-                  {/* Notice & Duration */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
                       <Clock className="h-4 w-4 text-gray-500" />

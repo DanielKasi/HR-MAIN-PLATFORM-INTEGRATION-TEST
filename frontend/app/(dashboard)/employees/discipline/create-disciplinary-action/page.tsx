@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { AlertTriangle, User, FileText, Loader2, Plus } from "lucide-react"
+import { Loader2, Plus } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { createDisciplinaryAction, createDisciplineType, getDisciplineTypes, getAllEmployees } from "@/lib/utils" 
@@ -19,6 +19,9 @@ import { toast } from "sonner"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
 import { IUserInstitution } from "@/app/types"
+import { DisciplineTypeForm, DisciplinaryActionForm} from "@/app/types/types.utils"
+import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"
+
 
 interface DisciplineType {
   id?: number
@@ -35,7 +38,6 @@ export default function DisciplinaryForm() {
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
   
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSubmittingType, setIsSubmittingType] = useState(false)
   const [isDisciplineTypeModalOpen, setIsDisciplineTypeModalOpen] = useState(false)
   const [isAddingDisciplineType, setIsAddingDisciplineType] = useState(false)
   const [isLoadingDisciplineTypes, setIsLoadingDisciplineTypes] = useState(true)
@@ -65,14 +67,14 @@ export default function DisciplinaryForm() {
     notes: "",
   })
 
-  // Add state for discipline types
+ 
   const [disciplineTypes, setDisciplineTypes] = useState<Array<{
     id: string;
     name: string;
     severity: "low" | "medium" | "high" | "critical";
   }>>([])
 
-  // Add state for employees
+
   const [employees, setEmployees] = useState<Array<{
     id: string;
     name: string;
@@ -80,7 +82,6 @@ export default function DisciplinaryForm() {
     email: string;
   }>>([])
 
-  // Set institution ID from Redux state
   useEffect(() => {
     if (selectedInstitution) {
       setInstitutionId(selectedInstitution.id)
@@ -89,7 +90,6 @@ export default function DisciplinaryForm() {
     }
   }, [institutionsAttached, selectedInstitution])
 
-  // Fetch employees
   useEffect(() => {
     const fetchEmployees = async () => {
       if (!institutionId) return
@@ -99,13 +99,10 @@ export default function DisciplinaryForm() {
         const fetchedEmployees = await getAllEmployees({ institutionId })
         
         if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
-          const formattedEmployees: Array<{
-            id: string;
-            name: string;
-            email: string;
-          }> = fetchedEmployees.map((emp: any) => ({
+          const formattedEmployees: typeof employees = fetchedEmployees.map((emp: any) => ({
             id: emp.id.toString(),
             name: emp.user?.fullname || emp.email || 'Unknown Employee',
+            department: emp.department || '', 
             email: emp.email || ''
           }))
           setEmployees(formattedEmployees)
@@ -113,7 +110,6 @@ export default function DisciplinaryForm() {
           setEmployees([])
         }
       } catch (error) {
-        console.error("Error fetching employees:", error)
         toast.error("Failed to load employees")
         setEmployees([])
       } finally {
@@ -124,7 +120,6 @@ export default function DisciplinaryForm() {
     fetchEmployees()
   }, [institutionId])
 
-  // Fetch discipline types on component mount
   useEffect(() => {
     const fetchDisciplineTypes = async () => {
       if (!institutionId) return
@@ -144,7 +139,6 @@ export default function DisciplinaryForm() {
           setDisciplineTypes([])
         }
       } catch (error) {
-        console.error("Error fetching discipline types:", error)
         toast.error("Failed to load discipline types")
         setDisciplineTypes([])
       } finally {
@@ -169,9 +163,6 @@ export default function DisciplinaryForm() {
     { value: "dismissed", label: "Dismissed" },
   ]
 
-  // Mock data for dropdowns - You should replace these with API calls
-  // Note: users is kept as mock data since "Reported By" and "Assigned To" now use employees
-
   const validateForm = (): boolean => {
     const requiredFields = [
       { field: disciplinaryAction.employee, name: "Employee" },
@@ -184,7 +175,6 @@ export default function DisciplinaryForm() {
     for (const { field, name } of requiredFields) {
       if (!field || field.trim() === '' || field === '0') {
         toast.error(`${name} is required`)
-        console.log(`❌ Validation failed for ${name}:`, field)
         return false
       }
     }
@@ -194,13 +184,12 @@ export default function DisciplinaryForm() {
       return false
     }
 
-    // Validate follow-up date if follow-up is required
     if (disciplinaryAction.follow_up_required && !disciplinaryAction.follow_up_date) {
       toast.error("Follow-up date is required when follow-up is marked as required")
       return false
     }
 
-    // Validate incident date is not in the future
+
     const incidentDate = new Date(disciplinaryAction.incident_date)
     const today = new Date()
     if (incidentDate > today) {
@@ -235,15 +224,11 @@ export default function DisciplinaryForm() {
       const result = await createDisciplineType({
         disciplineTypeData: disciplineType,
       })
-
-      console.log('Create discipline type result:', result) // Debug log
-
       if (result) {
         toast.success("Discipline type created successfully!")
-        
-        // Add the new discipline type to the list and select it
+     
         const newDisciplineType = {
-          id: result.id?.toString() || Date.now().toString(), // Fallback ID
+          id: result.id?.toString() || Date.now().toString(), 
           name: result.name || disciplineType.name,
           severity: (result.severity || disciplineType.severity) as "low" | "medium" | "high" | "critical"
         }
@@ -251,7 +236,6 @@ export default function DisciplinaryForm() {
         setDisciplineTypes(prev => [...prev, newDisciplineType])
         setDisciplinaryAction(prev => ({ ...prev, discipline_type: newDisciplineType.id }))
         
-        // Reset form and close modal
         setDisciplineType({
           name: "",
           description: "",
@@ -260,13 +244,9 @@ export default function DisciplinaryForm() {
         })
         setIsDisciplineTypeModalOpen(false)
       } else {
-        console.log('Result was null or undefined')
         toast.error("Failed to create discipline type. Please try again.")
       }
     } catch (error) {
-      console.error("Error creating discipline type:", error)
-      
-      // Handle specific error messages
       const errorMessage = error instanceof Error 
         ? error.message 
         : "Failed to create discipline type. Please try again."
@@ -287,27 +267,18 @@ export default function DisciplinaryForm() {
     setIsSubmitting(true)
 
     try {
-      console.log('Submitting disciplinary action:', disciplinaryAction) // Debug log
-      
       const result = await createDisciplinaryAction({
         disciplinaryActionData: disciplinaryAction,
       })
 
-      console.log('Create disciplinary action result:', result) // Debug log
-
       if (result) {
         toast.success("Disciplinary action created successfully!")
         
-        // Navigate to discipline list page using absolute path
         router.push("/employees/discipline")
       } else {
-        console.log('Result was null or undefined')
         toast.error("Failed to create disciplinary action. Please try again.")
       }
     } catch (error) {
-      console.error("Error creating disciplinary action:", error)
-      
-      // Handle specific error messages
       const errorMessage = error instanceof Error 
         ? error.message 
         : "Failed to create disciplinary action. Please try again."
@@ -329,7 +300,6 @@ export default function DisciplinaryForm() {
   }
 
   const handleDisciplinaryActionCancel = () => {
-    // Navigate back to discipline list page using absolute path
     router.push("/employees/discipline")
   }
 
@@ -345,31 +315,19 @@ export default function DisciplinaryForm() {
             <form onSubmit={handleDisciplinaryActionSubmit} className="space-y-8">
                   {/* Basic Information */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="space-y-2">
+                   <div className="space-y-2">
                       <Label htmlFor="employee">Employee *</Label>
-                      <Select
+                      <EmployeeSearchableSelect
+                        employees={employees}
                         value={disciplinaryAction.employee}
-                        onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, employee: value })}
+                        onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, employee: value.toString() })}
                         disabled={isSubmitting || isLoadingEmployees}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={isLoadingEmployees ? "Loading employees..." : "Select employee"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {employees.length > 0 ? (
-                            employees.map((emp) => (
-                              <SelectItem key={emp.id} value={emp.id}>
-                                {emp.name}
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <div className="px-2 py-1.5 text-sm text-gray-500">
-                              {isLoadingEmployees ? "Loading employees..." : "No employees available"}
-                            </div>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                        placeholder="Search and select employee"
+                        isLoading={isLoadingEmployees}
+                        showEmployeeId={false}
+                        showDepartment={false}
+                      />
+                    </div>   
 
                     <div className="space-y-2">
                       <Label htmlFor="discipline_type">Discipline Type *</Label>
@@ -579,55 +537,31 @@ export default function DisciplinaryForm() {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="reported_by">Reported By *</Label>
-                      <Select
+                      <EmployeeSearchableSelect
+                        employees={employees}
                         value={disciplinaryAction.reported_by}
-                        onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, reported_by: value })}
+                        onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, reported_by: value.toString() })}
                         disabled={isSubmitting || isLoadingEmployees}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={isLoadingEmployees ? "Loading employees..." : "Select reporter"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {employees.length > 0 ? (
-                            employees.map((emp) => (
-                              <SelectItem key={emp.id} value={emp.id}>
-                                {emp.name}
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <div className="px-2 py-1.5 text-sm text-gray-500">
-                              {isLoadingEmployees ? "Loading employees..." : "No employees available"}
-                            </div>
-                          )}
-                        </SelectContent>
-                      </Select>
+                        placeholder="Search and select reporter"
+                        isLoading={isLoadingEmployees}
+                        showEmployeeId={false}
+                        showDepartment={false}
+                      />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="assigned_to">Assigned To</Label>
-                      <Select
-                        value={disciplinaryAction.assigned_to}
-                        onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, assigned_to: value })}
-                        disabled={isSubmitting || isLoadingEmployees}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={isLoadingEmployees ? "Loading employees..." : "Select assignee"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {employees.length > 0 ? (
-                            employees.map((emp) => (
-                              <SelectItem key={emp.id} value={emp.id}>
-                                {emp.name}
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <div className="px-2 py-1.5 text-sm text-gray-500">
-                              {isLoadingEmployees ? "Loading employees..." : "No employees available"}
-                            </div>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <Label htmlFor="assigned_to">Assigned To</Label>
+                    <EmployeeSearchableSelect
+                      employees={employees}
+                      value={disciplinaryAction.assigned_to}
+                      onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, assigned_to: value.toString() })}
+                      disabled={isSubmitting || isLoadingEmployees}
+                      placeholder="Search and select assignee"
+                      isLoading={isLoadingEmployees}
+                      showEmployeeId={false}
+                      showDepartment={false}
+                    />
+                  </div>
                   </div>
 
                   {/* Description and Evidence - Full Width */}
@@ -693,8 +627,7 @@ export default function DisciplinaryForm() {
                       Follow-up Required
                     </Label>
                   </div>
-
-                  {/* Notes - Full Width */}
+                 
                   <div className="space-y-2">
                     <Label htmlFor="notes">Additional Notes</Label>
                     <Textarea

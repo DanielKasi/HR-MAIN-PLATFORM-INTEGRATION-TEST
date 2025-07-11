@@ -557,32 +557,6 @@ export default function ApplicationsPage() {
                   </p>
                 )}
               </div>
-
-              {/* Organization Info Display */}
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <h4 className="font-medium text-sm mb-3">Application will be created for:</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium text-foreground">Organization:</span>{" "}
-                      {selectedInstitution.institution_name}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Branch:</span> {selectedBranch.branch_name}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium text-foreground">Institution ID:</span> {selectedInstitution.id}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Available Job Adverts:</span>{" "}
-                      {jobPositionAdverts.length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               <div className="flex justify-end space-x-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancel

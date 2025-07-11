@@ -69,7 +69,6 @@ export default function EditDepartmentPage() {
         router.push("/admin/departments")
       }
     } catch (error) {
-      console.error("Error fetching department:", error)
       toast.error("Failed to load department data")
       router.push("/admin/departments")
     } finally {
@@ -138,7 +137,6 @@ export default function EditDepartmentPage() {
         toast.error("Failed to update department. Please try again.")
       }
     } catch (error) {
-      console.error("Error updating department:", error)
       toast.error("Failed to update department. Please try again.")
     } finally {
       setIsSubmitting(false)
@@ -202,7 +200,7 @@ export default function EditDepartmentPage() {
 
   return (
     <div className="w-full h-full p-6">
-      <div className="w-full max-w-6xl mx-auto space-y-6">
+      <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
@@ -265,38 +263,6 @@ export default function EditDepartmentPage() {
                 />
                 {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
               </div>
-
-              {/* Department Info Display */}
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <h4 className="font-medium text-sm mb-3">Department Information:</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium text-foreground">Department ID:</span> {department?.id}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Organization:</span>{" "}
-                      {selectedInstitution.institution_name}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Branch:</span> {selectedBranch.branch_name}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium text-foreground">Institution ID:</span> {selectedInstitution.id}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Branch ID:</span> {selectedBranch.id}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Current Institution:</span>{" "}
-                      {department?.institution}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               {/* Form Actions */}
               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
                 <Button

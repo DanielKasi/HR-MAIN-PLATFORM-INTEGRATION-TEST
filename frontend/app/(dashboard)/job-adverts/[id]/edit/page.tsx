@@ -101,7 +101,6 @@ export default function EditJobAdvertPage() {
         extra_information: fetchedJobAdvert.extra_information || "",
       })
     } catch (error) {
-      console.error("Error fetching initial data:", error)
       toast.error("Failed to load job advert data")
       router.push("/job-adverts")
     } finally {
@@ -111,7 +110,6 @@ export default function EditJobAdvertPage() {
 
   const updateFormData = (field: keyof JobPositionAdvertFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
     }
@@ -119,13 +117,12 @@ export default function EditJobAdvertPage() {
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof JobPositionAdvertFormData, string>> = {}
-
-    // Job position validation
     if (!formData.job_position || formData.job_position === 0) {
       newErrors.job_position = "Please select a job position"
     }
-
-    // Expiry date validation - enhanced constraints
+    if (!formData.status) {
+      newErrors.status = "Status is required"
+    }
     if (!formData.expiry_date) {
       newErrors.expiry_date = "Expiry date is required"
     } else {
@@ -137,15 +134,15 @@ export default function EditJobAdvertPage() {
         newErrors.expiry_date = "Expiry date must be in the future"
       }
 
-      // Check if the date is too far in the future (optional constraint)
       const maxDate = new Date()
-      maxDate.setFullYear(maxDate.getFullYear() + 2) // Max 2 years in future
+      maxDate.setFullYear(maxDate.getFullYear() + 2) 
       if (expiryDate > maxDate) {
         newErrors.expiry_date = "Expiry date cannot be more than 2 years in the future"
       }
     }
-
-    // Number of employees validation - enhanced constraints
+    if (formData.job_position && !jobPositions.some((pos) => pos.id === formData.job_position)) {
+      newErrors.job_position = "Selected job position does not exist"
+    }
     if (formData.number_of_employees_expected !== undefined && formData.number_of_employees_expected !== null) {
       const numEmployees = Number(formData.number_of_employees_expected)
 
@@ -158,7 +155,9 @@ export default function EditJobAdvertPage() {
       }
     }
 
-    // Extra information validation (optional length constraint)
+    if (formData.extra_information && formData.extra_information.length > 0 && formData.extra_information.length < 10) {
+      newErrors.extra_information = "Extra information must be at least 10 characters"
+    }
     if (formData.extra_information && formData.extra_information.length > 2000) {
       newErrors.extra_information = "Extra information cannot exceed 2000 characters"
     }
@@ -198,12 +197,11 @@ export default function EditJobAdvertPage() {
 
       if (updatedJobAdvert) {
         toast.success("Job advert updated successfully!")
-        router.push(`/job-adverts/${jobAdvertId}`)
+        router.push(`/job-adverts`)
       } else {
         toast.error("Failed to update job advert. Please try again.")
       }
     } catch (error) {
-      console.error("Error updating job advert:", error)
       toast.error("Failed to update job advert. Please try again.")
     } finally {
       setIsSubmitting(false)
@@ -260,7 +258,7 @@ export default function EditJobAdvertPage() {
 
   return (
     <div className="w-full h-full p-6">
-      <div className="w-full max-w-6xl mx-auto space-y-6">
+      <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
@@ -286,24 +284,6 @@ export default function EditJobAdvertPage() {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Current Job Position Info */}
-              {jobPosition && (
-                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                  <h4 className="font-medium text-sm mb-2 text-blue-800">Current Job Position</h4>
-                  <div className="text-sm text-blue-700">
-                    <p>
-                      <span className="font-medium">Position:</span> {jobPosition.name}
-                    </p>
-                    <p>
-                      <span className="font-medium">Department:</span> {jobPosition.department_details?.name}
-                    </p>
-                    <p>
-                      <span className="font-medium">Salary:</span> ${jobPosition.salary.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              )}
-
               {/* Form Fields - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Job Position */}
@@ -409,39 +389,7 @@ export default function EditJobAdvertPage() {
                   className={errors.extra_information ? "border-destructive" : ""}
                 />
                 {errors.extra_information && <p className="text-sm text-destructive">{errors.extra_information}</p>}
-                <p className="text-xs text-muted-foreground">
-                  {formData.extra_information?.length || 0}/2000 characters
-                </p>
               </div>
-
-              {/* Job Advert Info Display */}
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <h4 className="font-medium text-sm mb-3">Job Advert Information:</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium text-foreground">Advert ID:</span> {jobAdvert?.id}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Organization:</span>{" "}
-                      {selectedInstitution.institution_name}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Branch:</span> {selectedBranch.branch_name}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium text-foreground">Published:</span>{" "}
-                      {jobAdvert?.published_date ? new Date(jobAdvert.published_date).toLocaleDateString() : "N/A"}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Current Status:</span> {jobAdvert?.status}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               {/* Form Actions */}
               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
                 <Button

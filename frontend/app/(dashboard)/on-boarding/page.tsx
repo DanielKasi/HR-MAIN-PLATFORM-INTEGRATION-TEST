@@ -520,10 +520,6 @@ export default function OnboardPage() {
           <p className="text-muted-foreground">
             Manage candidate onboarding process for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Institution ID: {selectedInstitution.id} | Total Records: {onboardings.length}
-            {selectedIds.size > 0 && ` | Selected: ${selectedIds.size}`}
-          </p>
         </div>
         <Button
           variant="outline"
@@ -1103,18 +1099,6 @@ export default function OnboardPage() {
               />
             </div>
 
-            {/* Show selected candidates preview */}
-            <div className="max-h-32 overflow-y-auto border rounded p-2 bg-muted/50">
-              <div className="text-sm font-medium mb-2">Selected Candidates:</div>
-              {selectedOnboardings.map((onboarding) => {
-                const { applicantName } = getApplicationData(onboarding)
-                return (
-                  <div key={onboarding.id} className="text-xs text-muted-foreground">
-                    • {applicantName}
-                  </div>
-                )
-              })}
-            </div>
           </div>
 
           <DialogFooter>

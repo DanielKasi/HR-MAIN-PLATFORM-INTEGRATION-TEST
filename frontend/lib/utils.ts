@@ -416,9 +416,6 @@ export const createJobPositionAdvert = async ({
 };
 
 
-
-
-// Fetch all job position adverts for a specific institution
 export const getJobPositionAdverts = async ({
   institutionId,
 }: {
@@ -430,7 +427,6 @@ export const getJobPositionAdverts = async ({
     );
     return response.data as JobPositionAdvert[];
   } catch (error) {
-    console.error("Failed to fetch job position adverts", error);
     return null;
   }
 };
@@ -1068,6 +1064,21 @@ export const createDisciplineType = async ({
   }
 };
 
+export const deleteDisciplinaryAction = async (id: number | string): Promise<boolean> => {
+  try {
+    const response = await apiRequest.delete(
+      `discipline/disciplinary-actions/${id}/`
+    );
+    
+    return response.status === 200 || response.status === 204;
+  } catch (error) {
+    console.error("Failed to delete disciplinary action:", error);
+    return false;
+  }
+};
+
+
+
 
 export const getDisciplineTypes = async ({
   institutionId,
@@ -1097,6 +1108,46 @@ export const getDisciplinaryActions = async (): Promise<DisciplinaryActionAPIRes
     return null;
   }
 };
+
+export const updateDisciplinaryAction = async ({
+  disciplinaryActionId,
+  disciplinaryActionData,
+}: {
+  disciplinaryActionId: number | string;
+  disciplinaryActionData: Partial<DisciplinaryActionRequest> | DisciplinaryActionForm;
+}): Promise<DisciplinaryActionAPIResponse | null> => {
+  try {
+    const dataToSend = 'discipline_type' in disciplinaryActionData && typeof disciplinaryActionData.discipline_type === 'string'
+      ? convertFormToApiRequest(disciplinaryActionData as DisciplinaryActionForm)
+      : disciplinaryActionData;
+
+    const response = await apiRequest.patch(
+      `discipline/disciplinary-actions/${disciplinaryActionId}/`,
+      dataToSend
+    );
+    
+    return response.data as DisciplinaryActionAPIResponse;
+  } catch (error) {
+    console.error("Failed to update disciplinary action:", error);
+    return null;
+  }
+};
+
+export const getDisciplinaryActionById = async (
+  disciplinaryActionId: number | string
+): Promise<DisciplinaryActionAPIResponse | null> => {
+  try {
+    const response = await apiRequest.get(
+      `discipline/disciplinary-actions/${disciplinaryActionId}/`
+    );
+    
+    return response.data as DisciplinaryActionAPIResponse;
+  } catch (error) {
+    console.error("Failed to retrieve disciplinary action:", error);
+    return null;
+  }
+};
+
 
 
 export const createLeaveType = async ({

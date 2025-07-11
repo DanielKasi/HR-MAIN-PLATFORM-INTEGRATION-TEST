@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { AlertTriangle, User, FileText, Loader2, Plus } from "lucide-react"
+import { Loader2, Plus } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { updateDisciplinaryAction, createDisciplineType, getDisciplineTypes, getAllEmployees, getDisciplinaryActionById } from "@/lib/utils"
@@ -39,7 +39,6 @@ export default function DisciplinaryUpdateForm() {
   const [institutionId, setInstitutionId] = useState<number | null>(null)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSubmittingType, setIsSubmittingType] = useState(false)
   const [isDisciplineTypeModalOpen, setIsDisciplineTypeModalOpen] = useState(false)
   const [isAddingDisciplineType, setIsAddingDisciplineType] = useState(false)
   const [isLoadingDisciplineTypes, setIsLoadingDisciplineTypes] = useState(true)
@@ -82,7 +81,6 @@ export default function DisciplinaryUpdateForm() {
     email: string
   }>>([])
 
-  // Set institutionId for other API calls (e.g., getDisciplineTypes, getAllEmployees)
   useEffect(() => {
     if (selectedInstitution) {
       setInstitutionId(selectedInstitution.id)
@@ -91,7 +89,6 @@ export default function DisciplinaryUpdateForm() {
     }
   }, [institutionsAttached, selectedInstitution])
 
-  // Fetch disciplinary action
  useEffect(() => {
   const fetchDisciplinaryAction = async () => {
     if (!disciplinaryActionId) {
@@ -105,9 +102,7 @@ export default function DisciplinaryUpdateForm() {
       if (isNaN(idAsNumber)) {
         throw new Error("Invalid disciplinary action ID: must be a number")
       }
-      const existingAction = await getDisciplinaryActionById({ 
-        disciplinaryActionId: idAsNumber
-      })
+      const existingAction = await getDisciplinaryActionById(idAsNumber)
       if (!existingAction) {
         toast.error("Disciplinary action not found")
         router.push("/employees/discipline")
@@ -145,7 +140,6 @@ export default function DisciplinaryUpdateForm() {
   fetchDisciplinaryAction()
 }, [disciplinaryActionId, router])
 
-  // Fetch employees
   useEffect(() => {
     const fetchEmployees = async () => {
       if (!institutionId) return
@@ -153,13 +147,10 @@ export default function DisciplinaryUpdateForm() {
       try {
         const fetchedEmployees = await getAllEmployees({ institutionId })
         if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
-          const formattedEmployees: Array<{
-            id: string
-            name: string
-            email: string
-          }> = fetchedEmployees.map((emp: any) => ({
+          const formattedEmployees: typeof employees = fetchedEmployees.map((emp: any) => ({
             id: emp.id.toString(),
             name: emp.user?.fullname || emp.email || 'Unknown Employee',
+            department: emp.department || '', 
             email: emp.email || ''
           }))
           setEmployees(formattedEmployees)
@@ -176,7 +167,6 @@ export default function DisciplinaryUpdateForm() {
     fetchEmployees()
   }, [institutionId])
 
-  // Fetch discipline types
   useEffect(() => {
     const fetchDisciplineTypes = async () => {
       if (!institutionId) return
@@ -683,7 +673,6 @@ export default function DisciplinaryUpdateForm() {
                 </div>
               </div>
 
-              {/* Action Taken */}
               <div className="space-y-2">
                 <Label htmlFor="action_taken">Action Taken</Label>
                 <Textarea
@@ -697,7 +686,6 @@ export default function DisciplinaryUpdateForm() {
                 />
               </div>
 
-              {/* Follow-up Checkbox */}
               <div className="flex items-center space-x-2 p-4 bg-orange-50 rounded-lg border border-orange-200">
                 <Checkbox
                   id="follow_up_required"
@@ -713,7 +701,6 @@ export default function DisciplinaryUpdateForm() {
                 </Label>
               </div>
 
-              {/* Notes */}
               <div className="space-y-2">
                 <Label htmlFor="notes">Additional Notes</Label>
                 <Textarea

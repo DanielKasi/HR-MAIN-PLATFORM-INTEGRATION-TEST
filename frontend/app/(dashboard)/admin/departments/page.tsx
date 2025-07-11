@@ -4,14 +4,12 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
 import { Building2, Plus, Search, Filter, MoreVertical, Edit, Trash2, RefreshCw } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
-
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getDepartments } from "@/lib/utils"
 import { IDepartment } from "@/app/types/types.utils"
@@ -212,8 +210,6 @@ export default function DepartmentsPage() {
                     </div>
                     <div>
                       <CardTitle className="text-lg">{department.name}</CardTitle>
-                      <Badge variant="secondary" className="text-xs">
-                      </Badge>
                     </div>
                   </div>
                   <DropdownMenu>

@@ -596,7 +596,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const renderNavigationItem = (item: NavItem) => {
-    const isActive = pathname === item.href || (item.submenu && item.submenu.some(sub => pathname === sub.href));
+    // Check if current item or any submenu item is active
+    let isActive = false;
+    
+    if (item.submenu && item.submenu.length > 0) {
+      // For items with submenu, check if any submenu item is active
+      isActive = item.submenu.some(sub => pathname === sub.href);
+    } else {
+      // For regular items, check if the item itself is active
+      isActive = pathname === item.href;
+    }
     
     // Special handling for admin item
     if (item.title === "Admin") {
@@ -614,7 +623,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 ? "bg-green-100 text-green-700 hover:bg-green-200"
                 : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
             }`}
-            onClick={() => router.push(item.href)}
+            onClick={() => {
+              console.log("Navigating to:", item.href);
+              router.push(item.href);
+            }}
           >
             {item.icon}
           </Button>
@@ -648,7 +660,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div key={option.href}>
                 <DropdownMenuItem 
                   className="cursor-pointer"
-                  onClick={() => router.push(option.href)}
+                  onClick={() => {
+                    console.log("Navigating to:", option.href);
+                    router.push(option.href);
+                  }}
                 >
                   {option.title}
                 </DropdownMenuItem>
@@ -665,7 +680,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         key={item.title} 
         variant={isActive ? "default" : "ghost"} 
         className={buttonClasses}
-        onClick={() => router.push(item.href)}
+        onClick={() => {
+          console.log("Navigating to:", item.href);
+          router.push(item.href);
+        }}
       >
         {item.icon}
         <span>{item.title}</span>
@@ -755,7 +773,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="w-full border-b bg-white sticky top-0 z-40">
         <div className="flex items-center">
           {/* Scrollable Navigation Items */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <ScrollArea className="w-full whitespace-nowrap">
               <div className="flex items-center space-x-1 p-4">
                 {filteredNavItems.map(renderNavigationItem)}
@@ -764,9 +782,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </ScrollArea>
           </div>
           
-          {/* Static Admin - Always Visible if user has permission */}
+          {/* Static Admin - Always Visible */}
           <div className="flex-shrink-0 px-4 border-l border-gray-200">
-            {isMounted && canViewAdmin && filteredAdminItem && renderNavigationItem(filteredAdminItem)}
+            <div 
+              className="relative"
+              onMouseEnter={() => setIsAdminHovered(true)}
+              onMouseLeave={() => setIsAdminHovered(false)}
+            >
+              <Button 
+                variant="ghost" 
+                className="flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                onClick={() => {
+                  console.log("Navigating to:", "/admin");
+                  router.push("/admin");
+                }}
+              >
+                <Shield className="w-5 h-5" />
+              </Button>
+              {isAdminHovered && (
+                <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs whitespace-nowrap z-50">
+                  Admin
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
