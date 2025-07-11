@@ -38,7 +38,6 @@ export default function CreateDepartmentPage() {
 
   const updateFormData = (field: keyof DepartmentFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
     }
@@ -94,7 +93,6 @@ export default function CreateDepartmentPage() {
         toast.error("Failed to create department. Please try again.")
       }
     } catch (error) {
-      console.error("Error creating department:", error)
       toast.error("Failed to create department. Please try again.")
     } finally {
       setIsSubmitting(false)
@@ -111,7 +109,7 @@ export default function CreateDepartmentPage() {
 
   return (
     <div className="w-full h-full p-6">
-      <div className="w-full max-w-6xl mx-auto space-y-6">
+      <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
@@ -186,14 +184,6 @@ export default function CreateDepartmentPage() {
                     </p>
                     <p>
                       <span className="font-medium text-foreground">Branch:</span> {selectedBranch.branch_name}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium text-foreground">Institution ID:</span> {selectedInstitution.id}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Branch ID:</span> {selectedBranch.id}
                     </p>
                   </div>
                 </div>

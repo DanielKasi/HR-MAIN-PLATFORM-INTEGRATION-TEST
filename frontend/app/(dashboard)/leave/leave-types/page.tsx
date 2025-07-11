@@ -21,6 +21,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { createLeaveType, getLeaveTypes, updateLeaveType, deleteLeaveType } from "@/lib/utils"
 import { ILeaveType, ILeaveTypeFormData } from "@/app/types/types.utils" 
 import { toast } from "sonner" 
+import { select } from "redux-saga/effects"
+import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
+import { useSelector } from "react-redux"
 
 interface LeaveType extends ILeaveType {
 
@@ -42,7 +45,7 @@ const GENDER_CHOICES = [
   { value: "female", label: "Female" },
 ]
 
-const LeaveTypesComponent = ({ institutionId }: { institutionId: number }) => {
+const LeaveTypesComponent = () => {
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -51,6 +54,8 @@ const LeaveTypesComponent = ({ institutionId }: { institutionId: number }) => {
   const [deletingLeaveType, setDeletingLeaveType] = useState<LeaveType | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const selectedInstitution = useSelector(selectSelectedInstitution)
 
   const [formData, setFormData] = useState<{
     name: string
@@ -69,10 +74,9 @@ const LeaveTypesComponent = ({ institutionId }: { institutionId: number }) => {
     carry_forward_allowed: false,
     max_carry_forward_days: "",
     requires_document: false,
-    gender_specific: "none",
+    gender_specific: "all",
   })
 
-  // Reset form data
   const resetFormData = () => {
     setFormData({
       name: "",
@@ -86,12 +90,16 @@ const LeaveTypesComponent = ({ institutionId }: { institutionId: number }) => {
     })
   }
 
-  // Load leave types on component mount
+
   useEffect(() => {
     const fetchLeaveTypes = async () => {
+      if (selectedInstitution?.id === undefined) {
+        setLeaveTypes([]);
+        return;
+      }
       setIsLoading(true);
       try {
-        const types = await getLeaveTypes(institutionId);
+        const types = await getLeaveTypes(selectedInstitution.id);
         setLeaveTypes(types);
       } catch (error) {
         toast.error("Failed to load leave types");
@@ -101,7 +109,7 @@ const LeaveTypesComponent = ({ institutionId }: { institutionId: number }) => {
     };
     
     fetchLeaveTypes();
-  }, [institutionId])
+  }, [selectedInstitution?.id]);
 
   const handleAddLeaveType = async () => {
     if (!formData.name || !formData.description || !formData.max_days_per_year) {
@@ -124,7 +132,6 @@ const LeaveTypesComponent = ({ institutionId }: { institutionId: number }) => {
       }
 
       const newLeaveType = await createLeaveType({
-        institutionId,
         leaveTypeData,
       })
 
@@ -162,12 +169,12 @@ const LeaveTypesComponent = ({ institutionId }: { institutionId: number }) => {
         max_carry_forward_days: parseInt(formData.max_carry_forward_days) || 0,
         is_active: true,
         requires_document: formData.requires_document,
-        gender_specific: formData.gender_specific === "none" ? null : formData.gender_specific as any,
+        gender_specific: formData.gender_specific === "none" ? "all" : formData.gender_specific as any,
       }
 
+      console.log("Updating leave type with data:", leaveTypeData)
       const updatedLeaveType = await updateLeaveType({
         leaveTypeId: editingLeaveType.id,
-        institutionId,
         leaveTypeData,
       })
 
@@ -197,7 +204,6 @@ const LeaveTypesComponent = ({ institutionId }: { institutionId: number }) => {
     try {
       const success = await deleteLeaveType({ 
         leaveTypeId: deletingLeaveType.id, 
-        institutionId 
       });
       
       if (success) {
@@ -237,7 +243,7 @@ const LeaveTypesComponent = ({ institutionId }: { institutionId: number }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      <div className="container py-10 px-6 md:px-8 lg:px-12">
+      <div className="w-full py-8 px-4 md:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Leave Types</h1>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

@@ -3,11 +3,10 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
 import { useRouter } from "next/navigation"
 import {
   Dialog,
@@ -26,21 +25,14 @@ import { toast } from "sonner"
 import { useSelector } from "react-redux"
 
 import {
-  createPayslip,
   getPayslips,
-  updatePayslip,
   deletePayslip,
   markPayslipAsPaid,
-  getPayslipsByEmployee,
-  getPayslipsByPayrollPeriod,
-  getUnpaidPayslips,
   getAllEmployees,
   getPayrollPeriods,
   createBulkPayslips
 } from "@/lib/utils"
 import { 
-  IPayslip, 
-  IPayslipFormData,
   IPayrollPeriod,
 } from "@/app/types/types.utils"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
@@ -118,7 +110,7 @@ interface PayslipComponentProps {
   institutionId?: number
 }
 
-export default function Payslips({ institutionId: propInstitutionId }: PayslipComponentProps) {
+export default function Payslips() {
   const [payslips, setPayslips] = useState<DisplayPayslip[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [payrollPeriods, setPayrollPeriods] = useState<IPayrollPeriod[]>([])
@@ -138,9 +130,10 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
   const [itemsPerPage, setItemsPerPage] = useState(10)
 
 
+
+  // Redux selectors
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
-  const [institutionId, setInstitutionId] = useState<number | null>(propInstitutionId || null)
 
   const [formData, setFormData] = useState({
     payroll_period_id: "",
@@ -148,23 +141,21 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
 
 
   useEffect(() => {
-    if (propInstitutionId) {
-      setInstitutionId(propInstitutionId)
-    } else if (selectedInstitution?.id) {
-      setInstitutionId(selectedInstitution.id)
+    if (selectedInstitution?.id) {
+      setInstitutionId(selectedInstitution?.id)
     } else if (institutionsAttached && institutionsAttached.length > 0) {
       setInstitutionId(institutionsAttached[0].id)
     }
-  }, [propInstitutionId, institutionsAttached, selectedInstitution])
+  }, [selectedInstitution?.id, institutionsAttached, selectedInstitution])
 
   useEffect(() => {
     const fetchEmployees = async () => {
-      if (!institutionId) {
+      if (!selectedInstitution?.id ) {
         return
       }
       
       try {
-        const fetchedEmployees = await getAllEmployees({ institutionId })
+        const fetchedEmployees = await getAllEmployees({ institutionId:selectedInstitution?.id })
         
         if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
           const formattedEmployees: Employee[] = fetchedEmployees.map((emp: any) => {
@@ -189,23 +180,22 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
           toast.error("Invalid employee data received")
         }
       } catch (error) {
-        console.error("Error fetching employees:", error)
         setEmployees([])
         toast.error("Failed to load employees")
       }
     }
 
     fetchEmployees()
-  }, [institutionId])
+  }, [selectedInstitution?.id])
 
   useEffect(() => {
     const fetchPayrollPeriods = async () => {
-      if (!institutionId) {
+      if (!selectedInstitution?.id) {
         return
       }
       
       try {
-        const periods = await getPayrollPeriods(institutionId)
+        const periods = await getPayrollPeriods(selectedInstitution.id)
         
         if (periods && Array.isArray(periods)) {
           setPayrollPeriods(periods)
@@ -218,24 +208,23 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
           toast.error("Invalid payroll periods data received")
         }
       } catch (error) {
-        console.error("Error fetching payroll periods:", error)
         setPayrollPeriods([])
         toast.error("Failed to load payroll periods")
       }
     }
 
     fetchPayrollPeriods()
-  }, [institutionId])
+  }, [selectedInstitution?.id])
 
 
   useEffect(() => {
     const fetchPayslips = async () => {
-      if (!institutionId) {
+      if (!selectedInstitution?.id) {
         return
       }
       
       try {
-        const payslipsData = await getPayslips(institutionId)
+        const payslipsData = await getPayslips(selectedInstitution?.id)
         
         if (payslipsData && Array.isArray(payslipsData)) {
           const displayPayslips = payslipsData.map(convertToDisplayPayslip)
@@ -244,22 +233,21 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
           setPayslips([])
         }
       } catch (error) {
-        console.error("Error fetching payslips:", error)
         setPayslips([])
         toast.error("Failed to load payslips")
       }
     }
     
     fetchPayslips()
-  }, [institutionId, employees, payrollPeriods])
+  }, [selectedInstitution?.id, employees, payrollPeriods])
 
 
   const refreshPayslips = async () => {
-    if (!institutionId) return
-    
+    if (!selectedInstitution?.id) return
+
     try {
-      const payslipsData = await getPayslips(institutionId)
-      
+      const payslipsData = await getPayslips(selectedInstitution.id)
+
       if (payslipsData && Array.isArray(payslipsData)) {
         const displayPayslips = payslipsData.map(convertToDisplayPayslip)
         setPayslips(displayPayslips)
@@ -277,7 +265,7 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
       name: apiPayslip.employee.user.fullname,
       email: apiPayslip.employee.user.email || apiPayslip.employee.email,
       employee_id: apiPayslip.employee.id.toString(),
-      salary: 0, // Not provided in payslip response, will use basic_salary from payslip
+      salary: 0, 
       department: apiPayslip.employee.department.name,
       user: apiPayslip.employee.user
     }
@@ -409,7 +397,7 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!institutionId) {
+    if (!selectedInstitution) {
       toast.error("Institution ID is required")
       return
     }
@@ -428,32 +416,23 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
     setSaving(true)
     
     try {
-      // Handle generating new payslips for all employees in the payroll period
       const createdPayslips: DisplayPayslip[] = []
       const errors: string[] = []
 
       try {
-        console.log("Generating payslips for payroll period:", formData.payroll_period_id)
-        console.log("Institution ID:", institutionId)
-        console.log("Employee IDs:", employees.map(emp => parseInt(emp.id)))
-
-        // Use the createBulkPayslips helper function
         const newPayslips = await createBulkPayslips({
-          institutionId,
+          institutionId: selectedInstitution?.id ?? setInstitutionId ?? 0,
           payrollPeriodId: parseInt(formData.payroll_period_id),
           employeeIds: employees.map(emp => parseInt(emp.id))
         })
 
-        console.log("API response:", newPayslips)
         
         if (newPayslips && Array.isArray(newPayslips)) {
-          // Process the array of created payslips
           newPayslips.forEach(payslip => {
             try {
               const displayPayslip = convertToDisplayPayslip(payslip)
               createdPayslips.push(displayPayslip)
             } catch (conversionError: any) {
-              console.error(`Conversion error for payslip ${payslip.id}:`, conversionError)
               errors.push(`Payslip ${payslip.id}: Data conversion failed`)
             }
           })
@@ -461,27 +440,21 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
           throw new Error("Failed to generate payslips - invalid response")
         }
       } catch (error: any) {
-        console.error("Error creating payslips:", error)
         if (error.message) {
           errors.push(error.message)
         } else {
           errors.push("Unknown error occurred")
         }
       }
-
-      // Refresh payslips data from database to show updated table
       await refreshPayslips()
 
-      // Show results - prioritize success message if payslips were created
       if (createdPayslips.length > 0) {
         toast.success(`Successfully generated ${createdPayslips.length} payslips`)
         
         if (errors.length > 0) {
-          console.log(`Errors for some employees: ${errors.join('; ')}`)
           toast.warning("Some payslips had issues - check console for details")
         }
       } else {
-        // Only show error messages if no payslips were created at all
         if (errors.length > 0) {
           toast.error(`Failed to generate payslips: ${errors[0]}`)
         } else {
@@ -492,7 +465,6 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
       setIsModalOpen(false)
       resetForm()
     } catch (error: any) {
-      console.error("Failed to save payslip:", error)
       toast.error(error.message || "An error occurred while processing payslips")
     } finally {
       setSaving(false)
@@ -538,7 +510,6 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
             errorCount++
           }
         } catch (error) {
-          console.error(`Failed to mark payslip ${payslip.id} as paid:`, error)
           errorCount++
         }
       }
@@ -567,7 +538,6 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
       setBulkPaymentModalOpen(false)
       setSelectedDepartment("all")
     } catch (error: any) {
-      console.error("Bulk payment error:", error)
       toast.error("An error occurred during bulk payment processing")
     } finally {
       setBulkProcessing(false)
@@ -598,7 +568,6 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
         toast.error("Failed to mark payslip as paid")
       }
     } catch (error: any) {
-      console.error("Failed to mark payslip as paid:", error)
       toast.error(error.message || "An error occurred while marking payslip as paid")
     } finally {
       setSaving(false)
@@ -616,7 +585,6 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
         toast.error("Failed to delete payslip")
       }
     } catch (error: any) {
-      console.error("Failed to delete payslip:", error)
       toast.error(error.message || "An error occurred while deleting the payslip")
     }
   }
@@ -646,7 +614,9 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
     return `USh ${amount.toLocaleString()}`
   }
 
-  if (!institutionId) {
+  const [institutionId, setInstitutionId] = useState<number | null>(null);
+
+  if (!selectedInstitution) {
     return (
       <div className="flex justify-center items-center h-64">
         <span className="ml-2">No institution selected...</span>
@@ -672,7 +642,7 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
                   <Button 
                     onClick={resetForm} 
                     className="bg-orange-600 hover:bg-orange-700 shadow-md"
-                    disabled={!institutionId || employees.length === 0 || payrollPeriods.length === 0}
+                    disabled={!selectedInstitution?.id || employees.length === 0 || payrollPeriods.length === 0}
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Generate Payslips
@@ -747,7 +717,7 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
                 <DialogTrigger asChild>
                   <Button 
                     className="bg-green-600 hover:bg-green-700 shadow-md"
-                    disabled={!institutionId || payslips.filter(p => !p.is_paid).length === 0}
+                    disabled={!selectedInstitution || payslips.filter(p => !p.is_paid).length === 0}
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Bulk Payments
@@ -794,17 +764,6 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
                               : `This will mark all unpaid payslips in ${selectedDepartment} department as paid.`
                             }
                           </div>
-                          {getUnpaidPayslipsByDepartment(selectedDepartment).length > 0 && (
-                            <div className="mt-3">
-                              <div className="text-sm font-medium text-green-900 mb-1">Employees to be marked as paid:</div>
-                              <div className="text-sm text-green-800">
-                                {getUnpaidPayslipsByDepartment(selectedDepartment)
-                                  .map(p => p.employee.name)
-                                  .join(", ")
-                                }
-                              </div>
-                            </div>
-                          )}
                         </div>
                       )}
                     </div>
@@ -1173,4 +1132,8 @@ export default function Payslips({ institutionId: propInstitutionId }: PayslipCo
       </Card>
     </div>
   )
+}
+
+function setInstitutionId(id: number) {
+  throw new Error("Function not implemented.")
 }

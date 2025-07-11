@@ -43,7 +43,7 @@ export const selectSelectedTillLoading = createSelector(
 
 export const selectAttachedInstitutions = createSelector(
   [authSlice],
-  (slice) => slice.InstitutionsAttached.value,
+  (slice) => slice.InstitutionsAttached.value || []
 );
 
 export const selectAttachedInstitutionsLoading = createSelector(

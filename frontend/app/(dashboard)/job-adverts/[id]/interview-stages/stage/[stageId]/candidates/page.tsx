@@ -47,7 +47,7 @@ import {
   Plus
 } from "lucide-react"
 import { toast } from "sonner"
-import type { JobPositionAdvert, IInterviewFormData, IInterview, IOnBoarding, IBulkOnBoardingResponse, IBulkOnBoardingRequest } from "@/app/types/types.utils"
+import type { JobPositionAdvert, IInterviewFormData, IInterview } from "@/app/types/types.utils"
 import { getJobPositionAdvertById, updateInterview, getInterviews, createInterview, bulkCreateOnBoarding } from "@/lib/utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
@@ -577,21 +577,6 @@ const FeedbackDialog = ({
                 )}
               </div>
             </div>
-
-            {nextStage && (
-              <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded-md">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-blue-600" />
-                  <span>Next stage: <strong>{nextStage.name}</strong> (Level {nextStage.level})</span>
-                </div>
-                <div className="mt-1 ml-6">
-                  Interviewer: {nextStage.interviewer_details?.user?.fullname || 'Not assigned'}
-                </div>
-                <div className="mt-1 ml-6 text-xs">
-                  Click "Schedule & Move" to schedule an interview for the next stage
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </DialogContent>
@@ -723,11 +708,8 @@ const StageCandidatesContent = ({
       if (!result) {
         throw new Error('Failed to update interview stage');
       }
-
-      console.log(`Successfully moved candidate ${candidateId} to stage ${targetStageId}`);
       return { success: true, data: result };
     } catch (error) {
-      console.error(`Error moving candidate ${candidateId} to stage ${targetStageId}:`, error);
       throw error;
     }
   };
@@ -752,11 +734,8 @@ const StageCandidatesContent = ({
       if (!result) {
         throw new Error('Failed to reject candidate');
       }
-
-      console.log(`Successfully rejected candidate ${candidateId}`);
       return { success: true, data: result };
     } catch (error) {
-      console.error(`Error rejecting candidate ${candidateId}:`, error);
       throw error;
     }
   };
@@ -798,7 +777,6 @@ const StageCandidatesContent = ({
 
       return { successCount, totalCount: candidates.length };
     } catch (error) {
-      console.error('Error scheduling interviews:', error);
       throw error;
     }
   };
@@ -837,18 +815,15 @@ const StageCandidatesContent = ({
       
       setJobAdvert(jobAdvertData)
     } catch (err) {
-      console.error('Error fetching data:', err)
       setError(err instanceof Error ? err.message : 'Failed to load candidates')
     } finally {
       setLoading(false)
     }
   }
 
-  // Enhanced function to merge candidate data with interview data and show all relevant candidates
   const mergeInterviewData = (candidates: Candidate[], interviews: IInterview[]): Candidate[] => {
     const processedCandidates = new Map<number, Candidate>()
     
-    // First, add all candidates from the current stage
     candidates.forEach(candidate => {
       const interview = interviews.find(
         (interview) => interview.job_position_application === candidate.id && 
@@ -858,8 +833,8 @@ const StageCandidatesContent = ({
       if (interview) {
         processedCandidates.set(candidate.id, {
           ...candidate,
-          feedback: interview.feedback,
-          rating: interview.rating,
+          feedback: interview.feedback || undefined,
+          rating: interview.rating || undefined,
           interview_date: interview.interview_date,
           interview_time: interview.interview_time,
           location: interview.location,
@@ -871,13 +846,10 @@ const StageCandidatesContent = ({
       }
     })
 
-    // Then, add candidates who have interviews in later stages but originated from this job position
-    // and have completed interviews in the current stage
     interviews.forEach(interview => {
       if (interview.interview_stage !== parseInt(stageId) && 
           interview.job_position_application_details?.job_position_advert === parseInt(jobId)) {
         
-        // Check if this candidate has a completed interview in the current stage
         const currentStageInterview = interviews.find(
           (int) => int.job_position_application === interview.job_position_application &&
           int.interview_stage === parseInt(stageId) &&
@@ -887,37 +859,36 @@ const StageCandidatesContent = ({
         )
 
         if (currentStageInterview && !processedCandidates.has(interview.job_position_application)) {
-          // Create a candidate object from the interview data
-          const candidateFromInterview: Candidate = {
-            id: interview.job_position_application,
-            job_position_advert: interview.job_position_application_details?.job_position_advert || parseInt(jobId),
-            job_position_advert_job_details: {
-              name: interview.job_position_application_details?.job_position_advert_job_details?.name || 'Unknown Position',
-              description: interview.job_position_application_details?.job_position_advert_job_details?.description || '',
-              job_posted_date: interview.job_position_application_details?.job_position_advert_job_details?.job_posted_date || ''
-            },
-            applicant_name: interview.job_position_application_details?.applicant_name || 'Unknown',
-            applicant_email: interview.job_position_application_details?.applicant_email || '',
-            applicant_phone: interview.job_position_application_details?.applicant_phone || '',
-            resume: interview.job_position_application_details?.resume || '',
-            cover_letter: interview.job_position_application_details?.cover_letter || '',
-            application_date: interview.job_position_application_details?.application_date || '',
-            status: interview.job_position_application_details?.status || '',
-            gender: interview.job_position_application_details?.gender || '',
-            state: interview.job_position_application_details?.state || '',
-            address: interview.job_position_application_details?.address || '',
-            country: interview.job_position_application_details?.country || '',
-            source: interview.job_position_application_details?.source || '',
-            positions: interview.job_position_application_details?.positions || 1,
-            // Use the current stage interview data for feedback/rating
-            feedback: currentStageInterview.feedback,
-            rating: currentStageInterview.rating,
-            interview_date: currentStageInterview.interview_date,
-            interview_time: currentStageInterview.interview_time,
-            location: currentStageInterview.location,
-            interview_id: currentStageInterview.id,
-            interview: currentStageInterview
-          }
+            const candidateFromInterview: Candidate = {
+              id: interview.job_position_application,
+              job_position_advert: interview.job_position_application_details?.job_position_advert || parseInt(jobId),
+              job_position_advert_job_details: {
+                name: interview.job_position_application_details?.job_position_advert_job_details?.name || 'Unknown Position',
+                description: interview.job_position_application_details?.job_position_advert_job_details?.description || '',
+                job_posted_date: interview.job_position_application_details?.job_position_advert_job_details?.job_posted_date || ''
+              },
+              applicant_name: interview.job_position_application_details?.applicant_name || 'Unknown',
+              applicant_email: interview.job_position_application_details?.applicant_email || '',
+              applicant_phone: interview.job_position_application_details?.applicant_phone || '',
+              resume: interview.job_position_application_details?.resume || '',
+              cover_letter: interview.job_position_application_details?.cover_letter || '',
+              application_date: interview.job_position_application_details?.application_date || '',
+              status: interview.job_position_application_details?.status || '',
+              gender: interview.job_position_application_details?.gender || '',
+              state: interview.job_position_application_details?.state || '',
+              address: interview.job_position_application_details?.address || '',
+              country: interview.job_position_application_details?.country || '',
+              source: interview.job_position_application_details?.source || '',
+              positions: interview.job_position_application_details?.positions || 1,
+              // Fix the type casting here
+              feedback: currentStageInterview.feedback || undefined,
+              rating: currentStageInterview.rating || undefined,
+              interview_date: currentStageInterview.interview_date,
+              interview_time: currentStageInterview.interview_time,
+              location: currentStageInterview.location,
+              interview_id: currentStageInterview.id,
+              interview: currentStageInterview
+            }
           
           processedCandidates.set(interview.job_position_application, candidateFromInterview)
         }
@@ -932,10 +903,8 @@ const StageCandidatesContent = ({
 
     let candidates = currentStage.candidates || []
     
-    // Merge interview data with candidate data - this now includes candidates moved to later stages
     let mergedCandidates = mergeInterviewData(candidates, interviews)
 
-    // Filter by search term
     if (searchTerm) {
       mergedCandidates = mergedCandidates.filter(
         (candidate) =>
@@ -945,7 +914,6 @@ const StageCandidatesContent = ({
       )
     }
 
-    // Remove duplicates based on candidate ID (in case there are any)
     const uniqueCandidates = mergedCandidates.filter((candidate, index, self) => 
       index === self.findIndex(c => c.id === candidate.id)
     )
@@ -998,56 +966,48 @@ const StageCandidatesContent = ({
   }
 
   const handleBulkOnboard = async () => {
-    if (selectedCandidates.length === 0) {
-      toast.error('Please select candidates to onboard')
-      return
-    }
-
-    try {
-      // Get the selected candidates data
-      const candidatesToOnboard = filteredCandidates.filter(c => selectedCandidates.includes(c.id))
-      
-      // Extract application IDs for the bulk onboarding API
-      const applicationIds = candidatesToOnboard.map(candidate => candidate.id)
-
-      console.log('Attempting to onboard candidates with IDs:', applicationIds)
-
-      // Call the bulk onboarding API
-      const result = await bulkCreateOnBoarding({ applicationIds })
-
-      console.log('Onboarding API response:', result)
-
-      if (result) {
-        const createdCount = result.summary?.created_count || result.created?.length || 0
-        const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0
-        
-        if (createdCount > 0) {
-          if (skippedCount === 0) {
-            toast.success(`Successfully onboarded ${createdCount} candidate(s)`)
-          } else {
-            toast.warning(`${createdCount} candidates onboarded successfully, ${skippedCount} were skipped`)
-          }
-          
-          setSelectedCandidates([])
-          // Refresh data to reflect any status changes
-          await refreshStageData()
-        } else {
-          // No candidates were successfully onboarded
-          toast.error(`No candidates were onboarded successfully. ${skippedCount} were skipped.`)
-          if (result.skipped && result.skipped.length > 0) {
-            console.log('Skipped applications:', result.skipped)
-          }
-        }
-      } else {
-        console.error('Onboarding API returned null response')
-        toast.error('Failed to onboard candidates - API returned no response')
-      }
-
-    } catch (error) {
-      console.error('Error onboarding candidates:', error)
-      toast.error(`Failed to onboard candidates: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
+  if (selectedCandidates.length === 0) {
+    toast.error('Please select candidates to onboard')
+    return
   }
+
+  try {
+    const candidatesToOnboard = filteredCandidates.filter(c => selectedCandidates.includes(c.id))
+    
+    const applicationIds = candidatesToOnboard.map(candidate => candidate.id)
+
+    const result = await bulkCreateOnBoarding({ applicationIds })
+
+    if (result) {
+      const createdCount = result.summary?.created_count || result.created?.length || 0
+      const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0
+      
+      if (createdCount > 0 && skippedCount === 0) {
+        toast.success(`Successfully onboarded ${createdCount} candidate(s)`)
+        setSelectedCandidates([])
+        await refreshStageData()
+      } else if (createdCount > 0 && skippedCount > 0) {
+        toast.warning(`${createdCount} candidates onboarded successfully, ${skippedCount} were already onboarded`)
+        setSelectedCandidates([])
+        await refreshStageData()
+      } else if (createdCount === 0 && skippedCount > 0) {
+        toast.warning(`All ${skippedCount} selected candidate(s) are already onboarded`)
+        setSelectedCandidates([])
+        await refreshStageData()
+      } else {
+        toast.error('No candidates were processed successfully')
+        if (result.skipped && result.skipped.length > 0) {
+          console.log('Skipped applications:', result.skipped)
+        }
+      }
+    } else {
+      toast.error('Failed to onboard candidates - API returned no response')
+    }
+
+  } catch (error) {
+    toast.error(`Failed to onboard candidates: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  }
+}
 
   const handleBulkScheduleFirst = () => {
     const candidatesData = filteredCandidates.filter(c => selectedCandidates.includes(c.id))
@@ -1071,7 +1031,6 @@ const StageCandidatesContent = ({
             const result = await moveToNextStage(candidate.id, nextStage!.id)
             moveResults.push({ candidateId: candidate.id, success: true, data: result })
           } catch (error) {
-            console.error(`Failed to move candidate ${candidate.id}:`, error)
             moveErrors.push({ candidateId: candidate.id, error })
           }
         }
@@ -1093,7 +1052,6 @@ const StageCandidatesContent = ({
         toast.error('Failed to schedule interviews')
       }
     } catch (error) {
-      console.error('Error in schedule and move process:', error)
       toast.error('Failed to schedule interviews and move candidates')
     } finally {
       setIsProcessingProgression(false)
@@ -1162,18 +1120,17 @@ const StageCandidatesContent = ({
         })
       )
 
-      setSelectedCandidate(prev => {
+     setSelectedCandidate(prev => {
         if (!prev || prev.interview_id !== interviewId) return prev
         return {
           ...prev,
-          feedback: result.feedback,
-          rating: result.rating
+          feedback: result.feedback || undefined,
+          rating: result.rating || undefined
         }
       })
 
       await refreshStageData()
     } catch (error) {
-      console.error('Error updating feedback:', error)
       throw error
     }
   }
@@ -1192,7 +1149,6 @@ const StageCandidatesContent = ({
       await moveToNextStage(selectedCandidate.id, nextStage.id)
       await refreshStageData()
     } catch (error) {
-      console.error('Error moving candidate:', error)
       throw error
     }
   }
@@ -1204,43 +1160,51 @@ const StageCandidatesContent = ({
       await rejectCandidate(selectedCandidate.id)
       await refreshStageData()
     } catch (error) {
-      console.error('Error rejecting candidate:', error)
       throw error
     }
   }
 
   const handleIndividualOnboard = async (candidate: Candidate) => {
-    try {
-      console.log('Attempting to onboard individual candidate:', candidate.id)
+  try {
+    const result = await bulkCreateOnBoarding({ applicationIds: [candidate.id] })
+
+    if (result) {
+      const createdCount = result.summary?.created_count || result.created?.length || 0
+      const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0
       
-      // Use the bulk onboarding function for individual candidates too
-      const result = await bulkCreateOnBoarding({ applicationIds: [candidate.id] })
-
-      console.log('Individual onboarding API response:', result)
-
-      if (result) {
-        const createdCount = result.summary?.created_count || result.created?.length || 0
-        
-        if (createdCount > 0) {
-          // Refresh data to reflect any status changes
-          await refreshStageData()
-          return { success: true }
-        } else {
-          const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0
-          if (skippedCount > 0) {
-            throw new Error('Candidate was skipped - may already be onboarded')
-          } else {
-            throw new Error('Failed to onboard candidate - unknown error')
-          }
+      if (createdCount > 0) {
+        // Successfully onboarded
+        await refreshStageData()
+        return { success: true }
+      } else if (skippedCount > 0) {
+        // Candidate was skipped (likely already onboarded)
+        return { 
+          success: false, 
+          alreadyOnboarded: true, 
+          message: 'Candidate is already onboarded' 
         }
       } else {
-        throw new Error('Failed to onboard candidate - API returned no response')
+        return { 
+          success: false, 
+          alreadyOnboarded: false, 
+          message: 'Failed to onboard candidate - unknown error' 
+        }
       }
-    } catch (error) {
-      console.error('Error onboarding candidate:', error)
-      throw error
+    } else {
+      return { 
+        success: false, 
+        alreadyOnboarded: false, 
+        message: 'Failed to onboard candidate - API returned no response' 
+      }
+    }
+  } catch (error) {
+    return { 
+      success: false, 
+      alreadyOnboarded: false, 
+      message: error instanceof Error ? error.message : 'Unknown error occurred' 
     }
   }
+}
 
   const openFeedbackDialog = (candidate: Candidate) => {
     setSelectedCandidate(candidate)
@@ -1258,7 +1222,7 @@ const StageCandidatesContent = ({
 
   return (
     <div className="w-full h-full p-6">
-      <div className="w-full max-w-7xl mx-auto space-y-6">
+      <div className="w-full mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
@@ -1497,21 +1461,27 @@ const StageCandidatesContent = ({
                               
                               <DropdownMenuSeparator />
 
-                              <DropdownMenuItem 
-                                onClick={async () => {
-                                  try {
-                                    await handleIndividualOnboard(candidate);
+                            <DropdownMenuItem 
+                              onClick={async () => {
+                                try {
+                                  const result = await handleIndividualOnboard(candidate);
+                                  
+                                  if (result.success) {
                                     toast.success(`${candidate.applicant_name} onboarded successfully`);
-                                  } catch (error) {
-                                    console.error('Failed to onboard candidate:', error);
-                                    toast.error(`Failed to onboard ${candidate.applicant_name}`);
+                                  } else if (result.alreadyOnboarded) {
+                                    toast.warning(`${candidate.applicant_name} is already onboarded`);
+                                  } else {
+                                    toast.error(`Failed to onboard ${candidate.applicant_name}: ${result.message}`);
                                   }
-                                }}
-                                className="text-purple-600"
-                              >
-                                <Users className="h-4 w-4 mr-2" />
-                                Onboard Candidate
-                              </DropdownMenuItem>
+                                } catch (error) {
+                                  toast.error(`Unexpected error occurred while onboarding ${candidate.applicant_name}`);
+                                }
+                              }}
+                              className="text-purple-600"
+                            >
+                              <Users className="h-4 w-4 mr-2" />
+                              Onboard Candidate
+                            </DropdownMenuItem>
                               
                               {nextStage && candidate.feedback && candidate.rating && (
                                 <>
@@ -1533,7 +1503,6 @@ const StageCandidatesContent = ({
                                         toast.success(`${candidate.applicant_name} moved to ${nextStage.name}`);
                                         await refreshStageData();
                                       } catch (error) {
-                                        console.error('Failed to move candidate:', error);
                                         toast.error(`Failed to move ${candidate.applicant_name}`);
                                       }
                                     }}
@@ -1552,7 +1521,6 @@ const StageCandidatesContent = ({
                                     toast.success(`${candidate.applicant_name} rejected`);
                                     await refreshStageData();
                                   } catch (error) {
-                                    console.error('Failed to reject candidate:', error);
                                     toast.error(`Failed to reject ${candidate.applicant_name}`);
                                   }
                                 }}

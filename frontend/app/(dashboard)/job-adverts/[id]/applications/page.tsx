@@ -257,23 +257,28 @@ export default function JobAdvertApplicationsPage() {
 
   return (
     <div className="w-full h-full p-6">
-      <div className="w-full max-w-7xl mx-auto space-y-6">
+      <div className="w-full space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Job Advert
-            </Button>
+      <div className="space-y-4">
+            {/* Back button on top */}
             <div>
-              <h1 className="text-2xl font-bold">Applications</h1>
-              <p className="text-muted-foreground">
-                {jobAdvert?.job_position_details?.name || `Job Advert #${jobAdvertId}`} • {applications.length} total
-                applications
-              </p>
+              <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Job Advert
+              </Button>
+            </div>
+            
+            {/* Header content below */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold">Applications</h1>
+                <p className="text-muted-foreground">
+                  {jobAdvert?.job_position_details?.name || `Job Advert #${jobAdvertId}`} • {applications.length} total
+                  applications
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Filters and Search */}
         <div className="flex flex-col sm:flex-row gap-4">

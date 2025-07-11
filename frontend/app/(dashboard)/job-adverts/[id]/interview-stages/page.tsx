@@ -23,6 +23,7 @@ import type { JobPositionAdvert, IInterviewStage, IInterviewStageFormData, IEmpl
 import { getJobPositionAdvertById, createInterviewStage, fetchEmployees } from "@/lib/utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { toast } from "sonner"
+import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"
 
 interface InterviewStagePageProps {
   params: Promise<{
@@ -85,6 +86,8 @@ const getStageColors = (index: number) => {
   
   return colors[index % colors.length]
 }
+
+
 
 // Loading component
 const LoadingState = () => (
@@ -178,15 +181,13 @@ const InterviewStagesContent = ({
   useEffect(() => {
     if (isCreateStageDialogOpen && selectedInstitution) {
       fetchEmployeesList()
-      
-      // Auto-fill the next level based on existing stages
       const existingStages = jobPositionAdvert.interview_stages as unknown as IInterviewStage[]
       if (existingStages && existingStages.length > 0) {
         const maxLevel = Math.max(...existingStages.map(stage => stage.level))
         const nextLevel = maxLevel + 1
         setStageFormData(prev => ({ ...prev, level: nextLevel }))
       } else {
-        // If no stages exist, start with level 1
+
         setStageFormData(prev => ({ ...prev, level: 1 }))
       }
     }
@@ -201,7 +202,6 @@ const InterviewStagesContent = ({
         setEmployees(fetchedEmployees)
       }
     } catch (error) {
-      console.error("Error fetching employees:", error)
       toast.error("Failed to load employees")
     }
   }
@@ -263,7 +263,6 @@ const InterviewStagesContent = ({
         toast.error("Failed to create interview stage")
       }
     } catch (error) {
-      console.error("Error creating interview stage:", error)
       toast.error("Failed to create interview stage")
     } finally {
       setIsCreatingStage(false)
@@ -325,30 +324,21 @@ const InterviewStagesContent = ({
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="stage_interviewer">Interviewer *</Label>
-                  <Select
-                    value={stageFormData.interviewer.toString()}
-                    onValueChange={(value) => updateStageFormData("interviewer", Number(value))}
-                  >
-                    <SelectTrigger className={stageErrors.interviewer ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select interviewer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.map((employee) => (
-                        <SelectItem key={employee.id} value={employee.id.toString()}>
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4" />
-                            {employee.user.fullname}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {stageErrors.interviewer && (
-                    <p className="text-sm text-destructive">{stageErrors.interviewer}</p>
-                  )}
-                </div>
+               <div className="space-y-2">
+                <Label htmlFor="stage_interviewer">Interviewer *</Label>
+                <EmployeeSearchableSelect
+                  employees={employees as any}  
+                  value={stageFormData.interviewer === 0 ? undefined : stageFormData.interviewer.toString()}
+                  onValueChange={(value) => updateStageFormData("interviewer", Number(value))}
+                  disabled={isCreatingStage}
+                  placeholder="Search and select interviewer"
+                  showEmployeeId={false}
+                  showDepartment={false}
+                />
+                {stageErrors.interviewer && (
+                  <p className="text-sm text-destructive">{stageErrors.interviewer}</p>
+                )}
+              </div> 
 
                 <div className="flex justify-end gap-2 pt-4">
                   <Button
@@ -387,7 +377,7 @@ const InterviewStagesContent = ({
   const interviewStages = jobPositionAdvert.interview_stages as unknown as IInterviewStage[]
   
   const processedStages: ProcessedStage[] = interviewStages
-    .sort((a, b) => a.level - b.level) // Sort by level
+    .sort((a, b) => a.level - b.level) 
     .map((stage, index) => {
       const colors = getStageColors(index)
       
@@ -476,24 +466,15 @@ const InterviewStagesContent = ({
 
                     <div className="space-y-2">
                       <Label htmlFor="stage_interviewer">Interviewer *</Label>
-                      <Select
-                        value={stageFormData.interviewer.toString()}
+                      <EmployeeSearchableSelect
+                        employees={employees as any }
+                        value={stageFormData.interviewer === 0 ? undefined : stageFormData.interviewer.toString()}
                         onValueChange={(value) => updateStageFormData("interviewer", Number(value))}
-                      >
-                        <SelectTrigger className={stageErrors.interviewer ? "border-destructive" : ""}>
-                          <SelectValue placeholder="Select interviewer" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {employees.map((employee) => (
-                            <SelectItem key={employee.id} value={employee.id.toString()}>
-                              <div className="flex items-center gap-2">
-                                <User className="h-4 w-4" />
-                                {employee.user.fullname}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        disabled={isCreatingStage}
+                        placeholder="Search and select interviewer"
+                        showEmployeeId={false}
+                        showDepartment={false}
+                      />
                       {stageErrors.interviewer && (
                         <p className="text-sm text-destructive">{stageErrors.interviewer}</p>
                       )}
@@ -678,11 +659,7 @@ export default function InterviewStagesPage({ params }: InterviewStagePageProps)
       setLoading(true)
       setError(null)
       
-      console.log('Fetching job position advert with ID:', resolvedParams.id)
-      
       const data = await getJobPositionAdvertById({ advertId: parseInt(resolvedParams.id) })
-      
-      console.log('Received data:', data)
       
       if (!data) {
         throw new Error('No data returned from API')
@@ -690,7 +667,6 @@ export default function InterviewStagesPage({ params }: InterviewStagePageProps)
       
       setJobPositionAdvert(data as JobPositionAdvert)
     } catch (err) {
-      console.error('Error fetching job position advert:', err)
       setError(`Failed to load interview stages: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setLoading(false)

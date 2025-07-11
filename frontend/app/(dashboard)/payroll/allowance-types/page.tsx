@@ -24,7 +24,7 @@ import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/a
 import { IUserInstitution } from "@/app/types"
 import { useSelector } from "react-redux"
 
-const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institutionId?: number }) => {
+const AllowanceTypesComponent = () => {
   const [allowanceTypes, setAllowanceTypes] = useState<IAllowanceType[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -33,7 +33,6 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
   const [deletingAllowanceType, setDeletingAllowanceType] = useState<IAllowanceType | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [institutionId, setInstitutionId] = useState<number | null>(propInstitutionId || null)
   
   // Redux selectors
   const selectedInstitution = useSelector(selectSelectedInstitution)
@@ -56,27 +55,16 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
     })
   }
 
-  // Set institution ID from Redux state or prop
-  useEffect(() => {
-    if (propInstitutionId) {
-      setInstitutionId(propInstitutionId)
-    } else if (selectedInstitution?.id) {
-      setInstitutionId(selectedInstitution.id)
-    } else if (institutionsAttached && institutionsAttached.length > 0) {
-      setInstitutionId(institutionsAttached[0].id)
-    }
-  }, [propInstitutionId, institutionsAttached, selectedInstitution])
-
   // Load allowance types when institution ID is available
   useEffect(() => {
     const fetchAllowanceTypes = async () => {
-      if (!institutionId) {
+      if (!selectedInstitution?.id) {
         return
       }
       
       setIsLoading(true)
       try {
-        const types = await getAllowanceTypes(institutionId)
+        const types = await getAllowanceTypes(selectedInstitution?.id)
         setAllowanceTypes(types || [])
         
         if (!types || types.length === 0) {
@@ -92,7 +80,7 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
     }
     
     fetchAllowanceTypes()
-  }, [institutionId])
+  }, [selectedInstitution])
 
   const handleAddAllowanceType = async () => {
     if (!formData.name || !formData.description) {
@@ -100,7 +88,7 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
       return
     }
 
-    if (!institutionId) {
+    if (!selectedInstitution) {
       toast.error("Institution ID is required")
       return
     }
@@ -115,7 +103,7 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
       }
 
       const newAllowanceType = await createAllowanceType({
-        institutionId,
+        institutionId: selectedInstitution?.id,
         allowanceTypeData,
       })
 
@@ -217,7 +205,7 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
   }
 
   // Show loading if no institution ID is set
-  if (isLoading && !institutionId) {
+  if (isLoading && !selectedInstitution?.id) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4 text-center">
@@ -252,7 +240,7 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
               <DialogTrigger asChild>
                 <Button 
                   className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 px-4 py-2 rounded-lg font-medium"
-                  disabled={!institutionId}
+                  disabled={!selectedInstitution?.id}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Allowance Type
@@ -482,7 +470,7 @@ const AllowanceTypesComponent = ({ institutionId: propInstitutionId }: { institu
                   <Button
                     onClick={() => setIsAddDialogOpen(true)}
                     className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 px-6 py-2 rounded-lg font-medium"
-                    disabled={!institutionId}
+                    disabled={!selectedInstitution?.id}
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Create Your First Allowance Type

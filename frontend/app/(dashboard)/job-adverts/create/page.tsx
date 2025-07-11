@@ -164,7 +164,7 @@ export default function CreateJobAdvertPage() {
 
   return (
     <div className="w-full h-full p-6">
-      <div className="w-full max-w-6xl mx-auto space-y-6">
+      <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
@@ -266,27 +266,6 @@ export default function CreateJobAdvertPage() {
                   onChange={(e) => updateFormData("extra_information", e.target.value)}
                   rows={4}
                 />
-              </div>
-
-              {/* Organization Info Display */}
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <h4 className="font-medium text-sm mb-3">Job advert will be created for:</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium text-foreground">Organization:</span>{" "}
-                      {selectedInstitution.institution_name}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Branch:</span> {selectedBranch.branch_name}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium text-foreground">Institution :</span> {selectedInstitution.institution_name}
-                    </p>
-                  </div>
-                </div>
               </div>
 
               {/* Form Actions */}

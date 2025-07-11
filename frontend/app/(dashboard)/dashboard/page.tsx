@@ -1,6 +1,6 @@
 "use client";
 
-import {SetStateAction, useEffect, useState} from "react";
+import {SetStateAction, useEffect, useState, useMemo} from "react";
 import {
   Users,
   UserCheck,
@@ -14,13 +14,179 @@ import {
   Building,
   GraduationCap,
   Heart,
-  MapPin
+  MapPin,
+  Bell,
+  FileText,
+  Plus,
+  Download,
+  Eye,
+  Send,
+  UserPlus,
+  BarChart3,
+  PieChart,
+  Target,
+  Globe,
+  BookOpen,
+  Zap,
+  Star,
+  Briefcase,
+  Settings,
+  CheckCircle2,
+  XCircle,
+  Megaphone
 } from "lucide-react";
 
 // HR Dashboard Components
 import { useSelector } from "react-redux";
-import { selectUser } from "@/store/auth/selectors";
+import { selectUser, selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
+import { 
+  getAllEmployees, 
+  getLeaveApplications, 
+  getJobPositionAdverts, 
+  getInterviews,
+  getLeaveTypes,
+  getLeavePolicies,
+  getDepartments 
+} from "@/lib/utils";
+import { IUserInstitution } from "@/app/types";
 import EmployeeAttendance from "./EmployeeAttendance";
+
+// Interface for employee data from API
+interface EmployeeFromAPI {
+  id: number
+  user: {
+    id: number
+    email: string
+    fullname: string
+    is_active: boolean
+    is_email_verified: boolean
+    is_password_verified: boolean
+    is_staff: boolean
+    roles: string
+    branches: string
+    permissions: string
+  } | null
+  email: string
+  phone_number: string
+  position: {
+    id: number
+    name: string
+    department_id?: number
+  }
+  department: {
+    id: number
+    name: string
+    institution_id: number
+  }
+  roles: Array<{
+    id: number
+    name: string
+  }>
+  date_of_birth: string
+  date_of_joining: string
+  address: string
+  is_active: boolean
+  experience: number
+  qualifications: string
+  skills: string
+  emergency_contact_name: string
+  emergency_contact_phone: string
+  emergency_contact_relationship: string
+  marital_status: string
+  children_count: number
+  employee_profile_picture: string
+  created_at: string
+  updated_at: string
+}
+
+// Interface for leave applications
+interface LeaveApplication {
+  id: string | number;
+  employee: {
+    id: string;
+    user: {
+      fullname: string;
+      email: string;
+    };
+    employee_id: string;
+  };
+  leave_type: {
+    id: string | number;
+    name: string;
+    category: string;
+  };
+  start_date: string;
+  end_date: string;
+  duration_type?: string;
+  reason: string;
+  handover_notes?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  approved_by?: {
+    id: string;
+    fullname: string;
+  };
+  approved_at?: string;
+  rejection_reason?: string;
+  total_days?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Interface for job adverts
+interface JobAdvert {
+  id: number;
+  job_position_details?: {
+    name: string;
+  };
+  status: 'active' | 'archived' | 'expired' | 'closed';
+  expiry_date: string;
+  published_date: string;
+  number_of_employees_expected?: number;
+  extra_information?: string;
+}
+
+
+interface Interview {
+  id: number;
+  status: 'completed' | 'scheduled' | 'cancelled';
+  interview_date: string;
+  rating?: number;
+  job_position_application_details?: {
+    id: number;
+    applicant_name: string;
+    applicant_email: string;
+    applicant_phone: string;
+  };
+  interview_stage_details?: {
+    name: string;
+  };
+}
+
+
+interface LeaveType {
+  id: number;
+  name: string;
+  category: string;
+  max_days_per_year: number;
+  is_active: boolean;
+}
+
+
+interface Department {
+  id: number;
+  name: string;
+  description?: string;
+  institution_id: number;
+}
+
+
+interface LeavePolicy {
+  id: number;
+  name: string;
+  is_active: boolean;
+  requires_manager_approval: boolean;
+  requires_hr_approval: boolean;
+}
 
 const WelcomeCard = () => {
   const userData = useSelector(selectUser);
@@ -48,61 +214,140 @@ const WelcomeCard = () => {
   );
 };
 
-const StatsCards = ({ departmentId }: { departmentId: string }) => {
-  const [stats, setStats] = useState({
-    totalEmployees: 247,
-    activeEmployees: 238,
-    newHires: 12,
-    turnoverRate: 8.5,
-    avgSalary: 65000,
-    pendingLeaves: 15,
-    openPositions: 8,
-    satisfactionScore: 4.2
-  });
+const StatsCards = ({ 
+  departmentId, 
+  employees, 
+  leaveApplications,
+  jobAdverts,
+  interviews,
+  leaveTypes,
+  leavePolicies,
+  departments
+}: { 
+  departmentId: string; 
+  employees: EmployeeFromAPI[]; 
+  leaveApplications: LeaveApplication[];
+  jobAdverts: JobAdvert[];
+  interviews: Interview[];
+  leaveTypes: LeaveType[];
+  leavePolicies: LeavePolicy[];
+  departments: Department[];
+}) => {
+  // Fixed filtering logic - filter employees first
+  const filteredEmployees = useMemo(() => {
+    if (departmentId === "all") {
+      return employees;
+    }
+    // Filter by department name matching the selected department
+    return employees.filter(emp => 
+      emp.department?.name?.toLowerCase() === departmentId.toLowerCase()
+    );
+  }, [employees, departmentId]);
+
+  // Calculate stats from filtered employees and related data
+  const stats = useMemo(() => {
+    const totalEmployees = filteredEmployees.length;
+    const activeEmployees = filteredEmployees.filter(emp => emp.is_active).length;
+    
+    // Calculate new hires from filtered employees (joined in current month)
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const newHires = filteredEmployees.filter(emp => {
+      const joinDate = new Date(emp.date_of_joining);
+      return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear;
+    }).length;
+    
+    // Calculate turnover rate (rough estimate)
+    const turnoverRate = 8.5; // This would need historical data
+    
+    // Calculate average salary from filtered employees
+    const avgSalary = filteredEmployees.length > 0 
+      ? filteredEmployees.reduce((sum, emp) => {
+          const baseSalary = 40000 + (emp.experience || 0) * 5000;
+          return sum + baseSalary;
+        }, 0) / filteredEmployees.length
+      : 65000;
+    
+    // For leave applications - filter by department employees if not "all"
+    const departmentEmployeeIds = new Set(filteredEmployees.map(emp => emp.id.toString()));
+    
+    const relevantLeaveApplications = departmentId === "all" 
+      ? leaveApplications 
+      : leaveApplications.filter(app => departmentEmployeeIds.has(app.employee.id));
+    
+    const pendingLeaves = relevantLeaveApplications.filter(app => app.status === 'pending').length;
+    
+    // For job adverts and interviews, these are usually organization-wide
+    const openPositions = jobAdverts.filter(advert => advert.status === 'active').length;
+    const satisfactionScore = 4.2; // Static for now
+    const completedInterviews = interviews.filter(interview => interview.status === 'completed').length;
+    
+    const ratedInterviews = interviews.filter(interview => interview.rating);
+    const avgInterviewRating = ratedInterviews.length > 0 
+      ? ratedInterviews.reduce((sum, interview) => sum + (interview.rating || 0), 0) / ratedInterviews.length 
+      : 0;
+    
+    const activeLeaveTypes = leaveTypes.filter(type => type.is_active).length;
+    const activePolicies = leavePolicies.filter(policy => policy.is_active).length;
+    const scheduledInterviews = interviews.filter(interview => interview.status === 'scheduled').length;
+    const departmentsCount = departments.length;
+    
+    const departmentsWithEmployees = new Set(employees.map(emp => emp.department?.name).filter(Boolean)).size;
+    const departmentUtilization = departmentsCount > 0 ? Math.round((departmentsWithEmployees / departmentsCount) * 100) : 0;
+    
+    const hrApprovalPolicies = leavePolicies.filter(policy => policy.requires_hr_approval).length;
+    
+    return {
+      totalEmployees,
+      activeEmployees,
+      newHires,
+      turnoverRate,
+      avgSalary: Math.round(avgSalary),
+      pendingLeaves,
+      openPositions,
+      satisfactionScore,
+      completedInterviews,
+      avgInterviewRating: Number(avgInterviewRating.toFixed(1)),
+      activeLeaveTypes,
+      activePolicies,
+      scheduledInterviews,
+      departmentsCount,
+      departmentUtilization,
+      hrApprovalPolicies
+    };
+  }, [filteredEmployees, leaveApplications, jobAdverts, interviews, leaveTypes, leavePolicies, departments, departmentId, employees]);
 
   const statsData = [
     {
       title: "Total Employees",
+      subtitle: departmentId === "all" ? "Current workforce count" : `In ${departmentId}`,
       value: stats.totalEmployees,
-      change: "+12 this month",
+      change: `+${stats.newHires} this month`,
       icon: Users,
       color: "bg-blue-50 text-blue-600",
       trend: "up"
     },
     {
       title: "Active Employees",
+      subtitle: "Currently active workforce",
       value: stats.activeEmployees,
-      change: "96.4% active",
+      change: stats.totalEmployees > 0 ? `${((stats.activeEmployees / stats.totalEmployees) * 100).toFixed(1)}% active` : "0% active",
       icon: UserCheck,
       color: "bg-green-50 text-green-600",
       trend: "up"
     },
     {
-      title: "New Hires",
-      value: stats.newHires,
-      change: "This month",
-      icon: TrendingUp,
-      color: "bg-purple-50 text-purple-600",
-      trend: "up"
-    },
-    {
-      title: "Turnover Rate",
-      value: `${stats.turnoverRate}%`,
-      change: "-2.1% from last quarter",
-      icon: UserX,
+      title: "Open Positions",
+      subtitle: "Active job postings",
+      value: stats.openPositions,
+      change: "Actively recruiting",
+      icon: Briefcase,
       color: "bg-orange-50 text-orange-600",
-      trend: "down"
-    },
-    {
-      title: "Avg. Salary",
-      value: `$${stats.avgSalary.toLocaleString()}`,
-      change: "+5.2% YoY",
-      icon: DollarSign,
-      color: "bg-emerald-50 text-emerald-600",
-      trend: "up"
+      trend: "neutral"
     },
     {
       title: "Pending Leaves",
+      subtitle: departmentId === "all" ? "Awaiting approval" : `From ${departmentId}`,
       value: stats.pendingLeaves,
       change: "Requires approval",
       icon: Calendar,
@@ -110,15 +355,71 @@ const StatsCards = ({ departmentId }: { departmentId: string }) => {
       trend: "neutral"
     },
     {
-      title: "Open Positions",
-      value: stats.openPositions,
-      change: "Actively recruiting",
-      icon: AlertTriangle,
-      color: "bg-red-50 text-red-600",
+      title: "Completed Interviews",
+      subtitle: "This period",
+      value: stats.completedInterviews,
+      change: `${stats.scheduledInterviews} scheduled`,
+      icon: Users,
+      color: "bg-purple-50 text-purple-600",
+      trend: "up"
+    },
+    {
+      title: "Interview Rating",
+      subtitle: "Average candidate rating",
+      value: `${stats.avgInterviewRating}/10`,
+      change: "Overall performance",
+      icon: Star,
+      color: "bg-yellow-50 text-yellow-600",
+      trend: "up"
+    },
+    {
+      title: "Leave Types",
+      subtitle: "Active leave categories",
+      value: stats.activeLeaveTypes,
+      change: "Available options",
+      icon: FileText,
+      color: "bg-indigo-50 text-indigo-600",
       trend: "neutral"
     },
     {
+      title: "Leave Policies",
+      subtitle: "Active policies",
+      value: stats.activePolicies,
+      change: `${stats.hrApprovalPolicies} require HR`,
+      icon: Settings,
+      color: "bg-gray-50 text-gray-600",
+      trend: "neutral"
+    },
+    {
+      title: "Departments",
+      subtitle: "Total organizational units",
+      value: stats.departmentsCount,
+      change: `${stats.departmentUtilization}% have employees`,
+      icon: Building,
+      color: "bg-blue-50 text-blue-600",
+      trend: "neutral"
+    },
+    {
+      title: "Avg. Salary",
+      subtitle: departmentId === "all" ? "Estimated average" : `In ${departmentId}`,
+      value: `$${stats.avgSalary.toLocaleString()}`,
+      change: "+5.2% YoY",
+      icon: DollarSign,
+      color: "bg-emerald-50 text-emerald-600",
+      trend: "up"
+    },
+    {
+      title: "Turnover Rate",
+      subtitle: "Quarterly rate",
+      value: `${stats.turnoverRate}%`,
+      change: "-2.1% from last quarter",
+      icon: UserX,
+      color: "bg-red-50 text-red-600",
+      trend: "down"
+    },
+    {
       title: "Satisfaction Score",
+      subtitle: "Employee happiness",
       value: `${stats.satisfactionScore}/5`,
       change: "+0.3 from last survey",
       icon: Heart,
@@ -128,110 +429,276 @@ const StatsCards = ({ departmentId }: { departmentId: string }) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
       {statsData.map((stat, index) => (
-        <div key={index} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <div className={`p-3 rounded-lg ${stat.color}`}>
-              <stat.icon className="h-6 w-6" />
+        <div key={index} className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+          <div className="flex items-start gap-3">
+            <div className={`p-2 rounded-lg ${stat.color} shrink-0`}>
+              <stat.icon className="h-5 w-5" />
             </div>
-            <div className={`text-sm font-medium ${
-              stat.trend === 'up' ? 'text-green-600' : 
-              stat.trend === 'down' ? 'text-red-600' : 'text-gray-500'
-            }`}>
-              {stat.trend === 'up' ? '↗' : stat.trend === 'down' ? '↘' : '→'}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-lg font-bold text-gray-900 leading-tight">{stat.value}</h3>
+                <div className={`text-xs font-medium ${
+                  stat.trend === 'up' ? 'text-green-600' : 
+                  stat.trend === 'down' ? 'text-red-600' : 'text-gray-500'
+                }`}>
+                  {stat.trend === 'up' ? '↗' : stat.trend === 'down' ? '↘' : '→'}
+                </div>
+              </div>
+              <p className="text-sm font-medium text-gray-700 mb-1 leading-tight">{stat.title}</p>
+              <p className="text-xs text-gray-500 mb-1 leading-tight">{stat.subtitle}</p>
+              <p className="text-xs text-gray-400 leading-tight">{stat.change}</p>
             </div>
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
-          <p className="text-sm text-gray-600 mb-1">{stat.title}</p>
-          <p className="text-xs text-gray-500">{stat.change}</p>
         </div>
       ))}
     </div>
   );
 };
 
-const EmployeeDistribution = () => {
-  const departments = [
-    { name: "Engineering", count: 78, percentage: 31.6, color: "bg-blue-500" },
-    { name: "Sales", count: 45, percentage: 18.2, color: "bg-green-500" },
-    { name: "Marketing", count: 32, percentage: 13.0, color: "bg-purple-500" },
-    { name: "HR", count: 18, percentage: 7.3, color: "bg-pink-500" },
-    { name: "Finance", count: 22, percentage: 8.9, color: "bg-yellow-500" },
-    { name: "Operations", count: 28, percentage: 11.3, color: "bg-indigo-500" },
-    { name: "Legal", count: 8, percentage: 3.2, color: "bg-gray-500" },
-    { name: "Others", count: 16, percentage: 6.5, color: "bg-orange-500" }
-  ];
+const WorkforceOverview = ({ employees, departments, departmentId }: { 
+  employees: EmployeeFromAPI[]; 
+  departments: Department[];
+  departmentId: string;
+}) => {
+  // Filter employees based on selected department
+  const filteredEmployees = useMemo(() => {
+    if (departmentId === "all") {
+      return employees;
+    }
+    return employees.filter(emp => 
+      emp.department?.name?.toLowerCase() === departmentId.toLowerCase()
+    );
+  }, [employees, departmentId]);
+
+  // Calculate department distribution from filtered data
+  const departmentData = useMemo(() => {
+    const deptCounts = filteredEmployees.reduce((acc, emp) => {
+      const deptName = emp.department?.name || 'Unassigned';
+      acc[deptName] = (acc[deptName] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const total = filteredEmployees.length;
+    
+    const relevantDepartments = departmentId === "all" 
+      ? new Set([...departments.map(dept => dept.name), ...Object.keys(deptCounts)])
+      : new Set([departmentId, ...Object.keys(deptCounts)]);
+    
+    return Array.from(relevantDepartments).map((name, index) => ({
+      name,
+      count: deptCounts[name] || 0,
+      percentage: total > 0 ? Number(((deptCounts[name] || 0) / total) * 100).toFixed(1) : "0",
+      color: [
+        "bg-blue-500", "bg-green-500", "bg-purple-500", "bg-pink-500",
+        "bg-yellow-500", "bg-indigo-500", "bg-gray-500", "bg-orange-500",
+        "bg-red-500", "bg-teal-500", "bg-cyan-500", "bg-emerald-500"
+      ][index % 12],
+      isEmpty: (deptCounts[name] || 0) === 0
+    })).sort((a, b) => b.count - a.count);
+  }, [filteredEmployees, departments, departmentId]);
+
+  // Calculate job levels based on experience from filtered employees
+  const jobLevels = useMemo(() => {
+    const levelCounts = filteredEmployees.reduce((acc, emp) => {
+      const experience = emp.experience || 0;
+      let level = 'Junior';
+      if (experience >= 8) level = 'Executive';
+      else if (experience >= 5) level = 'Senior';
+      else if (experience >= 2) level = 'Mid-Level';
+      
+      acc[level] = (acc[level] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const total = filteredEmployees.length;
+    const levels = ['Junior', 'Mid-Level', 'Senior', 'Executive'];
+    const colors = ["bg-green-400", "bg-blue-400", "bg-purple-400", "bg-red-400"];
+    
+    return levels.map((level, index) => ({
+      level,
+      count: levelCounts[level] || 0,
+      percentage: total > 0 ? Math.round(((levelCounts[level] || 0) / total) * 100) : 0,
+      color: colors[index]
+    }));
+  }, [filteredEmployees]);
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Employee Distribution by Department</h3>
-      <div className="space-y-4">
-        {departments.map((dept, index) => (
-          <div key={index} className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${dept.color}`}></div>
-              <span className="text-sm font-medium text-gray-700">{dept.name}</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex-1 w-24 bg-gray-200 rounded-full h-2">
-                <div 
-                  className={`h-2 rounded-full ${dept.color}`}
-                  style={{ width: `${dept.percentage}%` }}
-                ></div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+          <BarChart3 className="h-5 w-5" />
+          Employee Distribution by Department
+          {departmentId !== "all" && (
+            <span className="text-sm font-normal text-gray-500">({departmentId})</span>
+          )}
+        </h3>
+        <div className="space-y-4">
+          {departmentData.map((dept, index) => (
+            <div key={index} className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${dept.color} ${dept.isEmpty ? 'opacity-30' : ''}`}></div>
+                <span className={`text-sm font-medium ${dept.isEmpty ? 'text-gray-400' : 'text-gray-700'}`}>
+                  {dept.name} {dept.isEmpty && '(Empty)'}
+                </span>
               </div>
-              <span className="text-sm text-gray-600 w-12 text-right">{dept.count}</span>
-              <span className="text-xs text-gray-500 w-12 text-right">{dept.percentage}%</span>
+              <div className="flex items-center gap-4">
+                <div className="flex-1 w-24 bg-gray-200 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full ${dept.color} ${dept.isEmpty ? 'opacity-30' : ''}`}
+                    style={{ width: `${dept.percentage}%` }}
+                  ></div>
+                </div>
+                <span className={`text-sm w-12 text-right ${dept.isEmpty ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {dept.count}
+                </span>
+                <span className={`text-xs w-12 text-right ${dept.isEmpty ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {dept.percentage}%
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+          <PieChart className="h-5 w-5" />
+          Employee Distribution by Experience Level
+          {departmentId !== "all" && (
+            <span className="text-sm font-normal text-gray-500">({departmentId})</span>
+          )}
+        </h3>
+        <div className="space-y-4">
+          {jobLevels.map((level, index) => (
+            <div key={index} className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${level.color}`}></div>
+                <span className="text-sm font-medium text-gray-700">{level.level}</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex-1 w-24 bg-gray-200 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full ${level.color}`}
+                    style={{ width: `${level.percentage}%` }}
+                  ></div>
+                </div>
+                <span className="text-sm text-gray-600 w-12 text-right">{level.count}</span>
+                <span className="text-xs text-gray-500 w-12 text-right">{level.percentage}%</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 };
 
-const RecentActivities = () => {
-  const activities = [
-    {
-      type: "hire",
-      message: "John Smith joined Engineering team",
-      time: "2 hours ago",
-      icon: UserCheck,
-      color: "text-green-600"
-    },
-    {
-      type: "leave",
-      message: "Sarah Johnson submitted vacation request",
-      time: "4 hours ago",
-      icon: Calendar,
-      color: "text-blue-600"
-    },
-    {
-      type: "performance",
-      message: "Q1 performance reviews completed",
-      time: "1 day ago",
-      icon: Award,
-      color: "text-purple-600"
-    },
-    {
-      type: "training",
-      message: "5 employees completed safety training",
-      time: "2 days ago",
-      icon: GraduationCap,
-      color: "text-orange-600"
-    },
-    {
-      type: "alert",
-      message: "Contract renewal due for 3 employees",
-      time: "3 days ago",
-      icon: AlertTriangle,
-      color: "text-red-600"
+
+
+const RecentActivities = ({ 
+  employees, 
+  leaveApplications,
+  interviews 
+}: { 
+  employees: EmployeeFromAPI[]; 
+  leaveApplications: LeaveApplication[];
+  interviews: Interview[];
+}) => {
+  const activities = useMemo(() => {
+    const recentActivities: Array<{
+      type: string;
+      message: string;
+      time: string;
+      icon: any;
+      color: string;
+    }> = [];
+
+    // Add recent hires (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const recentHires = employees.filter(emp => {
+      const joinDate = new Date(emp.date_of_joining);
+      return joinDate > sevenDaysAgo;
+    }).slice(0, 2);
+
+    recentHires.forEach(emp => {
+      const daysAgo = Math.floor((Date.now() - new Date(emp.date_of_joining).getTime()) / (1000 * 60 * 60 * 24));
+      recentActivities.push({
+        type: "hire",
+        message: `${(emp.user as any)?.fullname || emp.email} joined ${emp.department?.name || 'the company'}`,
+        time: daysAgo === 0 ? "Today" : daysAgo === 1 ? "1 day ago" : `${daysAgo} days ago`,
+        icon: UserCheck,
+        color: "text-green-600"
+      });
+    });
+
+    // Add recent leave applications
+    const recentLeaveApps = leaveApplications
+      .filter(app => app.created_at && new Date(app.created_at) > sevenDaysAgo)
+      .slice(0, 2);
+
+    recentLeaveApps.forEach(app => {
+      const daysAgo = app.created_at ? Math.floor((Date.now() - new Date(app.created_at).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+      recentActivities.push({
+        type: "leave",
+        message: `${(app.employee as any)?.user?.fullname || 'Employee'} submitted ${(app.leave_type as any)?.name || 'leave'} request`,
+        time: daysAgo === 0 ? "Today" : daysAgo === 1 ? "1 day ago" : `${daysAgo} days ago`,
+        icon: Calendar,
+        color: "text-blue-600"
+      });
+    });
+
+    // Add recent interviews
+    const recentInterviews = interviews
+      .filter(interview => {
+        const interviewDate = new Date(interview.interview_date);
+        return interviewDate > sevenDaysAgo;
+      })
+      .slice(0, 2);
+
+    recentInterviews.forEach(interview => {
+      const daysAgo = Math.floor((Date.now() - new Date(interview.interview_date).getTime()) / (1000 * 60 * 60 * 24));
+      recentActivities.push({
+        type: "interview",
+        message: `Interview ${interview.status} for ${interview.job_position_application_details?.applicant_name || 'candidate'}`,
+        time: daysAgo === 0 ? "Today" : daysAgo === 1 ? "1 day ago" : `${daysAgo} days ago`,
+        icon: Users,
+        color: interview.status === 'completed' ? "text-green-600" : "text-blue-600"
+      });
+    });
+
+    // Add fallback activities if no recent data
+    if (recentActivities.length === 0) {
+      recentActivities.push(
+        {
+          type: "system",
+          message: "Dashboard data refreshed",
+          time: "Just now",
+          icon: Award,
+          color: "text-blue-600"
+        },
+        {
+          type: "info",
+          message: "No recent activities found",
+          time: "Today",
+          icon: Clock,
+          color: "text-gray-600"
+        }
+      );
     }
-  ];
+
+    return recentActivities.slice(0, 5);
+  }, [employees, leaveApplications, interviews]);
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Recent Activities</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+        <Clock className="h-5 w-5" />
+        Recent Activities
+      </h3>
       <div className="space-y-4">
         {activities.map((activity, index) => (
           <div key={index} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
@@ -249,32 +716,63 @@ const RecentActivities = () => {
   );
 };
 
+const QuickActions = () => {
+  const actions = [
+    { title: "Add New Employee", icon: UserPlus, color: "bg-blue-500 hover:bg-blue-600" },
+    { title: "Approve Leave Requests", icon: Calendar, color: "bg-green-500 hover:bg-green-600" },
+    { title: "Schedule Interview", icon: Clock, color: "bg-orange-500 hover:bg-orange-600" },
+    { title: "Post Job Advert", icon: Megaphone, color: "bg-purple-500 hover:bg-purple-600" },
+    { title: "View Reports", icon: BarChart3, color: "bg-indigo-500 hover:bg-indigo-600" },
+    { title: "Manage Policies", icon: Settings, color: "bg-gray-500 hover:bg-gray-600" }
+  ];
+
+  return (
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+      <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+        <Zap className="h-5 w-5" />
+        Quick Actions
+      </h3>
+      <div className="grid grid-cols-2 gap-3">
+        {actions.map((action, index) => (
+          <button
+            key={index}
+            className={`${action.color} text-white p-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 hover:transform hover:scale-105 hover:shadow-lg`}
+          >
+            <action.icon className="h-4 w-4" />
+            <span className="hidden lg:inline">{action.title}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const UpcomingEvents = () => {
   const events = [
     {
       title: "Team Building Workshop",
-      date: "Jun 22, 2025",
+      date: "Jul 22, 2025",
       time: "10:00 AM",
       attendees: 25,
       type: "Workshop"
     },
     {
       title: "Monthly All-Hands Meeting",
-      date: "Jun 28, 2025",
+      date: "Jul 28, 2025", 
       time: "2:00 PM",
       attendees: 247,
       type: "Meeting"
     },
     {
       title: "New Employee Orientation",
-      date: "Jul 1, 2025",
+      date: "Aug 1, 2025",
       time: "9:00 AM",
       attendees: 8,
       type: "Training"
     },
     {
       title: "Performance Review Deadline",
-      date: "Jul 5, 2025",
+      date: "Aug 5, 2025",
       time: "End of Day",
       attendees: 45,
       type: "Deadline"
@@ -293,7 +791,10 @@ const UpcomingEvents = () => {
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Upcoming Events</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+        <Calendar className="h-5 w-5" />
+        Upcoming Events
+      </h3>
       <div className="space-y-4">
         {events.map((event, index) => (
           <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
@@ -324,26 +825,88 @@ const UpcomingEvents = () => {
   );
 };
 
-const QuickActions = () => {
-  const actions = [
-    { title: "Add New Employee", icon: Users, color: "bg-blue-500 hover:bg-blue-600" },
-    { title: "Approve Leave Requests", icon: Calendar, color: "bg-green-500 hover:bg-green-600" },
-    { title: "View Reports", icon: TrendingUp, color: "bg-purple-500 hover:bg-purple-600" },
-    { title: "Schedule Interview", icon: Clock, color: "bg-orange-500 hover:bg-orange-600" }
-  ];
+const NotificationsPanel = ({ leaveApplications, interviews }: { leaveApplications: LeaveApplication[]; interviews: Interview[] }) => {
+  const notifications = useMemo(() => {
+    const notifs = [];
+    
+    // Pending leave requests
+    const pendingLeaves = leaveApplications.filter(app => app.status === 'pending').length;
+    if (pendingLeaves > 0) {
+      notifs.push({
+        type: "leave",
+        message: `${pendingLeaves} leave ${pendingLeaves === 1 ? 'request' : 'requests'} awaiting approval`,
+        icon: "📅",
+        color: "text-orange-600",
+        urgent: true
+      });
+    }
+    
+    // Scheduled interviews today/tomorrow
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const upcomingInterviews = interviews.filter(interview => {
+      const interviewDate = new Date(interview.interview_date);
+      return interview.status === 'scheduled' && 
+             interviewDate >= today && 
+             interviewDate <= tomorrow;
+    }).length;
+    
+    if (upcomingInterviews > 0) {
+      notifs.push({
+        type: "interview",
+        message: `${upcomingInterviews} ${upcomingInterviews === 1 ? 'interview' : 'interviews'} scheduled soon`,
+        icon: "👥",
+        color: "text-blue-600",
+        urgent: false
+      });
+    }
+    
+    // Static notifications
+    notifs.push(
+      {
+        type: "birthday",
+        message: "5 employees have birthdays this week",
+        icon: "🎂",
+        color: "text-pink-600",
+        urgent: false
+      },
+      {
+        type: "policy",
+        message: "New HR policy update available",
+        icon: "📋",
+        color: "text-blue-600",
+        urgent: false
+      }
+    );
+    
+    return notifs.slice(0, 4);
+  }, [leaveApplications, interviews]);
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h3>
-      <div className="grid grid-cols-2 gap-3">
-        {actions.map((action, index) => (
-          <button
-            key={index}
-            className={`${action.color} text-white p-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 hover:transform hover:scale-105`}
-          >
-            <action.icon className="h-4 w-4" />
-            {action.title}
-          </button>
+      <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+        <Bell className="h-5 w-5" />
+        Notifications & Alerts
+      </h3>
+      <div className="space-y-4">
+        {notifications.map((notification, index) => (
+          <div key={index} className={`p-3 rounded-lg border-l-4 ${
+            notification.urgent ? 'border-red-500 bg-red-50' : 'border-blue-500 bg-blue-50'
+          }`}>
+            <div className="flex items-start gap-3">
+              <span className="text-lg">{notification.icon}</span>
+              <div className="flex-1">
+                <p className={`text-sm font-medium ${notification.color}`}>
+                  {notification.message}
+                </p>
+                {notification.urgent && (
+                  <span className="text-xs text-red-600 font-semibold">Urgent</span>
+                )}
+              </div>
+            </div>
+          </div>
         ))}
       </div>
     </div>
@@ -352,16 +915,102 @@ const QuickActions = () => {
 
 export default function HRDashboard() {
   const [selectedDepartment, setSelectedDepartment] = useState("all");
-  const [departments, setDepartments] = useState([
-    { id: "all", name: "All Departments" },
-    { id: "engineering", name: "Engineering" },
-    { id: "sales", name: "Sales" },
-    { id: "marketing", name: "Marketing" },
-    { id: "hr", name: "Human Resources" },
-    { id: "finance", name: "Finance" },
-    { id: "operations", name: "Operations" }
-  ]);
+  const [employees, setEmployees] = useState<EmployeeFromAPI[]>([]);
+  const [leaveApplications, setLeaveApplications] = useState<LeaveApplication[]>([]);
+  const [jobAdverts, setJobAdverts] = useState<JobAdvert[]>([]);
+  const [interviews, setInterviews] = useState<Interview[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [leavePolicies, setLeavePolicies] = useState<LeavePolicy[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+
+  // Redux selectors
+  const selectedInstitution = useSelector(selectSelectedInstitution);
+  const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
+  const [institutionId, setInstitutionId] = useState<string | null>(null);
+
+  // Set institution ID
+  useEffect(() => {
+    if (selectedInstitution) {
+      setInstitutionId(selectedInstitution.id.toString());
+    } else if (institutionsAttached && institutionsAttached.length > 0) {
+      const id = String(institutionsAttached[0].id);
+      setInstitutionId(id);
+    }
+  }, [institutionsAttached, selectedInstitution]);
+
+  // Load all data
+  useEffect(() => {
+    const loadData = async () => {
+      if (!institutionId) return;
+
+      try {
+        const institutionIdNumber = parseInt(institutionId);
+        
+        // Load all data in parallel
+        const [
+          employeesResult, 
+          leaveAppsResult, 
+          jobAdvertsResult, 
+          interviewsResult,
+          leaveTypesResult,
+          leavePoliciesResult,
+          departmentsResult
+        ] = await Promise.all([
+          getAllEmployees({ institutionId: institutionIdNumber }),
+          getLeaveApplications(institutionIdNumber),
+          getJobPositionAdverts({ institutionId: institutionIdNumber }),
+          getInterviews({ institutionId: institutionIdNumber }),
+          getLeaveTypes(institutionIdNumber),
+          getLeavePolicies(institutionIdNumber),
+          getDepartments({ institutionId: institutionIdNumber })
+        ]);
+        
+        // Set employees data
+        setEmployees((employeesResult as any) || []);
+        
+        // Set leave applications data
+        setLeaveApplications((leaveAppsResult as any) || []);
+        
+        // Set job adverts data
+        setJobAdverts((jobAdvertsResult as any) || []);
+        
+        // Set interviews data
+        setInterviews((interviewsResult as any) || []);
+        
+        // Set leave types data
+        setLeaveTypes((leaveTypesResult as any) || []);
+        
+        // Set departments data
+        setDepartments((departmentsResult as any) || []);
+        
+        // Set leave policies data
+        setLeavePolicies((leavePoliciesResult as any) || []);
+        
+        setError(null);
+      } catch (err) {
+        setError("Failed to load dashboard data");
+        setEmployees([]);
+        setLeaveApplications([]);
+        setJobAdverts([]);
+        setInterviews([]);
+        setLeaveTypes([]);
+        setLeavePolicies([]);
+        setDepartments([]);
+      }
+    };
+
+    loadData();
+  }, [institutionId]);
+
+  // Calculate departments for filter from real departments data
+  const departmentOptions = useMemo(() => {
+    return [
+      { id: "all", name: "All Departments" },
+      ...departments.map(dept => ({ id: dept.name, name: dept.name }))
+    ];
+  }, [departments]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -371,17 +1020,28 @@ export default function HRDashboard() {
     setSelectedDepartment(value);
   };
 
-  const getDepartmentLabel = (deptId: string) => {
-    const dept = departments.find((d) => d.id === deptId);
-    return dept ? dept.name : "Select department";
-  };
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="w-full px-4 py-6 ">
+      <div className="w-full px-4 py-6">
         <div className="space-y-6">
           <WelcomeCard />
-
+        
           {isMounted && (
             <>
               <div className="flex items-center justify-between mb-6">
@@ -393,7 +1053,7 @@ export default function HRDashboard() {
                     onChange={(e) => handleDepartmentChange(e.target.value)}
                     className="border-2 border-gray-200 rounded-lg px-4 py-2 hover:border-blue-500 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    {departments.map((dept) => (
+                    {departmentOptions.map((dept) => (
                       <option key={dept.id} value={dept.id}>
                         {dept.name}
                       </option>
@@ -402,22 +1062,45 @@ export default function HRDashboard() {
                 </div>
               </div>
 
-              <StatsCards departmentId={selectedDepartment} />
+              {/* Enhanced Stats Cards with fixed filtering and compact layout */}
+              <StatsCards 
+                departmentId={selectedDepartment} 
+                employees={employees} 
+                leaveApplications={leaveApplications}
+                jobAdverts={jobAdverts}
+                interviews={interviews}
+                leaveTypes={leaveTypes}
+                leavePolicies={leavePolicies}
+                departments={departments}
+              />
               
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                  <EmployeeDistribution />
-                </div>
-                <div>
-                  <QuickActions />
-                </div>
-              </div>
+              {/* Workforce Overview Charts with department filtering */}
+              <WorkforceOverview 
+                employees={employees} 
+                departments={departments}
+                departmentId={selectedDepartment}
+              />
+              
 
-
+              
+              {/* Notifications and Quick Actions */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <RecentActivities />
+                <NotificationsPanel leaveApplications={leaveApplications} interviews={interviews} />
+                <QuickActions />
+              </div>
+              
+              {/* Recent Activities and Upcoming Events */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <RecentActivities 
+                  employees={employees} 
+                  leaveApplications={leaveApplications}
+                  interviews={interviews}
+                />
                 <UpcomingEvents />
               </div>
+              
+              {/* Optional: Include EmployeeAttendance with employees data if needed */}
+              {/* <EmployeeAttendance employees={employees} /> */}
             </>
           )}
         </div>

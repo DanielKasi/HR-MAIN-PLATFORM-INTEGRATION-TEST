@@ -173,7 +173,7 @@ export default function JobPositionsPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">
-                ${formatCurrency(jobPositions.reduce((sum, pos) => Number(sum) + Number(pos.salary), 0))}
+                {formatCurrency(jobPositions.reduce((sum, pos) => Number(sum) + Number(pos.salary), 0))}
               </div>
               <p className="text-xs text-muted-foreground">Total Salary Budget</p>
             </CardContent>
@@ -232,9 +232,6 @@ export default function JobPositionsPage() {
                     </div>
                     <div>
                       <CardTitle className="text-lg">{position.name}</CardTitle>
-                      <Badge variant="secondary" className="text-xs">
-                        ID: {position.id}
-                      </Badge>
                     </div>
                   </div>
                   <DropdownMenu>
@@ -277,7 +274,7 @@ export default function JobPositionsPage() {
                       UGX {" "}
                       Salary:
                     </span>
-                    <span className="font-medium">${formatCurrency(position.salary.toLocaleString())}</span>
+                    <span className="font-medium">{formatCurrency(position.salary.toLocaleString())}</span>
                   </div>
 
                   {position.reportsToDetails && (

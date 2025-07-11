@@ -40,7 +40,7 @@ import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 
-// Import API functions and interfaces
+
 import {
   createEmployeeAllowance,
   getEmployeeAllowances,
@@ -53,6 +53,7 @@ import { IEmployeeAllowance, IEmployeeAllowanceFormData, IAllowanceType } from "
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
 import { IUserInstitution } from "@/app/types"
 import { useSelector } from "react-redux"
+import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"
 
 
 interface ApiEmployee {
@@ -97,7 +98,6 @@ interface ApiAllowanceType {
   institution: {
     id: number
     institution_name: string
-    // ... other institution fields
   }
   name: string
   description: string
@@ -119,7 +119,7 @@ interface ApiEmployeeAllowance {
   created_at: string
 }
 
-// Employee interface for internal use
+
 interface Employee {
   id: string
   name: string
@@ -130,6 +130,7 @@ interface Employee {
     fullname: string
     email: string
   }
+  department?: string 
 }
 
 
@@ -156,7 +157,6 @@ interface EmployeeAllowanceComponentProps {
   institutionId?: number
 }
 
-// Validation result interface
 interface ValidationResult {
   employee?: string
   allowance_type?: string
@@ -167,7 +167,7 @@ interface ValidationResult {
   warning?: string
 }
 
-export default function EmployeeAllowanceComponent({ institutionId: propInstitutionId }: EmployeeAllowanceComponentProps) {
+export default function EmployeeAllowanceComponent() {
   const [allowances, setAllowances] = useState<DisplayEmployeeAllowance[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [allowanceTypes, setAllowanceTypes] = useState<SimpleAllowanceType[]>([])
@@ -178,12 +178,12 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
   const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all")
   const [validationErrors, setValidationErrors] = useState<ValidationResult>({})
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
   
 
-  // Redux selectors
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
-  const [institutionId, setInstitutionId] = useState<number | null>(propInstitutionId || null)
+  
 
   const [formData, setFormData] = useState({
     employee: "",
@@ -196,29 +196,16 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
     effective_to: "",
   })
 
-  // Set institution ID from Redux state
-  useEffect(() => {
-    if (propInstitutionId) {
-      setInstitutionId(propInstitutionId)
-    } else if (selectedInstitution?.id) {
-      setInstitutionId(selectedInstitution.id)
-    } else if (institutionsAttached && institutionsAttached.length > 0) {
-      setInstitutionId(institutionsAttached[0].id)
-    }
-  }, [propInstitutionId, institutionsAttached, selectedInstitution])
-
-  // Load allowance types when institution ID is available
   useEffect(() => {
     const fetchAllowanceTypes = async () => {
-      if (!institutionId) {
+      if (!selectedInstitution?.id) {
         return
       }
       
       try {
-        const types = await getAllowanceTypes(institutionId)
+        const types = await getAllowanceTypes(selectedInstitution.id)
         
         if (types && Array.isArray(types)) {
-          // Only get active types and simplify to just id and name
           const activeTypes = types
             .filter(type => type.is_active !== false)
             .map(type => ({
@@ -236,24 +223,24 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
           toast.error("Invalid allowance types data received")
         }
       } catch (error) {
-        console.error("Error fetching allowance types:", error)
+
         setAllowanceTypes([])
         toast.error("Failed to load allowance types")
       }
     }
 
     fetchAllowanceTypes()
-  }, [institutionId])
+  }, [selectedInstitution?.id])
 
-  // Load employees when institution ID is available
   useEffect(() => {
     const fetchEmployees = async () => {
-      if (!institutionId) {
+      if (!selectedInstitution?.id) {
         return
       }
       
+      setIsLoadingEmployees(true)
       try {
-        const fetchedEmployees = await getAllEmployees({ institutionId })
+        const fetchedEmployees = await getAllEmployees({ institutionId: selectedInstitution.id })
         
         if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
           const formattedEmployees: Employee[] = fetchedEmployees.map((emp: any) => {
@@ -263,9 +250,10 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
               email: emp.user?.email || emp.email || '',
               employee_id: emp.employee_id || emp.id?.toString() || '',
               salary: emp.salary || emp.basic_salary || 0,
-              user: emp.user || null
+              user: emp.user || null,
+              department: emp.department?.name || emp.department || ''
             }
-          }).filter(emp => emp.id && emp.id !== "0") // Filter out invalid IDs including "0"
+          }).filter(emp => emp.id && emp.id !== "0") 
           
           setEmployees(formattedEmployees)
           
@@ -277,23 +265,24 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
           toast.error("Invalid employee data received")
         }
       } catch (error) {
-        console.error("Error fetching employees:", error)
         setEmployees([])
         toast.error("Failed to load employees")
+      } finally {
+        setIsLoadingEmployees(false)
       }
     }
 
     fetchEmployees()
-  }, [institutionId])
+  }, [selectedInstitution])
 
   useEffect(() => {
     const fetchAllowances = async () => {
-      if (!institutionId) {
+      if (!selectedInstitution) {
         return
       }
       
       try {
-        const allowancesData = await getEmployeeAllowances(institutionId)
+        const allowancesData = await getEmployeeAllowances(selectedInstitution.id)
         
         if (allowancesData && Array.isArray(allowancesData)) {
           const displayAllowances = allowancesData.map(convertToDisplayAllowance)
@@ -302,21 +291,19 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
           setAllowances([])
         }
       } catch (error) {
-        console.error("Error fetching allowances:", error)
         setAllowances([])
         toast.error("Failed to load allowances")
       }
     }
     
     fetchAllowances()
-  }, [institutionId, employees])
+  }, [selectedInstitution?.id, employees])
 
-  // Validate form and update validation errors
+
   useEffect(() => {
     const errors: ValidationResult = {}
 
     if (isDialogOpen) {
-      // Only show validation errors for fields that have been interacted with or on submit
       if (formData.calculation_method === 'fixed') {
         const amount = parseFloat(formData.amount)
         if (formData.amount && (isNaN(amount) || amount <= 0)) {
@@ -396,14 +383,13 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
       return true
     }
 
-    // Check for validation errors in the state
     const errorKeys = Object.keys(validationErrors).filter(key => key !== 'warning')
     return errorKeys.length > 0
   }
 
   const handleSubmit = async () => {
-    if (!institutionId) {
-      toast.error("Institution ID is required")
+    if (!formData.employee) {
+      toast.error("Employee is required")
       return
     }
 
@@ -435,14 +421,13 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
           employeeAllowanceData: formattedData
         })
         if (updatedAllowance) {
-          // The API should return the full object with employee and allowance_type details
           const displayAllowance = convertToDisplayAllowance(updatedAllowance)
           setAllowances(prev => prev.map(a => a.id === editingAllowance.id ? displayAllowance : a))
           toast.success("Allowance updated successfully")
         }
       } else {
         const newAllowance = await createEmployeeAllowance({
-          institutionId,
+          institutionId: selectedInstitution!.id,
           employeeAllowanceData: formattedData
         })
         if (newAllowance) {
@@ -456,7 +441,6 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
       setEditingAllowance(null)
       resetForm()
     } catch (error: any) {
-      console.error("Failed to save allowance:", error)
       toast.error(error.message || "An error occurred while saving the allowance")
     } finally {
       setSaving(false)
@@ -488,7 +472,6 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
         toast.error("Failed to delete allowance")
       }
     } catch (error: any) {
-      console.error("Failed to delete allowance:", error)
       toast.error(error.message || "An error occurred while deleting the allowance")
     }
   }
@@ -575,10 +558,8 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
     window.URL.revokeObjectURL(url)
   }
 
-  // Export to Excel function using HTML table method
   const exportToExcel = () => {
     try {
-      // Prepare data for Excel
       const excelData = filteredAllowances.map((allowance) => ({
         "Employee Name": allowance.employee.name,
         "Employee Email": allowance.employee.email,
@@ -593,17 +574,14 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
         "Created Date": format(new Date(allowance.created_at), "yyyy-MM-dd"),
       }))
 
-      // Create HTML table
       const headers = Object.keys(excelData[0] || {})
       let htmlTable = '<table border="1"><thead><tr>'
-      
-      // Add headers
+    
       headers.forEach(header => {
         htmlTable += `<th>${header}</th>`
       })
       htmlTable += '</tr></thead><tbody>'
       
-      // Add data rows
       excelData.forEach(row => {
         htmlTable += '<tr>'
         headers.forEach(header => {
@@ -640,7 +618,7 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
         </html>
       `
 
-      // Create blob and download
+
       const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' })
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -653,17 +631,15 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
       
       toast.success("Excel file downloaded successfully")
     } catch (error) {
-      console.error("Error exporting to Excel:", error)
       toast.error("Failed to export Excel file")
     }
   }
 
   const getCategoryColor = () => {
-    // Simple blue color for all allowance types
     return "bg-blue-50 text-blue-700 border-blue-200"
   }
 
-  if (!institutionId) {
+  if (!selectedInstitution || !selectedInstitution.id) {
     return (
       <div className="flex justify-center items-center h-64">
         <span className="ml-2">No institution selected...</span>
@@ -717,7 +693,7 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
                   <Button 
                     onClick={openNewAllowanceDialog} 
                     className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2.5"
-                    disabled={!institutionId}
+                    disabled={!selectedInstitution.id}
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add Allowance
@@ -737,32 +713,16 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
                       <Label htmlFor="employee" className="text-sm font-medium">
                         Employee *
                       </Label>
-                      <Select 
+                      <EmployeeSearchableSelect
+                        employees={employees}
                         value={formData.employee}
-                        onValueChange={(value) => setFormData({ ...formData, employee: value })}
-                        disabled={saving}
-                      >
-                        <SelectTrigger className={`focus:ring-orange-500 focus:border-orange-500 ${
-                          validationErrors.employee ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                        }`}>
-                          <SelectValue placeholder="Please select an employee" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {employees.length > 0 ? (
-                            employees.map((emp) => (
-                              <SelectItem key={emp.id} value={emp.id}>
-                                <div className="flex flex-col">
-                                  <span>{emp.name}</span>
-                                </div>
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <div className="px-2 py-1.5 text-sm text-gray-500">
-                              No employees available
-                            </div>
-                          )}
-                        </SelectContent>
-                      </Select>
+                        onValueChange={(value) => setFormData({ ...formData, employee: value.toString() })}
+                        disabled={saving || isLoadingEmployees}
+                        placeholder="Search and select employee"
+                        isLoading={isLoadingEmployees}
+                        showEmployeeId={false}
+                        showDepartment={true}
+                      />
                       {validationErrors.employee && (
                         <p className="text-xs text-red-500 mt-1 flex items-center">
                           <AlertTriangle className="h-3 w-3 mr-1" />
@@ -951,22 +911,6 @@ export default function EmployeeAllowanceComponent({ institutionId: propInstitut
                         />
                       </div>
                     </div>
-
-                    {/* Employee Summary */}
-                    {getSelectedEmployee() && (
-                      <div className="md:col-span-2 space-y-2">
-                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                          <h4 className="text-sm font-medium text-blue-800 mb-2 flex items-center">
-                            <Info className="h-4 w-4 mr-2" />
-                            Employee Information
-                          </h4>
-                          <div className="space-y-1 text-xs text-blue-700">
-                            <p>• Name: {getSelectedEmployee()?.name}</p>
-                            <p>• Email: {getSelectedEmployee()?.email}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
 
                     {/* Warning message for high percentage */}
                     {validationErrors.warning && (

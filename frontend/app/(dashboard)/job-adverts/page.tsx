@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
 import {
@@ -57,28 +57,19 @@ const isExpired = (expiryDate: string) => {
   return new Date(expiryDate) < new Date()
 }
 
-export default function () {
+export default function JobAdvertsPage() {
   const [jobAdverts, setJobAdverts] = useState<JobPositionAdvert[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [error, setError] = useState("")
-  const [isClosed, setIsClosing] = useState(false);
+  const [isClosing, setIsClosing] = useState(false)
 
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const selectedBranch = useSelector(selectSelectedBranch)
 
-  useEffect(() => {
-    if (!selectedInstitution || !selectedBranch) {
-      router.push("/dashboard")
-      return
-    }
-
-    fetchJobAdverts()
-  }, [selectedBranch, selectedInstitution, router])
-
-  const fetchJobAdverts = async (showRefreshLoader = false) => {
+  const fetchJobAdverts = useCallback(async (showRefreshLoader = false) => {
     if (!selectedInstitution) return
 
     try {
@@ -104,63 +95,89 @@ export default function () {
       setIsLoading(false)
       setIsRefreshing(false)
     }
-  }
+  }, [selectedInstitution?.id])
 
-  const handleRefresh = () => {
+  useEffect(() => {
+    if (!selectedInstitution || !selectedBranch) {
+      router.push("/dashboard")
+      return
+    }
+    fetchJobAdverts()
+  }, [selectedInstitution?.id, selectedBranch?.id, fetchJobAdverts])
+
+  const handleRefresh = useCallback(() => {
     fetchJobAdverts(true)
-  }
+  }, [fetchJobAdverts])
 
-  const filteredJobAdverts = jobAdverts.filter((advert) =>
-    advert.extra_information?.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredJobAdverts = useMemo(() => {
+    return jobAdverts.filter((advert) => {
+      if (!searchTerm.trim()) return true
+      
+      return (
+        advert.extra_information?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        advert.job_position_details?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    })
+  }, [jobAdverts, searchTerm])
+
+  const publishedAdverts = useMemo(() => 
+    jobAdverts.filter((advert) => advert.status === "active"), 
+    [jobAdverts]
+  )
+  
+  const draftAdverts = useMemo(() => 
+    jobAdverts.filter((advert) => advert.status === "archived"), 
+    [jobAdverts]
+  )
+  
+  const expiredAdverts = useMemo(() => 
+    jobAdverts.filter((advert) => advert.status === "expired" || isExpired(advert.expiry_date)), 
+    [jobAdverts]
   )
 
-  const handleCreateJobAdvert = () => {
+  const handleCreateJobAdvert = useCallback(() => {
     router.push("/job-adverts/create")
-  }
+  }, [router])
 
-  const handleEditJobAdvert = (advertId: number) => {
+  const handleEditJobAdvert = useCallback((advertId: number) => {
     router.push(`/job-adverts/${advertId}/edit`)
-  }
+  }, [router])
 
-  const handleArchiveJobAdvert = (advertId: number) => {
-    // TODO: Implement delete functionality
-    toast.success("Job advert deletion would be implemented here")
-  }
+  const handleArchiveJobAdvert = useCallback((advertId: number) => {
+    toast.success("Job advert archiving would be implemented here")
+  }, [])
 
-    const advertId = async ({advertId}:{advertId:number}) => {
-      if (!advertId) return
-  
-      try {
-        setIsClosing(true)
-  
-        const updatedAdvert = await updateJobPositionAdvert({
-          advertId: advertId,
-          advertData: { status: "closed" },
-        })
-  
-        if (updatedAdvert) {
-          toast.success("Job advert closed successfully!")
-        } else {
-          toast.error("Failed to close job advert")
-        }
-      } catch (error) {
+  const handleCloseJobAdvert = useCallback(async (advertId: number) => {
+    if (!advertId) return
+
+    try {
+      setIsClosing(true)
+
+      const updatedAdvert = await updateJobPositionAdvert({
+        advertId: advertId,
+        advertData: { status: "closed" },
+      })
+
+      if (updatedAdvert) {
+        toast.success("Job advert closed successfully!")
+        fetchJobAdverts(true)
+      } else {
         toast.error("Failed to close job advert")
-      } finally {
-        setIsClosing(false)
       }
+    } catch (error) {
+      toast.error("Failed to close job advert")
+    } finally {
+      setIsClosing(false)
     }
+  }, [fetchJobAdverts])
 
-  const handleViewJobAdvert = (advertId: number) => {
+  const handleViewJobAdvert = useCallback((advertId: number) => {
     router.push(`/job-adverts/${advertId}`)
-  }
+  }, [router])
 
   if (!selectedInstitution || !selectedBranch) {
     return <div>Loading...</div>
   }
-
-  const publishedAdverts = jobAdverts.filter((advert) => advert.status === "active")
-  const draftAdverts = jobAdverts.filter((advert) => advert.status === "archived")
-  const expiredAdverts = jobAdverts.filter((advert) => advert.status === "expired" || isExpired(advert.expiry_date))
 
   return (
     <div className="w-full h-full p-6 space-y-6">
@@ -212,7 +229,7 @@ export default function () {
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">{jobAdverts.length}</div>
+              <div className="text-2xl font-bold text-blue-600">{jobAdverts.length}</div>
               <p className="text-xs text-muted-foreground">Total Adverts</p>
             </CardContent>
           </Card>
@@ -287,7 +304,7 @@ export default function () {
                       <Megaphone className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg">Job Advert #{advert.id}</CardTitle>
+                      <CardTitle className="text-lg">Job Advert</CardTitle>
                       <Badge className={`text-xs ${getStatusColor(advert.status)}`}>
                         {advert.status.toUpperCase()}
                       </Badge>
@@ -308,7 +325,11 @@ export default function () {
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleArchiveJobAdvert(advert.id)} className="text-destructive">
+                      <DropdownMenuItem 
+                        onClick={() => handleCloseJobAdvert(advert.id)} 
+                        className="text-destructive"
+                        disabled={isClosing}
+                      >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Close
                       </DropdownMenuItem>
@@ -323,7 +344,7 @@ export default function () {
                       <Briefcase className="h-3 w-3" />
                       Position:
                     </span>
-                    <span className="font-medium">{advert.job_position_details.name}</span>
+                    <span className="font-medium">{advert.job_position_details?.name || 'N/A'}</span>
                   </div>
 
                   <div className="flex items-center justify-between text-sm">
