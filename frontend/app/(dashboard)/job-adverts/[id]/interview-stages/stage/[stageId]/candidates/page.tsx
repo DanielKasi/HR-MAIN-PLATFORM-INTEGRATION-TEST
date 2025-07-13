@@ -11,12 +11,12 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select"
 import {
   Dialog,
@@ -28,13 +28,13 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { 
-  ArrowLeft, 
+import {
+  ArrowLeft,
   Users,
-  Mail, 
-  Phone, 
-  MessageSquare, 
-  Edit, 
+  Mail,
+  Phone,
+  MessageSquare,
+  Edit,
   Save,
   Search,
   MapPin,
@@ -78,8 +78,8 @@ interface Candidate {
   interview_date?: string
   interview_time?: string
   location?: string
-  interview_id?: number 
-  interview?: any 
+  interview_id?: number
+  interview?: any
 }
 
 interface InterviewStage {
@@ -142,10 +142,10 @@ const sourceLabels = {
   other: "Other",
 }
 
-const RatingInput = ({ 
-  rating, 
+const RatingInput = ({
+  rating,
   onRatingChange
-}: { 
+}: {
   rating: number
   onRatingChange?: (rating: number) => void
 }) => {
@@ -395,10 +395,10 @@ const InterviewSchedulingDialog = ({
   )
 }
 
-const FeedbackDialog = ({ 
-  candidate, 
-  onSave, 
-  isOpen, 
+const FeedbackDialog = ({
+  candidate,
+  onSave,
+  isOpen,
   onClose,
   nextStage,
   onMoveToNextStage,
@@ -515,12 +515,12 @@ const FeedbackDialog = ({
                 <Button variant="outline" onClick={onClose} disabled={isSaving}>
                   Cancel
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setAction('save')
                     handleSave()
-                  }} 
+                  }}
                   disabled={isSaving}
                 >
                   {isSaving && action === 'save' ? (
@@ -538,7 +538,7 @@ const FeedbackDialog = ({
               </div>
 
               <div className="flex gap-2">
-                <Button 
+                <Button
                   variant="destructive"
                   onClick={handleReject}
                   disabled={isSaving}
@@ -557,7 +557,7 @@ const FeedbackDialog = ({
                 </Button>
 
                 {nextStage && (
-                  <Button 
+                  <Button
                     onClick={handleScheduleAndMove}
                     disabled={isSaving}
                     className="bg-green-600 hover:bg-green-700"
@@ -657,12 +657,12 @@ const StageProgressionDialog = ({
   )
 }
 
-const StageCandidatesContent = ({ 
-  jobId, 
-  stageId 
-}: { 
+const StageCandidatesContent = ({
+  jobId,
+  stageId
+}: {
   jobId: string
-  stageId: string 
+  stageId: string
 }) => {
   const router = useRouter()
   const [jobAdvert, setJobAdvert] = useState<JobPositionAdvert | null>(null)
@@ -691,7 +691,7 @@ const StageCandidatesContent = ({
   const moveToNextStage = async (candidateId: number, targetStageId: number) => {
     try {
       const candidate = filteredCandidates.find(c => c.id === candidateId);
-      
+
       if (!candidate || !candidate.interview_id) {
         throw new Error(`No interview found for candidate ${candidateId}`);
       }
@@ -717,7 +717,7 @@ const StageCandidatesContent = ({
   const rejectCandidate = async (candidateId: number) => {
     try {
       const candidate = filteredCandidates.find(c => c.id === candidateId);
-      
+
       if (!candidate || !candidate.interview_id) {
         throw new Error(`No interview found for candidate ${candidateId}`);
       }
@@ -741,7 +741,7 @@ const StageCandidatesContent = ({
   };
 
   const scheduleInterviewsForNextStage = async (
-    candidates: Candidate[], 
+    candidates: Candidate[],
     scheduleData: InterviewScheduleData
   ) => {
     if (!selectedInstitution || !nextStage) {
@@ -770,7 +770,7 @@ const StageCandidatesContent = ({
 
       const results = await Promise.all(interviewPromises);
       const successCount = results.filter(result => result !== null).length;
-      
+
       if (successCount === 0) {
         throw new Error('Failed to schedule any interviews');
       }
@@ -784,27 +784,27 @@ const StageCandidatesContent = ({
   const fetchData = async () => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const jobAdvertData = await getJobPositionAdvertById({ advertId: parseInt(jobId) })
-      
+
       if (!jobAdvertData) {
         throw new Error('No job advert data returned')
       }
-      
+
       const stages = (jobAdvertData.interview_stages as unknown as InterviewStage[]) || []
       const sortedStages = stages.sort((a, b) => a.level - b.level)
       setAllStages(sortedStages)
-      
+
       const stage = sortedStages.find(s => s.id === parseInt(stageId))
-      
+
       if (!stage) {
         throw new Error(`Interview stage with ID ${stageId} not found`)
       }
 
       const currentStageIndex = sortedStages.findIndex(s => s.id === parseInt(stageId))
       const nextStageData = currentStageIndex < sortedStages.length - 1 ? sortedStages[currentStageIndex + 1] : null
-      
+
       setCurrentStage(stage)
       setNextStage(nextStageData)
 
@@ -812,7 +812,7 @@ const StageCandidatesContent = ({
         const fetchedInterviews = await getInterviews({ institutionId: selectedInstitution.id })
         setInterviews(fetchedInterviews || [])
       }
-      
+
       setJobAdvert(jobAdvertData)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load candidates')
@@ -821,88 +821,130 @@ const StageCandidatesContent = ({
     }
   }
 
-  const mergeInterviewData = (candidates: Candidate[], interviews: IInterview[]): Candidate[] => {
-    const processedCandidates = new Map<number, Candidate>()
-    
-    candidates.forEach(candidate => {
-      const interview = interviews.find(
-        (interview) => interview.job_position_application === candidate.id && 
-        interview.interview_stage === parseInt(stageId)
-      )
-      
-      if (interview) {
+  const mergeInterviewData = (
+    candidates: Candidate[],
+    interviews: IInterview[]
+  ): Candidate[] => {
+    const processedCandidates = new Map<number, Candidate>();
+
+    // First, process all candidates from the current stage
+    candidates.forEach((candidate) => {
+      // Check if this candidate has been moved to a later stage
+      const laterStageInterview = interviews.find(
+        (interview) =>
+          interview.job_position_application === candidate.id &&
+          interview.interview_stage > parseInt(stageId)
+      );
+
+      // If candidate has been moved to a later stage, don't show them here
+      if (laterStageInterview) {
+        return;
+      }
+
+      // Get interview data for current stage
+      const currentStageInterview = interviews.find(
+        (interview) =>
+          interview.job_position_application === candidate.id &&
+          interview.interview_stage === parseInt(stageId)
+      );
+
+      if (currentStageInterview) {
+        // Candidate has interview data for current stage
         processedCandidates.set(candidate.id, {
           ...candidate,
-          feedback: interview.feedback || undefined,
-          rating: interview.rating || undefined,
-          interview_date: interview.interview_date,
-          interview_time: interview.interview_time,
-          location: interview.location,
-          interview_id: interview.id,
-          interview: interview
-        })
+          feedback: currentStageInterview.feedback || undefined,
+          rating: currentStageInterview.rating || undefined,
+          interview_date: currentStageInterview.interview_date,
+          interview_time: currentStageInterview.interview_time,
+          location: currentStageInterview.location,
+          interview_id: currentStageInterview.id,
+          interview: currentStageInterview,
+        });
       } else {
-        processedCandidates.set(candidate.id, candidate)
+        // Candidate doesn't have interview data yet for current stage
+        processedCandidates.set(candidate.id, candidate);
       }
-    })
+    });
 
-    interviews.forEach(interview => {
-      if (interview.interview_stage !== parseInt(stageId) && 
-          interview.job_position_application_details?.job_position_advert === parseInt(jobId)) {
-        
-        const currentStageInterview = interviews.find(
-          (int) => int.job_position_application === interview.job_position_application &&
-          int.interview_stage === parseInt(stageId) &&
-          int.status === 'completed' &&
-          int.feedback &&
-          int.rating
-        )
+    // Also check for any candidates who might have interviews in this stage
+    // but weren't in the original candidates list (edge case)
+    interviews.forEach((interview) => {
+      if (
+        interview.interview_stage === parseInt(stageId) &&
+        interview.job_position_application_details?.job_position_advert === parseInt(jobId) &&
+        !processedCandidates.has(interview.job_position_application)
+      ) {
+        // Check if this candidate has been moved to a later stage
+        const laterStageInterview = interviews.find(
+          (int) =>
+            int.job_position_application === interview.job_position_application &&
+            int.interview_stage > parseInt(stageId)
+        );
 
-        if (currentStageInterview && !processedCandidates.has(interview.job_position_application)) {
-            const candidateFromInterview: Candidate = {
-              id: interview.job_position_application,
-              job_position_advert: interview.job_position_application_details?.job_position_advert || parseInt(jobId),
-              job_position_advert_job_details: {
-                name: interview.job_position_application_details?.job_position_advert_job_details?.name || 'Unknown Position',
-                description: interview.job_position_application_details?.job_position_advert_job_details?.description || '',
-                job_posted_date: interview.job_position_application_details?.job_position_advert_job_details?.job_posted_date || ''
-              },
-              applicant_name: interview.job_position_application_details?.applicant_name || 'Unknown',
-              applicant_email: interview.job_position_application_details?.applicant_email || '',
-              applicant_phone: interview.job_position_application_details?.applicant_phone || '',
-              resume: interview.job_position_application_details?.resume || '',
-              cover_letter: interview.job_position_application_details?.cover_letter || '',
-              application_date: interview.job_position_application_details?.application_date || '',
-              status: interview.job_position_application_details?.status || '',
-              gender: interview.job_position_application_details?.gender || '',
-              state: interview.job_position_application_details?.state || '',
-              address: interview.job_position_application_details?.address || '',
-              country: interview.job_position_application_details?.country || '',
-              source: interview.job_position_application_details?.source || '',
-              positions: interview.job_position_application_details?.positions || 1,
-              // Fix the type casting here
-              feedback: currentStageInterview.feedback || undefined,
-              rating: currentStageInterview.rating || undefined,
-              interview_date: currentStageInterview.interview_date,
-              interview_time: currentStageInterview.interview_time,
-              location: currentStageInterview.location,
-              interview_id: currentStageInterview.id,
-              interview: currentStageInterview
-            }
-          
-          processedCandidates.set(interview.job_position_application, candidateFromInterview)
+        // Only add if not moved to later stage
+        if (!laterStageInterview) {
+          const candidateFromInterview: Candidate = {
+            id: interview.job_position_application,
+            job_position_advert:
+              interview.job_position_application_details?.job_position_advert ||
+              parseInt(jobId),
+            job_position_advert_job_details: {
+              name:
+                interview.job_position_application_details
+                  ?.job_position_advert_job_details?.name || "Unknown Position",
+              description:
+                interview.job_position_application_details
+                  ?.job_position_advert_job_details?.description || "",
+              job_posted_date:
+                interview.job_position_application_details
+                  ?.job_position_advert_job_details?.job_posted_date || "",
+            },
+            applicant_name:
+              interview.job_position_application_details?.applicant_name ||
+              "Unknown",
+            applicant_email:
+              interview.job_position_application_details?.applicant_email || "",
+            applicant_phone:
+              interview.job_position_application_details?.applicant_phone || "",
+            resume: interview.job_position_application_details?.resume || "",
+            cover_letter:
+              interview.job_position_application_details?.cover_letter || "",
+            application_date:
+              interview.job_position_application_details?.application_date ||
+              "",
+            status: interview.job_position_application_details?.status || "",
+            gender: interview.job_position_application_details?.gender || "",
+            state: interview.job_position_application_details?.state || "",
+            address: interview.job_position_application_details?.address || "",
+            country: interview.job_position_application_details?.country || "",
+            source: interview.job_position_application_details?.source || "",
+            positions:
+              interview.job_position_application_details?.positions || 1,
+            feedback: interview.feedback || undefined,
+            rating: interview.rating || undefined,
+            interview_date: interview.interview_date,
+            interview_time: interview.interview_time,
+            location: interview.location,
+            interview_id: interview.id,
+            interview: interview,
+          };
+
+          processedCandidates.set(
+            interview.job_position_application,
+            candidateFromInterview
+          );
         }
       }
-    })
-    
-    return Array.from(processedCandidates.values())
-  }
+    });
+  
+    return Array.from(processedCandidates.values());
+  };
 
   const filterCandidates = () => {
     if (!currentStage) return
 
     let candidates = currentStage.candidates || []
-    
+
     let mergedCandidates = mergeInterviewData(candidates, interviews)
 
     if (searchTerm) {
@@ -914,7 +956,7 @@ const StageCandidatesContent = ({
       )
     }
 
-    const uniqueCandidates = mergedCandidates.filter((candidate, index, self) => 
+    const uniqueCandidates = mergedCandidates.filter((candidate, index, self) =>
       index === self.findIndex(c => c.id === candidate.id)
     )
 
@@ -973,7 +1015,7 @@ const StageCandidatesContent = ({
 
   try {
     const candidatesToOnboard = filteredCandidates.filter(c => selectedCandidates.includes(c.id))
-    
+
     const applicationIds = candidatesToOnboard.map(candidate => candidate.id)
 
     const result = await bulkCreateOnBoarding({ applicationIds })
@@ -981,7 +1023,7 @@ const StageCandidatesContent = ({
     if (result) {
       const createdCount = result.summary?.created_count || result.created?.length || 0
       const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0
-      
+
       if (createdCount > 0 && skippedCount === 0) {
         toast.success(`Successfully onboarded ${createdCount} candidate(s)`)
         setSelectedCandidates([])
@@ -1018,10 +1060,10 @@ const StageCandidatesContent = ({
 
   const handleScheduleAndMove = async (scheduleData: InterviewScheduleData) => {
     setIsProcessingProgression(true)
-    
+
     try {
       const scheduleResult = await scheduleInterviewsForNextStage(candidatesToSchedule, scheduleData)
-      
+
       if (scheduleResult.successCount > 0) {
         const moveResults = []
         const moveErrors = []
@@ -1046,7 +1088,7 @@ const StageCandidatesContent = ({
         setSelectedCandidates([])
         setIsSchedulingDialogOpen(false)
         setCandidatesToSchedule([])
-        
+
         await refreshStageData()
       } else {
         toast.error('Failed to schedule interviews')
@@ -1064,12 +1106,12 @@ const StageCandidatesContent = ({
       if (data && data.interview_stages) {
         const stages = (data.interview_stages as unknown as InterviewStage[]).sort((a, b) => a.level - b.level)
         setAllStages(stages)
-        
+
         const stage = stages.find((s: any) => s.id === parseInt(stageId))
         if (stage) {
           setCurrentStage(stage)
         }
-        
+
         const currentStageIndex = stages.findIndex(s => s.id === parseInt(stageId))
         const nextStageData = currentStageIndex < stages.length - 1 ? stages[currentStageIndex + 1] : null
         setNextStage(nextStageData)
@@ -1111,7 +1153,7 @@ const StageCandidatesContent = ({
         throw new Error('Failed to update interview feedback');
       }
 
-      setInterviews(prev => 
+      setInterviews(prev =>
         prev.map(interview => {
           if (interview.id === interviewId) {
             return { ...interview, feedback: result.feedback, rating: result.rating }
@@ -1171,37 +1213,37 @@ const StageCandidatesContent = ({
     if (result) {
       const createdCount = result.summary?.created_count || result.created?.length || 0
       const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0
-      
+
       if (createdCount > 0) {
         // Successfully onboarded
         await refreshStageData()
         return { success: true }
       } else if (skippedCount > 0) {
         // Candidate was skipped (likely already onboarded)
-        return { 
-          success: false, 
-          alreadyOnboarded: true, 
-          message: 'Candidate is already onboarded' 
+        return {
+          success: false,
+          alreadyOnboarded: true,
+          message: 'Candidate is already onboarded'
         }
       } else {
-        return { 
-          success: false, 
-          alreadyOnboarded: false, 
-          message: 'Failed to onboard candidate - unknown error' 
+        return {
+          success: false,
+          alreadyOnboarded: false,
+          message: 'Failed to onboard candidate - unknown error'
         }
       }
     } else {
-      return { 
-        success: false, 
-        alreadyOnboarded: false, 
-        message: 'Failed to onboard candidate - API returned no response' 
+      return {
+        success: false,
+        alreadyOnboarded: false,
+        message: 'Failed to onboard candidate - API returned no response'
       }
     }
   } catch (error) {
-    return { 
-      success: false, 
-      alreadyOnboarded: false, 
-      message: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      alreadyOnboarded: false,
+      message: error instanceof Error ? error.message : 'Unknown error occurred'
     }
   }
 }
@@ -1423,7 +1465,7 @@ const StageCandidatesContent = ({
                                 </Badge>
                                 {(() => {
                                   const laterStageInterview = interviews.find(
-                                    int => int.job_position_application === candidate.id && 
+                                    int => int.job_position_application === candidate.id &&
                                     int.interview_stage > parseInt(stageId)
                                   )
                                   if (laterStageInterview) {
@@ -1458,14 +1500,14 @@ const StageCandidatesContent = ({
                                 <Edit className="h-4 w-4 mr-2" />
                                 Provide Feedback
                               </DropdownMenuItem>
-                              
+
                               <DropdownMenuSeparator />
 
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={async () => {
                                 try {
                                   const result = await handleIndividualOnboard(candidate);
-                                  
+
                                   if (result.success) {
                                     toast.success(`${candidate.applicant_name} onboarded successfully`);
                                   } else if (result.alreadyOnboarded) {
@@ -1482,10 +1524,10 @@ const StageCandidatesContent = ({
                               <Users className="h-4 w-4 mr-2" />
                               Onboard Candidate
                             </DropdownMenuItem>
-                              
+
                               {nextStage && candidate.feedback && candidate.rating && (
                                 <>
-                                  <DropdownMenuItem 
+                                  <DropdownMenuItem
                                     onClick={async () => {
                                       setCandidatesToSchedule([candidate])
                                       setIsSchedulingDialogOpen(true)
@@ -1495,8 +1537,8 @@ const StageCandidatesContent = ({
                                     <Calendar className="h-4 w-4 mr-2" />
                                     Schedule & Move to {nextStage.name}
                                   </DropdownMenuItem>
-                                  
-                                  <DropdownMenuItem 
+
+                                  <DropdownMenuItem
                                     onClick={async () => {
                                       try {
                                         await moveToNextStage(candidate.id, nextStage.id);
@@ -1513,8 +1555,8 @@ const StageCandidatesContent = ({
                                   </DropdownMenuItem>
                                 </>
                               )}
-                              
-                              <DropdownMenuItem 
+
+                              <DropdownMenuItem
                                 onClick={async () => {
                                   try {
                                     await rejectCandidate(candidate.id);
@@ -1587,9 +1629,9 @@ export default function StageCandidatesPage({ params }: StageCandidatesPageProps
   const resolvedParams = use(params)
 
   return (
-    <StageCandidatesContent 
-      jobId={resolvedParams.id} 
-      stageId={resolvedParams.stageId} 
+    <StageCandidatesContent
+      jobId={resolvedParams.id}
+      stageId={resolvedParams.stageId}
     />
   )
 }

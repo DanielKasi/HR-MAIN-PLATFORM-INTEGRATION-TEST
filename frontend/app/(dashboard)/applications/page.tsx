@@ -187,6 +187,12 @@ export default function ApplicationsPage() {
     router.push(`/applications/${applicationId}/edit`)
   }
 
+  const resetFiltersAndShowNewApplication = () => {
+    setStatusFilter("all")
+    setSearchTerm("")
+    setSelectedApplications([])
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -220,24 +226,15 @@ export default function ApplicationsPage() {
         country: formData.country || "",
       }
 
-      // Add debugging logs
-      console.log("Submitting application with institutionId:", selectedInstitution.id)
-      console.log("Application data:", {
-        ...applicationData,
-        resume: applicationData.resume ? `File: ${applicationData.resume.name}` : "No resume",
-        cover_letter: applicationData.cover_letter ? `File: ${applicationData.cover_letter.name}` : "No cover letter",
-      })
-
       const newApplication = await createJobApplication({
         institutionId: selectedInstitution.id,
         applicationData,
       })
 
       if (newApplication) {
-        console.log("Application created successfully:", newApplication)
         setApplications((prev) => [newApplication, ...prev])
         setIsCreateDialogOpen(false)
-
+        resetFiltersAndShowNewApplication()
         // Reset form
         setFormData({
           job_position_advert: 0,
