@@ -19,8 +19,8 @@ import { Badge } from "@/components/ui/badge"
 import { MoreHorizontal, Edit, Trash2, Loader2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { createLeaveType, getLeaveTypes, updateLeaveType, deleteLeaveType } from "@/lib/utils"
-import { ILeaveType, ILeaveTypeFormData } from "@/app/types/types.utils" 
-import { toast } from "sonner" 
+import { ILeaveType, ILeaveTypeFormData } from "@/app/types/types.utils"
+import { toast } from "sonner"
 import { select } from "redux-saga/effects"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
 import { useSelector } from "react-redux"
@@ -40,7 +40,7 @@ const LEAVE_CATEGORIES = [
 ]
 
 const GENDER_CHOICES = [
-  { value: "none", label: "All" },
+  { value: "all", label: "All" },
   { value: "male", label: "Male" },
   { value: "female", label: "Female" },
 ]
@@ -86,7 +86,7 @@ const LeaveTypesComponent = () => {
       carry_forward_allowed: false,
       max_carry_forward_days: "",
       requires_document: false,
-      gender_specific: "none",
+      gender_specific: "all",
     })
   }
 
@@ -107,7 +107,7 @@ const LeaveTypesComponent = () => {
         setIsLoading(false);
       }
     };
-    
+
     fetchLeaveTypes();
   }, [selectedInstitution?.id]);
 
@@ -128,7 +128,7 @@ const LeaveTypesComponent = () => {
         max_carry_forward_days: parseInt(formData.max_carry_forward_days) || 0,
         is_active: true,
         requires_document: formData.requires_document,
-        gender_specific: formData.gender_specific === "none" ? null : formData.gender_specific as any,
+        gender_specific: formData.gender_specific === "all" ? null : formData.gender_specific as any,
       }
 
       const newLeaveType = await createLeaveType({
@@ -169,10 +169,8 @@ const LeaveTypesComponent = () => {
         max_carry_forward_days: parseInt(formData.max_carry_forward_days) || 0,
         is_active: true,
         requires_document: formData.requires_document,
-        gender_specific: formData.gender_specific === "none" ? "all" : formData.gender_specific as any,
+        gender_specific: formData.gender_specific === "null" ? "all" : formData.gender_specific as any,
       }
-
-      console.log("Updating leave type with data:", leaveTypeData)
       const updatedLeaveType = await updateLeaveType({
         leaveTypeId: editingLeaveType.id,
         leaveTypeData,
@@ -202,10 +200,10 @@ const LeaveTypesComponent = () => {
 
     setIsSubmitting(true)
     try {
-      const success = await deleteLeaveType({ 
-        leaveTypeId: deletingLeaveType.id, 
+      const success = await deleteLeaveType({
+        leaveTypeId: deletingLeaveType.id,
       });
-      
+
       if (success) {
         setLeaveTypes(leaveTypes.filter((leaveType) => leaveType.id !== deletingLeaveType.id))
         toast.success("Leave type deleted successfully")
@@ -236,7 +234,7 @@ const LeaveTypesComponent = () => {
       carry_forward_allowed: leaveType.carry_forward_allowed,
       max_carry_forward_days: leaveType.max_carry_forward_days.toString(),
       requires_document: leaveType.requires_document,
-      gender_specific: leaveType.gender_specific || "none",
+      gender_specific: leaveType.gender_specific || "all",
     })
     setIsEditDialogOpen(true)
   }
@@ -267,7 +265,7 @@ const LeaveTypesComponent = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
-                  <Select 
+                  <Select
                     value={formData.category}
                     onValueChange={(value) => setFormData({ ...formData, category: value })}
                     disabled={isSubmitting}
@@ -326,7 +324,7 @@ const LeaveTypesComponent = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="gender_specific">Gender Specific</Label>
-                  <Select 
+                  <Select
                     value={formData.gender_specific}
                     onValueChange={(value) => setFormData({ ...formData, gender_specific: value })}
                     disabled={isSubmitting}
@@ -382,8 +380,8 @@ const LeaveTypesComponent = () => {
                   </div>
                 </div>
               </div>
-              <Button 
-                className="bg-orange-500 hover:bg-orange-600 text-white" 
+              <Button
+                className="bg-orange-500 hover:bg-orange-600 text-white"
                 onClick={handleAddLeaveType}
                 disabled={isSubmitting}
               >
@@ -393,7 +391,7 @@ const LeaveTypesComponent = () => {
             </DialogContent>
           </Dialog>
         </div>
-        
+
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-8 w-8 animate-spin" />
@@ -502,7 +500,7 @@ const LeaveTypesComponent = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-category">Category</Label>
-              <Select 
+              <Select
                 value={formData.category}
                 onValueChange={(value) => setFormData({ ...formData, category: value })}
                 disabled={isSubmitting}
@@ -561,7 +559,7 @@ const LeaveTypesComponent = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-gender_specific">Gender Specific</Label>
-              <Select 
+              <Select
                 value={formData.gender_specific}
                 onValueChange={(value) => setFormData({ ...formData, gender_specific: value })}
                 disabled={isSubmitting}
@@ -617,8 +615,8 @@ const LeaveTypesComponent = () => {
               </div>
             </div>
           </div>
-          <Button 
-            className="bg-orange-500 hover:bg-orange-600 text-white" 
+          <Button
+            className="bg-orange-500 hover:bg-orange-600 text-white"
             onClick={handleUpdateLeaveType}
             disabled={isSubmitting}
           >
