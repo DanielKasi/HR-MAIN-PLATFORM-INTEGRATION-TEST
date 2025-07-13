@@ -270,8 +270,8 @@ export interface IInterview {
 export interface User {
   email: string;
   fullname: string;
-  password?: string;  
-  roles_ids?: number[]; 
+  password?: string;
+  roles_ids?: number[];
   permissions?: string;
 }
 
@@ -315,9 +315,9 @@ export interface EmployeeFormState {
   date_of_joining: string;
   address: string;
   country: string;             // Added
-  nin: string;                 
-  bank: string;                
-  bank_account_number: string; 
+  nin: string;
+  bank: string;
+  bank_account_number: string;
   is_active: boolean;
   experience: number;
   qualifications: string;
@@ -446,7 +446,7 @@ export interface IBulkOnBoardingResponse {
 export interface IInterviewFormData {
   job_position_application: number;
   interview_stage: number;
-  interview_date: string;           
+  interview_date: string;
   feedback?: string;
   rating?: number;
   location: string,
@@ -530,10 +530,10 @@ export interface SetDefaultBranchPayload {
 }
 
 export interface DisciplinaryActionForm {
-  discipline_type: string 
-  employee: string 
-  reported_by: string 
-  assigned_to: string 
+  discipline_type: string
+  employee: string
+  reported_by: string
+  assigned_to: string
   incident_date: string
   description: string
   evidence: string
@@ -783,7 +783,7 @@ export interface DisciplinaryActionAPIResponse {
 // Updated transform function to extract the names from nested objects
 export const transformDisciplinaryActionData = (apiData: DisciplinaryActionAPIResponse[] | null) => {
   if (!apiData) return []
-  
+
   return apiData.map(action => ({
     id: action.id.toString(),
     employee_name: action.employee.user.fullname,
@@ -815,7 +815,7 @@ export interface LeaveType {
   max_carry_forward_days: number;
   is_active: boolean;
   requires_document: boolean;
-  gender_specific: "male" | "female" | "none" | null;
+  gender_specific: "male" | "female" | "all" | null;
 }
 
 
@@ -828,7 +828,7 @@ export interface ILeaveTypeFormData {
   max_carry_forward_days: number;
   is_active: boolean;
   requires_document: boolean;
-  gender_specific: "male" | "female" | "none" | null;
+  gender_specific: "male" | "female" | "all" | null;
 }
 
 
@@ -842,7 +842,7 @@ export interface ILeaveType extends LeaveType {
 
 export interface ILeavePolicy {
   id?: number | string;
-  leave_type: number; 
+  leave_type: number;
   name: string;
   description: string;
   min_notice_days: number;
@@ -905,16 +905,16 @@ export interface ILeaveRequest {
   employee: number;
   leave_type: number;
   approved_by: number;
-  start_date: string; 
-  end_date: string; 
+  start_date: string;
+  end_date: string;
   duration_type: DurationType;
   reason: string;
   status: LeaveRequestStatus;
   rejection_reason: string;
   supporting_document: string;
   handover_notes: string;
-  created_at?: string; 
-  updated_at?: string; 
+  created_at?: string;
+  updated_at?: string;
 }
 
 
@@ -927,7 +927,7 @@ export interface ILeaveRequestFormData {
   reason: string;
   handover_notes?: string;
   status?: string;
-  supporting_document?: File | null; 
+  supporting_document?: File | null;
 }
 
 export interface LeaveRequestWithRelations extends ILeaveRequest {
@@ -950,8 +950,8 @@ export interface LeaveRequestWithRelations extends ILeaveRequest {
     email: string;
     role?: string;
   };
-  calculated_days?: number; 
-  is_editable?: boolean; 
+  calculated_days?: number;
+  is_editable?: boolean;
 }
 
 export interface ILeaveRequestResponse {
@@ -1026,11 +1026,11 @@ export interface IEmployeeAllowance {
   employee: number;
   allowance_type: number;
   calculation_method: "fixed" | "percentage";
-  amount: string; 
-  percentage: string; 
+  amount: string;
+  percentage: string;
   is_active: boolean;
-  effective_from: string; 
-  effective_to: string | null; 
+  effective_from: string;
+  effective_to: string | null;
   created_at: string;
 }
 
@@ -1042,7 +1042,7 @@ export interface IEmployeeAllowanceFormData {
   percentage: string;
   is_active: boolean;
   effective_from: string;
-  effective_to?: string | null; 
+  effective_to?: string | null;
 }
 
 
@@ -1139,6 +1139,6 @@ export interface IPayslipItem {
   };
   item_type: 'allowance' | 'deduction' | 'overtime';
   name: string;
-  amount: string; 
+  amount: string;
   description: string;
 }
