@@ -143,6 +143,8 @@ class Employee(models.Model):
         if is_new_employee and self.is_active:
             self.initialize_leave_balances()
 
+    # Updated Employee model methods
+
     def initialize_leave_balances(self, year=None):
         """Initialize leave balances for this employee for the given year"""
         if year is None:
@@ -151,7 +153,12 @@ class Employee(models.Model):
         from leave_mgt.models import LeaveType, LeaveBalance
         from leave_mgt.utils import LeaveCalculator
 
-        leave_types = LeaveType.objects.filter(is_active=True)
+        # Get institution from employee (assuming employee has institution field)
+        institution = getattr(self, 'institution', None)
+        if not institution:
+            raise ValueError("Employee must have an institution to initialize leave balances")
+
+        leave_types = LeaveType.objects.filter(is_active=True, institution=institution)
 
         created_balances = []
 
@@ -168,6 +175,7 @@ class Employee(models.Model):
             )
 
             balance, created = LeaveBalance.objects.get_or_create(
+                institution=institution,
                 employee=self,
                 leave_type=leave_type,
                 year=year,
@@ -192,7 +200,12 @@ class Employee(models.Model):
         from leave_mgt.models import LeaveType, LeaveBalance
         from leave_mgt.utils import LeaveCalculator
 
-        leave_types = LeaveType.objects.filter(is_active=True)
+        # Get institution from employee
+        institution = getattr(self, 'institution', None)
+        if not institution:
+            raise ValueError("Employee must have an institution to reinitialize leave balances")
+
+        leave_types = LeaveType.objects.filter(is_active=True, institution=institution)
 
         updated_balances = []
 
@@ -204,7 +217,10 @@ class Employee(models.Model):
                     and self.gender != leave_type.gender_specific
                 ):
                     LeaveBalance.objects.filter(
-                        employee=self, leave_type=leave_type, year=year
+                        institution=institution,
+                        employee=self, 
+                        leave_type=leave_type, 
+                        year=year
                     ).delete()
                     continue
 
@@ -213,6 +229,7 @@ class Employee(models.Model):
             )
 
             balance, created = LeaveBalance.objects.update_or_create(
+                institution=institution,
                 employee=self,
                 leave_type=leave_type,
                 year=year,

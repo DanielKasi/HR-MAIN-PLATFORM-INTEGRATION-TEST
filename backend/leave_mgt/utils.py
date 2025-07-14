@@ -134,10 +134,19 @@ class LeaveBalanceManager:
         if year is None:
             year = timezone.now().year
 
-        employees = Employee.objects.filter(is_active=True, institution_id=institution_id)
-        leave_types = LeaveType.objects.filter(is_active=True, institution_id=institution_id)
+        from institution.models import Institution
+        
+        try:
+            institution = Institution.objects.get(id=institution_id)
+        except Institution.DoesNotExist:
+            raise ValueError(f"Institution with id {institution_id} does not exist")
+
+        employees = Employee.objects.filter(is_active=True, institution=institution)
+        leave_types = LeaveType.objects.filter(is_active=True, institution=institution)
 
         created_count = 0
+        updated_count = 0
+        
         for employee in employees:
             for leave_type in leave_types:
                 # Skip gender-specific leaves if not applicable
@@ -149,7 +158,7 @@ class LeaveBalanceManager:
                 entitlement = LeaveCalculator.calculate_leave_entitlement(employee, leave_type, year)
 
                 balance, created = LeaveBalance.objects.get_or_create(
-                    institution_id=institution_id,
+                    institution=institution,
                     employee=employee,
                     leave_type=leave_type,
                     year=year,
@@ -166,15 +175,20 @@ class LeaveBalanceManager:
                 elif balance.allocated_days != entitlement:
                     balance.allocated_days = entitlement
                     balance.save()
+                    updated_count += 1
 
-        return created_count
+        return {
+            'created_count': created_count,
+            'updated_count': updated_count,
+            'total_processed': created_count + updated_count
+        }
 
-    
     @staticmethod
     def update_balance_on_approval(leave_application):
         """Update leave balance when application is approved"""
         try:
             balance = LeaveBalance.objects.get(
+                institution=leave_application.employee.institution,
                 employee=leave_application.employee,
                 leave_type=leave_application.leave_type,
                 year=leave_application.start_date.year
@@ -195,6 +209,7 @@ class LeaveBalanceManager:
         """Update leave balance when application is rejected"""
         try:
             balance = LeaveBalance.objects.get(
+                institution=leave_application.employee.institution,
                 employee=leave_application.employee,
                 leave_type=leave_application.leave_type,
                 year=leave_application.start_date.year
@@ -214,6 +229,7 @@ class LeaveBalanceManager:
         """Update leave balance when approved application is cancelled"""
         try:
             balance = LeaveBalance.objects.get(
+                institution=leave_application.employee.institution,
                 employee=leave_application.employee,
                 leave_type=leave_application.leave_type,
                 year=leave_application.start_date.year
@@ -235,8 +251,15 @@ class LeaveBalanceManager:
     @staticmethod
     def carry_forward_leaves(institution_id, from_year, to_year):
         """Carry forward unused leaves for a specific institution"""
+        from institution.models import Institution
+        
+        try:
+            institution = Institution.objects.get(id=institution_id)
+        except Institution.DoesNotExist:
+            raise ValueError(f"Institution with id {institution_id} does not exist")
+
         balances = LeaveBalance.objects.filter(
-            institution_id=institution_id,
+            institution=institution,
             year=from_year
         ).select_related('leave_type', 'employee')
 
@@ -256,7 +279,7 @@ class LeaveBalanceManager:
                     )
 
                     next_year_balance, created = LeaveBalance.objects.get_or_create(
-                        institution_id=institution_id,
+                        institution=institution,
                         employee=balance.employee,
                         leave_type=balance.leave_type,
                         year=to_year,
@@ -275,7 +298,6 @@ class LeaveBalanceManager:
                     carried_forward_count += 1
 
         return carried_forward_count
-
 
     @staticmethod
     def get_employee_balance_summary(employee, year=None):
@@ -318,6 +340,67 @@ class LeaveBalanceManager:
         
         return summary
 
+    @staticmethod
+    def update_balance_on_application(leave_application):
+        """Update leave balance when application is submitted (pending status)"""
+        try:
+            balance = LeaveBalance.objects.get(
+                institution=leave_application.employee.institution,
+                employee=leave_application.employee,
+                leave_type=leave_application.leave_type,
+                year=leave_application.start_date.year
+            )
+            
+            # Check if sufficient balance is available
+            if balance.available_days >= leave_application.total_days:
+                balance.pending_days += leave_application.total_days
+                balance.save()
+                return True
+            else:
+                return False
+            
+        except LeaveBalance.DoesNotExist:
+            return False
+
+    @staticmethod
+    def get_institution_balance_summary(institution_id, year=None):
+        """Get balance summary for all employees in an institution"""
+        if year is None:
+            year = timezone.now().year
+        
+        from institution.models import Institution
+        
+        try:
+            institution = Institution.objects.get(id=institution_id)
+        except Institution.DoesNotExist:
+            raise ValueError(f"Institution with id {institution_id} does not exist")
+
+        balances = LeaveBalance.objects.filter(
+            institution=institution,
+            year=year
+        ).select_related('leave_type', 'employee')
+        
+        summary = {}
+        
+        for balance in balances:
+            leave_type_name = balance.leave_type.name
+            if leave_type_name not in summary:
+                summary[leave_type_name] = {
+                    'total_allocated': Decimal('0'),
+                    'total_used': Decimal('0'),
+                    'total_pending': Decimal('0'),
+                    'total_available': Decimal('0'),
+                    'employee_count': 0
+                }
+            
+            summary[leave_type_name]['total_allocated'] += balance.allocated_days
+            summary[leave_type_name]['total_used'] += balance.used_days
+            summary[leave_type_name]['total_pending'] += balance.pending_days
+            summary[leave_type_name]['total_available'] += balance.available_days
+            summary[leave_type_name]['employee_count'] += 1
+        
+        return summary
+
 
 class LeaveReportGenerator:
     """Generate various leave reports"""
@@ -328,7 +411,6 @@ class LeaveReportGenerator:
         if year is None:
             year = timezone.now().year
         
-        # This would need to be adjusted based on your Employee model structure
         employees_query = Employee.objects.filter(is_active=True)
         if department:
             employees_query = employees_query.filter(department=department)
@@ -344,16 +426,24 @@ class LeaveReportGenerator:
         return report_data
     
     @staticmethod
-    def leave_type_utilization_report(year=None):
-        """Generate utilization report by leave type"""
+    def leave_type_utilization_report(institution_id, year=None):
+        """Generate utilization report by leave type for an institution"""
         if year is None:
             year = timezone.now().year
         
-        leave_types = LeaveType.objects.filter(is_active=True)
+        from institution.models import Institution
+        
+        try:
+            institution = Institution.objects.get(id=institution_id)
+        except Institution.DoesNotExist:
+            raise ValueError(f"Institution with id {institution_id} does not exist")
+        
+        leave_types = LeaveType.objects.filter(is_active=True, institution=institution)
         report_data = []
         
         for leave_type in leave_types:
             balances = LeaveBalance.objects.filter(
+                institution=institution,
                 leave_type=leave_type,
                 year=year
             )
@@ -375,7 +465,7 @@ class LeaveReportGenerator:
         return report_data
     
     @staticmethod
-    def upcoming_leaves_report(days_ahead=30):
+    def upcoming_leaves_report(institution_id=None, days_ahead=30):
         """Generate report of upcoming approved leaves"""
         start_date = timezone.now().date()
         end_date = start_date + timedelta(days=days_ahead)
@@ -386,9 +476,30 @@ class LeaveReportGenerator:
             start_date__lte=end_date
         ).select_related('employee', 'leave_type').order_by('start_date')
         
+        if institution_id:
+            upcoming_leaves = upcoming_leaves.filter(employee__institution_id=institution_id)
+        
         return upcoming_leaves
 
-
+    @staticmethod
+    def employee_leave_history_report(employee, year=None):
+        """Generate leave history report for a specific employee"""
+        if year is None:
+            year = timezone.now().year
+        
+        applications = LeaveApplication.objects.filter(
+            employee=employee,
+            start_date__year=year
+        ).select_related('leave_type').order_by('-start_date')
+        
+        balance_summary = LeaveBalanceManager.get_employee_balance_summary(employee, year)
+        
+        return {
+            'employee': employee,
+            'year': year,
+            'applications': applications,
+            'balance_summary': balance_summary
+        }
 class LeaveNotificationManager:
     """Manage leave-related notifications"""
     
