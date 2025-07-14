@@ -22,17 +22,18 @@ class LeaveTypeListCreateAPIView(APIView):
         summary="List all leave types",
         responses={200: LeaveTypeSerializer(many=True)}
     )
-    def get(self, request):
-        queryset = LeaveType.objects.filter(is_active=True)
+    def get(self, request, institution_id):
+        queryset = LeaveType.objects.filter(is_active=True, institution_id=institution_id)
         serializer = LeaveTypeSerializer(queryset, many=True)
         return Response(serializer.data)
+
 
     @extend_schema(
         summary="Create a new leave type",
         request=LeaveTypeSerializer,
         responses={201: LeaveTypeSerializer}
     )
-    def post(self, request):
+    def post(self, request, institution_id):
         serializer = LeaveTypeSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -85,8 +86,8 @@ class LeaveBalanceListCreateAPIView(APIView):
         ],
         responses={200: LeaveBalanceSerializer(many=True)}
     )
-    def get(self, request):
-        queryset = LeaveBalance.objects.select_related('employee', 'leave_type').all()
+    def get(self, request, institution_id):
+        queryset = LeaveBalance.objects.select_related('employee', 'leave_type').filter(institution_id=institution_id)
         
         employee_id = request.query_params.get('employee_id')
         year = request.query_params.get('year')
@@ -99,12 +100,13 @@ class LeaveBalanceListCreateAPIView(APIView):
         serializer = LeaveBalanceSerializer(queryset, many=True)
         return Response(serializer.data)
 
+
     @extend_schema(
         summary="Create a new leave balance record",
         request=LeaveBalanceSerializer,
         responses={201: LeaveBalanceSerializer}
     )
-    def post(self, request):
+    def post(self, request, institution_id):
         serializer = LeaveBalanceSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -161,14 +163,13 @@ class LeaveApplicationListCreateAPIView(APIView):
         ],
         responses={200: LeaveApplicationSerializer(many=True)}
     )
-    def get(self, request):
-        queryset = LeaveApplication.objects.select_related('employee', 'leave_type', 'approved_by').all()
+    def get(self, request, institution_id):
+        queryset = LeaveApplication.objects.select_related('employee', 'leave_type', 'approved_by').filter(institution_id=institution_id)
         
-        # Filter parameters
+        # Optional query parameters
         employee_id = request.query_params.get('employee_id')
         status_filter = request.query_params.get('status')
         leave_type_id = request.query_params.get('leave_type_id')
-        institution_id = request.query_params.get('institutionId')
         
         if employee_id:
             queryset = queryset.filter(employee_id=employee_id)
@@ -176,11 +177,10 @@ class LeaveApplicationListCreateAPIView(APIView):
             queryset = queryset.filter(status=status_filter)
         if leave_type_id:
             queryset = queryset.filter(leave_type_id=leave_type_id)
-        if institution_id:
-            queryset = queryset.filter(employee__institutionId=institution_id)
             
         serializer = LeaveApplicationSerializer(queryset, many=True)
         return Response(serializer.data)
+
 
     @extend_schema(
         summary="Create a new leave application",
@@ -193,7 +193,7 @@ class LeaveApplicationListCreateAPIView(APIView):
             )
         }
     )
-    def post(self, request):
+    def post(self, request, institution_id):
         def extract_value(data, key):
             """Extract single value from QueryDict list format"""
             value = data.get(key)
@@ -427,8 +427,8 @@ class LeavePolicyListCreateAPIView(APIView):
         summary="List all leave policies",
         responses={200: LeavePolicySerializer(many=True)}
     )
-    def get(self, request):
-        queryset = LeavePolicy.objects.select_related('leave_type').filter(is_active=True)
+    def get(self, request, institution_id):
+        queryset = LeavePolicy.objects.select_related('leave_type').filter(is_active=True, institution_id=institution_id)
         serializer = LeavePolicySerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -437,7 +437,7 @@ class LeavePolicyListCreateAPIView(APIView):
         request=LeavePolicySerializer,
         responses={201: LeavePolicySerializer}
     )
-    def post(self, request):
+    def post(self, request, institution_id):
         serializer = LeavePolicySerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -483,32 +483,37 @@ class LeavePolicyDetailAPIView(APIView):
 # Utility endpoints
 @extend_schema(tags=["Leave Management"])
 @api_view(['POST'])
-def initialize_yearly_balances(request):
-    """Initialize leave balances for all employees for a given year"""
+def initialize_yearly_balances(request, institution_id):
+    """Initialize leave balances for all employees in an institution for a given year"""
     year = request.data.get('year', timezone.now().year)
-    created_count = LeaveBalanceManager.initialize_yearly_balances(year)
+
+    created_count = LeaveBalanceManager.initialize_yearly_balances(institution_id, year)
+    
     return Response({
         'message': f'Initialized {created_count} leave balance records for year {year}'
     })
 
 
+
 @extend_schema(tags=["Leave Management"])
 @api_view(['POST'])
-def carry_forward_leaves(request):
-    """Carry forward unused leaves from one year to another"""
+def carry_forward_leaves(request, institution_id):
+    """Carry forward unused leaves from one year to another for a given institution"""
     from_year = request.data.get('from_year')
     to_year = request.data.get('to_year')
-    
+
     if not from_year or not to_year:
         return Response(
-            {'error': 'Both from_year and to_year are required'}, 
+            {'error': 'Both from_year and to_year are required'},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
-    carried_count = LeaveBalanceManager.carry_forward_leaves(from_year, to_year)
+
+    carried_count = LeaveBalanceManager.carry_forward_leaves(institution_id, from_year, to_year)
+
     return Response({
         'message': f'Carried forward {carried_count} leave balances from {from_year} to {to_year}'
     })
+
 
 
 @extend_schema(tags=["Leave Management"])

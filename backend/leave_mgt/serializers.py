@@ -1,3 +1,5 @@
+from institution.serializers import InstitutionSerializer
+from institution.models import Institution
 from rest_framework import serializers
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -12,10 +14,17 @@ from users.models import CustomUser
 
 
 class LeaveTypeSerializer(serializers.ModelSerializer):
+    institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
+
     class Meta:
         model = LeaveType
         fields = '__all__'
         read_only_fields = ('created_at', 'updated_at')
+        
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['institution'] = InstitutionSerializer(instance.institution).data
+        return rep      
 
     def validate(self, attrs):
         if attrs.get('carry_forward_allowed') and attrs.get('max_carry_forward_days', 0) > attrs.get('max_days_per_year', 0):
@@ -29,6 +38,7 @@ class LeaveBalanceSerializer(serializers.ModelSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())  
     leave_type = serializers.PrimaryKeyRelatedField(queryset=LeaveType.objects.all())
     available_days = serializers.ReadOnlyField()
+    Institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
 
     class Meta:
         model = LeaveBalance
@@ -56,6 +66,7 @@ class LeaveBalanceSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         rep['employee'] = EmployeeSerializer(instance.employee).data
         rep['leave_type'] = LeaveTypeSerializer(instance.leave_type).data
+        rep['institution'] = InstitutionSerializer(instance.institution).data
         return rep
 
 
@@ -69,6 +80,7 @@ class LeaveApplicationSerializer(serializers.ModelSerializer):
     )
     total_days = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
     working_days = serializers.SerializerMethodField()
+    Institution  = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
 
     class Meta:
         model = LeaveApplication
@@ -173,6 +185,7 @@ class LeaveApplicationSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         rep['employee'] = EmployeeSerializer(instance.employee).data
         rep['leave_type'] = LeaveTypeSerializer(instance.leave_type).data
+        rep['institution'] = InstitutionSerializer(instance.institution).data
         if instance.approved_by:
             rep['approved_by'] = CustomUserSerializer(instance.approved_by).data
         else:
@@ -182,6 +195,7 @@ class LeaveApplicationSerializer(serializers.ModelSerializer):
 
 class LeavePolicySerializer(serializers.ModelSerializer):
     leave_type = serializers.PrimaryKeyRelatedField(queryset=LeaveType.objects.all())
+    institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
 
     class Meta:
         model = LeavePolicy
@@ -202,6 +216,7 @@ class LeavePolicySerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         rep['leave_type'] = LeaveTypeSerializer(instance.leave_type).data
+        rep['institution'] = InstitutionSerializer(instance.institution).data
         return rep
 
 

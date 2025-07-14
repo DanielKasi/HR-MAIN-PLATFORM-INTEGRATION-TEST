@@ -129,14 +129,14 @@ class LeaveBalanceManager:
     """Manage leave balances for employees"""
     
     @staticmethod
-    def initialize_yearly_balances(year=None):
-        """Initialize leave balances for all employees for a given year"""
+    def initialize_yearly_balances(institution_id, year=None):
+        """Initialize leave balances for all employees in an institution for a given year"""
         if year is None:
             year = timezone.now().year
-        
-        employees = Employee.objects.filter(is_active=True)
-        leave_types = LeaveType.objects.filter(is_active=True)
-        
+
+        employees = Employee.objects.filter(is_active=True, institution_id=institution_id)
+        leave_types = LeaveType.objects.filter(is_active=True, institution_id=institution_id)
+
         created_count = 0
         for employee in employees:
             for leave_type in leave_types:
@@ -144,13 +144,12 @@ class LeaveBalanceManager:
                 if leave_type.gender_specific != 'all':
                     if hasattr(employee, 'gender') and employee.gender != leave_type.gender_specific:
                         continue
-                
+
                 # Calculate entitlement
-                entitlement = LeaveCalculator.calculate_leave_entitlement(
-                    employee, leave_type, year
-                )
-                
+                entitlement = LeaveCalculator.calculate_leave_entitlement(employee, leave_type, year)
+
                 balance, created = LeaveBalance.objects.get_or_create(
+                    institution_id=institution_id,
                     employee=employee,
                     leave_type=leave_type,
                     year=year,
@@ -161,15 +160,15 @@ class LeaveBalanceManager:
                         'carried_forward_days': Decimal('0'),
                     }
                 )
-                
+
                 if created:
                     created_count += 1
                 elif balance.allocated_days != entitlement:
-                    # Update entitlement if it has changed
                     balance.allocated_days = entitlement
                     balance.save()
-        
+
         return created_count
+
     
     @staticmethod
     def update_balance_on_approval(leave_application):
@@ -234,27 +233,30 @@ class LeaveBalanceManager:
             return False
 
     @staticmethod
-    def carry_forward_leaves(from_year, to_year):
-        """Carry forward unused leaves to next year"""
-        balances = LeaveBalance.objects.filter(year=from_year).select_related('leave_type', 'employee')
+    def carry_forward_leaves(institution_id, from_year, to_year):
+        """Carry forward unused leaves for a specific institution"""
+        balances = LeaveBalance.objects.filter(
+            institution_id=institution_id,
+            year=from_year
+        ).select_related('leave_type', 'employee')
+
         carried_forward_count = 0
-        
+
         for balance in balances:
             if balance.leave_type.carry_forward_allowed:
                 unused_days = balance.allocated_days + balance.carried_forward_days - balance.used_days
                 carry_forward_days = min(
-                    unused_days, 
+                    unused_days,
                     Decimal(str(balance.leave_type.max_carry_forward_days))
                 )
-                
+
                 if carry_forward_days > 0:
-                    # Calculate new year entitlement
                     new_entitlement = LeaveCalculator.calculate_leave_entitlement(
                         balance.employee, balance.leave_type, to_year
                     )
-                    
-                    # Create or update next year's balance
+
                     next_year_balance, created = LeaveBalance.objects.get_or_create(
+                        institution_id=institution_id,
                         employee=balance.employee,
                         leave_type=balance.leave_type,
                         year=to_year,
@@ -265,14 +267,15 @@ class LeaveBalanceManager:
                             'pending_days': Decimal('0'),
                         }
                     )
-                    
+
                     if not created:
                         next_year_balance.carried_forward_days = carry_forward_days
                         next_year_balance.save()
-                    
+
                     carried_forward_count += 1
-        
+
         return carried_forward_count
+
 
     @staticmethod
     def get_employee_balance_summary(employee, year=None):
