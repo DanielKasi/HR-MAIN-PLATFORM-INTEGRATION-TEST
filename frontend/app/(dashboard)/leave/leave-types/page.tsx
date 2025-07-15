@@ -91,25 +91,27 @@ const LeaveTypesComponent = () => {
   }
 
 
-  useEffect(() => {
-    const fetchLeaveTypes = async () => {
-      if (selectedInstitution?.id === undefined) {
-        setLeaveTypes([]);
-        return;
-      }
-      setIsLoading(true);
-      try {
-        const types = await getLeaveTypes(selectedInstitution.id);
-        setLeaveTypes(types);
-      } catch (error) {
-        toast.error("Failed to load leave types");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+ useEffect(() => {
+  const fetchLeaveTypes = async () => {
+    if (selectedInstitution?.id === undefined) {
+      setLeaveTypes([]);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const types = await getLeaveTypes({
+        institutionId: selectedInstitution.id
+      });
+      setLeaveTypes(types);
+    } catch (error) {
+      toast.error("Failed to load leave types");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchLeaveTypes();
-  }, [selectedInstitution?.id]);
+  fetchLeaveTypes();
+}, [selectedInstitution?.id]);
 
   const handleAddLeaveType = async () => {
     if (!formData.name || !formData.description || !formData.max_days_per_year) {
@@ -131,7 +133,13 @@ const LeaveTypesComponent = () => {
         gender_specific: formData.gender_specific === "all" ? null : formData.gender_specific as any,
       }
 
+      if (selectedInstitution?.id === undefined) {
+        toast.error("Institution is not selected");
+        setIsSubmitting(false);
+        return;
+      }
       const newLeaveType = await createLeaveType({
+        institutionId: selectedInstitution.id,
         leaveTypeData,
       })
 

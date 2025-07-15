@@ -1150,13 +1150,33 @@ export const getDisciplinaryActionById = async (
 
 
 
+export const getLeaveTypes = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<ILeaveType[]> => {
+  try {
+    const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-types/?is_active=true`);
+    return response.data as ILeaveType[];
+  } catch (error) {
+    console.error("Failed to fetch leave types:", error);
+    return [];
+  }
+};
+
 export const createLeaveType = async ({
+  institutionId,
   leaveTypeData,
 }: {
+  institutionId: number;
   leaveTypeData: ILeaveTypeFormData;
 }): Promise<ILeaveType | null> => {
   try {
     const formData = new FormData();
+    
+    // Add institution to the form data
+    formData.append('institution', institutionId.toString());
+    
     Object.entries(leaveTypeData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         formData.append(key, value.toString());
@@ -1164,7 +1184,7 @@ export const createLeaveType = async ({
     });
 
     const response = await apiRequest.post(
-      `leave-mgt/leave-types/`,
+      `leave-mgt/${institutionId}/leave-types/`,
       formData
     );
     return response.data as ILeaveType;
@@ -1173,19 +1193,6 @@ export const createLeaveType = async ({
     return null;
   }
 };
-
-
-
-export const getLeaveTypes = async (institutionId: number): Promise<ILeaveType[]> => {
-  try {
-    const response = await apiRequest.get(`leave-mgt/leave-types/?is_active=true`);
-    return response.data as ILeaveType[];
-  } catch (error) {
-    console.error("Failed to fetch leave types:", error);
-    return [];
-  }
-};
-
 
 
 export const updateLeaveType = async ({
@@ -1236,14 +1243,18 @@ export const deleteLeaveType = async ({
 
 
 export const createLeavePolicy = async ({
+  institutionId,
   leavePolicyData,
 }: {
+  institutionId: number;
   leavePolicyData: ILeavePolicyFormData;
 }): Promise<ILeavePolicy | null> => {
   try {
     const formData = new FormData();
     
-    // Append all the leave policy data to FormData
+    // Add institution to the form data
+    formData.append('institution', institutionId.toString());
+    
     Object.entries(leavePolicyData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         formData.append(key, value.toString());
@@ -1251,10 +1262,9 @@ export const createLeavePolicy = async ({
     });
 
     const response = await apiRequest.post(
-      "leave-mgt/leave-policies/",
+      `leave-mgt/${institutionId}/leave-policies/`,
       formData
     );
-    
     return response.data as ILeavePolicy;
   } catch (error) {
     console.error("Failed to create leave policy:", error);
@@ -1262,17 +1272,19 @@ export const createLeavePolicy = async ({
   }
 };
 
-
-export const getLeavePolicies = async (institutionId: number): Promise<ILeavePolicy[]> => {
+export const getLeavePolicies = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<ILeavePolicy[]> => {
   try {
-    const response = await apiRequest.get(`leave-mgt/leave-policies/`);
+    const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-policies/`);
     return response.data as ILeavePolicy[];
   } catch (error) {
     console.error("Failed to fetch leave policies:", error);
     return [];
   }
-};
-
+}
 
 export const updateLeavePolicy = async ({
   leavePolicyId,
@@ -1318,12 +1330,17 @@ export const deleteLeavePolicy = async ({
 };
 
 export const createLeaveApplication = async ({
+  institutionId,
   leaveApplicationData,
 }: {
+  institutionId: number;
   leaveApplicationData: ILeaveRequestFormData;
 }): Promise<ILeaveRequest | null> => {
   try {
     const formData = new FormData();
+    
+    // Change this line from 'Institution' to 'institution' (lowercase)
+    formData.append('institution', institutionId.toString());
     
     Object.entries(leaveApplicationData).forEach(([key, value]) => {
       if (key === "supporting_document" && value instanceof File) {
@@ -1333,7 +1350,10 @@ export const createLeaveApplication = async ({
       }
     });
 
-    const response = await apiRequest.post(`/leave-mgt/leave-applications/`, formData);
+    const response = await apiRequest.post(
+      `leave-mgt/${institutionId}/leave-applications/`, 
+      formData
+    );
     return response.data;
   } catch (error: any) {
     throw new Error(
@@ -1345,12 +1365,14 @@ export const createLeaveApplication = async ({
   }
 };
 
-export const getLeaveApplications = async (institutionId: number): Promise<ILeaveRequest[]> => {
+export const getLeaveApplications = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<ILeaveRequest[]> => {
   try {
-    const response = await apiRequest.get(
-      `leave-mgt/leave-applications/`
-    );
-    return Array.isArray(response.data) ? response.data : response.data.results || [];
+    const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-applications/`);
+    return response.data as ILeaveRequest[];
   } catch (error) {
     console.error("Failed to fetch leave applications:", error);
     return [];
@@ -1359,13 +1381,15 @@ export const getLeaveApplications = async (institutionId: number): Promise<ILeav
 
 
 export const getLeaveApplication = async ({
+  institutionId,
   leaveApplicationId,
 }: {
+  institutionId: number;
   leaveApplicationId: number | string;
 }): Promise<ILeaveRequest | null> => {
   try {
     const response = await apiRequest.get(
-      `leave-mgt/leave-applications/${leaveApplicationId}/`
+      `leave-mgt/${institutionId}/leave-applications/${leaveApplicationId}/`
     );
     return response.data as ILeaveRequest;
   } catch (error) {
@@ -1373,7 +1397,6 @@ export const getLeaveApplication = async ({
     return null;
   }
 };
-
 
 export const updateLeaveApplication = async ({
   leaveApplicationId,

@@ -105,8 +105,8 @@ const LeavePolicyComponent = () => {
       }
       try {
         const [policiesData, leaveTypesData] = await Promise.all([
-          getLeavePolicies(selectedInstitution?.id),
-          getLeaveTypes(selectedInstitution?.id)
+          getLeavePolicies({ institutionId: selectedInstitution?.id }),
+          getLeaveTypes({ institutionId: selectedInstitution?.id })
         ])
         
         const activePolicies = policiesData
@@ -165,12 +165,17 @@ const LeavePolicyComponent = () => {
         is_active: true,
       }
 
+      if (!selectedInstitution) {
+        toast.error("No institution selected");
+        setIsSubmitting(false);
+        return;
+      }
       const newPolicy = await createLeavePolicy({
+        institutionId: selectedInstitution.id,
         leavePolicyData: policyData,
       })
 
       if (newPolicy) {
-        // Find the selected leave type to add to the new policy
         const selectedLeaveType = leaveTypes.find(lt => lt.id.toString() === formData.leave_type)
         const policyWithLeaveType = {
           ...newPolicy,

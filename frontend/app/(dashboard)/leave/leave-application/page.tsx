@@ -149,8 +149,14 @@ const LeaveApplicationComponent = () => {
     if (!selectedInstitution?.id) return
     
     try {
-      const applicationsData = await getLeaveApplications(selectedInstitution?.id)
-      setApplications(applicationsData || [])
+      const applicationsData = await getLeaveApplications({ institutionId: selectedInstitution?.id })
+      setApplications(
+        Array.isArray(applicationsData)
+          ? applicationsData
+          : applicationsData
+            ? [applicationsData]
+            : []
+      )
     } catch (error) {
       toast.error("Error refreshing applications")
     }
@@ -303,42 +309,38 @@ const LeaveApplicationComponent = () => {
     fetchEmployees()
   }, [selectedInstitution?.id])
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!selectedInstitution?.id) {
-        return
-      }
-      
-      setIsLoading(true)
-      
-      try {
-        const [leaveTypesData, applicationsData, policiesData] = await Promise.all([
-          getLeaveTypes(selectedInstitution?.id),
-          getLeaveApplications(selectedInstitution?.id),
-          getLeavePolicies(selectedInstitution?.id),
-        ])
-        
-        const activeLeaveTypes = leaveTypesData?.filter(type => type.is_active !== false) || []
-        setLeaveTypes(activeLeaveTypes)
-        setApplications(applicationsData || [])
-        setLeavePolicies(policiesData || [])
-        
-        if (activeLeaveTypes.length === 0) {
-          toast.error("No leave types found for this institution")
-        }
-        
-      } catch (error) {
-        toast.error("Failed to load data")
-        setLeaveTypes([])
-        setApplications([])
-        setLeavePolicies([])
-      } finally {
-        setIsLoading(false)
-      }
+useEffect(() => {
+  const fetchData = async () => {
+    if (!selectedInstitution?.id) {
+      return
     }
     
-    fetchData()
-  }, [selectedInstitution?.id])
+    setIsLoading(true)
+    
+    try {
+      const [leaveTypesData, applicationsData, policiesData] = await Promise.all([
+        getLeaveTypes({ institutionId: selectedInstitution.id }),
+        getLeaveApplications({ institutionId: selectedInstitution.id }), 
+        getLeavePolicies({ institutionId: selectedInstitution.id }),
+      ])
+      
+      const activeLeaveTypes = leaveTypesData?.filter(type => type.is_active !== false) || []
+      setLeaveTypes(activeLeaveTypes)
+      setApplications(Array.isArray(applicationsData) ? applicationsData : [])
+      setLeavePolicies(policiesData || [])
+      
+    } catch (error) {
+      toast.error("Failed to load data")
+      setLeaveTypes([])
+      setApplications([])
+      setLeavePolicies([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  fetchData()
+}, [selectedInstitution?.id])
 
   const handleAddApplication = async () => {
     if (!formData.employee || !formData.leave_type || !formData.start_date || !formData.end_date || !formData.reason) {
@@ -379,6 +381,7 @@ const LeaveApplicationComponent = () => {
       }
 
       const newApplication = await createLeaveApplication({
+        institutionId: selectedInstitution.id,
         leaveApplicationData: applicationData,
       })
 
