@@ -153,10 +153,13 @@ class Employee(models.Model):
         from leave_mgt.models import LeaveType, LeaveBalance
         from leave_mgt.utils import LeaveCalculator
 
-        # Get institution from employee (assuming employee has institution field)
-        institution = getattr(self, 'institution', None)
+        # Get institution from department
+        if not self.department:
+            raise ValueError("Employee must have a department to initialize leave balances")
+        
+        institution = self.department.institution
         if not institution:
-            raise ValueError("Employee must have an institution to initialize leave balances")
+            raise ValueError("Employee's department must belong to an institution")
 
         leave_types = LeaveType.objects.filter(is_active=True, institution=institution)
 
@@ -200,10 +203,13 @@ class Employee(models.Model):
         from leave_mgt.models import LeaveType, LeaveBalance
         from leave_mgt.utils import LeaveCalculator
 
-        # Get institution from employee
-        institution = getattr(self, 'institution', None)
+        # Get institution from department
+        if not self.department:
+            raise ValueError("Employee must have a department to reinitialize leave balances")
+        
+        institution = self.department.institution
         if not institution:
-            raise ValueError("Employee must have an institution to reinitialize leave balances")
+            raise ValueError("Employee's department must belong to an institution")
 
         leave_types = LeaveType.objects.filter(is_active=True, institution=institution)
 
