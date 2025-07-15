@@ -129,7 +129,7 @@ class LeaveBalanceManager:
     """Manage leave balances for employees"""
     
     @staticmethod
-    def initialize_yearly_balances(institution_id, year=None):
+    def initialize_yearly_balances(institution, year=None):
         """Initialize leave balances for all employees in an institution for a given year"""
         if year is None:
             year = timezone.now().year
@@ -163,7 +163,7 @@ class LeaveBalanceManager:
                 entitlement = LeaveCalculator.calculate_leave_entitlement(employee, leave_type, year)
 
                 balance, created = LeaveBalance.objects.get_or_create(
-                    institution=institution,
+                    institution=institution_id,
                     employee=employee,
                     leave_type=leave_type,
                     year=year,
