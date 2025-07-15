@@ -221,6 +221,12 @@ class LeaveApplicationListCreateAPIView(APIView):
             data_to_serialize = final_data
         else:
             data_to_serialize = request.data
+
+
+        data_to_serialize['institution'] = institution_id
+        
+        print(f"Institution ID set to: {institution_id}")  # Debug line
+        print(f"Data being serialized: {data_to_serialize}")  # Debug lin
         
         serializer = LeaveApplicationSerializer(data=data_to_serialize)
         
@@ -265,7 +271,7 @@ class LeaveApplicationListCreateAPIView(APIView):
                 balance.save()
             except LeaveBalance.DoesNotExist:
                 return Response(
-                    {'error': 'No leave balance found for this year'}, 
+                    {'error': ''}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             

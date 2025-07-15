@@ -38,7 +38,7 @@ class LeaveBalanceSerializer(serializers.ModelSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())  
     leave_type = serializers.PrimaryKeyRelatedField(queryset=LeaveType.objects.all())
     available_days = serializers.ReadOnlyField()
-    Institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
+    institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
 
     class Meta:
         model = LeaveBalance
@@ -80,7 +80,7 @@ class LeaveApplicationSerializer(serializers.ModelSerializer):
     )
     total_days = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
     working_days = serializers.SerializerMethodField()
-    Institution  = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
+    institution  = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
 
     class Meta:
         model = LeaveApplication
@@ -226,7 +226,7 @@ class LeaveApplicationCreateSerializer(LeaveApplicationSerializer):
     
     class Meta(LeaveApplicationSerializer.Meta):
         fields = [
-            'employee', 'leave_type', 'start_date', 'end_date', 
+            'institution', 'employee', 'leave_type', 'start_date', 'end_date', 
             'duration_type', 'reason', 'supporting_document', 'handover_notes'
         ]
 
