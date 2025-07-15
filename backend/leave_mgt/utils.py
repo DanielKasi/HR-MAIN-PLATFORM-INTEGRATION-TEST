@@ -141,7 +141,12 @@ class LeaveBalanceManager:
         except Institution.DoesNotExist:
             raise ValueError(f"Institution with id {institution_id} does not exist")
 
-        employees = Employee.objects.filter(is_active=True, institution=institution)
+        # Filter employees by department's institution instead of direct institution
+        employees = Employee.objects.filter(
+            is_active=True, 
+            department__institution=institution
+        )
+        
         leave_types = LeaveType.objects.filter(is_active=True, institution=institution)
 
         created_count = 0
@@ -187,8 +192,11 @@ class LeaveBalanceManager:
     def update_balance_on_approval(leave_application):
         """Update leave balance when application is approved"""
         try:
+            # Get institution from employee's department
+            institution = leave_application.employee.department.institution
+            
             balance = LeaveBalance.objects.get(
-                institution=leave_application.employee.institution,
+                institution=institution,
                 employee=leave_application.employee,
                 leave_type=leave_application.leave_type,
                 year=leave_application.start_date.year
@@ -203,13 +211,19 @@ class LeaveBalanceManager:
             
         except LeaveBalance.DoesNotExist:
             return False
+        except AttributeError:
+            # Handle case where employee has no department or department has no institution
+            return False
     
     @staticmethod
     def update_balance_on_rejection(leave_application):
         """Update leave balance when application is rejected"""
         try:
+            # Get institution from employee's department
+            institution = leave_application.employee.department.institution
+            
             balance = LeaveBalance.objects.get(
-                institution=leave_application.employee.institution,
+                institution=institution,
                 employee=leave_application.employee,
                 leave_type=leave_application.leave_type,
                 year=leave_application.start_date.year
@@ -223,13 +237,19 @@ class LeaveBalanceManager:
             
         except LeaveBalance.DoesNotExist:
             return False
+        except AttributeError:
+            # Handle case where employee has no department or department has no institution
+            return False
     
     @staticmethod
     def update_balance_on_cancellation(leave_application):
         """Update leave balance when approved application is cancelled"""
         try:
+            # Get institution from employee's department
+            institution = leave_application.employee.department.institution
+            
             balance = LeaveBalance.objects.get(
-                institution=leave_application.employee.institution,
+                institution=institution,
                 employee=leave_application.employee,
                 leave_type=leave_application.leave_type,
                 year=leave_application.start_date.year
@@ -246,6 +266,9 @@ class LeaveBalanceManager:
             return True
             
         except LeaveBalance.DoesNotExist:
+            return False
+        except AttributeError:
+            # Handle case where employee has no department or department has no institution
             return False
 
     @staticmethod
@@ -344,8 +367,11 @@ class LeaveBalanceManager:
     def update_balance_on_application(leave_application):
         """Update leave balance when application is submitted (pending status)"""
         try:
+            # Get institution from employee's department
+            institution = leave_application.employee.department.institution
+            
             balance = LeaveBalance.objects.get(
-                institution=leave_application.employee.institution,
+                institution=institution,
                 employee=leave_application.employee,
                 leave_type=leave_application.leave_type,
                 year=leave_application.start_date.year
@@ -360,6 +386,9 @@ class LeaveBalanceManager:
                 return False
             
         except LeaveBalance.DoesNotExist:
+            return False
+        except AttributeError:
+            # Handle case where employee has no department or department has no institution
             return False
 
     @staticmethod
@@ -400,6 +429,7 @@ class LeaveBalanceManager:
             summary[leave_type_name]['employee_count'] += 1
         
         return summary
+
 
 
 class LeaveReportGenerator:
