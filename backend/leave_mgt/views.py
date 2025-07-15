@@ -22,17 +22,18 @@ class LeaveTypeListCreateAPIView(APIView):
         summary="List all leave types",
         responses={200: LeaveTypeSerializer(many=True)}
     )
-    def get(self, request):
-        queryset = LeaveType.objects.filter(is_active=True)
+    def get(self, request, institution_id):
+        queryset = LeaveType.objects.filter(is_active=True, institution_id=institution_id)
         serializer = LeaveTypeSerializer(queryset, many=True)
         return Response(serializer.data)
+
 
     @extend_schema(
         summary="Create a new leave type",
         request=LeaveTypeSerializer,
         responses={201: LeaveTypeSerializer}
     )
-    def post(self, request):
+    def post(self, request, institution_id):
         serializer = LeaveTypeSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -85,8 +86,8 @@ class LeaveBalanceListCreateAPIView(APIView):
         ],
         responses={200: LeaveBalanceSerializer(many=True)}
     )
-    def get(self, request):
-        queryset = LeaveBalance.objects.select_related('employee', 'leave_type').all()
+    def get(self, request, institution_id):
+        queryset = LeaveBalance.objects.select_related('employee', 'leave_type').filter(institution_id=institution_id)
         
         employee_id = request.query_params.get('employee_id')
         year = request.query_params.get('year')
@@ -99,12 +100,13 @@ class LeaveBalanceListCreateAPIView(APIView):
         serializer = LeaveBalanceSerializer(queryset, many=True)
         return Response(serializer.data)
 
+
     @extend_schema(
         summary="Create a new leave balance record",
         request=LeaveBalanceSerializer,
         responses={201: LeaveBalanceSerializer}
     )
-    def post(self, request):
+    def post(self, request, institution_id):
         serializer = LeaveBalanceSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -161,14 +163,13 @@ class LeaveApplicationListCreateAPIView(APIView):
         ],
         responses={200: LeaveApplicationSerializer(many=True)}
     )
-    def get(self, request):
-        queryset = LeaveApplication.objects.select_related('employee', 'leave_type', 'approved_by').all()
+    def get(self, request, institution_id):
+        queryset = LeaveApplication.objects.select_related('employee', 'leave_type', 'approved_by').filter(institution_id=institution_id)
         
-        # Filter parameters
+        # Optional query parameters
         employee_id = request.query_params.get('employee_id')
         status_filter = request.query_params.get('status')
         leave_type_id = request.query_params.get('leave_type_id')
-        institution_id = request.query_params.get('institutionId')
         
         if employee_id:
             queryset = queryset.filter(employee_id=employee_id)
@@ -176,11 +177,10 @@ class LeaveApplicationListCreateAPIView(APIView):
             queryset = queryset.filter(status=status_filter)
         if leave_type_id:
             queryset = queryset.filter(leave_type_id=leave_type_id)
-        if institution_id:
-            queryset = queryset.filter(employee__institutionId=institution_id)
             
         serializer = LeaveApplicationSerializer(queryset, many=True)
         return Response(serializer.data)
+
 
     @extend_schema(
         summary="Create a new leave application",
@@ -193,7 +193,7 @@ class LeaveApplicationListCreateAPIView(APIView):
             )
         }
     )
-    def post(self, request):
+    def post(self, request, institution_id):
         def extract_value(data, key):
             """Extract single value from QueryDict list format"""
             value = data.get(key)
@@ -221,6 +221,12 @@ class LeaveApplicationListCreateAPIView(APIView):
             data_to_serialize = final_data
         else:
             data_to_serialize = request.data
+
+
+        data_to_serialize['institution'] = institution_id
+        
+        print(f"Institution ID set to: {institution_id}")  # Debug line
+        print(f"Data being serialized: {data_to_serialize}")  # Debug lin
         
         serializer = LeaveApplicationSerializer(data=data_to_serialize)
         
@@ -265,7 +271,7 @@ class LeaveApplicationListCreateAPIView(APIView):
                 balance.save()
             except LeaveBalance.DoesNotExist:
                 return Response(
-                    {'error': 'No leave balance found for this year'}, 
+                    {'error': ''}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
@@ -427,8 +433,8 @@ class LeavePolicyListCreateAPIView(APIView):
         summary="List all leave policies",
         responses={200: LeavePolicySerializer(many=True)}
     )
-    def get(self, request):
-        queryset = LeavePolicy.objects.select_related('leave_type').filter(is_active=True)
+    def get(self, request, institution_id):
+        queryset = LeavePolicy.objects.select_related('leave_type').filter(is_active=True, institution_id=institution_id)
         serializer = LeavePolicySerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -437,7 +443,7 @@ class LeavePolicyListCreateAPIView(APIView):
         request=LeavePolicySerializer,
         responses={201: LeavePolicySerializer}
     )
-    def post(self, request):
+    def post(self, request, institution_id):
         serializer = LeavePolicySerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -483,65 +489,195 @@ class LeavePolicyDetailAPIView(APIView):
 # Utility endpoints
 @extend_schema(tags=["Leave Management"])
 @api_view(['POST'])
-def initialize_yearly_balances(request):
-    """Initialize leave balances for all employees for a given year"""
-    year = request.data.get('year', timezone.now().year)
-    created_count = LeaveBalanceManager.initialize_yearly_balances(year)
-    return Response({
-        'message': f'Initialized {created_count} leave balance records for year {year}'
-    })
+def initialize_yearly_balances(request, institution_id):
+    """Initialize leave balances for all employees in an institution for a given year"""
+    try:
+        # Get year from request data, default to current year
+        year_param = request.data.get('year', timezone.now().year)
+        
+        # Ensure year is an integer
+        try:
+            year = int(year_param)
+        except (ValueError, TypeError):
+            return Response(
+                {'error': 'Year must be a valid integer'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Call the manager method
+        result = LeaveBalanceManager.initialize_yearly_balances(institution_id, year)
+        
+        return Response({
+            'message': f'Successfully processed leave balances for year {year}',
+            'details': {
+                'created_count': result['created_count'],
+                'updated_count': result['updated_count'],
+                'total_processed': result['total_processed']
+            }
+        }, status=status.HTTP_200_OK)
+        
+    except ValueError as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        return Response(
+            {'error': 'An unexpected error occurred', 'details': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @extend_schema(tags=["Leave Management"])
 @api_view(['POST'])
-def carry_forward_leaves(request):
-    """Carry forward unused leaves from one year to another"""
-    from_year = request.data.get('from_year')
-    to_year = request.data.get('to_year')
-    
-    if not from_year or not to_year:
+def carry_forward_leaves(request, institution_id):
+    """Carry forward unused leaves from one year to another for a given institution"""
+    try:
+        from_year = request.data.get('from_year')
+        to_year = request.data.get('to_year')
+        
+        if not from_year or not to_year:
+            return Response(
+                {'error': 'Both from_year and to_year are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Ensure years are integers
+        try:
+            from_year = int(from_year)
+            to_year = int(to_year)
+        except (ValueError, TypeError):
+            return Response(
+                {'error': 'Both from_year and to_year must be valid integers'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate year logic
+        if from_year >= to_year:
+            return Response(
+                {'error': 'from_year must be less than to_year'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Call the manager method
+        carried_count = LeaveBalanceManager.carry_forward_leaves(
+            institution_id, from_year, to_year
+        )
+        
+        return Response({
+            'message': f'Successfully carried forward {carried_count} leave balances from {from_year} to {to_year}',
+            'details': {
+                'carried_forward_count': carried_count,
+                'from_year': from_year,
+                'to_year': to_year
+            }
+        }, status=status.HTTP_200_OK)
+        
+    except ValueError as e:
         return Response(
-            {'error': 'Both from_year and to_year are required'}, 
+            {'error': str(e)},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
-    carried_count = LeaveBalanceManager.carry_forward_leaves(from_year, to_year)
-    return Response({
-        'message': f'Carried forward {carried_count} leave balances from {from_year} to {to_year}'
-    })
+    except Exception as e:
+        return Response(
+            {'error': 'An unexpected error occurred', 'details': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @extend_schema(tags=["Leave Management"])
 @api_view(['GET'])
 def employee_leave_summary(request, employee_id):
     """Get leave summary for a specific employee"""
-    employee = get_object_or_404(Employee, pk=employee_id)
-    year = request.query_params.get('year', timezone.now().year)
-    
-    balances = LeaveBalance.objects.filter(
-        employee=employee,
-        year=year
-    ).select_related('leave_type')
-    
-    applications = LeaveApplication.objects.filter(
-        employee=employee,
-        start_date__year=year
-    ).select_related('leave_type')
-    
-    summary = {
-        'employee': {
-            'id': employee.id,
-            'name': employee.user.fullname,
-        },
-        'year': year,
-        'balances': LeaveBalanceSerializer(balances, many=True).data,
-        'applications': LeaveApplicationSerializer(applications, many=True).data,
-        'statistics': {
-            'total_applications': applications.count(),
-            'pending_applications': applications.filter(status='pending').count(),
-            'approved_applications': applications.filter(status='approved').count(),
-            'rejected_applications': applications.filter(status='rejected').count(),
+    try:
+        employee = get_object_or_404(Employee, pk=employee_id)
+        
+        # Get year from query parameters, default to current year
+        year_param = request.query_params.get('year', timezone.now().year)
+        
+        # Ensure year is an integer
+        try:
+            year = int(year_param)
+        except (ValueError, TypeError):
+            return Response(
+                {'error': 'Year must be a valid integer'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get balances for the employee
+        balances = LeaveBalance.objects.filter(
+            employee=employee,
+            year=year
+        ).select_related('leave_type')
+        
+        # Get applications for the employee
+        applications = LeaveApplication.objects.filter(
+            employee=employee,
+            start_date__year=year
+        ).select_related('leave_type')
+        
+        # Use the manager method for better balance summary
+        balance_summary = LeaveBalanceManager.get_employee_balance_summary(employee, year)
+        
+        summary = {
+            'employee': {
+                'id': employee.id,
+                'name': employee.user.fullname,
+            },
+            'year': year,
+            'balance_summary': balance_summary,
+            'balances': LeaveBalanceSerializer(balances, many=True).data,
+            'applications': LeaveApplicationSerializer(applications, many=True).data,
+            'statistics': {
+                'total_applications': applications.count(),
+                'pending_applications': applications.filter(status='pending').count(),
+                'approved_applications': applications.filter(status='approved').count(),
+                'rejected_applications': applications.filter(status='rejected').count(),
+            }
         }
-    }
-    
-    return Response(summary)
+        
+        return Response(summary, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {'error': 'An unexpected error occurred', 'details': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@extend_schema(tags=["Leave Management"])
+@api_view(['GET'])
+def institution_leave_summary(request, institution_id):
+    """Get leave summary for all employees in an institution"""
+    try:
+        # Get year from query parameters, default to current year
+        year_param = request.query_params.get('year', timezone.now().year)
+        
+        # Ensure year is an integer
+        try:
+            year = int(year_param)
+        except (ValueError, TypeError):
+            return Response(
+                {'error': 'Year must be a valid integer'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Use the manager method to get institution summary
+        summary = LeaveBalanceManager.get_institution_balance_summary(institution_id, year)
+        
+        return Response({
+            'institution_id': institution_id,
+            'year': year,
+            'summary': summary
+        }, status=status.HTTP_200_OK)
+        
+    except ValueError as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        return Response(
+            {'error': 'An unexpected error occurred', 'details': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

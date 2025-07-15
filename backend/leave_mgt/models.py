@@ -17,6 +17,7 @@ class LeaveType(models.Model):
     ]
     
     name = models.CharField(max_length=100)
+    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE, related_name='leave_types')
     category = models.CharField(max_length=20, choices=LEAVE_CATEGORIES)
     description = models.TextField(blank=True)
     max_days_per_year = models.PositiveIntegerField(default=0)
@@ -41,6 +42,7 @@ class LeaveType(models.Model):
 
 class LeaveBalance(models.Model):
     """Track leave balances for each employee per leave type per year"""
+    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE, related_name='leave_balances')
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='leave_balances')
     leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE)
     year = models.PositiveIntegerField()
@@ -81,6 +83,7 @@ class LeaveApplication(models.Model):
         ('hourly', 'Hourly'),
     ]
 
+    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE, related_name='leave_applications')
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='leave_applications')
     leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE)
     start_date = models.DateField()
@@ -118,6 +121,7 @@ class LeaveApplication(models.Model):
 
 class LeavePolicy(models.Model):
     """Company leave policies and rules"""
+    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE, related_name='leave_policies')
     name = models.CharField(max_length=200)
     description = models.TextField()
     leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE)
