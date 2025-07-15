@@ -55,7 +55,6 @@ export default function CreateInterviewPage() {
   const [selectedApplications, setSelectedApplications] = useState<JobApplication[]>([])
   const [selectedStage, setSelectedStage] = useState<IInterviewStage | null>(null)
   const [selectedJobPosition, setSelectedJobPosition] = useState<string>("")
-  const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<any>({})
   const [isCreateStageDialogOpen, setIsCreateStageDialogOpen] = useState(false)
@@ -140,7 +139,6 @@ const hasStagesForPosition = filteredInterviewStages.length > 0
     if (!selectedInstitution) return
 
     try {
-      setIsLoading(true)
       const [fetchedApplications, fetchedStages, fetchedEmployees, fetchedInterviews] = await Promise.all([
         getJobApplications({ institutionId: selectedInstitution.id }),
         getInterviewStages({ institutionId: selectedInstitution.id }),
@@ -167,11 +165,8 @@ const hasStagesForPosition = filteredInterviewStages.length > 0
         setExistingInterviews(fetchedInterviews)
       }
     } catch (error) {
-      console.error("Error fetching initial data:", error)
       toast.error("Failed to load applications and interview stages")
-    } finally {
-      setIsLoading(false)
-    }
+    } 
   }
 
   const handleJobPositionSelect = (jobPositionId: string) => {
@@ -348,7 +343,6 @@ const hasStagesForPosition = filteredInterviewStages.length > 0
         toast.error("Failed to create interview stage")
       }
     } catch (error) {
-      console.error("Error creating interview stage:", error)
       toast.error("Failed to create interview stage")
     } finally {
       setIsCreatingStage(false)
@@ -408,7 +402,6 @@ const hasStagesForPosition = filteredInterviewStages.length > 0
         toast.error("Failed to schedule any interviews. Please try again.")
       }
     } catch (error) {
-      console.error("Error creating interviews:", error)
       toast.error("Failed to schedule interviews. Please try again.")
     } finally {
       setIsSubmitting(false)
@@ -436,9 +429,6 @@ const hasStagesForPosition = filteredInterviewStages.length > 0
     return <div>Loading...</div>
   }
 
-  if (isLoading) {
-    return <div>Loading applications and interview stages...</div>
-  }
 
   return (
     <div className="w-full h-full p-6">

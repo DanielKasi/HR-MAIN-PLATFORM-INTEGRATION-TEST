@@ -485,7 +485,7 @@ export default function UpdateEmployeePage() {
               {/* Personal Information */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Personal Information</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="fullname">Full Name *</Label>
                     <Input
@@ -554,7 +554,7 @@ export default function UpdateEmployeePage() {
                       placeholder="0"
                     />
                   </div>
-                  <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+                  <div className="space-y-2">
                     <Label htmlFor="address">Address</Label>
                     <Input
                       id="address"
@@ -571,7 +571,7 @@ export default function UpdateEmployeePage() {
               {/* Work Information */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Work Information</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="position">Position *</Label>
                     <Select
@@ -671,7 +671,7 @@ export default function UpdateEmployeePage() {
               {/* Emergency Contact */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Emergency Contact</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="emergencyContactName">Contact Name</Label>
                     <Input

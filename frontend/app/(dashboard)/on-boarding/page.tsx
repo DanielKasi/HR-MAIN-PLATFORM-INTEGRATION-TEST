@@ -142,6 +142,72 @@ export default function OnboardPage() {
   const selectedBranch = useSelector(selectSelectedBranch)
 
 
+ const handleSmartSelectAll = () => {
+  const selectableOnboardings = filteredOnboardings.filter(o => o.status !== 'accepted_offer')
+  
+  if (selectedIds.size === selectableOnboardings.length) {
+    setSelectedIds(new Set())
+  } else {
+    setSelectedIds(new Set(selectableOnboardings.map(o => o.id)))
+  }
+}
+
+// 2. Select by Status Function
+const handleSelectByStatus = (statuses: IOnBoarding['status'][]) => {
+  const candidatesWithStatus = filteredOnboardings.filter(o => statuses.includes(o.status))
+  setSelectedIds(new Set(candidatesWithStatus.map(o => o.id)))
+}
+
+// 3. Quick selection helpers
+const selectNewCandidates = () => {
+  handleSelectByStatus(['initial', 'training', 'issued_contract'])
+}
+
+const selectPendingCandidates = () => {
+  handleSelectByStatus(['initial', 'training'])
+}
+
+const selectContractIssued = () => {
+  handleSelectByStatus(['issued_contract'])
+}
+
+// 4. Enhanced Select All component with dropdown options
+const SmartSelectAllDropdown = () => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <div className="flex items-center">
+        <Checkbox
+          checked={selectedIds.size === filteredOnboardings.length && filteredOnboardings.length > 0}
+          onCheckedChange={handleSelectAll}
+          aria-label="Select all"
+        />
+        <ChevronDown className="h-3 w-3 ml-1 text-muted-foreground" />
+      </div>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="start">
+      <DropdownMenuItem onClick={handleSelectAll}>
+        Select All ({filteredOnboardings.length})
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => handleSelectByStatus(['initial'])}>
+        Select Initial ({filteredOnboardings.filter(o => o.status === 'initial').length})
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => handleSelectByStatus(['training'])}>
+        Select Training ({filteredOnboardings.filter(o => o.status === 'training').length})
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => handleSelectByStatus(['issued_contract'])}>
+        Select Contract Issued ({filteredOnboardings.filter(o => o.status === 'issued_contract').length})
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => handleSelectByStatus(['initial', 'training', 'issued_contract'])}>
+        Select All Except Accepted ({filteredOnboardings.filter(o => o.status !== 'accepted_offer' && o.status !== 'declined_offer').length})
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={clearSelection}>
+        Clear Selection
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+)
+
+
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
       router.push("/dashboard")
@@ -315,22 +381,19 @@ export default function OnboardPage() {
     return getNextStages(firstStatus)
   }
 
-  // Update Handlers
-  const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding['status']) => {
-    const defaultAttended = newStatus === 'training' 
-      ? true 
-      : onboarding.attended
+const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding['status']) => {
+  const isTrainingOrBeyond = ['training', 'issued_contract', 'accepted_offer'].includes(newStatus)
+  const defaultAttended = isTrainingOrBeyond || onboarding.attended
 
-    setUpdateDialog({
-      open: true,
-      onboarding,
-      newStatus,
-      attended: defaultAttended,
-      remarks: onboarding.remarks || '',
-      isSubmitting: false
-    })
-  }
-
+  setUpdateDialog({
+    open: true,
+    onboarding,
+    newStatus,
+    attended: defaultAttended,
+    remarks: onboarding.remarks || '',
+    isSubmitting: false
+  })
+}
   const submitOnboardingUpdate = async () => {
     if (!updateDialog.onboarding) return
 
@@ -375,16 +438,16 @@ export default function OnboardPage() {
   }
 
   const handleBulkUpdate = (newStatus: IOnBoarding['status']) => {
-    const defaultAttended = newStatus === 'training' ? true : false
+  const defaultAttended = true
 
-    setBulkUpdateDialog({
-      open: true,
-      newStatus,
-      attended: defaultAttended,
-      remarks: '',
-      isSubmitting: false
-    })
-  }
+  setBulkUpdateDialog({
+    open: true,
+    newStatus,
+    attended: defaultAttended,  
+    remarks: '',
+    isSubmitting: false
+  })
+}
 
   const submitBulkUpdate = async () => {
     const selectedOnboardings = getSelectedOnboardings()
@@ -730,12 +793,8 @@ export default function OnboardPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[50px]">
-                  <Checkbox
-                    checked={selectedIds.size === filteredOnboardings.length && filteredOnboardings.length > 0}
-                    onCheckedChange={handleSelectAll}
-                    aria-label="Select all"
-                  />
+                <TableHead className="w-[80px]">
+                  <SmartSelectAllDropdown />
                 </TableHead>
                 <TableHead>Candidate</TableHead>
                 <TableHead>Position</TableHead>

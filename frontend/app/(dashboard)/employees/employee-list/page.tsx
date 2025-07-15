@@ -30,8 +30,10 @@ import {
 import { IUserInstitution } from "@/app/types"
 import { EmployeeFormData } from "@/app/types/types.utils"
 import Link from "next/link"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
 
-// Interface for getAllEmployees API response with additional nested objects
+
 interface EmployeeFromAPI {
   id: number
   user: {
@@ -245,140 +247,134 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
         </div>
       </CardHeader>
 
-      <CardContent>
-        <div className="rounded-md border">
-          <div className="w-full">
-            <div className="bg-gray-50 border-b">
-              <div className="grid grid-cols-6 gap-4 p-4 font-medium">
-                <div>Name</div>
-                <div>Department</div>
-                <div>Email</div>
-                <div>Job Position</div>
-                <div>Status</div>
-                <div className="w-[150px]">Actions</div>
-              </div>
+    {paginatedEmployees.length === 0 ? (
+  <div className="p-12 text-center">
+    <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+    <h3 className="text-lg font-semibold mb-2">No employees found</h3>
+    <p className="text-muted-foreground mb-4">
+      No employees match your current filters.
+    </p>
+  </div>
+) : (
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableHead>Name</TableHead>
+        <TableHead>Department</TableHead>
+        <TableHead>Email</TableHead>
+        <TableHead>Job Position</TableHead>
+        <TableHead>Status</TableHead>
+        <TableHead className="w-[150px]">Actions</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {paginatedEmployees.map((employee) => (
+        <TableRow 
+          key={employee.id || Math.random()} 
+          className="cursor-pointer hover:bg-muted/50"
+          onClick={() => window.location.href = `/employees/profile/${employee.id || 'unknown'}`}
+        >
+          <TableCell>
+            <div className="font-medium">
+              {getFullName(employee)}
             </div>
-            <div>
-              {paginatedEmployees.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No employees found matching your criteria
-                </div>
-              ) : (
-                paginatedEmployees.map((employee) => (
-                  <div key={employee.id || Math.random()} className="grid grid-cols-6 gap-4 p-4 border-b hover:bg-gray-50">
-                    <Link
-                      href={`/employees/profile/${employee.id || 'unknown'}`}
-                      className="font-medium cursor-pointer hover:text-orange-600 hover:underline transition-colors"
-                      onClick={() => {
-                        console.log('Navigating to employee profile:', employee.id);
-                        // Store employee data in localStorage as backup
-                        localStorage.setItem(`employee_${employee.id || 'unknown'}`, JSON.stringify(employee));
-                      }}
+          </TableCell>
+          <TableCell>
+            <Badge variant="outline" className={getDepartmentColor(getDepartmentName(employee))}>
+              {getDepartmentName(employee)}
+            </Badge>
+          </TableCell>
+          <TableCell className="text-sm">{employee.email}</TableCell>
+          <TableCell>{getPositionName(employee)}</TableCell>
+          <TableCell>{getStatusBadge(employee.is_active)}</TableCell>
+          <TableCell>
+            <div className="flex items-center gap-1">
+              <Link href={`/employees/profile/${employee.id || 'unknown'}`}>
+                <Button variant="ghost" size="sm" title="View Details" onClick={(e) => e.stopPropagation()}>
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link 
+                href={`/employees/update-employee/${employee.id || 'unknown'}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  localStorage.setItem(`employee_${employee.id || 'unknown'}`, JSON.stringify(employee));
+                }}
+              >
+                <Button variant="ghost" size="sm" title="Update Employee">
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </Link>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    title="Delete Employee"
+                    className="text-red-600 hover:text-red-700"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Employee</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete {getFullName(employee)}? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => employee.id && onDelete(employee.id)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      {getFullName(employee)}
-                    </Link>
-                    <div>
-                      <Badge variant="outline" className={getDepartmentColor(getDepartmentName(employee))}>
-                        {getDepartmentName(employee)}
-                      </Badge>
-                    </div>
-                    <div className="text-sm">{employee.email}</div>
-                    <div>{getPositionName(employee)}</div>
-                    <div>{getStatusBadge(employee.is_active)}</div>
-                    <div>
-                      <div className="flex items-center gap-1">
-                        {/* View Button */}
-                        <Link href={`/employees/profile/${employee.id || 'unknown'}`}>
-                          <Button variant="ghost" size="sm" title="View Details">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
-
-                        {/* Update Button - Now navigates to update page */}
-                        <Link 
-                          href={`/employees/update-employee/${employee.id || 'unknown'}`}
-                          onClick={() => {
-                            // Store employee data in localStorage for the update page
-                            localStorage.setItem(`employee_${employee.id || 'unknown'}`, JSON.stringify(employee));
-                          }}
-                        >
-                          <Button variant="ghost" size="sm" title="Update Employee">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </Link>
-
-                        {/* Delete Button */}
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Delete Employee"
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Employee</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete {getFullName(employee)}? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => employee.id && onDelete(employee.id)}
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
-          </div>
-        </div>
+          </TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+)}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-muted-foreground">
-              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredEmployees.length)} of{" "}
-              {filteredEmployees.length} employees
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Previous
-              </Button>
-              <span className="text-sm">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-              >
-                Next
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
+{/* Move pagination outside, after the table */}
+{totalPages > 1 && (
+  <div className="flex items-center justify-between mt-4 px-6 pb-6">
+    <p className="text-sm text-muted-foreground">
+      Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredEmployees.length)} of{" "}
+      {filteredEmployees.length} employees
+    </p>
+    <div className="flex items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+        disabled={currentPage === 1}
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Previous
+      </Button>
+      <span className="text-sm">
+        Page {currentPage} of {totalPages}
+      </span>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+        disabled={currentPage === totalPages}
+      >
+        Next
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+    </div>
+  </div>
+)} 
     </Card>
   )
 }
@@ -436,8 +432,6 @@ export default function Component() {
 
   const handleDelete = async (id: number) => {
     try {
-      // TODO: Add your delete API call here
-      // await deleteEmployee(id)
       setEmployees(employees.filter((emp) => emp.id !== id))
     } catch (err) {
       console.error("Error deleting employee:", err)
@@ -458,10 +452,12 @@ export default function Component() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="w-full h-full p-2 space-y-6">
       <div className="w-full">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Employees</h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Employees</h1>
+          </div>
         </div>
 
         <EmployeeTable
