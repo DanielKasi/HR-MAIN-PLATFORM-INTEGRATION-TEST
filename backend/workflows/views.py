@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
+from backend.utilities.pagination import CustomPageNumberPagination
 from general.serializers import MessageResponseSerializer
 from users.models import Profile, UserRole
 from users.serializers import CustomUserSerializer
@@ -74,19 +75,23 @@ class ApproveTaskDetailAPIView(APIView):
             user_roles = user.user_roles.values_list("role_id", flat=True)
 
             step_role_ids = set(
-                InstitutionApprovalStepApprovorRole.objects.filter(step=task.step).values_list(
-                    "approver_role_id", flat=True
-                )
+                InstitutionApprovalStepApprovorRole.objects.filter(
+                    step=task.step
+                ).values_list("approver_role_id", flat=True)
             )
             approver_user_ids = set(
-                InstitutionApprovalStepApprovorUser.objects.filter(step=task.step).values_list(
-                    "approver_user__user__id", flat=True
-                )
+                InstitutionApprovalStepApprovorUser.objects.filter(
+                    step=task.step
+                ).values_list("approver_user__user__id", flat=True)
             )
 
             matching_role = next((x for x in step_role_ids if x in user_roles), None)
 
-            if matching_role is None and not request.user.id in approver_user_ids and request.user.id != task.step.Institution.Institution_owner.id:
+            if (
+                matching_role is None
+                and not request.user.id in approver_user_ids
+                and request.user.id != task.step.Institution.Institution_owner.id
+            ):
                 return Response(
                     {"detail": "You are not allowed to approve this task."},
                     status=status.HTTP_403_FORBIDDEN,
@@ -120,10 +125,18 @@ class ApproveTaskDetailAPIView(APIView):
                 notify_workflow_participants(task, "rejected", request.user)
 
                 ApprovalTask.objects.filter(
-                    content_type=task.content_type,
-                object_id=task.object_id
-                ).exclude(id=task.id).filter(status__in=["not_started", "pending"]).update(status="terminated")
-                return Response({"message": "Task rejected. All other pending and not started steps terminated."}, status=status.HTTP_200_OK)
+                    content_type=task.content_type, object_id=task.object_id
+                ).exclude(id=task.id).filter(
+                    status__in=["not_started", "pending"]
+                ).update(
+                    status="terminated"
+                )
+                return Response(
+                    {
+                        "message": "Task rejected. All other pending and not started steps terminated."
+                    },
+                    status=status.HTTP_200_OK,
+                )
             else:
                 return Response(
                     {"detail": "Only completion is implemented."},
@@ -161,12 +174,19 @@ class InstitutionApprovalStepAPIView(APIView):
             single_Institution_approval_step = InstitutionApprovalStep.objects.filter(
                 id=step_id, Institution__id=Institution_id
             ).first()
-            serializer = InstitutionApprovalStepSerializer(single_Institution_approval_step)
+            serializer = InstitutionApprovalStepSerializer(
+                single_Institution_approval_step
+            )
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-        Institution_approval_steps = InstitutionApprovalStep.objects.filter(Institution__id=Institution_id)
-        serializer = InstitutionApprovalStepSerializer(Institution_approval_steps, many=True)
-        return Response(serializer.data)
+        Institution_approval_steps = InstitutionApprovalStep.objects.filter(
+            Institution__id=Institution_id
+        )
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(Institution_approval_steps, request)
+        serializer = InstitutionApprovalStepSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
         request=InstitutionApprovalStepSerializer,
@@ -215,7 +235,9 @@ class InstitutionApprovalStepAPIView(APIView):
             step_id = request.query_params.get("step", None)
             if step_id is None:
                 raise InstitutionApprovalStep.DoesNotExist()
-            step = InstitutionApprovalStep.objects.get(pk=step_id, Institution_id=Institution_id)
+            step = InstitutionApprovalStep.objects.get(
+                pk=step_id, Institution_id=Institution_id
+            )
         except InstitutionApprovalStep.DoesNotExist:
             return Response(
                 {"detail": "Approval step not found."},
@@ -268,7 +290,9 @@ class InstitutionApprovalStepAPIView(APIView):
             step_id = request.query_params.get("step", None)
             if step_id is None:
                 raise InstitutionApprovalStep.DoesNotExist()
-            step = InstitutionApprovalStep.objects.get(pk=step_id, Institution_id=Institution_id)
+            step = InstitutionApprovalStep.objects.get(
+                pk=step_id, Institution_id=Institution_id
+            )
         except InstitutionApprovalStep.DoesNotExist:
             return Response(
                 {"detail": "Approval step not found."},
@@ -314,7 +338,9 @@ class InstitutionApprovalStepReorderAPIView(APIView):
 
         ids = list(new_levels.keys())
 
-        qs = InstitutionApprovalStep.objects.filter(Institution_id=Institution_id, id__in=ids)
+        qs = InstitutionApprovalStep.objects.filter(
+            Institution_id=Institution_id, id__in=ids
+        )
         if qs.count() != len(ids):
             return Response(
                 {"detail": "One or more step IDs not found for this Institution."},

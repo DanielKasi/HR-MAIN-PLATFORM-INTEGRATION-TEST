@@ -86,8 +86,11 @@ class InstitutionListAPIView(APIView):
             institutions = Institution.objects.all()
         else:
             institutions = Institution.objects.filter(institution_owner=request.user)
-        serializer = InstitutionSerializer(institutions, many=True)
-        return Response(serializer.data)
+
+        paginator = CustomPageNumberPagination()
+        paginator_qs = paginator.paginate_queryset(institutions, request)
+        serializer = InstitutionSerializer(paginator_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class InstitutionDetailAPIView(APIView):
@@ -183,8 +186,11 @@ class BranchListAPIView(APIView):
                 institution__institution_owner=request.user
             )
 
-        serializer = BranchSerializer(branches, many=True)
-        return Response(serializer.data)
+        paginator = CustomPageNumberPagination()
+        paginator_qs = paginator.paginate_queryset(branches, request)
+
+        serializer = BranchSerializer(paginator_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class BranchDetailAPIView(APIView):
@@ -280,8 +286,10 @@ class InstitutionBranchAPIView(APIView):
                 ),
             )
 
-        serializer = BranchSerializer(branches, many=True)
-        return Response(serializer.data)
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(branches, request)
+        serializer = BranchSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class UserProfileListAPIView(APIView):
@@ -498,8 +506,10 @@ class DepartmentListAPIView(APIView):
     )
     def get(self, request, institution_id=None):
         departments = Department.objects.filter(institution_id=institution_id)
-        serializer = DepartmentSerializer(departments, many=True)
-        return Response(serializer.data)
+        paginator = CustomPageNumberPagination()
+        paginator_qs = paginator.paginate_queryset(departments, request)
+        serializer = DepartmentSerializer(paginator_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class DepartmentDetailAPIView(APIView):
