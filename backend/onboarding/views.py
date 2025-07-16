@@ -1,4 +1,4 @@
-from backend.utilities.pagination import CustomPageNumberPagination
+from utilities.pagination import CustomPageNumberPagination
 from recruitment.models import JobAdvertApplication
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser

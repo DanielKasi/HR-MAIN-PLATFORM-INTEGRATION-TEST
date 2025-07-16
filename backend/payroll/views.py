@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 
-from backend.utilities.pagination import CustomPageNumberPagination
+from utilities.pagination import CustomPageNumberPagination
 from .models import (
     EmployeeAllowance,
     EmployeeDeduction,
