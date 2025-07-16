@@ -109,6 +109,7 @@ const LeavePolicyComponent = () => {
           getLeaveTypes({ institutionId: selectedInstitution?.id })
         ])
         
+        
         const activePolicies = policiesData
           .filter(policy => policy.is_active !== false && policy.id != null)
           
