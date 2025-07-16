@@ -8,7 +8,7 @@ from django.db import transaction
 from datetime import datetime
 from decimal import Decimal
 
-from backend.utilities.pagination import CustomPageNumberPagination
+from utilities.pagination import CustomPageNumberPagination
 
 from .models import LeaveApplication, LeaveBalance, LeavePolicy, LeaveType
 from .serializers import (

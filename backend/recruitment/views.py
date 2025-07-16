@@ -6,7 +6,7 @@ from drf_spectacular.utils import extend_schema
 from django.db.models import Sum, Q
 from django.db.models.functions import Coalesce
 
-from backend.utilities.pagination import CustomPageNumberPagination
+from utilities.pagination import CustomPageNumberPagination
 
 from .serializers import (
     InterviewStageSerializer,

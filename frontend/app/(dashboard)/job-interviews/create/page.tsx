@@ -731,7 +731,6 @@ const hasStagesForPosition = filteredInterviewStages.length > 0
                     value={formData.location}
                     onChange={(e) => updateFormData("location", e.target.value)}
                     className={errors.location ? "border-destructive" : ""}
-                    placeholder="e.g., Zoom, Google Meet, In-person at office"
                   />
                   {errors.location && (
                     <p className="text-sm text-destructive">{errors.location}</p>
@@ -740,7 +739,7 @@ const hasStagesForPosition = filteredInterviewStages.length > 0
                 </div>
 
                 {/* Interview Time */}
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="interview_time" className="text-sm font-medium">
                     Interview Time
                   </Label>
@@ -752,7 +751,7 @@ const hasStagesForPosition = filteredInterviewStages.length > 0
                     className={errors.interview_time ? "border-destructive" : ""}
                     placeholder="e.g., 10:00 AM"
                   />
-                </div>
+                </div> */}
 
                 {/* Interview Type */}
                 <div className="space-y-2">
