@@ -36,7 +36,7 @@ class OnBoardingListAPI(APIView):
     def get(self, request, institution_id):
         onboardings = OnBoarding.objects.filter(
             application__job_position_advert__job_position__department__institution_id=institution_id
-        )
+        ).order_by("-created_at")
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(onboardings, request)

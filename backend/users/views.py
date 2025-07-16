@@ -598,7 +598,9 @@ class RoleListAPIView(APIView):
     )
     def get(self, request):
         Institution_id = request.query_params.get("Institution_id", None)
-        roles = Role.objects.filter(institution__id=Institution_id).order_by("name")
+        roles = Role.objects.filter(institution__id=Institution_id).order_by(
+            "-created_at"
+        )
         paginator = CustomPageNumberPagination()
         paginator_qs = paginator.paginate_queryset(roles, request)
         serializer = RoleSerializer(
@@ -674,7 +676,7 @@ class PermissionCategoryListAPIView(APIView):
         tags=["User Management"],
     )
     def get(self, request):
-        permission_categories = PermissionCategory.objects.all()
+        permission_categories = PermissionCategory.objects.all().order_by("-created_at")
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(permission_categories, request)
         serializer = PermissionCategorySerializer(paginated_qs, many=True)

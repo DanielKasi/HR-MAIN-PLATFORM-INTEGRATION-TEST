@@ -38,7 +38,7 @@ class EmployeeAllowanceAPIView(APIView):
     def get(self, request, institution_id):
         allowances = EmployeeAllowance.objects.filter(
             employee__department__institution_id=institution_id
-        )
+        ).order_by("-created_at")
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(allowances, request)
@@ -98,7 +98,9 @@ class PayrollPeriodAPIView(APIView):
         responses=PayrollPeriodSerializer(many=True),
     )
     def get(self, request, institution_id):
-        periods = PayrollPeriod.objects.filter(institution_id=institution_id)
+        periods = PayrollPeriod.objects.filter(institution_id=institution_id).order_by(
+            "-created_at"
+        )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(periods, request)
@@ -157,7 +159,7 @@ class EmployeeDeductionAPIView(APIView):
     def get(self, request, institution_id):
         deductions = EmployeeDeduction.objects.filter(
             employee__department__institution_id=institution_id
-        )
+        ).order_by("-created_at")
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(deductions, request)
         serializer = EmployeeDeductionSerializer(paginated_qs, many=True)
@@ -221,7 +223,9 @@ class AllowanceTypeAPIView(APIView):
         responses=AllowanceTypeSerializer(many=True),
     )
     def get(self, request, institution_id):
-        allowance_types = AllowanceType.objects.filter(institution_id=institution_id)
+        allowance_types = AllowanceType.objects.filter(
+            institution_id=institution_id
+        ).order_by("-created_at")
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(allowance_types, request)
@@ -290,7 +294,9 @@ class DeductionTypeAPIView(APIView):
         responses=DeductionTypeSerializer(many=True),
     )
     def get(self, request, institution_id):
-        deduction_types = DeductionType.objects.filter(institution_id=institution_id)
+        deduction_types = DeductionType.objects.filter(
+            institution_id=institution_id
+        ).order_by("-created_at")
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(deduction_types, request)
@@ -349,7 +355,7 @@ class PayslipAPIView(APIView):
     def get(self, request, institution_id):
         payslips = Payslip.objects.filter(
             employee__department__institution_id=institution_id
-        )
+        ).order_by("-created_at")
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(payslips, request)

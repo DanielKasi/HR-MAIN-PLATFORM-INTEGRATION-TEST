@@ -51,7 +51,7 @@ class EmployeeListAPIView(APIView):
         try:
             employees = Employee.objects.filter(
                 department__institution_id=institution_id
-            )
+            ).order_by("-created_at")
 
             paginator = CustomPageNumberPagination()
             paginated_qs = paginator.paginate_queryset(employees, request)
@@ -758,8 +758,7 @@ class EmployeeAttendanceListCreateAPIView(APIView):
         if end_date:
             records = records.filter(date__lte=end_date)
 
-        # Order by date (most recent first)
-        records = records.order_by("-date")
+        records = records.order_by("date")
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(records, request)
@@ -849,7 +848,7 @@ class EmployeeTypeListCreateAPIView(APIView):
         description="Get list of all employee types",
     )
     def get(self, request):
-        data = EmployeeType.objects.all()
+        data = EmployeeType.objects.all().order_by("-created_at")
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(data, request)
@@ -909,7 +908,7 @@ class WorkTypeListCreateAPIView(APIView):
         description="Get list of all work types",
     )
     def get(self, request):
-        data = WorkType.objects.all()
+        data = WorkType.objects.all().order_by("-created_at")
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(data, request)
@@ -967,7 +966,7 @@ class EmployeeTypeListCreateAPIView(APIView):
         description="Get list of all employee types",
     )
     def get(self, request):
-        data = EmployeeType.objects.all()
+        data = EmployeeType.objects.all().order_by("-created_at")
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(data, request)
         serializer = EmployeeTypeSerializer(paginated_qs, many=True)
@@ -1026,7 +1025,7 @@ class WorkTypeListCreateAPIView(APIView):
         description="Get list of all work types",
     )
     def get(self, request):
-        data = WorkType.objects.all()
+        data = WorkType.objects.all().order_by("-created_at")
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(data, request)
         serializer = WorkTypeSerializer(paginated_qs, many=True)

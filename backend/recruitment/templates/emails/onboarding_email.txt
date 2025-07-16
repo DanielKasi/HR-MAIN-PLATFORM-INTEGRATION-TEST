@@ -1,0 +1,16 @@
+Welcome to the Team, {{ employee_name }}!
+
+We're excited to have you join us as a {{ position }} in the {{ department }} department.
+
+Your official joining date is {{ date_of_joining }}.
+
+Here are your contact details we have on record:
+- Email: {{ email }}
+- Phone Number: {{ phone_number }}
+
+If any of this information is incorrect, please reach out to HR as soon as possible.
+
+Welcome aboard!
+
+Best regards,  
+HR Team

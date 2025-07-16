@@ -50,7 +50,7 @@ class JobPositionListAPI(APIView):
     def get(self, request, institution_id):
         job_positions = JobPosition.objects.filter(
             department__institution_id=institution_id
-        )
+        ).order_by("-created_at")
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(job_positions, request)
         serializer = JobPositionSerializer(paginated_qs, many=True)
@@ -123,7 +123,7 @@ class JobPositionAdvertListAPI(APIView):
     def get(self, request, institution_id):
         adverts = JobPositionAdvert.objects.filter(
             job_position__department__institution_id=institution_id
-        )
+        ).order_by("-published_date")
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(adverts, request)
@@ -193,7 +193,7 @@ class JobAdvertApplicationListAPI(APIView):
     def get(self, request, institution_id):
         applications = JobAdvertApplication.objects.filter(
             job_position_advert__job_position__department__institution_id=institution_id
-        )
+        ).order_by("created_at")
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(applications, request)
         serializer = JobAdvertApplicationSerializer(paginated_qs, many=True)
@@ -262,7 +262,7 @@ class InterviewStageListAPI(APIView):
     def get(self, request, institution_id):
         stages = InterviewStage.objects.filter(
             job_position_advert__job_position__department__institution_id=institution_id
-        )
+        ).order_by("level")
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(stages, request)
         serializer = InterviewStageSerializer(paginated_qs, many=True)

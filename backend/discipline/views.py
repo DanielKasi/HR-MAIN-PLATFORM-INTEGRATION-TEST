@@ -80,7 +80,7 @@ class DisciplineTypeAPIView(APIView):
         summary="List all discipline types",
     )
     def get(self, request):
-        types = DisciplineType.objects.all()
+        types = DisciplineType.objects.all().order_by("-created_at")
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(types, request)

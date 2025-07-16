@@ -31,7 +31,7 @@ class LeaveTypeListCreateAPIView(APIView):
     def get(self, request, institution_id):
         queryset = LeaveType.objects.filter(
             is_active=True, institution_id=institution_id
-        )
+        ).order_by("-created_at")
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
@@ -95,8 +95,10 @@ class LeaveBalanceListCreateAPIView(APIView):
         responses={200: LeaveBalanceSerializer(many=True)},
     )
     def get(self, request, institution_id):
-        queryset = LeaveBalance.objects.select_related("employee", "leave_type").filter(
-            institution_id=institution_id
+        queryset = (
+            LeaveBalance.objects.select_related("employee", "leave_type")
+            .filter(institution_id=institution_id)
+            .order_by("created_at")
         )
 
         employee_id = request.query_params.get("employee_id")
@@ -193,6 +195,8 @@ class LeaveApplicationListCreateAPIView(APIView):
             queryset = queryset.filter(status=status_filter)
         if leave_type_id:
             queryset = queryset.filter(leave_type_id=leave_type_id)
+
+        queryset = queryset.order_by("-start_date", "-created_at")
 
         pagination = CustomPageNumberPagination()
         paginated_qs = pagination.paginate_queryset(queryset, request)
@@ -449,8 +453,10 @@ class LeavePolicyListCreateAPIView(APIView):
         responses={200: LeavePolicySerializer(many=True)},
     )
     def get(self, request, institution_id):
-        queryset = LeavePolicy.objects.select_related("leave_type").filter(
-            is_active=True, institution_id=institution_id
+        queryset = (
+            LeavePolicy.objects.select_related("leave_type")
+            .filter(is_active=True, institution_id=institution_id)
+            .order_by("-created_at")
         )
 
         paginator = CustomPageNumberPagination()
