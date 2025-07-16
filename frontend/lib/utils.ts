@@ -640,8 +640,8 @@ export const createInterviewStage = async ({
 export const getAllEmployees = async ({institutionId}:{institutionId:number}) => {
   try {
     const endpoint = `employee/${institutionId}/employee/`;
-    const response = await apiRequest.get(endpoint);
-    return response.data as EmployeeFormData[];
+    const response = await apiRequest.get(endpoint)
+    return response.data 
   } catch (error) {
     throw error;
   }
@@ -1012,7 +1012,7 @@ export const createDisciplinaryAction = async ({
       apiData
     );
     return response.data as DisciplinaryActionResponse;
-  } catch (error) {
+  } catch (error: any) {
     if (error.response?.status === 400) {
       const errorData = error.response.data;
       if (typeof errorData === 'object' && errorData !== null) {
@@ -1050,7 +1050,7 @@ export const createDisciplineType = async ({
     );
     
     return response.data as DisciplineTypeResponse;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to create discipline type:", error);
     
     if (error.response?.status === 400) {

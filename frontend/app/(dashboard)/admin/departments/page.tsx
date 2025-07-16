@@ -81,6 +81,12 @@ export default function DepartmentsPage() {
     router.push(`/admin/departments/${departmentId}/edit`)
   }
 
+  const handleViewDepartment = (departmentId: number) => {
+    router.push(`/admin/departments/${departmentId}/view`)
+  }
+
+
+
   const handleDeleteDepartment = (departmentId: number) => {
     // TODO: Implement delete functionality
     toast.success("Department deletion would be implemented here")
@@ -219,7 +225,13 @@ export default function DepartmentsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEditDepartment(department.id)}>
+                      <DropdownMenuItem
+                        onClick={() => handleViewDepartment(department.id)}>
+                        <Building2 className="h-4 w-4 mr-2" />
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                          onClick={() => handleEditDepartment(department.id)}>
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
