@@ -4,20 +4,24 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 from users.models import CustomUser
 
+
 class LeaveType(models.Model):
     """Leave types like Annual, Sick, Maternity, etc."""
+
     LEAVE_CATEGORIES = [
-        ('annual', 'Annual Leave'),
-        ('sick', 'Sick Leave'),
-        ('maternity', 'Maternity Leave'),
-        ('paternity', 'Paternity Leave'),
-        ('compassionate', 'Compassionate Leave'),
-        ('study', 'Study Leave'),
-        ('unpaid', 'Unpaid Leave'),
+        ("annual", "Annual Leave"),
+        ("sick", "Sick Leave"),
+        ("maternity", "Maternity Leave"),
+        ("paternity", "Paternity Leave"),
+        ("compassionate", "Compassionate Leave"),
+        ("study", "Study Leave"),
+        ("unpaid", "Unpaid Leave"),
     ]
-    
+
     name = models.CharField(max_length=100)
-    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE, related_name='leave_types')
+    institution = models.ForeignKey(
+        "institution.Institution", on_delete=models.CASCADE, related_name="leave_types"
+    )
     category = models.CharField(max_length=20, choices=LEAVE_CATEGORIES)
     description = models.TextField(blank=True)
     max_days_per_year = models.PositiveIntegerField(default=0)
@@ -26,102 +30,135 @@ class LeaveType(models.Model):
     is_active = models.BooleanField(default=True)
     requires_document = models.BooleanField(default=False)
     gender_specific = models.CharField(
-        max_length=10, 
-        choices=[('male', 'Male'), ('female', 'Female'), ('all', 'All')],
-        default='all'
+        max_length=10,
+        choices=[("male", "Male"), ("female", "Female"), ("all", "All")],
+        default="all",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'leave_types'
-        ordering = ['name']
+        db_table = "leave_types"
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
 
+
 class LeaveBalance(models.Model):
     """Track leave balances for each employee per leave type per year"""
-    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE, related_name='leave_balances')
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='leave_balances')
+
+    institution = models.ForeignKey(
+        "institution.Institution",
+        on_delete=models.CASCADE,
+        related_name="leave_balances",
+    )
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name="leave_balances"
+    )
     leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE)
     year = models.PositiveIntegerField()
     allocated_days = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     used_days = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     pending_days = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    carried_forward_days = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    
+    carried_forward_days = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'leave_balances'
-        unique_together = ['employee', 'leave_type', 'year']
-        ordering = ['-year', 'leave_type__name']
+        db_table = "leave_balances"
+        unique_together = ["employee", "leave_type", "year"]
+        ordering = ["-year", "leave_type__name"]
 
     @property
     def available_days(self):
-        return self.allocated_days + self.carried_forward_days - self.used_days - self.pending_days
+        return (
+            self.allocated_days
+            + self.carried_forward_days
+            - self.used_days
+            - self.pending_days
+        )
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.leave_type.name} ({self.year})"
-    
+
 
 class LeaveApplication(models.Model):
     """Leave application requests"""
+
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('cancelled', 'Cancelled'),
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+        ("cancelled", "Cancelled"),
     ]
 
     DURATION_TYPES = [
-        ('full_day', 'Full Day'),
-        ('half_day_morning', 'Half Day - Morning'),
-        ('half_day_afternoon', 'Half Day - Afternoon'),
-        ('hourly', 'Hourly'),
+        ("full_day", "Full Day"),
+        ("half_day_morning", "Half Day - Morning"),
+        ("half_day_afternoon", "Half Day - Afternoon"),
+        ("hourly", "Hourly"),
     ]
 
-    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE, related_name='leave_applications')
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='leave_applications')
+    institution = models.ForeignKey(
+        "institution.Institution",
+        on_delete=models.CASCADE,
+        related_name="leave_applications",
+    )
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name="leave_applications"
+    )
     leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE)
     start_date = models.DateField()
     end_date = models.DateField()
-    duration_type = models.CharField(max_length=20, choices=DURATION_TYPES, default='full_day')
+    duration_type = models.CharField(
+        max_length=20, choices=DURATION_TYPES, default="full_day"
+    )
     total_days = models.DecimalField(max_digits=5, decimal_places=2)
     reason = models.TextField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     approved_by = models.ForeignKey(
-        CustomUser, 
-        on_delete=models.SET_NULL, 
-        null=True, 
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
-        related_name='approved_leaves'
+        related_name="approved_leaves",
     )
     approved_at = models.DateTimeField(null=True, blank=True)
     rejection_reason = models.TextField(blank=True)
-    supporting_document = models.FileField(upload_to='leave_documents/', null=True, blank=True)
+    supporting_document = models.FileField(
+        upload_to="leave_documents/", null=True, blank=True
+    )
     handover_notes = models.TextField(blank=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'leave_applications'
-        ordering = ['-created_at']
+        db_table = "leave_applications"
+        ordering = ["-created_at"]
 
     def clean(self):
         from django.core.exceptions import ValidationError
+
         if self.start_date and self.end_date and self.start_date > self.end_date:
             raise ValidationError("End date must be after start date")
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.leave_type.name} ({self.start_date} to {self.end_date})"
 
+
 class LeavePolicy(models.Model):
     """Company leave policies and rules"""
-    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE, related_name='leave_policies')
+
+    institution = models.ForeignKey(
+        "institution.Institution",
+        on_delete=models.CASCADE,
+        related_name="leave_policies",
+    )
     name = models.CharField(max_length=200)
     description = models.TextField()
     leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE)
@@ -135,7 +172,7 @@ class LeavePolicy(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'leave_policies'
+        db_table = "leave_policies"
 
     def __str__(self):
-        return f"{self.name} - {self.leave_type.name}"        
+        return f"{self.name} - {self.leave_type.name}"

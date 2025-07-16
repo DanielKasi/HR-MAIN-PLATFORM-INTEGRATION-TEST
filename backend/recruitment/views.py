@@ -6,8 +6,22 @@ from drf_spectacular.utils import extend_schema
 from django.db.models import Sum, Q
 from django.db.models.functions import Coalesce
 
-from .serializers import InterviewStageSerializer, JobAdvertApplicationSerializer, JobInterviewSerializer, JobPositionAdvertSerializer, JobPositionSerializer
-from .models import InterviewStage, JobAdvertApplication, JobInterview, JobPosition, JobPositionAdvert
+from backend.utilities.pagination import CustomPageNumberPagination
+
+from .serializers import (
+    InterviewStageSerializer,
+    JobAdvertApplicationSerializer,
+    JobInterviewSerializer,
+    JobPositionAdvertSerializer,
+    JobPositionSerializer,
+)
+from .models import (
+    InterviewStage,
+    JobAdvertApplication,
+    JobInterview,
+    JobPosition,
+    JobPositionAdvert,
+)
 
 
 class JobPositionListAPI(APIView):
@@ -36,9 +50,11 @@ class JobPositionListAPI(APIView):
     def get(self, request, institution_id):
         job_positions = JobPosition.objects.filter(
             department__institution_id=institution_id
-        )
-        serializer = JobPositionSerializer(job_positions, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        ).order_by("-created_at")
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(job_positions, request)
+        serializer = JobPositionSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class JobPositionDetailAPI(APIView):
@@ -90,7 +106,7 @@ class JobPositionAdvertListAPI(APIView):
         request=JobPositionAdvertSerializer,
         responses={201: JobPositionAdvertSerializer},
         summary="Create Job Position Advert",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def post(self, request, institution_id):
         serializer = JobPositionAdvertSerializer(data=request.data)
@@ -102,14 +118,18 @@ class JobPositionAdvertListAPI(APIView):
     @extend_schema(
         responses={200: JobPositionAdvertSerializer(many=True)},
         summary="List Job Position Adverts",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def get(self, request, institution_id):
         adverts = JobPositionAdvert.objects.filter(
             job_position__department__institution_id=institution_id
-        )
-        serializer = JobPositionAdvertSerializer(adverts, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        ).order_by("-published_date")
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(adverts, request)
+        serializer = JobPositionAdvertSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
 
 class JobPositionAdvertDetailAPI(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -117,7 +137,7 @@ class JobPositionAdvertDetailAPI(APIView):
     @extend_schema(
         responses={200: JobPositionAdvertSerializer},
         summary="Get Job Position Advert",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def get(self, request, advert_id):
         try:
@@ -125,18 +145,22 @@ class JobPositionAdvertDetailAPI(APIView):
             serializer = JobPositionAdvertSerializer(advert)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except JobPositionAdvert.DoesNotExist:
-            return Response({"detail": "Job advert not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Job advert not found."}, status=status.HTTP_404_NOT_FOUND
+            )
 
     @extend_schema(
         request=JobPositionAdvertSerializer,
         responses={200: JobPositionAdvertSerializer},
         summary="Update Job Position Advert",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def patch(self, request, advert_id):
         try:
             advert = JobPositionAdvert.objects.get(id=advert_id)
-            serializer = JobPositionAdvertSerializer(advert, data=request.data, partial=True)
+            serializer = JobPositionAdvertSerializer(
+                advert, data=request.data, partial=True
+            )
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data)
@@ -152,7 +176,7 @@ class JobAdvertApplicationListAPI(APIView):
         request=JobAdvertApplicationSerializer,
         responses={201: JobAdvertApplicationSerializer},
         summary="Submit Job Application",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def post(self, request, institution_id):
         serializer = JobAdvertApplicationSerializer(data=request.data)
@@ -164,14 +188,17 @@ class JobAdvertApplicationListAPI(APIView):
     @extend_schema(
         responses={200: JobAdvertApplicationSerializer(many=True)},
         summary="List Job Applications",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def get(self, request, institution_id):
         applications = JobAdvertApplication.objects.filter(
             job_position_advert__job_position__department__institution_id=institution_id
-        )
-        serializer = JobAdvertApplicationSerializer(applications, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        ).order_by("created_at")
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(applications, request)
+        serializer = JobAdvertApplicationSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
 
 class JobAdvertApplicationDetailAPI(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -179,7 +206,7 @@ class JobAdvertApplicationDetailAPI(APIView):
     @extend_schema(
         responses={200: JobAdvertApplicationSerializer},
         summary="Get Job Application",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def get(self, request, application_id):
         try:
@@ -187,18 +214,22 @@ class JobAdvertApplicationDetailAPI(APIView):
             serializer = JobAdvertApplicationSerializer(application)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except JobAdvertApplication.DoesNotExist:
-            return Response({"detail": "Application not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Application not found."}, status=status.HTTP_404_NOT_FOUND
+            )
 
     @extend_schema(
         request=JobAdvertApplicationSerializer,
         responses={200: JobAdvertApplicationSerializer},
         summary="Update Job Application",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def patch(self, request, application_id):
         try:
             application = JobAdvertApplication.objects.get(id=application_id)
-            serializer = JobAdvertApplicationSerializer(application, data=request.data, partial=True)
+            serializer = JobAdvertApplicationSerializer(
+                application, data=request.data, partial=True
+            )
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data)
@@ -214,7 +245,7 @@ class InterviewStageListAPI(APIView):
         request=InterviewStageSerializer,
         responses={201: InterviewStageSerializer},
         summary="Create Interview Stage",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def post(self, request, institution_id):
         serializer = InterviewStageSerializer(data=request.data)
@@ -226,14 +257,17 @@ class InterviewStageListAPI(APIView):
     @extend_schema(
         responses={200: InterviewStageSerializer(many=True)},
         summary="List Interview Stages",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def get(self, request, institution_id):
         stages = InterviewStage.objects.filter(
             job_position_advert__job_position__department__institution_id=institution_id
-        )
-        serializer = InterviewStageSerializer(stages, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        ).order_by("level")
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(stages, request)
+        serializer = InterviewStageSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
 
 class InterviewStageDetailAPI(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -241,7 +275,7 @@ class InterviewStageDetailAPI(APIView):
     @extend_schema(
         responses={200: InterviewStageSerializer},
         summary="Get Interview Stage",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def get(self, request, stage_id):
         try:
@@ -249,18 +283,23 @@ class InterviewStageDetailAPI(APIView):
             serializer = InterviewStageSerializer(stage)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except InterviewStage.DoesNotExist:
-            return Response({"detail": "Interview stage not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Interview stage not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     @extend_schema(
         request=InterviewStageSerializer,
         responses={200: InterviewStageSerializer},
         summary="Update Interview Stage",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def patch(self, request, stage_id):
         try:
             stage = InterviewStage.objects.get(id=stage_id)
-            serializer = InterviewStageSerializer(stage, data=request.data, partial=True)
+            serializer = InterviewStageSerializer(
+                stage, data=request.data, partial=True
+            )
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data)
@@ -276,7 +315,7 @@ class JobInterviewListAPI(APIView):
         request=JobInterviewSerializer,
         responses={201: JobInterviewSerializer},
         summary="Schedule Job Interview",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def post(self, request, institution_id):
         serializer = JobInterviewSerializer(data=request.data)
@@ -288,29 +327,38 @@ class JobInterviewListAPI(APIView):
     @extend_schema(
         responses={200: dict},
         summary="List Job Interviews with Cumulative Rating",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def get(self, request, institution_id):
-        interviews = JobInterview.objects.filter(
-            job_position_application__job_position_advert__job_position__department__institution_id=institution_id
-        ).annotate(
-            # Calculate cumulative rating for each application across all their interviews
-            cumulative_rating=Coalesce(
-                Sum('job_position_application__interviews__rating', 
-                    filter=Q(job_position_application__interviews__rating__isnull=False)), 
-                0
+        interviews = (
+            JobInterview.objects.filter(
+                job_position_application__job_position_advert__job_position__department__institution_id=institution_id
             )
-        ).order_by('-cumulative_rating', '-created_at')  # Default order by cumulative rating desc
-        
+            .annotate(
+                # Calculate cumulative rating for each application across all their interviews
+                cumulative_rating=Coalesce(
+                    Sum(
+                        "job_position_application__interviews__rating",
+                        filter=Q(
+                            job_position_application__interviews__rating__isnull=False
+                        ),
+                    ),
+                    0,
+                )
+            )
+            .order_by("-cumulative_rating", "-created_at")
+        )  # Default order by cumulative rating desc
+
         # Serialize interviews and add cumulative rating to response
         interview_data = []
         for interview in interviews:
             serializer = JobInterviewSerializer(interview)
             interview_dict = serializer.data
-            interview_dict['cumulative_rating'] = interview.cumulative_rating
+            interview_dict["cumulative_rating"] = interview.cumulative_rating
             interview_data.append(interview_dict)
-        
+
         return Response(interview_data, status=status.HTTP_200_OK)
+
 
 class JobInterviewDetailAPI(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -318,7 +366,7 @@ class JobInterviewDetailAPI(APIView):
     @extend_schema(
         responses={200: JobInterviewSerializer},
         summary="Get Job Interview",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def get(self, request, interview_id):
         try:
@@ -326,27 +374,26 @@ class JobInterviewDetailAPI(APIView):
             serializer = JobInterviewSerializer(interview)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except JobInterview.DoesNotExist:
-            return Response({"detail": "Job interview not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Job interview not found."}, status=status.HTTP_404_NOT_FOUND
+            )
 
     @extend_schema(
         request=JobInterviewSerializer,
         responses={200: JobInterviewSerializer},
         summary="Update Job Interview",
-        tags=["Recruitment"]
+        tags=["Recruitment"],
     )
     def patch(self, request, interview_id):
         try:
             interview = JobInterview.objects.get(id=interview_id)
             print("am here")
-            serializer = JobInterviewSerializer(interview, data=request.data, partial=True)
+            serializer = JobInterviewSerializer(
+                interview, data=request.data, partial=True
+            )
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except JobInterview.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
-
-
-
-
-

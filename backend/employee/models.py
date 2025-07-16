@@ -20,6 +20,9 @@ class EmployeeType(models.Model):
     description = models.TextField(blank=True, null=True)
     code = models.CharField(max_length=10, unique=True, blank=True, null=True)
 
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
         return self.name
 
@@ -28,6 +31,9 @@ class WorkType(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
     code = models.CharField(max_length=10, unique=True, blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -155,8 +161,10 @@ class Employee(models.Model):
 
         # Get institution from department
         if not self.department:
-            raise ValueError("Employee must have a department to initialize leave balances")
-        
+            raise ValueError(
+                "Employee must have a department to initialize leave balances"
+            )
+
         institution = self.department.institution
         if not institution:
             raise ValueError("Employee's department must belong to an institution")
@@ -205,8 +213,10 @@ class Employee(models.Model):
 
         # Get institution from department
         if not self.department:
-            raise ValueError("Employee must have a department to reinitialize leave balances")
-        
+            raise ValueError(
+                "Employee must have a department to reinitialize leave balances"
+            )
+
         institution = self.department.institution
         if not institution:
             raise ValueError("Employee's department must belong to an institution")
@@ -224,9 +234,9 @@ class Employee(models.Model):
                 ):
                     LeaveBalance.objects.filter(
                         institution=institution,
-                        employee=self, 
-                        leave_type=leave_type, 
-                        year=year
+                        employee=self,
+                        leave_type=leave_type,
+                        year=year,
                     ).delete()
                     continue
 
