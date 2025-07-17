@@ -15,6 +15,7 @@ import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition,
 
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/app/types/types.utils";
+import { IPaginatedResponse } from "@/app/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -1157,7 +1158,7 @@ export const getLeaveTypes = async ({
 }): Promise<ILeaveType[]> => {
   try {
     const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-types/?is_active=true`);
-    return response.data as ILeaveType[];
+    return (response.data as IPaginatedResponse<ILeaveType>).results;
   } catch (error) {
     console.error("Failed to fetch leave types:", error);
     return [];
@@ -1279,7 +1280,7 @@ export const getLeavePolicies = async ({
 }): Promise<ILeavePolicy[]> => {
   try {
     const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-policies/`);
-    return response.data as ILeavePolicy[];
+    return (response.data as IPaginatedResponse<ILeavePolicy>).results;
   } catch (error) {
     console.error("Failed to fetch leave policies:", error);
     return [];
@@ -1372,7 +1373,7 @@ export const getLeaveApplications = async ({
 }): Promise<ILeaveRequest[]> => {
   try {
     const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-applications/`);
-    return response.data as ILeaveRequest[];
+    return (response.data as IPaginatedResponse<ILeaveRequest>).results;
   } catch (error) {
     console.error("Failed to fetch leave applications:", error);
     return [];

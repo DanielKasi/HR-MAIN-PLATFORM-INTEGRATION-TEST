@@ -4,7 +4,7 @@ import {format} from "date-fns";
 
 import apiRequest from "./apiRequest";
 
-import {IMarketPlaceOrder, IPermission, IUser, Role} from "@/app/types";
+import {IMarketPlaceOrder, IPaginatedResponse, IPermission, IUser, Role} from "@/app/types";
 import {store} from "@/store";
 
 export function cn(...inputs: ClassValue[]) {
@@ -319,7 +319,7 @@ export const fetchMarketPlaceOrders = async () => {
     }
     const response = await apiRequest.get(`marketplace/orders/by-branch/${selectedBranch.id}`);
 
-    return response.data as IMarketPlaceOrder[];
+    return (response.data as IPaginatedResponse<IMarketPlaceOrder>).results;
   } catch {
     // console.log("\nError fetching orders as : ", error)
     return null;
