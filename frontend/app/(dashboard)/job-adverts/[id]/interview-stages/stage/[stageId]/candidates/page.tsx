@@ -160,7 +160,7 @@ const RatingInput = ({
         placeholder="1-5"
         className="w-20"
       />
-      <p className="text-xs text-muted-foreground">Rate 1-5</p>
+      <p className="text-xs text-muted-foreground">Rate 1-10</p>
     </div>
   )
 }
@@ -304,72 +304,61 @@ const InterviewSchedulingDialog = ({
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="interview_date" className="text-sm font-medium">
-                Interview Date & Time *
-              </Label>
-              <Input
-                id="interview_date"
-                type="datetime-local"
-                value={scheduleData.interview_date}
-                onChange={(e) => updateScheduleData("interview_date", e.target.value)}
-                className={errors.interview_date ? "border-destructive" : ""}
-                min={new Date().toISOString().slice(0, 16)}
-              />
-              {errors.interview_date && (
-                <p className="text-sm text-destructive">{errors.interview_date}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="interview_time" className="text-sm font-medium">
-                Interview Time
-              </Label>
-              <Input
-                id="interview_time"
-                type="time"
-                value={scheduleData.interview_time}
-                onChange={(e) => updateScheduleData("interview_time", e.target.value)}
-                placeholder="e.g., 10:00"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="location" className="text-sm font-medium">
-                Interview Location *
-              </Label>
-              <Input
-                id="location"
-                type="text"
-                value={scheduleData.location}
-                onChange={(e) => updateScheduleData("location", e.target.value)}
-                className={errors.location ? "border-destructive" : ""}
-                placeholder="e.g., Zoom, Google Meet, Conference Room A"
-              />
-              {errors.location && (
-                <p className="text-sm text-destructive">{errors.location}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="interview_type" className="text-sm font-medium">
-                Interview Type
-              </Label>
-              <Select
-                value={scheduleData.interview_type}
-                onValueChange={(value) => updateScheduleData("interview_type", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select interview type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="online">Online</SelectItem>
-                  <SelectItem value="in_person">In Person</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="interview_date" className="text-sm font-medium">
+              Interview Date & Time *
+            </Label>
+            <Input
+              id="interview_date"
+              type="datetime-local"
+              value={scheduleData.interview_date}
+              onChange={(e) => updateScheduleData("interview_date", e.target.value)}
+              className={errors.interview_date ? "border-destructive" : ""}
+              min={new Date().toISOString().slice(0, 16)}
+            />
+            {errors.interview_date && (
+              <p className="text-sm text-destructive">{errors.interview_date}</p>
+            )}
+            <p className="text-xs text-muted-foreground">Must be a future date and time</p>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="location" className="text-sm font-medium">
+              Interview Location *
+            </Label>
+            <Input
+              id="location"
+              type="text"
+              value={scheduleData.location}
+              onChange={(e) => updateScheduleData("location", e.target.value)}
+              className={errors.location ? "border-destructive" : ""}
+              placeholder="e.g., Zoom, Google Meet, Conference Room A"
+            />
+            {errors.location && (
+              <p className="text-sm text-destructive">{errors.location}</p>
+            )}
+            <p className="text-xs text-muted-foreground">Specify if interview is in-person or virtual</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="interview_type" className="text-sm font-medium">
+              Interview Type
+            </Label>
+            <Select
+              value={scheduleData.interview_type}
+              onValueChange={(value) => updateScheduleData("interview_type", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select interview type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="online">Online</SelectItem>
+                <SelectItem value="in_person">In Person</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={onClose} disabled={isScheduling}>
@@ -741,45 +730,77 @@ const StageCandidatesContent = ({
   };
 
   const scheduleInterviewsForNextStage = async (
-    candidates: Candidate[],
-    scheduleData: InterviewScheduleData
-  ) => {
-    if (!selectedInstitution || !nextStage) {
-      throw new Error('Missing institution or next stage data');
-    }
+  candidates: Candidate[],
+  scheduleData: InterviewScheduleData
+) => {
+  if (!selectedInstitution || !nextStage) {
+    throw new Error('Missing institution or next stage data');
+  }
 
-    try {
-      const interviewPromises = candidates.map(async (candidate) => {
-        const createData: IInterviewFormData = {
-          job_position_application: candidate.id,
-          interview_stage: nextStage.id,
-          interview_date: scheduleData.interview_date,
-          interview_time: scheduleData.interview_time,
-          location: scheduleData.location,
-          interview_type: scheduleData.interview_type,
-          status: "scheduled",
-          feedback: undefined,
-          rating: undefined,
-        };
+  try {
+    const interviewPromises = candidates.map(async (candidate, index) => {
+      // Extract time from datetime-local input and format it properly
+      let interviewTime = ""
+      if (scheduleData.interview_date) {
+        const dateTime = new Date(scheduleData.interview_date)
+        const hours = dateTime.getHours().toString().padStart(2, '0')
+        const minutes = dateTime.getMinutes().toString().padStart(2, '0')
+        interviewTime = `${hours}:${minutes}`
+      }
 
-        return createInterview({
+      const createData: IInterviewFormData = {
+        job_position_application: candidate.id,
+        interview_stage: nextStage.id,
+        interview_date: scheduleData.interview_date,
+        location: scheduleData.location,
+        interview_time: interviewTime, // Use the properly formatted time
+        interview_type: scheduleData.interview_type,
+        status: "scheduled",
+        feedback: undefined,
+        rating: undefined,
+      };
+
+      console.log(`Creating interview ${index + 1}/${candidates.length}:`, createData)
+      console.log(`Formatted interview_time: "${interviewTime}"`)
+
+      try {
+        const result = await createInterview({
           institutionId: selectedInstitution.id,
           interviewData: createData,
         });
-      });
-
-      const results = await Promise.all(interviewPromises);
-      const successCount = results.filter(result => result !== null).length;
-
-      if (successCount === 0) {
-        throw new Error('Failed to schedule any interviews');
+        
+        if (result) {
+          console.log(`Interview ${index + 1} created successfully:`, result)
+        } else {
+          console.error(`Interview ${index + 1} creation returned null`)
+        }
+        
+        return result
+      } catch (individualError) {
+        console.error(`Error creating interview ${index + 1}:`, individualError)
+        return null
       }
+    });
 
-      return { successCount, totalCount: candidates.length };
-    } catch (error) {
-      throw error;
+    console.log("Waiting for all interview creation promises...")
+    const results = await Promise.all(interviewPromises);
+    
+    console.log("All interview creation results:", results)
+    
+    const successCount = results.filter(result => result !== null).length;
+    const failureCount = results.length - successCount;
+
+    console.log(`Success: ${successCount}, Failures: ${failureCount}`)
+
+    if (successCount === 0) {
+      throw new Error('Failed to schedule any interviews');
     }
-  };
+
+    return { successCount, totalCount: candidates.length, failureCount };
+  } catch (error) {
+    throw error;
+  }
+};
 
   const fetchData = async () => {
     setLoading(true)

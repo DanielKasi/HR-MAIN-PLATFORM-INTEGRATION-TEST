@@ -31,7 +31,7 @@ import {
   fetchEmployees,
   getInterviews,
 } from "@/lib/utils"
-import type { JobApplication, IInterviewStage, IInterviewStageFormData, IInterview, IInterviewFormData, IEmployee } from "@/app/types/types.utils"
+import type { JobApplication, IInterviewStage, IInterviewStageFormData, IInterview, IInterviewFormData, IEmployee, PaginatedResponse } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
 interface MultiInterviewFormData extends Omit<IInterviewFormData, 'job_position_application'> {
@@ -72,61 +72,60 @@ export default function CreateInterviewPage() {
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const selectedBranch = useSelector(selectSelectedBranch)
+  
   const filteredInterviewStages = selectedJobPosition
-  ? interviewStages.filter(stage => stage.job_position_advert === Number(selectedJobPosition))
-  : []
+    ? interviewStages.filter(stage => stage.job_position_advert === Number(selectedJobPosition))
+    : []
 
-
-const hasStagesForPosition = filteredInterviewStages.length > 0
+  const hasStagesForPosition = filteredInterviewStages.length > 0
 
   const getAvailableApplications = (applications: JobApplication[]) => {
-  const scheduledApplicationIds = new Set(
-    existingInterviews
-      .filter(interview =>
-        interview.status === "scheduled" ||
-        interview.status === "completed"
-      )
-      .map(interview => interview.job_position_application)
-  )
-  return applications.filter(app => !scheduledApplicationIds.has(app.id))
-}
+    const scheduledApplicationIds = new Set(
+      existingInterviews
+        .filter(interview =>
+          interview.status === "scheduled" ||
+          interview.status === "completed"
+        )
+        .map(interview => interview.job_position_application)
+    )
+    return applications.filter(app => !scheduledApplicationIds.has(app.id))
+  }
 
+  const groupedApplications = jobApplications.reduce((acc, app) => {
+    const jobId = app.job_position_advert
+    const jobName = app.job_position_advert_job_details?.name || 'Unknown Position'
 
-      const groupedApplications = jobApplications.reduce((acc, app) => {
-      const jobId = app.job_position_advert
-      const jobName = app.job_position_advert_job_details?.name || 'Unknown Position'
-
-      if (!acc[jobId]) {
-        acc[jobId] = {
-          jobName,
-          applications: []
-        }
+    if (!acc[jobId]) {
+      acc[jobId] = {
+        jobName,
+        applications: []
       }
-      acc[jobId].applications.push(app)
-      return acc
-    }, {} as Record<number, { jobName: string; applications: JobApplication[] }>)
+    }
+    acc[jobId].applications.push(app)
+    return acc
+  }, {} as Record<number, { jobName: string; applications: JobApplication[] }>)
 
-    const filteredGroupedApplications = Object.entries(groupedApplications).reduce((acc, [jobId, { jobName, applications }]) => {
-      const availableApplications = getAvailableApplications(applications)
+  const filteredGroupedApplications = Object.entries(groupedApplications).reduce((acc, [jobId, { jobName, applications }]) => {
+    const availableApplications = getAvailableApplications(applications)
 
-      if (availableApplications.length > 0) {
-        acc[Number(jobId)] = {
-          jobName,
-          applications: availableApplications
-        }
+    if (availableApplications.length > 0) {
+      acc[Number(jobId)] = {
+        jobName,
+        applications: availableApplications
       }
+    }
 
-      return acc
-    }, {} as Record<number, { jobName: string; applications: JobApplication[] }>)
+    return acc
+  }, {} as Record<number, { jobName: string; applications: JobApplication[] }>)
 
-    useEffect(() => {
-        if (!selectedInstitution || !selectedBranch) {
-          router.push("/dashboard")
-          return
-        }
+  useEffect(() => {
+    if (!selectedInstitution || !selectedBranch) {
+      router.push("/dashboard")
+      return
+    }
 
-        fetchInitialData()
-      }, [selectedInstitution, selectedBranch, router])
+    fetchInitialData()
+  }, [selectedInstitution, selectedBranch, router])
 
   useEffect(() => {
     if (selectedApplications.length > 0) {
@@ -139,32 +138,81 @@ const hasStagesForPosition = filteredInterviewStages.length > 0
     if (!selectedInstitution) return
 
     try {
-      const [fetchedApplications, fetchedStages, fetchedEmployees, fetchedInterviews] = await Promise.all([
+      console.log("Fetching initial data for institution:", selectedInstitution.id)
+      
+      const [
+        fetchedApplicationsResponse, 
+        fetchedStagesResponse, 
+        fetchedEmployeesResponse, 
+        fetchedInterviewsResponse
+      ] = await Promise.all([
         getJobApplications({ institutionId: selectedInstitution.id }),
         getInterviewStages({ institutionId: selectedInstitution.id }),
         fetchEmployees({ institutionId: selectedInstitution.id }),
         getInterviews({ institutionId: selectedInstitution.id }),
       ])
 
-      if (fetchedApplications) {
-        const eligibleApplications = fetchedApplications.filter(
-          (app) => app.status === "shortlisted" || app.status === "reviewed",
-        )
-        setJobApplications(eligibleApplications)
+      console.log("API responses:", {
+        applications: fetchedApplicationsResponse,
+        stages: fetchedStagesResponse,
+        employees: fetchedEmployeesResponse,
+        interviews: fetchedInterviewsResponse
+      })
+
+      // Handle paginated job applications response
+      let applicationsArray: JobApplication[] = []
+      if (fetchedApplicationsResponse && 'results' in fetchedApplicationsResponse && Array.isArray(fetchedApplicationsResponse.results)) {
+        applicationsArray = fetchedApplicationsResponse.results
+      } else if (Array.isArray(fetchedApplicationsResponse)) {
+        applicationsArray = fetchedApplicationsResponse
+      } else {
+        applicationsArray = []
       }
 
-      if (fetchedStages) {
-        setInterviewStages(fetchedStages)
-      }
+      const eligibleApplications = applicationsArray.filter(
+        (app) => app.status === "shortlisted" || app.status === "reviewed",
+      )
+      console.log("Eligible applications:", eligibleApplications)
+      setJobApplications(eligibleApplications)
 
-      if (fetchedEmployees) {
-        setEmployees(fetchedEmployees)
+      // Handle paginated interview stages response
+      let stagesArray: IInterviewStage[] = []
+      if (fetchedStagesResponse && 'results' in fetchedStagesResponse && Array.isArray(fetchedStagesResponse.results)) {
+        stagesArray = fetchedStagesResponse.results
+      } else if (Array.isArray(fetchedStagesResponse)) {
+        stagesArray = fetchedStagesResponse
+      } else {
+        stagesArray = []
       }
+      console.log("Interview stages:", stagesArray)
+      setInterviewStages(stagesArray)
 
-      if (fetchedInterviews) {
-        setExistingInterviews(fetchedInterviews)
+      // Handle paginated employees response
+      let employeesArray: IEmployee[] = []
+      if (fetchedEmployeesResponse && 'results' in fetchedEmployeesResponse && Array.isArray(fetchedEmployeesResponse.results)) {
+        employeesArray = fetchedEmployeesResponse.results
+      } else if (Array.isArray(fetchedEmployeesResponse)) {
+        employeesArray = fetchedEmployeesResponse
+      } else {
+        employeesArray = []
       }
+      console.log("Employees:", employeesArray)
+      setEmployees(employeesArray)
+
+      // Handle paginated interviews response
+      let interviewsArray: IInterview[] = []
+      if (fetchedInterviewsResponse && 'results' in fetchedInterviewsResponse && Array.isArray(fetchedInterviewsResponse.results)) {
+        interviewsArray = fetchedInterviewsResponse.results
+      } else if (Array.isArray(fetchedInterviewsResponse)) {
+        interviewsArray = fetchedInterviewsResponse
+      } else {
+        interviewsArray = []
+      }
+      console.log("Existing interviews:", interviewsArray)
+      setExistingInterviews(interviewsArray)
+
     } catch (error) {
+      console.error("Error fetching initial data:", error)
       toast.error("Failed to load applications and interview stages")
     } 
   }
@@ -250,7 +298,6 @@ const hasStagesForPosition = filteredInterviewStages.length > 0
     if (!formData.interview_stage || formData.interview_stage === 0) {
       newErrors.interview_stage = "Please select an interview stage"
     }
-
 
     if (!formData.interview_date) {
       newErrors.interview_date = "Interview date and time is required"
@@ -372,36 +419,72 @@ const hasStagesForPosition = filteredInterviewStages.length > 0
     setIsSubmitting(true)
 
     try {
-      const interviewPromises = formData.selected_applications.map(async (applicationId) => {
+      console.log("Starting interview creation process...")
+      console.log("Selected applications:", formData.selected_applications)
+      console.log("Form data:", formData)
+
+      const interviewPromises = formData.selected_applications.map(async (applicationId, index) => {
+        // Extract time from datetime-local input and format it properly
+        let interviewTime = ""
+        if (formData.interview_date) {
+          const dateTime = new Date(formData.interview_date)
+          const hours = dateTime.getHours().toString().padStart(2, '0')
+          const minutes = dateTime.getMinutes().toString().padStart(2, '0')
+          interviewTime = `${hours}:${minutes}`
+        }
+
         const createData: IInterviewFormData = {
           job_position_application: applicationId,
           interview_stage: formData.interview_stage,
           interview_date: formData.interview_date,
           location: formData.location,
-          interview_time: formData.interview_time,
+          interview_time: interviewTime, // Use the properly formatted time
           interview_type: formData.interview_type,
           status: formData.status || "scheduled",
           feedback: formData.feedback || undefined,
           rating: formData.rating || undefined,
         }
 
-        return createInterview({
-          institutionId: selectedInstitution.id,
-          interviewData: createData,
-        })
+        console.log(`Creating interview ${index + 1}/${formData.selected_applications.length}:`, createData)
+        console.log(`Formatted interview_time: "${interviewTime}"`)
+
+        try {
+          const result = await createInterview({
+            institutionId: selectedInstitution.id,
+            interviewData: createData,
+          })
+          
+          if (result) {
+            console.log(`Interview ${index + 1} created successfully:`, result)
+          } else {
+            console.error(`Interview ${index + 1} creation returned null`)
+          }
+          
+          return result
+        } catch (individualError) {
+          console.error(`Error creating interview ${index + 1}:`, individualError)
+          return null
+        }
       })
 
+      console.log("Waiting for all interview creation promises...")
       const results = await Promise.all(interviewPromises)
+      
+      console.log("All interview creation results:", results)
+      
       const successCount = results.filter(result => result !== null).length
       const failureCount = results.length - successCount
+
+      console.log(`Success: ${successCount}, Failures: ${failureCount}`)
 
       if (successCount > 0) {
         toast.success(`${successCount} interview(s) scheduled successfully!${failureCount > 0 ? ` ${failureCount} failed.` : ''}`)
         router.push("/job-interviews")
       } else {
-        toast.error("Failed to schedule any interviews. Please try again.")
+        toast.error("Failed to schedule any interviews. Please check console for details.")
       }
     } catch (error) {
+      console.error("Error in handleSubmit:", error)
       toast.error("Failed to schedule interviews. Please try again.")
     } finally {
       setIsSubmitting(false)
@@ -428,7 +511,6 @@ const hasStagesForPosition = filteredInterviewStages.length > 0
   if (!selectedInstitution || !selectedBranch) {
     return <div>Loading...</div>
   }
-
 
   return (
     <div className="w-full h-full p-6">
@@ -459,249 +541,249 @@ const hasStagesForPosition = filteredInterviewStages.length > 0
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Job Position Selection */}
-                <div className="space-y-2">
-                  <Label htmlFor="job_position" className="text-sm font-medium">
-                    Job Position *
-                  </Label>
-                  <Select
-                    value={selectedJobPosition}
-                    onValueChange={handleJobPositionSelect}
-                  >
-                    <SelectTrigger className={errors.job_position ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select a job position" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(filteredGroupedApplications).map(([jobId, { jobName, applications }]) => (
-                        <SelectItem key={jobId} value={jobId}>
-                          <div className="flex items-center gap-2">
-                            <Building className="h-4 w-4" />
-                            {jobName} ({applications.length} available applicant{applications.length !== 1 ? 's' : ''})
-                          </div>
-                        </SelectItem>
-                      ))}
-                      {Object.keys(filteredGroupedApplications).length === 0 && (
-                        <SelectItem value="no-positions" disabled>
-                          No job positions with available applicants
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {errors.job_position && (
-                    <p className="text-sm text-destructive">{errors.job_position}</p>
-                  )}
+              <div className="space-y-2">
+                <Label htmlFor="job_position" className="text-sm font-medium">
+                  Job Position *
+                </Label>
+                <Select
+                  value={selectedJobPosition}
+                  onValueChange={handleJobPositionSelect}
+                >
+                  <SelectTrigger className={errors.job_position ? "border-destructive" : ""}>
+                    <SelectValue placeholder="Select a job position" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(filteredGroupedApplications).map(([jobId, { jobName, applications }]) => (
+                      <SelectItem key={jobId} value={jobId}>
+                        <div className="flex items-center gap-2">
+                          <Building className="h-4 w-4" />
+                          {jobName} ({applications.length} available applicant{applications.length !== 1 ? 's' : ''})
+                        </div>
+                      </SelectItem>
+                    ))}
+                    {Object.keys(filteredGroupedApplications).length === 0 && (
+                      <SelectItem value="no-positions" disabled>
+                        No job positions with available applicants
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                {errors.job_position && (
+                  <p className="text-sm text-destructive">{errors.job_position}</p>
+                )}
+                <div className="text-xs text-muted-foreground">
+                  Total applications: {jobApplications.length}, 
+                  Grouped positions: {Object.keys(filteredGroupedApplications).length}
                 </div>
+              </div>
 
               {/* Applicant Selection */}
-                {selectedJobPosition && filteredGroupedApplications[Number(selectedJobPosition)] && (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">
-                          Select Applicants * ({filteredGroupedApplications[Number(selectedJobPosition)]?.applications.length || 0} available)
-                        </Label>
-                        <div className="border rounded-lg p-4 max-h-60 overflow-y-auto">
-                          <div className="space-y-3">
-                            {filteredGroupedApplications[Number(selectedJobPosition)]?.applications.map((application) => (
-                              <div key={application.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50">
-                                <Checkbox
-                                  id={`app-${application.id}`}
-                                  checked={selectedApplications.some(app => app.id === application.id)}
-                                  onCheckedChange={() => handleApplicationToggle(application)}
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <User className="h-4 w-4 text-muted-foreground" />
-                                    <span className="font-medium">{application.applicant_name}</span>
-                                    <Badge variant="outline" className="capitalize">
-                                      {application.status}
-                                    </Badge>
-                                  </div>
-                                  <div className="text-sm text-muted-foreground space-y-1">
-                                    <p>Email: {application.applicant_email}</p>
-                                    <p>Phone: {application.applicant_phone}</p>
-                                  </div>
-                                </div>
+              {selectedJobPosition && filteredGroupedApplications[Number(selectedJobPosition)] && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      Select Applicants * ({filteredGroupedApplications[Number(selectedJobPosition)]?.applications.length || 0} available)
+                    </Label>
+                    <div className="border rounded-lg p-4 max-h-60 overflow-y-auto">
+                      <div className="space-y-3">
+                        {filteredGroupedApplications[Number(selectedJobPosition)]?.applications.map((application) => (
+                          <div key={application.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50">
+                            <Checkbox
+                              id={`app-${application.id}`}
+                              checked={selectedApplications.some(app => app.id === application.id)}
+                              onCheckedChange={() => handleApplicationToggle(application)}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <User className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">{application.applicant_name}</span>
+                                <Badge variant="outline" className="capitalize">
+                                  {application.status}
+                                </Badge>
                               </div>
-                            ))}
-                            {filteredGroupedApplications[Number(selectedJobPosition)]?.applications.length === 0 && (
-                              <div className="text-center py-4 text-muted-foreground">
-                                <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                <p className="text-sm">All applicants for this position have already been scheduled for interviews</p>
+                              <div className="text-sm text-muted-foreground space-y-1">
+                                <p>Email: {application.applicant_email}</p>
+                                <p>Phone: {application.applicant_phone}</p>
                               </div>
-                            )}
+                            </div>
                           </div>
-                        </div>
-                        {errors.selected_applications && (
-                          <p className="text-sm text-destructive">{errors.selected_applications}</p>
+                        ))}
+                        {filteredGroupedApplications[Number(selectedJobPosition)]?.applications.length === 0 && (
+                          <div className="text-center py-4 text-muted-foreground">
+                            <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">All applicants for this position have already been scheduled for interviews</p>
+                          </div>
                         )}
                       </div>
-                      {/* Rest of your selected applicants summary code remains the same */}
                     </div>
-                  )}
+                    {errors.selected_applications && (
+                      <p className="text-sm text-destructive">{errors.selected_applications}</p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Form Fields - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Interview Stage */}
                 <div className="space-y-2">
-  <Label htmlFor="interview_stage" className="text-sm font-medium">
-    Interview Stage *
-  </Label>
-  <div className="flex gap-2">
-    <Select
-      value={formData.interview_stage.toString()}
-      onValueChange={(value) => updateFormData("interview_stage", Number(value))}
-      disabled={!selectedJobPosition} // Disable if no job position selected
-    >
-      <SelectTrigger className={errors.interview_stage ? "border-destructive" : ""}>
-        <SelectValue placeholder={
-          !selectedJobPosition
-            ? "Select a job position first"
-            : filteredInterviewStages.length === 0
-              ? "No stages available for this position"
-              : "Select interview stage"
-        } />
-      </SelectTrigger>
-      <SelectContent>
-        {filteredInterviewStages.map((stage) => (
-          <SelectItem key={stage.id} value={stage.id.toString()}>
-            <div className="flex items-center gap-2">
-              <Building className="h-4 w-4" />
-              {stage.name} (Level {stage.level})
-            </div>
-          </SelectItem>
-        ))}
-        {selectedJobPosition && filteredInterviewStages.length === 0 && (
-          <SelectItem value="no-stages" disabled>
-            No interview stages for this position
-          </SelectItem>
-        )}
-      </SelectContent>
-    </Select>
+                  <Label htmlFor="interview_stage" className="text-sm font-medium">
+                    Interview Stage *
+                  </Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={formData.interview_stage.toString()}
+                      onValueChange={(value) => updateFormData("interview_stage", Number(value))}
+                      disabled={!selectedJobPosition}
+                    >
+                      <SelectTrigger className={errors.interview_stage ? "border-destructive" : ""}>
+                        <SelectValue placeholder={
+                          !selectedJobPosition
+                            ? "Select a job position first"
+                            : filteredInterviewStages.length === 0
+                              ? "No stages available for this position"
+                              : "Select interview stage"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredInterviewStages.map((stage) => (
+                          <SelectItem key={stage.id} value={stage.id.toString()}>
+                            <div className="flex items-center gap-2">
+                              <Building className="h-4 w-4" />
+                              {stage.name} (Level {stage.level})
+                            </div>
+                          </SelectItem>
+                        ))}
+                        {selectedJobPosition && filteredInterviewStages.length === 0 && (
+                          <SelectItem value="no-stages" disabled>
+                            No interview stages for this position
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
 
-    <Dialog open={isCreateStageDialogOpen} onOpenChange={setIsCreateStageDialogOpen}>
-      <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          disabled={!selectedJobPosition} // Only allow creating stages when position is selected
-          title={!selectedJobPosition ? "Select a job position first" : "Create new interview stage"}
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Create Interview Stage</DialogTitle>
-          <DialogDescription>
-            Create a new interview stage for {filteredGroupedApplications[Number(selectedJobPosition)]?.jobName || 'the selected position'}.
-          </DialogDescription>
-        </DialogHeader>
+                    <Dialog open={isCreateStageDialogOpen} onOpenChange={setIsCreateStageDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          disabled={!selectedJobPosition}
+                          title={!selectedJobPosition ? "Select a job position first" : "Create new interview stage"}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Create Interview Stage</DialogTitle>
+                          <DialogDescription>
+                            Create a new interview stage for {filteredGroupedApplications[Number(selectedJobPosition)]?.jobName || 'the selected position'}.
+                          </DialogDescription>
+                        </DialogHeader>
 
-        <div onClick={(e) => e.stopPropagation()}>
-          <form onSubmit={handleCreateStage} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="stage_name">Stage Name *</Label>
-              <Input
-                id="stage_name"
-                value={stageFormData.name}
-                onChange={(e) => updateStageFormData("name", e.target.value)}
-                placeholder="e.g., Technical Interview, HR Round"
-                className={stageErrors.name ? "border-destructive" : ""}
-              />
-              {stageErrors.name && <p className="text-sm text-destructive">{stageErrors.name}</p>}
-            </div>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <form onSubmit={handleCreateStage} className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="stage_name">Stage Name *</Label>
+                              <Input
+                                id="stage_name"
+                                value={stageFormData.name}
+                                onChange={(e) => updateStageFormData("name", e.target.value)}
+                                placeholder="e.g., Technical Interview, HR Round"
+                                className={stageErrors.name ? "border-destructive" : ""}
+                              />
+                              {stageErrors.name && <p className="text-sm text-destructive">{stageErrors.name}</p>}
+                            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="stage_level">Level *</Label>
-              <Input
-                id="stage_level"
-                type="number"
-                min="1"
-                value={stageFormData.level}
-                onChange={(e) => updateStageFormData("level", Number(e.target.value))}
-                className={stageErrors.level ? "border-destructive" : ""}
-              />
-              {stageErrors.level && <p className="text-sm text-destructive">{stageErrors.level}</p>}
-              <p className="text-xs text-muted-foreground">
-                Stage order (1 = first stage, 2 = second stage, etc.)
-              </p>
-            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="stage_level">Level *</Label>
+                              <Input
+                                id="stage_level"
+                                type="number"
+                                min="1"
+                                value={stageFormData.level}
+                                onChange={(e) => updateStageFormData("level", Number(e.target.value))}
+                                className={stageErrors.level ? "border-destructive" : ""}
+                              />
+                              {stageErrors.level && <p className="text-sm text-destructive">{stageErrors.level}</p>}
+                              <p className="text-xs text-muted-foreground">
+                                Stage order (1 = first stage, 2 = second stage, etc.)
+                              </p>
+                            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="stage_interviewer">Interviewer *</Label>
-              <Select
-                value={stageFormData.interviewer.toString()}
-                onValueChange={(value) => updateStageFormData("interviewer", Number(value))}
-              >
-                <SelectTrigger className={stageErrors.interviewer ? "border-destructive" : ""}>
-                  <SelectValue placeholder="Select interviewer" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id.toString()}>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        {employee.user.fullname}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {stageErrors.interviewer && (
-                <p className="text-sm text-destructive">{stageErrors.interviewer}</p>
-              )}
-            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="stage_interviewer">Interviewer *</Label>
+                              <Select
+                                value={stageFormData.interviewer.toString()}
+                                onValueChange={(value) => updateStageFormData("interviewer", Number(value))}
+                              >
+                                <SelectTrigger className={stageErrors.interviewer ? "border-destructive" : ""}>
+                                  <SelectValue placeholder="Select interviewer" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {employees.map((employee) => (
+                                    <SelectItem key={employee.id} value={employee.id.toString()}>
+                                      <div className="flex items-center gap-2">
+                                        <User className="h-4 w-4" />
+                                        {employee.user.fullname}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {stageErrors.interviewer && (
+                                <p className="text-sm text-destructive">{stageErrors.interviewer}</p>
+                              )}
+                            </div>
 
-            {/* Hidden field to set the job_position_advert */}
-            <input
-              type="hidden"
-              value={selectedJobPosition || 0}
-              onChange={(e) => updateStageFormData("job_position_advert", Number(e.target.value))}
-            />
+                            <input
+                              type="hidden"
+                              value={selectedJobPosition || 0}
+                              onChange={(e) => updateStageFormData("job_position_advert", Number(e.target.value))}
+                            />
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setIsCreateStageDialogOpen(false)
-                }}
-                disabled={isCreatingStage}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isCreatingStage} onClick={(e) => e.stopPropagation()}>
-                {isCreatingStage ? (
-                  <>
-                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Check className="h-4 w-4 mr-2" />
-                    Create Stage
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-        </div>
-      </DialogContent>
-    </Dialog>
-  </div>
-  {errors.interview_stage && <p className="text-sm text-destructive">{errors.interview_stage}</p>}
-  <p className="text-xs text-muted-foreground">
-    {!selectedJobPosition
-      ? "Select a job position to see available interview stages"
-      : !hasStagesForPosition
-        ? "No stages found for this position. Click + to create one."
-        : "Can't find the right stage? Click the + button to create a new one."
-    }
-  </p>
-</div>
-
-
+                            <div className="flex justify-end gap-2 pt-4">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setIsCreateStageDialogOpen(false)
+                                }}
+                                disabled={isCreatingStage}
+                              >
+                                Cancel
+                              </Button>
+                              <Button type="submit" disabled={isCreatingStage} onClick={(e) => e.stopPropagation()}>
+                                {isCreatingStage ? (
+                                  <>
+                                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                                    Creating...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Check className="h-4 w-4 mr-2" />
+                                    Create Stage
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </form>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                  {errors.interview_stage && <p className="text-sm text-destructive">{errors.interview_stage}</p>}
+                  <p className="text-xs text-muted-foreground">
+                    {!selectedJobPosition
+                      ? "Select a job position to see available interview stages"
+                      : !hasStagesForPosition
+                        ? "No stages found for this position. Click + to create one."
+                        : "Can't find the right stage? Click the + button to create a new one."
+                    }
+                  </p>
+                </div>
 
                 {/* Interview Date */}
                 <div className="space-y-2">
@@ -738,21 +820,6 @@ const hasStagesForPosition = filteredInterviewStages.length > 0
                   <p className="text-xs text-muted-foreground">Specify if interview is in-person or virtual</p>
                 </div>
 
-                {/* Interview Time */}
-                {/* <div className="space-y-2">
-                  <Label htmlFor="interview_time" className="text-sm font-medium">
-                    Interview Time
-                  </Label>
-                  <Input
-                    id="interview_time"
-                    type="time"
-                    value={formData.interview_time}
-                    onChange={(e) => updateFormData("interview_time", e.target.value)}
-                    className={errors.interview_time ? "border-destructive" : ""}
-                    placeholder="e.g., 10:00 AM"
-                  />
-                </div> */}
-
                 {/* Interview Type */}
                 <div className="space-y-2">
                   <Label htmlFor="interview_type" className="text-sm font-medium">
@@ -772,6 +839,40 @@ const hasStagesForPosition = filteredInterviewStages.length > 0
                   </Select>
                 </div>
               </div>
+
+              {/* Selected Applications Summary */}
+              {selectedApplications.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Selected Applicants ({selectedApplications.length})
+                  </Label>
+                  <div className="border rounded-lg p-4 bg-muted/20">
+                    <div className="grid gap-2">
+                      {selectedApplications.map((application) => (
+                        <div key={application.id} className="flex items-center justify-between p-2 bg-background rounded border">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{application.applicant_name}</span>
+                            <Badge variant="outline" className="capitalize text-xs">
+                              {application.status}
+                            </Badge>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeSelectedApplication(application.id)}
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Form Actions */}
               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
                 <Button

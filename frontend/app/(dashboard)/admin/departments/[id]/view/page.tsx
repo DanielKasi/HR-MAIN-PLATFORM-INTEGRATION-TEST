@@ -54,52 +54,10 @@ import {
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getDepartments, getAllEmployees, getOnBoardings } from "@/lib/utils"
-import type { IDepartment, IOnBoarding } from "@/app/types/types.utils"
+import type { IDepartment, IOnBoarding, EmployeeFromAPI } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
-interface EmployeeFromAPI {
-  id: number
-  user: {
-    id: number
-    email: string
-    fullname: string
-    is_active: boolean
-    is_email_verified: boolean
-    is_password_verified: boolean
-    is_staff: boolean
-    roles: any[]
-    branches: any[]
-    permissions: any[]
-  } | null
-  email: string
-  phone_number: string
-  position: {
-    id: number
-    name: string
-    department_id: number
-  }
-  department: {
-    id: number
-    name: string
-    institution_id: number
-  }
-  roles: any[]
-  date_of_birth: string | null
-  date_of_joining: string
-  address: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
-  experience: number
-  qualifications: string | null
-  skills: string | null
-  emergency_contact_name: string | null
-  emergency_contact_phone: string | null
-  emergency_contact_relationship: string | null
-  marital_status: string
-  children_count: number
-  employee_profile_picture: string | null
-}
+
 
 const getFullName = (employee: EmployeeFromAPI) => {
   return employee.user?.fullname || employee.email || 'Unknown Employee'

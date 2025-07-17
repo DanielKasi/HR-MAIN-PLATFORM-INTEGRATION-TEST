@@ -68,7 +68,9 @@ export default function EditJobAdvertPage() {
       setIsLoading(true)
 
       // Fetch job advert details
+      console.log("Fetching job advert with ID:", jobAdvertId)
       const fetchedJobAdvert = await getJobPositionAdvertById({ advertId: jobAdvertId })
+      console.log("Fetched job advert:", fetchedJobAdvert)
 
       if (!fetchedJobAdvert) {
         toast.error("Job advert not found")
@@ -79,28 +81,52 @@ export default function EditJobAdvertPage() {
       setJobAdvert(fetchedJobAdvert)
 
       // Fetch job positions and job position details in parallel
-      const [fetchedJobPositions, fetchedJobPosition] = await Promise.all([
+      console.log("Fetching job positions and job position details...")
+      console.log("Institution ID:", selectedInstitution.id)
+      console.log("Job position ID from advert:", fetchedJobAdvert.job_position)
+
+      const [fetchedJobPositionsResponse, fetchedJobPosition] = await Promise.all([
         getJobPositions({ institutionId: selectedInstitution.id }),
         getJobPosition({ jobPositionId: fetchedJobAdvert.job_position }),
       ])
 
-      if (fetchedJobPositions) {
-        setJobPositions(fetchedJobPositions)
+      console.log("Job positions response:", fetchedJobPositionsResponse)
+      console.log("Job position details:", fetchedJobPosition)
+
+      // Handle paginated job positions response
+      if (fetchedJobPositionsResponse && 'results' in fetchedJobPositionsResponse && Array.isArray(fetchedJobPositionsResponse.results)) {
+        console.log("Setting job positions from results:", fetchedJobPositionsResponse.results)
+        setJobPositions(fetchedJobPositionsResponse.results)
+      } else if (Array.isArray(fetchedJobPositionsResponse)) {
+        console.log("Setting job positions directly (not paginated):", fetchedJobPositionsResponse)
+        setJobPositions(fetchedJobPositionsResponse)
+      } else {
+        console.log("No valid job positions found, setting empty array")
+        setJobPositions([])
       }
 
       if (fetchedJobPosition) {
         setJobPosition(fetchedJobPosition)
       }
 
-      // Pre-populate form data
-      setFormData({
-        job_position: fetchedJobAdvert.job_position,
-        status: fetchedJobAdvert.status,
-        expiry_date: fetchedJobAdvert.expiry_date.split("T")[0], // Convert to YYYY-MM-DD format
+      // Populate form data with fetched job advert data
+      const expiryDate = fetchedJobAdvert.expiry_date 
+        ? new Date(fetchedJobAdvert.expiry_date).toISOString().split('T')[0]
+        : ""
+
+      const formDataToSet = {
+        job_position: fetchedJobAdvert.job_position || 0,
+        status: fetchedJobAdvert.status || "active",
+        expiry_date: expiryDate,
         number_of_employees_expected: fetchedJobAdvert.number_of_employees_expected || 1,
         extra_information: fetchedJobAdvert.extra_information || "",
-      })
+      }
+
+      console.log("Setting form data to:", formDataToSet)
+      setFormData(formDataToSet)
+
     } catch (error) {
+      console.error("Error fetching initial data:", error)
       toast.error("Failed to load job advert data")
       router.push("/job-adverts")
     } finally {
@@ -117,12 +143,15 @@ export default function EditJobAdvertPage() {
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof JobPositionAdvertFormData, string>> = {}
+    
     if (!formData.job_position || formData.job_position === 0) {
       newErrors.job_position = "Please select a job position"
     }
+    
     if (!formData.status) {
       newErrors.status = "Status is required"
     }
+    
     if (!formData.expiry_date) {
       newErrors.expiry_date = "Expiry date is required"
     } else {
@@ -140,9 +169,11 @@ export default function EditJobAdvertPage() {
         newErrors.expiry_date = "Expiry date cannot be more than 2 years in the future"
       }
     }
+    
     if (formData.job_position && !jobPositions.some((pos) => pos.id === formData.job_position)) {
       newErrors.job_position = "Selected job position does not exist"
     }
+    
     if (formData.number_of_employees_expected !== undefined && formData.number_of_employees_expected !== null) {
       const numEmployees = Number(formData.number_of_employees_expected)
 
@@ -158,6 +189,7 @@ export default function EditJobAdvertPage() {
     if (formData.extra_information && formData.extra_information.length > 0 && formData.extra_information.length < 10) {
       newErrors.extra_information = "Extra information must be at least 10 characters"
     }
+    
     if (formData.extra_information && formData.extra_information.length > 2000) {
       newErrors.extra_information = "Extra information cannot exceed 2000 characters"
     }
@@ -202,6 +234,7 @@ export default function EditJobAdvertPage() {
         toast.error("Failed to update job advert. Please try again.")
       }
     } catch (error) {
+      console.error("Error updating job advert:", error)
       toast.error("Failed to update job advert. Please try again.")
     } finally {
       setIsSubmitting(false)
@@ -292,14 +325,17 @@ export default function EditJobAdvertPage() {
                     Job Position *
                   </Label>
                   <Select
-                    value={formData.job_position.toString()}
-                    onValueChange={(value) => updateFormData("job_position", Number(value))}
+                    value={formData.job_position > 0 ? formData.job_position.toString() : ""}
+                    onValueChange={(value) => {
+                      console.log("Job position selected:", value)
+                      updateFormData("job_position", Number(value))
+                    }}
                   >
                     <SelectTrigger className={errors.job_position ? "border-destructive" : ""}>
                       <SelectValue placeholder="Select a job position" />
                     </SelectTrigger>
                     <SelectContent>
-                      {jobPositions.map((position) => (
+                      {Array.isArray(jobPositions) && jobPositions.map((position) => (
                         <SelectItem key={position.id} value={position.id.toString()}>
                           {position.name} - {position.department_details?.name}
                         </SelectItem>
@@ -390,6 +426,7 @@ export default function EditJobAdvertPage() {
                 />
                 {errors.extra_information && <p className="text-sm text-destructive">{errors.extra_information}</p>}
               </div>
+              
               {/* Form Actions */}
               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
                 <Button

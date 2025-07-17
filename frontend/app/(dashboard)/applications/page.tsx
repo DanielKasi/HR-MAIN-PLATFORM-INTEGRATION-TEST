@@ -52,7 +52,7 @@ import {
   getJobPositionAdverts,
   updateJobApplicationStatus,
 } from "@/lib/utils"
-import type { JobApplication, JobApplicationFormData, JobPositionAdvert } from "@/app/types/types.utils"
+import type { JobApplication, JobApplicationFormData, JobPositionAdvert, PaginatedResponse } from "@/app/types/types.utils"
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
@@ -106,6 +106,16 @@ export default function ApplicationsPage() {
     applicationId: null,
     applicantName: '',
     action: null
+  })
+
+  const [confirmBulkAction, setConfirmBulkAction] = useState<{
+    isOpen: boolean
+    action: 'shortlisted' | 'reviewed' | 'rejected' | null
+    count: number
+  }>({
+    isOpen: false,
+    action: null,
+    count: 0
   })
 
   const router = useRouter()
@@ -197,13 +207,35 @@ export default function ApplicationsPage() {
     setError(null)
 
     try {
-      const data = await getJobApplications({ institutionId: selectedInstitution.id })
-      if (data) {
-        setApplications(data)
-      } else {
+      console.log("Loading applications for institution:", selectedInstitution.id)
+      const response = await getJobApplications({ institutionId: selectedInstitution.id })
+      console.log("Applications response:", response)
+      console.log("Response type:", typeof response)
+      
+      // Handle paginated response
+      let applicationsArray: JobApplication[] = []
+      
+      if (response && 'results' in response && Array.isArray(response.results)) {
+        console.log("Setting applications from paginated response:", response.results)
+        applicationsArray = response.results
+      } else if (Array.isArray(response)) {
+        console.log("Setting applications from direct array:", response)
+        applicationsArray = response
+      } else if (response === null) {
+        console.log("Response is null - API call failed")
+        applicationsArray = []
         setError("Failed to load applications")
+      } else {
+        console.log("Unexpected response structure:", response)
+        applicationsArray = []
+        setError("Failed to load applications - unexpected response format")
       }
+      
+      console.log("Final applications array:", applicationsArray)
+      setApplications(applicationsArray)
     } catch (err: any) {
+      console.error("Error loading applications:", err)
+      setApplications([]) // Ensure it's always an array
       setError(err?.message || "Failed to load applications")
     } finally {
       setIsLoading(false)
@@ -215,11 +247,25 @@ export default function ApplicationsPage() {
 
     setIsLoadingAdverts(true)
     try {
-      const data = await getJobPositionAdverts({ institutionId: selectedInstitution.id })
-      if (data) {
-        setJobPositionAdverts(data)
+      console.log("Loading job position adverts for institution:", selectedInstitution.id)
+      const response = await getJobPositionAdverts({ institutionId: selectedInstitution.id })
+      console.log("Job adverts response:", response)
+      
+      // Handle paginated response
+      let advertsArray: JobPositionAdvert[] = []
+      
+      if (response && 'results' in response && Array.isArray(response.results)) {
+        advertsArray = response.results
+      } else if (Array.isArray(response)) {
+        advertsArray = response
+      } else {
+        advertsArray = []
       }
+      
+      setJobPositionAdverts(advertsArray)
     } catch (err: any) {
+      console.error("Error loading job adverts:", err)
+      setJobPositionAdverts([]) // Ensure it's always an array
       setError(err?.message || "Failed to load job position adverts")
     } finally {
       setIsLoadingAdverts(false)
@@ -349,18 +395,33 @@ export default function ApplicationsPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedApplications(filteredApplications.map((app) => app.id))
+      setSelectedApplications(safeFilteredApplications.map((app) => app.id))
     } else {
       setSelectedApplications([])
     }
   }
 
-  const handleBulkAction = async (action: "shortlisted" | "reviewed") => {
+  const handleBulkAction = async (action: "shortlisted" | "reviewed" | "rejected") => {
     if (selectedApplications.length === 0) {
       toast.error("Please select applications first")
       return
     }
 
+    // Show confirmation for shortlist and reject actions
+    if (action === "shortlisted" || action === "rejected") {
+      setConfirmBulkAction({
+        isOpen: true,
+        action,
+        count: selectedApplications.length
+      })
+      return
+    }
+
+    // Execute directly for "reviewed" action (no confirmation needed)
+    await executeBulkAction(action)
+  }
+
+  const executeBulkAction = async (action: "shortlisted" | "reviewed" | "rejected") => {
     if (action === "shortlisted") {
       setIsBulkShortlisting(true)
     }
@@ -384,6 +445,17 @@ export default function ApplicationsPage() {
     }
   }
 
+  const handleConfirmBulkAction = async () => {
+    if (confirmBulkAction.action) {
+      await executeBulkAction(confirmBulkAction.action)
+      setConfirmBulkAction({
+        isOpen: false,
+        action: null,
+        count: 0
+      })
+    }
+  }
+
   const handleSort = (field: 'application_date' | 'posted_date') => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
@@ -393,10 +465,12 @@ export default function ApplicationsPage() {
     }
   }
 
-  const totalPages = Math.ceil(filteredApplications.length / itemsPerPage)
+  // Ensure filteredApplications is always an array before using slice
+  const safeFilteredApplications = Array.isArray(filteredApplications) ? filteredApplications : []
+  const totalPages = Math.ceil(safeFilteredApplications.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const currentApplications = filteredApplications.slice(startIndex, endIndex)
+  const currentApplications = safeFilteredApplications.slice(startIndex, endIndex)
 
   const handleIndividualAction = async (
     applicationId: number,
@@ -765,6 +839,15 @@ export default function ApplicationsPage() {
                 <Button
                   size="sm"
                   variant="outline"
+                  onClick={() => handleBulkAction("rejected")}
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Reject
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
                   onClick={() => setSelectedApplications([])}
                   className="text-gray-600"
                 >
@@ -787,24 +870,26 @@ export default function ApplicationsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Applications ({filteredApplications.length})
+            Applications ({safeFilteredApplications.length})
           </CardTitle>
           <CardDescription>
             All job applications submitted to your organization
-            {filteredApplications.length !== applications.length && 
+            {safeFilteredApplications.length !== applications.length && 
               ` (${applications.length} total)`
             }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredApplications.length === 0 ? (
+          {safeFilteredApplications.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">
                 {searchTerm || statusFilter !== "all"
                   ? "No applications match your current filters."
-                  : "No applications have been submitted yet."}
+                  : isLoading 
+                    ? "Loading applications..." 
+                    : "No applications have been submitted yet."}
               </p>
-              {applications.length > 0 && (
+              {applications.length > 0 && !isLoading && (
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -1030,7 +1115,7 @@ export default function ApplicationsPage() {
           {totalPages > 1 && (
               <div className="flex items-center justify-between mt-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {startIndex + 1} to {Math.min(endIndex, filteredApplications.length)} of {filteredApplications.length} applications
+                  Showing {startIndex + 1} to {Math.min(endIndex, safeFilteredApplications.length)} of {safeFilteredApplications.length} applications
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -1112,6 +1197,43 @@ export default function ApplicationsPage() {
               className={confirmAction.action === 'rejected' ? 'bg-destructive hover:bg-destructive/90' : ''}
             >
               {confirmAction.action === 'shortlisted' ? 'Shortlist' : 'Reject'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Action Confirmation Dialog */}
+      <AlertDialog open={confirmBulkAction.isOpen} onOpenChange={(open) => {
+        if (!open) {
+          setConfirmBulkAction({
+            isOpen: false,
+            action: null,
+            count: 0
+          })
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmBulkAction.action === 'shortlisted' ? 'Shortlist Applications' : 'Reject Applications'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to {confirmBulkAction.action === 'shortlisted' ? 'shortlist' : 'reject'}{' '}
+              <strong>{confirmBulkAction.count}</strong> selected application{confirmBulkAction.count !== 1 ? 's' : ''}?
+              {confirmBulkAction.action === 'rejected' && (
+                <span className="block mt-2 text-red-600 font-medium">
+                  This action cannot be undone.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmBulkAction}
+              className={confirmBulkAction.action === 'rejected' ? 'bg-destructive hover:bg-destructive/90' : ''}
+            >
+              {confirmBulkAction.action === 'shortlisted' ? 'Shortlist' : 'Reject'} {confirmBulkAction.count} Application{confirmBulkAction.count !== 1 ? 's' : ''}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
