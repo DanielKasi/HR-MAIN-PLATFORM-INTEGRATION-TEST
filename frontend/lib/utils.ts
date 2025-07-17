@@ -10,7 +10,9 @@ import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition,
    ILeaveRequest, ILeaveRequestFormData, LeaveRequestStatus,LeaveType,ILeaveTypeFormData, ILeaveType,ILeavePolicy, 
    ILeavePolicyFormData, ILeavePolicyResponse, IAllowanceType, IAllowanceTypeFormData, IDeductionType, IDeductionTypeFormData,
    IEmployeeAllowance,IEmployeeAllowanceFormData,IEmployeeDeduction, IEmployeeDeductionFormData, IPayrollPeriod, IPayrollPeriodFormData,
-   IPayslipFormData, IPayslip, IPayslipItem
+   IPayslipFormData, IPayslip, IPayslipItem, PaginatedEmployeeResponse,
+   EmployeeFromAPI, PaginatedIOnboardingResponse,
+   PaginatedResponse
   } from "@/app/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -164,20 +166,23 @@ export const updateDepartment = async ({departmentData}:{departmentData:IDepartm
   }
 }
 
-export const getDepartments = async ({institutionId}:{institutionId:number}) =>{
+export const getDepartments = async ({institutionId}: {institutionId: number}) => {
   try {
-    const response = await apiRequest.get(`institution/${institutionId}/department/` )
-    return response.data as IDepartment[]
+    const response = await apiRequest.get(`institution/${institutionId}/department/`)
+    const data = response.data as PaginatedResponse<IDepartment>
+    
+    // Return the results array instead of the entire response
+    return data.results
   } catch (error) {
     return null
   }
 }
 
-
 export const getJobPositions = async ({ institutionId }: { institutionId: number }) => {
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`)
-    return response.data as IJobPosition[]
+    const data = response.data as PaginatedResponse<IJobPosition>
+    return data.results
   } catch (error) {
     console.error("Error fetching job positions:", error)
     return null
@@ -304,12 +309,12 @@ export const getJobApplications = async ({
   institutionId,
 }: {
   institutionId: number;
-}): Promise<JobApplication[] | null> => {
+}): Promise<PaginatedResponse<JobApplication> | null> => {
   try {
     const response = await apiRequest.get(
       `recruitment/institution/${institutionId}/job-application/`
     );
-    return response.data as JobApplication[];
+    return response.data as PaginatedResponse<JobApplication>
   } catch (error) {
     console.error("Failed to fetch job applications", error);
     return null;
@@ -421,12 +426,12 @@ export const getJobPositionAdverts = async ({
   institutionId,
 }: {
   institutionId: number;
-}): Promise<JobPositionAdvert[] | null> => {
+}): Promise<PaginatedResponse<JobPositionAdvert> | null> => {
   try {
     const response = await apiRequest.get(
       `recruitment/institution/${institutionId}/job-advert/`
     );
-    return response.data as JobPositionAdvert[];
+    return response.data; 
   } catch (error) {
     return null;
   }
@@ -441,6 +446,7 @@ export const getJobPositionAdvertById = async ({
   try {
     const response = await apiRequest.get(`recruitment/job-advert/${advertId}/`);
     return response.data as JobPositionAdvert;
+    
   } catch (error) {
     console.error("Failed to fetch job position advert", error);
     return null;
@@ -642,7 +648,10 @@ export const getAllEmployees = async ({institutionId}:{institutionId:number}) =>
   try {
     const endpoint = `employee/${institutionId}/employee/`;
     const response = await apiRequest.get(endpoint)
-    return response.data 
+    const data = response.data as PaginatedEmployeeResponse
+
+    // Return the results array instead of the entire response
+    return data.results as EmployeeFromAPI[]
   } catch (error) {
     throw error;
   }
@@ -782,7 +791,10 @@ export const getEmployeeDetailId = async ({
 export const getOnBoardings = async ({ institutionId }: { institutionId: number }) => {
   try {
     const response = await apiRequest.get(`on-boarding/list/${institutionId}/`)
-    return response.data as IOnBoarding[]
+    const data = response.data as PaginatedIOnboardingResponse
+
+    // Return the results array instead of the entire response
+    return data.results as IOnBoarding[]
   } catch (error) {
     console.error("Error fetching onboarding records:", error)
     return null
@@ -1090,8 +1102,11 @@ export const getDisciplineTypes = async ({
     const response = await apiRequest.get(
       `discipline/discipline-types/?institution=${institutionId}`
     );
+  
+    const data = response.data as PaginatedResponse<DisciplineTypeResponse>
     
-    return response.data as DisciplineTypeResponse[];
+    // Return the results array instead of the entire response
+    return data.results
   } catch (error) {
     console.error("Failed to fetch discipline types:", error);
     return null;
@@ -1104,7 +1119,9 @@ export const getDisciplinaryActions = async (): Promise<DisciplinaryActionAPIRes
       `discipline/disciplinary-actions`
     );
     
-    return response.data as DisciplinaryActionAPIResponse[];
+    const data = response.data as PaginatedResponse<DisciplinaryActionAPIResponse>
+  
+    return data.results
   } catch (error) {
     return null;
   }
@@ -1652,7 +1669,10 @@ export const getAllowanceTypes = async (
 ): Promise<IAllowanceType[] | null> => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/allowance-types/`);
-    return response.data as IAllowanceType[];
+    const data = response.data as PaginatedResponse<IAllowanceType>
+    
+    // Return the results array instead of the entire response
+    return data.results
   } catch (error) {
     console.error("Failed to get allowance types:", error);
     return null;
@@ -1749,7 +1769,10 @@ export const getDeductionTypes = async (
 ): Promise<IDeductionType[] | null> => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/deduction-types/`);
-    return response.data as IDeductionType[];
+    const data = response.data as PaginatedResponse<IDeductionType>
+    
+    // Return the results array instead of the entire response
+    return data.results
   } catch (error) {
     console.error("Failed to get deduction types:", error);
     return null;

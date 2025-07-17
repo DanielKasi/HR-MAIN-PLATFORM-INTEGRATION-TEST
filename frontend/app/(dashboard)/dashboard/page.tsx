@@ -1,6 +1,6 @@
 "use client";
 
-import {SetStateAction, useEffect, useState, useMemo} from "react";
+import { SetStateAction, useEffect, useState, useMemo } from "react";
 import {
   Users,
   UserCheck,
@@ -39,14 +39,14 @@ import {
 // HR Dashboard Components
 import { useSelector } from "react-redux";
 import { selectUser, selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
-import { 
-  getAllEmployees, 
-  getLeaveApplications, 
-  getJobPositionAdverts, 
+import {
+  getAllEmployees,
+  getLeaveApplications,
+  getJobPositionAdverts,
   getInterviews,
   getLeaveTypes,
   getLeavePolicies,
-  getDepartments 
+  getDepartments
 } from "@/lib/utils";
 import { IUserInstitution } from "@/app/types";
 import EmployeeAttendance from "./EmployeeAttendance";
@@ -215,18 +215,18 @@ const WelcomeCard = () => {
   );
 };
 
-const StatsCards = ({ 
-  departmentId, 
-  employees, 
+const StatsCards = ({
+  departmentId,
+  employees,
   leaveApplications,
   jobAdverts,
   interviews,
   leaveTypes,
   leavePolicies,
   departments
-}: { 
-  departmentId: string; 
-  employees: EmployeeFromAPI[]; 
+}: {
+  departmentId: string;
+  employees: EmployeeFromAPI[];
   leaveApplications: LeaveApplication[];
   jobAdverts: JobAdvert[];
   interviews: Interview[];
@@ -240,7 +240,7 @@ const StatsCards = ({
       return employees;
     }
     // Filter by department name matching the selected department
-    return employees.filter(emp => 
+    return employees.filter(emp =>
       emp.department?.name?.toLowerCase() === departmentId.toLowerCase()
     );
   }, [employees, departmentId]);
@@ -248,56 +248,88 @@ const StatsCards = ({
   // Calculate stats from filtered employees and related data
   const stats = useMemo(() => {
     const totalEmployees = filteredEmployees.length;
-    const activeEmployees = filteredEmployees.filter(emp => emp.is_active).length;
-    
+    const activeEmployees = Array.isArray(filteredEmployees)
+      ? filteredEmployees.filter(emp => emp.is_active).length
+      : 0;
+
+
     // Calculate new hires from filtered employees (joined in current month)
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
-    const newHires = filteredEmployees.filter(emp => {
-      const joinDate = new Date(emp.date_of_joining);
-      return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear;
-    }).length;
-    
+    const newHires = Array.isArray(filteredEmployees)
+      ? filteredEmployees.filter(emp => {
+        const joinDate = new Date(emp.date_of_joining);
+        return (
+          joinDate.getMonth() === currentMonth &&
+          joinDate.getFullYear() === currentYear
+        );
+      }).length
+      : 0;
+
+
     // Calculate turnover rate (rough estimate)
     const turnoverRate = 8.5; // This would need historical data
-    
+
     // Calculate average salary from filtered employees
-    const avgSalary = filteredEmployees.length > 0 
+    const avgSalary = filteredEmployees.length > 0
       ? filteredEmployees.reduce((sum, emp) => {
-          const baseSalary = 40000 + (emp.experience || 0) * 5000;
-          return sum + baseSalary;
-        }, 0) / filteredEmployees.length
+        const baseSalary = 40000 + (emp.experience || 0) * 5000;
+        return sum + baseSalary;
+      }, 0) / filteredEmployees.length
       : 65000;
-    
+
     // For leave applications - filter by department employees if not "all"
-    const departmentEmployeeIds = new Set(filteredEmployees.map(emp => emp.id.toString()));
-    
-    const relevantLeaveApplications = departmentId === "all" 
-      ? leaveApplications 
+    const departmentEmployeeIds = new Set(
+      Array.isArray(filteredEmployees)
+        ? filteredEmployees.map(emp => emp.id.toString())
+        : []
+    );
+
+
+    const relevantLeaveApplications = departmentId === "all"
+      ? leaveApplications
       : leaveApplications.filter(app => departmentEmployeeIds.has(app.employee.id));
-    
-    const pendingLeaves = relevantLeaveApplications.filter(app => app.status === 'pending').length;
-    
+
+    const pendingLeaves = Array.isArray(relevantLeaveApplications)
+      ? relevantLeaveApplications.filter(app => app.status === 'pending').length
+      : 0;
+
+
     // For job adverts and interviews, these are usually organization-wide
-    const openPositions = jobAdverts.filter(advert => advert.status === 'active').length;
+    const openPositions = Array.isArray(jobAdverts)
+      ? jobAdverts.filter(advert => advert.status === 'active').length
+      : 0;
+
     const satisfactionScore = 4.2; // Static for now
     const completedInterviews = interviews.filter(interview => interview.status === 'completed').length;
-    
+
     const ratedInterviews = interviews.filter(interview => interview.rating);
-    const avgInterviewRating = ratedInterviews.length > 0 
-      ? ratedInterviews.reduce((sum, interview) => sum + (interview.rating || 0), 0) / ratedInterviews.length 
+    const avgInterviewRating = ratedInterviews.length > 0
+      ? ratedInterviews.reduce((sum, interview) => sum + (interview.rating || 0), 0) / ratedInterviews.length
       : 0;
-    
-    const activeLeaveTypes = leaveTypes.filter(type => type.is_active).length;
-    const activePolicies = leavePolicies.filter(policy => policy.is_active).length;
+
+    const activeLeaveTypes = Array.isArray(leaveTypes)
+      ? leaveTypes.filter(type => type.is_active).length
+      : 0;
+
+    const activePolicies = Array.isArray(leavePolicies)
+      ? leavePolicies.filter(policy => policy.is_active).length
+      : 0;
+
     const scheduledInterviews = interviews.filter(interview => interview.status === 'scheduled').length;
     const departmentsCount = departments.length;
-    
-    const departmentsWithEmployees = new Set(employees.map(emp => emp.department?.name).filter(Boolean)).size;
+
+    const departmentsWithEmployees = Array.isArray(employees)
+      ? new Set(employees.map(emp => emp.department?.name).filter(Boolean)).size
+      : 0;
+
     const departmentUtilization = departmentsCount > 0 ? Math.round((departmentsWithEmployees / departmentsCount) * 100) : 0;
-    
-    const hrApprovalPolicies = leavePolicies.filter(policy => policy.requires_hr_approval).length;
-    
+
+    const hrApprovalPolicies = Array.isArray(leavePolicies)
+      ? leavePolicies.filter(policy => policy.requires_hr_approval).length
+      : 0;
+
+
     return {
       totalEmployees,
       activeEmployees,
@@ -440,10 +472,9 @@ const StatsCards = ({
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-lg font-bold text-gray-900 leading-tight">{stat.value}</h3>
-                <div className={`text-xs font-medium ${
-                  stat.trend === 'up' ? 'text-green-600' : 
+                <div className={`text-xs font-medium ${stat.trend === 'up' ? 'text-green-600' :
                   stat.trend === 'down' ? 'text-red-600' : 'text-gray-500'
-                }`}>
+                  }`}>
                   {stat.trend === 'up' ? '↗' : stat.trend === 'down' ? '↘' : '→'}
                 </div>
               </div>
@@ -458,23 +489,28 @@ const StatsCards = ({
   );
 };
 
-const WorkforceOverview = ({ employees, departments, departmentId }: { 
-  employees: EmployeeFromAPI[]; 
+const WorkforceOverview = ({ employees, departments, departmentId }: {
+  employees: EmployeeFromAPI[];
   departments: Department[];
   departmentId: string;
 }) => {
   // Filter employees based on selected department
   const filteredEmployees = useMemo(() => {
+    if (!Array.isArray(employees)) return [];
+
     if (departmentId === "all") {
       return employees;
     }
-    return employees.filter(emp => 
+    return employees.filter(emp =>
       emp.department?.name?.toLowerCase() === departmentId.toLowerCase()
     );
   }, [employees, departmentId]);
 
+
   // Calculate department distribution from filtered data
   const departmentData = useMemo(() => {
+    if (!Array.isArray(filteredEmployees)) return [];
+
     const deptCounts = filteredEmployees.reduce((acc, emp) => {
       const deptName = emp.department?.name || 'Unassigned';
       acc[deptName] = (acc[deptName] || 0) + 1;
@@ -482,11 +518,15 @@ const WorkforceOverview = ({ employees, departments, departmentId }: {
     }, {} as Record<string, number>);
 
     const total = filteredEmployees.length;
-    
-    const relevantDepartments = departmentId === "all" 
-      ? new Set([...departments.map(dept => dept.name), ...Object.keys(deptCounts)])
+
+    const relevantDepartments = departmentId === "all"
+      ? new Set([
+        ...(Array.isArray(departments) ? departments.map(dept => dept.name) : []),
+        ...Object.keys(deptCounts)
+      ])
       : new Set([departmentId, ...Object.keys(deptCounts)]);
-    
+
+
     return Array.from(relevantDepartments).map((name, index) => ({
       name,
       count: deptCounts[name] || 0,
@@ -508,7 +548,7 @@ const WorkforceOverview = ({ employees, departments, departmentId }: {
       if (experience >= 8) level = 'Executive';
       else if (experience >= 5) level = 'Senior';
       else if (experience >= 2) level = 'Mid-Level';
-      
+
       acc[level] = (acc[level] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
@@ -516,7 +556,7 @@ const WorkforceOverview = ({ employees, departments, departmentId }: {
     const total = filteredEmployees.length;
     const levels = ['Junior', 'Mid-Level', 'Senior', 'Executive'];
     const colors = ["bg-green-400", "bg-blue-400", "bg-purple-400", "bg-red-400"];
-    
+
     return levels.map((level, index) => ({
       level,
       count: levelCounts[level] || 0,
@@ -546,7 +586,7 @@ const WorkforceOverview = ({ employees, departments, departmentId }: {
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex-1 w-24 bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className={`h-2 rounded-full ${dept.color} ${dept.isEmpty ? 'opacity-30' : ''}`}
                     style={{ width: `${dept.percentage}%` }}
                   ></div>
@@ -580,7 +620,7 @@ const WorkforceOverview = ({ employees, departments, departmentId }: {
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex-1 w-24 bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className={`h-2 rounded-full ${level.color}`}
                     style={{ width: `${level.percentage}%` }}
                   ></div>
@@ -598,12 +638,12 @@ const WorkforceOverview = ({ employees, departments, departmentId }: {
 
 
 
-const RecentActivities = ({ 
-  employees, 
+const RecentActivities = ({
+  employees,
   leaveApplications,
-  interviews 
-}: { 
-  employees: EmployeeFromAPI[]; 
+  interviews
+}: {
+  employees: EmployeeFromAPI[];
   leaveApplications: LeaveApplication[];
   interviews: Interview[];
 }) => {
@@ -619,11 +659,14 @@ const RecentActivities = ({
     // Add recent hires (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
-    const recentHires = employees.filter(emp => {
-      const joinDate = new Date(emp.date_of_joining);
-      return joinDate > sevenDaysAgo;
-    }).slice(0, 2);
+
+    const recentHires = Array.isArray(employees)
+      ? employees.filter(emp => {
+        const joinDate = new Date(emp.date_of_joining);
+        return joinDate > sevenDaysAgo;
+      }).slice(0, 2)
+      : [];
+
 
     recentHires.forEach(emp => {
       const daysAgo = Math.floor((Date.now() - new Date(emp.date_of_joining).getTime()) / (1000 * 60 * 60 * 24));
@@ -637,9 +680,12 @@ const RecentActivities = ({
     });
 
     // Add recent leave applications
-    const recentLeaveApps = leaveApplications
-      .filter(app => app.created_at && new Date(app.created_at) > sevenDaysAgo)
-      .slice(0, 2);
+    const recentLeaveApps = Array.isArray(leaveApplications)
+      ? leaveApplications
+        .filter(app => app.created_at && new Date(app.created_at) > sevenDaysAgo)
+        .slice(0, 2)
+      : [];
+
 
     recentLeaveApps.forEach(app => {
       const daysAgo = app.created_at ? Math.floor((Date.now() - new Date(app.created_at).getTime()) / (1000 * 60 * 60 * 24)) : 0;
@@ -759,7 +805,7 @@ const UpcomingEvents = () => {
     },
     {
       title: "Monthly All-Hands Meeting",
-      date: "Jul 28, 2025", 
+      date: "Jul 28, 2025",
       time: "2:00 PM",
       attendees: 247,
       type: "Meeting"
@@ -781,7 +827,7 @@ const UpcomingEvents = () => {
   ];
 
   const getTypeColor = (type: string) => {
-    switch(type) {
+    switch (type) {
       case 'Workshop': return 'bg-blue-100 text-blue-800';
       case 'Meeting': return 'bg-green-100 text-green-800';
       case 'Training': return 'bg-purple-100 text-purple-800';
@@ -829,8 +875,11 @@ const UpcomingEvents = () => {
 const NotificationsPanel = ({ leaveApplications, interviews }: { leaveApplications: LeaveApplication[]; interviews: Interview[] }) => {
   const notifications = useMemo(() => {
     const notifs = [];
-    
-    const pendingLeaves = leaveApplications.filter(app => app.status === 'pending').length;
+
+    const pendingLeaves = Array.isArray(leaveApplications)
+      ? leaveApplications.filter(app => app.status === 'pending').length
+      : 0;
+
     if (pendingLeaves > 0) {
       notifs.push({
         type: "leave",
@@ -840,18 +889,18 @@ const NotificationsPanel = ({ leaveApplications, interviews }: { leaveApplicatio
         urgent: true
       });
     }
-    
+
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     const upcomingInterviews = interviews.filter(interview => {
       const interviewDate = new Date(interview.interview_date);
-      return interview.status === 'scheduled' && 
-             interviewDate >= today && 
-             interviewDate <= tomorrow;
+      return interview.status === 'scheduled' &&
+        interviewDate >= today &&
+        interviewDate <= tomorrow;
     }).length;
-    
+
     if (upcomingInterviews > 0) {
       notifs.push({
         type: "interview",
@@ -861,7 +910,7 @@ const NotificationsPanel = ({ leaveApplications, interviews }: { leaveApplicatio
         urgent: false
       });
     }
-    
+
     notifs.push(
       {
         type: "birthday",
@@ -878,7 +927,7 @@ const NotificationsPanel = ({ leaveApplications, interviews }: { leaveApplicatio
         urgent: false
       }
     );
-    
+
     return notifs.slice(0, 4);
   }, [leaveApplications, interviews]);
 
@@ -890,9 +939,8 @@ const NotificationsPanel = ({ leaveApplications, interviews }: { leaveApplicatio
       </h3>
       <div className="space-y-4">
         {notifications.map((notification, index) => (
-          <div key={index} className={`p-3 rounded-lg border-l-4 ${
-            notification.urgent ? 'border-red-500 bg-red-50' : 'border-blue-500 bg-blue-50'
-          }`}>
+          <div key={index} className={`p-3 rounded-lg border-l-4 ${notification.urgent ? 'border-red-500 bg-red-50' : 'border-blue-500 bg-blue-50'
+            }`}>
             <div className="flex items-start gap-3">
               <span className="text-lg">{notification.icon}</span>
               <div className="flex-1">
@@ -944,11 +992,11 @@ export default function HRDashboard() {
 
       try {
         const institutionIdNumber = parseInt(selectedInstitution.id.toString(), 10);
-        
+
         const [
-          employeesResult, 
-          leaveAppsResult, 
-          jobAdvertsResult, 
+          employeesResult,
+          leaveAppsResult,
+          jobAdvertsResult,
           interviewsResult,
           leaveTypesResult,
           leavePoliciesResult,
@@ -964,19 +1012,19 @@ export default function HRDashboard() {
         ]);
 
         setEmployees((employeesResult as any) || []);
-        
+
         setLeaveApplications((leaveAppsResult as any) || []);
-    
+
         setJobAdverts((jobAdvertsResult as any) || []);
-  
+
         setInterviews((interviewsResult as any) || []);
-      
+
         setLeaveTypes((leaveTypesResult as any) || []);
-        
+
         setDepartments((departmentsResult as any) || []);
-      
+
         setLeavePolicies((leavePoliciesResult as any) || []);
-        
+
         setError(null);
       } catch (err) {
         setError("Failed to load dashboard data");
@@ -995,11 +1043,13 @@ export default function HRDashboard() {
 
   // Calculate departments for filter from real departments data
   const departmentOptions = useMemo(() => {
+    const deptList = Array.isArray(departments) ? departments : [];
     return [
       { id: "all", name: "All Departments" },
-      ...departments.map(dept => ({ id: dept.name, name: dept.name }))
+      ...deptList.map(dept => ({ id: dept.name, name: dept.name }))
     ];
   }, [departments]);
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -1014,8 +1064,8 @@ export default function HRDashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Retry
@@ -1030,15 +1080,15 @@ export default function HRDashboard() {
       <div className="w-full px-4 py-6">
         <div className="space-y-6">
           <WelcomeCard />
-        
+
           {isMounted && (
             <>
               <div className="flex items-center justify-between mb-6">
                 <h1 className="text-3xl font-bold tracking-tight text-gray-900">HR Dashboard</h1>
-                
+
                 <div className="flex items-center gap-4">
-                  <select 
-                    value={selectedDepartment} 
+                  <select
+                    value={selectedDepartment}
                     onChange={(e) => handleDepartmentChange(e.target.value)}
                     className="border-2 border-gray-200 rounded-lg px-4 py-2 hover:border-blue-500 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
@@ -1052,9 +1102,9 @@ export default function HRDashboard() {
               </div>
 
               {/* Enhanced Stats Cards with fixed filtering and compact layout */}
-              <StatsCards 
-                departmentId={selectedDepartment} 
-                employees={employees} 
+              <StatsCards
+                departmentId={selectedDepartment}
+                employees={employees}
                 leaveApplications={leaveApplications}
                 jobAdverts={jobAdverts}
                 interviews={interviews}
@@ -1062,23 +1112,23 @@ export default function HRDashboard() {
                 leavePolicies={leavePolicies}
                 departments={departments}
               />
-              
+
               {/* Workforce Overview Charts with department filtering */}
-              <WorkforceOverview 
-                employees={employees} 
+              <WorkforceOverview
+                employees={employees}
                 departments={departments}
                 departmentId={selectedDepartment}
               />
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <NotificationsPanel leaveApplications={leaveApplications} interviews={interviews} />
                 <QuickActions />
               </div>
-              
+
               {/* Recent Activities and Upcoming Events */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <RecentActivities 
-                  employees={employees} 
+                <RecentActivities
+                  employees={employees}
                   leaveApplications={leaveApplications}
                   interviews={interviews}
                 />

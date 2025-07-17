@@ -67,11 +67,13 @@ export default function DepartmentsPage() {
     fetchDepartments(true)
   }
 
-  const filteredDepartments = departments.filter(
-    (dept) =>
-      dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dept?.description?.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  const filteredDepartments = Array.isArray(departments)
+  ? departments.filter(
+      dept =>
+        dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        dept?.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  : [];
 
   const handleCreateDepartment = () => {
     router.push("/admin/departments/create")

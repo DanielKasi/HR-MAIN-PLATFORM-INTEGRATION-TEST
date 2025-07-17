@@ -324,22 +324,6 @@ export default function JobPositionDetailsPage() {
             )}
 
             <Separator />
-
-            {/* Organization Context */}
-            <div className="bg-muted/50 p-4 rounded-lg">
-              <h4 className="font-medium text-sm mb-3">Organization Context</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                <div className="space-y-2">
-                  <p>
-                    <span className="font-medium text-foreground">Organization:</span>{" "}
-                    {selectedInstitution.institution_name}
-                  </p>
-                  <p>
-                    <span className="font-medium text-foreground">Branch:</span> {selectedBranch.branch_name}
-                  </p>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>
