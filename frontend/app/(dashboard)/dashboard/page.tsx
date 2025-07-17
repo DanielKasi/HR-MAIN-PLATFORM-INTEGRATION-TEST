@@ -50,6 +50,7 @@ import {
 } from "@/lib/utils";
 import { IUserInstitution } from "@/app/types";
 import EmployeeAttendance from "./EmployeeAttendance";
+import { se } from "date-fns/locale";
 
 // Interface for employee data from API
 interface EmployeeFromAPI {
@@ -829,7 +830,6 @@ const NotificationsPanel = ({ leaveApplications, interviews }: { leaveApplicatio
   const notifications = useMemo(() => {
     const notifs = [];
     
-    // Pending leave requests
     const pendingLeaves = leaveApplications.filter(app => app.status === 'pending').length;
     if (pendingLeaves > 0) {
       notifs.push({
@@ -841,7 +841,6 @@ const NotificationsPanel = ({ leaveApplications, interviews }: { leaveApplicatio
       });
     }
     
-    // Scheduled interviews today/tomorrow
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -863,7 +862,6 @@ const NotificationsPanel = ({ leaveApplications, interviews }: { leaveApplicatio
       });
     }
     
-    // Static notifications
     notifs.push(
       {
         type: "birthday",
@@ -940,15 +938,13 @@ export default function HRDashboard() {
     }
   }, [institutionsAttached, selectedInstitution]);
 
-  // Load all data
   useEffect(() => {
     const loadData = async () => {
-      if (!institutionId) return;
+      if (!selectedInstitution?.id) return;
 
       try {
-        const institutionIdNumber = parseInt(institutionId);
+        const institutionIdNumber = parseInt(selectedInstitution.id.toString(), 10);
         
-        // Load all data in parallel
         const [
           employeesResult, 
           leaveAppsResult, 
@@ -959,33 +955,26 @@ export default function HRDashboard() {
           departmentsResult
         ] = await Promise.all([
           getAllEmployees({ institutionId: institutionIdNumber }),
-          getLeaveApplications(institutionIdNumber),
+          getLeaveApplications({ institutionId: institutionIdNumber }),
           getJobPositionAdverts({ institutionId: institutionIdNumber }),
           getInterviews({ institutionId: institutionIdNumber }),
-          getLeaveTypes(institutionIdNumber),
-          getLeavePolicies(institutionIdNumber),
+          getLeaveTypes({ institutionId: institutionIdNumber }),
+          getLeavePolicies({ institutionId: institutionIdNumber }),
           getDepartments({ institutionId: institutionIdNumber })
         ]);
-        
-        // Set employees data
+
         setEmployees((employeesResult as any) || []);
         
-        // Set leave applications data
         setLeaveApplications((leaveAppsResult as any) || []);
-        
-        // Set job adverts data
+    
         setJobAdverts((jobAdvertsResult as any) || []);
-        
-        // Set interviews data
+  
         setInterviews((interviewsResult as any) || []);
-        
-        // Set leave types data
+      
         setLeaveTypes((leaveTypesResult as any) || []);
         
-        // Set departments data
         setDepartments((departmentsResult as any) || []);
-        
-        // Set leave policies data
+      
         setLeavePolicies((leavePoliciesResult as any) || []);
         
         setError(null);
@@ -1081,9 +1070,6 @@ export default function HRDashboard() {
                 departmentId={selectedDepartment}
               />
               
-
-              
-              {/* Notifications and Quick Actions */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <NotificationsPanel leaveApplications={leaveApplications} interviews={interviews} />
                 <QuickActions />
@@ -1098,9 +1084,6 @@ export default function HRDashboard() {
                 />
                 <UpcomingEvents />
               </div>
-              
-              {/* Optional: Include EmployeeAttendance with employees data if needed */}
-              {/* <EmployeeAttendance employees={employees} /> */}
             </>
           )}
         </div>

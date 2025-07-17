@@ -7,7 +7,6 @@ Great news! We have scheduled your interview for the position of:
 
 INTERVIEW DETAILS:
 =================
-Stage: {{ interview_stage }}
 Date: {{ interview_date }}
 Time: {{ interview_time }}
 Type: {{ interview_type }}

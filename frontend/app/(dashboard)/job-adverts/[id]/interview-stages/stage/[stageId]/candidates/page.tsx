@@ -1280,8 +1280,14 @@ const StageCandidatesContent = ({
           </div>
         </div>
 
-        {nextStage && (
-          <Card className="border-green-200 bg-green-50">
+          {nextStage && (
+          <Card 
+            className="border-green-200 bg-green-50 hover:bg-green-100 cursor-pointer transition-colors duration-200 hover:shadow-md"
+            onClick={() => {
+              console.log('Navigating to next stage:', nextStage.id) // Debug log
+              router.push(`/job-adverts/${jobId}/interview-stages/stage/${nextStage.id}/candidates`)
+            }}
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1290,9 +1296,16 @@ const StageCandidatesContent = ({
                     Next stage: <strong>{nextStage.name}</strong> (Level {nextStage.level})
                   </span>
                 </div>
-                <div className="text-sm text-green-700">
-                  Interviewer: {nextStage.interviewer_details?.user?.fullname || 'Not assigned'}
+                <div className="flex items-center gap-2">
+                  <div className="text-sm text-green-700">
+                    Interviewer: {nextStage.interviewer_details?.user?.fullname || 'Not assigned'}
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-green-600" />
                 </div>
+              </div>
+              {/* Add a subtle hint that it's clickable */}
+              <div className="text-xs text-green-600 mt-1 opacity-75">
+                Click to view candidates in {nextStage.name}
               </div>
             </CardContent>
           </Card>

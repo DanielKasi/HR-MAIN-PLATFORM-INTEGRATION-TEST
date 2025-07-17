@@ -290,6 +290,13 @@ export interface StoredColorData {
   timestamp: number;
 }
 
+export interface IPaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
 export type ApprovalStepApprover = {
   id: number;
   approver_user: UserProfile;

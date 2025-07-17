@@ -148,7 +148,9 @@ export interface CreateJobPositionData {
 
 
 export interface JobApplication {
-  job_position_advert_job_details: {name:string, description:string, job_posted_date:string};
+  job_position_advert_job_details: {
+    department: string;name:string, description:string, job_posted_date:string
+};
   positions: number;
   id: number
   job_position_advert: number

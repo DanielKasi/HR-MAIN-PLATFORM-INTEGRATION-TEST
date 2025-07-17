@@ -143,7 +143,7 @@ export default function JobPositionDetailsPage() {
 
   return (
     <div className="w-full h-full p-6">
-      <div className="w-full max-w-6xl mx-auto space-y-6">
+      <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
@@ -167,7 +167,6 @@ export default function JobPositionDetailsPage() {
                 <div>
                   <CardTitle className="text-2xl">{jobPosition.name}</CardTitle>
                   <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="secondary">ID: {jobPosition.id}</Badge>
                     <Badge variant="outline" className="flex items-center gap-1">
                       <Building2 className="h-3 w-3" />
                       {jobPosition.department_details?.name}
@@ -337,14 +336,6 @@ export default function JobPositionDetailsPage() {
                   </p>
                   <p>
                     <span className="font-medium text-foreground">Branch:</span> {selectedBranch.branch_name}
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <p>
-                    <span className="font-medium text-foreground">Institution :</span> {jobPosition.department_details?.institution_details?.institution_name}
-                  </p>
-                  <p>
-                    <span className="font-medium text-foreground">Branch :</span> {selectedBranch.branch_name}
                   </p>
                 </div>
               </div>

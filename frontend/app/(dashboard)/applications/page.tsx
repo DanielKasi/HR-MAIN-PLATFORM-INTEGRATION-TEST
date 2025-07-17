@@ -30,8 +30,22 @@ import {
   X,
   Users,
   Check,
+  ChevronUp,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   createJobApplication,
   getJobApplications,
@@ -44,6 +58,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@radix-u
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
 import { Checkbox } from "@/components/ui/checkbox"
+import { LocationAutocomplete } from "@/components/location-autocomplete"
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
@@ -71,16 +86,39 @@ export default function ApplicationsPage() {
   const [selectedApplications, setSelectedApplications] = useState<number[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [jobFilter, setJobFilter] = useState<string>("all")
   const [isBulkShortlisting, setIsBulkShortlisting] = useState(false)
   const [individualLoadingStates, setIndividualLoadingStates] = useState<Record<number, boolean>>({})
+  
+  const [sortField, setSortField] = useState<'application_date' | 'posted_date' | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
+  
+  const [confirmAction, setConfirmAction] = useState<{
+    isOpen: boolean
+    applicationId: number | null
+    applicantName: string
+    action: 'shortlisted' | 'rejected' | null
+  }>({
+    isOpen: false,
+    applicationId: null,
+    applicantName: '',
+    action: null
+  })
 
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const selectedBranch = useSelector(selectSelectedBranch)
 
-  // Form state
   const [formData, setFormData] = useState<
-    Omit<JobApplicationFormData, "resume"> & { resume: File | null; cover_letter?: File }
+    Omit<JobApplicationFormData, "resume"> & { 
+      resume: File | null
+      cover_letter?: File
+      address_latitude?: string
+      address_longitude?: string
+    }
   >({
     job_position_advert: 0,
     applicant_name: "",
@@ -91,14 +129,16 @@ export default function ApplicationsPage() {
     gender: "male",
     state: "",
     address: "",
+    address_latitude: "",
+    address_longitude: "",
     country: "",
     source: "website",
+    application_date: new Date().toISOString().split('T')[0],
   })
 
   const [jobPositionAdverts, setJobPositionAdverts] = useState<JobPositionAdvert[]>([])
   const [isLoadingAdverts, setIsLoadingAdverts] = useState(false)
 
-  // Check if institution is selected and redirect if not
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
       router.push("/dashboard")
@@ -111,6 +151,7 @@ export default function ApplicationsPage() {
 
   useEffect(() => {
     let filtered = applications
+    
     if (searchTerm) {
       filtered = filtered.filter(
         (app) =>
@@ -119,11 +160,35 @@ export default function ApplicationsPage() {
           (app.applicant_phone && app.applicant_phone.toLowerCase().includes(searchTerm.toLowerCase())),
       )
     }
+    
     if (statusFilter !== "all") {
       filtered = filtered.filter((app) => app.status === statusFilter)
     }
+    
+    if (jobFilter !== "all") {
+      filtered = filtered.filter((app) => app.job_position_advert.toString() === jobFilter)
+    }
+    
+    if (sortField) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue: string, bValue: string
+        
+        if (sortField === 'application_date') {
+          aValue = a.application_date
+          bValue = b.application_date
+        } else { 
+          aValue = a.job_position_advert_job_details?.job_posted_date || ''
+          bValue = b.job_position_advert_job_details?.job_posted_date || ''
+        }
+        
+        const comparison = new Date(aValue).getTime() - new Date(bValue).getTime()
+        return sortDirection === 'asc' ? comparison : -comparison
+      })
+    }
+    
     setFilteredApplications(filtered)
-  }, [applications, searchTerm, statusFilter])
+    setCurrentPage(1)
+  }, [applications, searchTerm, statusFilter, jobFilter, sortField, sortDirection])
 
   const loadApplications = async () => {
     if (!selectedInstitution) return
@@ -133,15 +198,13 @@ export default function ApplicationsPage() {
 
     try {
       const data = await getJobApplications({ institutionId: selectedInstitution.id })
-      console.log("Apps", data)
       if (data) {
         setApplications(data)
       } else {
         setError("Failed to load applications")
       }
     } catch (err: any) {
-      setError(err?.message || "An error occurred while loading applications")
-      console.error(err)
+      setError(err?.message || "Failed to load applications")
     } finally {
       setIsLoading(false)
     }
@@ -153,13 +216,11 @@ export default function ApplicationsPage() {
     setIsLoadingAdverts(true)
     try {
       const data = await getJobPositionAdverts({ institutionId: selectedInstitution.id })
-      console.log("Adverts", data)
       if (data) {
         setJobPositionAdverts(data)
       }
     } catch (err: any) {
       setError(err?.message || "Failed to load job position adverts")
-      console.error("Failed to load job position adverts:", err)
     } finally {
       setIsLoadingAdverts(false)
     }
@@ -176,6 +237,14 @@ export default function ApplicationsPage() {
     setFormData((prev) => ({
       ...prev,
       [field]: file,
+    }))
+  }
+
+  const handleAddressCoordinatesChange = (lat: string, lon: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      address_latitude: lat,
+      address_longitude: lon,
     }))
   }
 
@@ -221,7 +290,7 @@ export default function ApplicationsPage() {
         cover_letter: formData.cover_letter || undefined,
         applicant_phone: formData.applicant_phone || undefined,
         state: formData.state || undefined,
-        application_date: new Date().toISOString(),
+        application_date: formData.application_date,
         address: formData.address || "",
         country: formData.country || "",
       }
@@ -235,7 +304,6 @@ export default function ApplicationsPage() {
         setApplications((prev) => [newApplication, ...prev])
         setIsCreateDialogOpen(false)
         resetFiltersAndShowNewApplication()
-        // Reset form
         setFormData({
           job_position_advert: 0,
           applicant_name: "",
@@ -247,18 +315,16 @@ export default function ApplicationsPage() {
           gender: "male",
           state: "",
           address: "",
+          address_latitude: "",
+          address_longitude: "",
           country: "",
           source: "website",
+          application_date: new Date().toISOString().split('T')[0],
         })
       } else {
         setError("Failed to create application - API returned null")
       }
     } catch (err: any) {
-      console.error("Full error object:", err)
-      console.error("Error response:", err?.response?.data)
-      console.error("Error status:", err?.response?.status)
-
-      // More detailed error message
       let errorMessage = "An error occurred while creating the application"
       if (err?.response?.data?.message) {
         errorMessage = err.response.data.message
@@ -273,7 +339,6 @@ export default function ApplicationsPage() {
       setIsSubmitting(false)
     }
   }
-
   const handleSelectApplication = (applicationId: number, checked: boolean) => {
     if (checked) {
       setSelectedApplications((prev) => [...prev, applicationId])
@@ -319,10 +384,41 @@ export default function ApplicationsPage() {
     }
   }
 
+  const handleSort = (field: 'application_date' | 'posted_date') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('desc')
+    }
+  }
+
+  const totalPages = Math.ceil(filteredApplications.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentApplications = filteredApplications.slice(startIndex, endIndex)
+
   const handleIndividualAction = async (
     applicationId: number,
     action: "new" | "reviewed" | "shortlisted" | "rejected" | "passed",
   ) => {
+    if (action === "shortlisted" || action === "rejected") {
+      const application = applications.find(app => app.id === applicationId)
+      if (application) {
+        setConfirmAction({
+          isOpen: true,
+          applicationId,
+          applicantName: application.applicant_name,
+          action: action as 'shortlisted' | 'rejected'
+        })
+        return
+      }
+    }
+
+    await executeAction(applicationId, action)
+  }
+
+  const executeAction = async (applicationId: number, action: "new" | "reviewed" | "shortlisted" | "rejected" | "passed") => {
     if (action === "shortlisted") {
       setIndividualLoadingStates((prev) => ({ ...prev, [applicationId]: true }))
     }
@@ -340,6 +436,18 @@ export default function ApplicationsPage() {
     }
   }
 
+  const handleConfirmAction = async () => {
+    if (confirmAction.applicationId && confirmAction.action) {
+      await executeAction(confirmAction.applicationId, confirmAction.action)
+      setConfirmAction({
+        isOpen: false,
+        applicationId: null,
+        applicantName: '',
+        action: null
+      })
+    }
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -347,27 +455,12 @@ export default function ApplicationsPage() {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    })
-  }
+    });
+  };
 
-  // Show loading if institution/branch not selected
   if (!selectedInstitution || !selectedBranch) {
     return <div>Loading...</div>
   }
-
-  if (isLoading) {
-    return (
-      <div className="w-full py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-            <p className="mt-2 text-muted-foreground">Loading applications...</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="w-full py-8 space-y-6">
       <div className="flex items-center justify-between">
@@ -425,6 +518,27 @@ export default function ApplicationsPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="application_date">Application Date *</Label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                    </div>
+                    <Input
+                      id="application_date"
+                      type="date"
+                      value={formData.application_date}
+                      onChange={(e) => handleInputChange("application_date", e.target.value)}
+                      className="pl-10"
+                      min={new Date().toISOString().split('T')[0]} // Restrict to today
+                      max={new Date().toISOString().split('T')[0]} // Restrict to today
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="applicant_name">Applicant Name *</Label>
                   <Input
                     id="applicant_name"
@@ -432,6 +546,18 @@ export default function ApplicationsPage() {
                     onChange={(e) => handleInputChange("applicant_name", e.target.value)}
                     required
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender *</Label>
+                  <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -458,18 +584,6 @@ export default function ApplicationsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="gender">Gender *</Label>
-                  <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="source">Source</Label>
                   <Select value={formData.source} onValueChange={(value) => handleInputChange("source", value)}>
                     <SelectTrigger>
@@ -484,16 +598,21 @@ export default function ApplicationsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="address">Address *</Label>
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => handleInputChange("address", e.target.value)}
-                  required
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address *</Label>
+                  <LocationAutocomplete
+                    value={formData.address}
+                    onChange={(value) => handleInputChange("address", value)}
+                    onCoordinatesChange={handleAddressCoordinatesChange}
+                    placeholder="Search for applicant's address..."
+                    showCurrentLocationButton={true}
+                  />
+                  {formData.address_latitude && formData.address_longitude && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Coordinates: {formData.address_latitude}, {formData.address_longitude}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -515,9 +634,8 @@ export default function ApplicationsPage() {
                   />
                 </div>
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="resume">Resume *</Label>
+                <Label htmlFor="resume">Curriculum Vitae /Resume *</Label>
                 <div className="flex items-center space-x-2">
                   <Input
                     id="resume"
@@ -590,6 +708,19 @@ export default function ApplicationsPage() {
             <SelectItem value="rejected">Rejected</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={jobFilter} onValueChange={setJobFilter}>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Filter by job" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Jobs</SelectItem>
+            {jobPositionAdverts.map((advert) => (
+              <SelectItem key={advert.id} value={advert.id.toString()}>
+                {advert.job_position_details?.name || `Job Advert #${advert.id}`}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {selectedApplications.length > 0 && (
@@ -658,7 +789,12 @@ export default function ApplicationsPage() {
             <Users className="h-5 w-5" />
             Applications ({filteredApplications.length})
           </CardTitle>
-          <CardDescription>All job applications submitted to your organization</CardDescription>
+          <CardDescription>
+            All job applications submitted to your organization
+            {filteredApplications.length !== applications.length && 
+              ` (${applications.length} total)`
+            }
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {filteredApplications.length === 0 ? (
@@ -689,25 +825,57 @@ export default function ApplicationsPage() {
                     <TableHead className="w-12">
                       <Checkbox
                         checked={
-                          filteredApplications.length > 0 && selectedApplications.length === filteredApplications.length
+                          currentApplications.length > 0 && 
+                          selectedApplications.length === currentApplications.length &&
+                          currentApplications.every(app => selectedApplications.includes(app.id))
                         }
-                        onCheckedChange={handleSelectAll}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            const newSelections = currentApplications
+                              .filter(app => app.status !== "shortlisted")
+                              .map(app => app.id)
+                            setSelectedApplications(prev => [...new Set([...prev, ...newSelections])])
+                          } else {
+                            const currentIds = currentApplications.map(app => app.id)
+                            setSelectedApplications(prev => prev.filter(id => !currentIds.includes(id)))
+                          }
+                        }}
                       />
                     </TableHead>
                     <TableHead>Applicant</TableHead>
                     <TableHead>Job Position</TableHead>
-                    <TableHead>Posted Date</TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleSort('posted_date')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Posted Date
+                        {sortField === 'posted_date' && (
+                          sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                        )}
+                      </div>
+                    </TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Source</TableHead>
-                    <TableHead>Applied</TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleSort('application_date')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Applied
+                        {sortField === 'application_date' && (
+                          sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                        )}
+                      </div>
+                    </TableHead>
                     <TableHead>Documents</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredApplications.map((application) => (
+                  {currentApplications.map((application) => (
                     <TableRow key={application.id}>
                       <TableCell>
                         {application.status !== "shortlisted" ? (
@@ -716,7 +884,7 @@ export default function ApplicationsPage() {
                             onCheckedChange={(checked) => handleSelectApplication(application.id, checked as boolean)}
                           />
                         ) : (
-                          <div className="w-4 h-4" /> // Empty space to maintain table alignment
+                          <div className="w-4 h-4" /> 
                         )}
                       </TableCell>
                       <TableCell>
@@ -734,15 +902,14 @@ export default function ApplicationsPage() {
                             {application.job_position_advert_job_details?.name ||
                               `Advert #${application.job_position_advert}`}
                           </div>
-                          <div className="text-xs text-muted-foreground">{application.positions} positions</div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center text-sm">
-                          <Calendar className="mr-1 h-3 w-3" />
-                          {formatDate(application.job_position_advert_job_details.job_posted_date)}
-                        </div>
-                      </TableCell>
+                      <div className="flex items-center text-sm">
+                        <Calendar className="mr-1 h-3 w-3" />
+                        {formatDate(application.job_position_advert_job_details.job_posted_date)}
+                      </div>
+                    </TableCell>
                       <TableCell>
                         <div className="space-y-1">
                           <div className="flex items-center text-sm">
@@ -858,8 +1025,97 @@ export default function ApplicationsPage() {
               </Table>
             </div>
           )}
+            
+          {/* Pagination */}
+          {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredApplications.length)} of {filteredApplications.length} applications
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNumber
+                      if (totalPages <= 5) {
+                        pageNumber = i + 1
+                      } else if (currentPage <= 3) {
+                        pageNumber = i + 1
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNumber = totalPages - 4 + i
+                      } else {
+                        pageNumber = currentPage - 2 + i
+                      }
+                      
+                      return (
+                        <Button
+                          key={pageNumber}
+                          variant={currentPage === pageNumber ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNumber)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {pageNumber}
+                        </Button>
+                      )
+                    })}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={confirmAction.isOpen} onOpenChange={(open) => {
+        if (!open) {
+          setConfirmAction({
+            isOpen: false,
+            applicationId: null,
+            applicantName: '',
+            action: null
+          })
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction.action === 'shortlisted' ? 'Shortlist Application' : 'Reject Application'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to {confirmAction.action === 'shortlisted' ? 'shortlist' : 'reject'} the application from{' '}
+              <strong>{confirmAction.applicantName}</strong>? 
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmAction}
+              className={confirmAction.action === 'rejected' ? 'bg-destructive hover:bg-destructive/90' : ''}
+            >
+              {confirmAction.action === 'shortlisted' ? 'Shortlist' : 'Reject'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

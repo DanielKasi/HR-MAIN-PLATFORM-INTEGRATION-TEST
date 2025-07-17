@@ -4,33 +4,51 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
+
+from utilities.pagination import CustomPageNumberPagination
 from .models import (
-    EmployeeAllowance, EmployeeDeduction, AllowanceType,
-    DeductionType, PayrollPeriod, Payslip, PayslipItem
+    EmployeeAllowance,
+    EmployeeDeduction,
+    AllowanceType,
+    DeductionType,
+    PayrollPeriod,
+    Payslip,
+    PayslipItem,
 )
 from .serializers import (
-    EmployeeAllowanceSerializer, EmployeeDeductionSerializer,
-    AllowanceTypeSerializer, DeductionTypeSerializer,
-    PayrollPeriodSerializer, PayslipSerializer, PayslipItemSerializer, PayslipGenerationInputSerializer
+    EmployeeAllowanceSerializer,
+    EmployeeDeductionSerializer,
+    AllowanceTypeSerializer,
+    DeductionTypeSerializer,
+    PayrollPeriodSerializer,
+    PayslipSerializer,
+    PayslipItemSerializer,
+    PayslipGenerationInputSerializer,
 )
 from employee.models import Employee
 from .utils import PayrollProcessor
+
 
 class EmployeeAllowanceAPIView(APIView):
 
     @extend_schema(
         summary="List employee allowances for a specific institution",
-        responses=EmployeeAllowanceSerializer(many=True)
+        responses=EmployeeAllowanceSerializer(many=True),
     )
     def get(self, request, institution_id):
-        allowances = EmployeeAllowance.objects.filter(employee__department__institution_id=institution_id)
-        serializer = EmployeeAllowanceSerializer(allowances, many=True)
-        return Response(serializer.data)
+        allowances = EmployeeAllowance.objects.filter(
+            employee__department__institution_id=institution_id
+        ).order_by("-created_at")
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(allowances, request)
+        serializer = EmployeeAllowanceSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
         request=EmployeeAllowanceSerializer,
         responses=EmployeeAllowanceSerializer,
-        summary="Create a new employee allowance"
+        summary="Create a new employee allowance",
     )
     def post(self, request, institution_id):
         serializer = EmployeeAllowanceSerializer(data=request.data)
@@ -44,7 +62,7 @@ class EmployeeAllowanceDetailAPIView(APIView):
 
     @extend_schema(
         responses=EmployeeAllowanceSerializer,
-        summary="Retrieve an employee allowance by ID"
+        summary="Retrieve an employee allowance by ID",
     )
     def get(self, request, pk):
         instance = get_object_or_404(EmployeeAllowance, pk=pk)
@@ -54,11 +72,13 @@ class EmployeeAllowanceDetailAPIView(APIView):
     @extend_schema(
         request=EmployeeAllowanceSerializer,
         responses=EmployeeAllowanceSerializer,
-        summary="Update an employee allowance (partial)"
+        summary="Update an employee allowance (partial)",
     )
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeAllowance, pk=pk)
-        serializer = EmployeeAllowanceSerializer(instance, data=request.data, partial=True)
+        serializer = EmployeeAllowanceSerializer(
+            instance, data=request.data, partial=True
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -69,23 +89,28 @@ class EmployeeAllowanceDetailAPIView(APIView):
         instance = get_object_or_404(EmployeeAllowance, pk=pk)
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
-    
+
+
 class PayrollPeriodAPIView(APIView):
 
     @extend_schema(
         summary="List payroll periods for a given institution",
-        responses=PayrollPeriodSerializer(many=True)
+        responses=PayrollPeriodSerializer(many=True),
     )
     def get(self, request, institution_id):
-        periods = PayrollPeriod.objects.filter(institution_id=institution_id)
-        serializer = PayrollPeriodSerializer(periods, many=True)
-        return Response(serializer.data)
+        periods = PayrollPeriod.objects.filter(institution_id=institution_id).order_by(
+            "-created_at"
+        )
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(periods, request)
+        serializer = PayrollPeriodSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
         request=PayrollPeriodSerializer,
         responses=PayrollPeriodSerializer,
-        summary="Create a new payroll period"
+        summary="Create a new payroll period",
     )
     def post(self, request, institution_id):
         serializer = PayrollPeriodSerializer(data=request.data)
@@ -98,8 +123,7 @@ class PayrollPeriodAPIView(APIView):
 class PayrollPeriodDetailAPIView(APIView):
 
     @extend_schema(
-        responses=PayrollPeriodSerializer,
-        summary="Retrieve a payroll period by ID"
+        responses=PayrollPeriodSerializer, summary="Retrieve a payroll period by ID"
     )
     def get(self, request, pk):
         instance = get_object_or_404(PayrollPeriod, pk=pk)
@@ -109,7 +133,7 @@ class PayrollPeriodDetailAPIView(APIView):
     @extend_schema(
         request=PayrollPeriodSerializer,
         responses=PayrollPeriodSerializer,
-        summary="Update a payroll period (partial)"
+        summary="Update a payroll period (partial)",
     )
     def patch(self, request, pk):
         instance = get_object_or_404(PayrollPeriod, pk=pk)
@@ -123,30 +147,33 @@ class PayrollPeriodDetailAPIView(APIView):
     def delete(self, request, pk):
         instance = get_object_or_404(PayrollPeriod, pk=pk)
         instance.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)    
-    
-    
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class EmployeeDeductionAPIView(APIView):
 
     @extend_schema(
         summary="List employee deductions for a specific institution",
-        responses=EmployeeDeductionSerializer(many=True)
+        responses=EmployeeDeductionSerializer(many=True),
     )
     def get(self, request, institution_id):
-        deductions = EmployeeDeduction.objects.filter(employee__department__institution_id=institution_id)
-        serializer = EmployeeDeductionSerializer(deductions, many=True)
-        return Response(serializer.data)
+        deductions = EmployeeDeduction.objects.filter(
+            employee__department__institution_id=institution_id
+        ).order_by("-created_at")
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(deductions, request)
+        serializer = EmployeeDeductionSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
         summary="Create a new employee deduction",
         request=EmployeeDeductionSerializer,
-        responses=EmployeeDeductionSerializer
+        responses=EmployeeDeductionSerializer,
     )
-
     @extend_schema(
         request=EmployeeDeductionSerializer,
         responses=EmployeeDeductionSerializer,
-        summary="Create a new employee deduction"
+        summary="Create a new employee deduction",
     )
     def post(self, request, institution_id):
         serializer = EmployeeDeductionSerializer(data=request.data)
@@ -160,7 +187,7 @@ class EmployeeDeductionDetailAPIView(APIView):
 
     @extend_schema(
         responses=EmployeeDeductionSerializer,
-        summary="Retrieve an employee deduction by ID"
+        summary="Retrieve an employee deduction by ID",
     )
     def get(self, request, pk):
         instance = get_object_or_404(EmployeeDeduction, pk=pk)
@@ -170,11 +197,13 @@ class EmployeeDeductionDetailAPIView(APIView):
     @extend_schema(
         request=EmployeeDeductionSerializer,
         responses=EmployeeDeductionSerializer,
-        summary="Update an employee deduction (partial)"
+        summary="Update an employee deduction (partial)",
     )
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeDeduction, pk=pk)
-        serializer = EmployeeDeductionSerializer(instance, data=request.data, partial=True)
+        serializer = EmployeeDeductionSerializer(
+            instance, data=request.data, partial=True
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -188,33 +217,38 @@ class EmployeeDeductionDetailAPIView(APIView):
 
 
 class AllowanceTypeAPIView(APIView):
-    
+
     @extend_schema(
         summary="List allowance types for an institution",
-        responses=AllowanceTypeSerializer(many=True)
+        responses=AllowanceTypeSerializer(many=True),
     )
     def get(self, request, institution_id):
-        allowance_types = AllowanceType.objects.filter(institution_id=institution_id)
-        serializer = AllowanceTypeSerializer(allowance_types, many=True)
-        return Response(serializer.data)
-    
+        allowance_types = AllowanceType.objects.filter(
+            institution_id=institution_id
+        ).order_by("-created_at")
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(allowance_types, request)
+        serializer = AllowanceTypeSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
     @extend_schema(
         request=AllowanceTypeSerializer,
         responses=AllowanceTypeSerializer,
-        summary="Create a new allowance type"
+        summary="Create a new allowance type",
     )
-    def post(self, request, institution_id): 
+    def post(self, request, institution_id):
         serializer = AllowanceTypeSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(institution_id=institution_id)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class AllowanceTypeDetailAPIView(APIView):
 
     @extend_schema(
-        responses=AllowanceTypeSerializer,
-        summary="Retrieve an allowance type by ID"
+        responses=AllowanceTypeSerializer, summary="Retrieve an allowance type by ID"
     )
     def get(self, request, pk):
         instance = get_object_or_404(AllowanceType, pk=pk)
@@ -224,7 +258,7 @@ class AllowanceTypeDetailAPIView(APIView):
     @extend_schema(
         request=AllowanceTypeSerializer,
         responses=AllowanceTypeSerializer,
-        summary="Update an allowance type (partial)"
+        summary="Update an allowance type (partial)",
     )
     def patch(self, request, pk):
         instance = get_object_or_404(AllowanceType, pk=pk)
@@ -243,7 +277,7 @@ class AllowanceTypeDetailAPIView(APIView):
     @extend_schema(
         request=AllowanceTypeSerializer,
         responses=AllowanceTypeSerializer,
-        summary="Create allowance types for an institution"
+        summary="Create allowance types for an institution",
     )
     def post(self, request):
         serializer = AllowanceTypeSerializer(data=request.data)
@@ -252,22 +286,27 @@ class AllowanceTypeDetailAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
- 
+
 class DeductionTypeAPIView(APIView):
 
     @extend_schema(
         summary="List deduction types for an institution",
-        responses=DeductionTypeSerializer(many=True)
+        responses=DeductionTypeSerializer(many=True),
     )
     def get(self, request, institution_id):
-        deduction_types = DeductionType.objects.filter(institution_id=institution_id)
-        serializer = DeductionTypeSerializer(deduction_types, many=True)
-        return Response(serializer.data)
-    
+        deduction_types = DeductionType.objects.filter(
+            institution_id=institution_id
+        ).order_by("-created_at")
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(deduction_types, request)
+        serializer = DeductionTypeSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
     @extend_schema(
         request=DeductionTypeSerializer,
         responses=DeductionTypeSerializer,
-        summary="Create a new deduction type"
+        summary="Create a new deduction type",
     )
     def post(self, request, institution_id):
         serializer = DeductionTypeSerializer(data=request.data)
@@ -280,8 +319,7 @@ class DeductionTypeAPIView(APIView):
 class DeductionTypeDetailAPIView(APIView):
 
     @extend_schema(
-        responses=DeductionTypeSerializer,
-        summary="Retrieve a deduction type by ID"
+        responses=DeductionTypeSerializer, summary="Retrieve a deduction type by ID"
     )
     def get(self, request, pk):
         instance = get_object_or_404(DeductionType, pk=pk)
@@ -291,7 +329,7 @@ class DeductionTypeDetailAPIView(APIView):
     @extend_schema(
         request=DeductionTypeSerializer,
         responses=DeductionTypeSerializer,
-        summary="Update a deduction type (partial)"
+        summary="Update a deduction type (partial)",
     )
     def patch(self, request, pk):
         instance = get_object_or_404(DeductionType, pk=pk)
@@ -308,44 +346,46 @@ class DeductionTypeDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-
 class PayslipAPIView(APIView):
 
     @extend_schema(
         summary="List payslips for a specific institution",
-        responses=PayslipSerializer(many=True)
+        responses=PayslipSerializer(many=True),
     )
     def get(self, request, institution_id):
-        payslips = Payslip.objects.filter(employee__department__institution_id=institution_id)
-        serializer = PayslipSerializer(payslips, many=True)
-        return Response(serializer.data)
+        payslips = Payslip.objects.filter(
+            employee__department__institution_id=institution_id
+        ).order_by("-created_at")
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(payslips, request)
+        serializer = PayslipSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
-    request=PayslipGenerationInputSerializer,
-    responses=PayslipSerializer(many=True),
-    summary="Generate payslips for a payroll period"
+        request=PayslipGenerationInputSerializer,
+        responses=PayslipSerializer(many=True),
+        summary="Generate payslips for a payroll period",
     )
     def post(self, request, institution_id):
         input_serializer = PayslipGenerationInputSerializer(data=request.data)
         if not input_serializer.is_valid():
             return Response(input_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        payroll_period = input_serializer.validated_data['payroll_period']
-        employee_ids = input_serializer.validated_data.get('employee_ids')
+        payroll_period = input_serializer.validated_data["payroll_period"]
+        employee_ids = input_serializer.validated_data.get("employee_ids")
 
-        created_payslips = PayrollProcessor.generate_payslips_for_period(payroll_period, employee_ids)
+        created_payslips = PayrollProcessor.generate_payslips_for_period(
+            payroll_period, employee_ids
+        )
 
         output_serializer = PayslipSerializer(created_payslips, many=True)
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
 
 
-
 class PayslipDetailAPIView(APIView):
 
-    @extend_schema(
-        responses=PayslipSerializer,
-        summary="Retrieve a payslip by ID"
-    )
+    @extend_schema(responses=PayslipSerializer, summary="Retrieve a payslip by ID")
     def get(self, request, pk):
         instance = get_object_or_404(Payslip, pk=pk)
         serializer = PayslipSerializer(instance)
@@ -354,7 +394,7 @@ class PayslipDetailAPIView(APIView):
     @extend_schema(
         request=PayslipSerializer,
         responses=PayslipSerializer,
-        summary="Update a payslip (partial)"
+        summary="Update a payslip (partial)",
     )
     def patch(self, request, pk):
         instance = get_object_or_404(Payslip, pk=pk)
@@ -370,6 +410,7 @@ class PayslipDetailAPIView(APIView):
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
 class PayslipItemAPIView(APIView):
 
     @extend_schema(
@@ -378,11 +419,7 @@ class PayslipItemAPIView(APIView):
     )
     def get(self, request, payslip_id):
         items = PayslipItem.objects.filter(payslip_id=payslip_id)
-        serializer = PayslipItemSerializer(items, many=True)
-        return Response(serializer.data)
-
-
-
-
-
-    
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(items, request)
+        serializer = PayslipItemSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)

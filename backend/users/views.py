@@ -29,9 +29,18 @@ from .serializers import (
     UserPasswordResetSerializer,
     UserResendOTPVerificationSerializer,
     UserSendForgotPasswordTokenSerializer,
-    ResendOTPSerializer, ProfileSerializer
+    ResendOTPSerializer,
+    ProfileSerializer,
 )
-from .models import CustomUser, Role, Permission, PermissionCategory, UserType, OTPModel, Profile
+from .models import (
+    CustomUser,
+    Role,
+    Permission,
+    PermissionCategory,
+    UserType,
+    OTPModel,
+    Profile,
+)
 from institution.serializers import InstitutionWithBranchesSerializer
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -356,7 +365,7 @@ class ResendOTPAPIView(APIView):
             )
         try:
 
-            user_id	 = serializer.validated_data["user_id"]
+            user_id = serializer.validated_data["user_id"]
             user_instance = CustomUser.objects.get(id=user_id)
             otp = create_and_institution_otp(
                 user_id=user_instance.id, purpose="registration", expiry_minutes=15
@@ -365,7 +374,9 @@ class ResendOTPAPIView(APIView):
                 send_otp_to_user(user_instance, otp)
             else:
                 token = create_and_institution_token(
-                    user=user_instance.profile.user, purpose="registration", expiry_minutes=15
+                    user=user_instance.profile.user,
+                    purpose="registration",
+                    expiry_minutes=15,
                 )
                 password_link = build_password_link(request=request, token=token)
                 send_password_link_to_user(user=user_instance, link=password_link)
@@ -438,7 +449,9 @@ class LoginView(APIView):
                                 )
                             except ObjectDoesNotExist:
                                 institution_attached = (
-                                    [] if not institution_attached else institution_attached
+                                    []
+                                    if not institution_attached
+                                    else institution_attached
                                 )
 
                         serializer_context = {"user": user}
@@ -490,7 +503,9 @@ class UserInstitutionsListAPIView(APIView):
                         [user.profile.institution] if user.profile.institution else []
                     )
                 except ObjectDoesNotExist:
-                    institution_attached = [] if not institution_attached else institution_attached
+                    institution_attached = (
+                        [] if not institution_attached else institution_attached
+                    )
 
             serializer = InstitutionWithBranchesSerializer(
                 institution_attached,
@@ -583,7 +598,9 @@ class RoleListAPIView(APIView):
     )
     def get(self, request):
         Institution_id = request.query_params.get("Institution_id", None)
-        roles = Role.objects.filter(institution__id=Institution_id).order_by("name")
+        roles = Role.objects.filter(institution__id=Institution_id).order_by(
+            "-created_at"
+        )
         paginator = CustomPageNumberPagination()
         paginator_qs = paginator.paginate_queryset(roles, request)
         serializer = RoleSerializer(
@@ -659,9 +676,11 @@ class PermissionCategoryListAPIView(APIView):
         tags=["User Management"],
     )
     def get(self, request):
-        permission_categories = PermissionCategory.objects.all()
-        serializer = PermissionCategorySerializer(permission_categories, many=True)
-        return Response(serializer.data)
+        permission_categories = PermissionCategory.objects.all().order_by("-created_at")
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(permission_categories, request)
+        serializer = PermissionCategorySerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class PermissionCategoryDetailAPIView(APIView):
@@ -729,8 +748,10 @@ class PermissionListAPIView(APIView):
     )
     def get(self, request):
         system_permissions = Permission.objects.all()
-        serializer = PermissionSerializer(system_permissions, many=True)
-        return Response(serializer.data)
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(system_permissions, request)
+        serializer = PermissionSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class PermissionDetailAPIView(APIView):
@@ -924,6 +945,7 @@ class ResetPasswordAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+
 class GoogleAuthURLView(APIView):
     """
     Generate Google OAuth URL for frontend to redirect to
@@ -1063,6 +1085,7 @@ class GoogleAuthCallbackView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+
 class UserDetailsWithInstitutions(APIView):
     """
     Returns the same response as the login endpoint for an authenticated user.
@@ -1095,7 +1118,7 @@ class UserDetailsWithInstitutions(APIView):
                 },
                 status=status.HTTP_200_OK,
             )
-        
+
         return Response(
             {
                 "detail": "Only staff users are supported in this endpoint.",

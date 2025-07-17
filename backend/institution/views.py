@@ -9,7 +9,6 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiRespon
 from rest_framework.permissions import AllowAny
 from utilities.helpers import (
     build_password_link,
-    create_and_institution_otp,
     send_password_link_to_user,
     create_and_institution_token,
     send_activation_confirmation_email,
@@ -86,8 +85,12 @@ class InstitutionListAPIView(APIView):
             institutions = Institution.objects.all()
         else:
             institutions = Institution.objects.filter(institution_owner=request.user)
-        serializer = InstitutionSerializer(institutions, many=True)
-        return Response(serializer.data)
+
+        institutions = institutions.order_by("-created_at")
+        paginator = CustomPageNumberPagination()
+        paginator_qs = paginator.paginate_queryset(institutions, request)
+        serializer = InstitutionSerializer(paginator_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class InstitutionDetailAPIView(APIView):
@@ -183,8 +186,13 @@ class BranchListAPIView(APIView):
                 institution__institution_owner=request.user
             )
 
-        serializer = BranchSerializer(branches, many=True)
-        return Response(serializer.data)
+        branches = branches.order_by("-created_at")
+
+        paginator = CustomPageNumberPagination()
+        paginator_qs = paginator.paginate_queryset(branches, request)
+
+        serializer = BranchSerializer(paginator_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class BranchDetailAPIView(APIView):
@@ -280,8 +288,12 @@ class InstitutionBranchAPIView(APIView):
                 ),
             )
 
-        serializer = BranchSerializer(branches, many=True)
-        return Response(serializer.data)
+        branches = branches.order_by("-created_at")
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(branches, request)
+        serializer = BranchSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class UserProfileListAPIView(APIView):
@@ -425,7 +437,7 @@ class UserBranchListCreateView(APIView):
         )
 
     def get(self, request):
-        user_branches = UserBranch.objects.all()
+        user_branches = UserBranch.objects.all().order_by("-created_at")
         serializer = UserBranchSerializer(user_branches, many=True)
         return Response(serializer.data)
 
@@ -497,9 +509,13 @@ class DepartmentListAPIView(APIView):
         tags=["Department Management"],
     )
     def get(self, request, institution_id=None):
-        departments = Department.objects.filter(institution_id=institution_id)
-        serializer = DepartmentSerializer(departments, many=True)
-        return Response(serializer.data)
+        departments = Department.objects.filter(institution_id=institution_id).order_by(
+            "-created_at"
+        )
+        paginator = CustomPageNumberPagination()
+        paginator_qs = paginator.paginate_queryset(departments, request)
+        serializer = DepartmentSerializer(paginator_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class DepartmentDetailAPIView(APIView):
