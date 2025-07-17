@@ -757,28 +757,6 @@ class SystemActivationView(APIView):
 
         return created_employees
 
-    def create_owner_employee(self, owner_user, institution, branches, departments):
-        """Create employee record for the owner"""
-        try:
-            # Use the first branch for the owner
-            branch = branches[0] if branches else None
-
-            # Create employee record for owner
-            owner_employee = Employee.objects.create(
-                user=owner_user,
-                email=owner_user.email,
-                phone_number=getattr(owner_user, "phone_number", None),
-                payroll_branch=branch,
-                department=departments[0] if departments else None,
-                date_of_joining=datetime.now().date(),
-            )
-
-            return owner_employee
-
-        except Exception as e:
-            logger.error(f"Error creating owner employee: {str(e)}")
-            return None
-
     def post(self, request):
         """Handle HR system activation"""
 
@@ -820,16 +798,19 @@ class SystemActivationView(APIView):
         try:
             with transaction.atomic():
                 validated_data = serializer.validated_data.copy()
-
-                # Create or get owner user
+                
+                # Create owner user first
                 owner_data = validated_data.get("owner", {})
                 owner_user = self.create_or_get_user(owner_data)
-
+                
                 if not owner_user:
                     return Response(
-                        {"error": "Owner data is required and must include email"},
+                        {"error": "Could not create owner user"},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
+
+                # Get owner email for later comparison
+                owner_email = owner_data.get("email")
 
                 # Create institution, branches, departments, and get employees data
                 institution, branches, departments, employees_data, owner_data = (
@@ -842,21 +823,20 @@ class SystemActivationView(APIView):
 
                 all_employees = []
 
-                # Create owner employee record
-                owner_employee = self.create_owner_employee(
-                    owner_user, institution, branches, departments
-                )
-
-                # Create employees
+                # Create employees (including the owner)
                 employees = self.create_employees(
                     institution, branches, departments, employees_data
                 )
 
-                if employees or owner_employee:
-                    if employees:
-                        all_employees.extend(employees)
-                    if owner_employee:
-                        all_employees.append(owner_employee)
+                # Find the owner employee from the created employees
+                owner_employee = None
+                if owner_email:
+                    for employee in employees:
+                        if employee.email == owner_email:
+                            owner_employee = employee
+                            break
+
+                all_employees = employees if employees else []
 
                 # Prepare response
                 response_data = {
