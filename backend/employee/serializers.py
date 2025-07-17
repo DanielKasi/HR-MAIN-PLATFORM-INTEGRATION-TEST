@@ -151,7 +151,7 @@ class EmployeeActivationSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
     full_name = serializers.CharField(max_length=100, required=True)
     date_of_birth = serializers.DateField(required=False, allow_null=True)
-    address = serializers.CharField(required=False, allow_blank=True)
+    address = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     gender = serializers.ChoiceField(
         choices=[("male", "Male"), ("female", "Female"), ("other", "Other")],
         required=False, allow_blank=True
