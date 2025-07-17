@@ -1,86 +1,634 @@
 {
   "User Management": [
     {
-      "code": "can_deactivate_users",
-      "name": "Create Product",
-      "description": "Allows creating new products"
-    },
-    {
       "code": "can_create_users",
-      "name": "Can Create User",
-      "description": "Can Create User"
+      "name": "Can Create Users",
+      "description": "Allows creating new user accounts"
     },
     {
-      "code": "view_users",
-      "name": "can view users",
-      "description": "can view users"
+      "code": "can_view_users",
+      "name": "Can View Users",
+      "description": "Allows viewing user accounts and profiles"
+    },
+    {
+      "code": "can_edit_users",
+      "name": "Can Edit Users",
+      "description": "Allows editing user account information"
+    },
+    {
+      "code": "can_deactivate_users",
+      "name": "Can Deactivate Users",
+      "description": "Allows deactivating/suspending user accounts"
+    },
+    {
+      "code": "can_delete_users",
+      "name": "Can Delete Users",
+      "description": "Allows permanently deleting user accounts"
+    },
+    {
+      "code": "can_reset_user_passwords",
+      "name": "Can Reset User Passwords",
+      "description": "Allows resetting user passwords"
     },
     {
       "code": "can_view_staff_roles",
-      "name": "can view staff roles",
-      "description": "Can View Staff Roles"
+      "name": "Can View Staff Roles",
+      "description": "Allows viewing staff roles and permissions"
     },
     {
       "code": "can_edit_staff_roles",
-      "name": "can edit staff roles",
-      "description": "Can Edit Staff Roles"
+      "name": "Can Edit Staff Roles",
+      "description": "Allows editing staff roles and permissions"
     },
     {
-      "code": "can_edit_user",
-      "name": "can edit users",
-      "description": "can edit users"
+      "code": "can_assign_user_roles",
+      "name": "Can Assign User Roles",
+      "description": "Allows assigning roles to users"
     }
   ],
-  "Administrative Tasks": [
+
+  "Employee Management": [
+    {
+      "code": "can_create_employees",
+      "name": "Can Create Employees",
+      "description": "Allows creating new employee records"
+    },
+    {
+      "code": "can_view_employees",
+      "name": "Can View Employees",
+      "description": "Allows viewing employee information"
+    },
+    {
+      "code": "can_edit_employees",
+      "name": "Can Edit Employees",
+      "description": "Allows editing employee information"
+    },
+    {
+      "code": "can_delete_employees",
+      "name": "Can Delete Employees",
+      "description": "Allows deleting employee records"
+    },
+    {
+      "code": "can_view_employee_personal_data",
+      "name": "Can View Employee Personal Data",
+      "description": "Allows viewing sensitive employee personal information"
+    },
+    {
+      "code": "can_edit_employee_personal_data",
+      "name": "Can Edit Employee Personal Data",
+      "description": "Allows editing sensitive employee personal information"
+    },
+    {
+      "code": "can_view_employee_salary_info",
+      "name": "Can View Employee Salary Info",
+      "description": "Allows viewing employee salary and compensation details"
+    },
+    {
+      "code": "can_terminate_employees",
+      "name": "Can Terminate Employees",
+      "description": "Allows terminating employee contracts"
+    }
+  ],
+
+  "Recruitment & Selection": [
+    {
+      "code": "can_create_job_positions",
+      "name": "Can Create Job Positions",
+      "description": "Allows creating new job positions"
+    },
+    {
+      "code": "can_view_job_positions",
+      "name": "Can View Job Positions",
+      "description": "Allows viewing job positions"
+    },
+    {
+      "code": "can_edit_job_positions",
+      "name": "Can Edit Job Positions",
+      "description": "Allows editing job position details"
+    },
+    {
+      "code": "can_delete_job_positions",
+      "name": "Can Delete Job Positions",
+      "description": "Allows deleting job positions"
+    },
+    {
+      "code": "can_create_job_adverts",
+      "name": "Can Create Job Adverts",
+      "description": "Allows creating job advertisements"
+    },
+    {
+      "code": "can_publish_job_adverts",
+      "name": "Can Publish Job Adverts",
+      "description": "Allows publishing job advertisements"
+    },
+    {
+      "code": "can_view_job_applications",
+      "name": "Can View Job Applications",
+      "description": "Allows viewing job applications"
+    },
+    {
+      "code": "can_shortlist_candidates",
+      "name": "Can Shortlist Candidates",
+      "description": "Allows shortlisting job candidates"
+    },
+    {
+      "code": "can_schedule_interviews",
+      "name": "Can Schedule Interviews",
+      "description": "Allows scheduling interviews"
+    },
+    {
+      "code": "can_conduct_interviews",
+      "name": "Can Conduct Interviews",
+      "description": "Allows conducting interviews and scoring candidates"
+    },
+    {
+      "code": "can_make_job_offers",
+      "name": "Can Make Job Offers",
+      "description": "Allows making job offers to candidates"
+    },
+    {
+      "code": "can_perform_gap_analysis",
+      "name": "Can Perform Gap Analysis",
+      "description": "Allows performing workforce gap analysis"
+    }
+  ],
+
+  "Performance Management": [
+    {
+      "code": "can_view_performance_data",
+      "name": "Can View Performance Data",
+      "description": "Allows viewing performance appraisals and reviews"
+    },
+    {
+      "code": "can_conduct_appraisals",
+      "name": "Can Conduct Appraisals",
+      "description": "Allows conducting performance appraisals"
+    },
+    {
+      "code": "can_set_performance_goals",
+      "name": "Can Set Performance Goals",
+      "description": "Allows setting performance goals and KPIs"
+    },
+    {
+      "code": "can_approve_appraisals",
+      "name": "Can Approve Appraisals",
+      "description": "Allows approving performance appraisals"
+    },
+    {
+      "code": "can_view_performance_reports",
+      "name": "Can View Performance Reports",
+      "description": "Allows viewing performance management reports"
+    },
+    {
+      "code": "can_manage_performance_cycles",
+      "name": "Can Manage Performance Cycles",
+      "description": "Allows managing performance review cycles"
+    },
+    {
+      "code": "can_create_performance_policies",
+      "name": "Can Create Performance Policies",
+      "description": "Allows creating performance management policies"
+    }
+  ],
+
+  "Training & Development": [
+    {
+      "code": "can_view_training_programs",
+      "name": "Can View Training Programs",
+      "description": "Allows viewing training programs and schedules"
+    },
+    {
+      "code": "can_create_training_programs",
+      "name": "Can Create Training Programs",
+      "description": "Allows creating new training programs"
+    },
+    {
+      "code": "can_enroll_employees_training",
+      "name": "Can Enroll Employees in Training",
+      "description": "Allows enrolling employees in training programs"
+    },
+    {
+      "code": "can_approve_training_requests",
+      "name": "Can Approve Training Requests",
+      "description": "Allows approving training requests"
+    },
+    {
+      "code": "can_manage_training_budget",
+      "name": "Can Manage Training Budget",
+      "description": "Allows managing training budgets and expenses"
+    },
+    {
+      "code": "can_conduct_training_needs_assessment",
+      "name": "Can Conduct Training Needs Assessment",
+      "description": "Allows conducting training needs assessments"
+    },
+    {
+      "code": "can_view_training_reports",
+      "name": "Can View Training Reports",
+      "description": "Allows viewing training effectiveness reports"
+    }
+  ],
+
+  "Leave Management": [
+    {
+      "code": "can_view_leave_applications",
+      "name": "Can View Leave Applications",
+      "description": "Allows viewing leave applications"
+    },
+    {
+      "code": "can_approve_leave_applications",
+      "name": "Can Approve Leave Applications",
+      "description": "Allows approving leave applications"
+    },
+    {
+      "code": "can_reject_leave_applications",
+      "name": "Can Reject Leave Applications",
+      "description": "Allows rejecting leave applications"
+    },
+    {
+      "code": "can_manage_leave_types",
+      "name": "Can Manage Leave Types",
+      "description": "Allows managing leave types and policies"
+    },
+    {
+      "code": "can_view_leave_balances",
+      "name": "Can View Leave Balances",
+      "description": "Allows viewing employee leave balances"
+    },
+    {
+      "code": "can_adjust_leave_balances",
+      "name": "Can Adjust Leave Balances",
+      "description": "Allows adjusting employee leave balances"
+    },
+    {
+      "code": "can_view_leave_reports",
+      "name": "Can View Leave Reports",
+      "description": "Allows viewing leave management reports"
+    },
+    {
+      "code": "can_cancel_approved_leave",
+      "name": "Can Cancel Approved Leave",
+      "description": "Allows canceling previously approved leave"
+    }
+  ],
+
+  "Payroll & Compensation": [
+    {
+      "code": "can_view_payroll_data",
+      "name": "Can View Payroll Data",
+      "description": "Allows viewing payroll information"
+    },
+    {
+      "code": "can_process_payroll",
+      "name": "Can Process Payroll",
+      "description": "Allows processing monthly payroll"
+    },
+    {
+      "code": "can_generate_payslips",
+      "name": "Can Generate Payslips",
+      "description": "Allows generating employee payslips"
+    },
+    {
+      "code": "can_manage_allowances",
+      "name": "Can Manage Allowances",
+      "description": "Allows managing employee allowances"
+    },
+    {
+      "code": "can_manage_deductions",
+      "name": "Can Manage Deductions",
+      "description": "Allows managing employee deductions"
+    },
+    {
+      "code": "can_approve_salary_changes",
+      "name": "Can Approve Salary Changes",
+      "description": "Allows approving salary adjustments"
+    },
+    {
+      "code": "can_view_payroll_reports",
+      "name": "Can View Payroll Reports",
+      "description": "Allows viewing payroll reports and analytics"
+    },
+    {
+      "code": "can_manage_compensation_policies",
+      "name": "Can Manage Compensation Policies",
+      "description": "Allows managing compensation policies"
+    }
+  ],
+
+  "Discipline Management": [
+    {
+      "code": "can_view_discipline_cases",
+      "name": "Can View Discipline Cases",
+      "description": "Allows viewing disciplinary cases"
+    },
+    {
+      "code": "can_create_discipline_cases",
+      "name": "Can Create Discipline Cases",
+      "description": "Allows creating new disciplinary cases"
+    },
+    {
+      "code": "can_investigate_discipline_cases",
+      "name": "Can Investigate Discipline Cases",
+      "description": "Allows investigating disciplinary matters"
+    },
+    {
+      "code": "can_approve_disciplinary_actions",
+      "name": "Can Approve Disciplinary Actions",
+      "description": "Allows approving disciplinary actions"
+    },
+    {
+      "code": "can_manage_disciplinary_committee",
+      "name": "Can Manage Disciplinary Committee",
+      "description": "Allows managing disciplinary committee"
+    },
+    {
+      "code": "can_lodge_disciplinary_complaints",
+      "name": "Can Lodge Disciplinary Complaints",
+      "description": "Allows lodging disciplinary complaints"
+    }
+  ],
+
+  "Attendance Management": [
+    {
+      "code": "can_view_attendance_records",
+      "name": "Can View Attendance Records",
+      "description": "Allows viewing attendance records"
+    },
+    {
+      "code": "can_edit_attendance_records",
+      "name": "Can Edit Attendance Records",
+      "description": "Allows editing attendance records"
+    },
+    {
+      "code": "can_approve_attendance_corrections",
+      "name": "Can Approve Attendance Corrections",
+      "description": "Allows approving attendance corrections"
+    },
+    {
+      "code": "can_view_attendance_reports",
+      "name": "Can View Attendance Reports",
+      "description": "Allows viewing attendance reports"
+    },
+    {
+      "code": "can_manage_attendance_policies",
+      "name": "Can Manage Attendance Policies",
+      "description": "Allows managing attendance policies"
+    }
+  ],
+
+  "Administration": [
+    {
+      "code": "can_manage_company_assets",
+      "name": "Can Manage Company Assets",
+      "description": "Allows managing company assets and inventory"
+    },
+    {
+      "code": "can_manage_travel_requests",
+      "name": "Can Manage Travel Requests",
+      "description": "Allows managing travel requests and approvals"
+    },
+    {
+      "code": "can_approve_travel_requests",
+      "name": "Can Approve Travel Requests",
+      "description": "Allows approving travel requests"
+    },
+    {
+      "code": "can_manage_driver_schedules",
+      "name": "Can Manage Driver Schedules",
+      "description": "Allows managing driver schedules and rotas"
+    },
+    {
+      "code": "can_manage_visitor_access",
+      "name": "Can Manage Visitor Access",
+      "description": "Allows managing visitor access and logs"
+    },
+    {
+      "code": "can_manage_welfare_services",
+      "name": "Can Manage Welfare Services",
+      "description": "Allows managing employee welfare services"
+    },
+    {
+      "code": "can_manage_health_safety",
+      "name": "Can Manage Health & Safety",
+      "description": "Allows managing health and safety protocols"
+    },
+    {
+      "code": "can_lodge_wellness_complaints",
+      "name": "Can Lodge Wellness Complaints",
+      "description": "Allows lodging health and wellness complaints"
+    },
+    {
+      "code": "can_manage_maintenance_schedules",
+      "name": "Can Manage Maintenance Schedules",
+      "description": "Allows managing property maintenance schedules"
+    }
+  ],
+
+  "Policy Management": [
+    {
+      "code": "can_create_policies",
+      "name": "Can Create Policies",
+      "description": "Allows creating new company policies"
+    },
+    {
+      "code": "can_edit_policies",
+      "name": "Can Edit Policies",
+      "description": "Allows editing existing policies"
+    },
+    {
+      "code": "can_approve_policies",
+      "name": "Can Approve Policies",
+      "description": "Allows approving policy changes"
+    },
+    {
+      "code": "can_publish_policies",
+      "name": "Can Publish Policies",
+      "description": "Allows publishing policies to employees"
+    },
+    {
+      "code": "can_archive_policies",
+      "name": "Can Archive Policies",
+      "description": "Allows archiving outdated policies"
+    },
+    {
+      "code": "can_track_policy_acknowledgments",
+      "name": "Can Track Policy Acknowledgments",
+      "description": "Allows tracking employee policy acknowledgments"
+    }
+  ],
+
+  "Leadership & Culture": [
+    {
+      "code": "can_manage_company_vision",
+      "name": "Can Manage Company Vision",
+      "description": "Allows managing company vision and mission"
+    },
+    {
+      "code": "can_manage_core_values",
+      "name": "Can Manage Core Values",
+      "description": "Allows managing company core values"
+    },
+    {
+      "code": "can_manage_leadership_programs",
+      "name": "Can Manage Leadership Programs",
+      "description": "Allows managing leadership development programs"
+    },
+    {
+      "code": "can_assess_leadership_gaps",
+      "name": "Can Assess Leadership Gaps",
+      "description": "Allows assessing leadership gaps and opportunities"
+    },
+    {
+      "code": "can_manage_cultural_activities",
+      "name": "Can Manage Cultural Activities",
+      "description": "Allows managing workplace cultural activities"
+    }
+  ],
+
+  "Reports & Analytics": [
+    {
+      "code": "can_view_hr_dashboard",
+      "name": "Can View HR Dashboard",
+      "description": "Allows viewing HR analytics dashboard"
+    },
+    {
+      "code": "can_generate_hr_reports",
+      "name": "Can Generate HR Reports",
+      "description": "Allows generating comprehensive HR reports"
+    },
+    {
+      "code": "can_view_quality_metrics",
+      "name": "Can View Quality Metrics",
+      "description": "Allows viewing ISO 9001 quality metrics"
+    },
+    {
+      "code": "can_export_hr_data",
+      "name": "Can Export HR Data",
+      "description": "Allows exporting HR data for analysis"
+    },
+    {
+      "code": "can_view_compliance_reports",
+      "name": "Can View Compliance Reports",
+      "description": "Allows viewing compliance and audit reports"
+    },
+    {
+      "code": "can_view_employee_statistics",
+      "name": "Can View Employee Statistics",
+      "description": "Allows viewing employee statistics by department"
+    }
+  ],
+
+  "System Administration": [
     {
       "code": "can_view_admin_dashboard",
       "name": "Can View Admin Dashboard",
-      "description": "This permissions lets someone see the button to access admin"
-    },
-    {
-      "code": "can_view_guide",
-      "name": "Can View Guide",
-      "description": "This permissions lets someone view the Institution setup guide"
-    },
-    {
-      "code": "can_view_settings",
-      "name": "Can View Settings",
-      "description": "This lets someone view Institution organisation settings"
-    },
-    {
-      "code": "can_view_modules",
-      "name": "Can View Modules",
-      "description": "This lets someone view modules"
-    },
-    {
-      "code": "can_change_theme_color",
-      "name": "Can Change Theme Color",
-      "description": "This lets someone change the theme color of the Institution"
-    },
-    {
-      "code": "can_add_Institution_approval_steps",
-      "name": "Can add Institution approval steps",
-      "description": "This lets someone add new Institution approval steps"
-    },
-    {
-      "code": "can_edit_branch",
-      "name": "Can Edit Branch",
-      "description": "This lets someone edit branch details"
-    },
-    {
-      "code": "can_delete_branch",
-      "name": "Can Delete Branch",
-      "description": "This lets someone delete branch details"
-    },
-    {
-      "code": "can_add_branch",
-      "name": "Can Add Branch",
-      "description": "This lets someone add new branch details"
+      "description": "Allows viewing system administration dashboard"
     },
     {
       "code": "can_view_admin_page",
       "name": "Can View Admin Page",
-      "description": "This lets someone view admin page"
+      "description": "Allows viewing admin page"
+    },
+    {
+      "code": "can_view_settings",
+      "name": "Can View Settings",
+      "description": "Allows viewing system settings"
+    },
+    {
+      "code": "can_edit_settings",
+      "name": "Can Edit Settings",
+      "description": "Allows editing system settings"
+    },
+    {
+      "code": "can_view_modules",
+      "name": "Can View Modules",
+      "description": "Allows viewing system modules"
+    },
+    {
+      "code": "can_manage_modules",
+      "name": "Can Manage Modules",
+      "description": "Allows managing system modules"
+    },
+    {
+      "code": "can_change_theme_color",
+      "name": "Can Change Theme Color",
+      "description": "Allows changing the system theme color"
+    },
+    {
+      "code": "can_view_guide",
+      "name": "Can View Setup Guide",
+      "description": "Allows viewing the system setup guide"
+    },
+    {
+      "code": "can_manage_approval_workflows",
+      "name": "Can Manage Approval Workflows",
+      "description": "Allows managing approval workflows and steps"
+    },
+    {
+      "code": "can_backup_system",
+      "name": "Can Backup System",
+      "description": "Allows creating system backups"
+    },
+    {
+      "code": "can_restore_system",
+      "name": "Can Restore System",
+      "description": "Allows restoring system from backups"
+    }
+  ],
+
+  "Branch Management": [
+    {
+      "code": "can_view_branches",
+      "name": "Can View Branches",
+      "description": "Allows viewing branch information"
+    },
+    {
+      "code": "can_add_branch",
+      "name": "Can Add Branch",
+      "description": "Allows adding new branches"
+    },
+    {
+      "code": "can_edit_branch",
+      "name": "Can Edit Branch",
+      "description": "Allows editing branch details"
+    },
+    {
+      "code": "can_delete_branch",
+      "name": "Can Delete Branch",
+      "description": "Allows deleting branches"
+    },
+    {
+      "code": "can_manage_branch_employees",
+      "name": "Can Manage Branch Employees",
+      "description": "Allows managing employees within specific branches"
+    }
+  ],
+
+  "Department Management": [
+    {
+      "code": "can_view_departments",
+      "name": "Can View Departments",
+      "description": "Allows viewing department information"
+    },
+    {
+      "code": "can_create_departments",
+      "name": "Can Create Departments",
+      "description": "Allows creating new departments"
+    },
+    {
+      "code": "can_edit_departments",
+      "name": "Can Edit Departments",
+      "description": "Allows editing department details"
+    },
+    {
+      "code": "can_delete_departments",
+      "name": "Can Delete Departments",
+      "description": "Allows deleting departments"
+    },
+    {
+      "code": "can_manage_department_heads",
+      "name": "Can Manage Department Heads",
+      "description": "Allows managing department heads and hierarchy"
     }
   ]
 }

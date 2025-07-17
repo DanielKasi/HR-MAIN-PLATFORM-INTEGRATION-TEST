@@ -771,34 +771,51 @@ class EmployeeAttendanceListCreateAPIView(APIView):
         description="Create a new attendance record",
     )
     def post(self, request, employee_id=None):
+        print("Received POST request")
         data = request.data.copy()
+        print("Raw request data:", request.data)
+        print("Copied data:", data)
+
         employee = data.get("employee")
         date = data.get("date")
-        # If date is not provided, use today
+        print(f"Employee ID: {employee}")
+        print(f"Provided date: {date}")
+
         from datetime import date as dt_date
 
         if not date:
             date = str(dt_date.today())
             data["date"] = date
+            print(f"No date provided. Using today's date: {date}")
 
-        # Try to find an existing record for this employee and date
+        print("Checking for existing attendance record...")
         existing = EmployeeAttendance.objects.filter(
             employee=employee, date=date
         ).first()
+
         if existing:
-            # Update the existing record (partial update)
+            print("Existing attendance record found. Updating...")
             serializer = EmployeeAttendanceSerializer(existing, data=data, partial=True)
             if serializer.is_valid():
+                print("Serializer is valid. Saving updated data...")
                 serializer.save()
+                print("Update successful. Returning updated data.")
                 return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                print("Serializer validation failed with errors:", serializer.errors)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
-            # Create a new record
+            print("No existing record found. Creating new attendance record...")
             serializer = EmployeeAttendanceSerializer(data=data)
             if serializer.is_valid():
+                print("Serializer is valid. Saving new data...")
                 serializer.save()
+                print("Creation successful. Returning created data.")
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                print("Serializer validation failed with errors:", serializer.errors)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 @extend_schema(tags=["Employee Attendance"])

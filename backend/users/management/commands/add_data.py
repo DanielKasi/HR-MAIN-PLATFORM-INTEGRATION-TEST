@@ -5,14 +5,16 @@ from django.conf import settings
 
 from users.models import Permission, PermissionCategory, SystemType, System
 from workflows.models import WorkflowAction, WorkflowCategory
+from discipline.models import DisciplineType
 
 
 class Command(BaseCommand):
-    help = "Sync permissions, workflows, and systems from JSON files"
+    help = "Add/sync permissions, workflows, systems, and discipline types from JSON files"
 
     def handle(self, *args, **kwargs):
         self.sync_permissions()
         self.sync_systems()
+        self.sync_discipline_types()
         # self.sync_workflows()
 
     def sync_permissions(self):
@@ -137,6 +139,89 @@ class Command(BaseCommand):
             self.style.NOTICE(f"  🧹 Removed System Types: {deleted_system_types}")
         )
         self.stdout.write(self.style.SUCCESS("\n🎉 Systems synced successfully!"))
+
+    def sync_discipline_types(self):
+        self.stdout.write(self.style.MIGRATE_HEADING("\n⏳ Syncing discipline types...\n"))
+        
+        default_types = [
+            {
+                'name': 'Verbal Warning',
+                'description': 'Informal verbal warning for minor infractions',
+                'severity': 'low'
+            },
+            {
+                'name': 'Written Warning',
+                'description': 'Formal written warning documented in employee file',
+                'severity': 'medium'
+            },
+            {
+                'name': 'Final Warning',
+                'description': 'Final written warning before suspension or termination',
+                'severity': 'high'
+            },
+            {
+                'name': 'Suspension',
+                'description': 'Temporary suspension from work duties',
+                'severity': 'high'
+            },
+            {
+                'name': 'Termination',
+                'description': 'Employment termination for serious violations',
+                'severity': 'critical'
+            },
+            {
+                'name': 'Performance Improvement Plan',
+                'description': 'Structured plan to address performance issues',
+                'severity': 'medium'
+            },
+            {
+                'name': 'Counseling',
+                'description': 'Professional counseling or coaching session',
+                'severity': 'low'
+            },
+        ]
+        
+        valid_discipline_names = set()
+        created_count = 0
+        updated_count = 0
+        
+        for type_data in default_types:
+            discipline_type, created = DisciplineType.objects.update_or_create(
+                name=type_data['name'],
+                defaults={
+                    'description': type_data['description'],
+                    'severity': type_data['severity']
+                }
+            )
+            valid_discipline_names.add(type_data['name'])
+            
+            if created:
+                created_count += 1
+                self.stdout.write(
+                    self.style.SUCCESS(f'  ✅ Created discipline type: {discipline_type.name}')
+                )
+            else:
+                updated_count += 1
+                self.stdout.write(
+                    self.style.NOTICE(f'  ♻️  Updated discipline type: {discipline_type.name}')
+                )
+        
+        # Remove discipline types that are no longer in the default list
+        deleted_discipline_types, _ = DisciplineType.objects.exclude(
+            name__in=valid_discipline_names
+        ).delete()
+        
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Discipline Types Summary"))
+        self.stdout.write(
+            self.style.NOTICE(f"  ➕ Created: {created_count}")
+        )
+        self.stdout.write(
+            self.style.NOTICE(f"  ♻️  Updated: {updated_count}")
+        )
+        self.stdout.write(
+            self.style.NOTICE(f"  🧹 Removed: {deleted_discipline_types}")
+        )
+        self.stdout.write(self.style.SUCCESS("\n🎉 Discipline types synced successfully!"))
 
     def sync_workflows(self):
         filepath = os.path.join(
