@@ -29,7 +29,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getJobApplicationById, updateJobApplication, getJobPositionAdverts } from "@/lib/utils"
-import type { JobApplication, JobApplicationFormData, JobPositionAdvert } from "@/app/types/types.utils"
+import type { JobApplication, JobApplicationFormData, JobPositionAdvert, PaginatedResponse } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
 const statusOptions = [
@@ -145,12 +145,32 @@ export default function EditApplicationPage() {
     if (!selectedInstitution) return
 
     try {
-      const data = await getJobPositionAdverts({ institutionId: selectedInstitution.id })
-      if (data) {
-        setJobPositionAdverts(data)
+      console.log("Loading job position adverts for institution:", selectedInstitution.id)
+      const response = await getJobPositionAdverts({ institutionId: selectedInstitution.id })
+      console.log("Job adverts response:", response)
+      
+      // Handle paginated response
+      let advertsArray: JobPositionAdvert[] = []
+      
+      if (response && 'results' in response && Array.isArray(response.results)) {
+        console.log("Setting job adverts from paginated response:", response.results)
+        advertsArray = response.results
+      } else if (Array.isArray(response)) {
+        console.log("Setting job adverts from direct array:", response)
+        advertsArray = response
+      } else if (response === null) {
+        console.log("Response is null - API call failed")
+        advertsArray = []
+      } else {
+        console.log("Unexpected response structure:", response)
+        advertsArray = []
       }
+      
+      console.log("Final job adverts array:", advertsArray)
+      setJobPositionAdverts(advertsArray)
     } catch (err) {
       console.error("Failed to load job position adverts:", err)
+      setJobPositionAdverts([]) // Ensure it's always an array
     }
   }
 
@@ -235,6 +255,9 @@ export default function EditApplicationPage() {
     router.push(`/applications/${applicationId}`)
   }
 
+  // Ensure jobPositionAdverts is always an array for safe filtering
+  const safeJobPositionAdverts = Array.isArray(jobPositionAdverts) ? jobPositionAdverts : []
+
   if (!selectedInstitution || !selectedBranch) {
     return <div>Loading...</div>
   }
@@ -304,31 +327,6 @@ export default function EditApplicationPage() {
           </Button>
         </div>
       </div>
-
-      {/* Current Application Info */}
-      {application && (
-        <Card className="border-l-4 border-l-blue-500 bg-blue-50/50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="h-5 w-5 text-blue-500" />
-                <div>
-                  <p className="font-medium">Current Application</p>
-                  <p className="text-sm text-muted-foreground">
-                    {application.applicant_name} • {application.applicant_email}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Status</p>
-                <Badge variant="outline" className="mt-1">
-                  {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Form */}
@@ -420,7 +418,7 @@ export default function EditApplicationPage() {
                         <SelectValue placeholder="Select a job advert" />
                       </SelectTrigger>
                       <SelectContent>
-                        {jobPositionAdverts
+                        {safeJobPositionAdverts
                           .filter((advert) => advert.status === "active")
                           .map((advert) => (
                             <SelectItem key={advert.id} value={advert.id.toString()}>
@@ -433,6 +431,9 @@ export default function EditApplicationPage() {
                           ))}
                       </SelectContent>
                     </Select>
+                    <div className="text-xs text-muted-foreground">
+                      Available job adverts: {safeJobPositionAdverts.length}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="status">Status *</Label>
@@ -606,51 +607,6 @@ export default function EditApplicationPage() {
               </Button>
             </div>
           </form>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Current Application Info */}
-          {application && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Current Application</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Application ID</span>
-                  <span className="text-sm font-medium">#{application.id}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Job Advert ID</span>
-                  <span className="text-sm font-medium">#{application.job_position_advert}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Current Status</span>
-                  <Badge variant="outline">{application.status}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Applied Date</span>
-                  <span className="text-sm font-medium">
-                    {new Date(application.application_date).toLocaleDateString()}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Help */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Help</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <p>• Update applicant information and contact details</p>
-              <p>• Change application status to track progress</p>
-              <p>• Upload new documents to replace existing ones</p>
-              <p>• Modify location and source information</p>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

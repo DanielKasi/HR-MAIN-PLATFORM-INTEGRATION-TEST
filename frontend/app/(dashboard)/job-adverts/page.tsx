@@ -27,8 +27,11 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getJobPositionAdverts, updateJobPositionAdvert } from "@/lib/utils"
-import type { JobPositionAdvert, JobAdvertStatus } from "@/app/types/types.utils"
+import type { JobPositionAdvert, JobAdvertStatus, PaginatedResponse } from "@/app/types/types.utils"
 import { toast } from "sonner"
+
+
+type ApiResponse = PaginatedResponse<JobPositionAdvert> | null
 
 const getStatusColor = (status: JobAdvertStatus) => {
   switch (status) {
@@ -59,6 +62,11 @@ const isExpired = (expiryDate: string) => {
 
 export default function JobAdvertsPage() {
   const [jobAdverts, setJobAdverts] = useState<JobPositionAdvert[]>([])
+  const [paginationInfo, setPaginationInfo] = useState<{
+    count: number
+    next: string | null
+    previous: string | null
+  }>({ count: 0, next: null, previous: null })
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -80,16 +88,36 @@ export default function JobAdvertsPage() {
       }
       setError("")
 
-      const fetchedJobAdverts = await getJobPositionAdverts({ institutionId: selectedInstitution.id })
-
-      if (fetchedJobAdverts) {
-        setJobAdverts(fetchedJobAdverts)
-      } else {
-        setError("Failed to fetch job adverts. Please try again.")
-        toast.error("Failed to load job adverts")
+      const response: ApiResponse = await getJobPositionAdverts({ institutionId: selectedInstitution.id })
+      
+      // Handle paginated response structure
+      let advertsArray: JobPositionAdvert[] = []
+      let pagination: {
+        count: number
+        next: string | null
+        previous: string | null
+      } = { count: 0, next: null, previous: null }
+      
+      if (response && 'results' in response && Array.isArray(response.results)) {
+        // Paginated response structure (which is what your API returns)
+        advertsArray = response.results
+        pagination = {
+          count: response.count || 0,
+          next: response.next || null,
+          previous: response.previous || null
+        }
+      } else if (response === null) {
+        // Handle null response from helper function
+        advertsArray = []
       }
+
+      setJobAdverts(advertsArray)
+      setPaginationInfo(pagination)
+
     } catch (err) {
-      setError("Failed to fetch job adverts. Please try again.")
+      console.error("Error fetching job adverts:", err)
+      setJobAdverts([])
+      setError(`Failed to fetch job adverts: ${err instanceof Error ? err.message : 'Unknown error'}`)
       toast.error("Failed to load job adverts")
     } finally {
       setIsLoading(false)
@@ -110,6 +138,11 @@ export default function JobAdvertsPage() {
   }, [fetchJobAdverts])
 
   const filteredJobAdverts = useMemo(() => {
+    // Additional safety check to ensure jobAdverts is an array
+    if (!Array.isArray(jobAdverts)) {
+      return []
+    }
+    
     return jobAdverts.filter((advert) => {
       if (!searchTerm.trim()) return true
       
@@ -121,17 +154,17 @@ export default function JobAdvertsPage() {
   }, [jobAdverts, searchTerm])
 
   const publishedAdverts = useMemo(() => 
-    jobAdverts.filter((advert) => advert.status === "active"), 
+    Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.status === "active") : [], 
     [jobAdverts]
   )
   
   const draftAdverts = useMemo(() => 
-    jobAdverts.filter((advert) => advert.status === "archived"), 
+    Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.status === "archived") : [], 
     [jobAdverts]
   )
   
   const expiredAdverts = useMemo(() => 
-    jobAdverts.filter((advert) => advert.status === "expired" || isExpired(advert.expiry_date)), 
+    Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.status === "expired" || isExpired(advert.expiry_date)) : [], 
     [jobAdverts]
   )
 
@@ -229,7 +262,7 @@ export default function JobAdvertsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-blue-600">{jobAdverts.length}</div>
+              <div className="text-2xl font-bold text-blue-600">{paginationInfo.count}</div>
               <p className="text-xs text-muted-foreground">Total Adverts</p>
             </CardContent>
           </Card>
@@ -256,8 +289,19 @@ export default function JobAdvertsPage() {
 
       {/* Error Message */}
       {error && (
-        <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
-          {error}
+        <div className="text-sm font-medium text-destructive bg-destructive/10 p-4 rounded-md border border-destructive/20">
+          <div className="font-semibold mb-2">Error Loading Job Adverts</div>
+          <div className="text-sm">{error}</div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            className="mt-3"
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+            Try Again
+          </Button>
         </div>
       )}
 

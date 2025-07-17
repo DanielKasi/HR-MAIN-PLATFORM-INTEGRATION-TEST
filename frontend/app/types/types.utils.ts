@@ -104,6 +104,65 @@ export interface IDepartment {
   institution_details?: IInstitution | null; // Embedded serializer
 }
 
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+ export interface EmployeeFromAPI {
+  id: number
+  user: {
+    id: number
+    email: string
+    fullname: string
+    is_active: boolean
+    is_email_verified: boolean
+    is_password_verified: boolean
+    is_staff: boolean
+    roles: any[]
+    branches: any[]
+    permissions: any[]
+  } | null
+  email: string
+  phone_number: string
+  position: {
+    id: number
+    name: string
+    department_id: number
+  }
+  department: {
+    id: number
+    name: string
+    institution_id: number
+  }
+  roles: any[]
+  date_of_birth: string | null
+  date_of_joining: string
+  address: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  experience: number
+  qualifications: string | null
+  skills: string | null
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
+  emergency_contact_relationship: string | null
+  marital_status: string
+  children_count: number
+  employee_profile_picture: string | null
+}
+
+export interface PaginatedEmployeeResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: EmployeeFromAPI[];
+}
+
+
 export interface IReportsToDetails {
   id: number;
   name: string;
@@ -123,6 +182,7 @@ export interface IJobPosition {
   offerLetterTemplate?: string | null; // FileField serialized as URL
   salary: number;
 }
+
 
 
 
@@ -410,6 +470,13 @@ export interface IOnBoarding {
   status: 'initial' | 'training' | 'issued_contract' | 'declined_offer' | 'accepted_offer';
   created_at: string;
   updated_at: string;
+}
+
+export interface PaginatedIOnboardingResponse {     
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: IOnBoarding[];
 }
 
 export interface IOnBoardingFormData {

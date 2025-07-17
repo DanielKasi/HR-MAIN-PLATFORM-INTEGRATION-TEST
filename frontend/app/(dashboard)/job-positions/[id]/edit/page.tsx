@@ -189,7 +189,7 @@ export default function EditJobPositionPage() {
 
             if (updatedJobPosition) {
                 toast.success("Job position updated successfully!")
-                router.push(`/job-positions/${jobPositionId}`)
+                router.push(`/job-positions/`)
             } else {
                 toast.error("Failed to update job position. Please try again.")
             }
@@ -212,7 +212,7 @@ export default function EditJobPositionPage() {
     if (isLoading) {
         return (
             <div className="w-full h-full p-6">
-                <div className="w-full max-w-6xl mx-auto space-y-6">
+                <div className="w-full space-y-6">
                     {/* Header Skeleton */}
                     <div className="flex items-center gap-4">
                         <Skeleton className="h-9 w-32" />
@@ -251,7 +251,7 @@ export default function EditJobPositionPage() {
 
     return (
         <div className="w-full h-full p-6">
-            <div className="w-full max-w-6xl mx-auto space-y-6">
+            <div className="w-full space-y-6">
                 {/* Header */}
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
@@ -501,14 +501,6 @@ export default function EditJobPositionPage() {
                                             <span className="font-medium text-foreground">Institution:</span> {jobPosition?.department_details?.institution_details?.institution_name}
                                         </p>
 
-                                    </div>
-                                    <div className="space-y-2">
-                                        <p>
-                                            <span className="font-medium text-foreground">Branch:</span> {selectedBranch.branch_name}
-                                        </p>
-                                        <p>
-                                            <span className="font-medium text-foreground">Available Departments:</span> {departments.length}
-                                        </p>
                                     </div>
                                 </div>
                             </div>
