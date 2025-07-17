@@ -224,40 +224,43 @@ export default function EmployeeDeductionComponent() {
   })
 
 
-  useEffect(() => {
-    const fetchDeductionTypes = async () => {
-      if (!selectedInstitution?.id) {
-        return
-      }
-      
-      try {
-        const types = await getDeductionTypes(selectedInstitution?.id)
-        
-        if (types && Array.isArray(types)) {
-          // Only get active types and simplify to just id and name
-          const activeTypes = types
-            .filter(type => type.is_active !== false)
-            .map(type => ({
-              id: type.id,
-              name: type.name
-            }))
-          
-          setDeductionTypes(activeTypes)
-          
-          if (activeTypes.length === 0) {
-            toast.error("No active deduction types found for this institution")
-          }
-        } else {
-          setDeductionTypes([])
-          toast.error("Invalid deduction types data received")
-        }
-      } catch (error) {
-        console.warn("Error fetching deduction types:", error)
-        setDeductionTypes([])
-        toast.error("Failed to load deduction types")
-      }
+ useEffect(() => {
+  const fetchDeductionTypes = async () => {
+    if (!selectedInstitution?.id) {
+      return
     }
-  }, [selectedInstitution?.id])
+    
+    try {
+      const types = await getDeductionTypes(selectedInstitution.id)
+      
+      if (types && Array.isArray(types)) {
+        // Only get active types and simplify to just id and name
+        const activeTypes = types
+          .filter(type => type.is_active !== false)
+          .map(type => ({
+            id: type.id,
+            name: type.name
+          }))
+        
+        setDeductionTypes(activeTypes)
+        
+        if (activeTypes.length === 0) {
+          toast.error("No active deduction types found for this institution")
+        }
+      } else {
+        setDeductionTypes([])
+        toast.error("Invalid deduction types data received")
+      }
+    } catch (error) {
+      console.warn("Error fetching deduction types:", error)
+      setDeductionTypes([])
+      toast.error("Failed to load deduction types")
+    }
+  }
+  
+  // ADD THIS LINE - You're missing the function call!
+  fetchDeductionTypes()
+}, [selectedInstitution?.id])
 
   useEffect(() => {
     const fetchEmployees = async () => {

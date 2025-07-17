@@ -456,8 +456,8 @@ export default function DepartmentDetailView() {
       }} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="employees">Employees ({departmentEmployees.length})</TabsTrigger>
-          <TabsTrigger value="recruitment">Recruitment ({filteredRecruitmentHistory.length})</TabsTrigger>
+          <TabsTrigger value="employees">Employees</TabsTrigger>
+          <TabsTrigger value="recruitment">Recruitment History</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}

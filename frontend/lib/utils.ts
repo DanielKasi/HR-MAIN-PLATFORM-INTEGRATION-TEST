@@ -2267,7 +2267,10 @@ export const getPayrollPeriods = async (
 ): Promise<IPayrollPeriod[] | null> => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/payroll-periods/`);
-    return response.data as IPayrollPeriod[];
+    const data = response.data as PaginatedResponse<IPayrollPeriod>
+    
+    // Return the results array instead of the entire response
+    return data.results
   } catch (error) {
     console.error("Failed to get payroll periods:", error);
     return null;
@@ -2640,8 +2643,11 @@ export const getPayslips = async (
     
     const url = `payroll/${institutionId}/payslips/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await apiRequest.get(url);
+  
+    const data = response.data as PaginatedResponse<IPayslip>
     
-    return response.data as IPayslip[];
+    // Return the results array instead of the entire response
+    return data.results
   } catch (error) {
     console.error("Failed to get payslips:", error);
     return null;
@@ -2760,7 +2766,10 @@ export const getPayslipItems = async (
 ): Promise<IPayslipItem[] | null> => {
   try {
     const response = await apiRequest.get(`payroll/payslips/${payslipId}/items/`);
-    return response.data as IPayslipItem[];
+    const data = response.data as PaginatedResponse<IPayslipItem>
+    
+    // Return the results array instead of the entire response
+    return data.results
   } catch (error) {
     console.error("Failed to get payslip items:", error)
     return null;
