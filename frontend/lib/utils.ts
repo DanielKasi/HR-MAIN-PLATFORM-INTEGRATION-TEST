@@ -192,7 +192,8 @@ export const getJobPositions = async ({ institutionId }: { institutionId: number
 export const getJobPosition = async ({jobPositionId}:{jobPositionId:number}) =>{
   try {
     const response = await apiRequest.get(`recruitment/job-position/${jobPositionId}/`)
-    return response.data as IJobPosition
+    const data = response.data as IJobPosition
+    return data
   } catch (error) {
     console.error("Error fetching job position:", error)
     return null
@@ -762,8 +763,8 @@ export const getRoles = async ({ institutionId }: { institutionId: number }) => 
 export const getPositions = async ({ institutionId }: { institutionId: number }): Promise<IJobPosition[]> => {
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`)
-    console.log("Positions response:", response.data)
-    return response.data || []
+    const data = response.data as PaginatedResponse<IJobPosition>
+    return data.results
   } catch (error) {
     console.error("Error fetching positions:", error)
     return []
@@ -950,7 +951,8 @@ export const getWorkTypes = async ({
     const response = await apiRequest.get(
       `employee/work-types/`
     );
-    return response.data as IWorkType[];
+    const data = response.data as PaginatedResponse<IWorkType>
+    return data.results
   } catch (error) {
     console.error("Failed to fetch work types:", error);
     return [];
@@ -966,7 +968,8 @@ export const getEmployeeTypes = async ({
     const response = await apiRequest.get(
       `employee/employee-types/`
     );
-    return response.data as IEmployeeType[];
+    const data = response.data as PaginatedResponse<IEmployeeType>
+    return data.results
   } catch (error) {
     console.error("Failed to fetch employee types:", error);
     return [];

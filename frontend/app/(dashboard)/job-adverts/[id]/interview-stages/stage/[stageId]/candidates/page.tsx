@@ -154,10 +154,9 @@ const RatingInput = ({
       <Input
         type="number"
         min="1"
-        max="5"
+        max="10"
         value={rating || ''}
         onChange={(e) => onRatingChange?.(Number(e.target.value))}
-        placeholder="1-5"
         className="w-20"
       />
       <p className="text-xs text-muted-foreground">Rate 1-10</p>

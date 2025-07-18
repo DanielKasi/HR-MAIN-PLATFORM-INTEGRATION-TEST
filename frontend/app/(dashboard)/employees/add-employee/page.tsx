@@ -132,14 +132,14 @@ export default function AddEmployeeForm() {
 
   useEffect(() => {
     const loadDropdownData = async () => {
-      if (!institutionId) return;
+      if (!selectedInstitution?.id) return;
 
       try {
         const [positionsData, departmentsData, workTypesData, employeeTypesData] = await Promise.all([
-          getPositions({ institutionId }),
-          getDepartments({ institutionId }),
-          getWorkTypes({ institutionId }),
-          getEmployeeTypes({ institutionId }),
+          getPositions({ institutionId: selectedInstitution?.id  }),
+          getDepartments({ institutionId: selectedInstitution?.id  }),
+          getWorkTypes({ institutionId: selectedInstitution?.id  }),
+          getEmployeeTypes({ institutionId: selectedInstitution?.id  }),
         ]);
 
         setPositions(Array.isArray(positionsData) ? positionsData : []);
