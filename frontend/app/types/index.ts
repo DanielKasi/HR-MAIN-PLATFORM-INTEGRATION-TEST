@@ -182,6 +182,12 @@ export interface Branch {
   branch_closing_time?: string;
 }
 
+export enum USER_GENDER {
+  MALE="male",
+  FEMALE="female",
+  OTHER="other"
+}
+
 export interface IUser {
   id: number;
   fullname: string;
@@ -190,6 +196,7 @@ export interface IUser {
   is_staff: boolean;
   roles: Role[];
   branches: Branch[];
+  gender:USER_GENDER
 }
 
 export interface ICustomerProfile {

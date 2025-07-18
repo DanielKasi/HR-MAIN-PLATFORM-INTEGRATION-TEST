@@ -59,7 +59,7 @@ import requests
 import secrets
 import urllib.parse
 from institution.utils import generate_compliant_password
-import os
+
 
 logger = logging.getLogger(__name__)
 
