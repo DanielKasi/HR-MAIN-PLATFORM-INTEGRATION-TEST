@@ -433,7 +433,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     }
 
     return (
-      <div key={item.title} className="w-full">
+      <div key={item.title} className="w-full py-1">
         <Button
           variant="ghost"
           className={`w-full !rounded-3xl flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-600 ${isActive ? "bg-orange-500 bg-opacity-20" : "hover:bg-orange-500 hover:bg-opacity-30"}`}
@@ -452,7 +452,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             ))}
         </Button>
         {item.submenu && isExpanded && (
-          <div className="ml-6 space-y-1">
+          <div className="ml-6 space-y-1 py-2">
             {item.submenu.map((sub) => (
               <Button
                 key={sub.href}
