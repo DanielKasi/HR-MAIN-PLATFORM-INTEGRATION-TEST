@@ -631,14 +631,18 @@ class SystemActivationView(APIView):
         phone_number = employee_data.get("phone_number")
         gender = employee_data.get("gender")
 
-        print(f"[USER] Attempting to create/get user with email: {email}")
         if email:
             user, created = User.objects.get_or_create(
-                email=email, defaults={"fullname": full_name, "is_active": True}
+                email=email,
+                defaults={
+                    "fullname": full_name,
+                    "is_active": True,
+                    "gender": gender,
+                }
             )
-            print(f"[USER] User {'created' if created else 'retrieved'}: {user}")
+
             return user
-        print("[USER] No email provided for user creation.")
+
         return None
 
     def create_departments(self, institution, departments_data, owner_user):
