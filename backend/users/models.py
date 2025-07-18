@@ -36,6 +36,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_email_verified = models.BooleanField(default=False)
     is_password_verified = models.BooleanField(default=True)
+    gender = models.CharField(
+        max_length=10,
+        choices=[("male", "Male"), ("female", "Female"), ("other", "Other")],
+        blank=True,
+        null=True,
+    )
     user_type = models.CharField(
         max_length=20,
         choices=UserType.choices,

@@ -48,7 +48,7 @@ import {
   getLeavePolicies,
   getDepartments
 } from "@/lib/utils";
-import { IUserInstitution } from "@/app/types";
+import { IUserInstitution, USER_GENDER } from "@/app/types";
 import EmployeeAttendance from "./EmployeeAttendance";
 import { se } from "date-fns/locale";
 
@@ -205,11 +205,12 @@ const WelcomeCard = () => {
     greeting = "Hello";
   }
 
+
   const fullName = userData?.fullname || "User";
 
   return (
     <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
-      <h2 className="text-2xl font-bold mb-2">{greeting} {fullName}</h2>
+      <h2 className="text-2xl font-bold mb-2">{greeting}, {userData?.gender === USER_GENDER.MALE? "Mr" : userData?.gender === USER_GENDER.FEMALE? "Mrs" : ""} {fullName}</h2>
       <p className="opacity-90">Here's your HR dashboard overview for today</p>
     </div>
   );

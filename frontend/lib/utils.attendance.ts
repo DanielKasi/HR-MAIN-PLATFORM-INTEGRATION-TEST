@@ -1,4 +1,5 @@
 import apiRequest from "./apiRequest";
+import { IPaginatedResponse } from "@/app/types";
 
 export interface AttendanceRecordPayload {
   employee: number;

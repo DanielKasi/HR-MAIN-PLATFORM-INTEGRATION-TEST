@@ -4,7 +4,7 @@ import type React from "react";
 import {useState, useEffect} from "react";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
-import {Eye, EyeOff, ShoppingCart, CheckCircle2, XCircle} from "lucide-react";
+import {Eye, EyeOff, CheckCircle2, XCircle} from "lucide-react";
 import {toast} from "sonner";
 
 import {Button} from "@/components/ui/button";
@@ -20,6 +20,14 @@ import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import apiRequest from "@/lib/apiRequest";
 import {handleApiError} from "@/lib/apiErrorHandler";
+import {USER_GENDER} from "@/app/types";
+import {Select, SelectContent, SelectItem, SelectTrigger} from "@/components/ui/select";
+
+const GENDER_LABELS: Record<USER_GENDER, string> = {
+  [USER_GENDER.MALE]: "Male",
+  [USER_GENDER.FEMALE]: "Female",
+  [USER_GENDER.OTHER]: "Other",
+};
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -27,6 +35,7 @@ export default function SignupPage() {
   const [fullname, setFullname] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [gender, setGender] = useState<USER_GENDER | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isPasswordValid, setIsPasswordValid] = useState(true);
@@ -60,32 +69,32 @@ export default function SignupPage() {
     setErrorMessage("");
 
     if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
-
+      showErrorMessage("Passwords do not match");
+      return;
+    }
+    if (!gender) {
+      showErrorMessage("Please choose a gender");
       return;
     }
 
     setIsPasswordValid(Object.values(passwordValidation).every(Boolean));
-    // Validate password before submission
     if (!isPasswordValid) {
       setErrorMessage("Please fix the password requirements");
-
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Proceed with API request
       const response = await apiRequest.post("user/", {
         email,
         fullname,
         password,
+        gender,
       });
 
       if (response.status === 201) {
         const user_id = response.data.id;
-
         router.push(`verify-otp?user_id=${encodeURIComponent(user_id)}`);
       }
     } catch (error: any) {
@@ -108,13 +117,10 @@ export default function SignupPage() {
 
   return (
     <div className="flex h-screen w-full items-center justify-center">
-      <Card className="w-full max-w-md border-none">
+      <Card className="w-full mx-[2rem] max-w-md lg:max-w-lg border-none">
         <CardHeader className="space-y-1 border-none">
-          {/* <div className="flex items-center justify-center mb-2">
-            <ShoppingCart className="h-10 w-10 text-primary" />
-          </div> */}
           <CardTitle className="text-2xl text-center font-bold">Create an Account</CardTitle>
-          <CardDescription className="text-center   text-base">
+          <CardDescription className="text-center text-base">
             Enter your details to sign up for BAIFAM HR SYSTEM
           </CardDescription>
         </CardHeader>
@@ -122,7 +128,9 @@ export default function SignupPage() {
           <CardContent className="grid gap-4">
             {errorMessage && <div className="text-red-500 text-center mt-2">{errorMessage}</div>}
             <div className="grid gap-2">
-              <Label htmlFor="fullname" className="font-medium   text-sm">Full Name</Label>
+              <Label htmlFor="fullname" className="font-medium text-sm">
+                Full Name
+              </Label>
               <Input
                 required
                 id="fullname"
@@ -130,11 +138,12 @@ export default function SignupPage() {
                 type="text"
                 value={fullname}
                 onChange={(e) => setFullname(e.target.value)}
-                  
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="email" className="font-medium   text-sm">Email</Label>
+              <Label htmlFor="email" className="font-medium text-sm">
+                Email
+              </Label>
               <Input
                 required
                 id="email"
@@ -142,12 +151,31 @@ export default function SignupPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                  
               />
+            </div>
+            <div className="gap-2">
+              <Label htmlFor="gender" className="font-medium text-sm">
+                Gender
+              </Label>
+              <Select
+                value={gender}
+                onValueChange={(value) => setGender(value as USER_GENDER)}
+                name="gender"
+                required
+              >
+                <SelectTrigger>{gender ? GENDER_LABELS[gender] : "Choose a gender"}</SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={USER_GENDER.MALE}>Male</SelectItem>
+                  <SelectItem value={USER_GENDER.FEMALE}>Female</SelectItem>
+                  <SelectItem value={USER_GENDER.OTHER}>Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="font-medium   text-sm">Password</Label>
+                <Label htmlFor="password" className="font-medium text-sm">
+                  Password
+                </Label>
               </div>
               <div className="relative">
                 <Input
@@ -157,7 +185,6 @@ export default function SignupPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                    
                 />
                 <Button
                   className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
@@ -174,7 +201,9 @@ export default function SignupPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="confirm-password" className="font-medium   text-sm">Confirm Password</Label>
+                <Label htmlFor="confirm-password" className="font-medium text-sm">
+                  Confirm Password
+                </Label>
                 <div className="relative">
                   <Input
                     required
@@ -183,7 +212,6 @@ export default function SignupPage() {
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                      
                   />
                   <Button
                     className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
@@ -192,9 +220,13 @@ export default function SignupPage() {
                     variant="ghost"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                     <span className="sr-only">
-                      {showPassword ? "Hide password" : "Show password"}
+                      {showConfirmPassword ? "Hide password" : "Show password"}
                     </span>
                   </Button>
                 </div>
@@ -236,12 +268,19 @@ export default function SignupPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col">
-            <Button className="w-full h-12 rounded-xl" disabled={isSubmitting || !isPasswordValid} type="submit">
+            <Button
+              className="w-full h-12 rounded-xl"
+              disabled={isSubmitting || !isPasswordValid}
+              type="submit"
+            >
               {isSubmitting ? "Signing up..." : "Sign Up"}
             </Button>
             <p className="mt-4 text-center text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link className="text-primary underline hover:text-primary/90 h-12 rounded-xl" href="/login">
+              <Link
+                className="text-primary underline hover:text-primary/90 h-12 rounded-xl"
+                href="/login"
+              >
                 Sign in
               </Link>
             </p>

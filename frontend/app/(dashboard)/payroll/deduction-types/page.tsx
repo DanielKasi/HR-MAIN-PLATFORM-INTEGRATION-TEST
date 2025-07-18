@@ -82,7 +82,7 @@ const DeductionTypesComponent = () => {
     }
     
     fetchDeductionTypes()
-  }, [selectedInstitution && selectedInstitution.id])
+  }, [selectedInstitution?.id])
 
   const handleAddDeductionType = async () => {
     if (!formData.name || !formData.description) {
