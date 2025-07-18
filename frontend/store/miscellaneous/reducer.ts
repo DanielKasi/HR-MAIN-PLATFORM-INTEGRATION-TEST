@@ -16,6 +16,13 @@ export const miscReducer = (
   switch (action.type) {
     case MISC_ACTION_TYPES.TOGGLE_SIDEBAR:
       return {...state, sideBarOpened: !state.sideBarOpened};
+    case MISC_ACTION_TYPES.OPEN_SIDE_BAR:
+            console.log("Misc reducer hit with action : ", action.type)
+            return {...state, sideBarOpened:true}
+
+            case MISC_ACTION_TYPES.CLOSE_SIDE_BAR:
+            console.log("Misc reducer hit with action : ", action.type)
+                return {...state, sideBarOpened:false}
     default:
       return state;
   }
