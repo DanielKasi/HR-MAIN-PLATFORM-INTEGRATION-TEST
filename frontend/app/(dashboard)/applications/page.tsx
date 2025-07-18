@@ -546,11 +546,11 @@ export default function ApplicationsPage() {
           </p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
+           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
               Create Application
-            </Button>Address *
+            </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
