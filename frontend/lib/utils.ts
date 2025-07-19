@@ -1,13 +1,13 @@
 import {type ClassValue, clsx} from "clsx";
 import {twMerge} from "tailwind-merge";
-import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition, 
-  CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData, 
+import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition,
+  CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData,
   IInterview, EmployeeFormData, User, IInterviewFormData, IInterviewStage, IInterviewStageFormData,
    IBulkOnBoardingResponse, IBulkOnBoardingRequest, IOnBoarding, IOnBoardingFormData, IEmployeeTypeFormData  , IWorkType,
    IWorkTypeFormData, IEmployeeType,EmployeeBranchSummary,AttachBranchesPayload,SetDefaultBranchPayload,
    DisciplinaryActionForm, DisciplinaryActionRequest, DisciplinaryActionResponse, convertFormToApiRequest,
    DisciplineTypeForm, DisciplineTypeResponse, convertDisciplineTypeFormToApiRequest, DisciplinaryActionAPIResponse,
-   ILeaveRequest, ILeaveRequestFormData, LeaveRequestStatus,LeaveType,ILeaveTypeFormData, ILeaveType,ILeavePolicy, 
+   ILeaveRequest, ILeaveRequestFormData, LeaveRequestStatus,LeaveType,ILeaveTypeFormData, ILeaveType,ILeavePolicy,
    ILeavePolicyFormData, ILeavePolicyResponse, IAllowanceType, IAllowanceTypeFormData, IDeductionType, IDeductionTypeFormData,
    IEmployeeAllowance,IEmployeeAllowanceFormData,IEmployeeDeduction, IEmployeeDeductionFormData, IPayrollPeriod, IPayrollPeriodFormData,
    IPayslipFormData, IPayslip, IPayslipItem, PaginatedEmployeeResponse,
@@ -170,7 +170,7 @@ export const getDepartments = async ({institutionId}: {institutionId: number}) =
   try {
     const response = await apiRequest.get(`institution/${institutionId}/department/`)
     const data = response.data as PaginatedResponse<IDepartment>
-    
+
     // Return the results array instead of the entire response
     return data.results
   } catch (error) {
@@ -301,7 +301,7 @@ export const createJobApplication = async ({
       formData
     );
 
-   
+
     return response.data as JobApplication;
 };
 
@@ -432,7 +432,7 @@ export const getJobPositionAdverts = async ({
     const response = await apiRequest.get(
       `recruitment/institution/${institutionId}/job-advert/`
     );
-    return response.data; 
+    return response.data;
   } catch (error) {
     return null;
   }
@@ -447,7 +447,7 @@ export const getJobPositionAdvertById = async ({
   try {
     const response = await apiRequest.get(`recruitment/job-advert/${advertId}/`);
     return response.data as JobPositionAdvert;
-    
+
   } catch (error) {
     console.error("Failed to fetch job position advert", error);
     return null;
@@ -582,13 +582,13 @@ export const updateCandidateStageeFeedback = async ({
     const interviewsResponse = await apiRequest.get(
       `recruitment/interviews/?job_position_application=${candidateId}&interview_stage=${stageId}`
     );
-    
+
     if (!interviewsResponse.data.results || interviewsResponse.data.results.length === 0) {
       throw new Error('No interview found for this candidate in this stage');
     }
-    
+
     const interviewId = interviewsResponse.data.results[0].id;
-    
+
     const formData = new FormData();
     formData.append('feedback', feedback);
     formData.append('rating', rating.toString());
@@ -669,12 +669,12 @@ export const createEmployee = async ({
   try {
     const formData = new FormData();
     formData.append("institutionId", institutionId.toString());
-    
+
     if (employeeData.user) {
       formData.append("user.fullname", employeeData.user.fullname);
       formData.append("user.email", employeeData.user.email);
     }
-    
+
     Object.entries(employeeData).forEach(([key, value]) => {
       if (key === "user") return;
       if (key === "employee_profile_picture" && value instanceof File) {
@@ -683,14 +683,14 @@ export const createEmployee = async ({
         formData.append(key, value.toString());
       }
     });
-    
+
     const response = await apiRequest.post(`/employee/create/`, formData);
     return response.data;
   } catch (error: any) {
     throw new Error(
-      error.response?.data?.detail || 
-      error.response?.data?.message || 
-      error.message || 
+      error.response?.data?.detail ||
+      error.response?.data?.message ||
+      error.message ||
       "Failed to create employee"
     );
   }
@@ -705,12 +705,12 @@ export const updateEmployee = async ({
 }): Promise<any | null> => {
   try {
     const formData = new FormData();
-    
+
     if (employeeData.user) {
       formData.append("user.fullname", employeeData.user.fullname);
       formData.append("user.email", employeeData.user.email);
     }
-    
+
     Object.entries(employeeData).forEach(([key, value]) => {
       if (key === "user") return;
       if (key === "employee_profile_picture" && value instanceof File) {
@@ -719,7 +719,7 @@ export const updateEmployee = async ({
         formData.append(key, value.toString());
       }
     });
-    
+
     const response = await apiRequest.patch(`/employee/${employeeId}/update/`, formData);
     return response.data;
   } catch (error: any) {
@@ -737,9 +737,9 @@ export const getEmployeeById = async ({
     return response.data;
   } catch (error: any) {
     throw new Error(
-      error.response?.data?.detail || 
-      error.response?.data?.message || 
-      error.message || 
+      error.response?.data?.detail ||
+      error.response?.data?.message ||
+      error.message ||
       "Failed to fetch employee"
     );
   }
@@ -857,7 +857,7 @@ export const updateOnBoarding = async ({
   try {
     const response = await apiRequest.patch(
       `on-boarding/record/${onboardingId}/`,
-      onboardingData 
+      onboardingData
     );
     return response.data as IOnBoarding;
   } catch (error) {
@@ -880,7 +880,7 @@ export const bulkCreateOnBoarding = async ({
     const response = await apiRequest.post(
       `on-boarding/bulk-create/`,
       requestData,
-      
+
     );
     return response.data as IBulkOnBoardingResponse;
   } catch (error) {
@@ -1050,9 +1050,9 @@ export const createDisciplineType = async ({
 }): Promise<DisciplineTypeResponse | null> => {
   try {
     const apiData = convertDisciplineTypeFormToApiRequest(disciplineTypeData);
-    
+
     const formData = new FormData();
-    
+
     // Append all the discipline type fields
     Object.entries(apiData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
@@ -1064,18 +1064,18 @@ export const createDisciplineType = async ({
       `discipline/discipline-types/`, // Adjust endpoint as needed
       formData
     );
-    
+
     return response.data as DisciplineTypeResponse;
   } catch (error: any) {
     console.error("Failed to create discipline type:", error);
-    
+
     if (error.response?.status === 400) {
       const errorData = error.response.data;
       if (errorData?.name && errorData.name.includes('already exists')) {
         throw new Error('A discipline type with this name already exists');
       }
     }
-    
+
     return null;
   }
 };
@@ -1085,7 +1085,7 @@ export const deleteDisciplinaryAction = async (id: number | string): Promise<boo
     const response = await apiRequest.delete(
       `discipline/disciplinary-actions/${id}/`
     );
-    
+
     return response.status === 200 || response.status === 204;
   } catch (error) {
     console.error("Failed to delete disciplinary action:", error);
@@ -1105,9 +1105,9 @@ export const getDisciplineTypes = async ({
     const response = await apiRequest.get(
       `discipline/discipline-types/?institution=${institutionId}`
     );
-  
+
     const data = response.data as PaginatedResponse<DisciplineTypeResponse>
-    
+
     // Return the results array instead of the entire response
     return data.results
   } catch (error) {
@@ -1121,9 +1121,9 @@ export const getDisciplinaryActions = async (): Promise<DisciplinaryActionAPIRes
     const response = await apiRequest.get(
       `discipline/disciplinary-actions`
     );
-    
+
     const data = response.data as PaginatedResponse<DisciplinaryActionAPIResponse>
-  
+
     return data.results
   } catch (error) {
     return null;
@@ -1146,7 +1146,7 @@ export const updateDisciplinaryAction = async ({
       `discipline/disciplinary-actions/${disciplinaryActionId}/`,
       dataToSend
     );
-    
+
     return response.data as DisciplinaryActionAPIResponse;
   } catch (error) {
     console.error("Failed to update disciplinary action:", error);
@@ -1161,7 +1161,7 @@ export const getDisciplinaryActionById = async (
     const response = await apiRequest.get(
       `discipline/disciplinary-actions/${disciplinaryActionId}/`
     );
-    
+
     return response.data as DisciplinaryActionAPIResponse;
   } catch (error) {
     console.error("Failed to retrieve disciplinary action:", error);
@@ -1194,10 +1194,10 @@ export const createLeaveType = async ({
 }): Promise<ILeaveType | null> => {
   try {
     const formData = new FormData();
-    
+
     // Add institution to the form data
     formData.append('institution', institutionId.toString());
-    
+
     Object.entries(leaveTypeData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         formData.append(key, value.toString());
@@ -1231,7 +1231,7 @@ export const updateLeaveType = async ({
       }
     });
 
-    const response = await apiRequest.patch(  
+    const response = await apiRequest.patch(
       `leave-mgt/leave-types/${leaveTypeId}/`,
       formData
     );
@@ -1250,7 +1250,7 @@ export const deleteLeaveType = async ({
 }): Promise<boolean> => {
   try {
     const response = await apiRequest.delete(`leave-mgt/leave-types/${leaveTypeId}/`);
-    
+
     // Check if deletion was successful (status 200, 201, 204, etc.)
     if (response.status >= 200 && response.status < 300) {
       return true;
@@ -1272,10 +1272,10 @@ export const createLeavePolicy = async ({
 }): Promise<ILeavePolicy | null> => {
   try {
     const formData = new FormData();
-    
+
     // Add institution to the form data
     formData.append('institution', institutionId.toString());
-    
+
     Object.entries(leavePolicyData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         formData.append(key, value.toString());
@@ -1341,7 +1341,7 @@ export const deleteLeavePolicy = async ({
 }): Promise<boolean> => {
   try {
     const response = await apiRequest.delete(`leave-mgt/leave-policies/${leavePolicyId}/`);
-    
+
     // 204 means successful deletion (soft delete)
     return response.status === 204;
   } catch (error) {
@@ -1359,10 +1359,10 @@ export const createLeaveApplication = async ({
 }): Promise<ILeaveRequest | null> => {
   try {
     const formData = new FormData();
-    
+
     // Change this line from 'Institution' to 'institution' (lowercase)
     formData.append('institution', institutionId.toString());
-    
+
     Object.entries(leaveApplicationData).forEach(([key, value]) => {
       if (key === "supporting_document" && value instanceof File) {
         formData.append(key, value);
@@ -1372,15 +1372,15 @@ export const createLeaveApplication = async ({
     });
 
     const response = await apiRequest.post(
-      `leave-mgt/${institutionId}/leave-applications/`, 
+      `leave-mgt/${institutionId}/leave-applications/`,
       formData
     );
     return response.data;
   } catch (error: any) {
     throw new Error(
-      error.response?.data?.detail || 
-      error.response?.data?.message || 
-      error.message || 
+      error.response?.data?.detail ||
+      error.response?.data?.message ||
+      error.message ||
       "Failed to create leave application"
     );
   }
@@ -1440,9 +1440,9 @@ export const updateLeaveApplication = async ({
     return response.data;
   } catch (error: any) {
     throw new Error(
-      error.response?.data?.detail || 
-      error.response?.data?.message || 
-      error.message || 
+      error.response?.data?.detail ||
+      error.response?.data?.message ||
+      error.message ||
       "Failed to update leave application"
     );
   }
@@ -1482,9 +1482,9 @@ export const approveRejectLeaveApplication = async ({
 }): Promise<ILeaveRequest | null> => {
   try {
     const formData = new FormData();
-    
+
     formData.append('action', action);
-    
+
     if (action === 'reject' && rejectionReason) {
       formData.append('rejection_reason', rejectionReason);
     }
@@ -1498,7 +1498,7 @@ export const approveRejectLeaveApplication = async ({
       `leave-mgt/leave-applications/${leaveApplicationId}/approval/`,
       formData
     );
-    
+
     return response.data as ILeaveRequest;
   } catch (error) {
     console.error("Failed to approve/reject leave application:", error);
@@ -1578,7 +1578,7 @@ export const getLeaveApplicationsWithFilters = async ({
 }): Promise<ILeaveRequest[]> => {
   try {
     let queryString = '';
-    
+
     if (filters) {
       const queryParams: string[] = [];
       Object.entries(filters).forEach(([key, value]) => {
@@ -1627,7 +1627,7 @@ export const bulkApproveRejectLeaveApplications = async ({
     );
 
     const results = await Promise.allSettled(promises);
-    return results.map(result => 
+    return results.map(result =>
       result.status === 'fulfilled' ? result.value : null
     );
   } catch (error) {
@@ -1646,7 +1646,7 @@ export const createAllowanceType = async ({
 }): Promise<IAllowanceType | null> => {
   try {
     const formData = new FormData();
-    
+
     Object.entries(allowanceTypeData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         formData.append(key, value.toString());
@@ -1659,7 +1659,7 @@ export const createAllowanceType = async ({
       `payroll/${institutionId}/allowance-types/`,
       formData
     );
-    
+
     return response.data as IAllowanceType;
   } catch (error) {
     console.error("Failed to create allowance type:", error);
@@ -1673,7 +1673,7 @@ export const getAllowanceTypes = async (
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/allowance-types/`);
     const data = response.data as PaginatedResponse<IAllowanceType>
-    
+
     // Return the results array instead of the entire response
     return data.results
   } catch (error) {
@@ -1745,7 +1745,7 @@ export const createDeductionType = async ({
 }): Promise<IDeductionType | null> => {
   try {
     const formData = new FormData();
-    
+
     Object.entries(deductionTypeData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         formData.append(key, value.toString());
@@ -1758,7 +1758,7 @@ export const createDeductionType = async ({
       `payroll/${institutionId}/deduction-types/`,
       formData
     );
-    
+
     return response.data as IDeductionType;
   } catch (error) {
     console.error("Failed to create deduction type:", error);
@@ -1773,7 +1773,7 @@ export const getDeductionTypes = async (
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/deduction-types/`);
     const data = response.data as PaginatedResponse<IDeductionType>
-    
+
     // Return the results array instead of the entire response
     return data.results
   } catch (error) {
@@ -1845,7 +1845,7 @@ export const createEmployeeAllowance = async ({
 }): Promise<IEmployeeAllowance | null> => {
   try {
     const formData = new FormData();
-    
+
     Object.entries(employeeAllowanceData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         formData.append(key, value.toString());
@@ -1856,7 +1856,7 @@ export const createEmployeeAllowance = async ({
       `payroll/${institutionId}/employee-allowances/`,
       formData
     );
-    
+
     return response.data as IEmployeeAllowance;
   } catch (error) {
     console.error("Failed to create employee allowance:", error);
@@ -2000,7 +2000,7 @@ export const createEmployeeDeduction = async ({
 }): Promise<IEmployeeDeduction | null> => {
   try {
     const formData = new FormData();
-    
+
     Object.entries(employeeDeductionData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         formData.append(key, value.toString());
@@ -2011,7 +2011,7 @@ export const createEmployeeDeduction = async ({
       `payroll/${institutionId}/employee-deductions/`,
       formData
     );
-    
+
     return response.data as IEmployeeDeduction;
   } catch (error) {
     console.error("Failed to create employee deduction:", error);
@@ -2200,7 +2200,7 @@ export const validateDeductionFormData = (
   if (!data.employee) {
     errors.push("Employee is required");
   }
-  
+
   if (!data.deduction_type) {
     errors.push("Deduction type is required");
   }
@@ -2243,10 +2243,10 @@ export const createPayrollPeriod = async ({
 }): Promise<IPayrollPeriod | null> => {
   try {
     const formData = new FormData();
-    
+
     // Add the institution field
     formData.append('institution', institutionId.toString());
-    
+
     Object.entries(payrollPeriodData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         formData.append(key, value.toString());
@@ -2257,7 +2257,7 @@ export const createPayrollPeriod = async ({
       `payroll/${institutionId}/payroll-periods/`,
       formData
     );
-    
+
     return response.data as IPayrollPeriod;
   } catch (error) {
     console.error("Failed to create payroll period:", error);
@@ -2271,7 +2271,7 @@ export const getPayrollPeriods = async (
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/payroll-periods/`);
     const data = response.data as PaginatedResponse<IPayrollPeriod>
-    
+
     // Return the results array instead of the entire response
     return data.results
   } catch (error) {
@@ -2342,13 +2342,13 @@ export const getCurrentPayrollPeriod = async (
     const response = await apiRequest.get(
       `payroll/${institutionId}/payroll-periods/?current_date=${today}`
     );
-    
+
     // Assuming the API returns the current period or we find it from the list
     const periods = response.data as IPayrollPeriod[];
-    const currentPeriod = periods.find(period => 
+    const currentPeriod = periods.find(period =>
       period.start_date <= today && period.end_date >= today
     );
-    
+
     return currentPeriod || null;
   } catch (error) {
     console.error("Failed to get current payroll period:", error);
@@ -2488,7 +2488,7 @@ export const validatePayrollPeriodFormData = (
     const startDate = new Date(data.start_date);
     const endDate = new Date(data.end_date);
     const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (daysDiff > 31) {
       errors.push("Warning: Payroll period is longer than 31 days");
     }
@@ -2504,16 +2504,16 @@ export const validatePayrollPeriodFormData = (
 export const generatePeriodName = (startDate: string, endDate: string): string => {
   const start = new Date(startDate);
   const end = new Date(endDate);
-  
+
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
   ];
-  
+
   const startMonth = monthNames[start.getMonth()];
   const endMonth = monthNames[end.getMonth()];
   const year = start.getFullYear();
-  
+
   if (start.getMonth() === end.getMonth()) {
     // Same month
     return `${startMonth} ${year}`;
@@ -2537,25 +2537,25 @@ export const checkPeriodOverlap = async ({
 }): Promise<{ hasOverlap: boolean; overlappingPeriods: IPayrollPeriod[] }> => {
   try {
     const allPeriods = await getPayrollPeriods(institutionId);
-    
+
     if (!allPeriods) {
       return { hasOverlap: false, overlappingPeriods: [] };
     }
-    
-    const filteredPeriods = excludeId 
+
+    const filteredPeriods = excludeId
       ? allPeriods.filter(period => period.id !== excludeId)
       : allPeriods;
-    
+
     const overlapping = filteredPeriods.filter(period => {
       const periodStart = new Date(period.start_date);
       const periodEnd = new Date(period.end_date);
       const newStart = new Date(startDate);
       const newEnd = new Date(endDate);
-      
+
       // Check if periods overlap
       return (newStart <= periodEnd && newEnd >= periodStart);
     });
-    
+
     return {
       hasOverlap: overlapping.length > 0,
       overlappingPeriods: overlapping
@@ -2577,7 +2577,7 @@ export const createPayslip = async ({
 }): Promise<IPayslip | null> => {
   try {
     const formData = new FormData();
-    
+
     Object.entries(payslipData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         formData.append(key, value.toString());
@@ -2588,7 +2588,7 @@ export const createPayslip = async ({
       `payroll/${institutionId}/payslips/`,
       formData
     );
-    
+
     return response.data as IPayslip;
   } catch (error) {
     console.error("Failed to create payslip:", error);
@@ -2613,13 +2613,13 @@ export const createBulkPayslips = async ({
 
     const response = await apiRequest.post(
       `payroll/${institutionId}/payslips/`,
-      requestData  
+      requestData
     );
-    
+
     return response.data as IPayslip[];
   } catch (error) {
     console.error("Failed to create bulk payslips:", error);
-    throw error; 
+    throw error;
   }
 };
 
@@ -2635,7 +2635,7 @@ export const getPayslips = async (
 ): Promise<IPayslip[] | null> => {
   try {
     const queryParams = new URLSearchParams();
-    
+
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
@@ -2643,12 +2643,12 @@ export const getPayslips = async (
         }
       });
     }
-    
+
     const url = `payroll/${institutionId}/payslips/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await apiRequest.get(url);
-  
+
     const data = response.data as PaginatedResponse<IPayslip>
-    
+
     // Return the results array instead of the entire response
     return data.results
   } catch (error) {
@@ -2678,7 +2678,7 @@ export const updatePayslip = async ({
 }): Promise<IPayslip | null> => {
   try {
     const formData = new FormData();
-    
+
     Object.entries(payslipData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         formData.append(key, value.toString());
@@ -2689,7 +2689,7 @@ export const updatePayslip = async ({
       `payroll/payslips/${id}/`,
       formData
     );
-    
+
     return response.data as IPayslip;
   } catch (error) {
     console.error("Failed to update payslip:", error);
@@ -2717,7 +2717,7 @@ export const markPayslipAsPaid = async (
   try {
     const formData = new FormData();
     formData.append('is_paid', 'true');
-    
+
     if (paidDate) {
       formData.append('paid_date', paidDate);
     } else {
@@ -2729,7 +2729,7 @@ export const markPayslipAsPaid = async (
       `payroll/payslips/${id}/`,
       formData
     );
-    
+
     return response.data as IPayslip;
   } catch (error) {
     console.error("Failed to mark payslip as paid:", error);
@@ -2770,7 +2770,7 @@ export const getPayslipItems = async (
   try {
     const response = await apiRequest.get(`payroll/payslips/${payslipId}/items/`);
     const data = response.data as PaginatedResponse<IPayslipItem>
-    
+
     // Return the results array instead of the entire response
     return data.results
   } catch (error) {

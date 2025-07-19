@@ -82,11 +82,11 @@ const getPositionId = (employee: EmployeeFromAPI) => {
 // Helper function to get application data from onboarding
 const getApplicationData = (onboarding: IOnBoarding) => {
   const applicationData = onboarding.application_details
-  
+
   if (!applicationData) {
     return {
       applicantName: "N/A",
-      applicantEmail: "N/A", 
+      applicantEmail: "N/A",
       jobDesc: "N/A",
       applicantPhone: "N/A",
       applicantAddress: "N/A",
@@ -94,15 +94,15 @@ const getApplicationData = (onboarding: IOnBoarding) => {
       department: "N/A"
     }
   }
-  
+
   const jobDetails = applicationData.job_position_advert_job_details
   const jobName = jobDetails?.name || "N/A"
   const jobDescription = jobDetails?.description || "N/A"
   const department = jobDetails?.department || "N/A"
-  
+
   return {
     applicantName: applicationData.applicant_name || "N/A",
-    applicantEmail: applicationData.applicant_email || "N/A", 
+    applicantEmail: applicationData.applicant_email || "N/A",
     jobDesc: jobName !== "N/A" ? jobName : jobDescription,
     applicantPhone: applicationData.applicant_phone || "N/A",
     applicantAddress: applicationData.address || "N/A",
@@ -116,7 +116,7 @@ const matchEmployeeWithRecruitment = (employee: EmployeeFromAPI, onboardings: IO
     const { applicantEmail } = getApplicationData(onboarding)
     return applicantEmail === employee.email && onboarding.status === 'accepted_offer'
   })
-  
+
   return matchingOnboarding || null
 }
 
@@ -125,9 +125,9 @@ export default function DepartmentDetailView() {
   const params = useParams()
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const selectedBranch = useSelector(selectSelectedBranch)
-  
+
   const departmentId = params?.id ? parseInt(params.id as string) : null
-  
+
   const [department, setDepartment] = useState<IDepartment | null>(null)
   const [allEmployees, setAllEmployees] = useState<EmployeeFromAPI[]>([])
   const [departmentEmployees, setDepartmentEmployees] = useState<EmployeeFromAPI[]>([])
@@ -137,7 +137,7 @@ export default function DepartmentDetailView() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState("")
   const [debugInfo, setDebugInfo] = useState<string>("")
-  
+
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("overview")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -150,12 +150,12 @@ export default function DepartmentDetailView() {
       router.push("/dashboard")
       return
     }
-    
+
     if (!departmentId) {
       setError("Department ID is required")
       return
     }
-    
+
     fetchDepartmentData()
   }, [selectedBranch, selectedInstitution, router, departmentId])
 
@@ -169,7 +169,7 @@ export default function DepartmentDetailView() {
       setDebugInfo("")
 
       const departments = await getDepartments({ institutionId: selectedInstitution.id })
-      
+
       const currentDepartment = departments?.find(d => d.id === departmentId)
       if (!currentDepartment) {
         setError(`Department with ID ${departmentId} not found`)
@@ -177,29 +177,29 @@ export default function DepartmentDetailView() {
       }
 
       setDepartment(currentDepartment)
-    
+
       const allEmployees = await getAllEmployees({ institutionId: selectedInstitution.id })
       const employees = allEmployees ?? []
       setAllEmployees(employees)
-      
+
       const filteredEmployees = employees.filter((emp: EmployeeFromAPI) => {
         const empDepartmentId = getDepartmentId(emp)
         const empDepartmentName = getDepartmentName(emp)
         return empDepartmentId === currentDepartment.id
       })
-    
+
       setDepartmentEmployees(filteredEmployees)
-      
+
       // Fetch all onboarding records
       const allOnboardings = await getOnBoardings({ institutionId: selectedInstitution.id })
       setAllOnboardings(allOnboardings || [])
-      
+
       // Filter onboardings that resulted in accepted offers (recruitment history)
       const acceptedOnboardings = allOnboardings?.filter(onboarding => {
         return onboarding.status === 'accepted_offer'
       }) || []
       setRecruitmentHistory(acceptedOnboardings)
-      
+
     } catch (err) {
       setError("Failed to fetch department data")
       toast.error("Failed to load department data")
@@ -218,36 +218,36 @@ export default function DepartmentDetailView() {
     return departmentEmployees.filter((employee) => {
       const fullName = getFullName(employee)
       const position = getPositionName(employee)
-      
+
       const matchesSearch =
         fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         position.toLowerCase().includes(searchTerm.toLowerCase())
-      
-      const matchesStatus = statusFilter === "all" || 
+
+      const matchesStatus = statusFilter === "all" ||
         (statusFilter === "active" && employee.is_active) ||
         (statusFilter === "inactive" && !employee.is_active)
-      
+
       return matchesSearch && matchesStatus
     })
   }, [departmentEmployees, searchTerm, statusFilter])
   const filteredRecruitmentHistory = useMemo(() => {
     return recruitmentHistory.filter((onboarding) => {
       const { applicantName, applicantEmail, jobDesc, department: jobDepartment } = getApplicationData(onboarding)
-      
+
       const belongsToCurrentDepartment = jobDepartment.toLowerCase().includes(department?.name.toLowerCase() || '') ||
                                         department?.name.toLowerCase().includes(jobDepartment.toLowerCase()) ||
                                         jobDepartment === department?.name
-      
+
 
       const matchesCurrentEmployee = departmentEmployees.some(emp => emp.email === applicantEmail)
-      
+
       const matchesSearch =
         applicantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         applicantEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
         jobDesc.toLowerCase().includes(searchTerm.toLowerCase()) ||
         jobDepartment.toLowerCase().includes(searchTerm.toLowerCase())
-      
+
       return (belongsToCurrentDepartment || matchesCurrentEmployee) && matchesSearch
     })
   }, [recruitmentHistory, department, departmentEmployees, searchTerm])
@@ -349,16 +349,16 @@ export default function DepartmentDetailView() {
   return (
     <div className="w-full h-full p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <Button
+      <Button
             variant="ghost"
             onClick={() => router.push("/admin/departments")}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Departments
-          </Button>
+      </Button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-4">
           <div className="h-6 w-px bg-border" />
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -562,8 +562,8 @@ export default function DepartmentDetailView() {
                 <div className="p-12 text-center">
                   <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No employees found</h3>
-                  
-                 
+
+
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -583,7 +583,7 @@ export default function DepartmentDetailView() {
                     <TableBody>
                       {paginatedEmployees.map((employee) => {
                         const recruitmentRecord = matchEmployeeWithRecruitment(employee, recruitmentHistory)
-                        
+
                         return (
                           <TableRow key={employee.id}>
                             <TableCell>
@@ -828,7 +828,7 @@ export default function DepartmentDetailView() {
                   </Table>
                 </div>
               )}
-              
+
               {/* Pagination for Recruitment History */}
               {filteredRecruitmentHistory.length > itemsPerPage && (
                 <div className="flex items-center justify-between px-6 py-4">

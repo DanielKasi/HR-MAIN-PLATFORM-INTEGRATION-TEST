@@ -52,17 +52,50 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
   selectedDate,
   setSelectedDate,
 }) => {
+  // Helper function to safely process attendance records
+  const processAttendanceData = (rawData: any): any[] => {
+    console.log("🔍 Processing raw attendance data:", rawData);
+
+    let records: any[] = [];
+
+    // Handle different response formats
+    if (rawData && typeof rawData === 'object' && 'results' in rawData && Array.isArray(rawData.results)) {
+      records = rawData.results;
+      console.log("✅ Using paginated response format (results property)");
+    }
+    else if (Array.isArray(rawData)) {
+      records = rawData;
+      console.log("✅ Using direct array format");
+    }
+    else if (!rawData) {
+      records = [];
+      console.log("⚠️ No attendance data found, using empty array");
+    }
+    else {
+      console.error("❌ Unexpected attendance data structure:", typeof rawData, rawData);
+      records = [];
+    }
+
+    console.log("📋 Processed attendance records:", records);
+    return records;
+  };
+
   // Fetch attendance from backend on mount and when employees or selectedDate change
   React.useEffect(() => {
     async function fetchAttendance() {
       try {
         console.log("⏳ Fetching attendance for date:", selectedDate);
-        const records = await import("@/lib/utils.attendance").then((mod) =>
+        const rawData = await import("@/lib/utils.attendance").then((mod) =>
           mod.fetchAttendanceRecords(selectedDate),
         );
-        console.log("✅ Attendance fetch response:", records);
+        console.log("📥 Raw attendance fetch response:", rawData);
+
+        // Safely process the attendance data
+        const records = processAttendanceData(rawData);
 
         const attendanceMap = new Map<number, {checkIn: string | null; checkOut: string | null}>();
+
+        // Now safely iterate over the records array
         records.forEach((rec: any) => {
           console.log("🔁 Mapping record:", rec);
           attendanceMap.set(rec.employee.id, {
@@ -106,10 +139,12 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
       );
       console.log("✅ Check-in API call succeeded");
 
-      const raw = await import("@/lib/utils.attendance").then((mod) =>
+      const rawData = await import("@/lib/utils.attendance").then((mod) =>
         mod.fetchAttendanceRecords(selectedDate),
       );
-      const records = raw.results || [];
+
+      // Safely process the refreshed attendance data
+      const records = processAttendanceData(rawData);
       console.log("📥 Attendance refreshed after check-in:", records);
 
       const attendanceMap = new Map<number, {checkIn: string | null; checkOut: string | null}>();
@@ -152,11 +187,12 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
       );
       console.log("✅ Check-out API call succeeded");
 
-      const raw = await import("@/lib/utils.attendance").then((mod) =>
+      const rawData = await import("@/lib/utils.attendance").then((mod) =>
         mod.fetchAttendanceRecords(selectedDate),
       );
-      const records = raw.results || [];
 
+      // Safely process the refreshed attendance data
+      const records = processAttendanceData(rawData);
       console.log("📥 Attendance refreshed after check-out:", records);
 
       const attendanceMap = new Map<number, {checkIn: string | null; checkOut: string | null}>();

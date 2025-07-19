@@ -29,6 +29,9 @@ export default function EditInterviewPage() {
     status: "scheduled",
     feedback: "",
     rating: undefined,
+    location: "",
+    interview_time: "",
+    interview_type: "in_person"
   })
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([])
   const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([])
@@ -84,8 +87,10 @@ export default function EditInterviewPage() {
       ])
 
       if (fetchedApplications) {
-        setJobApplications(fetchedApplications)
-        const currentApplication = fetchedApplications.find(
+
+
+        setJobApplications(fetchedApplications.results || [])
+        const currentApplication = (fetchedApplications.results || []).find(
           (app) => app.id === fetchedInterview.job_position_application,
         )
         setSelectedApplication(currentApplication || null)
@@ -105,6 +110,9 @@ export default function EditInterviewPage() {
         status: fetchedInterview.status,
         feedback: fetchedInterview.feedback || "",
         rating: fetchedInterview.rating || undefined,
+        location: fetchedInterview.location || "",
+        interview_time: fetchedInterview.interview_time || "",
+        interview_type: fetchedInterview.interview_type || "in_person"
       })
     } catch (error) {
       console.error("Error fetching initial data:", error)
@@ -200,6 +208,9 @@ export default function EditInterviewPage() {
         status: formData.status,
         feedback: formData.feedback || undefined,
         rating: formData.rating || undefined,
+        location: formData.location,
+        interview_time: formData.interview_time,
+        interview_type: formData.interview_type
       }
 
       const updatedInterview = await updateInterview({
@@ -303,12 +314,13 @@ export default function EditInterviewPage() {
                       <p>
                         <span className="font-medium">ID:</span> #{interview.id}
                       </p>
-                      <p>
+                      {/* Change <p> to <div> when containing Badge */}
+                      <div>
                         <span className="font-medium">Current Status:</span>
                         <Badge variant="outline" className="ml-1 capitalize">
                           {interview.status}
                         </Badge>
-                      </p>
+                      </div>
                     </div>
                     <div>
                       <p>
@@ -398,183 +410,12 @@ export default function EditInterviewPage() {
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4" />
                             {application.applicant_name} -{" "}
-                            {application.job_position_advert_job_details?.name}
                           </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {errors.job_position_application && (
-                    <p className="text-sm text-destructive">{errors.job_position_application}</p>
-                  )}
                 </div>
-
-                {/* Interview Stage */}
-                <div className="space-y-2">
-                  <Label htmlFor="interview_stage" className="text-sm font-medium">
-                    Interview Stage *
-                  </Label>
-                  <Select
-                    value={formData.interview_stage.toString()}
-                    onValueChange={(value) => updateFormData("interview_stage", Number(value))}
-                  >
-                    <SelectTrigger className={errors.interview_stage ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select interview stage" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {interviewStages.map((stage) => (
-                        <SelectItem key={stage.id} value={stage.id.toString()}>
-                          <div className="flex items-center gap-2">
-                            <Building className="h-4 w-4" />
-                            {stage.name} (Level {stage.level})
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.interview_stage && <p className="text-sm text-destructive">{errors.interview_stage}</p>}
-                </div>
-
-                {/* Interview Date */}
-                <div className="space-y-2">
-                  <Label htmlFor="interview_date" className="text-sm font-medium">
-                    Interview Date & Time *
-                  </Label>
-                  <Input
-                    id="interview_date"
-                    type="datetime-local"
-                    value={formData.interview_date}
-                    onChange={(e) => updateFormData("interview_date", e.target.value)}
-                    className={errors.interview_date ? "border-destructive" : ""}
-                  />
-                  {errors.interview_date && <p className="text-sm text-destructive">{errors.interview_date}</p>}
-                  <p className="text-xs text-muted-foreground">
-                    {formData.status === "scheduled"
-                      ? "Must be a future date for scheduled interviews"
-                      : "Date and time of the interview"}
-                  </p>
-                </div>
-
-                {/* Status */}
-                <div className="space-y-2">
-                  <Label htmlFor="status" className="text-sm font-medium">
-                    Status *
-                  </Label>
-                  <Select value={formData.status} onValueChange={(value) => updateFormData("status", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="scheduled">Scheduled</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                      <SelectItem value="rescheduled">Rescheduled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Rating */}
-                <div className="space-y-2">
-                  <Label htmlFor="rating" className="text-sm font-medium">
-                    Rating (Optional)
-                  </Label>
-                  <Input
-                    id="rating"
-                    type="number"
-                    min="1"
-                    max="10"
-                    step="1"
-                    placeholder="1-10"
-                    value={formData.rating || ""}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      const numValue = value === "" ? undefined : Number(value)
-                      updateFormData("rating", numValue)
-                    }}
-                    className={errors.rating ? "border-destructive" : ""}
-                  />
-                  {errors.rating && <p className="text-sm text-destructive">{errors.rating}</p>}
-                  <p className="text-xs text-muted-foreground">Rate from 1 to 10 (leave empty to remove rating)</p>
-                </div>
-              </div>
-
-              {/* Feedback - Full Width */}
-              <div className="space-y-2">
-                <Label htmlFor="feedback" className="text-sm font-medium">
-                  Feedback (Optional)
-                </Label>
-                <Textarea
-                  id="feedback"
-                  placeholder="Add any feedback or notes about this interview..."
-                  value={formData.feedback || ""}
-                  onChange={(e) => updateFormData("feedback", e.target.value)}
-                  rows={4}
-                  maxLength={1000}
-                  className={errors.feedback ? "border-destructive" : ""}
-                />
-                {errors.feedback && <p className="text-sm text-destructive">{errors.feedback}</p>}
-                <p className="text-xs text-muted-foreground">{formData.feedback?.length || 0}/1000 characters</p>
-              </div>
-
-              {/* Interview Info Display */}
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <h4 className="font-medium text-sm mb-3">Interview Information:</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium text-foreground">Interview ID:</span> #{interview?.id}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Organization:</span>{" "}
-                      {selectedInstitution.institution_name}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Branch:</span> {selectedBranch.branch_name}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium text-foreground">Available Applications:</span>{" "}
-                      {jobApplications.length}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Available Stages:</span> {interviewStages.length}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Current Status:</span> {interview?.status}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Form Actions */}
-              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleBack}
-                  disabled={isSubmitting}
-                  className="w-full sm:w-auto"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex items-center justify-center gap-2 w-full sm:w-auto"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Updating...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="h-4 w-4" />
-                      Update Interview
-                    </>
-                  )}
-                </Button>
               </div>
             </form>
           </CardContent>
@@ -582,4 +423,4 @@ export default function EditInterviewPage() {
       </div>
     </div>
   )
-}
+  }

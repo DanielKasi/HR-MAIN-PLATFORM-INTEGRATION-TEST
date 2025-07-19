@@ -227,7 +227,7 @@ const InterviewStagesContent = ({
   const router = useRouter()
   const [isCreateStageDialogOpen, setIsCreateStageDialogOpen] = useState(false)
   const [isCreatingStage, setIsCreatingStage] = useState(false)
-  const [employees, setEmployees] = useState<IEmployee[]>([])
+  const [employees, setEmployees] = useState<IEmployee[]>([]) 
   const [interviews, setInterviews] = useState<IInterview[]>([]) // Add this state
   const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
     name: "",
@@ -292,12 +292,24 @@ const InterviewStagesContent = ({
     if (!selectedInstitution) return
 
     try {
-      const fetchedEmployees = await fetchEmployees({ institutionId: selectedInstitution.id })
-      if (fetchedEmployees) {
-        setEmployees(fetchedEmployees)
+      const fetchedEmployeesResponse = await fetchEmployees({ institutionId: selectedInstitution.id })
+      console.log("Fetched employees response:", fetchedEmployeesResponse)
+
+      // Handle paginated employees response (same logic as first component)
+      let employeesArray: IEmployee[] = []
+      if (fetchedEmployeesResponse && 'results' in fetchedEmployeesResponse && Array.isArray(fetchedEmployeesResponse.results)) {
+        employeesArray = fetchedEmployeesResponse.results
+      } else if (Array.isArray(fetchedEmployeesResponse)) {
+        employeesArray = fetchedEmployeesResponse
+      } else {
+        employeesArray = []
       }
+
+      console.log("Final employees array:", employeesArray)
+      setEmployees(employeesArray)
     } catch (error) {
       console.warn("Error fetching employees:", error)
+      setEmployees([]) // Ensure it's always an array
       toast.error("Failed to load employees")
     }
   }

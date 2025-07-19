@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Plus } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { createDisciplinaryAction, createDisciplineType, getDisciplineTypes, getAllEmployees } from "@/lib/utils" 
+import { createDisciplinaryAction, createDisciplineType, getDisciplineTypes, getAllEmployees } from "@/lib/utils"
 import { toast } from "sonner"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
@@ -36,7 +36,7 @@ export default function DisciplinaryForm() {
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDisciplineTypeModalOpen, setIsDisciplineTypeModalOpen] = useState(false)
   const [isAddingDisciplineType, setIsAddingDisciplineType] = useState(false)
@@ -67,7 +67,7 @@ export default function DisciplinaryForm() {
     notes: "",
   })
 
- 
+
   const [disciplineTypes, setDisciplineTypes] = useState<Array<{
     id: string;
     name: string;
@@ -93,16 +93,16 @@ export default function DisciplinaryForm() {
   useEffect(() => {
     const fetchEmployees = async () => {
       if (!institutionId) return
-      
+
       setIsLoadingEmployees(true)
       try {
         const fetchedEmployees = await getAllEmployees({ institutionId })
-        
+
         if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
           const formattedEmployees: typeof employees = fetchedEmployees.map((emp: any) => ({
             id: emp.id.toString(),
             name: emp.user?.fullname || emp.email || 'Unknown Employee',
-            department: emp.department || '', 
+            department: emp.department || '',
             email: emp.email || ''
           }))
           setEmployees(formattedEmployees)
@@ -123,11 +123,11 @@ export default function DisciplinaryForm() {
   useEffect(() => {
     const fetchDisciplineTypes = async () => {
       if (!institutionId) return
-      
+
       setIsLoadingDisciplineTypes(true)
       try {
         const fetchedDisciplineTypes = await getDisciplineTypes({ institutionId })
-        
+
         if (fetchedDisciplineTypes) {
           const formattedTypes = fetchedDisciplineTypes.map(type => ({
             id: type.id.toString(),
@@ -226,16 +226,16 @@ export default function DisciplinaryForm() {
       })
       if (result) {
         toast.success("Discipline type created successfully!")
-     
+
         const newDisciplineType = {
-          id: result.id?.toString() || Date.now().toString(), 
+          id: result.id?.toString() || Date.now().toString(),
           name: result.name || disciplineType.name,
           severity: (result.severity || disciplineType.severity) as "low" | "medium" | "high" | "critical"
         }
-        
+
         setDisciplineTypes(prev => [...prev, newDisciplineType])
         setDisciplinaryAction(prev => ({ ...prev, discipline_type: newDisciplineType.id }))
-        
+
         setDisciplineType({
           name: "",
           description: "",
@@ -247,10 +247,10 @@ export default function DisciplinaryForm() {
         toast.error("Failed to create discipline type. Please try again.")
       }
     } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
+      const errorMessage = error instanceof Error
+        ? error.message
         : "Failed to create discipline type. Please try again."
-      
+
       toast.error(errorMessage)
     } finally {
       setIsAddingDisciplineType(false)
@@ -259,7 +259,7 @@ export default function DisciplinaryForm() {
 
   const handleDisciplinaryActionSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateForm()) {
       return
     }
@@ -273,16 +273,16 @@ export default function DisciplinaryForm() {
 
       if (result) {
         toast.success("Disciplinary action created successfully!")
-        
+
         router.push("/employees/discipline")
       } else {
         toast.error("Failed to create disciplinary action. Please try again.")
       }
     } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
+      const errorMessage = error instanceof Error
+        ? error.message
         : "Failed to create disciplinary action. Please try again."
-      
+
       toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
@@ -327,7 +327,7 @@ export default function DisciplinaryForm() {
                         showEmployeeId={false}
                         showDepartment={false}
                       />
-                    </div>   
+                    </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="discipline_type">Discipline Type *</Label>
@@ -627,7 +627,7 @@ export default function DisciplinaryForm() {
                       Follow-up Required
                     </Label>
                   </div>
-                 
+
                   <div className="space-y-2">
                     <Label htmlFor="notes">Additional Notes</Label>
                     <Textarea
@@ -642,8 +642,8 @@ export default function DisciplinaryForm() {
                   </div>
 
                   <div className="flex gap-4 pt-6">
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       className="flex-1 bg-orange-600 hover:bg-orange-700 h-12"
                       disabled={isSubmitting}
                     >
@@ -656,9 +656,9 @@ export default function DisciplinaryForm() {
                         "Create Disciplinary Action"
                       )}
                     </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       className="flex-1 h-12"
                       onClick={handleDisciplinaryActionCancel}
                       disabled={isSubmitting}
