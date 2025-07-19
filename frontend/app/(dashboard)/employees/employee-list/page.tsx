@@ -28,58 +28,10 @@ import {
   selectSelectedInstitution,
 } from "@/store/auth/selectors";
 import { IUserInstitution } from "@/app/types"
-import { EmployeeFormData } from "@/app/types/types.utils"
+import { EmployeeFormData, EmployeeFromAPI} from "@/app/types/types.utils"
 import Link from "next/link"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-
-
-interface EmployeeFromAPI {
-  id: number
-  user: {
-    id: number
-    email: string
-    fullname: string
-    is_active: boolean
-    is_email_verified: boolean
-    is_password_verified: boolean
-    is_staff: boolean
-    roles: string
-    branches: string
-    permissions: string
-  } | null
-  email: string
-  phone_number: string
-  position: {
-    id: number
-    name: string
-    department_id?: number
-  }
-  department: {
-    id: number
-    name: string
-    institution_id: number
-  }
-  roles: Array<{
-    id: number
-    name: string
-  }>
-  date_of_birth: string
-  date_of_joining: string
-  address: string
-  is_active: boolean
-  experience: number
-  qualifications: string
-  skills: string
-  emergency_contact_name: string
-  emergency_contact_phone: string
-  emergency_contact_relationship: string
-  marital_status: string
-  children_count: number
-  employee_profile_picture: string
-  created_at: string
-  updated_at: string
-}
 
 // Union type to handle both data structures
 type EmployeeData = EmployeeFromAPI | EmployeeFormData
@@ -138,6 +90,11 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, departmentFilter, statusFilter])
+
   // Get unique departments for filter
   const uniqueDepartments = useMemo(() => {
     const departments = employees.map((employee) => getDepartmentName(employee))
@@ -195,6 +152,13 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
     return colors[department] || "bg-gray-100 text-gray-800"
   }
 
+  const clearFilters = () => {
+    setSearchTerm("")
+    setDepartmentFilter("all")
+    setStatusFilter("all")
+    setCurrentPage(1)
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -244,137 +208,197 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
               <SelectItem value="inactive">Inactive</SelectItem>
             </SelectContent>
           </Select>
+
+          {(searchTerm || departmentFilter !== "all" || statusFilter !== "all") && (
+            <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
+              Clear Filters
+            </Button>
+          )}
         </div>
       </CardHeader>
 
-    {paginatedEmployees.length === 0 ? (
-  <div className="p-12 text-center">
-    <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-    <h3 className="text-lg font-semibold mb-2">No employees found</h3>
-    <p className="text-muted-foreground mb-4">
-      No employees match your current filters.
-    </p>
-  </div>
-) : (
-  <Table>
-    <TableHeader>
-      <TableRow>
-        <TableHead>Name</TableHead>
-        <TableHead>Department</TableHead>
-        <TableHead>Email</TableHead>
-        <TableHead>Job Position</TableHead>
-        <TableHead>Status</TableHead>
-        <TableHead className="w-[150px]">Actions</TableHead>
-      </TableRow>
-    </TableHeader>
-    <TableBody>
-      {paginatedEmployees.map((employee) => (
-        <TableRow 
-          key={employee.id || Math.random()} 
-          className="cursor-pointer hover:bg-muted/50"
-          onClick={() => window.location.href = `/employees/profile/${employee.id || 'unknown'}`}
-        >
-          <TableCell>
-            <div className="font-medium">
-              {getFullName(employee)}
+      <CardContent>
+        {/* Results Summary */}
+        {filteredEmployees.length > 0 && (
+          <div className="flex justify-between items-center text-sm text-muted-foreground mb-4">
+            <div>
+              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredEmployees.length)} of {filteredEmployees.length} employees
+              {(searchTerm || departmentFilter !== "all" || statusFilter !== "all") && ` (filtered from ${employees.length} total)`}
             </div>
-          </TableCell>
-          <TableCell>
-            <Badge variant="outline" className={getDepartmentColor(getDepartmentName(employee))}>
-              {getDepartmentName(employee)}
-            </Badge>
-          </TableCell>
-          <TableCell className="text-sm">{employee.email}</TableCell>
-          <TableCell>{getPositionName(employee)}</TableCell>
-          <TableCell>{getStatusBadge(employee.is_active)}</TableCell>
-          <TableCell>
-            <div className="flex items-center gap-1">
-              <Link href={`/employees/profile/${employee.id || 'unknown'}`}>
-                <Button variant="ghost" size="sm" title="View Details" onClick={(e) => e.stopPropagation()}>
-                  <Eye className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link 
-                href={`/employees/update-employee/${employee.id || 'unknown'}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  localStorage.setItem(`employee_${employee.id || 'unknown'}`, JSON.stringify(employee));
-                }}
-              >
-                <Button variant="ghost" size="sm" title="Update Employee">
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </Link>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    title="Delete Employee"
-                    className="text-red-600 hover:text-red-700"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Employee</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete {getFullName(employee)}? This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => employee.id && onDelete(employee.id)}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </TableCell>
-        </TableRow>
-      ))}
-    </TableBody>
-  </Table>
-)}
+          </div>
+        )}
 
-{/* Move pagination outside, after the table */}
-{totalPages > 1 && (
-  <div className="flex items-center justify-between mt-4 px-6 pb-6">
-    <p className="text-sm text-muted-foreground">
-      Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredEmployees.length)} of{" "}
-      {filteredEmployees.length} employees
-    </p>
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-        disabled={currentPage === 1}
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Previous
-      </Button>
-      <span className="text-sm">
-        Page {currentPage} of {totalPages}
-      </span>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-        disabled={currentPage === totalPages}
-      >
-        Next
-        <ChevronRight className="h-4 w-4" />
-      </Button>
-    </div>
-  </div>
-)} 
+        {paginatedEmployees.length === 0 ? (
+          <div className="p-12 text-center">
+            <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No employees found</h3>
+            <p className="text-muted-foreground mb-4">
+              {searchTerm || departmentFilter !== "all" || statusFilter !== "all"
+                ? "No employees match your current filters."
+                : "No employees have been added yet."}
+            </p>
+            {(searchTerm || departmentFilter !== "all" || statusFilter !== "all") ? (
+              <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
+                Clear Filters
+              </Button>
+            ) : (
+              <Link href="/employees/add-employee">
+                <Button className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700">
+                  <Plus className="h-4 w-4" />
+                  Add First Employee
+                </Button>
+              </Link>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Job Position</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[150px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedEmployees.map((employee) => (
+                    <TableRow
+                      key={employee.id || Math.random()}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => window.location.href = `/employees/profile/${employee.id || 'unknown'}`}
+                    >
+                      <TableCell>
+                        <div className="font-medium">
+                          {getFullName(employee)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getDepartmentColor(getDepartmentName(employee))}>
+                          {getDepartmentName(employee)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{employee.email}</TableCell>
+                      <TableCell>{getPositionName(employee)}</TableCell>
+                      <TableCell>{getStatusBadge(employee.is_active)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Link href={`/employees/profile/${employee.id || 'unknown'}`}>
+                            <Button variant="ghost" size="sm" title="View Details" onClick={(e) => e.stopPropagation()}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Link
+                            href={`/employees/update-employee/${employee.id || 'unknown'}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              localStorage.setItem(`employee_${employee.id || 'unknown'}`, JSON.stringify(employee));
+                            }}
+                          >
+                            <Button variant="ghost" size="sm" title="Update Employee">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Delete Employee"
+                                className="text-red-600 hover:text-red-700"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Employee</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete {getFullName(employee)}? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => employee.id && onDelete(employee.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Enhanced Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredEmployees.length)} of {filteredEmployees.length} employees
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNumber;
+                      if (totalPages <= 5) {
+                        pageNumber = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNumber = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNumber = totalPages - 4 + i;
+                      } else {
+                        pageNumber = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <Button
+                          key={pageNumber}
+                          variant={currentPage === pageNumber ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNumber)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {pageNumber}
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
     </Card>
   )
 }
@@ -414,14 +438,18 @@ export default function Component() {
         setLoading(true);
         const institutionIdNumber = parseInt(InstitutionId);
         const result = await getAllEmployees({ institutionId: institutionIdNumber });
+
         if (result && Array.isArray(result)) {
           setEmployees(result);
-          setError(null); // Clear any previous errors
+          setError(null);
         } else {
           setError("No employee data available");
+          setEmployees([]);
         }
       } catch (err) {
+        console.error("Error loading employees:", err);
         setError("Failed to load employees");
+        setEmployees([]);
       } finally {
         setLoading(false);
       }

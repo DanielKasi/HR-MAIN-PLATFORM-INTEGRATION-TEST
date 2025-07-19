@@ -42,21 +42,58 @@ const AttendancePage = () => {
         setLoading(true);
         const institutionIdNumber = parseInt(InstitutionId);
         const data = await getAllEmployees({ institutionId: institutionIdNumber });
+
+        console.log("Raw employee data:", data);
+
         if (data) {
-          const employeesArray = (data as any[]).map(emp => ({
+          // Handle different response formats
+          let employeesData: any[] = [];
+
+          // Check if it's a paginated response with 'results' property
+          if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
+            employeesData = data.results;
+            console.log("Using paginated response format");
+          }
+          // Check if it's a direct array
+          else if (Array.isArray(data)) {
+            employeesData = data;
+            console.log("Using direct array format");
+          }
+          // If it's neither, log the structure and set empty array
+          else {
+            console.error("Unexpected data structure:", typeof data, data);
+            setError("Unexpected employee data format");
+            setEmployees([]);
+            setAttendance([]);
+            return;
+          }
+
+          const employeesArray = employeesData.map(emp => ({
             id: emp.id,
-            name: emp.user?.fullname || "",
-            department: emp.department?.name || "",
+            name: emp.user?.fullname || emp.email || `Employee ${emp.id}`,
+            department: emp.department?.name || "Unknown Department",
             email: emp.email || ""
           }));
+
+          console.log("Processed employees:", employeesArray);
+
           setEmployees(employeesArray);
-          setAttendance(employeesArray.map(emp => ({ employeeId: emp.id, checkIn: null, checkOut: null })));
+          setAttendance(employeesArray.map(emp => ({
+            employeeId: emp.id,
+            checkIn: null,
+            checkOut: null
+          })));
           setError(null);
         } else {
           setError("No employee data available");
+          setEmployees([]);
+          setAttendance([]);
         }
       } catch (err) {
+        console.error("Error loading employees:", err);
         setError("Failed to load employees");
+        setEmployees([]);
+        setAttendance([]);
       } finally {
         setLoading(false);
       }
@@ -66,7 +103,11 @@ const AttendancePage = () => {
 
   // Filter employees by search
   const filteredEmployees = useMemo(() =>
-    employees.filter(e => e.name.toLowerCase().includes(search.toLowerCase())),
+    employees.filter(e =>
+      e.name.toLowerCase().includes(search.toLowerCase()) ||
+      e.email.toLowerCase().includes(search.toLowerCase()) ||
+      e.department.toLowerCase().includes(search.toLowerCase())
+    ),
     [employees, search]
   );
 
@@ -99,7 +140,13 @@ const AttendancePage = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600">{error}</p>
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );

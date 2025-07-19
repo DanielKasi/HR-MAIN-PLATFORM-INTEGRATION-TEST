@@ -39,15 +39,15 @@ import {
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
-import { 
-  createLeaveApplication, 
-  getLeaveApplications, 
-  updateLeaveApplication, 
+import {
+  createLeaveApplication,
+  getLeaveApplications,
+  updateLeaveApplication,
   deleteLeaveApplication,
   approveRejectLeaveApplication,
   getLeaveTypes,
   getAllEmployees,
-  getLeavePolicies, 
+  getLeavePolicies,
 } from "@/lib/utils"
 import { ILeaveRequest, ILeaveRequestFormData, ILeaveType, ILeavePolicy, Employee, LeaveBalance } from "@/app/types/types.utils"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
@@ -133,21 +133,21 @@ const LeaveApplicationComponent = () => {
 
   const renderSupportingDocumentName = (document: string | File | undefined): string => {
     if (!document) return 'Document';
-    
+
     if (typeof document === 'string') {
       const filename = document.split('/').pop() || document;
       return filename.split('?')[0];
     } else if (document instanceof File) {
       return document.name || 'Document';
     }
-    
+
     return 'Document';
   };
 
 
   const refreshApplications = async () => {
     if (!selectedInstitution?.id) return
-    
+
     try {
       const applicationsData = await getLeaveApplications({ institutionId: selectedInstitution?.id })
       setApplications(
@@ -183,7 +183,7 @@ const LeaveApplicationComponent = () => {
 
   const getSelectedLeavePolicy = () => {
     if (!formData.leave_type) return null
-    return leavePolicies.find(policy => 
+    return leavePolicies.find(policy =>
       policy.leave_type.toString() === formData.leave_type
     )
   }
@@ -191,12 +191,12 @@ const LeaveApplicationComponent = () => {
 
   const getSelectedLeaveBalance = () => {
     if (!formData.employee || !formData.leave_type) return null
-    return leaveBalances.find(balance => 
+    return leaveBalances.find(balance =>
       balance.leave_type_id.toString() === formData.leave_type
     )
   }
 
- 
+
   const validateLeaveApplication = () => {
     const validations = []
     const selectedLeaveType = getSelectedLeaveType()
@@ -208,7 +208,7 @@ const LeaveApplicationComponent = () => {
       const startDate = new Date(formData.start_date)
       const endDate = new Date(formData.end_date)
       const today = new Date()
-      
+
       if (endDate < startDate) {
         validations.push({
           type: 'error',
@@ -261,7 +261,7 @@ const LeaveApplicationComponent = () => {
 
     return {
       approvals,
-      message: approvals.length > 0 
+      message: approvals.length > 0
         ? `This application requires approval from: ${approvals.join(' and ')}`
         : 'No approvals required for this leave type'
     }
@@ -273,12 +273,12 @@ const LeaveApplicationComponent = () => {
         setIsLoadingEmployees(false)
         return
       }
-      
+
       setIsLoadingEmployees(true)
-      
+
       try {
         const fetchedEmployees = await getAllEmployees({ institutionId:selectedInstitution?.id })
-        
+
         if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
           const formattedEmployees: Employee[] = fetchedEmployees.map((emp: any) => {
             return {
@@ -289,9 +289,9 @@ const LeaveApplicationComponent = () => {
               user: emp.user || null
             }
           }).filter(emp => emp.id)
-          
+
           setEmployees(formattedEmployees)
-          
+
           if (formattedEmployees.length === 0) {
             toast.error("No employees found for this institution")
           }
@@ -314,21 +314,21 @@ useEffect(() => {
     if (!selectedInstitution?.id) {
       return
     }
-    
+
     setIsLoading(true)
-    
+
     try {
       const [leaveTypesData, applicationsData, policiesData] = await Promise.all([
         getLeaveTypes({ institutionId: selectedInstitution.id }),
-        getLeaveApplications({ institutionId: selectedInstitution.id }), 
+        getLeaveApplications({ institutionId: selectedInstitution.id }),
         getLeavePolicies({ institutionId: selectedInstitution.id }),
       ])
-      
+
       const activeLeaveTypes = leaveTypesData?.filter(type => type.is_active !== false) || []
       setLeaveTypes(activeLeaveTypes)
       setApplications(Array.isArray(applicationsData) ? applicationsData : [])
       setLeavePolicies(policiesData || [])
-      
+
     } catch (error) {
       toast.error("Failed to load data")
       setLeaveTypes([])
@@ -338,7 +338,7 @@ useEffect(() => {
       setIsLoading(false)
     }
   }
-  
+
   fetchData()
 }, [selectedInstitution?.id])
 
@@ -355,7 +355,7 @@ useEffect(() => {
 
     const validations = validateLeaveApplication()
     const errors = validations.filter(v => v.type === 'error')
-    
+
     if (errors.length > 0) {
       toast.error(errors[0].message)
       return
@@ -373,7 +373,7 @@ useEffect(() => {
         leave_type: parseInt(formData.leave_type),
         start_date: formData.start_date,
         end_date: formData.end_date,
-        duration_type: formData.duration_type, 
+        duration_type: formData.duration_type,
         reason: formData.reason,
         handover_notes: formData.handover_notes,
         status: 'pending',
@@ -416,7 +416,7 @@ useEffect(() => {
 
     const validations = validateLeaveApplication()
     const errors = validations.filter(v => v.type === 'error')
-    
+
     if (errors.length > 0) {
       toast.error(errors[0].message)
       return
@@ -467,8 +467,8 @@ useEffect(() => {
     setIsSubmitting(true)
     try {
       const updatedApplication = await approveRejectLeaveApplication({
-        leaveApplicationId: id,  
-        institutionId:selectedInstitution?.id,         
+        leaveApplicationId: id,
+        institutionId:selectedInstitution?.id,
         action,
         rejectionReason,
       })
@@ -506,9 +506,9 @@ useEffect(() => {
 
     setIsSubmitting(true)
     try {
-      const success = await deleteLeaveApplication({ 
-        leaveApplicationId: id,  
-        institutionId:selectedInstitution?.id          
+      const success = await deleteLeaveApplication({
+        leaveApplicationId: id,
+        institutionId:selectedInstitution?.id
       })
       if (success) {
         const filteredApplications = applications.filter((app) => app.id?.toString() !== id.toString())
@@ -520,13 +520,13 @@ useEffect(() => {
       }
     } catch (error: any) {
       let errorMessage = "An error occurred while deleting the leave application"
-      
+
       if (error.response?.data?.error) {
         errorMessage = error.response.data.error
       } else if (error.response?.status === 400) {
         errorMessage = "Cannot delete this application. Only pending applications can be deleted."
       }
-      
+
       toast.error(errorMessage)
       await refreshApplications()
     } finally {
@@ -556,13 +556,13 @@ useEffect(() => {
 
   const handleEditApplication = (application: ILeaveRequest) => {
     setEditingApplication(application)
-    
+
     const formatDateForInput = (dateString: string) => {
       if (!dateString) return ""
       const date = new Date(dateString)
       return date.toISOString().split('T')[0]
     }
-    
+
     setFormData({
       employee: typeof application.employee === "object" && application.employee !== null
       ? (application.employee as any).id?.toString() || ""
@@ -577,7 +577,7 @@ useEffect(() => {
       handover_notes: application.handover_notes || "",
       supporting_document: null,
     })
-    
+
     setIsEditDialogOpen(true)
   }
 
@@ -597,7 +597,7 @@ useEffect(() => {
       handover_notes: "",
       supporting_document: null,
     })
-    
+
     setEditingApplication(null)
   }
 
@@ -662,7 +662,7 @@ useEffect(() => {
             </p>
           )}
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor={isEdit ? "edit-end_date" : "end_date"} className="text-sm font-medium">
             End Date *
@@ -778,7 +778,7 @@ useEffect(() => {
               </Select>
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button 
+                  <Button
                     className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2.5"
                     disabled={!selectedInstitution?.id}
                   >
@@ -811,12 +811,12 @@ useEffect(() => {
                           No employees found. Please check if employees are registered for this institution.
                         </p>
                       )}
-                    </div>  
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="leave_type" className="text-sm font-medium">
                         Leave Type *
                       </Label>
-                      <Select 
+                      <Select
                         value={formData.leave_type}
                         onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
                         disabled={isSubmitting}
@@ -844,7 +844,7 @@ useEffect(() => {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     {renderDateFields()}
 
                     <div className="space-y-2">
@@ -996,8 +996,8 @@ useEffect(() => {
             </TableHeader>
             <TableBody>
               {filteredApplications.map((application) => (
-                <TableRow 
-                    key={application.id?.toString() || (application.employee as any)?.id || `row-${Math.random()}`} 
+                <TableRow
+                    key={application.id?.toString() || (application.employee as any)?.id || `row-${Math.random()}`}
                     className="hover:bg-gray-50 transition-colors"
                   >
                   <TableCell>
@@ -1097,7 +1097,7 @@ useEffect(() => {
                               </DropdownMenuItem>
                             </>
                           )}
-                          
+
                           {application.status !== "pending" && (
                             <>
                               <DropdownMenuItem
@@ -1117,7 +1117,7 @@ useEffect(() => {
               ))}
             </TableBody>
           </Table>
-          
+
           {filteredApplications.length === 0 && (
             <div className="text-center py-8">
               <FileText className="mx-auto h-12 w-12 text-gray-400" />
@@ -1295,7 +1295,7 @@ useEffect(() => {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               {renderDateFields(true)}
 
               <div className="space-y-2">
@@ -1362,7 +1362,7 @@ useEffect(() => {
                   Upload a new document to replace the existing one (if any)
                 </p>
               </div>
-              
+
               {editingApplication?.supporting_document && (
                 <div className="md:col-span-2">
                   <div className="p-2 bg-gray-50 rounded-lg border">
@@ -1377,7 +1377,7 @@ useEffect(() => {
                 </div>
               )}
             </div>
-            
+
             <Button
               className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
               onClick={handleUpdateApplication}

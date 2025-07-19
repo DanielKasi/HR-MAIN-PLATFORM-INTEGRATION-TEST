@@ -103,8 +103,8 @@ const getMaritalStatusLabel = (status: string) => {
 
 // Helper function to check if data is from getAllEmployees API (has expanded objects)
 const isEmployeeFromAPI = (data: EmployeeData): data is EmployeeFromAPI => {
-  return typeof data.position === 'object' && 
-         data.position !== null && 
+  return typeof data.position === 'object' &&
+         data.position !== null &&
          'name' in data.position;
 }
 
@@ -119,27 +119,27 @@ const getEmployeeName = (employee: EmployeeData) => {
 // Helper function to get profile picture URL
 const getProfilePictureUrl = (employee: EmployeeData) => {
   const picture = employee.employee_profile_picture;
-  
+
   if (!picture || picture instanceof File) {
     return null;
   }
-  
+
   const pictureStr = picture as string;
-  
+
   if (pictureStr.startsWith('http://') || pictureStr.startsWith('https://')) {
     return pictureStr;
   }
-  
+
   if (pictureStr.startsWith('/')) {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
     return `${baseUrl}${pictureStr}`;
   }
-  
+
   if (pictureStr.includes('.')) {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
     return `${baseUrl}/media/${pictureStr}`;
   }
-  
+
   return null;
 }
 
@@ -183,7 +183,7 @@ export default function EmployeeProfilePage() {
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
   const [institutionId, setInstitutionId] = useState<number | null>(null)
 
-  
+
   useEffect(() => {
     if (selectedInstitution) {
       setInstitutionId(selectedInstitution.id)
@@ -192,7 +192,7 @@ export default function EmployeeProfilePage() {
     }
   }, [selectedInstitution, institutionsAttached])
 
- 
+
   useEffect(() => {
     const fetchEmployee = async () => {
       if (!institutionId || !employeeId) {
@@ -290,8 +290,8 @@ export default function EmployeeProfilePage() {
             <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
               <div className="relative">
                 <Avatar className="w-32 h-32 shadow-lg">
-                  <AvatarImage 
-                    src={getProfilePictureUrl(employee) || "/placeholder.svg"} 
+                  <AvatarImage
+                    src={getProfilePictureUrl(employee) || "/placeholder.svg"}
                     alt="Profile picture"
                     className="object-cover w-full h-full rounded-full"
                   />
@@ -316,10 +316,18 @@ export default function EmployeeProfilePage() {
                     >
                       {employee.is_active ? "Active" : "Inactive"}
                     </Badge>
+                    <Link
+                    href={`/employees/update-employee/${employee.id || 'unknown'}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      localStorage.setItem(`employee_${employee.id || 'unknown'}`, JSON.stringify(employee));
+                    }}
+                  >
                     <Button className="bg-orange-600 hover:bg-orange-700 text-white">
                       <Edit className="w-4 h-4 mr-2" />
                       Edit Profile
                     </Button>
+                  </Link>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

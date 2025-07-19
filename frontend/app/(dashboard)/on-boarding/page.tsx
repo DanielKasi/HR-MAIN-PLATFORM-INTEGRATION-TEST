@@ -118,7 +118,7 @@ export default function OnboardPage() {
   const [error, setError] = useState("")
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
-  
+
   const [updateDialog, setUpdateDialog] = useState<UpdateDialogState>({
     open: false,
     onboarding: null,
@@ -144,7 +144,7 @@ export default function OnboardPage() {
 
  const handleSmartSelectAll = () => {
   const selectableOnboardings = filteredOnboardings.filter(o => o.status !== 'accepted_offer')
-  
+
   if (selectedIds.size === selectableOnboardings.length) {
     setSelectedIds(new Set())
   } else {
@@ -246,25 +246,25 @@ const SmartSelectAllDropdown = () => (
 
   const getApplicationData = (onboarding: IOnBoarding) => {
   const applicationData = onboarding.application_details
-  
+
   if (!applicationData) {
     return {
       applicantName: "N/A",
-      applicantEmail: "N/A", 
+      applicantEmail: "N/A",
       jobDesc: "N/A",
       applicantPhone: "N/A",
       applicantAddress: "N/A",
       applicantPositions: "N/A"
     }
   }
-  
+
   const jobDetails = applicationData.job_position_advert_job_details
   const jobName = jobDetails?.name || "N/A"
   const jobDescription = jobDetails?.description || "N/A"
-  
+
   const result = {
     applicantName: applicationData.applicant_name || "N/A",
-    applicantEmail: applicationData.applicant_email || "N/A", 
+    applicantEmail: applicationData.applicant_email || "N/A",
     jobDesc: jobName !== "N/A" ? jobName : jobDescription,
     applicantPhone: applicationData.applicant_phone || "N/A",
     applicantAddress: applicationData.address || "N/A",
@@ -372,12 +372,12 @@ const SmartSelectAllDropdown = () => (
 
   const getCommonNextStages = (selectedOnboardings: IOnBoarding[]): IOnBoarding['status'][] => {
     if (selectedOnboardings.length === 0) return []
-    
+
     const firstStatus = selectedOnboardings[0].status
     const allSameStatus = selectedOnboardings.every(o => o.status === firstStatus)
-    
+
     if (!allSameStatus) return []
-    
+
     return getNextStages(firstStatus)
   }
 
@@ -412,13 +412,13 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
       })
 
       if (result) {
-        setOnboardings(prev => prev.map(onboarding => 
+        setOnboardings(prev => prev.map(onboarding =>
           onboarding.id === updateDialog.onboarding!.id ? result : onboarding
         ))
 
         const stageName = ONBOARDING_STAGES.find(s => s.value === updateDialog.newStatus)?.label
         toast.success(`Successfully moved candidate to ${stageName} stage`)
-        
+
         setUpdateDialog({
           open: false,
           onboarding: null,
@@ -443,7 +443,7 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
   setBulkUpdateDialog({
     open: true,
     newStatus,
-    attended: defaultAttended,  
+    attended: defaultAttended,
     remarks: '',
     isSubmitting: false
   })
@@ -475,13 +475,13 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
       })
 
       const results = await Promise.allSettled(updatePromises)
-      
-      const successful = results.filter(result => 
+
+      const successful = results.filter(result =>
         result.status === 'fulfilled' && result.value.success
       ) as PromiseFulfilledResult<{ id: number; success: true; data: IOnBoarding | null }>[]
-      
-      const failed = results.filter(result => 
-        result.status === 'rejected' || 
+
+      const failed = results.filter(result =>
+        result.status === 'rejected' ||
         (result.status === 'fulfilled' && !result.value.success)
       )
 
@@ -508,7 +508,7 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
       } else {
         toast.error('Failed to update any candidates')
       }
-      
+
       setBulkUpdateDialog({
         open: false,
         newStatus: 'initial',
@@ -608,8 +608,8 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
                     {selectedIds.size} candidate{selectedIds.size > 1 ? 's' : ''} selected
                   </span>
                 </div>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={clearSelection}
                   className="border-blue-300 text-blue-700 hover:bg-blue-100"
@@ -617,7 +617,7 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
                   Clear Selection
                 </Button>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 {/* Bulk Progress Actions */}
                 {commonNextStages.length > 0 && (
@@ -640,7 +640,7 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
                             onClick={() => handleBulkUpdate(stageValue)}
                           >
                             <IconComponent className={`h-4 w-4 mr-2 ${stage.color}`} />
-                            Move to {stage.label}
+                            Mark as {stage.label}
                           </DropdownMenuItem>
                         )
                       })}
@@ -660,7 +660,7 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Selected Records</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete {selectedIds.size} onboarding record{selectedIds.size > 1 ? 's' : ''}? 
+                        Are you sure you want to delete {selectedIds.size} onboarding record{selectedIds.size > 1 ? 's' : ''}?
                         This action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
@@ -926,7 +926,7 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
                                     }}
                                   >
                                     <IconComponent className={`h-4 w-4 mr-2 ${stage.color}`} />
-                                    Move to {stage.label}
+                                    Mark as {stage.label}
                                   </DropdownMenuItem>
                                 )
                               })}
@@ -1003,7 +1003,7 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
       </Card>
 
       {/* Update Dialog */}
-      <Dialog open={updateDialog.open} onOpenChange={(open) => 
+      <Dialog open={updateDialog.open} onOpenChange={(open) =>
         !updateDialog.isSubmitting && setUpdateDialog(prev => ({ ...prev, open }))
       }>
         <DialogContent className="sm:max-w-[500px]">
@@ -1020,12 +1020,12 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
               )}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div>
               <Label>New Status</Label>
-              <Select 
-                value={updateDialog.newStatus} 
+              <Select
+                value={updateDialog.newStatus}
                 onValueChange={(value) => setUpdateDialog(prev => ({ ...prev, newStatus: value as IOnBoarding['status'] }))}
               >
                 <SelectTrigger>
@@ -1051,7 +1051,7 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
               <Checkbox
                 id="attended"
                 checked={updateDialog.attended}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked) =>
                   setUpdateDialog(prev => ({ ...prev, attended: checked as boolean }))
                 }
               />
@@ -1076,14 +1076,14 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
           </div>
 
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setUpdateDialog(prev => ({ ...prev, open: false }))}
               disabled={updateDialog.isSubmitting}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={submitOnboardingUpdate}
               disabled={updateDialog.isSubmitting || !updateDialog.newStatus}
             >
@@ -1094,7 +1094,7 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
       </Dialog>
 
       {/* Bulk Update Dialog */}
-      <Dialog open={bulkUpdateDialog.open} onOpenChange={(open) => 
+      <Dialog open={bulkUpdateDialog.open} onOpenChange={(open) =>
         !bulkUpdateDialog.isSubmitting && setBulkUpdateDialog(prev => ({ ...prev, open }))
       }>
         <DialogContent className="sm:max-w-[500px]">
@@ -1104,12 +1104,12 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
               Update the onboarding status and feedback for {selectedIds.size} selected candidate{selectedIds.size > 1 ? 's' : ''}.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div>
               <Label>New Status</Label>
-              <Select 
-                value={bulkUpdateDialog.newStatus} 
+              <Select
+                value={bulkUpdateDialog.newStatus}
                 onValueChange={(value) => setBulkUpdateDialog(prev => ({ ...prev, newStatus: value as IOnBoarding['status'] }))}
               >
                 <SelectTrigger>
@@ -1135,7 +1135,7 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
               <Checkbox
                 id="bulk-attended"
                 checked={bulkUpdateDialog.attended}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked) =>
                   setBulkUpdateDialog(prev => ({ ...prev, attended: checked as boolean }))
                 }
               />
@@ -1161,14 +1161,14 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
           </div>
 
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setBulkUpdateDialog(prev => ({ ...prev, open: false }))}
               disabled={bulkUpdateDialog.isSubmitting}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={submitBulkUpdate}
               disabled={bulkUpdateDialog.isSubmitting || !bulkUpdateDialog.newStatus}
             >
