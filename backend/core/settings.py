@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "discipline",
     "leave_mgt",
     "payroll",
+    "performance",
 ]
 
 MIDDLEWARE = [

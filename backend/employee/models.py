@@ -132,6 +132,7 @@ class Employee(models.Model):
     salary = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00, null=True, blank=True
     )
+    salary_overridden = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.fullname}  - {self.position}"
@@ -154,7 +155,12 @@ class Employee(models.Model):
             self.payroll_branch = self.get_default_branch()
 
         if self.position and hasattr(self.position, "salary"):
-            self.salary = self.position.salary
+            if is_new_employee:
+                self.salary = self.position.salary
+                self.salary_overridden = False
+            elif not self.salary_overridden:
+                # Update salary if not overridden and position salary changed
+                self.salary = self.position.salary
 
         super().save(*args, **kwargs)
 
