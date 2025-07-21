@@ -198,58 +198,73 @@ const LeaveApplicationComponent = () => {
 
 
   const validateLeaveApplication = () => {
-    const validations = []
-    const selectedLeaveType = getSelectedLeaveType()
-    const selectedPolicy = getSelectedLeavePolicy()
-    const selectedBalance = getSelectedLeaveBalance()
-    const requestedDays = calculateDaysBetween(formData.start_date, formData.end_date)
+  const validations = [];
+  const selectedLeaveType = getSelectedLeaveType();
+  const selectedPolicy = getSelectedLeavePolicy();
+  const selectedBalance = getSelectedLeaveBalance();
+  const requestedDays = calculateDaysBetween(formData.start_date, formData.end_date);
 
-    if (formData.start_date && formData.end_date) {
-      const startDate = new Date(formData.start_date)
-      const endDate = new Date(formData.end_date)
-      const today = new Date()
+  if (!formData.employee || !formData.leave_type || !formData.start_date || !formData.end_date || !formData.reason) {
+    validations.push({
+      type: 'error',
+      message: 'Please fill in all required fields',
+    });
+  }
 
-      if (endDate < startDate) {
+  if (formData.start_date && formData.end_date) {
+    const startDate = new Date(formData.start_date);
+    const endDate = new Date(formData.end_date);
+    const today = new Date();
+
+    if (endDate < startDate) {
+      validations.push({
+        type: 'error',
+        message: 'End date cannot be before start date',
+      });
+    }
+
+    if (selectedPolicy) {
+      const daysDifference = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysDifference < selectedPolicy.min_notice_days) {
         validations.push({
           type: 'error',
-          message: 'End date cannot be before start date'
-        })
-      }
-
-      if (selectedPolicy) {
-        const daysDifference = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-        if (daysDifference < selectedPolicy.min_notice_days) {
-          validations.push({
-            type: 'error',
-            message: `Minimum ${selectedPolicy.min_notice_days} days notice required. Please select a start date at least ${selectedPolicy.min_notice_days} days from today.`
-          })
-        }
-      }
-
-      if (selectedPolicy?.max_consecutive_days && requestedDays > selectedPolicy.max_consecutive_days) {
-        validations.push({
-          type: 'error',
-          message: `Maximum ${selectedPolicy.max_consecutive_days} consecutive days allowed for this leave type. You requested ${requestedDays} days.`
-        })
-      }
-
-      if (selectedBalance && requestedDays > selectedBalance.available_days) {
-        validations.push({
-          type: 'error',
-          message: `Insufficient leave balance. You have ${selectedBalance.available_days} days available, but requested ${requestedDays} days.`
-        })
-      }
-
-      if (selectedBalance && requestedDays > (selectedBalance.available_days * 0.8)) {
-        validations.push({
-          type: 'warning',
-          message: `This request will use ${Math.round((requestedDays / selectedBalance.total_days) * 100)}% of your annual leave balance.`
-        })
+          message: `Minimum ${selectedPolicy.min_notice_days} days notice required. Please select a start date at least ${selectedPolicy.min_notice_days} days from today.`,
+        });
       }
     }
 
-    return validations
+    if (selectedPolicy?.max_consecutive_days && requestedDays > selectedPolicy.max_consecutive_days) {
+      validations.push({
+        type: 'error',
+        message: `Maximum ${selectedPolicy.max_consecutive_days} consecutive days allowed for this leave type. You requested ${requestedDays} days.`,
+      });
+    }
+
+    if (selectedBalance && requestedDays > selectedBalance.available_days) {
+      validations.push({
+        type: 'error',
+        message: `Insufficient leave balance. You have ${selectedBalance.available_days} days available, but requested ${requestedDays} days.`,
+      });
+    }
+
+    if (selectedBalance && requestedDays > selectedBalance.available_days * 0.8) {
+      validations.push({
+        type: 'warning',
+        message: `This request will use ${Math.round((requestedDays / selectedBalance.total_days) * 100)}% of your annual leave balance.`,
+      });
+    }
   }
+
+  // Validate supporting document if required
+  if (selectedLeaveType?.requires_document && !formData.supporting_document && !editingApplication?.supporting_document) {
+    validations.push({
+      type: 'error',
+      message: 'A supporting document is required for this leave type.',
+    });
+  }
+
+  return validations;
+};
 
   const getApprovalInfo = () => {
     const selectedPolicy = getSelectedLeavePolicy()
@@ -343,120 +358,115 @@ useEffect(() => {
 }, [selectedInstitution?.id])
 
   const handleAddApplication = async () => {
-    if (!formData.employee || !formData.leave_type || !formData.start_date || !formData.end_date || !formData.reason) {
-      toast.error("Please fill in all required fields")
-      return
-    }
-
-    if (!selectedInstitution?.id) {
-      toast.error("Institution ID is required")
-      return
-    }
-
-    const validations = validateLeaveApplication()
-    const errors = validations.filter(v => v.type === 'error')
-
-    if (errors.length > 0) {
-      toast.error(errors[0].message)
-      return
-    }
-
-    const warnings = validations.filter(v => v.type === 'warning')
-    if (warnings.length > 0) {
-      warnings.forEach(warning => toast.warning(warning.message))
-    }
-
-    setIsSubmitting(true)
-    try {
-      const applicationData: ILeaveRequestFormData = {
-        employee: parseInt(formData.employee),
-        leave_type: parseInt(formData.leave_type),
-        start_date: formData.start_date,
-        end_date: formData.end_date,
-        duration_type: formData.duration_type,
-        reason: formData.reason,
-        handover_notes: formData.handover_notes,
-        status: 'pending',
-        supporting_document: formData.supporting_document,
-      }
-
-      const newApplication = await createLeaveApplication({
-        institutionId: selectedInstitution.id,
-        leaveApplicationData: applicationData,
-      })
-
-      if (newApplication) {
-        setApplications([newApplication, ...applications])
-        toast.success("Leave application created successfully")
-        resetForm()
-        setIsAddDialogOpen(false)
-      } else {
-        toast.error("Failed to create leave application")
-      }
-    } catch (error: any) {
-      let errorMessage = error.message || "An error occurred while creating the leave application"
-      toast.error(errorMessage)
-    } finally {
-      setIsSubmitting(false)
-    }
+  if (!selectedInstitution?.id) {
+    toast.error("Institution ID is required");
+    return;
   }
 
-  const handleUpdateApplication = async () => {
-    if (!editingApplication) return
+  const validations = validateLeaveApplication();
+  const errors = validations.filter((v) => v.type === 'error');
 
-    if (!formData.employee || !formData.leave_type || !formData.start_date || !formData.end_date || !formData.reason) {
-      toast.error("Please fill in all required fields")
-      return
-    }
-
-    if (!selectedInstitution?.id) {
-      toast.error("Institution ID is required")
-      return
-    }
-
-    const validations = validateLeaveApplication()
-    const errors = validations.filter(v => v.type === 'error')
-
-    if (errors.length > 0) {
-      toast.error(errors[0].message)
-      return
-    }
-
-    setIsSubmitting(true)
-    try {
-      const applicationData: Partial<ILeaveRequestFormData> = {
-        employee: parseInt(formData.employee),
-        leave_type: parseInt(formData.leave_type),
-        start_date: formData.start_date,
-        end_date: formData.end_date,
-        duration_type: formData.duration_type,
-        reason: formData.reason,
-        handover_notes: formData.handover_notes,
-      }
-
-      const updatedApplication = await updateLeaveApplication({
-        leaveApplicationId: editingApplication.id?.toString() || '',
-        leaveApplicationData: applicationData,
-      })
-
-      if (updatedApplication) {
-        const updatedApplications = applications.map((app) =>
-          app.id?.toString() === editingApplication.id?.toString() ? updatedApplication : app
-        )
-        setApplications(updatedApplications)
-        toast.success("Leave application updated successfully")
-        resetForm()
-        setIsEditDialogOpen(false)
-        setEditingApplication(null)
-      } else {
-        toast.error("Failed to update leave application")
-      }
-    } catch (error) {
-      toast.error("An error occurred while updating the leave application")
-    } finally {
-      setIsSubmitting(false)
-    }
+  if (errors.length > 0) {
+    toast.error(errors[0].message);
+    return;
   }
+
+  const warnings = validations.filter((v) => v.type === 'warning');
+  if (warnings.length > 0) {
+    warnings.forEach((warning) => toast.warning(warning.message));
+  }
+
+  setIsSubmitting(true);
+  try {
+    const applicationData: ILeaveRequestFormData = {
+      employee: parseInt(formData.employee),
+      leave_type: parseInt(formData.leave_type),
+      start_date: formData.start_date,
+      end_date: formData.end_date,
+      duration_type: formData.duration_type,
+      reason: formData.reason,
+      handover_notes: formData.handover_notes,
+      status: 'pending',
+    };
+    if (formData.supporting_document) {
+      applicationData.supporting_document = formData.supporting_document;
+    }
+
+    const newApplication = await createLeaveApplication({
+      institutionId: selectedInstitution.id,
+      leaveApplicationData: applicationData,
+    });
+
+    if (newApplication) {
+      setApplications([newApplication, ...applications]);
+      toast.success("Leave application created successfully");
+      resetForm();
+      setIsAddDialogOpen(false);
+    } else {
+      toast.error("Failed to create leave application");
+    }
+  } catch (error: any) {
+    let errorMessage = error.message || "An error occurred while creating the leave application";
+    toast.error(errorMessage);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+const handleUpdateApplication = async () => {
+  if (!editingApplication) return;
+
+  if (!selectedInstitution?.id) {
+    toast.error("Institution ID is required");
+    return;
+  }
+
+  const validations = validateLeaveApplication();
+  const errors = validations.filter((v) => v.type === 'error');
+
+  if (errors.length > 0) {
+    toast.error(errors[0].message);
+    return;
+  }
+
+  setIsSubmitting(true);
+  try {
+    const applicationData: Partial<ILeaveRequestFormData> = {
+      employee: parseInt(formData.employee),
+      leave_type: parseInt(formData.leave_type),
+      start_date: formData.start_date,
+      end_date: formData.end_date,
+      duration_type: formData.duration_type,
+      reason: formData.reason,
+      handover_notes: formData.handover_notes,
+    };
+    if (formData.supporting_document) {
+      applicationData.supporting_document = formData.supporting_document;
+    }
+
+    const updatedApplication = await updateLeaveApplication({
+      leaveApplicationId: editingApplication.id?.toString() || '',
+      leaveApplicationData: applicationData,
+    });
+
+    if (updatedApplication) {
+      const updatedApplications = applications.map((app) =>
+        app.id?.toString() === editingApplication.id?.toString() ? updatedApplication : app
+      );
+      setApplications(updatedApplications);
+      toast.success("Leave application updated successfully");
+      resetForm();
+      setIsEditDialogOpen(false);
+      setEditingApplication(null);
+    } else {
+      toast.error("Failed to update leave application");
+    }
+  } catch (error) {
+    toast.error("An error occurred while updating the leave application");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleStatusChange = async (id: string | number, action: 'approve' | 'reject', rejectionReason?: string) => {
     if (!selectedInstitution?.id) {
@@ -776,152 +786,154 @@ useEffect(() => {
                   ))}
                 </SelectContent>
               </Select>
-              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2.5"
-                    disabled={!selectedInstitution?.id}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Application
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle className="text-xl font-semibold">New Leave Application</DialogTitle>
-                    <DialogDescription>Submit a new leave application request.</DialogDescription>
-                  </DialogHeader>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="employee" className="text-sm font-medium">
-                        Employee *
-                      </Label>
-                      <EmployeeSearchableSelect
-                        employees={employees}
-                        value={formData.employee}
-                        onValueChange={(value) => setFormData({ ...formData, employee: value.toString() })}
-                        disabled={isSubmitting || isLoadingEmployees}
-                        placeholder="Search and select employee"
-                        isLoading={isLoadingEmployees}
-                        showEmployeeId={true}
-                        showDepartment={false}
-                      />
-                      {!isLoadingEmployees && employees.length === 0 && (
-                        <p className="text-xs text-red-500 mt-1">
-                          No employees found. Please check if employees are registered for this institution.
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="leave_type" className="text-sm font-medium">
-                        Leave Type *
-                      </Label>
-                      <Select
-                        value={formData.leave_type}
-                        onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
-                        disabled={isSubmitting}
+                  <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2.5"
+                        disabled={!selectedInstitution?.id}
                       >
-                        <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
-                          <SelectValue placeholder="Select leave type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {leaveTypes.length > 0 ? (
-                            leaveTypes.map((type) => (
-                              <SelectItem key={type.id} value={type.id.toString()}>
-                                <div className="flex flex-col">
-                                  <span>{type.name}</span>
-                                  <span className="text-xs text-gray-500">
-                                    {type.max_days_per_year} days/year • {type.category}
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <div className="px-2 py-1.5 text-sm text-gray-500">
-                              No leave types available
-                            </div>
+                        <Plus className="h-4 w-4 mr-2" />
+                        New Application
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle className="text-xl font-semibold">New Leave Application</DialogTitle>
+                        <DialogDescription>Submit a new leave application request.</DialogDescription>
+                      </DialogHeader>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="employee" className="text-sm font-medium">
+                            Employee *
+                          </Label>
+                          <EmployeeSearchableSelect
+                            employees={employees}
+                            value={formData.employee}
+                            onValueChange={(value) => setFormData({ ...formData, employee: value.toString() })}
+                            disabled={isSubmitting || isLoadingEmployees}
+                            placeholder="Search and select employee"
+                            isLoading={isLoadingEmployees}
+                            showEmployeeId={true}
+                            showDepartment={false}
+                          />
+                          {!isLoadingEmployees && employees.length === 0 && (
+                            <p className="text-xs text-red-500 mt-1">
+                              No employees found. Please check if employees are registered for this institution.
+                            </p>
                           )}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="leave_type" className="text-sm font-medium">
+                            Leave Type *
+                          </Label>
+                          <Select
+                            value={formData.leave_type}
+                            onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
+                            disabled={isSubmitting}
+                          >
+                            <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
+                              <SelectValue placeholder="Select leave type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {leaveTypes.length > 0 ? (
+                                leaveTypes.map((type) => (
+                                  <SelectItem key={type.id} value={type.id.toString()}>
+                                    <div className="flex flex-col">
+                                      <span>{type.name}</span>
+                                      <span className="text-xs text-gray-500">
+                                        {type.max_days_per_year} days/year • {type.category}
+                                      </span>
+                                    </div>
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <div className="px-2 py-1.5 text-sm text-gray-500">
+                                  No leave types available
+                                </div>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                    {renderDateFields()}
+                        {renderDateFields()}
 
-                    <div className="space-y-2">
-                      <Label htmlFor="duration_type" className="text-sm font-medium">
-                        Duration Type
-                      </Label>
-                      <Select
-                        value={formData.duration_type}
-                        onValueChange={(value) => setFormData({ ...formData, duration_type: value })}
-                        disabled={isSubmitting}
+                        <div className="space-y-2">
+                          <Label htmlFor="duration_type" className="text-sm font-medium">
+                            Duration Type
+                          </Label>
+                          <Select
+                            value={formData.duration_type}
+                            onValueChange={(value) => setFormData({ ...formData, duration_type: value })}
+                            disabled={isSubmitting}
+                          >
+                            <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {DURATION_TYPES.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="reason" className="text-sm font-medium">
+                            Reason *
+                          </Label>
+                          <Textarea
+                            id="reason"
+                            value={formData.reason}
+                            onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                            rows={3}
+                            className="focus:ring-orange-500 focus:border-orange-500"
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="handover_notes" className="text-sm font-medium">
+                            Handover Notes
+                          </Label>
+                          <Textarea
+                            id="handover_notes"
+                            value={formData.handover_notes}
+                            onChange={(e) => setFormData({ ...formData, handover_notes: e.target.value })}
+                            rows={2}
+                            placeholder="Work delegation and handover details..."
+                            className="focus:ring-orange-500 focus:border-orange-500"
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                        {getSelectedLeaveType()?.requires_document && (
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="supporting_document" className="text-sm font-medium">
+                              Supporting Document {getSelectedLeaveType()?.requires_document ? "*" : ""}
+                            </Label>
+                            <Input
+                              id="supporting_document"
+                              type="file"
+                              onChange={(e) => setFormData({ ...formData, supporting_document: e.target.files?.[0] || null })}
+                              className="focus:ring-orange-500 focus:border-orange-500"
+                              disabled={isSubmitting}
+                            />
+                            <p className="text-xs text-gray-500">
+                              Upload any supporting documents (medical certificates, etc.)
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
+                        onClick={handleAddApplication}
+                        disabled={isSubmitting || !employees.length || !leaveTypes.length || validateLeaveApplication().filter(v => v.type === 'error').length > 0}
                       >
-                        <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {DURATION_TYPES.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="reason" className="text-sm font-medium">
-                        Reason *
-                      </Label>
-                      <Textarea
-                        id="reason"
-                        value={formData.reason}
-                        onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                        rows={3}
-                        className="focus:ring-orange-500 focus:border-orange-500"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="handover_notes" className="text-sm font-medium">
-                        Handover Notes
-                      </Label>
-                      <Textarea
-                        id="handover_notes"
-                        value={formData.handover_notes}
-                        onChange={(e) => setFormData({ ...formData, handover_notes: e.target.value })}
-                        rows={2}
-                        placeholder="Work delegation and handover details..."
-                        className="focus:ring-orange-500 focus:border-orange-500"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="supporting_document" className="text-sm font-medium">
-                        Supporting Document
-                      </Label>
-                      <Input
-                        id="supporting_document"
-                        type="file"
-                        onChange={(e) => setFormData({ ...formData, supporting_document: e.target.files?.[0] || null })}
-                        className="focus:ring-orange-500 focus:border-orange-500"
-                        disabled={isSubmitting}
-                      />
-                      <p className="text-xs text-gray-500">
-                        Upload any supporting documents (medical certificates, etc.)
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
-                    onClick={handleAddApplication}
-                    disabled={isSubmitting || !employees.length || !leaveTypes.length || validateLeaveApplication().filter(v => v.type === 'error').length > 0}
-                  >
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isSubmitting ? "Creating..." : "Submit Application"}
-                  </Button>
-                </DialogContent>
-              </Dialog>
-            </div>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isSubmitting ? "Creating..." : "Submit Application"}
+                      </Button>
+                    </DialogContent>
+                                    </Dialog>
+                              </div>
           </div>
 
           {/* Stats Cards */}
@@ -1255,9 +1267,9 @@ useEffect(() => {
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
               <div className="space-y-2">
-              <Label htmlFor="edit-employee" className="text-sm font-medium">
-                Employee *
-              </Label>
+                <Label htmlFor="edit-employee" className="text-sm font-medium">
+                  Employee *
+                </Label>
                 <EmployeeSearchableSelect
                   employees={employees}
                   value={formData.employee}
@@ -1268,7 +1280,6 @@ useEffect(() => {
                   showDepartment={false}
                 />
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="edit-leave_type" className="text-sm font-medium">
                   Leave Type *
@@ -1347,23 +1358,24 @@ useEffect(() => {
                   placeholder="Work delegation and handover details..."
                 />
               </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="edit-supporting_document" className="text-sm font-medium">
-                  Supporting Document
-                </Label>
-                <Input
-                  id="edit-supporting_document"
-                  type="file"
-                  onChange={(e) => setFormData({ ...formData, supporting_document: e.target.files?.[0] || null })}
-                  className="focus:ring-orange-500 focus:border-orange-500"
-                  disabled={isSubmitting}
-                />
-                <p className="text-xs text-gray-500">
-                  Upload a new document to replace the existing one (if any)
-                </p>
-              </div>
-
-              {editingApplication?.supporting_document && (
+              {getSelectedLeaveType()?.requires_document && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="edit-supporting_document" className="text-sm font-medium">
+                    Supporting Document {getSelectedLeaveType()?.requires_document ? "*" : ""}
+                  </Label>
+                  <Input
+                    id="edit-supporting_document"
+                    type="file"
+                    onChange={(e) => setFormData({ ...formData, supporting_document: e.target.files?.[0] || null })}
+                    className="focus:ring-orange-500 focus:border-orange-500"
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Upload a new document to replace the existing one (if any)
+                  </p>
+                </div>
+              )}
+              {editingApplication?.supporting_document && getSelectedLeaveType()?.requires_document && (
                 <div className="md:col-span-2">
                   <div className="p-2 bg-gray-50 rounded-lg border">
                     <Label className="text-xs font-medium text-gray-600">Current Document:</Label>
@@ -1377,7 +1389,6 @@ useEffect(() => {
                 </div>
               )}
             </div>
-
             <Button
               className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
               onClick={handleUpdateApplication}
