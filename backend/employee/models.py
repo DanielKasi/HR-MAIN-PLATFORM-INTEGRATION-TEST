@@ -367,16 +367,6 @@ class EmployeeAttendance(models.Model):
         return f"{self.employee.user.fullname} - {self.date} - {self.status}"
 
     def calculate_overtime_hours(self):
-        print("Calculating overtime hours...")
-
-        if not self.date:
-            print("Missing: self.date is None")
-        if not self.check_out_time:
-            print("Missing: self.check_out_time is None")
-        if not self.employee:
-            print("Missing: self.employee is None")
-        elif not self.employee.payroll_branch:
-            print("Missing: self.employee.payroll_branch is None")
 
         if (
             self.date
@@ -385,34 +375,22 @@ class EmployeeAttendance(models.Model):
             and self.employee.payroll_branch
         ):
             branch_end_time = self.employee.payroll_branch.branch_closing_time
-            print(f"Branch end time: {branch_end_time}")
-            print(f"Check-out time: {self.check_out_time}")
 
             datetime_checkout = datetime.combine(self.date, self.check_out_time)
             datetime_end = datetime.combine(self.date, branch_end_time)
 
-            print(f"Datetime checkout: {datetime_checkout}")
-            print(f"Datetime end: {datetime_end}")
 
             if datetime_checkout > datetime_end:
                 overtime_duration = datetime_checkout - datetime_end
                 hours = round(overtime_duration.total_seconds() / 3600, 2)
-                print(f"Overtime duration: {hours} hours")
                 return hours
-            else:
-                print("No overtime. Checkout was before or at end time.")
-        else:
-            print("Insufficient data to calculate overtime.")
-
         return 0.0
 
     def save(self, *args, **kwargs):
-        print("Saving model instance...")
 
         if self.date is None:
             self.date = datetime.today().date()
-            print(f"Date was missing. Set to today: {self.date}")
+
 
         self.overtime_hours = self.calculate_overtime_hours()
-        print(f"Overtime hours set to: {self.overtime_hours}")
         super().save(*args, **kwargs)

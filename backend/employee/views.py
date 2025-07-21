@@ -314,10 +314,6 @@ class EmployeeBranchManagementAPIView(APIView):
             employee_id = request.data.get("employee_id")
             branches_data = request.data.get("branches", [])
 
-            print(f"DEBUG: employee_id = {employee_id}")
-            print(f"DEBUG: branches_data = {branches_data}")
-            print(f"DEBUG: request.data = {request.data}")
-
             # Basic validation
             if not employee_id:
                 return Response(
@@ -334,7 +330,6 @@ class EmployeeBranchManagementAPIView(APIView):
             # Get employee
             try:
                 employee = Employee.objects.get(id=employee_id)
-                print(f"DEBUG: Found employee = {employee}")
             except Employee.DoesNotExist:
                 return Response(
                     {"error": f"Employee with id {employee_id} not found"},
@@ -384,11 +379,9 @@ class EmployeeBranchManagementAPIView(APIView):
             )
 
         except Exception as e:
-            print(f"DEBUG: Unexpected error: {str(e)}")
             import traceback
 
             traceback.print_exc()
-            print(f"DEBUG: Unexpected error: {str(e)}")
             import traceback
 
             traceback.print_exc()
@@ -400,7 +393,6 @@ class EmployeeBranchManagementAPIView(APIView):
 
     def _attach_branches(self, employee, branches_data, created_by):
         """Attach employee to branches"""
-        print(f"DEBUG: Attaching {len(branches_data)} branches")
 
         # Validate default branches
         default_count = sum(1 for bd in branches_data if bd.get("is_default", False))
@@ -410,7 +402,6 @@ class EmployeeBranchManagementAPIView(APIView):
         # If no default specified, make first one default
         if default_count == 0 and branches_data:
             branches_data[0]["is_default"] = True
-            print("DEBUG: Set first branch as default")
 
         user_branches = []
 
@@ -460,13 +451,11 @@ class EmployeeBranchManagementAPIView(APIView):
             .order_by("-is_default", "branch__branch_name")
         )
 
-        print(f"DEBUG: Found {user_branches.count()} user branches")
 
         branches = []
         default_branch = None
 
         for i, ub in enumerate(user_branches):
-            print(f"DEBUG: Processing UserBranch {i}: {ub.id}, default={ub.is_default}")
 
             branch_info = {
                 "id": ub.branch.id,
@@ -530,7 +519,6 @@ class EmployeeBranchManagementAPIView(APIView):
             )
 
         except Exception as e:
-            print(f"DEBUG: Error in GET: {str(e)}")
             return Response(
                 {"error": f"An unexpected error occurred: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -616,7 +604,6 @@ class EmployeeBranchDetailAPIView(APIView):
             )
 
         except Exception as e:
-            print(f"DEBUG: Error in GET detail: {str(e)}")
             return Response(
                 {"error": f"An unexpected error occurred: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -681,7 +668,6 @@ class EmployeeBranchDetailAPIView(APIView):
             )
 
         except Exception as e:
-            print(f"DEBUG: Error in PATCH: {str(e)}")
             return Response(
                 {"error": f"An unexpected error occurred: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -771,49 +757,37 @@ class EmployeeAttendanceListCreateAPIView(APIView):
         description="Create a new attendance record",
     )
     def post(self, request, employee_id=None):
-        print("Received POST request")
         data = request.data.copy()
-        print("Raw request data:", request.data)
-        print("Copied data:", data)
+
 
         employee = data.get("employee")
         date = data.get("date")
-        print(f"Employee ID: {employee}")
-        print(f"Provided date: {date}")
+
 
         from datetime import date as dt_date
 
         if not date:
             date = str(dt_date.today())
             data["date"] = date
-            print(f"No date provided. Using today's date: {date}")
 
-        print("Checking for existing attendance record...")
+
         existing = EmployeeAttendance.objects.filter(
             employee=employee, date=date
         ).first()
 
         if existing:
-            print("Existing attendance record found. Updating...")
             serializer = EmployeeAttendanceSerializer(existing, data=data, partial=True)
             if serializer.is_valid():
-                print("Serializer is valid. Saving updated data...")
                 serializer.save()
-                print("Update successful. Returning updated data.")
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
-                print("Serializer validation failed with errors:", serializer.errors)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
-            print("No existing record found. Creating new attendance record...")
             serializer = EmployeeAttendanceSerializer(data=data)
             if serializer.is_valid():
-                print("Serializer is valid. Saving new data...")
                 serializer.save()
-                print("Creation successful. Returning created data.")
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
-                print("Serializer validation failed with errors:", serializer.errors)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
