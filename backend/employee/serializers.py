@@ -23,32 +23,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Employee
-        fields = [
-            "id",
-            "user",
-            "email",
-            "phone_number",
-            "position",
-            "position_details",
-            "department",
-            "department_details",
-            "roles",
-            "date_of_birth",
-            "date_of_joining",
-            "address",
-            "is_active",
-            "created_at",
-            "updated_at",
-            "experience",
-            "qualifications",
-            "skills",
-            "emergency_contact_name",
-            "emergency_contact_phone",
-            "emergency_contact_relationship",
-            "marital_status",
-            "children_count",
-            "employee_profile_picture"
-        ]
+        fields = '__all__'
 
     def create(self, validated_data):
         user_data = validated_data.pop("user", None)

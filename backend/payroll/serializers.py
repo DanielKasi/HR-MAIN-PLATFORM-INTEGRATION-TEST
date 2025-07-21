@@ -41,31 +41,66 @@ class DeductionTypeSerializer(serializers.ModelSerializer):
 class EmployeeAllowanceSerializer(serializers.ModelSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
     allowance_type = serializers.PrimaryKeyRelatedField(queryset=AllowanceType.objects.all())
+    calculated_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = EmployeeAllowance
         fields = '__all__'
 
+    def get_calculated_amount(self, obj):
+        return obj.get_calculated_amount()
+
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         rep['employee'] = EmployeeSerializer(instance.employee).data
         rep['allowance_type'] = AllowanceTypeSerializer(instance.allowance_type).data
+        rep['calculated_amount'] = self.get_calculated_amount(instance)
         return rep
+
+    def validate(self, data):
+        if data.get('calculation_method') == 'percentage' and data.get('percentage') <= 0:
+            raise serializers.ValidationError("Percentage must be greater than 0 for percentage-based calculation.")
+        if data.get('calculation_method') == 'fixed' and data.get('amount') <= 0:
+            raise serializers.ValidationError("Amount must be greater than 0 for fixed calculation.")
+        return data
 
 
 class EmployeeDeductionSerializer(serializers.ModelSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
     deduction_type = serializers.PrimaryKeyRelatedField(queryset=DeductionType.objects.all())
+    calculated_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = EmployeeDeduction
         fields = '__all__'
 
+    def get_calculated_amount(self, obj):
+        return obj.get_calculated_amount()
+
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         rep['employee'] = EmployeeSerializer(instance.employee).data
         rep['deduction_type'] = DeductionTypeSerializer(instance.deduction_type).data
+        rep['calculated_amount'] = self.get_calculated_amount(instance)
         return rep
+
+    def validate(self, data):
+        """Validate percentage and amount based on calculation method"""
+        calculation_method = data.get('calculation_method')
+        percentage = data.get('percentage')
+        amount = data.get('amount')
+        employee = data.get('employee')
+
+        if calculation_method == 'percentage':
+            if not employee.salary or employee.salary <= 0:
+                raise serializers.ValidationError("Employee salary must be greater than 0 for percentage-based deduction.")
+            if percentage <= 0:
+                raise serializers.ValidationError("Percentage must be greater than 0 for percentage-based deduction.")
+        elif calculation_method == 'fixed':
+            if amount <= 0:
+                raise serializers.ValidationError("Amount must be greater than 0 for fixed deduction.")
+
+        return data
 
 
 class PayrollPeriodSerializer(serializers.ModelSerializer):
