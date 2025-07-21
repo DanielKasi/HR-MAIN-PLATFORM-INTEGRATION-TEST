@@ -19,6 +19,18 @@ import { getDepartments, getJobPositions, createJobPosition } from "@/lib/utils"
 import type { JobPositionFormData, IDepartment, IJobPosition, CreateJobPositionData } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
+
+function formatWithCommas(value: string) {
+  const num = value.replace(/,/g, "");
+  if (!num) return "";
+  return parseFloat(num).toLocaleString("en-US");
+}
+
+function unformat(value: string) {
+  return value.replace(/,/g, "");
+}
+
+
 export default function CreateJobPositionPage() {
   const [formData, setFormData] = useState<JobPositionFormData>({
     name: "",
@@ -34,10 +46,19 @@ export default function CreateJobPositionPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Partial<Record<keyof JobPositionFormData, string>>>({})
+  const [salaryDisplay, setSalaryDisplay] = useState(
+  formData.salary ? formatWithCommas(String(formData.salary)) : ""
+  )
+
 
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const selectedBranch = useSelector(selectSelectedBranch)
+ 
+  useEffect(() => {
+    setSalaryDisplay(formData.salary ? formatWithCommas(String(formData.salary)) : "")
+  }, [formData.salary])
+
 
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
@@ -114,6 +135,8 @@ export default function CreateJobPositionPage() {
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
+
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -233,14 +256,24 @@ export default function CreateJobPositionPage() {
                   </Label>
                   <Input
                     id="salary"
-                    type="number"
-                    placeholder="50000"
-                    value={formData.salary}
-                    onChange={(e) => updateFormData("salary", e.target.value)}
+                    type="text" // Use text to allow comma formatting
+                    inputMode="numeric" // Still mobile-friendly
+                    placeholder="50,000"
+                    value={salaryDisplay}
+                    onChange={(e) => {
+                      const raw = e.target.value
+                      const numeric = unformat(raw)
+
+                      if (!/^\d*$/.test(numeric)) return // Prevent non-digits
+
+                      setSalaryDisplay(formatWithCommas(numeric)) // Show commas
+                      updateFormData("salary", numeric) // Store raw number
+                    }}
                     className={errors.salary ? "border-destructive" : ""}
                   />
                   {errors.salary && <p className="text-sm text-destructive">{errors.salary}</p>}
                 </div>
+
 
                 {/* Department */}
                 <div className="space-y-2">

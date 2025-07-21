@@ -394,6 +394,7 @@ export default function ApplicationsPage() {
           source: "website",
           application_date: new Date().toISOString().split("T")[0],
         });
+        toast.success("Application created successfully!")
       } else {
         setError("Failed to create application - API returned null");
       }

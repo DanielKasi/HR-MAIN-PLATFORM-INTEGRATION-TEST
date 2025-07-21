@@ -1119,11 +1119,10 @@ export const getDisciplineTypes = async ({
 export const getDisciplinaryActions = async (): Promise<DisciplinaryActionAPIResponse[] | null> => {
   try {
     const response = await apiRequest.get(
-      `discipline/disciplinary-actions`
+      `discipline/disciplinary-actions/`
     );
 
     const data = response.data as PaginatedResponse<DisciplinaryActionAPIResponse>
-
     return data.results
   } catch (error) {
     return null;
