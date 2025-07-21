@@ -39,11 +39,6 @@ class WorkType(models.Model):
         return self.name
 
 
-from django.db import models
-from django.core.exceptions import ValidationError
-from django.utils import timezone
-from datetime import datetime, date
-import datetime as dt
 
 class Employee(models.Model):
     """
@@ -141,43 +136,7 @@ class Employee(models.Model):
     def __str__(self):
         return f"{self.user.fullname}  - {self.position}"
 
-    def clean(self):
-        """Custom validation for the Employee model"""
-        super().clean()
-        
-        # Validate minimum age of 18 years
-        if self.date_of_birth:
-            today = date.today()
-            age = today.year - self.date_of_birth.year - (
-                (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
-            )
-            
-            if age < 18:
-                raise ValidationError({
-                    'date_of_birth': f'Employee must be at least 18 years old. Current age: {age} years.'
-                })
-        
-        # Validate date of birth is not in the future
-        if self.date_of_birth and self.date_of_birth > date.today():
-            raise ValidationError({
-                'date_of_birth': 'Date of birth cannot be in the future.'
-            })
-
-    @property
-    def age(self):
-        """Calculate and return the employee's current age"""
-        if not self.date_of_birth:
-            return None
-        
-        today = date.today()
-        return today.year - self.date_of_birth.year - (
-            (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
-        )
-
     def save(self, *args, **kwargs):
-        # Run clean method to validate age before saving
-        self.full_clean()
-        
         is_new_employee = self.pk is None
         old_department = None
         old_gender = None
