@@ -55,7 +55,7 @@ class Command(BaseCommand):
                 )
                 valid_permission_codes.add(perm["code"])
 
-        print("valid_permission_codes:", valid_permission_codes)
+ 
 
         deleted_permissions, _ = Permission.objects.exclude(
             permission_code__in=valid_permission_codes

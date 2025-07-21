@@ -351,7 +351,6 @@ class UserProfileDetailAPIView(APIView):
 
         if not user.is_staff and institution.institution_owner != user:
             try:
-                print("User is not staff or institution owner")
                 profile = user.profile
                 if profile.institution_id != institution.id:
                     return Response({"detail": "Access denied."}, status=403)
@@ -615,13 +614,10 @@ class SystemActivationView(APIView):
 
     def get_system_from_api_key(self, api_key):
         """Validate API key and return the system."""
-        print(f"[ACTIVATION] Validating API key: {api_key}")
         try:
             system = System.objects.get(api_key=api_key, system_type__is_active=True)
-            print(f"[ACTIVATION] System found: {system}")
             return system
         except System.DoesNotExist:
-            print("[ACTIVATION] No system found with the provided API key.")
             return None
 
     def create_or_get_user(self, employee_data):
@@ -647,11 +643,9 @@ class SystemActivationView(APIView):
 
     def create_departments(self, institution, departments_data, owner_user):
         """Create departments for the institution."""
-        print(f"[DEPARTMENT] Creating departments for institution {institution}")
         created_departments = []
 
         for dept_data in departments_data:
-            print(f"[DEPARTMENT] Creating department: {dept_data}")
             try:
                 department = Department.objects.create(
                     institution=institution,
@@ -660,7 +654,6 @@ class SystemActivationView(APIView):
                     created_by=owner_user,
                 )
                 created_departments.append(department)
-                print(f"[DEPARTMENT] Created department: {department.name}")
             except Exception as e:
                 logger.error(f"Error creating department: {str(e)}")
                 continue
@@ -669,7 +662,7 @@ class SystemActivationView(APIView):
 
     def create_institution_and_branches(self, validated_data, owner_user):
         """Create institution and its branches."""
-        print("[INSTITUTION] Starting institution and branches creation.")
+
         try:
             branches_data = validated_data.pop("branches", [])
             employees_data = validated_data.pop("employees", [])
@@ -679,16 +672,13 @@ class SystemActivationView(APIView):
             institution = Institution.objects.create(
                 institution_owner=owner_user, created_by=owner_user, **validated_data
             )
-            print(f"[INSTITUTION] Created institution: {institution.institution_name}")
 
             created_branches = []
             for branch_data in branches_data:
-                print(f"[BRANCH] Creating branch: {branch_data}")
                 branch = Branch.objects.create(
                     institution=institution, created_by=owner_user, **branch_data
                 )
                 created_branches.append(branch)
-                print(f"[BRANCH] Created branch: {branch.branch_location}")
 
             created_departments = self.create_departments(
                 institution, departments_data, owner_user
@@ -708,14 +698,12 @@ class SystemActivationView(APIView):
 
     def create_employees(self, institution, branches, departments, employees_data):
         """Create employees for the institution."""
-        print(f"[EMPLOYEE] Creating employees for institution {institution}")
         created_employees = []
 
         branch_map = {branch.branch_location: branch for branch in branches}
         department_map = {dept.name: dept for dept in departments}
 
         for employee_data in employees_data:
-            print(f"[EMPLOYEE] Processing employee: {employee_data}")
             try:
                 branch_location = employee_data.get("branch_location")
                 branch = (
@@ -725,7 +713,6 @@ class SystemActivationView(APIView):
                 )
 
                 if not branch:
-                    print("[EMPLOYEE] No branch matched for employee.")
                     continue
 
                 department_name = employee_data.get("department")
@@ -735,7 +722,6 @@ class SystemActivationView(APIView):
 
                 employee_user = self.create_or_get_user(employee_data)
                 if not employee_user:
-                    print("[EMPLOYEE] Failed to create or get user.")
                     continue
 
                 employee = Employee.objects.create(
@@ -751,7 +737,6 @@ class SystemActivationView(APIView):
                         "date_of_joining", datetime.now().date()
                     ),
                 )
-                print(f"[EMPLOYEE] Created employee: {employee.email}")
                 created_employees.append(employee)
 
             except Exception as e:
@@ -762,13 +747,10 @@ class SystemActivationView(APIView):
 
     def post(self, request):
         """Handle HR system activation."""
-        print("\n[ACTIVATION] Hit system activation endpoint")
 
         api_key = request.headers.get("X-API-Key") or request.headers.get("Authorization")
-        print(f"[ACTIVATION] Received API key: {api_key}")
 
         if not api_key:
-            print("[ACTIVATION] No API key provided")
             return Response(
                 {"error": "API key is required in X-API-Key header"},
                 status=status.HTTP_401_UNAUTHORIZED,
@@ -779,14 +761,12 @@ class SystemActivationView(APIView):
 
         system = self.get_system_from_api_key(api_key)
         if not system:
-            print("[ACTIVATION] Invalid API key provided")
             return Response(
                 {"error": "Invalid API key"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
         serializer = InstitutionActivationSerializer(data=request.data)
         if not serializer.is_valid():
-            print(f"[ACTIVATION] Invalid data: {serializer.errors}")
             return Response(
                 {
                     "error": "Data does not conform to HR system requirements",
@@ -799,14 +779,11 @@ class SystemActivationView(APIView):
         try:
             with transaction.atomic():
                 validated_data = serializer.validated_data.copy()
-                print(f"[ACTIVATION] Validated data: {validated_data.keys()}")
 
                 owner_data = validated_data.get("owner", {})
-                print(f"[OWNER] Creating owner: {owner_data}")
                 owner_user = self.create_or_get_user(owner_data)
 
                 if not owner_user:
-                    print("[OWNER] Failed to create owner user")
                     return Response(
                         {"error": "Could not create owner user"},
                         status=status.HTTP_400_BAD_REQUEST,
@@ -820,7 +797,6 @@ class SystemActivationView(APIView):
 
                 institution.system = system
                 institution.save()
-                print(f"[INSTITUTION] Institution system updated: {system.code}")
 
                 employees = self.create_employees(
                     institution, branches, departments, employees_data
@@ -833,7 +809,6 @@ class SystemActivationView(APIView):
                             owner_employee = employee
                             break
 
-                print(f"[ACTIVATION] Employees created: {len(employees)}")
 
                 response_data = {
                     "success": True,
@@ -859,7 +834,6 @@ class SystemActivationView(APIView):
                     },
                 }
 
-                print("[ACTIVATION] Sending activation email...")
                 send_activation_confirmation_email(
                     owner_fullname=owner_user.fullname,
                     owner_email=owner_user.email,
@@ -869,12 +843,10 @@ class SystemActivationView(APIView):
                     employees=employees,
                 )
 
-                print("[ACTIVATION] HR system activation completed.")
                 return Response(response_data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             logger.error(f"Error during system activation: {str(e)}")
-            print(f"[ERROR] Exception in system activation: {str(e)}")
             return Response(
                 {"error": "Failed to activate HR system", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,

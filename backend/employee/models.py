@@ -39,6 +39,12 @@ class WorkType(models.Model):
         return self.name
 
 
+from django.db import models
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from datetime import datetime, date
+import datetime as dt
+
 class Employee(models.Model):
     """
     Employee model to store employee details in the system."""
@@ -135,7 +141,43 @@ class Employee(models.Model):
     def __str__(self):
         return f"{self.user.fullname}  - {self.position}"
 
+    def clean(self):
+        """Custom validation for the Employee model"""
+        super().clean()
+        
+        # Validate minimum age of 18 years
+        if self.date_of_birth:
+            today = date.today()
+            age = today.year - self.date_of_birth.year - (
+                (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
+            )
+            
+            if age < 18:
+                raise ValidationError({
+                    'date_of_birth': f'Employee must be at least 18 years old. Current age: {age} years.'
+                })
+        
+        # Validate date of birth is not in the future
+        if self.date_of_birth and self.date_of_birth > date.today():
+            raise ValidationError({
+                'date_of_birth': 'Date of birth cannot be in the future.'
+            })
+
+    @property
+    def age(self):
+        """Calculate and return the employee's current age"""
+        if not self.date_of_birth:
+            return None
+        
+        today = date.today()
+        return today.year - self.date_of_birth.year - (
+            (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
+        )
+
     def save(self, *args, **kwargs):
+        # Run clean method to validate age before saving
+        self.full_clean()
+        
         is_new_employee = self.pk is None
         old_department = None
         old_gender = None
@@ -367,16 +409,6 @@ class EmployeeAttendance(models.Model):
         return f"{self.employee.user.fullname} - {self.date} - {self.status}"
 
     def calculate_overtime_hours(self):
-        print("Calculating overtime hours...")
-
-        if not self.date:
-            print("Missing: self.date is None")
-        if not self.check_out_time:
-            print("Missing: self.check_out_time is None")
-        if not self.employee:
-            print("Missing: self.employee is None")
-        elif not self.employee.payroll_branch:
-            print("Missing: self.employee.payroll_branch is None")
 
         if (
             self.date
@@ -385,34 +417,22 @@ class EmployeeAttendance(models.Model):
             and self.employee.payroll_branch
         ):
             branch_end_time = self.employee.payroll_branch.branch_closing_time
-            print(f"Branch end time: {branch_end_time}")
-            print(f"Check-out time: {self.check_out_time}")
 
             datetime_checkout = datetime.combine(self.date, self.check_out_time)
             datetime_end = datetime.combine(self.date, branch_end_time)
 
-            print(f"Datetime checkout: {datetime_checkout}")
-            print(f"Datetime end: {datetime_end}")
 
             if datetime_checkout > datetime_end:
                 overtime_duration = datetime_checkout - datetime_end
                 hours = round(overtime_duration.total_seconds() / 3600, 2)
-                print(f"Overtime duration: {hours} hours")
                 return hours
-            else:
-                print("No overtime. Checkout was before or at end time.")
-        else:
-            print("Insufficient data to calculate overtime.")
-
         return 0.0
 
     def save(self, *args, **kwargs):
-        print("Saving model instance...")
 
         if self.date is None:
             self.date = datetime.today().date()
-            print(f"Date was missing. Set to today: {self.date}")
+
 
         self.overtime_hours = self.calculate_overtime_hours()
-        print(f"Overtime hours set to: {self.overtime_hours}")
         super().save(*args, **kwargs)

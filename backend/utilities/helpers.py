@@ -37,9 +37,6 @@ def send_activation_confirmation_email(
     Sends an email to the owner confirming the activation of the institution.
     """
 
-    print(
-        f"This function is called with {owner_fullname}, {owner_email}, {institution_name}, {branches}, {departments}, {employees}"
-    )
 
     try:
         subject = "Perrac Module Activation Confirmation"
@@ -256,7 +253,7 @@ def send_password_link_to_user(user, link):
         )
         return True
     except Exception as e:
-        print("Error sending email:", e)
+        
         return False
 
 
@@ -280,7 +277,7 @@ def send_password_reset_link_to_user(user, link):
         )
         return True
     except Exception as e:
-        print("Error sending email:", e)
+        
         return False
 
 
