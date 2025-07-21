@@ -28,7 +28,7 @@ class LeaveType(models.Model):
     description = models.TextField(blank=True)
     max_days_per_year = models.PositiveIntegerField(default=0)
     carry_forward_allowed = models.BooleanField(default=False)
-    max_carry_forward_days = models.PositiveIntegerField(default=0)
+    max_carry_forward_days = models.PositiveIntegerField(default=0, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     requires_document = models.BooleanField(default=False)
     gender_specific = models.CharField(

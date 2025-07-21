@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
 from datetime import datetime
 from employee.models import Employee
+from django.utils import timezone
 
 
 class AllowanceType(models.Model):
@@ -77,7 +78,7 @@ class EmployeeAllowance(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(100)],
     )
     is_active = models.BooleanField(default=True)
-    effective_from = models.DateField(default=datetime.now)
+    effective_from = models.DateField(default=timezone.now)
     effective_to = models.DateField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -86,13 +87,25 @@ class EmployeeAllowance(models.Model):
 
     def get_calculated_amount(self):
         """Calculate allowance amount based on method"""
-        if self.calculation_method == "percentage" and self.employee.salary:
-            return (self.employee.salary * self.percentage) / 100
+        if self.calculation_method == "percentage":
+            if not self.employee.salary or self.employee.salary <= 0:
+                return 0.00
+            if self.percentage <= 0:
+                return 0.00
+            calculated = (self.employee.salary * self.percentage) / 100
+            return calculated
+
         return self.amount
+
+    def save(self, *args, **kwargs):
+        """Override save to set amount for percentage-based allowances"""
+        if self.calculation_method == "percentage":
+            calculated_amount = self.get_calculated_amount()
+            self.amount = calculated_amount
+        super().save(*args, **kwargs)
 
     class Meta:
         unique_together = ["employee", "allowance_type"]
-
 
 class EmployeeDeduction(models.Model):
     """
@@ -119,7 +132,7 @@ class EmployeeDeduction(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(100)],
     )
     is_active = models.BooleanField(default=True)
-    effective_from = models.DateField(default=datetime.now)
+    effective_from = models.DateField(default=timezone.now)
     effective_to = models.DateField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -128,13 +141,24 @@ class EmployeeDeduction(models.Model):
 
     def get_calculated_amount(self):
         """Calculate deduction amount based on method"""
-        if self.calculation_method == "percentage" and self.employee.salary:
-            return (self.employee.salary * self.percentage) / 100
+        if self.calculation_method == "percentage":
+            if not self.employee.salary or self.employee.salary <= 0:
+                return 0.00
+            if self.percentage <= 0:
+                return 0.00
+            calculated = (self.employee.salary * self.percentage) / 100
+            return calculated
         return self.amount
+
+    def save(self, *args, **kwargs):
+        """Override save to set amount for percentage-based deductions"""
+        if self.calculation_method == "percentage":
+            calculated_amount = self.get_calculated_amount()
+            self.amount = calculated_amount
+        super().save(*args, **kwargs)
 
     class Meta:
         unique_together = ["employee", "deduction_type"]
-
 
 class PayrollPeriod(models.Model):
     """
