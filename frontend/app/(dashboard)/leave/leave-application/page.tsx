@@ -86,6 +86,7 @@ const LeaveApplicationComponent = () => {
   const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([])
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
+  
 
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean
