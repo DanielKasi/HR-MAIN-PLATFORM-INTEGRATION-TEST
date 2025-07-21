@@ -599,35 +599,35 @@ export interface SetDefaultBranchPayload {
 }
 
 export interface DisciplinaryActionForm {
-  discipline_type: string
-  employee: string
-  reported_by: string
-  assigned_to: string
-  incident_date: string
-  description: string
-  evidence: string
-  status: "pending" | "in_progress" | "completed" | "dismissed"
-  action_taken: string
-  resolution_date: string
-  follow_up_required: boolean
-  follow_up_date: string
-  notes: string
+  employee: string;
+  discipline_type: string;
+  incident_date: string;
+  description: string;
+  evidence: string;
+  reported_by: string;
+  assigned_to: string;
+  status: string;
+  action_taken: string;
+  resolution_date: string;
+  follow_up_required: boolean;
+  follow_up_date: string | null; // Allow null
+  notes: string;
 }
 
 export interface DisciplinaryActionRequest {
-  discipline_type: number
-  employee: number
-  reported_by: number
-  assigned_to: number
-  incident_date: string // YYYY-MM-DD format
-  description: string
-  evidence: string
-  status: "pending" | "in_progress" | "completed" | "dismissed"
-  action_taken: string
-  resolution_date: string // YYYY-MM-DD format
-  follow_up_required: boolean
-  follow_up_date: string // YYYY-MM-DD format
-  notes: string
+  discipline_type: number;
+  employee: number;
+  reported_by: number;
+  assigned_to: number | null; // Allow null for optional assignment
+  incident_date: string;
+  description: string;
+  evidence: string;
+  status: string;
+  action_taken: string;
+  resolution_date: string | null; // Allow null for optional resolution date
+  follow_up_required: boolean;
+  follow_up_date: string | null; // Allow null for optional follow-up date
+  notes: string;
 }
 
 
@@ -643,17 +643,19 @@ export function convertFormToApiRequest(formData: DisciplinaryActionForm): Disci
     discipline_type: parseInt(formData.discipline_type),
     employee: parseInt(formData.employee),
     reported_by: parseInt(formData.reported_by),
-    assigned_to: parseInt(formData.assigned_to),
+    assigned_to: formData.assigned_to ? parseInt(formData.assigned_to) : null,
     incident_date: formData.incident_date,
     description: formData.description,
     evidence: formData.evidence,
     status: formData.status,
     action_taken: formData.action_taken,
-    resolution_date: formData.resolution_date,
+    resolution_date: formData.resolution_date || null,
     follow_up_required: formData.follow_up_required,
-    follow_up_date: formData.follow_up_date,
+    follow_up_date: formData.follow_up_required && formData.follow_up_date 
+      ? formData.follow_up_date 
+      : null,
     notes: formData.notes,
-  }
+  };
 }
 
 
@@ -849,29 +851,54 @@ export interface DisciplinaryActionAPIResponse {
   notes: string
 }
 
-// Updated transform function to extract the names from nested objects
 export const transformDisciplinaryActionData = (apiData: DisciplinaryActionAPIResponse[] | null) => {
   if (!apiData) return []
 
-  return apiData.map(action => ({
-    id: action.id.toString(),
-    employee_name: action.employee.user.fullname,
-    employee_department: action.employee.department.name,
-    discipline_type: action.discipline_type.name,
-    discipline_severity: action.discipline_type.severity,
-    incident_date: action.incident_date,
-    reported_date: action.reported_date,
-    description: action.description,
-    evidence: action.evidence,
-    reported_by: action.reported_by.user.fullname,
-    assigned_to: action.assigned_to ? action.assigned_to.user.fullname : 'Unassigned',
-    status: action.status,
-    action_taken: action.action_taken,
-    resolution_date: action.resolution_date || '',
-    follow_up_required: action.follow_up_required,
-    follow_up_date: action.follow_up_date || '',
-    notes: action.notes,
-  }))
+  return apiData.map(action => {
+    try {
+      return {
+        id: action.id.toString(),
+        employee_name: action.employee?.user?.fullname || action.employee?.email || 'Unknown Employee',
+        employee_department: action.employee?.department?.name || 'No Department',
+        discipline_type: action.discipline_type?.name || 'Unknown Type',
+        discipline_severity: action.discipline_type?.severity || 'low',
+        incident_date: action.incident_date,
+        reported_date: action.reported_date,
+        description: action.description || '',
+        evidence: action.evidence || '',
+        reported_by: action.reported_by?.user?.fullname || action.reported_by?.email || 'Unknown Reporter',
+        assigned_to: action.assigned_to?.user?.fullname || 'Unassigned',
+        status: action.status,
+        action_taken: action.action_taken || '',
+        resolution_date: action.resolution_date || '',
+        follow_up_required: action.follow_up_required || false,
+        follow_up_date: action.follow_up_date || '',
+        notes: action.notes || '',
+      }
+    } catch (error) {
+      console.error('Error transforming disciplinary action:', action, error)
+      // Return a safe fallback object
+      return {
+        id: action.id?.toString() || 'unknown',
+        employee_name: 'Error loading employee',
+        employee_department: 'Unknown',
+        discipline_type: 'Unknown',
+        discipline_severity: 'low' as const,
+        incident_date: action.incident_date || '',
+        reported_date: action.reported_date || '',
+        description: action.description || '',
+        evidence: action.evidence || '',
+        reported_by: 'Unknown',
+        assigned_to: 'Unknown',
+        status: action.status || 'pending',
+        action_taken: action.action_taken || '',
+        resolution_date: action.resolution_date || '',
+        follow_up_required: false,
+        follow_up_date: '',
+        notes: action.notes || '',
+      }
+    }
+  })
 }
 
 
