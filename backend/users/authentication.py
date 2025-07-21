@@ -17,10 +17,9 @@ class CrossSystemAuthentication(BaseAuthentication):
 
     def authenticate(self, request):
         api_key = self.extract_api_key(request)
-        print(f"[AUTH] Extracted API Key: {api_key}")
+
 
         if not api_key:
-            print("[AUTH] No API key provided in headers.")
             return None
 
         return self.authenticate_external_system(request, api_key)
@@ -34,26 +33,19 @@ class CrossSystemAuthentication(BaseAuthentication):
 
     def authenticate_external_system(self, request, api_key):
         try:
-            print(f"[AUTH] Attempting to authenticate system with API key: {api_key}")
 
             system = self.get_system_from_api_key(api_key)
-            print(f"[AUTH] System found: {system}")
 
             access_token = self.extract_access_token(request)
-            print(f"[AUTH] Extracted Access Token: {access_token}")
 
             if not access_token:
-                print("[AUTH] Missing access token in request.")
                 raise AuthenticationFailed(_('Access token is required'))
 
             access_token_payload = self.decode_access_token(access_token, system)
-            print(f"[AUTH] Decoded Access Token Payload: {access_token_payload}")
 
             user = self.get_user_from_payload(system, access_token_payload)
-            print(f"[AUTH] Authenticated user: {user}")
 
             if not user:
-                print("[AUTH] No valid user found in payload or not associated with system.")
                 raise AuthenticationFailed(_('User not found or not associated with system'))
 
             request.external_system = system
@@ -62,20 +54,15 @@ class CrossSystemAuthentication(BaseAuthentication):
             return (user, access_token)
 
         except AuthenticationFailed as e:
-            print(f"[AUTH] Authentication failed: {str(e)}")
             raise
         except System.DoesNotExist:
-            print(f"[AUTH] Invalid API key (system not found): {api_key[:8]}...")
             raise AuthenticationFailed(_('Invalid API key'))
         except (jwt.InvalidTokenError, json.JSONDecodeError) as e:
-            print(f"[AUTH] Invalid token format: {str(e)}")
             raise AuthenticationFailed(_('Invalid access token format'))
         except Exception as e:
-            print(f"[AUTH] Unexpected error during authentication: {str(e)}")
             raise AuthenticationFailed(_('Authentication failed'))
 
     def get_system_from_api_key(self, api_key):
-        print(f"[AUTH] Looking up system by API key: {api_key}")
         return System.objects.select_related('system_type').get(
             api_key=api_key,
             system_type__is_active=True
