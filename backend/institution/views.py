@@ -779,14 +779,11 @@ class SystemActivationView(APIView):
         try:
             with transaction.atomic():
                 validated_data = serializer.validated_data.copy()
-                print(f"[ACTIVATION] Validated data: {validated_data.keys()}")
 
                 owner_data = validated_data.get("owner", {})
-                print(f"[OWNER] Creating owner: {owner_data}")
                 owner_user = self.create_or_get_user(owner_data)
 
                 if not owner_user:
-                    print("[OWNER] Failed to create owner user")
                     return Response(
                         {"error": "Could not create owner user"},
                         status=status.HTTP_400_BAD_REQUEST,
@@ -800,7 +797,6 @@ class SystemActivationView(APIView):
 
                 institution.system = system
                 institution.save()
-                print(f"[INSTITUTION] Institution system updated: {system.code}")
 
                 employees = self.create_employees(
                     institution, branches, departments, employees_data
@@ -813,7 +809,6 @@ class SystemActivationView(APIView):
                             owner_employee = employee
                             break
 
-                print(f"[ACTIVATION] Employees created: {len(employees)}")
 
                 response_data = {
                     "success": True,
@@ -839,7 +834,6 @@ class SystemActivationView(APIView):
                     },
                 }
 
-                print("[ACTIVATION] Sending activation email...")
                 send_activation_confirmation_email(
                     owner_fullname=owner_user.fullname,
                     owner_email=owner_user.email,
@@ -849,12 +843,10 @@ class SystemActivationView(APIView):
                     employees=employees,
                 )
 
-                print("[ACTIVATION] HR system activation completed.")
                 return Response(response_data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             logger.error(f"Error during system activation: {str(e)}")
-            print(f"[ERROR] Exception in system activation: {str(e)}")
             return Response(
                 {"error": "Failed to activate HR system", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
