@@ -30,7 +30,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    'django.contrib.gis',
+    "django.contrib.gis",
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "leave_mgt",
     "payroll",
     "performance",
+    "projects",
 ]
 
 MIDDLEWARE = [
@@ -119,8 +120,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        'users.authentication.CrossSystemAuthentication',
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        "users.authentication.CrossSystemAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -165,14 +166,14 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 # Google Auth Settings
 GOOGLE_OAUTH2_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_OAUTH2_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-GOOGLE_AUTH_REDIRECT_URL=os.getenv("GOOGLE_AUTH_REDIRECT_URL")
+GOOGLE_AUTH_REDIRECT_URL = os.getenv("GOOGLE_AUTH_REDIRECT_URL")
 
 # Channel layers configuration
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [os.environ.get('REDIS_URL', 'redis://localhost:6379/0')],
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [os.environ.get("REDIS_URL", "redis://localhost:6379/0")],
         },
     },
 }
