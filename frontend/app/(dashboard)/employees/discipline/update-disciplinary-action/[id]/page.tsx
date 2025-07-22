@@ -1,56 +1,57 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import { useRouter, useParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2, Plus } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { updateDisciplinaryAction, createDisciplineType, getDisciplineTypes, getAllEmployees, getDisciplinaryActionById } from "@/lib/utils"
-import type { DisciplinaryActionForm, DisciplineTypeForm } from "@/app/types/types.utils"
-import { toast } from "sonner"
-import { useSelector } from "react-redux"
-import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
-import { IUserInstitution } from "@/app/types"
+import type React from "react";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { updateDisciplinaryAction, createDisciplineType, getDisciplineTypes, getAllEmployees, getDisciplinaryActionById } from "@/lib/utils";
+import type { DisciplinaryActionForm, DisciplineTypeForm } from "@/app/types/types.utils";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
+import { IUserInstitution } from "@/app/types";
+import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select";
 
 interface DisciplineType {
-  id?: number
-  name: string
-  description: string
-  severity: "low" | "medium" | "high" | "critical"
-  is_active: boolean
-  created_at?: string
+  id?: number;
+  name: string;
+  description: string;
+  severity: "low" | "medium" | "high" | "critical";
+  is_active: boolean;
+  created_at?: string;
 }
 
 export default function DisciplinaryUpdateForm() {
-  const router = useRouter()
-  const params = useParams()
-  const disciplinaryActionId = params?.id as string
+  const router = useRouter();
+  const params = useParams();
+  const disciplinaryActionId = params?.id as string;
 
-  const selectedInstitution = useSelector(selectSelectedInstitution)
-  const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
-  const [institutionId, setInstitutionId] = useState<number | null>(null)
+  const selectedInstitution = useSelector(selectSelectedInstitution);
+  const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
+  const [institutionId, setInstitutionId] = useState<number | null>(null);
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isDisciplineTypeModalOpen, setIsDisciplineTypeModalOpen] = useState(false)
-  const [isAddingDisciplineType, setIsAddingDisciplineType] = useState(false)
-  const [isLoadingDisciplineTypes, setIsLoadingDisciplineTypes] = useState(true)
-  const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
-  const [isLoadingDisciplinaryAction, setIsLoadingDisciplinaryAction] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDisciplineTypeModalOpen, setIsDisciplineTypeModalOpen] = useState(false);
+  const [isAddingDisciplineType, setIsAddingDisciplineType] = useState(false);
+  const [isLoadingDisciplineTypes, setIsLoadingDisciplineTypes] = useState(true);
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(true);
+  const [isLoadingDisciplinaryAction, setIsLoadingDisciplinaryAction] = useState(true);
 
   const [disciplineType, setDisciplineType] = useState<DisciplineTypeForm>({
     name: "",
     description: "",
     severity: "low",
     is_active: true,
-  })
+  });
 
   const [disciplinaryAction, setDisciplinaryAction] = useState<DisciplinaryActionForm>({
     employee: "",
@@ -64,148 +65,158 @@ export default function DisciplinaryUpdateForm() {
     action_taken: "",
     resolution_date: "",
     follow_up_required: false,
-    follow_up_date: "",
+    follow_up_date: null,
     notes: "",
-  })
+  });
 
-  const [disciplineTypes, setDisciplineTypes] = useState<Array<{
-    id: string
-    name: string
-    severity: "low" | "medium" | "high" | "critical"
-  }>>([])
+  const [disciplineTypes, setDisciplineTypes] = useState<
+    Array<{
+      id: string;
+      name: string;
+      severity: "low" | "medium" | "high" | "critical";
+    }>
+  >([]);
 
-  const [employees, setEmployees] = useState<Array<{
-    id: string
-    name: string
-    department: string
-    email: string
-  }>>([])
+  const [employees, setEmployees] = useState<
+    Array<{
+      id: string;
+      name: string;
+      department: string;
+      email: string;
+    }>
+  >([]);
 
   useEffect(() => {
     if (selectedInstitution) {
-      setInstitutionId(selectedInstitution.id)
+      setInstitutionId(selectedInstitution.id);
     } else if (institutionsAttached && institutionsAttached.length > 0) {
-      setInstitutionId(institutionsAttached[0].id)
+      setInstitutionId(institutionsAttached[0].id);
     }
-  }, [institutionsAttached, selectedInstitution])
+  }, [institutionsAttached, selectedInstitution]);
 
- useEffect(() => {
-  const fetchDisciplinaryAction = async () => {
-    if (!disciplinaryActionId) {
-      toast.error("Invalid disciplinary action ID")
-      router.push("/employees/discipline")
-      return
-    }
-    setIsLoadingDisciplinaryAction(true)
-    try {
-      const idAsNumber = parseInt(disciplinaryActionId, 10)
-      if (isNaN(idAsNumber)) {
-        throw new Error("Invalid disciplinary action ID: must be a number")
+  useEffect(() => {
+    const fetchDisciplinaryAction = async () => {
+      if (!disciplinaryActionId) {
+        toast.error("Invalid disciplinary action ID");
+        router.push("/employees/discipline");
+        return;
       }
-      const existingAction = await getDisciplinaryActionById(idAsNumber)
-      if (!existingAction) {
-        toast.error("Disciplinary action not found")
-        router.push("/employees/discipline")
-        return
+      setIsLoadingDisciplinaryAction(true);
+      try {
+        const idAsNumber = parseInt(disciplinaryActionId, 10);
+        if (isNaN(idAsNumber)) {
+          throw new Error("Invalid disciplinary action ID: must be a number");
+        }
+        const existingAction = await getDisciplinaryActionById(idAsNumber);
+        if (!existingAction) {
+          toast.error("Disciplinary action not found");
+          router.push("/employees/discipline");
+          return;
+        }
+        const mappedAction = {
+          employee: existingAction.employee?.id?.toString() || "",
+          discipline_type: existingAction.discipline_type?.id?.toString() || "",
+          incident_date: existingAction.incident_date && !isNaN(new Date(existingAction.incident_date).getTime())
+            ? new Date(existingAction.incident_date).toISOString().split('T')[0]
+            : "",
+          description: existingAction.description || "",
+          evidence: existingAction.evidence || "",
+          reported_by: existingAction.reported_by?.id?.toString() || "",
+          assigned_to: existingAction.assigned_to?.id?.toString() || "",
+          status: existingAction.status || "pending",
+          action_taken: existingAction.action_taken || "",
+          resolution_date: existingAction.resolution_date && !isNaN(new Date(existingAction.resolution_date).getTime())
+            ? new Date(existingAction.resolution_date).toISOString().split('T')[0]
+            : "",
+          follow_up_required: existingAction.follow_up_required || false,
+          follow_up_date: existingAction.follow_up_date && !isNaN(new Date(existingAction.follow_up_date).getTime())
+            ? new Date(existingAction.follow_up_date).toISOString().split('T')[0]
+            : null,
+          notes: existingAction.notes || "",
+        };
+        setDisciplinaryAction(mappedAction);
+      } catch (error: any) {
+        toast.error("Failed to load disciplinary action");
+        router.push("/employees/discipline");
+      } finally {
+        setIsLoadingDisciplinaryAction(false);
       }
-      const mappedAction = {
-        employee: existingAction.employee?.id?.toString() || "",
-        discipline_type: existingAction.discipline_type?.id?.toString() || "",
-        incident_date: existingAction.incident_date && !isNaN(new Date(existingAction.incident_date).getTime())
-          ? new Date(existingAction.incident_date).toISOString().split('T')[0]
-          : "",
-        description: existingAction.description || "",
-        evidence: existingAction.evidence || "",
-        reported_by: existingAction.reported_by?.id?.toString() || "",
-        assigned_to: existingAction.assigned_to?.id?.toString() || "",
-        status: existingAction.status || "pending",
-        action_taken: existingAction.action_taken || "",
-        resolution_date: existingAction.resolution_date && !isNaN(new Date(existingAction.resolution_date).getTime())
-          ? new Date(existingAction.resolution_date).toISOString().split('T')[0]
-          : "",
-        follow_up_required: existingAction.follow_up_required || false,
-        follow_up_date: existingAction.follow_up_date && !isNaN(new Date(existingAction.follow_up_date).getTime())
-          ? new Date(existingAction.follow_up_date).toISOString().split('T')[0]
-          : "",
-        notes: existingAction.notes || "",
-      }
-      setDisciplinaryAction(mappedAction)
-    } catch (error: any) {
-      toast.error("Failed to load disciplinary action")
-      router.push("/employees/discipline")
-    } finally {
-      setIsLoadingDisciplinaryAction(false)
-    }
-  }
-  fetchDisciplinaryAction()
-}, [disciplinaryActionId, router])
+    };
+    fetchDisciplinaryAction();
+  }, [disciplinaryActionId, router]);
 
   useEffect(() => {
     const fetchEmployees = async () => {
-      if (!institutionId) return
-      setIsLoadingEmployees(true)
+      if (!institutionId) return;
+
+      setIsLoadingEmployees(true);
       try {
-        const fetchedEmployees = await getAllEmployees({ institutionId })
+        const fetchedEmployees = await getAllEmployees({ institutionId });
+
         if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
           const formattedEmployees: typeof employees = fetchedEmployees.map((emp: any) => ({
             id: emp.id.toString(),
-            name: emp.user?.fullname || emp.email || 'Unknown Employee',
-            department: emp.department || '', 
-            email: emp.email || ''
-          }))
-          setEmployees(formattedEmployees)
+            name: emp.user?.fullname || emp.email || "Unknown Employee",
+            department: emp.department || "",
+            email: emp.email || "",
+          }));
+          setEmployees(formattedEmployees);
         } else {
-          setEmployees([])
+          setEmployees([]);
         }
       } catch (error) {
-        toast.error("Failed to load employees")
-        setEmployees([])
+        toast.error("Failed to load employees");
+        setEmployees([]);
       } finally {
-        setIsLoadingEmployees(false)
+        setIsLoadingEmployees(false);
       }
-    }
-    fetchEmployees()
-  }, [institutionId])
+    };
+
+    fetchEmployees();
+  }, [institutionId]);
 
   useEffect(() => {
     const fetchDisciplineTypes = async () => {
-      if (!institutionId) return
-      setIsLoadingDisciplineTypes(true)
+      if (!institutionId) return;
+
+      setIsLoadingDisciplineTypes(true);
       try {
-        const fetchedDisciplineTypes = await getDisciplineTypes({ institutionId })
+        const fetchedDisciplineTypes = await getDisciplineTypes({ institutionId });
+
         if (fetchedDisciplineTypes) {
-          const formattedTypes = fetchedDisciplineTypes.map(type => ({
+          const formattedTypes = fetchedDisciplineTypes.map((type) => ({
             id: type.id.toString(),
             name: type.name,
-            severity: type.severity as "low" | "medium" | "high" | "critical"
-          }))
-          setDisciplineTypes(formattedTypes)
+            severity: type.severity as "low" | "medium" | "high" | "critical",
+          }));
+          setDisciplineTypes(formattedTypes);
         } else {
-          setDisciplineTypes([])
+          setDisciplineTypes([]);
         }
       } catch (error) {
-        toast.error("Failed to load discipline types")
-        setDisciplineTypes([])
+        toast.error("Failed to load discipline types");
+        setDisciplineTypes([]);
       } finally {
-        setIsLoadingDisciplineTypes(false)
+        setIsLoadingDisciplineTypes(false);
       }
-    }
-    fetchDisciplineTypes()
-  }, [institutionId])
+    };
+
+    fetchDisciplineTypes();
+  }, [institutionId]);
 
   const severityOptions = [
     { value: "low", label: "Low", color: "bg-green-200 text-green-900" },
     { value: "medium", label: "Medium", color: "bg-yellow-100 text-yellow-800" },
     { value: "high", label: "High", color: "bg-orange-100 text-orange-800" },
     { value: "critical", label: "Critical", color: "bg-red-100 text-red-800" },
-  ]
+  ];
 
   const statusOptions = [
     { value: "pending", label: "Pending" },
     { value: "in_progress", label: "In Progress" },
     { value: "completed", label: "Completed" },
     { value: "dismissed", label: "Dismissed" },
-  ]
+  ];
 
   const validateForm = (): boolean => {
     const requiredFields = [
@@ -214,102 +225,126 @@ export default function DisciplinaryUpdateForm() {
       { field: disciplinaryAction.incident_date, name: "Incident Date" },
       { field: disciplinaryAction.description, name: "Description" },
       { field: disciplinaryAction.reported_by, name: "Reported By" },
-    ]
+    ];
 
     for (const { field, name } of requiredFields) {
-      if (!field || field.trim() === '' || field === '0') {
-        toast.error(`${name} is required`)
-        return false
+      if (!field || field.trim() === "" || field === "0") {
+        toast.error(`${name} is required`);
+        return false;
       }
     }
 
     if (disciplinaryAction.description.length < 10) {
-      toast.error("Description must be at least 10 characters long")
-      return false
+      toast.error("Description must be at least 10 characters long");
+      return false;
+    }
+
+    const incidentDate = new Date(disciplinaryAction.incident_date);
+    const today = new Date();
+    if (incidentDate > today) {
+      toast.error("Incident date cannot be in the future");
+      return false;
     }
 
     if (disciplinaryAction.follow_up_required && !disciplinaryAction.follow_up_date) {
-      toast.error("Follow-up date is required when follow-up is marked as required")
-      return false
+      toast.error("Follow-up date is required when follow-up is checked");
+      return false;
     }
 
-    const incidentDate = new Date(disciplinaryAction.incident_date)
-    const today = new Date()
-    if (incidentDate > today) {
-      toast.error("Incident date cannot be in the future")
-      return false
+    if (disciplinaryAction.follow_up_required && disciplinaryAction.follow_up_date) {
+      const followUpDate = new Date(disciplinaryAction.follow_up_date);
+      if (followUpDate < incidentDate) {
+        toast.error("Follow-up date cannot be before the incident date");
+        return false;
+      }
     }
-    return true
-  }
+
+    return true;
+  };
 
   const validateDisciplineTypeForm = (): boolean => {
     if (!disciplineType.name.trim()) {
-      toast.error("Name is required")
-      return false
+      toast.error("Name is required");
+      return false;
     }
 
     if (disciplineType.name.length > 100) {
-      toast.error("Name cannot exceed 100 characters")
-      return false
+      toast.error("Name cannot exceed 100 characters");
+      return false;
     }
 
-    return true
-  }
+    return true;
+  };
 
   const handleDisciplineTypeSubmit = async () => {
-    if (!validateDisciplineTypeForm()) return
-    setIsAddingDisciplineType(true)
+    if (!validateDisciplineTypeForm()) {
+      return;
+    }
+
+    setIsAddingDisciplineType(true);
+
     try {
-      const result = await createDisciplineType({ disciplineTypeData: disciplineType })
+      const result = await createDisciplineType({
+        disciplineTypeData: disciplineType,
+      });
       if (result) {
-        toast.success("Discipline type created successfully!")
+        toast.success("Discipline type created successfully!");
+
         const newDisciplineType = {
           id: result.id?.toString() || Date.now().toString(),
           name: result.name || disciplineType.name,
-          severity: (result.severity || disciplineType.severity) as "low" | "medium" | "high" | "critical"
-        }
-        setDisciplineTypes(prev => [...prev, newDisciplineType])
-        setDisciplinaryAction(prev => ({ ...prev, discipline_type: newDisciplineType.id }))
+          severity: (result.severity || disciplineType.severity) as "low" | "medium" | "high" | "critical",
+        };
+
+        setDisciplineTypes((prev) => [...prev, newDisciplineType]);
+        setDisciplinaryAction((prev) => ({ ...prev, discipline_type: newDisciplineType.id }));
+
         setDisciplineType({
           name: "",
           description: "",
           severity: "low",
           is_active: true,
-        })
-        setIsDisciplineTypeModalOpen(false)
+        });
+        setIsDisciplineTypeModalOpen(false);
       } else {
-        toast.error("Failed to create discipline type. Please try again.")
+        toast.error("Failed to create discipline type. Please try again.");
       }
-    } catch (error: any) {
-      const errorMessage = error.message || "Failed to create discipline type. Please try again."
-      toast.error(errorMessage)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to create discipline type. Please try again.";
+      toast.error(errorMessage);
     } finally {
-      setIsAddingDisciplineType(false)
+      setIsAddingDisciplineType(false);
     }
-  }
+  };
 
   const handleDisciplinaryActionSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validateForm()) return
-    setIsSubmitting(true)
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
       const result = await updateDisciplinaryAction({
         disciplinaryActionId: parseInt(disciplinaryActionId, 10),
         disciplinaryActionData: disciplinaryAction,
-      })
+      });
+
       if (result) {
-        toast.success("Disciplinary action updated successfully!")
-        router.push("/employees/discipline")
+        toast.success("Disciplinary action updated successfully!");
+        router.push("/employees/discipline");
       } else {
-        toast.error("Failed to update disciplinary action. Please try again.")
+        toast.error("Failed to update disciplinary action. Please try again.");
       }
-    } catch (error: any) {
-      const errorMessage = error.message || "Failed to update disciplinary action. Please try again."
-      toast.error(errorMessage)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to update disciplinary action. Please try again.";
+      toast.error(errorMessage);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleDisciplineTypeCancel = () => {
     setDisciplineType({
@@ -317,13 +352,13 @@ export default function DisciplinaryUpdateForm() {
       description: "",
       severity: "low",
       is_active: true,
-    })
-    setIsDisciplineTypeModalOpen(false)
-  }
+    });
+    setIsDisciplineTypeModalOpen(false);
+  };
 
   const handleDisciplinaryActionCancel = () => {
-    router.push("/employees/discipline")
-  }
+    router.push("/employees/discipline");
+  };
 
   if (isLoadingDisciplinaryAction) {
     return (
@@ -339,7 +374,7 @@ export default function DisciplinaryUpdateForm() {
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -353,31 +388,19 @@ export default function DisciplinaryUpdateForm() {
           <CardContent>
             <form onSubmit={handleDisciplinaryActionSubmit} className="space-y-8">
               {/* Basic Information */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="employee">Employee *</Label>
-                  <Select
+                  <EmployeeSearchableSelect
+                    employees={employees}
                     value={disciplinaryAction.employee}
-                    onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, employee: value })}
+                    onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, employee: value.toString() })}
                     disabled={isSubmitting || isLoadingEmployees}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={isLoadingEmployees ? "Loading employees..." : "Select employee"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.length > 0 ? (
-                        employees.map((emp) => (
-                          <SelectItem key={emp.id} value={emp.id}>
-                            {emp.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <div className="px-2 py-1.5 text-sm text-gray-500">
-                          {isLoadingEmployees ? "Loading employees..." : "No employees available"}
-                        </div>
-                      )}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Search and select employee"
+                    isLoading={isLoadingEmployees}
+                    showEmployeeId={false}
+                    showDepartment={false}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -385,9 +408,7 @@ export default function DisciplinaryUpdateForm() {
                   <div className="flex gap-2">
                     <Select
                       value={disciplinaryAction.discipline_type}
-                      onValueChange={(value) =>
-                        setDisciplinaryAction({ ...disciplinaryAction, discipline_type: value })
-                      }
+                      onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, discipline_type: value })}
                       disabled={isSubmitting || isLoadingDisciplineTypes}
                     >
                       <SelectTrigger className="flex-1">
@@ -399,10 +420,7 @@ export default function DisciplinaryUpdateForm() {
                             <SelectItem key={type.id} value={type.id}>
                               <div className="flex items-center gap-2">
                                 {type.name}
-                                <Badge
-                                  variant="outline"
-                                  className={severityOptions.find((s) => s.value === type.severity)?.color}
-                                >
+                                <Badge variant="outline" className={severityOptions.find((s) => s.value === type.severity)?.color}>
                                   {type.severity}
                                 </Badge>
                               </div>
@@ -417,22 +435,14 @@ export default function DisciplinaryUpdateForm() {
                     </Select>
                     <Dialog open={isDisciplineTypeModalOpen} onOpenChange={setIsDisciplineTypeModalOpen}>
                       <DialogTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className="shrink-0"
-                          title="Add new discipline type"
-                        >
+                        <Button type="button" variant="outline" size="icon" className="shrink-0" title="Add new discipline type">
                           <Plus className="w-4 h-4" />
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[425px]">
                         <DialogHeader>
                           <DialogTitle>Add New Discipline Type</DialogTitle>
-                          <DialogDescription>
-                            Create a new discipline type for your organization.
-                          </DialogDescription>
+                          <DialogDescription>Create a new discipline type for your organization.</DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
                           <div className="space-y-2">
@@ -490,12 +500,7 @@ export default function DisciplinaryUpdateForm() {
                           </div>
                         </div>
                         <DialogFooter>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleDisciplineTypeCancel}
-                            disabled={isAddingDisciplineType}
-                          >
+                          <Button type="button" variant="outline" onClick={handleDisciplineTypeCancel} disabled={isAddingDisciplineType}>
                             Cancel
                           </Button>
                           <Button
@@ -537,10 +542,7 @@ export default function DisciplinaryUpdateForm() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-
-              {/* Dates */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
                 <div className="space-y-2">
                   <Label htmlFor="incident_date">Incident Date *</Label>
                   <Input
@@ -552,94 +554,89 @@ export default function DisciplinaryUpdateForm() {
                     disabled={isSubmitting}
                   />
                 </div>
+              </div>
 
+              {/* Dates */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="resolution_date">Resolution Date</Label>
                   <Input
                     id="resolution_date"
                     type="date"
                     value={disciplinaryAction.resolution_date}
-                    onChange={(e) =>
-                      setDisciplinaryAction({ ...disciplinaryAction, resolution_date: e.target.value })
-                    }
+                    onChange={(e) => setDisciplinaryAction({ ...disciplinaryAction, resolution_date: e.target.value })}
                     disabled={isSubmitting}
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="follow_up_date">Follow-up Date</Label>
-                  <Input
-                    id="follow_up_date"
-                    type="date"
-                    value={disciplinaryAction.follow_up_date}
-                    onChange={(e) =>
-                      setDisciplinaryAction({ ...disciplinaryAction, follow_up_date: e.target.value })
-                    }
-                    disabled={!disciplinaryAction.follow_up_required || isSubmitting}
-                    className={!disciplinaryAction.follow_up_required ? "bg-gray-100" : ""}
-                  />
-                  {!disciplinaryAction.follow_up_required && (
-                    <p className="text-xs text-muted-foreground">Enable "Follow-up Required" to set a date</p>
+                
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="follow_up_required"
+                      checked={disciplinaryAction.follow_up_required}
+                      onCheckedChange={(checked) =>
+                        setDisciplinaryAction({
+                          ...disciplinaryAction,
+                          follow_up_required: !!checked,
+                          follow_up_date: checked ? disciplinaryAction.follow_up_date : null,
+                        })
+                      }
+                      className="data-[state=checked]:bg-orange-600 data-[state=checked]:border-orange-600"
+                      disabled={isSubmitting}
+                    />
+                    <Label htmlFor="follow_up_required" className="text-orange-800 font-medium">
+                      Follow-up Required
+                    </Label>
+                  </div>
+                  {disciplinaryAction.follow_up_required && (
+                    <div className="flex-1">
+                      <Label htmlFor="follow_up_date" className="sr-only">Follow-up Date *</Label>
+                      <Input
+                        id="follow_up_date"
+                        type="date"
+                        value={disciplinaryAction.follow_up_date || ""}
+                        onChange={(e) => setDisciplinaryAction({ ...disciplinaryAction, follow_up_date: e.target.value })}
+                        disabled={isSubmitting}
+                        required
+                        placeholder="Follow-up Date"
+                      />
+                    </div>
                   )}
-                </div>
+                </div>   
               </div>
 
               {/* Assignment */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="reported_by">Reported By *</Label>
-                  <Select
+                  <EmployeeSearchableSelect
+                    employees={employees}
                     value={disciplinaryAction.reported_by}
-                    onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, reported_by: value })}
+                    onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, reported_by: value.toString() })}
                     disabled={isSubmitting || isLoadingEmployees}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={isLoadingEmployees ? "Loading employees..." : "Select reporter"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.length > 0 ? (
-                        employees.map((emp) => (
-                          <SelectItem key={emp.id} value={emp.id}>
-                            {emp.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <div className="px-2 py-1.5 text-sm text-gray-500">
-                          {isLoadingEmployees ? "Loading employees..." : "No employees available"}
-                        </div>
-                      )}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Search and select reporter"
+                    isLoading={isLoadingEmployees}
+                    showEmployeeId={false}
+                    showDepartment={false}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="assigned_to">Assigned To</Label>
-                  <Select
+                  <EmployeeSearchableSelect
+                    employees={employees}
                     value={disciplinaryAction.assigned_to}
-                    onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, assigned_to: value })}
+                    onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, assigned_to: value.toString() })}
                     disabled={isSubmitting || isLoadingEmployees}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={isLoadingEmployees ? "Loading employees..." : "Select assignee"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.length > 0 ? (
-                        employees.map((emp) => (
-                          <SelectItem key={emp.id} value={emp.id}>
-                            {emp.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <div className="px-2 py-1.5 text-sm text-gray-500">
-                          {isLoadingEmployees ? "Loading employees..." : "No employees available"}
-                        </div>
-                      )}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Search and select assignee"
+                    isLoading={isLoadingEmployees}
+                    showEmployeeId={false}
+                    showDepartment={false}
+                  />
                 </div>
               </div>
 
-              {/* Description and Evidence */}
+              {/* Description and Evidence - Full Width */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="description">Description *</Label>
@@ -654,9 +651,7 @@ export default function DisciplinaryUpdateForm() {
                     className="resize-none"
                     disabled={isSubmitting}
                   />
-                  <p className="text-sm text-muted-foreground">
-                    {disciplinaryAction.description.length}/10 characters minimum
-                  </p>
+                  <p className="text-sm text-muted-foreground">{disciplinaryAction.description.length}/10 characters minimum</p>
                 </div>
 
                 <div className="space-y-2">
@@ -673,6 +668,7 @@ export default function DisciplinaryUpdateForm() {
                 </div>
               </div>
 
+              {/* Action Taken - Full Width */}
               <div className="space-y-2">
                 <Label htmlFor="action_taken">Action Taken</Label>
                 <Textarea
@@ -686,21 +682,7 @@ export default function DisciplinaryUpdateForm() {
                 />
               </div>
 
-              <div className="flex items-center space-x-2 p-4 bg-orange-50 rounded-lg border border-orange-200">
-                <Checkbox
-                  id="follow_up_required"
-                  checked={disciplinaryAction.follow_up_required}
-                  onCheckedChange={(checked) =>
-                    setDisciplinaryAction({ ...disciplinaryAction, follow_up_required: !!checked })
-                  }
-                  className="data-[state=checked]:bg-orange-600 data-[state=checked]:border-orange-600"
-                  disabled={isSubmitting}
-                />
-                <Label htmlFor="follow_up_required" className="text-orange-800 font-medium">
-                  Follow-up Required
-                </Label>
-              </div>
-
+              {/* Additional Notes - Full Width */}
               <div className="space-y-2">
                 <Label htmlFor="notes">Additional Notes</Label>
                 <Textarea
@@ -715,11 +697,7 @@ export default function DisciplinaryUpdateForm() {
               </div>
 
               <div className="flex gap-4 pt-6">
-                <Button 
-                  type="submit" 
-                  className="flex-1 bg-orange-600 hover:bg-orange-700 h-12"
-                  disabled={isSubmitting}
-                >
+                <Button type="submit" className="flex-1 bg-orange-600 hover:bg-orange-700 h-12" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -729,13 +707,7 @@ export default function DisciplinaryUpdateForm() {
                     "Update Disciplinary Action"
                   )}
                 </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="flex-1 h-12"
-                  onClick={handleDisciplinaryActionCancel}
-                  disabled={isSubmitting}
-                >
+                <Button type="button" variant="outline" className="flex-1 h-12" onClick={handleDisciplinaryActionCancel} disabled={isSubmitting}>
                   Cancel
                 </Button>
               </div>
@@ -744,5 +716,5 @@ export default function DisciplinaryUpdateForm() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

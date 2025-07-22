@@ -37,9 +37,6 @@ class OnBoarding(models.Model):
         old_status = None
 
         if not is_new:
-            print("---" * 50)
-            print(f"Updating OnBoarding record for {self.application.applicant_name}")
-            print(f"Old status: {self.status}")
             # Get the old status before saving
             old_instance = OnBoarding.objects.get(pk=self.pk)
             old_status = old_instance.status
@@ -83,7 +80,6 @@ class OnBoarding(models.Model):
                 salary=self.application.job_position_advert.job_position.salary,
             )
 
-            print(f"Employee record created for {self.application.applicant_name}")
 
             context = {
                 "employee_name": self.application.applicant_name,

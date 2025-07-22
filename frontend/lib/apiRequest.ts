@@ -9,7 +9,7 @@ const axiosJsonInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api",
   headers: {},
   timeout: 30000,
-  validateStatus: (status) => status != 401,
+  validateStatus: (status) => status !== 401 && status !== 403
 });
 
 axiosJsonInstance.interceptors.request.use((config) => {
@@ -54,7 +54,7 @@ axiosJsonInstance.interceptors.response.use(
   async (error: any) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & {_retry?: boolean};
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
       originalRequest._retry = true;
 
       const refreshToken = store.getState().auth.refreshToken;

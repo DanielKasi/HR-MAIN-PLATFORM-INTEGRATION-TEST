@@ -1,6 +1,8 @@
 from .models import Employee, EmployeeAttendance, EmployeeType, WorkType
 from rest_framework import serializers
 from users.serializers import CustomUserSerializer
+from datetime import date
+from dateutil.relativedelta import relativedelta
 
 class EmployeeTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,32 +25,18 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Employee
-        fields = [
-            "id",
-            "user",
-            "email",
-            "phone_number",
-            "position",
-            "position_details",
-            "department",
-            "department_details",
-            "roles",
-            "date_of_birth",
-            "date_of_joining",
-            "address",
-            "is_active",
-            "created_at",
-            "updated_at",
-            "experience",
-            "qualifications",
-            "skills",
-            "emergency_contact_name",
-            "emergency_contact_phone",
-            "emergency_contact_relationship",
-            "marital_status",
-            "children_count",
-            "employee_profile_picture"
-        ]
+        fields = '__all__'
+
+    def validate_date_of_birth(self, value):
+        """
+        Ensure the employee is at least 18 years old based on their date of birth.
+        """
+        if value:
+            today = date.today()
+            age = relativedelta(today, value).years
+            if age < 18:
+                raise serializers.ValidationError("Employee must be at least 18 years old.")
+        return value
 
     def create(self, validated_data):
         user_data = validated_data.pop("user", None)

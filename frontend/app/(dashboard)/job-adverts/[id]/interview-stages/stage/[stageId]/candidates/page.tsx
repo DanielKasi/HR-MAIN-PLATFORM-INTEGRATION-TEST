@@ -767,13 +767,13 @@ const StageCandidatesContent = ({
           institutionId: selectedInstitution.id,
           interviewData: createData,
         });
-        
+
         if (result) {
           console.log(`Interview ${index + 1} created successfully:`, result)
         } else {
           console.error(`Interview ${index + 1} creation returned null`)
         }
-        
+
         return result
       } catch (individualError) {
         console.error(`Error creating interview ${index + 1}:`, individualError)
@@ -783,9 +783,9 @@ const StageCandidatesContent = ({
 
     console.log("Waiting for all interview creation promises...")
     const results = await Promise.all(interviewPromises);
-    
+
     console.log("All interview creation results:", results)
-    
+
     const successCount = results.filter(result => result !== null).length;
     const failureCount = results.length - successCount;
 
@@ -956,7 +956,7 @@ const StageCandidatesContent = ({
         }
       }
     });
-  
+
     return Array.from(processedCandidates.values());
   };
 
@@ -1285,12 +1285,12 @@ const StageCandidatesContent = ({
   return (
     <div className="w-full h-full p-6">
       <div className="w-full mx-auto space-y-6">
+        <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Interview Stages
+          </Button>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Interview Stages
-            </Button>
             <div>
               <h1 className="text-2xl font-bold">{currentStage.name} - Candidates</h1>
               <p className="text-muted-foreground">
@@ -1301,7 +1301,7 @@ const StageCandidatesContent = ({
         </div>
 
           {nextStage && (
-          <Card 
+          <Card
             className="border-green-200 bg-green-50 hover:bg-green-100 cursor-pointer transition-colors duration-200 hover:shadow-md"
             onClick={() => {
               console.log('Navigating to next stage:', nextStage.id) // Debug log
@@ -1482,7 +1482,7 @@ const StageCandidatesContent = ({
                         <TableCell>
                           <div className="text-center">
                             {candidate.rating ? (
-                              <span className="text-lg font-semibold">{candidate.rating}/5</span>
+                              <span className="text-lg font-semibold">{candidate.rating}/10</span>
                             ) : (
                               <span className="text-sm text-gray-400">-</span>
                             )}

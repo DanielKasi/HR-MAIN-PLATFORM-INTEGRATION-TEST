@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
-import { Building2, Plus, Search, Filter, MoreVertical, Edit, Trash2, RefreshCw } from "lucide-react"
+import { Building2,Eye, Plus, Search, Filter, MoreVertical, Edit, Trash2, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -229,7 +229,7 @@ export default function DepartmentsPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
                         onClick={() => handleViewDepartment(department.id)}>
-                        <Building2 className="h-4 w-4 mr-2" />
+                        <Eye className="h-4 w-4 mr-2" />
                         View Details
                       </DropdownMenuItem>
                       <DropdownMenuItem

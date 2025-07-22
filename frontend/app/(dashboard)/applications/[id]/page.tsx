@@ -233,12 +233,12 @@ export default function ApplicationViewPage() {
   return (
     <div className="w-full h-full p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" onClick={handleGoBack}>
+      <Button variant="outline" size="sm" onClick={handleGoBack}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
-          </Button>
+      </Button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold">Application from {application.applicant_name}</h1>
             <p className="text-muted-foreground">
@@ -534,7 +534,7 @@ export default function ApplicationViewPage() {
               <CardTitle className="text-lg">Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              
+
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Status</span>
                 <Badge variant={getStatusBadgeVariant(application.status)}>{application.status}</Badge>

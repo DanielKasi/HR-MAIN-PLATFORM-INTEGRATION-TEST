@@ -489,22 +489,6 @@ export default function EditJobPositionPage() {
                                 </div>
                             </div>
 
-                            {/* Job Position Info Display */}
-                            <div className="bg-muted/50 p-4 rounded-lg">
-                                <h4 className="font-medium text-sm mb-3">Job Position Information:</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                                    <div className="space-y-2">
-                                        <p>
-                                            <span className="font-medium text-foreground">Position:</span> {jobPosition?.name}
-                                        </p>
-                                        <p>
-                                            <span className="font-medium text-foreground">Institution:</span> {jobPosition?.department_details?.institution_details?.institution_name}
-                                        </p>
-
-                                    </div>
-                                </div>
-                            </div>
-
                             {/* Form Actions */}
                             <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
                                 <Button

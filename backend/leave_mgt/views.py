@@ -247,8 +247,6 @@ class LeaveApplicationListCreateAPIView(APIView):
 
         data_to_serialize["institution"] = institution_id
 
-        print(f"Institution ID set to: {institution_id}")  # Debug line
-        print(f"Data being serialized: {data_to_serialize}")  # Debug lin
 
         serializer = LeaveApplicationSerializer(data=data_to_serialize)
 

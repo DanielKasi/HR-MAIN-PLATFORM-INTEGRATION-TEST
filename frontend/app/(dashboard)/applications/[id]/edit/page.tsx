@@ -148,10 +148,10 @@ export default function EditApplicationPage() {
       console.log("Loading job position adverts for institution:", selectedInstitution.id)
       const response = await getJobPositionAdverts({ institutionId: selectedInstitution.id })
       console.log("Job adverts response:", response)
-      
+
       // Handle paginated response
       let advertsArray: JobPositionAdvert[] = []
-      
+
       if (response && 'results' in response && Array.isArray(response.results)) {
         console.log("Setting job adverts from paginated response:", response.results)
         advertsArray = response.results
@@ -165,7 +165,7 @@ export default function EditApplicationPage() {
         console.log("Unexpected response structure:", response)
         advertsArray = []
       }
-      
+
       console.log("Final job adverts array:", advertsArray)
       setJobPositionAdverts(advertsArray)
     } catch (err) {
@@ -252,7 +252,7 @@ export default function EditApplicationPage() {
   }
 
   const handleGoBack = () => {
-    router.push(`/applications/${applicationId}`)
+    router.push(`/applications`)
   }
 
   // Ensure jobPositionAdverts is always an array for safe filtering
@@ -307,14 +307,17 @@ export default function EditApplicationPage() {
   }
 
   return (
-    <div className="w-full h-full p-6 space-y-6">
+    <div className="w-full h-full p-6"> {/* Add padding here */}
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="mb-6"> {/* Add margin bottom */}
+        <Button variant="outline" size="sm" onClick={handleGoBack}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"> {/* Add margin bottom */}
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" onClick={handleGoBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
           <div>
             <h1 className="text-2xl font-bold">Edit Application</h1>
             <p className="text-muted-foreground">Update application details for {application?.applicant_name}</p>
@@ -328,138 +331,44 @@ export default function EditApplicationPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Form */}
-        <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+      {/* Make this container take full width */}
+      <div className="w-full">
+        {/* Main Form - Remove the grid layout to make it full width */}
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-none"> {/* Remove max-width constraints */}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-            {/* Applicant Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Applicant Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="applicant_name">Full Name *</Label>
-                    <Input
-                      id="applicant_name"
-                      value={formData.applicant_name}
-                      onChange={(e) => handleInputChange("applicant_name", e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="gender">Gender *</Label>
-                    <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {genderOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="applicant_email">Email *</Label>
-                    <Input
-                      id="applicant_email"
-                      type="email"
-                      value={formData.applicant_email}
-                      onChange={(e) => handleInputChange("applicant_email", e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="applicant_phone">Phone</Label>
-                    <Input
-                      id="applicant_phone"
-                      value={formData.applicant_phone}
-                      onChange={(e) => handleInputChange("applicant_phone", e.target.value)}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Job Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building className="h-5 w-5" />
-                  Job Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="job_position_advert">Job Position *</Label>
-                    <Select
-                      value={formData.job_position_advert.toString()}
-                      onValueChange={(value) => handleInputChange("job_position_advert", Number.parseInt(value))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a job advert" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {safeJobPositionAdverts
-                          .filter((advert) => advert.status === "active")
-                          .map((advert) => (
-                            <SelectItem key={advert.id} value={advert.id.toString()}>
-                              <div className="flex flex-col">
-                                <span className="font-medium">
-                                  {advert.job_position_details?.name || `Job Advert #${advert.id}`}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="text-xs text-muted-foreground">
-                      Available job adverts: {safeJobPositionAdverts.length}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status *</Label>
-                    <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statusOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
+          {/* Applicant Information */}
+          <Card className="w-full"> {/* Ensure full width */}
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Applicant Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="source">Source</Label>
-                  <Select value={formData.source} onValueChange={(value) => handleInputChange("source", value)}>
+                  <Label htmlFor="applicant_name">Full Name *</Label>
+                  <Input
+                    id="applicant_name"
+                    value={formData.applicant_name}
+                    onChange={(e) => handleInputChange("applicant_name", e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender *</Label>
+                  <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {sourceOptions.map((option) => (
+                      {genderOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -467,147 +376,240 @@ export default function EditApplicationPage() {
                     </SelectContent>
                   </Select>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Location Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Location Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address *</Label>
+                  <Label htmlFor="applicant_email">Email *</Label>
                   <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => handleInputChange("address", e.target.value)}
+                    id="applicant_email"
+                    type="email"
+                    value={formData.applicant_email}
+                    onChange={(e) => handleInputChange("applicant_email", e.target.value)}
                     required
                   />
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="state">State</Label>
-                    <Input
-                      id="state"
-                      value={formData.state}
-                      onChange={(e) => handleInputChange("state", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country">Country *</Label>
-                    <Input
-                      id="country"
-                      value={formData.country}
-                      onChange={(e) => handleInputChange("country", e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Documents */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Documents
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="resume">Resume</Label>
-                  <div className="space-y-2">
-                    {formData.currentResumeUrl && (
-                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">Current resume</span>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open(formData.currentResumeUrl, "_blank")}
-                        >
-                          View
-                        </Button>
-                      </div>
-                    )}
-                    <div className="flex items-center space-x-2">
-                      <Input
-                        id="resume"
-                        type="file"
-                        accept=".pdf,.doc,.docx"
-                        onChange={(e) => handleFileChange("resume", e.target.files?.[0] || null)}
-                      />
-                      <Upload className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    {formData.resume && (
-                      <p className="text-sm text-muted-foreground flex items-center">
-                        <FileText className="mr-1 h-3 w-3" />
-                        New file: {formData.resume.name}
-                      </p>
-                    )}
-                  </div>
+                  <Label htmlFor="applicant_phone">Phone</Label>
+                  <Input
+                    id="applicant_phone"
+                    value={formData.applicant_phone}
+                    onChange={(e) => handleInputChange("applicant_phone", e.target.value)}
+                  />
                 </div>
+              </div>
+            </CardContent>
+          </Card>
 
+          {/* Job Information */}
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building className="h-5 w-5" />
+                Job Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="cover_letter">Cover Letter</Label>
-                  <div className="space-y-2">
-                    {formData.currentCoverLetterUrl && (
-                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">Current cover letter</span>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open(formData.currentCoverLetterUrl!, "_blank")}
-                        >
-                          View
-                        </Button>
-                      </div>
-                    )}
-                    <div className="flex items-center space-x-2">
-                      <Input
-                        id="cover_letter"
-                        type="file"
-                        accept=".pdf,.doc,.docx"
-                        onChange={(e) => handleFileChange("cover_letter", e.target.files?.[0] || null)}
-                      />
-                      <Upload className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    {formData.cover_letter && (
-                      <p className="text-sm text-muted-foreground flex items-center">
-                        <FileText className="mr-1 h-3 w-3" />
-                        New file: {formData.cover_letter.name}
-                      </p>
-                    )}
+                  <Label htmlFor="job_position_advert">Job Position *</Label>
+                  <Select
+                    value={formData.job_position_advert.toString()}
+                    onValueChange={(value) => handleInputChange("job_position_advert", Number.parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a job advert" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {safeJobPositionAdverts
+                        .filter((advert) => advert.status === "active")
+                        .map((advert) => (
+                          <SelectItem key={advert.id} value={advert.id.toString()}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">
+                                {advert.job_position_details?.name || `Job Advert #${advert.id}`}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="text-xs text-muted-foreground">
+                    Available job adverts: {safeJobPositionAdverts.length}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status *</Label>
+                  <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-            {/* Submit Button */}
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={handleGoBack}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                <Save className="h-4 w-4 mr-2" />
-                {isSubmitting ? "Updating..." : "Update Application"}
-              </Button>
-            </div>
-          </form>
-        </div>
+              <div className="space-y-2">
+                <Label htmlFor="source">Source</Label>
+                <Select value={formData.source} onValueChange={(value) => handleInputChange("source", value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sourceOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                  </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Location Information */}
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Location Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="address">Address *</Label>
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => handleInputChange("address", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="state">State</Label>
+                  <Input
+                    id="state"
+                    value={formData.state}
+                    onChange={(e) => handleInputChange("state", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country *</Label>
+                  <Input
+                    id="country"
+                    value={formData.country}
+                    onChange={(e) => handleInputChange("country", e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Documents */}
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Documents
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="resume">Resume</Label>
+                <div className="space-y-2">
+                  {formData.currentResumeUrl && (
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">Current resume</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(formData.currentResumeUrl, "_blank")}
+                      >
+                        View
+                      </Button>
+                    </div>
+                  )}
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="resume"
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={(e) => handleFileChange("resume", e.target.files?.[0] || null)}
+                    />
+                    <Upload className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  {formData.resume && (
+                    <p className="text-sm text-muted-foreground flex items-center">
+                      <FileText className="mr-1 h-3 w-3" />
+                      New file: {formData.resume.name}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cover_letter">Cover Letter</Label>
+                <div className="space-y-2">
+                  {formData.currentCoverLetterUrl && (
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">Current cover letter</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(formData.currentCoverLetterUrl!, "_blank")}
+                      >
+                        View
+                      </Button>
+                    </div>
+                  )}
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="cover_letter"
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={(e) => handleFileChange("cover_letter", e.target.files?.[0] || null)}
+                    />
+                    <Upload className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  {formData.cover_letter && (
+                    <p className="text-sm text-muted-foreground flex items-center">
+                      <FileText className="mr-1 h-3 w-3" />
+                      New file: {formData.cover_letter.name}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Submit Button */}
+          <div className="flex justify-end space-x-2 pt-6">
+            <Button type="button" variant="outline" onClick={handleGoBack}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              <Save className="h-4 w-4 mr-2" />
+              {isSubmitting ? "Updating..." : "Update Application"}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   )

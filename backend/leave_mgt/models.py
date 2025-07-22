@@ -3,6 +3,8 @@ from employee.models import Employee
 from django.core.validators import MinValueValidator
 from decimal import Decimal
 from users.models import CustomUser
+from django.utils import timezone
+
 
 
 class LeaveType(models.Model):
@@ -26,7 +28,7 @@ class LeaveType(models.Model):
     description = models.TextField(blank=True)
     max_days_per_year = models.PositiveIntegerField(default=0)
     carry_forward_allowed = models.BooleanField(default=False)
-    max_carry_forward_days = models.PositiveIntegerField(default=0)
+    max_carry_forward_days = models.PositiveIntegerField(default=0, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     requires_document = models.BooleanField(default=False)
     gender_specific = models.CharField(
@@ -43,6 +45,102 @@ class LeaveType(models.Model):
 
     def __str__(self):
         return self.name
+    
+    def save(self, *args, **kwargs):
+        is_new_leave_type = self.pk is None
+        old_gender_specific = None
+        old_is_active = None
+        old_max_days = None
+
+        # Get old values for comparison if updating
+        if not is_new_leave_type:
+            old_leave_type = LeaveType.objects.get(pk=self.pk)
+            old_gender_specific = old_leave_type.gender_specific
+            old_is_active = old_leave_type.is_active
+            old_max_days = old_leave_type.max_days_per_year
+
+        super().save(*args, **kwargs)
+
+        # Sync balances if this is a new leave type or if important fields changed
+        should_sync = (
+            is_new_leave_type and self.is_active
+        ) or (
+            not is_new_leave_type and (
+                old_gender_specific != self.gender_specific or
+                old_is_active != self.is_active or
+                old_max_days != self.max_days_per_year
+            )
+        )
+
+        if should_sync:
+            self.sync_employee_balances()
+
+    def sync_employee_balances(self, year=None):
+        """
+        Synchronize leave balances for all employees affected by this leave type.
+        """
+        if year is None:
+            year = timezone.now().year
+
+        from employee.models import Employee
+        from leave_mgt.utils import LeaveCalculator
+
+        # Get all active employees in this institution
+        employees = Employee.objects.filter(
+            is_active=True,
+            department__institution=self.institution,
+            department__isnull=False
+        )
+
+        synced_count = 0
+
+        for employee in employees:
+            # First, clean up any duplicates for this employee and leave type
+            employee._cleanup_duplicate_balances(self.institution, self, year)
+            
+            # Check if this leave type applies to this employee
+            applies_to_employee = (
+                self.gender_specific == "all" or 
+                (hasattr(employee, 'gender') and employee.gender == self.gender_specific)
+            )
+
+            if applies_to_employee and self.is_active:
+                # Create or update balance
+                entitlement = LeaveCalculator.calculate_leave_entitlement(
+                    employee, self, year
+                )
+
+                balance, created = LeaveBalance.objects.get_or_create(
+                    institution=self.institution,
+                    employee=employee,
+                    leave_type=self,
+                    year=year,
+                    defaults={
+                        "allocated_days": entitlement,
+                        "used_days": Decimal("0"),
+                        "pending_days": Decimal("0"),
+                        "carried_forward_days": Decimal("0"),
+                    }
+                )
+
+                # Update allocated days if balance already existed but entitlement changed
+                if not created and balance.allocated_days != entitlement:
+                    balance.allocated_days = entitlement
+                    balance.save()
+
+                synced_count += 1
+            else:
+                # Remove balance if it exists but shouldn't
+                LeaveBalance.objects.filter(
+                    institution=self.institution,
+                    employee=employee,
+                    leave_type=self,
+                    year=year,
+                    used_days=0,  # Only remove unused balances
+                    pending_days=0
+                ).delete()
+
+        return synced_count
 
 
 class LeaveBalance(models.Model):

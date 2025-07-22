@@ -39,6 +39,7 @@ class WorkType(models.Model):
         return self.name
 
 
+
 class Employee(models.Model):
     """
     Employee model to store employee details in the system."""
@@ -131,138 +132,143 @@ class Employee(models.Model):
     salary = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00, null=True, blank=True
     )
+    salary_overridden = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.fullname}  - {self.position}"
 
     def save(self, *args, **kwargs):
         is_new_employee = self.pk is None
+        old_department = None
+        old_gender = None
+        old_is_active = None
+        
+        # Get old values for comparison if updating
+        if not is_new_employee:
+            old_employee = Employee.objects.get(pk=self.pk)
+            old_department = old_employee.department
+            old_gender = old_employee.gender
+            old_is_active = old_employee.is_active
+
         # Auto-set payroll_branch to default branch if not set
         if self.user and not self.payroll_branch:
             self.payroll_branch = self.get_default_branch()
 
         if self.position and hasattr(self.position, "salary"):
-            self.salary = self.position.salary
+            if is_new_employee:
+                self.salary = self.position.salary
+                self.salary_overridden = False
+            elif not self.salary_overridden:
+                # Update salary if not overridden and position salary changed
+                self.salary = self.position.salary
 
         super().save(*args, **kwargs)
 
-        if is_new_employee and self.is_active:
-            self.initialize_leave_balances()
+        # Initialize or update leave balances based on changes
+        should_initialize = (
+            is_new_employee and self.is_active and self.department
+        ) or (
+            not is_new_employee and self.is_active and (
+                old_department != self.department or  # Department changed
+                old_gender != self.gender or          # Gender changed
+                (not old_is_active and self.is_active)  # Reactivated
+            )
+        )
 
-    # Updated Employee model methods
+        if should_initialize:
+            self.sync_leave_balances()
 
-    def initialize_leave_balances(self, year=None):
-        """Initialize leave balances for this employee for the given year"""
+    def sync_leave_balances(self, year=None):
+        """
+        Synchronize leave balances for this employee.
+        Creates missing balances and removes inappropriate ones (e.g., gender-specific).
+        Also handles duplicate cleanup.
+        """
         if year is None:
             year = timezone.now().year
 
         from leave_mgt.models import LeaveType, LeaveBalance
         from leave_mgt.utils import LeaveCalculator
 
-        # Get institution from department
-        if not self.department:
-            raise ValueError(
-                "Employee must have a department to initialize leave balances"
-            )
+        if not self.department or not self.department.institution:
+            return []
 
         institution = self.department.institution
-        if not institution:
-            raise ValueError("Employee's department must belong to an institution")
-
         leave_types = LeaveType.objects.filter(is_active=True, institution=institution)
 
-        created_balances = []
+        synced_balances = []
 
         for leave_type in leave_types:
-            if leave_type.gender_specific != "all":
-                if (
-                    hasattr(self, "gender")
-                    and self.gender != leave_type.gender_specific
-                ):
-                    continue
-
-            entitlement = LeaveCalculator.calculate_leave_entitlement(
-                self, leave_type, year
+            # First, clean up any duplicates for this employee and leave type
+            self._cleanup_duplicate_balances(institution, leave_type, year)
+            
+            # Check if this leave type applies to this employee
+            applies_to_employee = (
+                leave_type.gender_specific == "all" or 
+                (hasattr(self, 'gender') and self.gender == leave_type.gender_specific)
             )
 
-            balance, created = LeaveBalance.objects.get_or_create(
-                institution=institution,
-                employee=self,
-                leave_type=leave_type,
-                year=year,
-                defaults={
-                    "allocated_days": entitlement,
-                    "used_days": Decimal("0"),
-                    "pending_days": Decimal("0"),
-                    "carried_forward_days": Decimal("0"),
-                },
-            )
+            if applies_to_employee:
+                # Create or update balance
+                entitlement = LeaveCalculator.calculate_leave_entitlement(
+                    self, leave_type, year
+                )
 
-            if created:
-                created_balances.append(balance)
+                balance, created = LeaveBalance.objects.get_or_create(
+                    institution=institution,
+                    employee=self,
+                    leave_type=leave_type,
+                    year=year,
+                    defaults={
+                        "allocated_days": entitlement,
+                        "used_days": Decimal("0"),
+                        "pending_days": Decimal("0"),
+                        "carried_forward_days": Decimal("0"),
+                    }
+                )
 
-        return created_balances
+                # Update allocated days if balance already existed but entitlement changed
+                if not created and balance.allocated_days != entitlement:
+                    balance.allocated_days = entitlement
+                    balance.save()
 
-    def reinitialize_leave_balances(self, year=None):
-        """Reinitialize leave balances for this employee (useful for updates)"""
-        if year is None:
-            year = timezone.now().year
+                synced_balances.append(balance)
+            else:
+                # Remove balance if it exists but shouldn't (e.g., gender change)
+                LeaveBalance.objects.filter(
+                    institution=institution,
+                    employee=self,
+                    leave_type=leave_type,
+                    year=year,
+                    used_days=0,  # Only remove unused balances
+                    pending_days=0
+                ).delete()
 
-        from leave_mgt.models import LeaveType, LeaveBalance
-        from leave_mgt.utils import LeaveCalculator
+        return synced_balances
 
-        # Get institution from department
-        if not self.department:
-            raise ValueError(
-                "Employee must have a department to reinitialize leave balances"
-            )
+    def _cleanup_duplicate_balances(self, institution, leave_type, year):
+        """
+        Clean up duplicate leave balances for this employee, leave type, and year.
+        Keeps the one with the most usage or the latest created one.
+        """
+        from leave_mgt.models import LeaveBalance
+        
+        duplicates = LeaveBalance.objects.filter(
+            institution=institution,
+            employee=self,
+            leave_type=leave_type,
+            year=year
+        ).order_by('-used_days', '-pending_days', '-created_at')
 
-        institution = self.department.institution
-        if not institution:
-            raise ValueError("Employee's department must belong to an institution")
-
-        leave_types = LeaveType.objects.filter(is_active=True, institution=institution)
-
-        updated_balances = []
-
-        for leave_type in leave_types:
-            # Skip gender-specific leaves if not applicable
-            if leave_type.gender_specific != "all":
-                if (
-                    hasattr(self, "gender")
-                    and self.gender != leave_type.gender_specific
-                ):
-                    LeaveBalance.objects.filter(
-                        institution=institution,
-                        employee=self,
-                        leave_type=leave_type,
-                        year=year,
-                    ).delete()
-                    continue
-
-            entitlement = LeaveCalculator.calculate_leave_entitlement(
-                self, leave_type, year
-            )
-
-            balance, created = LeaveBalance.objects.update_or_create(
-                institution=institution,
-                employee=self,
-                leave_type=leave_type,
-                year=year,
-                defaults={
-                    "allocated_days": entitlement,
-                },
-            )
-
-            if created:
-                balance.used_days = Decimal("0")
-                balance.pending_days = Decimal("0")
-                balance.carried_forward_days = Decimal("0")
-                balance.save()
-
-            updated_balances.append(balance)
-
-        return updated_balances
+        if duplicates.count() > 1:
+            # Keep the first one (highest usage or latest created)
+            keeper = duplicates.first()
+            
+            # Delete the rest
+            duplicates.exclude(id=keeper.id).delete()
+            
+            return True
+        return False
 
     def get_leave_balance_summary(self, year=None):
         """Get leave balance summary for this employee"""
@@ -368,16 +374,6 @@ class EmployeeAttendance(models.Model):
         return f"{self.employee.user.fullname} - {self.date} - {self.status}"
 
     def calculate_overtime_hours(self):
-        print("Calculating overtime hours...")
-
-        if not self.date:
-            print("Missing: self.date is None")
-        if not self.check_out_time:
-            print("Missing: self.check_out_time is None")
-        if not self.employee:
-            print("Missing: self.employee is None")
-        elif not self.employee.payroll_branch:
-            print("Missing: self.employee.payroll_branch is None")
 
         if (
             self.date
@@ -386,34 +382,22 @@ class EmployeeAttendance(models.Model):
             and self.employee.payroll_branch
         ):
             branch_end_time = self.employee.payroll_branch.branch_closing_time
-            print(f"Branch end time: {branch_end_time}")
-            print(f"Check-out time: {self.check_out_time}")
 
             datetime_checkout = datetime.combine(self.date, self.check_out_time)
             datetime_end = datetime.combine(self.date, branch_end_time)
 
-            print(f"Datetime checkout: {datetime_checkout}")
-            print(f"Datetime end: {datetime_end}")
 
             if datetime_checkout > datetime_end:
                 overtime_duration = datetime_checkout - datetime_end
                 hours = round(overtime_duration.total_seconds() / 3600, 2)
-                print(f"Overtime duration: {hours} hours")
                 return hours
-            else:
-                print("No overtime. Checkout was before or at end time.")
-        else:
-            print("Insufficient data to calculate overtime.")
-
         return 0.0
 
     def save(self, *args, **kwargs):
-        print("Saving model instance...")
 
         if self.date is None:
             self.date = datetime.today().date()
-            print(f"Date was missing. Set to today: {self.date}")
+
 
         self.overtime_hours = self.calculate_overtime_hours()
-        print(f"Overtime hours set to: {self.overtime_hours}")
         super().save(*args, **kwargs)
