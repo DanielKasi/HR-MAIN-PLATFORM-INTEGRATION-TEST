@@ -113,7 +113,8 @@ class Task(BaseModel):
     )
 
     start_date = models.DateField(null=True, blank=True)
-    end_date = models.DateField(null=True, blank=True)
+    
+    = models.DateField(null=True, blank=True)
     status = models.CharField(
         max_length=20,
         choices=TASK_STATUS_CHOICES,
