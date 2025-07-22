@@ -105,6 +105,12 @@ class Task(BaseModel):
 
     task_name = models.CharField(max_length=255, blank=False)
     description = models.TextField(blank=True)
+    
+    leaders = models.ManyToManyField(
+        "users.Profile",
+        related_name="led_tasks",
+        blank=True,
+    )
 
     assigned_to = models.ManyToManyField(
         "users.Profile",
@@ -113,8 +119,8 @@ class Task(BaseModel):
     )
 
     start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
     
-    = models.DateField(null=True, blank=True)
     status = models.CharField(
         max_length=20,
         choices=TASK_STATUS_CHOICES,
@@ -167,16 +173,10 @@ class TaskDocument(BaseModel):
 
 
 class TaskTimeSheet(BaseModel):
-    task = models.ForeignKey(
+    task = models.OneToOneField(
         Task,
         on_delete=models.CASCADE,
-        related_name="timesheets",
-    )
-
-    user = models.ForeignKey(
-        "users.Profile",
-        on_delete=models.CASCADE,
-        related_name="timesheets",
+        related_name="timesheet",
     )
 
     start_time = models.DateTimeField()
@@ -191,10 +191,6 @@ class TaskTimeSheet(BaseModel):
         ordering = ["-created_at"]
         verbose_name_plural = "Time Sheets"
         verbose_name = "Time Sheet"
-        unique_together = ("task", "user", "start_time", "end_time")
-        indexes = [
-            models.Index(fields=["task", "user"]),
-        ]
 
     @property
     def timespent(self):

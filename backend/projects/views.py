@@ -3,13 +3,15 @@ from .models import Project, Task, TaskTimeSheet
 from .serializers import (
     ProjectSerializer,
     TaskTimeSheetSerializer,
-    Task,
+    TaskSerializer,
 )
-from rest_framework import APIView, status
+from rest_framework.views import APIView, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from institutions.models import Institution
+from institution.models import Institution
 from utilities.pagination import CustomPageNumberPagination
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 class ProjectListCreateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -21,15 +23,10 @@ class ProjectListCreateView(APIView):
             200: ProjectSerializer(many=True),
             401: OpenApiResponse(description="Unauthorized"),
         },
+        tags=["Projects Mgt"],
     )
-    def get(self, request, institution_id):
-        
-        institution = Institution.objects.filter(id=institution_id).first()
-        if not institution:
-            return Response(
-                {"detail": "Institution not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+    def get(self, request, institution_id):            
+        institution = get_object_or_404(Institution, id=institution_id)
         projects = Project.objects.filter(institution=institution)
         
         paginator = CustomPageNumberPagination()
@@ -46,15 +43,10 @@ class ProjectListCreateView(APIView):
             400: OpenApiResponse(description="Bad Request"),
             401: OpenApiResponse(description="Unauthorized"),
         },
+        tags=["Projects Mgt"],
     )
     def post(self, request, institution_id):
-        institution = Institution.objects.filter(id=institution_id).first()
-        if not institution:
-            return Response(
-                {"detail": "Institution not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        
+        institution = get_object_or_404(Institution, id=institution_id)        
         serializer = ProjectSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(institution=institution, created_by=request.user)
@@ -63,7 +55,7 @@ class ProjectListCreateView(APIView):
 
         
 class ProjectDetailView(APIView):
-    permissions_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     @extend_schema(
         operation_id="Get Project Details",
@@ -73,9 +65,10 @@ class ProjectDetailView(APIView):
             404: OpenApiResponse(description="Project not found"),
             401: OpenApiResponse(description="Unauthorized"),
         },
+        tags=["Projects Mgt"],
     )
     def get(self, request, project_id):
-        project = Project.objects.filter(id=project).first()
+        project = Project.objects.filter(id=project_id).first()
         if not project:
             return Response(
                 {"detail": "Project not found."},
@@ -94,6 +87,7 @@ class ProjectDetailView(APIView):
             404: OpenApiResponse(description="Project not found"),
             401: OpenApiResponse(description="Unauthorized"),
         },
+        tags=["Projects Mgt"],
     )
     
     def patch(self, request, project_id):
@@ -118,15 +112,10 @@ class ProjectDetailView(APIView):
             404: OpenApiResponse(description="Project not found"),
             401: OpenApiResponse(description="Unauthorized"),
         },
+        tags=["Projects Mgt"],
     )
     def delete(self, request, project_id):
-        project = Project.objects.filter(id=project_id).first()
-        if not project:
-            return Response(
-                {"detail": "Project not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        
+        project = get_object_or_404(Project, id=project_id)
         project.delete()
         return Response(
             {"detail": "Project deleted successfully."},
@@ -143,6 +132,7 @@ class TaskListCreateView(APIView):
             200: TaskSerializer(many=True),
             401: OpenApiResponse(description="Unauthorized"),
         },
+        tags=["Projects Mgt"],
     )
     def get(self, request, project_id):
         project = Project.objects.filter(id=project_id).first()
@@ -168,6 +158,7 @@ class TaskListCreateView(APIView):
             400: OpenApiResponse(description="Bad Request"),
             401: OpenApiResponse(description="Unauthorized"),
         },
+        tags=["Projects Mgt"],
     )
     def post(self, request, project_id):
         serializer = TaskSerializer(data=request.data)
@@ -187,6 +178,7 @@ class TaskDetailView(APIView):
             404: OpenApiResponse(description="Task not found"),
             401: OpenApiResponse(description="Unauthorized"),
         },
+        tags=["Projects Mgt"],
     )
     def get(self, request, task_id):
         task = Task.objects.filter(id=task_id).first()
@@ -208,6 +200,7 @@ class TaskDetailView(APIView):
             404: OpenApiResponse(description="Task not found"),
             401: OpenApiResponse(description="Unauthorized"),
         },
+        tags=["Projects Mgt"],
     )
     def patch(self, request, task_id):
         task = Task.objects.filter(id=task_id).first()
@@ -231,15 +224,10 @@ class TaskDetailView(APIView):
             404: OpenApiResponse(description="Task not found"),
             401: OpenApiResponse(description="Unauthorized"),
         },
+        tags=["Projects Mgt"],
     )
     def delete(self, request, task_id):
-        task = Task.objects.filter(id=task_id).first()
-        if not task:
-            return Response(
-                {"detail": "Task not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        
+        task = get_object_or_404(Task, id=task_id)        
         task.delete()
         return Response(
             {"detail": "Task deleted successfully."},
@@ -258,6 +246,7 @@ class TaskTimeSheetView(APIView):
             400: OpenApiResponse(description="Bad Request"),
             401: OpenApiResponse(description="Unauthorized"),
         },
+        tags=["Projects Mgt"],
     )
     def patch(self, request, task_timesheet_id):
         task_timesheet = TaskTimeSheet.objects.filter(id=task_timesheet_id).first()
@@ -266,6 +255,12 @@ class TaskTimeSheetView(APIView):
             return Response(
                 {"detail": "Task timesheet not found."},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+        
+        if request.user.profile not in task.leaders.all():
+            return Response(
+                {"detail": "You do not have permission to update this task timesheet."},
+                status=status.HTTP_403_FORBIDDEN,
             )
         
         serializer = TaskTimeSheetSerializer(task_timesheet, data=request.data, partial=True)

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ProjectListCreateView, ProjectDetailView, TaskListCreateView, TaskTimeSheetView
+from .views import ProjectListCreateView, ProjectDetailView, TaskListCreateView, TaskTimeSheetView, TaskDetailView
 
 urlpatterns = [
     path('projects/<int:institution_id>/', ProjectListCreateView.as_view(), name='project-list-create'),

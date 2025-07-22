@@ -22,7 +22,6 @@ class TaskTimeSheetSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "task",
-            "user",
             "start_time",
             "end_time",
             "time_spent",
@@ -43,6 +42,8 @@ class TaskTimeSheetSerializer(serializers.ModelSerializer):
 
 
 class ProjectSerializer(serializers.ModelSerializer):
+    project_tasks = serializers.SerializerMethodField()
+    
     class Meta:
         model = Project
 
@@ -56,6 +57,8 @@ class ProjectSerializer(serializers.ModelSerializer):
             "start_date",
             "end_date",
             "status",
+            "project_tasks",
+            
         ]
         read_only_fields = [
             "id",
@@ -63,10 +66,16 @@ class ProjectSerializer(serializers.ModelSerializer):
             "updated_at",
             "created_by",
             "updated_by",
+            "project_tasks",
         ]
-
+        
+    def get_project_tasks(self, obj):
+        tasks = Task.objects.filter(project=obj)
+        return TaskSerializer(tasks, many=True).data
 
 class TaskSerializer(serializers.ModelSerializer):
+    task_time_sheet = serializers.SerializerMethodField()
+    
     class Meta:
         model = Task
         fields = [
@@ -79,6 +88,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "start_date",
             "end_date",
             "priority",
+            "task_time_sheet",
         ]
         read_only_fields = [
             "id",
@@ -86,4 +96,13 @@ class TaskSerializer(serializers.ModelSerializer):
             "updated_at",
             "created_by",
             "updated_by",
+            "task_time_sheet",
         ]
+
+    def get_task_time_sheet(self, obj):
+        try:
+            timesheet = obj.timesheet
+        except TaskTimeSheet.DoesNotExist:
+            return None
+
+        return TaskTimeSheetSerializer(timesheet).data
