@@ -13,6 +13,7 @@ from .views import (
     EmployeeDeleteAPIView,
     WorkTypeDetailAPIView,
     WorkTypeListCreateAPIView,
+    EmployeeTemplateDownloadAPIView,
 )
 
 urlpatterns = [
@@ -28,6 +29,7 @@ urlpatterns = [
         EmployeeUpdateAPIView.as_view(),
         name="update-employee",
     ),
+    path("template/", EmployeeTemplateDownloadAPIView.as_view(), name='employee-template'),
     path(
         "<int:employee_id>/delete/",
         EmployeeDeleteAPIView.as_view(),

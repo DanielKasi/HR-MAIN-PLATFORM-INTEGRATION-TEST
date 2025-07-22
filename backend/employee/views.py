@@ -93,13 +93,18 @@ class EmployeeCreateAPIView(APIView):
 
     @extend_schema(
         request=EmployeeSerializer,
-        responses={201: EmployeeSerializer, 400: "Bad Request"},
-        summary="Create Employee",
+        responses={201: EmployeeSerializer(many=True), 400: "Bad Request"},
+        summary="Create Employee(s)",
+        description="Create a single employee with form data or multiple employees via CSV/Excel file upload.",
         tags=["Employee Management"],
     )
     def post(self, request):
-        """Create a new employee with user account."""
-
+        """Create a new employee or multiple employees via file upload."""
+        # Check if a file is uploaded
+        if 'file' in request.FILES:
+            return self.handle_bulk_upload(request)
+        
+        # Handle single employee creation (existing logic)
         def extract_value(data, key):
             """Extract single value from QueryDict list format"""
             value = data.get(key)
@@ -167,6 +172,133 @@ class EmployeeCreateAPIView(APIView):
         return Response(
             EmployeeSerializer(employee).data, status=status.HTTP_201_CREATED
         )
+
+    def handle_bulk_upload(self, request):
+        """Handle bulk employee creation from uploaded CSV/Excel file."""
+        file = request.FILES['file']
+        file_extension = file.name.split('.')[-1].lower()
+
+        if file_extension not in ['csv', 'xlsx']:
+            return Response(
+                {"detail": "Invalid file format. Only CSV or Excel files are supported."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Read the file
+            if file_extension == 'csv':
+                df = pd.read_csv(file)
+            else:  # xlsx
+                df = pd.read_excel(file)
+
+            # Validate required columns
+            required_columns = ['user.fullname', 'user.email']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            if missing_columns:
+                return Response(
+                    {"detail": f"Missing required columns: {', '.join(missing_columns)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Process each row
+            employees = []
+            errors = []
+            with transaction.atomic():  # Ensure all-or-nothing creation
+                for index, row in df.iterrows():
+                    employee_data = {}
+                    user_data = {
+                        "fullname": str(row['user.fullname']).strip(),
+                        "email": str(row['user.email']).strip(),
+                        "password": generate_compliant_password(),
+                    }
+                    employee_data["user"] = user_data
+
+                    # Map other fields
+                    for column in df.columns:
+                        if column not in ['user.fullname', 'user.email']:
+                            value = row[column]
+                            if pd.isna(value):
+                                employee_data[column] = None
+                            else:
+                                employee_data[column] = str(value).strip()
+
+                    # Convert data types
+                    if "is_active" in employee_data:
+                        employee_data["is_active"] = str(employee_data["is_active"]).lower() == "true"
+
+                    for field in ["position", "department", "experience", "children_count", "institutionId"]:
+                        if field in employee_data and employee_data[field]:
+                            try:
+                                employee_data[field] = int(float(employee_data[field]))
+                            except (ValueError, TypeError):
+                                employee_data[field] = 0
+
+                    # Validate and create employee
+                    serializer = EmployeeSerializer(data=employee_data)
+                    if serializer.is_valid():
+                        employee = serializer.save()
+                        employee.user.is_password_verified = False
+                        employee.user.save()
+                        employee.setup_employee_password(request)
+                        employees.append(employee)
+                    else:
+                        errors.append({
+                            "row": index + 2,  # +2 to account for header row and 1-based indexing
+                            "errors": serializer.errors
+                        })
+
+            if errors:
+                return Response(
+                    {"detail": "Some employees could not be created", "errors": errors},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            return Response(
+                EmployeeSerializer(employees, many=True).data,
+                status=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            return Response(
+                {"detail": f"Error processing file: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+class EmployeeTemplateDownloadAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        responses={200: None},
+        summary="Download Employee CSV Template",
+        description="Download a CSV template for bulk employee creation.",
+        tags=["Employee Management"],
+    )
+    def get(self, request):
+        """Generate and return a CSV template for bulk employee upload."""
+        # Define template columns based on Employee model
+        columns = [
+            'user.fullname', 'user.email', 'phone_number', 'position', 'gender',
+            'department', 'payroll_branch', 'date_of_birth', 'work_type',
+            'employee_type', 'date_of_joining', 'address', 'country', 'nin',
+            'bank', 'bank_account_number', 'is_active', 'experience',
+            'qualifications', 'skills', 'emergency_contact_name',
+            'emergency_contact_phone', 'emergency_contact_relationship',
+            'marital_status', 'children_count', 'salary'
+        ]
+        df = pd.DataFrame(columns=columns)
+
+        # Create CSV in memory
+        output = io.StringIO()
+        df.to_csv(output, index=False)
+        output.seek(0)
+
+        # Return CSV as downloadable file
+        response = HttpResponse(
+            content_type='text/csv',
+            headers={'Content-Disposition': 'attachment; filename="employee_template.csv"'}
+        )
+        response.write(output.getvalue())
+        return response
 
 
 class EmployeeUpdateAPIView(APIView):
