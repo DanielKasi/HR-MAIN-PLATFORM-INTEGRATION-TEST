@@ -1,6 +1,6 @@
 "use client";
 import type React from "react";
-import type {Permission} from "@//app/types";
+import type {IPermission, Permission} from "@//app/types";
 
 import {useState, useEffect} from "react";
 import {useRouter} from "next/navigation";
@@ -24,6 +24,13 @@ interface PermissionsByCategory {
   };
 }
 
+interface PaginatedResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Permission[];
+}
+
 export default function AddRolePage() {
   const router = useRouter();
   const [roleName, setRoleName] = useState("");
@@ -35,19 +42,38 @@ export default function AddRolePage() {
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
   const [error, setError] = useState("");
 
-  // Fetch all permissions
+  // Fetch all permissions with pagination
   useEffect(() => {
-    const fetchPermissions = async () => {
+    const fetchAllPermissions = async () => {
       setIsLoadingPermissions(true);
       try {
-        const response = await apiGet("user/permission/");
+        let allPermissions: Permission[] = [];
+        let nextUrl: string | null = "user/permission/";
 
-        setPermissions(response.data);
+        
+        while (nextUrl) {
+          const response = await apiGet(nextUrl);
+          const data = response.data as PaginatedResponse;
+          
+          console.log(`Fetched page with ${data.results.length} permissions`);
+          allPermissions = [...allPermissions, ...data.results];
+          
+          // Extract the path from the next URL if it exists
+          if (data.next) {
+            const url = new URL(data.next);
+            nextUrl = `user/permission/${url.search}`;
+          } else {
+            nextUrl = null;
+          }
+        }
+
+        console.log(`\n\nTotal permissions fetched: ${allPermissions.length}`);
+        setPermissions(allPermissions);
 
         // Organize permissions by category
         const byCategory: PermissionsByCategory = {};
 
-        response.data.forEach((permission: Permission) => {
+        allPermissions.forEach((permission: Permission) => {
           const categoryId = permission.category.id;
 
           if (!byCategory[categoryId]) {
@@ -58,7 +84,10 @@ export default function AddRolePage() {
           }
           byCategory[categoryId].permissions.push(permission);
         });
+        
         setPermissionsByCategory(byCategory);
+        console.log(`Organized into ${Object.keys(byCategory).length} categories`);
+        
       } catch (error: any) {
         setError(error.message || "Failed to fetch permissions");
         handleApiError(error);
@@ -67,7 +96,7 @@ export default function AddRolePage() {
       }
     };
 
-    fetchPermissions();
+    fetchAllPermissions();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,7 +107,6 @@ export default function AddRolePage() {
     if (!roleName.trim()) {
       setError("Role name is required");
       setIsLoading(false);
-
       return;
     }
 
@@ -91,7 +119,6 @@ export default function AddRolePage() {
       });
 
       toast.success("Role Created Successfully");
-
       router.push("/users/roles");
     } catch (error: any) {
       setError(error.message || "Failed to create role");
@@ -115,13 +142,11 @@ export default function AddRolePage() {
     if (checked) {
       setSelectedPermissions((prev) => {
         const newPermissions = [...prev];
-
         categoryPermissionIds.forEach((id) => {
           if (!newPermissions.includes(id)) {
             newPermissions.push(id);
           }
         });
-
         return newPermissions;
       });
     } else {
@@ -139,7 +164,6 @@ export default function AddRolePage() {
 
   const isCategoryFullySelected = (categoryId: number) => {
     const categoryPermissionIds = permissionsByCategory[categoryId].permissions.map((p) => p.id);
-
     return categoryPermissionIds.every((id) => selectedPermissions.includes(id));
   };
 
@@ -201,13 +225,15 @@ export default function AddRolePage() {
               {/* Permissions Section */}
               <div className="border-t pt-6 mt-2">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium">Permissions</h3>
+                  <h3 className="text-lg font-medium">
+                    Permissions {permissions.length > 0 && `(${permissions.length} total)`}
+                  </h3>
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       checked={isAllSelected()}
                       disabled={isLoadingPermissions}
                       id="select-all"
-                      onCheckedChange={(checked) => toggleAll(!!checked)}
+                      onCheckedChange={(checked: boolean) => toggleAll(!!checked)}
                     />
                     <Label htmlFor="select-all">Select All</Label>
                   </div>
@@ -223,12 +249,14 @@ export default function AddRolePage() {
                     {Object.entries(permissionsByCategory).map(([categoryId, category]) => (
                       <div key={categoryId} className="border rounded-md p-4">
                         <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-medium">{category.categoryName}</h4>
+                          <h4 className="font-medium">
+                            {category.categoryName} ({category.permissions.length})
+                          </h4>
                           <div className="flex items-center space-x-2">
                             <Checkbox
                               checked={isCategoryFullySelected(Number(categoryId))}
                               id={`category-${categoryId}`}
-                              onCheckedChange={(checked) =>
+                              onCheckedChange={(checked: boolean) =>
                                 toggleAllInCategory(Number(categoryId), !!checked)
                               }
                             />

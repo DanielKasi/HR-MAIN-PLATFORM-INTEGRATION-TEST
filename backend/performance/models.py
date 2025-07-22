@@ -23,5 +23,5 @@ class PerformancePolicy(models.Model):
         ordering = ['-effective_date']
         
     def __str__(self):
-        return f"{self.title}" v"{self.version}"    
+        return f"{self.title}" "{self.version}"    
     
