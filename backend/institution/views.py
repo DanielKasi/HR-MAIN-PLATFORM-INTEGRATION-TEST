@@ -1,269 +1,853 @@
-# performance/models.py
-from django.db import models
-from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator, MaxValueValidator
-from employees.models import Employee, Department
+from datetime import datetime
+from employee.models import Employee
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.views import APIView
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
+from rest_framework.permissions import AllowAny
+from utilities.helpers import (
+    build_password_link,
+    send_password_link_to_user,
+    create_and_institution_token,
+    send_activation_confirmation_email,
+)
+from users.models import Profile, System
 
-class PerformancePolicy(models.Model):
-    """Performance management policies and procedures"""
-    title = models.CharField(max_length=255)
-    description = models.TextField()
-    policy_document = models.FileField(upload_to='performance/policies/')
-    version = models.CharField(max_length=20, default='1.0')
-    effective_date = models.DateField()
-    review_date = models.DateField()
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+from .models import Department, Institution, Branch, UserBranch
+from users.serializers import ProfileSerializer
+from .serializers import (
+    DepartmentSerializer,
+    ErrorResponseSerializer,
+    InstitutionActivationSerializer,
+    InstitutionSerializer,
+    BranchSerializer,
+    SuccessResponseSerializer,
+    UserBranchSerializer,
+)
+from django.shortcuts import get_object_or_404
+from .utils import generate_compliant_password
+from utilities.pagination import CustomPageNumberPagination
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from django.db.models import Q
+from django.contrib.auth import get_user_model
+import logging
+from django.db import transaction
 
-    class Meta:
-        ordering = ['-effective_date']
+User = get_user_model()
+logger = logging.getLogger(__name__)
 
-    def __str__(self):
-        return f"{self.title} v{self.version}"
 
-class AppraisalTool(models.Model):
-    """Different types of appraisal tools"""
-    TOOL_TYPES = [
-        ('360_feedback', '360 Degree Feedback'),
-        ('self_assessment', 'Self Assessment'),
-        ('supervisor_review', 'Supervisor Review'),
-        ('peer_review', 'Peer Review'),
-        ('customer_feedback', 'Customer Feedback'),
-        ('kpi_based', 'KPI Based'),
-    ]
-    
-    name = models.CharField(max_length=200)
-    tool_type = models.CharField(max_length=50, choices=TOOL_TYPES)
-    description = models.TextField()
-    instructions = models.TextField()
-    template = models.JSONField(default=dict)  # Store tool questions/structure
-    weight_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=100.00)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+class InstitutionListAPIView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
 
-    def __str__(self):
-        return self.name
+    @extend_schema(
+        request=InstitutionSerializer,
+        responses={201: InstitutionSerializer},
+        description="Create a new institution with name, address, and owner.",
+        summary="Create a new institution",
+        tags=["Institution Management"],
+    )
+    def post(self, request):
+        if Institution.objects.filter(
+            institution_owner__id=request.data.get("institution_owner_id"),
+            institution_name=request.data.get("institution_name"),
+        ).exists():
+            return Response(
+                {"detail": "User Already has an Institution with the same name."},
+                status=status.HTTP_409_CONFLICT,
+            )
 
-class PerformanceCycle(models.Model):
-    """Performance management cycles (annual, semi-annual, quarterly)"""
-    CYCLE_TYPES = [
-        ('annual', 'Annual'),
-        ('semi_annual', 'Semi-Annual'),
-        ('quarterly', 'Quarterly'),
-        ('monthly', 'Monthly'),
-    ]
-    
-    STATUS_CHOICES = [
-        ('planning', 'Planning'),
-        ('active', 'Active'),
-        ('review', 'Under Review'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
-    ]
-    
-    name = models.CharField(max_length=200)
-    cycle_type = models.CharField(max_length=20, choices=CYCLE_TYPES)
-    start_date = models.DateField()
-    end_date = models.DateField()
-    goal_setting_deadline = models.DateField()
-    mid_review_date = models.DateField(null=True, blank=True)
-    final_review_deadline = models.DateField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='planning')
-    departments = models.ManyToManyField(Department, blank=True)
-    appraisal_tools = models.ManyToManyField(AppraisalTool)
-    created_at = models.DateTimeField(auto_now_add=True)
+        serializer = InstitutionSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            institution = serializer.save()
+            return Response(
+                InstitutionSerializer(institution).data,
+                status=status.HTTP_201_CREATED,
+            )
 
-    class Meta:
-        ordering = ['-start_date']
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
 
-    def __str__(self):
-        return f"{self.name} ({self.start_date} - {self.end_date})"
+    @extend_schema(
+        responses={200: InstitutionSerializer(many=True)},
+        description="Retrieve all institutions.",
+        summary="Get all institutions",
+        tags=["Institution Management"],
+    )
+    def get(self, request, institution_id=None):
 
-class KeyPerformanceIndicator(models.Model):
-    """KPIs for different roles and departments"""
-    KPI_TYPES = [
-        ('quantitative', 'Quantitative'),
-        ('qualitative', 'Qualitative'),
-        ('behavioral', 'Behavioral'),
-    ]
-    
-    MEASUREMENT_UNITS = [
-        ('percentage', 'Percentage'),
-        ('number', 'Number'),
-        ('currency', 'Currency'),
-        ('rating', 'Rating (1-5)'),
-        ('yes_no', 'Yes/No'),
-        ('text', 'Text Description'),
-    ]
-    
-    name = models.CharField(max_length=200)
-    description = models.TextField()
-    kpi_type = models.CharField(max_length=20, choices=KPI_TYPES)
-    measurement_unit = models.CharField(max_length=20, choices=MEASUREMENT_UNITS)
-    target_value = models.CharField(max_length=100)  # Flexible to store different types
-    weight_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=20.00)
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, null=True, blank=True)
-    job_positions = models.ManyToManyField('employees.JobPosition', blank=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+        if request.user.is_staff:
+            institutions = Institution.objects.all()
+        else:
+            institutions = Institution.objects.filter(institution_owner=request.user)
 
-    def __str__(self):
-        return self.name
+        institutions = institutions.order_by("-created_at")
+        paginator = CustomPageNumberPagination()
+        paginator_qs = paginator.paginate_queryset(institutions, request)
+        serializer = InstitutionSerializer(paginator_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
-class GoalSetting(models.Model):
-    """Individual goals for employees"""
-    GOAL_TYPES = [
-        ('performance', 'Performance Goal'),
-        ('development', 'Development Goal'),
-        ('behavioral', 'Behavioral Goal'),
-        ('project', 'Project Goal'),
-    ]
-    
-    STATUS_CHOICES = [
-        ('draft', 'Draft'),
-        ('submitted', 'Submitted'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('in_progress', 'In Progress'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
-    ]
-    
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    performance_cycle = models.ForeignKey(PerformanceCycle, on_delete=models.CASCADE)
-    goal_type = models.CharField(max_length=20, choices=GOAL_TYPES)
-    title = models.CharField(max_length=255)
-    description = models.TextField()
-    success_criteria = models.TextField()
-    target_date = models.DateField()
-    weight_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=25.00)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    progress_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
-    supervisor_comments = models.TextField(blank=True)
-    employee_comments = models.TextField(blank=True)
-    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    approved_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"{self.employee} - {self.title}"
+class InstitutionDetailAPIView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
 
-class PerformanceAppraisal(models.Model):
-    """Main performance appraisal records"""
-    STATUS_CHOICES = [
-        ('not_started', 'Not Started'),
-        ('self_assessment', 'Self Assessment'),
-        ('supervisor_review', 'Supervisor Review'),
-        ('calibration', 'Calibration'),
-        ('completed', 'Completed'),
-        ('appealed', 'Appealed'),
-    ]
-    
-    OVERALL_RATINGS = [
-        ('exceeds', 'Exceeds Expectations'),
-        ('meets', 'Meets Expectations'),
-        ('partially_meets', 'Partially Meets Expectations'),
-        ('below', 'Below Expectations'),
-        ('unsatisfactory', 'Unsatisfactory'),
-    ]
-    
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    performance_cycle = models.ForeignKey(PerformanceCycle, on_delete=models.CASCADE)
-    supervisor = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='supervised_appraisals')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_started')
-    self_assessment_date = models.DateTimeField(null=True, blank=True)
-    supervisor_review_date = models.DateTimeField(null=True, blank=True)
-    final_review_date = models.DateTimeField(null=True, blank=True)
-    overall_rating = models.CharField(max_length=20, choices=OVERALL_RATINGS, null=True, blank=True)
-    overall_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    strengths = models.TextField(blank=True)
-    areas_for_improvement = models.TextField(blank=True)
-    development_plan = models.TextField(blank=True)
-    employee_acknowledgment = models.BooleanField(default=False)
-    employee_acknowledgment_date = models.DateTimeField(null=True, blank=True)
-    employee_comments = models.TextField(blank=True)
-    calibration_notes = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    @extend_schema(
+        responses={200: InstitutionSerializer},
+        description="Retrieve an institution.",
+        summary="Get an institution",
+        tags=["Institution Management"],
+    )
+    def get(self, request, institution_id):
+        try:
+            institution = Institution.objects.get(id=institution_id)
+            if institution.institution_owner != request.user:
+                return Response({"detail": "Access denied."}, status=403)
+            serializer = InstitutionSerializer(institution)
+            return Response(serializer.data)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=404)
 
-    class Meta:
-        unique_together = ['employee', 'performance_cycle']
+    @extend_schema(
+        request=InstitutionSerializer,
+        responses={200: InstitutionSerializer},
+        description="Update an existing institution.",
+        summary="Update an institution",
+        tags=["Institution Management"],
+    )
+    def patch(self, request, institution_id):
+        try:
+            institution = Institution.objects.get(id=institution_id)
+            if institution.institution_owner != request.user:
+                return Response({"detail": "Access denied."}, status=403)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=404)
 
-    def __str__(self):
-        return f"{self.employee} - {self.performance_cycle.name}"
+        serializer = InstitutionSerializer(institution, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
 
-class PerformanceReview(models.Model):
-    """Detailed review entries for each appraisal tool"""
-    appraisal = models.ForeignKey(PerformanceAppraisal, on_delete=models.CASCADE, related_name='reviews')
-    appraisal_tool = models.ForeignKey(AppraisalTool, on_delete=models.CASCADE)
-    reviewer = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    responses = models.JSONField(default=dict)  # Store responses to tool questions
-    score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    comments = models.TextField(blank=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    @extend_schema(
+        responses={204: None},
+        description="Delete an existing institution.",
+        summary="Delete as institution",
+        tags=["Institution Management"],
+    )
+    def delete(self, request, institution_id):
+        try:
+            institution = Institution.objects.get(id=institution_id)
+            if institution.institution_owner != request.user:
+                return Response({"detail": "Access denied."}, status=403)
+            institution.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=404)
 
-    def __str__(self):
-        return f"{self.appraisal} - {self.appraisal_tool.name}"
 
-class KPIScore(models.Model):
-    """Individual KPI scores for employees"""
-    appraisal = models.ForeignKey(PerformanceAppraisal, on_delete=models.CASCADE, related_name='kpi_scores')
-    kpi = models.ForeignKey(KeyPerformanceIndicator, on_delete=models.CASCADE)
-    target_value = models.CharField(max_length=100)
-    actual_value = models.CharField(max_length=100)
-    score = models.DecimalField(max_digits=5, decimal_places=2)
-    comments = models.TextField(blank=True)
-    evidence = models.FileField(upload_to='performance/evidence/', blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+class BranchListAPIView(APIView):
+    @extend_schema(
+        request=BranchSerializer,
+        responses={201: BranchSerializer},
+        description="Create a new branch.",
+        summary="Create a new branch",
+        tags=["Branch Management"],
+    )
+    def post(self, request):
+        serializer = BranchSerializer(data=request.data, context={"request": request})
+        if serializer.is_valid():
+            branch = serializer.save()
+            return Response(
+                BranchSerializer(branch).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
 
-    def __str__(self):
-        return f"{self.appraisal} - {self.kpi.name}"
+    @extend_schema(
+        responses={200: BranchSerializer(many=True)},
+        description="Retrieve all branches.",
+        summary="Get all branches",
+        tags=["Branch Management"],
+    )
+    def get(self, request):
+        if request.user.is_staff:
+            branches = Branch.objects.all()
+        else:
+            branches = Branch.objects.filter(
+                institution__institution_owner=request.user
+            )
 
-class PerformanceReport(models.Model):
-    """Generated performance reports"""
-    REPORT_TYPES = [
-        ('individual', 'Individual Performance'),
-        ('department', 'Department Performance'),
-        ('cycle_summary', 'Cycle Summary'),
-        ('calibration', 'Calibration Report'),
-        ('analytics', 'Performance Analytics'),
-    ]
-    
-    title = models.CharField(max_length=255)
-    report_type = models.CharField(max_length=20, choices=REPORT_TYPES)
-    performance_cycle = models.ForeignKey(PerformanceCycle, on_delete=models.CASCADE)
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, null=True, blank=True)
-    generated_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    report_data = models.JSONField(default=dict)
-    report_file = models.FileField(upload_to='performance/reports/', blank=True)
-    generated_at = models.DateTimeField(auto_now_add=True)
+        branches = branches.order_by("-created_at")
 
-    def __str__(self):
-        return self.title
+        paginator = CustomPageNumberPagination()
+        paginator_qs = paginator.paginate_queryset(branches, request)
 
-class PerformanceDevelopmentPlan(models.Model):
-    """Development plans arising from performance reviews"""
-    STATUS_CHOICES = [
-        ('draft', 'Draft'),
-        ('active', 'Active'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
-    ]
-    
-    appraisal = models.OneToOneField(PerformanceAppraisal, on_delete=models.CASCADE)
-    development_areas = models.TextField()
-    action_items = models.JSONField(default=list)  # List of development actions
-    timeline = models.TextField()
-    resources_needed = models.TextField(blank=True)
-    success_metrics = models.TextField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    follow_up_date = models.DateField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+        serializer = BranchSerializer(paginator_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
-    def __str__(self):
-        return f"Development Plan - {self.appraisal.employee}"
+
+class BranchDetailAPIView(APIView):
+    @extend_schema(
+        responses={200: BranchSerializer},
+        description="Retrieve a branch.",
+        summary="Get a branch",
+        tags=["Branch Management"],
+    )
+    def get(self, request, branch_id):
+        try:
+            branch = Branch.objects.get(id=branch_id)
+            if (
+                not request.user.is_staff
+                and branch.institution.institution_owner != request.user
+            ):
+                return Response({"detail": "Access denied."}, status=403)
+            serializer = BranchSerializer(branch)
+            return Response(serializer.data)
+        except Branch.DoesNotExist:
+            return Response({"detail": "Branch not found."}, status=404)
+
+    @extend_schema(
+        request=BranchSerializer,
+        responses={200: BranchSerializer},
+        description="Update an existing branch.",
+        summary="Update a branch",
+        tags=["Branch Management"],
+    )
+    def patch(self, request, branch_id):
+
+        try:
+            branch = Branch.objects.get(id=branch_id)
+            if (
+                not request.user.is_staff
+                and branch.institution.institution_owner != request.user
+            ):
+                return Response({"detail": "Access denied."}, status=403)
+        except Branch.DoesNotExist:
+            return Response({"detail": "Branch not found."}, status=404)
+
+        serializer = BranchSerializer(branch, data=request.data, partial=True)
+        if serializer.is_valid():
+
+            serializer.save()
+            return Response(serializer.data)
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    @extend_schema(
+        responses={204: None},
+        description="Delete an existing branch.",
+        summary="Delete a branch",
+        tags=["Branch Management"],
+    )
+    def delete(self, request, branch_id):
+        try:
+            branch = Branch.objects.get(id=branch_id)
+            if (
+                not request.user.is_staff
+                and branch.institution.institution_owner != request.user
+            ):
+                return Response({"detail": "Access denied."}, status=403)
+            branch.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Branch.DoesNotExist:
+            return Response({"detail": "Branch not found."}, status=404)
+
+
+class InstitutionBranchAPIView(APIView):
+    @extend_schema(
+        responses={200: BranchSerializer(many=True)},
+        description="Retrieve all branches associated to a institution whose ID is given",
+        summary="Get branches by Institution ID",
+        tags=["Branch Management"],
+    )
+    def get(self, request, institution_id):
+        try:
+            institution = Institution.objects.get(id=institution_id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        if request.user == institution.institution_owner:
+            branches = Branch.objects.filter(institution_id=institution_id)
+        else:
+            branches = Branch.objects.filter(
+                institution_id=institution_id,
+                id__in=UserBranch.objects.filter(user=request.user).values_list(
+                    "branch_id", flat=True
+                ),
+            )
+
+        branches = branches.order_by("-created_at")
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(branches, request)
+        serializer = BranchSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
+class UserProfileListAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=ProfileSerializer,
+        responses={201: ProfileSerializer},
+        description="Create a new user with profile.",
+        summary="Create a new user profile",
+        tags=["User Management"],
+    )
+    def post(self, request):
+        random_password = generate_compliant_password()
+        mutable_data = request.data.copy()
+        user_data = mutable_data.get("user", {})
+        user_data["password"] = random_password
+        mutable_data["user"] = user_data
+
+        serializer = ProfileSerializer(data=mutable_data)
+        if serializer.is_valid():
+            profile = serializer.save()
+            profile.user.is_password_verified = False
+            profile.user.save()
+
+            token = create_and_institution_token(
+                user=profile.user, purpose="registration", expiry_minutes=15
+            )
+            password_link = build_password_link(request=request, token=token)
+            send_password_link_to_user(user=profile.user, link=password_link)
+
+            return Response(
+                ProfileSerializer(profile).data, status=status.HTTP_201_CREATED
+            )
+
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class UserProfileDetailAPIView(APIView):
+    @extend_schema(
+        responses={200: ProfileSerializer(many=True)},
+        description="Retrieve the user profile of all users attached to the institution.",
+        summary="Get all user profiles",
+        tags=["User Management"],
+    )
+    def get(self, request, institution_id):
+        try:
+            institution = Institution.objects.get(id=institution_id)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=404)
+
+        user = request.user
+
+        if not user.is_staff and institution.institution_owner != user:
+            try:
+                profile = user.profile
+                if profile.institution_id != institution.id:
+                    return Response({"detail": "Access denied."}, status=403)
+            except Profile.DoesNotExist:
+                return Response({"detail": "Access denied."}, status=403)
+
+        profiles = Profile.objects.filter(institution=institution_id)
+        paginator = CustomPageNumberPagination()
+        paginator_qs = paginator.paginate_queryset(profiles, request)
+        serializer = ProfileSerializer(
+            paginator_qs, many=True, context={"request": request}
+        )
+        return paginator.get_paginated_response(serializer.data)
+
+
+class InstitutionUserProfileAPIView(APIView):
+    @extend_schema(
+        request=ProfileSerializer(partial=True),
+        responses={200: ProfileSerializer},
+        description="Update a institution user's profile (partial update).",
+        summary="Update institution user details",
+        tags=["User Management"],
+    )
+    def patch(self, request, user_id):
+        if user_id:
+            try:
+                user = Profile.objects.get(user_id=user_id)
+                serializer = Profile(user, data=request.data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(
+                        {
+                            "message": "Institution User updated successfully",
+                            "user": serializer.data,
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+                return Response(
+                    {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+                )
+            except Profile.DoesNotExist:
+                return Response(
+                    {"detail": "Institution User not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        return Response(
+            {"detail": "User ID is required for updating."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class UserBranchListCreateView(APIView):
+    @extend_schema(
+        request=UserBranchSerializer,
+        responses={201: UserBranchSerializer},
+        description="Create a new user-branch relationship.",
+        summary="Create a new user-branch relationship",
+        tags=["User Management"],
+    )
+    def post(self, request):
+        serializer = UserBranchSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            user_branch = serializer.save()
+
+            from employee.models import Employee
+
+            try:
+                employee = Employee.objects.get(user=user_branch.user)
+                if user_branch.is_default:
+                    employee.payroll_branch = user_branch.branch
+                    employee.save(update_fields=["payroll_branch"])
+            except Employee.DoesNotExist:
+                pass
+
+            return Response(
+                UserBranchSerializer(user_branch).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def get(self, request):
+        user_branches = UserBranch.objects.all().order_by("-created_at")
+        serializer = UserBranchSerializer(user_branches, many=True)
+        return Response(serializer.data)
+
+
+class UserBranchDetailAPIView(APIView):
+    @extend_schema(
+        responses={200: UserBranchSerializer},
+        description="Retrieve a user-branch relationship.",
+        summary="Get a user-branch relationship",
+        tags=["User Management"],
+    )
+    def get(self, request, user_branch_id):
+        try:
+            user_branch = UserBranch.objects.get(id=user_branch_id)
+            serializer = UserBranchSerializer(user_branch)
+            return Response(serializer.data)
+        except UserBranch.DoesNotExist:
+            return Response(
+                {"detail": "User-branch relationship not found."}, status=404
+            )
+
+    @extend_schema(
+        request=UserBranchSerializer,
+        responses={200: UserBranchSerializer},
+        description="Update an existing user-branch relationship.",
+        summary="Update a user-branch relationship",
+        tags=["User Management"],
+    )
+    def patch(self, request, user_branch_id):
+        user_branch = get_object_or_404(UserBranch, id=user_branch_id)
+        serializer = UserBranchSerializer(user_branch, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class DepartmentListAPIView(APIView):
+    @extend_schema(
+        request=DepartmentSerializer,
+        responses={201: DepartmentSerializer},
+        description="Create a new department.",
+        summary="Create a new department",
+        tags=["Department Management"],
+    )
+    def post(self, request, institution_id=None):
+        if not institution_id:
+            return Response(
+                {"detail": "Institution ID is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = DepartmentSerializer(data=request.data)
+        if serializer.is_valid():
+            department = serializer.save()
+            return Response(
+                DepartmentSerializer(department).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    @extend_schema(
+        responses={200: DepartmentSerializer(many=True)},
+        description="Retrieve all departments.",
+        summary="Get all departments",
+        tags=["Department Management"],
+    )
+    def get(self, request, institution_id=None):
+        departments = Department.objects.filter(institution_id=institution_id).order_by(
+            "-created_at"
+        )
+        paginator = CustomPageNumberPagination()
+        paginator_qs = paginator.paginate_queryset(departments, request)
+        serializer = DepartmentSerializer(paginator_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
+class DepartmentDetailAPIView(APIView):
+    @extend_schema(
+        responses={200: DepartmentSerializer},
+        description="Retrieve a department.",
+        summary="Get a department",
+        tags=["Department Management"],
+    )
+    def get(self, request, department_id):
+        try:
+            department = Department.objects.get(id=department_id)
+            serializer = DepartmentSerializer(department)
+            return Response(serializer.data)
+        except Department.DoesNotExist:
+            return Response({"detail": "Department not found."}, status=404)
+
+    @extend_schema(
+        request=DepartmentSerializer,
+        responses={200: DepartmentSerializer},
+        description="Update an existing department.",
+        summary="Update a department",
+        tags=["Department Management"],
+    )
+    def patch(self, request, department_id):
+        try:
+            department = Department.objects.get(id=department_id)
+            serializer = DepartmentSerializer(
+                department, data=request.data, partial=True
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(
+                {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+            )
+        except Department.DoesNotExist:
+            return Response({"detail": "Department not found."}, status=404)
+
+
+# TODO: Make sure a user who does this has permissions to do so
+@extend_schema(
+    responses={204: None},
+    description="Delete an existing user-branch relationship by user and branch IDs.",
+    summary="Delete a user-branch relationship by user and branch",
+    tags=["User Management"],
+)
+@api_view(["DELETE"])
+def delete_user_branch_by_ids(request, user_id, branch_id):
+    try:
+        user_branch = UserBranch.objects.get(user_id=user_id, branch_id=branch_id)
+        user_branch.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    except UserBranch.DoesNotExist:
+        return Response(
+            {"detail": "User-branch relationship not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+
+@extend_schema(
+    summary="Activate HR System",
+    description="Accepts validated institution, branches, and employee data...",
+    request=InstitutionActivationSerializer,
+    responses={
+        201: OpenApiResponse(
+            response=SuccessResponseSerializer,  # if you define one
+            description="Successful Activation",
+        ),
+        400: OpenApiResponse(
+            response=ErrorResponseSerializer, description="Validation Error"
+        ),
+        401: OpenApiResponse(
+            response=ErrorResponseSerializer, description="Unauthorized"
+        ),
+        500: OpenApiResponse(
+            response=ErrorResponseSerializer, description="Internal Server Error"
+        ),
+    },
+    parameters=[
+        OpenApiParameter(
+            name="X-API-Key",
+            location=OpenApiParameter.HEADER,
+            required=True,
+            description="API key for authenticating the external system",
+            type=str,
+        )
+    ],
+    tags=["System Activation"],
+)
+class SystemActivationView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    """
+    For activating HR system from the external systems.
+    """
+
+    def get_system_from_api_key(self, api_key):
+        """Validate API key and return the system."""
+        try:
+            system = System.objects.get(api_key=api_key, system_type__is_active=True)
+            return system
+        except System.DoesNotExist:
+            return None
+
+    def create_or_get_user(self, employee_data):
+        """Create or get user for employee."""
+        email = employee_data.get("email")
+        full_name = employee_data.get("full_name")
+        phone_number = employee_data.get("phone_number")
+        gender = employee_data.get("gender")
+
+        if email:
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    "fullname": full_name,
+                    "is_active": True,
+                    "gender": gender,
+                }
+            )
+
+            return user
+
+        return None
+
+    def create_departments(self, institution, departments_data, owner_user):
+        """Create departments for the institution."""
+        created_departments = []
+
+        for dept_data in departments_data:
+            try:
+                department = Department.objects.create(
+                    institution=institution,
+                    name=dept_data.get("name"),
+                    description=dept_data.get("description", ""),
+                    created_by=owner_user,
+                )
+                created_departments.append(department)
+            except Exception as e:
+                logger.error(f"Error creating department: {str(e)}")
+                continue
+
+        return created_departments
+
+    def create_institution_and_branches(self, validated_data, owner_user):
+        """Create institution and its branches."""
+
+        try:
+            branches_data = validated_data.pop("branches", [])
+            employees_data = validated_data.pop("employees", [])
+            departments_data = validated_data.pop("departments", [])
+            owner_data = validated_data.pop("owner", {})
+
+            institution = Institution.objects.create(
+                institution_owner=owner_user, created_by=owner_user, **validated_data
+            )
+
+            created_branches = []
+            for branch_data in branches_data:
+                branch = Branch.objects.create(
+                    institution=institution, created_by=owner_user, **branch_data
+                )
+                created_branches.append(branch)
+
+            created_departments = self.create_departments(
+                institution, departments_data, owner_user
+            )
+
+            return (
+                institution,
+                created_branches,
+                created_departments,
+                employees_data,
+                owner_data,
+            )
+
+        except Exception as e:
+            logger.error(f"Error creating institution and branches: {str(e)}")
+            raise
+
+    def create_employees(self, institution, branches, departments, employees_data):
+        """Create employees for the institution."""
+        created_employees = []
+
+        branch_map = {branch.branch_location: branch for branch in branches}
+        department_map = {dept.name: dept for dept in departments}
+
+        for employee_data in employees_data:
+            try:
+                branch_location = employee_data.get("branch_location")
+                branch = (
+                    branch_map.get(branch_location)
+                    if branch_location
+                    else (branches[0] if branches else None)
+                )
+
+                if not branch:
+                    continue
+
+                department_name = employee_data.get("department")
+                department = (
+                    department_map.get(department_name) if department_name else None
+                )
+
+                employee_user = self.create_or_get_user(employee_data)
+                if not employee_user:
+                    continue
+
+                employee = Employee.objects.create(
+                    user=employee_user,
+                    email=employee_data.get("email"),
+                    phone_number=employee_data.get("phone_number"),
+                    gender=employee_data.get("gender"),
+                    date_of_birth=employee_data.get("date_of_birth"),
+                    address=employee_data.get("address"),
+                    payroll_branch=branch,
+                    department=department,
+                    date_of_joining=employee_data.get(
+                        "date_of_joining", datetime.now().date()
+                    ),
+                )
+                created_employees.append(employee)
+
+            except Exception as e:
+                logger.error(f"Error creating employee: {str(e)}")
+                continue
+
+        return created_employees
+
+    def post(self, request):
+        """Handle HR system activation."""
+
+        api_key = request.headers.get("X-API-Key") or request.headers.get("Authorization")
+
+        if not api_key:
+            return Response(
+                {"error": "API key is required in X-API-Key header"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if api_key.startswith("Bearer "):
+            api_key = api_key[7:]
+
+        system = self.get_system_from_api_key(api_key)
+        if not system:
+            return Response(
+                {"error": "Invalid API key"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        serializer = InstitutionActivationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "error": "Data does not conform to HR system requirements",
+                    "details": serializer.errors,
+                    "message": "Please ensure your data matches the HR system contract",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            with transaction.atomic():
+                validated_data = serializer.validated_data.copy()
+
+                owner_data = validated_data.get("owner", {})
+                owner_user = self.create_or_get_user(owner_data)
+
+                if not owner_user:
+                    return Response(
+                        {"error": "Could not create owner user"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                owner_email = owner_data.get("email")
+
+                institution, branches, departments, employees_data, owner_data = (
+                    self.create_institution_and_branches(validated_data, owner_user)
+                )
+
+                institution.system = system
+                institution.save()
+
+                employees = self.create_employees(
+                    institution, branches, departments, employees_data
+                )
+
+                owner_employee = None
+                if owner_email:
+                    for employee in employees:
+                        if employee.email == owner_email:
+                            owner_employee = employee
+                            break
+
+
+                response_data = {
+                    "success": True,
+                    "message": "HR system activated successfully",
+                    "data": {
+                        "institution": {
+                            "id": institution.id,
+                            "institution_name": institution.institution_name,
+                            "location": institution.location,
+                            "institution_email": institution.institution_email,
+                        },
+                        "owner": {
+                            "id": owner_user.id,
+                            "email": owner_user.email,
+                            "fullname": owner_user.fullname,
+                            "employee_created": owner_employee is not None,
+                        },
+                        "branches_created": len(branches),
+                        "departments_created": len(departments),
+                        "employees_created": len(employees),
+                        "system_type": system.system_type.name,
+                        "system_code": system.code,
+                    },
+                }
+
+                send_activation_confirmation_email(
+                    owner_fullname=owner_user.fullname,
+                    owner_email=owner_user.email,
+                    institution_name=institution.institution_name,
+                    branches=branches,
+                    departments=departments,
+                    employees=employees,
+                )
+
+                return Response(response_data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            logger.error(f"Error during system activation: {str(e)}")
+            return Response(
+                {"error": "Failed to activate HR system", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
