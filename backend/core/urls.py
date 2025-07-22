@@ -21,6 +21,7 @@ urlpatterns = [
     path("api/discipline/", include("discipline.urls")),
     path("api/leave-mgt/", include("leave_mgt.urls")),
     path("api/payroll/", include("payroll.urls")),
+    path("api/projects/", include("projects.urls")),
 ]
 
 if settings.DEBUG:
