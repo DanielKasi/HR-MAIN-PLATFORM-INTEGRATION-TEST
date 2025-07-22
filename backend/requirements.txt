@@ -41,6 +41,7 @@ pycparser==2.22
 PyJWT==2.9.0
 pyOpenSSL==25.1.0
 pyparsing==3.2.3
+python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
 PyYAML==6.0.2
 redis==5.0.1
@@ -50,6 +51,8 @@ requests-oauthlib==2.0.0
 rpds-py==0.24.0
 rsa==4.9.1
 service-identity==24.2.0
+setuptools==80.9.0
+six==1.17.0
 sqlparse==0.5.3
 tomli==2.2.1
 Twisted==25.5.0
