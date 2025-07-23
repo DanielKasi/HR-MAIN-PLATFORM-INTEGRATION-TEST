@@ -48,9 +48,12 @@ class ProjectListCreateView(APIView):
     )
     def post(self, request, institution_id):
         institution = get_object_or_404(Institution, id=institution_id)
+
+        print("\n\n\nRequest Data:", request.data, "\n\n")
         serializer = ProjectSerializer(data=request.data)
+
         if serializer.is_valid():
-            serializer.save(institution=institution, created_by=request.user)
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -100,7 +103,7 @@ class ProjectDetailView(APIView):
 
         serializer = ProjectSerializer(project, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save(updated_by=request.user)
+            serializer.save(updated_by=request.user.profile)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -164,7 +167,7 @@ class TaskListCreateView(APIView):
     def post(self, request, project_id):
         serializer = TaskSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(project_id=project_id, created_by=request.user)
+            serializer.save(created_by=request.user.profile)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -214,7 +217,7 @@ class TaskDetailView(APIView):
 
         serializer = TaskSerializer(task, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save(updated_by=request.user)
+            serializer.save(updated_by=request.user.profile)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -260,7 +263,7 @@ class TaskTimeSheetView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if request.user.profile not in task.leaders.all():
+        if request.user.profile not in task_timesheet.task.leaders.all():
             return Response(
                 {"detail": "You do not have permission to update this task timesheet."},
                 status=status.HTTP_403_FORBIDDEN,

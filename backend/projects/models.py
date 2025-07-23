@@ -85,7 +85,6 @@ class ProjectDocument(BaseModel):
         indexes = [
             models.Index(fields=["project"]),
         ]
-        unique_together = ("project", "document")
 
 
 class Task(BaseModel):
@@ -169,7 +168,6 @@ class TaskDocument(BaseModel):
         indexes = [
             models.Index(fields=["task"]),
         ]
-        unique_together = ("task", "document")
 
 
 class TaskTimeSheet(BaseModel):
