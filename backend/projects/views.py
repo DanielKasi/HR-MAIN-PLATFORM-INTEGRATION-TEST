@@ -13,6 +13,7 @@ from utilities.pagination import CustomPageNumberPagination
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
+
 class ProjectListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -25,15 +26,15 @@ class ProjectListCreateView(APIView):
         },
         tags=["Projects Mgt"],
     )
-    def get(self, request, institution_id):            
+    def get(self, request, institution_id):
         institution = get_object_or_404(Institution, id=institution_id)
         projects = Project.objects.filter(institution=institution)
-        
+
         paginator = CustomPageNumberPagination()
         paginated_projects = paginator.paginate_queryset(projects, request)
         serializer = ProjectSerializer(paginated_projects, many=True)
         return paginator.get_paginated_response(serializer.data)
-    
+
     @extend_schema(
         operation_id="Create Project",
         summary="Create a new project",
@@ -46,17 +47,17 @@ class ProjectListCreateView(APIView):
         tags=["Projects Mgt"],
     )
     def post(self, request, institution_id):
-        institution = get_object_or_404(Institution, id=institution_id)        
+        institution = get_object_or_404(Institution, id=institution_id)
         serializer = ProjectSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(institution=institution, created_by=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        
+
 class ProjectDetailView(APIView):
     permission_classes = [IsAuthenticated]
-    
+
     @extend_schema(
         operation_id="Get Project Details",
         summary="Retrieve project details",
@@ -76,7 +77,7 @@ class ProjectDetailView(APIView):
             )
         serializer = ProjectSerializer(project)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
     @extend_schema(
         operation_id="Update Project",
         summary="Update project details",
@@ -89,7 +90,6 @@ class ProjectDetailView(APIView):
         },
         tags=["Projects Mgt"],
     )
-    
     def patch(self, request, project_id):
         project = Project.objects.filter(id=project_id).first()
         if not project:
@@ -97,13 +97,13 @@ class ProjectDetailView(APIView):
                 {"detail": "Project not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        
+
         serializer = ProjectSerializer(project, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save(updated_by=request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @extend_schema(
         operation_id="Delete Project",
         summary="Delete a project",
@@ -121,7 +121,8 @@ class ProjectDetailView(APIView):
             {"detail": "Project deleted successfully."},
             status=status.HTTP_204_NO_CONTENT,
         )
-        
+
+
 class TaskListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -141,14 +142,14 @@ class TaskListCreateView(APIView):
                 {"detail": "Project not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-            
+
         tasks = Task.objects.filter(project_id=project_id)
-        
+
         paginator = CustomPageNumberPagination()
         paginated_tasks = paginator.paginate_queryset(tasks, request)
         serializer = TaskSerializer(paginated_tasks, many=True)
         return paginator.get_paginated_response(serializer.data)
-    
+
     @extend_schema(
         operation_id="Create Task",
         summary="Create a new task for a project",
@@ -166,7 +167,8 @@ class TaskListCreateView(APIView):
             serializer.save(project_id=project_id, created_by=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 class TaskDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -189,7 +191,7 @@ class TaskDetailView(APIView):
             )
         serializer = TaskSerializer(task)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
     @extend_schema(
         operation_id="Update Task",
         summary="Update task details",
@@ -209,13 +211,13 @@ class TaskDetailView(APIView):
                 {"detail": "Task not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        
+
         serializer = TaskSerializer(task, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save(updated_by=request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @extend_schema(
         operation_id="Delete Task",
         summary="Delete a task",
@@ -227,13 +229,14 @@ class TaskDetailView(APIView):
         tags=["Projects Mgt"],
     )
     def delete(self, request, task_id):
-        task = get_object_or_404(Task, id=task_id)        
+        task = get_object_or_404(Task, id=task_id)
         task.delete()
         return Response(
             {"detail": "Task deleted successfully."},
             status=status.HTTP_204_NO_CONTENT,
         )
-    
+
+
 class TaskTimeSheetView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -250,20 +253,25 @@ class TaskTimeSheetView(APIView):
     )
     def patch(self, request, task_timesheet_id):
         task_timesheet = TaskTimeSheet.objects.filter(id=task_timesheet_id).first()
-        
+
         if not task_timesheet:
             return Response(
                 {"detail": "Task timesheet not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        
+
         if request.user.profile not in task.leaders.all():
             return Response(
                 {"detail": "You do not have permission to update this task timesheet."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        
-        serializer = TaskTimeSheetSerializer(task_timesheet, data=request.data, partial=True)
+
+        serializer = TaskTimeSheetSerializer(
+            task_timesheet,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
         if serializer.is_valid():
             serializer.save(updated_by=request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)

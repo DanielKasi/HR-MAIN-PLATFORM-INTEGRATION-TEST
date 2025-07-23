@@ -105,7 +105,7 @@ class Task(BaseModel):
 
     task_name = models.CharField(max_length=255, blank=False)
     description = models.TextField(blank=True)
-    
+
     leaders = models.ManyToManyField(
         "users.Profile",
         related_name="led_tasks",
@@ -120,7 +120,7 @@ class Task(BaseModel):
 
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
-    
+
     status = models.CharField(
         max_length=20,
         choices=TASK_STATUS_CHOICES,
@@ -179,8 +179,8 @@ class TaskTimeSheet(BaseModel):
         related_name="timesheet",
     )
 
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+    start_time = models.DateTimeField(blank=True, null=True)
+    end_time = models.DateTimeField(blank=True, null=True)
 
     notes = models.TextField(blank=True)
 
