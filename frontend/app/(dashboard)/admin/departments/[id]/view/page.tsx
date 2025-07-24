@@ -53,7 +53,7 @@ import {
 } from "lucide-react"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { getDepartments, getAllEmployees, getOnBoardings } from "@/lib/utils"
+import { getDepartments, getAllEmployees, getOnBoardings, getJobPosition } from "@/lib/utils"
 import type { IDepartment, IOnBoarding, EmployeeFromAPI } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
@@ -143,6 +143,7 @@ export default function DepartmentDetailView() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
+  
 
   // Effects
   useEffect(() => {
