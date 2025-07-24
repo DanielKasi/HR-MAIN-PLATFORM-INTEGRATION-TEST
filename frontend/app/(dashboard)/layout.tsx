@@ -191,6 +191,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Applications", href: "/applications"},
         {title: "Interviews", href: "/job-interviews"},
       ],
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS
     },
     {
       title: "Onboarding",
@@ -206,6 +207,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Attendance", href: "/employees/attendance"},
         {title: "Discipline", href: "/employees/discipline"},
       ],
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES
     },
     {
       title: "Leave",
@@ -376,7 +378,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         return item;
       })
       .filter((item) => {
-        if (item.submenu && item.submenu.length > 0) return item.submenu.length > 0;
+        // if (item.submenu && item.submenu.length > 0) return item.submenu.length > 0;
         return !item.requiredPermission || hasPermission(item.requiredPermission);
       });
     setFilteredNavItems(filtered);

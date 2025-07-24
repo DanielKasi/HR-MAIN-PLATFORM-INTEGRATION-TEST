@@ -39,7 +39,8 @@ import { toast } from "sonner"
 import { select } from "redux-saga/effects"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
 import { useSelector } from "react-redux"
-
+import { PERMISSION_CODES } from "@/app/types/types.utils"
+import ProtectedComponent from "@/components/ProtectedComponent"
 
 type LeavePolicy = ILeavePolicyResponse & {
   leave_type: ILeaveType;

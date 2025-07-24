@@ -117,6 +117,21 @@
       "description": "Allows creating job advertisements"
     },
     {
+      "code": "can_view_job_adverts",
+      "name": "Can View Job Adverts",
+      "description": "Allows viewing job advertisements"
+    },
+    {
+      "code": "can_edit_job_adverts",
+      "name": "Can Edit Job Adverts",
+      "description": "Allows editing job advertisements"
+    },
+    {
+      "code": "can_delete_job_adverts",
+      "name": "Can Delete Job Adverts",
+      "description": "Allows deleting job advertisements"
+    },
+    {
       "code": "can_publish_job_adverts",
       "name": "Can Publish Job Adverts",
       "description": "Allows publishing job advertisements"
@@ -135,6 +150,11 @@
       "code": "can_schedule_interviews",
       "name": "Can Schedule Interviews",
       "description": "Allows scheduling interviews"
+    },
+    {
+      "code": "can_view_interviews",
+      "name": "Can View Interviews",
+      "description": "Allows Viewing interviews"
     },
     {
       "code": "can_conduct_interviews",
@@ -325,6 +345,16 @@
       "code": "can_create_discipline_cases",
       "name": "Can Create Discipline Cases",
       "description": "Allows creating new disciplinary cases"
+    },
+    {
+      "code": "can_edit_discipline_cases",
+      "name": "Can Edit Discipline Cases",
+      "description": "Allows editing new disciplinary cases"
+    },
+    {
+      "code": "can_delete_discipline_cases",
+      "name": "Can  DisDelete discipline Cases",
+      "description": "Allows deleting new disciplinary cases"
     },
     {
       "code": "can_investigate_discipline_cases",

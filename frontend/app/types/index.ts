@@ -155,7 +155,7 @@ export interface Role {
   id: number;
   name: string;
   description: string;
-  permissions_details?: IPermission[];
+  permissions_details?: Permission[];
 }
 
 export type WorkflowAction = {

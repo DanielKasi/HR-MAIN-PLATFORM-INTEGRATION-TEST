@@ -29,26 +29,161 @@ export enum PERMISSION_CODES {
   CAN_HOLD_SALE = "can_hold_sale",
 
   // User Management
-  CAN_DEACTIVATE_USERS = "can_deactivate_users",
   CAN_CREATE_USERS = "can_create_users",
-  VIEW_USERS = "view_users",
+  CAN_VIEW_USERS = "can_view_users", 
+  CAN_EDIT_USERS = "can_edit_users", 
+  CAN_DEACTIVATE_USERS = "can_deactivate_users",
+  CAN_DELETE_USERS = "can_delete_users",
+  CAN_RESET_USER_PASSWORDS = "can_reset_user_passwords",
   CAN_VIEW_STAFF_ROLES = "can_view_staff_roles",
   CAN_EDIT_STAFF_ROLES = "can_edit_staff_roles",
-  CAN_EDIT_USER = "can_edit_user",
+  CAN_ASSIGN_USER_ROLES = "can_assign_user_roles",
 
-  // Administrative Tasks
+  // Employee Management
+  CAN_CREATE_EMPLOYEES = "can_create_employees",
+  CAN_VIEW_EMPLOYEES = "can_view_employees",
+  CAN_EDIT_EMPLOYEES = "can_edit_employees",
+  CAN_DELETE_EMPLOYEES = "can_delete_employees",
+  CAN_VIEW_EMPLOYEE_PERSONAL_DATA = "can_view_employee_personal_data",
+  CAN_EDIT_EMPLOYEE_PERSONAL_DATA = "can_edit_employee_personal_data",
+  CAN_VIEW_EMPLOYEE_SALARY_INFO = "can_view_employee_salary_info",
+  CAN_TERMINATE_EMPLOYEES = "can_terminate_employees",
+
+  // Recruitment & Selection
+  CAN_CREATE_JOB_POSITIONS = "can_create_job_positions",
+  CAN_VIEW_JOB_POSITIONS = "can_view_job_positions",
+  CAN_EDIT_JOB_POSITIONS = "can_edit_job_positions",
+  CAN_DELETE_JOB_POSITIONS = "can_delete_job_positions",
+  CAN_CREATE_JOB_ADVERTS = "can_create_job_adverts",
+  CAN_VIEW_JOB_ADVERTS = "can_view_job_adverts",
+  CAN_EDIT_JOB_ADVERTS = "can_edit_job_adverts",
+  CAN_DELETE_JOB_ADVERTS = "can_delete_job_adverts",
+  CAN_PUBLISH_JOB_ADVERTS = "can_publish_job_adverts",
+  CAN_VIEW_JOB_APPLICATIONS = "can_view_job_applications",
+  CAN_SHORTLIST_CANDIDATES = "can_shortlist_candidates",
+  CAN_SCHEDULE_INTERVIEWS = "can_schedule_interviews",
+  CAN_VIEW_INTERVIEWS = "can_view_interviews",
+  CAN_CONDUCT_INTERVIEWS = "can_conduct_interviews",
+  CAN_MAKE_JOB_OFFERS = "can_make_job_offers",
+  CAN_PERFORM_GAP_ANALYSIS = "can_perform_gap_analysis",
+
+  // Performance Management
+  CAN_VIEW_PERFORMANCE_DATA = "can_view_performance_data",
+  CAN_CONDUCT_APPRAISALS = "can_conduct_appraisals",
+  CAN_SET_PERFORMANCE_GOALS = "can_set_performance_goals",
+  CAN_APPROVE_APPRAISALS = "can_approve_appraisals",
+  CAN_VIEW_PERFORMANCE_REPORTS = "can_view_performance_reports",
+  CAN_MANAGE_PERFORMANCE_CYCLES = "can_manage_performance_cycles",
+  CAN_CREATE_PERFORMANCE_POLICIES = "can_create_performance_policies",
+
+  // Training & Development
+  CAN_VIEW_TRAINING_PROGRAMS = "can_view_training_programs",
+  CAN_CREATE_TRAINING_PROGRAMS = "can_create_training_programs",
+  CAN_ENROLL_EMPLOYEES_TRAINING = "can_enroll_employees_training",
+  CAN_APPROVE_TRAINING_REQUESTS = "can_approve_training_requests",
+  CAN_MANAGE_TRAINING_BUDGET = "can_manage_training_budget",
+  CAN_CONDUCT_TRAINING_NEEDS_ASSESSMENT = "can_conduct_training_needs_assessment",
+  CAN_VIEW_TRAINING_REPORTS = "can_view_training_reports",
+
+  // Leave Management
+  CAN_VIEW_LEAVE_APPLICATIONS = "can_view_leave_applications",
+  CAN_APPROVE_LEAVE_APPLICATIONS = "can_approve_leave_applications",
+  CAN_REJECT_LEAVE_APPLICATIONS = "can_reject_leave_applications",
+  CAN_MANAGE_LEAVE_TYPES = "can_manage_leave_types",
+  CAN_VIEW_LEAVE_BALANCES = "can_view_leave_balances",
+  CAN_ADJUST_LEAVE_BALANCES = "can_adjust_leave_balances",
+  CAN_VIEW_LEAVE_REPORTS = "can_view_leave_reports",
+  CAN_CANCEL_APPROVED_LEAVE = "can_cancel_approved_leave",
+
+  // Payroll & Compensation
+  CAN_VIEW_PAYROLL_DATA = "can_view_payroll_data",
+  CAN_PROCESS_PAYROLL = "can_process_payroll",
+  CAN_GENERATE_PAYSLIPS = "can_generate_payslips",
+  CAN_MANAGE_ALLOWANCES = "can_manage_allowances",
+  CAN_MANAGE_DEDUCTIONS = "can_manage_deductions",
+  CAN_APPROVE_SALARY_CHANGES = "can_approve_salary_changes",
+  CAN_VIEW_PAYROLL_REPORTS = "can_view_payroll_reports",
+  CAN_MANAGE_COMPENSATION_POLICIES = "can_manage_compensation_policies",
+
+  // Discipline Management
+  CAN_VIEW_DISCIPLINE_CASES = "can_view_discipline_cases",
+  CAN_CREATE_DISCIPLINE_CASES = "can_create_discipline_cases",
+  CAN_EDIT_DISCIPLINE_CASES = "can_edit_discipline_cases",
+  CAN_DELETE_DISCIPLINE_CASES = "can_delete_discipline_cases",
+  CAN_INVESTIGATE_DISCIPLINE_CASES = "can_investigate_discipline_cases",
+  CAN_APPROVE_DISCIPLINARY_ACTIONS = "can_approve_disciplinary_actions",
+  CAN_MANAGE_DISCIPLINARY_COMMITTEE = "can_manage_disciplinary_committee",
+  CAN_LODGE_DISCIPLINARY_COMPLAINTS = "can_lodge_disciplinary_complaints",
+
+  // Attendance Management
+  CAN_VIEW_ATTENDANCE_RECORDS= "can_view_attendance_records",
+  CAN_EDIT_ATTENDANCE_RECORDS = "can_edit_attendance_records",
+  CAN_APPROVE_ATTENDANCE_CORRECTIONS = "can_approve_attendance_corrections",
+  CAN_VIEW_ATTENDANCE_REPORTS = "can_view_attendance_reports",
+  CAN_MANAGE_ATTENDANCE_POLICIES = "can_manage_attendance_policies",
+
+  // Administration
+  CAN_MANAGE_COMPANY_ASSETS = "can_manage_company_assets",
+  CAN_MANAGE_TRAVEL_REQUESTS = "can_manage_travel_requests",
+  CAN_APPROVE_TRAVEL_REQUESTS = "can_approve_travel_requests",
+  CAN_MANAGE_DRIVER_SCHEDULES = "can_manage_driver_schedules",
+  CAN_MANAGE_VISITOR_ACCESS = "can_manage_visitor_access",
+  CAN_MANAGE_WELFARE_SERVICES = "can_manage_welfare_services",
+  CAN_MANAGE_HEALTH_SAFETY = "can_manage_health_safety",
+  CAN_LODGE_WELLNESS_COMPLAINTS = "can_lodge_wellness_complaints",
+  CAN_MANAGE_MAINTENANCE_SCHEDULES = "can_manage_maintenance_schedules",
+
+  // Policy Management
+  CAN_CREATE_POLICIES = "can_create_policies",
+  CAN_EDIT_POLICIES = "can_edit_policies",
+  CAN_APPROVE_POLICIES = "can_approve_policies",
+  CAN_PUBLISH_POLICIES = "can_publish_policies",
+  CAN_ARCHIVE_POLICIES = "can_archive_policies",
+  CAN_TRACK_POLICY_ACKNOWLEDGMENTS = "can_track_policy_acknowledgments",
+
+  // Leadership & Culture
+  CAN_MANAGE_COMPANY_VISION = "can_manage_company_vision",
+  CAN_MANAGE_CORE_VALUES = "can_manage_core_values",
+  CAN_MANAGE_LEADERSHIP_PROGRAMS = "can_manage_leadership_programs",
+  CAN_ASSESS_LEADERSHIP_GAPS = "can_assess_leadership_gaps",
+  CAN_MANAGE_CULTURAL_ACTIVITIES = "can_manage_cultural_activities",
+
+  // Reports & Analytics
+  CAN_VIEW_HR_DASHBOARD = "can_view_hr_dashboard",
+  CAN_GENERATE_HR_REPORTS = "can_generate_hr_reports",
+  CAN_VIEW_QUALITY_METRICS = "can_view_quality_metrics",
+  CAN_EXPORT_HR_DATA = "can_export_hr_data",
+  CAN_VIEW_COMPLIANCE_REPORTS = "can_view_compliance_reports",
+  CAN_VIEW_EMPLOYEE_STATISTICS = "can_view_employee_statistics",
+
+  // System Administration
   CAN_VIEW_ADMIN_DASHBOARD = "can_view_admin_dashboard",
-  CAN_VIEW_GUIDE = "can_view_guide",
+  CAN_VIEW_ADMIN_PAGE = "can_view_admin_page",
   CAN_VIEW_SETTINGS = "can_view_settings",
+  CAN_EDIT_SETTINGS = "can_edit_settings",
   CAN_VIEW_MODULES = "can_view_modules",
+  CAN_MANAGE_MODULES = "can_manage_modules",
   CAN_CHANGE_THEME_COLOR = "can_change_theme_color",
-  CAN_ADD_Institution_APPROVAL_STEPS = "can_add_Institution_approval_steps",
+  CAN_VIEW_GUIDE = "can_view_guide",
+  CAN_MANAGE_APPROVAL_WORKFLOWS = "can_manage_approval_workflows",
+  CAN_BACKUP_SYSTEM = "can_backup_system",
+  CAN_RESTORE_SYSTEM = "can_restore_system",
+  CAN_ADD_Institution_APPROVAL_STEPS = "can_add_institution_approval_steps",
+
+  // Branch Management
+  CAN_VIEW_BRANCHES = "can_view_branches",
+  CAN_ADD_BRANCH = "can_add_branch",
   CAN_EDIT_BRANCH = "can_edit_branch",
   CAN_DELETE_BRANCH = "can_delete_branch",
-  CAN_ADD_BRANCH = "can_add_branch",
-  CAN_VIEW_ADMIN_PAGE = "can_view_admin_page",
-}
+  CAN_MANAGE_BRANCH_EMPLOYEES = "can_manage_branch_employees",
 
+  // Department Management
+  CAN_VIEW_DEPARTMENTS = "can_view_departments",
+  CAN_CREATE_DEPARTMENTS = "can_create_departments",
+  CAN_EDIT_DEPARTMENTS = "can_edit_departments",
+  CAN_DELETE_DEPARTMENTS = "can_delete_departments",
+  CAN_MANAGE_DEPARTMENT_HEADS = "can_manage_department_heads"
+}
 
 
 
