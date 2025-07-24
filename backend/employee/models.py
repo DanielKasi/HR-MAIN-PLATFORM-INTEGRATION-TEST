@@ -113,6 +113,8 @@ class Employee(models.Model):
     address = models.TextField(blank=True, null=True)
     country = models.CharField(max_length=50, blank=True, null=True)
     nin = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    nssf_no = models.CharField(max_length=20, blank=True, null=True)
+    tin = models.CharField(max_length=12, blank=True, null=True)
     bank = models.CharField(max_length=50, blank=True, null=True)
     bank_account_number = models.CharField(max_length=20, blank=True, null=True)
     is_active = models.BooleanField(default=True)
@@ -134,7 +136,6 @@ class Employee(models.Model):
     salary = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00, null=True, blank=True
     )
-    # salary_overridden = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.fullname}  - {self.position}"

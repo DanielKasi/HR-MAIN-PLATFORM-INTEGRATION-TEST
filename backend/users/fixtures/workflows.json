@@ -1,48 +1,41 @@
 [
   {
-    "code": "product",
-    "label": "All approvals on a product",
-    "workflow_actions": [
-      { "code": "product_creation", "label": "When a Product is created" }
-    ]
-  },
-  {
-    "code": "purchase_order",
-    "label": "All approvals on a purchase order",
+    "code": "leave_request",
+    "label": "All approvals on the leave request",
     "workflow_actions": [
       {
-        "code": "purchase_order_creation",
-        "label": "When a Purchase Order is created"
+        "code": "leave_request",
+        "label": "When a leave request is made"
+      }
+    ]
+  }, 
+  {
+    "code": "asset_allocation",
+    "label": "All approvals on asset allocation",
+    "workflow_actions": [
+      {
+        "code": "asset_allocation",
+        "label": "When an asset allocation is made"
       }
     ]
   },
   {
-    "code": "stock_movement_to_branch",
-    "label": "All approvals on stock allocation to a branch",
+    "code": "asset_return_request",
+    "label": "All approvals on asset return",
     "workflow_actions": [
       {
-        "code": "stock_movement_to_branch",
-        "label": "When Stock is allocated to a branch"
+        "code": "asset_return_request",
+        "label": "When an asset return is made"
       }
     ]
   },
   {
-    "code": "stock_movement_to_shelf",
-    "label": "All approvals on stock movement to shelf",
+    "code": "asset_request",
+    "label": "All approvals on asset request",
     "workflow_actions": [
       {
-        "code": "stock_movement_to_shelf",
-        "label": "When branch stock is moved to shelf"
-      }
-    ]
-  },
-  {
-    "code": "return_request",
-    "label": "All approvals on the return request",
-    "workflow_actions": [
-      {
-        "code": "return_request",
-        "label": "When a return request is made"
+        "code": "asset_request",
+        "label": "When an asset request is made"
       }
     ]
   }

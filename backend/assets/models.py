@@ -1,5 +1,6 @@
 from django.db import models
 from .utils.history import create_asset_history
+from django.db import transaction
 
 
 class BaseModel(models.Model):
@@ -102,6 +103,7 @@ class AssetRequest(BaseModel):
         ("pending", "Pending"),
         ("approved", "Approved"),
         ("rejected", "Rejected"),
+        ("cancelled", "Cancelled"),
     ]
 
     asset = models.ForeignKey(
@@ -137,6 +139,53 @@ class AssetRequest(BaseModel):
             self.request_reference_code = request_code
             super().save(update_fields=["request_reference_code"])
 
+    @transaction.atomic
+    def approve(self):
+
+        if self.asset_request_status != "pending":
+            raise ValueError("Only pending requests can be approved.")
+
+        self.asset_request_status = "approved"
+        self.save()
+
+        AssetAllocation.objects.create(
+            asset=self.asset,
+            allocated_to=self.requester,
+            responding_to_request=self,
+            allocated_by=None,
+        )
+
+    def finish_workflow(self):
+        from workflows.models import ApprovalTask
+        from django.contrib.contenttypes.models import ContentType
+
+        content_type = ContentType.objects.get_for_model(self.__class__)
+
+        tasks = ApprovalTask.objects.filter(
+            content_type=content_type, object_id=self.pk
+        )
+
+        if tasks.exists() and tasks.filter(status="rejected").exists():
+            self.asset_request_status = "cancelled"
+            self.save()
+            return
+
+        if (
+            tasks.exists()
+            and not tasks.filter(
+                status__in=["not_started", "pending", "rejected"]
+            ).exists()
+        ):
+            self.approve()
+
+        elif not tasks.exists():
+            self.approve()
+
+        else:
+            raise Exception(
+                "Cannot finish workflow: Some tasks are not completed or rejected."
+            )
+
 
 class AssetAllocation(BaseModel):
 
@@ -170,6 +219,8 @@ class AssetAllocation(BaseModel):
         "users.Profile",
         on_delete=models.CASCADE,
         related_name="asset_allocations_made",
+        blank=True,
+        null=True,
     )
 
     allocation_status = models.CharField(
@@ -267,7 +318,9 @@ class AssetHistory(BaseModel):
         ("reassigned", "Reassigned"),
     ]
 
-    asset = models.ForeignKey(Asset, on_delete=models.CASCADE, related_name="history")
+    asset = models.ForeignKey(
+        Asset, on_delete=models.CASCADE, related_name="asset_histories"
+    )
 
     event_type = models.CharField(max_length=30, choices=EVENT_TYPE_CHOICES)
 

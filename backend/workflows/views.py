@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from backend.utilities.pagination import CustomPageNumberPagination
+from utilities.pagination import CustomPageNumberPagination
 from general.serializers import MessageResponseSerializer
 from users.models import Profile, UserRole
 from users.serializers import CustomUserSerializer
