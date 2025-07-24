@@ -1,7 +1,7 @@
 from django.db import models
 from datetime import timedelta, date
 from dateutil.relativedelta import relativedelta
-
+from utilities.holiday_manager import HolidayManager
 
 class PublicHoliday(models.Model):
     institution = models.ForeignKey(

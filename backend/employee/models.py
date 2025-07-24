@@ -447,3 +447,7 @@ class EmployeeAttendance(models.Model):
 
         self.overtime_hours = self.calculate_overtime_hours()
         super().save(*args, **kwargs)
+
+
+# class Contract(models.Model):
+#     employee = models.ForeignKey()

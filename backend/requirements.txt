@@ -23,6 +23,7 @@ google-auth==2.23.4
 google-auth-httplib2==0.1.1
 google-auth-oauthlib==1.1.0
 gunicorn==23.0.0
+holidays==0.77
 httplib2==0.22.0
 hyperlink==21.0.0
 idna==3.10

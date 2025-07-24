@@ -3,7 +3,7 @@ from .models import Institution, Branch, UserBranch, Department
 
 
 class InstitutionAdmin(admin.ModelAdmin):
-    list_display = ("institution_name", "institution_owner")
+    list_display = ("institution_name", "institution_owner", "country_code")
     search_fields = ("institution_name",)
     ordering = ("institution_name",)
     list_per_page = 20
