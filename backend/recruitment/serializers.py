@@ -143,6 +143,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
         required=False,
         help_text="List of employee IDs to apply salary change to",
     )
+    employees = EmployeeSerializer(many=True, read_only=True)
 
     class Meta:
         model = JobPosition
@@ -158,6 +159,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
             "offer_letter_template",
             "salary",
             "job_adverts",
+            "employees",
             "apply_salary_to_employees",
         ]
 
