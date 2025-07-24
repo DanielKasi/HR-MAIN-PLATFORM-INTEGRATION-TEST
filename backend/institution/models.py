@@ -90,7 +90,7 @@ class Institution(models.Model):
         from calendar2.models import Calendar
 
         current_year = datetime.now().year
-        Calendar.objects.create(institution=institution, year=current_year)
+        Calendar.create_with_holidays(institution=self, year=current_year)
 
     def get_zoom_access_token(self):
         import base64
