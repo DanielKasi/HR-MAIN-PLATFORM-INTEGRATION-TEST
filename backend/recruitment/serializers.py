@@ -56,7 +56,9 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
 
 
 class InterviewStageSerializer(serializers.ModelSerializer):
-    interviewer_details = EmployeeSerializer(source="interviewer", read_only=True)
+    interviewers_details = EmployeeSerializer(
+        source="interviewers", many=True, read_only=True
+    )
     candidates = serializers.SerializerMethodField(read_only=True)
     candidates_count = serializers.SerializerMethodField(read_only=True)
 
@@ -67,8 +69,8 @@ class InterviewStageSerializer(serializers.ModelSerializer):
             "job_position_advert",
             "name",
             "level",
-            "interviewer",
-            "interviewer_details",
+            "interviewers",
+            "interviewers_details",
             "candidates_count",
             "candidates",
         ]
@@ -183,7 +185,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
 
             invalid_ids = (
                 Employee.objects.exclude(id__in=employee_ids)
-                .filter(job_position=self.instance)
+                .filter(position=self.instance)
                 .values_list("id", flat=True)
             )
             if invalid_ids:
@@ -204,7 +206,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
 
         if new_salary is not None and old_salary != new_salary and employee_ids:
-            Employee.objects.filter(id__in=employee_ids, job_position=instance).update(
+            Employee.objects.filter(id__in=employee_ids, position=instance).update(
                 salary=new_salary
             )
 

@@ -34,6 +34,11 @@ class Institution(models.Model):
     longitude = models.FloatField(blank=True, null=True)
     # location_geodjango = gis_models.PointField(geography=True, null=True, blank=True)
 
+    # Zoom Settings
+    zoom_account_id = models.CharField(max_length=100, blank=True, null=True)
+    zoom_client_id = models.CharField(max_length=100, blank=True, null=True)
+    zoom_client_secret = models.CharField(max_length=100, blank=True, null=True)
+
     approval_status = models.CharField(
         max_length=20,
         choices=APPROVAL_STATUS_CHOICES,
@@ -85,7 +90,39 @@ class Institution(models.Model):
         from calendar2.models import Calendar
 
         current_year = datetime.now().year
-        Calendar.create_with_holidays(institution=self, year=current_year)
+        Calendar.objects.create(institution=institution, year=current_year)
+
+    def get_zoom_access_token(self):
+        import base64
+        import requests
+
+        if (
+            not self.zoom_account_id
+            or not self.zoom_client_id
+            or not self.zoom_client_secret
+        ):
+            raise Exception(f"Institution {self} has no Zoom credentials configured.")
+
+        credentials = f"{self.zoom_client_id}:{self.zoom_client_secret}"
+        encoded_credentials = base64.b64encode(credentials.encode()).decode()
+
+        headers = {
+            "Authorization": f"Basic {encoded_credentials}",
+        }
+
+        params = {
+            "grant_type": "account_credentials",
+            "account_id": self.zoom_account_id,
+        }
+
+        response = requests.post(
+            "https://zoom.us/oauth/token", headers=headers, params=params
+        )
+
+        if response.status_code == 200:
+            return response.json()["access_token"]
+        else:
+            raise Exception(f"Zoom token error: {response.text}")
 
 
 class InstitutionDocument(models.Model):

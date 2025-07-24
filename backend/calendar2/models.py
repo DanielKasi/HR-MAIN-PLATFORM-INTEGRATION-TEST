@@ -44,6 +44,23 @@ class PublicHoliday(models.Model):
         calendar.public_holidays.add(self)
 
 
+# Preferably Zoom
+class OnlineMeeting(models.Model):
+    event = models.OneToOneField(
+        "Event", on_delete=models.CASCADE, related_name="online_event_details"
+    )
+    meeting_id = models.CharField(max_length=100, unique=True)
+    start_time = models.DateTimeField()
+    duration = models.PositiveIntegerField()
+    topic = models.CharField(max_length=200, blank=True, null=True)
+    join_url = models.URLField()
+    start_url = models.URLField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Online Meeting for {self.topic} at {self.start_time}"
+
+
 class Event(models.Model):
     TARGET_AUDIENCE_CHOICES = [
         ("all", "All Employees"),
@@ -58,6 +75,11 @@ class Event(models.Model):
         ("monthly", "Monthly"),
         ("yearly", "Yearly"),
     ]
+    EVENT_MODE_CHOICES = [
+        ("physical", "Physical"),
+        ("online", "Online"),
+        ("hybrid", "Hybrid"),
+    ]
 
     institution = models.ForeignKey(
         "institution.Institution",
@@ -71,6 +93,10 @@ class Event(models.Model):
 
     target_audience = models.CharField(
         max_length=20, choices=TARGET_AUDIENCE_CHOICES, default="all"
+    )
+
+    event_mode = models.CharField(
+        max_length=20, choices=EVENT_MODE_CHOICES, default="physical"
     )
 
     department = models.ForeignKey(
@@ -124,6 +150,37 @@ class Event(models.Model):
 
         if is_new:
             self._add_event_to_calendar()
+
+            # This will be opened after Review
+            """
+            if self.event_mode == "online":
+                self._create_online_meeting()
+            """
+
+    def _create_online_meeting(self):
+        from calendar2.zoom_api import create_zoom_meeting
+        from calendar2.models import ZoomMeeting
+        from datetime import datetime
+
+        access_token = self.institution.get_zoom_access_token()
+        start_time = datetime.combine(self.date, datetime.min.time())
+
+        zoom_data = create_zoom_meeting(
+            access_token=access_token,
+            topic=self.title,
+            start_time=start_time.isoformat(),
+            duration=60,
+        )
+
+        ZoomMeeting.objects.create(
+            event=self,
+            meeting_id=zoom_data["id"],
+            start_time=zoom_data["start_time"],
+            duration=zoom_data["duration"],
+            topic=zoom_data["topic"],
+            join_url=zoom_data["join_url"],
+            start_url=zoom_data["start_url"],
+        )
 
     def _add_event_to_calendar(self):
         from calendar2.models import Calendar, EventOccurrence

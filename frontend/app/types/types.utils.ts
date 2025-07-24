@@ -332,6 +332,9 @@ export interface JobPositionFormData {
 }
 
 export interface CreateJobPositionData {
+  affected_employees(affected_employees: any): string | Blob;
+  affected_employees: any;
+  affected_employees: boolean;
   name: string
   description?: string
   department: number
