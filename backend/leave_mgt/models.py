@@ -6,7 +6,6 @@ from users.models import CustomUser
 from django.utils import timezone
 
 
-
 class LeaveType(models.Model):
     """Leave types like Annual, Sick, Maternity, etc."""
 
@@ -28,7 +27,9 @@ class LeaveType(models.Model):
     description = models.TextField(blank=True)
     max_days_per_year = models.PositiveIntegerField(default=0)
     carry_forward_allowed = models.BooleanField(default=False)
-    max_carry_forward_days = models.PositiveIntegerField(default=0, blank=True, null=True)
+    max_carry_forward_days = models.PositiveIntegerField(
+        default=0, blank=True, null=True
+    )
     is_active = models.BooleanField(default=True)
     requires_document = models.BooleanField(default=False)
     gender_specific = models.CharField(
@@ -45,7 +46,7 @@ class LeaveType(models.Model):
 
     def __str__(self):
         return self.name
-    
+
     def save(self, *args, **kwargs):
         is_new_leave_type = self.pk is None
         old_gender_specific = None
@@ -62,13 +63,12 @@ class LeaveType(models.Model):
         super().save(*args, **kwargs)
 
         # Sync balances if this is a new leave type or if important fields changed
-        should_sync = (
-            is_new_leave_type and self.is_active
-        ) or (
-            not is_new_leave_type and (
-                old_gender_specific != self.gender_specific or
-                old_is_active != self.is_active or
-                old_max_days != self.max_days_per_year
+        should_sync = (is_new_leave_type and self.is_active) or (
+            not is_new_leave_type
+            and (
+                old_gender_specific != self.gender_specific
+                or old_is_active != self.is_active
+                or old_max_days != self.max_days_per_year
             )
         )
 
@@ -89,7 +89,7 @@ class LeaveType(models.Model):
         employees = Employee.objects.filter(
             is_active=True,
             department__institution=self.institution,
-            department__isnull=False
+            department__isnull=False,
         )
 
         synced_count = 0
@@ -97,11 +97,10 @@ class LeaveType(models.Model):
         for employee in employees:
             # First, clean up any duplicates for this employee and leave type
             employee._cleanup_duplicate_balances(self.institution, self, year)
-            
+
             # Check if this leave type applies to this employee
-            applies_to_employee = (
-                self.gender_specific == "all" or 
-                (hasattr(employee, 'gender') and employee.gender == self.gender_specific)
+            applies_to_employee = self.gender_specific == "all" or (
+                hasattr(employee, "gender") and employee.gender == self.gender_specific
             )
 
             if applies_to_employee and self.is_active:
@@ -120,7 +119,7 @@ class LeaveType(models.Model):
                         "used_days": Decimal("0"),
                         "pending_days": Decimal("0"),
                         "carried_forward_days": Decimal("0"),
-                    }
+                    },
                 )
 
                 # Update allocated days if balance already existed but entitlement changed
@@ -137,7 +136,7 @@ class LeaveType(models.Model):
                     leave_type=self,
                     year=year,
                     used_days=0,  # Only remove unused balances
-                    pending_days=0
+                    pending_days=0,
                 ).delete()
 
         return synced_count
@@ -230,6 +229,8 @@ class LeaveApplication(models.Model):
     supporting_document = models.FileField(
         upload_to="leave_documents/", null=True, blank=True
     )
+
+    # TODO change to a file
     handover_notes = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)

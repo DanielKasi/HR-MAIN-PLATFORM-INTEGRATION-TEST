@@ -14,7 +14,7 @@ urlpatterns = [
     ),
     path("api/user/", include("users.urls")),
     path("api/institution/", include("institution.urls")),
-    # path("api/workflow/", include("workflows.urls")),
+    path("api/workflow/", include("workflows.urls")),
     path("api/recruitment/", include("recruitment.urls")),
     path("api/on-boarding/", include("onboarding.urls")),
     path("api/employee/", include("employee.urls")),
