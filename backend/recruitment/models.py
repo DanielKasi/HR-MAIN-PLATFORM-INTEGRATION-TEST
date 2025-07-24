@@ -148,10 +148,8 @@ class JobAdvertApplication(models.Model):
                 fail_silently=False,
             )
 
-
         except Exception as e:
             print(f"Error sending email: {e}")
-            
 
     def send_shortlist_email(self):
         """Send email notification when applicant is shortlisted"""
@@ -181,7 +179,6 @@ class JobAdvertApplication(models.Model):
                 html_message=html_message,  # HTML version
                 fail_silently=False,
             )
-
 
         except Exception as e:
             print(f"Error sending shortlist email to {self.applicant_email}: {str(e)}")
@@ -318,7 +315,6 @@ class JobInterview(models.Model):
                 fail_silently=False,
             )
 
-
         except Exception as e:
             print(
                 f"Error sending interview email to {self.job_position_application.applicant_email}: {str(e)}"
@@ -351,7 +347,6 @@ class JobInterview(models.Model):
                 html_message=html_message,
                 fail_silently=False,
             )
-
 
         except Exception as e:
             print(

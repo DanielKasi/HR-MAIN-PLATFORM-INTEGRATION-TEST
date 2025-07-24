@@ -24,6 +24,8 @@ import { toast } from "sonner"
 import { select } from "redux-saga/effects"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
 import { useSelector } from "react-redux"
+import { PERMISSION_CODES } from "@/app/types/types.utils"
+import ProtectedComponent from "@/components/ProtectedComponent"
 
 interface LeaveType extends ILeaveType {
 
@@ -253,9 +255,11 @@ const LeaveTypesComponent = () => {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Leave Types</h1>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_LEAVE_TYPES}> 
             <DialogTrigger asChild>
               <Button className="bg-orange-500 hover:bg-orange-600 text-white">Add Leave Type</Button>
             </DialogTrigger>
+          </ProtectedComponent> 
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>Add Leave Type</DialogTitle>
@@ -426,6 +430,7 @@ const LeaveTypesComponent = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-40">
+                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_LEAVE_TYPES}> 
                         <DropdownMenuItem
                           onClick={() => handleEditLeaveType(leaveType)}
                           className="cursor-pointer hover:bg-orange-50 focus:bg-orange-50"
@@ -433,6 +438,8 @@ const LeaveTypesComponent = () => {
                           <Edit className="h-4 w-4 mr-2 text-orange-600" />
                           Edit
                         </DropdownMenuItem>
+                      </ProtectedComponent>
+                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_LEAVE_TYPES}> 
                         <DropdownMenuItem
                           onClick={() => handleDeleteClick(leaveType)}
                           className="cursor-pointer hover:bg-red-50 focus:bg-red-50 text-red-600"
@@ -440,6 +447,7 @@ const LeaveTypesComponent = () => {
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete
                         </DropdownMenuItem>
+                      </ProtectedComponent> 
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>

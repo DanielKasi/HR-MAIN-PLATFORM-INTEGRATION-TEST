@@ -1,5 +1,5 @@
 from django.db import models
-from datetime import time
+from datetime import time, datetime
 
 # from django.contrib.gis.db import models as gis_models
 
@@ -29,6 +29,7 @@ class Institution(models.Model):
 
     # Location fields
     location = models.CharField(max_length=500, blank=True, null=True)
+    country_code = models.CharField(max_length=10, blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
     # location_geodjango = gis_models.PointField(geography=True, null=True, blank=True)
@@ -71,13 +72,20 @@ class Institution(models.Model):
         return self.approval_status == "approved"
 
     def save(self, *args, **kwargs):
-        is_new = self.pk is None
+        is_new = self._state.adding
         super().save(*args, **kwargs)
 
         if is_new:
             from payroll.utils import PayrollProcessor
 
             PayrollProcessor.setup_default_payroll_types_for_institution(self)
+            _create_calender_for_institution(self)
+
+    def _create_calendar_for_institution(institution):
+        from calendar2.models import Calendar
+
+        current_year = datetime.now().year
+        Calendar.objects.create(institution=self, year=current_year)
 
 
 class InstitutionDocument(models.Model):
@@ -230,5 +238,3 @@ class Department(models.Model):
 
     def __str__(self):
         return self.name
-    
-    

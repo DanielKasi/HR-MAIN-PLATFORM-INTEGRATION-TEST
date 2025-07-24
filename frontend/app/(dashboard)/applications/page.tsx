@@ -80,6 +80,8 @@ import {DropdownMenuItem} from "@/components/ui/dropdown-menu";
 import {toast} from "sonner";
 import {Checkbox} from "@/components/ui/checkbox";
 import {LocationAutocomplete} from "@/components/location-autocomplete";
+import ProtectedComponent from "@/components/ProtectedComponent"
+import { PERMISSION_CODES } from "@/app/types/types.utils"
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",

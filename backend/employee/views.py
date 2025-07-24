@@ -583,7 +583,6 @@ class EmployeeBranchManagementAPIView(APIView):
             .order_by("-is_default", "branch__branch_name")
         )
 
-
         branches = []
         default_branch = None
 
@@ -891,17 +890,14 @@ class EmployeeAttendanceListCreateAPIView(APIView):
     def post(self, request, employee_id=None):
         data = request.data.copy()
 
-
         employee = data.get("employee")
         date = data.get("date")
-
 
         from datetime import date as dt_date
 
         if not date:
             date = str(dt_date.today())
             data["date"] = date
-
 
         existing = EmployeeAttendance.objects.filter(
             employee=employee, date=date
@@ -921,7 +917,6 @@ class EmployeeAttendanceListCreateAPIView(APIView):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 @extend_schema(tags=["Employee Attendance"])

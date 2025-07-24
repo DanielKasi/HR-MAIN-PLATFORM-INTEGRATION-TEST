@@ -29,6 +29,8 @@ import { getJobPositions } from "@/lib/utils"
 import type { IJobPosition } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import { formatCurrency } from "@/lib/helpers"
+import ProtectedComponent from "@/components/ProtectedComponent"
+import { PERMISSION_CODES } from "@/app/types/types.utils"
 
 export default function JobPositionsPage() {
   const [jobPositions, setJobPositions] = useState<IJobPosition[]>([])
@@ -241,21 +243,27 @@ export default function JobPositionsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleViewJobPosition(position.id)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleEditJobPosition(position.id)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDeleteJobPosition(position.id)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
+                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS}>
+                        <DropdownMenuItem onClick={() => handleViewJobPosition(position.id)}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Details
+                        </DropdownMenuItem>
+                      </ProtectedComponent>
+                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_JOB_POSITIONS}>
+                        <DropdownMenuItem onClick={() => handleEditJobPosition(position.id)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                      </ProtectedComponent>
+                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_JOB_POSITIONS}>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteJobPosition(position.id)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </ProtectedComponent>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

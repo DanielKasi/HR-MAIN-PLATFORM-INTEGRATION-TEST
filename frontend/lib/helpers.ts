@@ -4,7 +4,7 @@ import {format} from "date-fns";
 
 import apiRequest from "./apiRequest";
 
-import {IMarketPlaceOrder, IPaginatedResponse, IPermission, IUser, Role} from "@/app/types";
+import {IMarketPlaceOrder, IPaginatedResponse, IPermission, IUser, Permission, Role} from "@/app/types";
 import {store} from "@/store";
 
 export function cn(...inputs: ClassValue[]) {
@@ -267,7 +267,7 @@ export function hasPermission(permissionCode: string): boolean {
     return (
       userData.roles?.some((role: Role) =>
         role.permissions_details?.some(
-          (permission: any) => permission.permission_code === permissionCode,
+          (permission: Permission) => permission.permission_code === permissionCode,
         ),
       ) || false
     );
@@ -281,9 +281,9 @@ export function hasPermission(permissionCode: string): boolean {
 export function extractRequiredPermissions(
   userRoles: Role[],
   requiredPermissionCodes: string[],
-): IPermission[] {
+): Permission[] {
   console.log("\n\nEXtracting permission codes : ", requiredPermissionCodes);
-  const requiredPermissions: IPermission[] = [];
+  const requiredPermissions: Permission[] = [];
 
   userRoles.forEach((role) => {
     const matchingPermissions = role.permissions_details?.filter((permission) =>

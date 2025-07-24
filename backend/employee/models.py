@@ -39,7 +39,6 @@ class WorkType(models.Model):
         return self.name
 
 
-
 class Employee(models.Model):
     """
     Employee model to store employee details in the system."""
@@ -138,7 +137,7 @@ class Employee(models.Model):
     salary = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00, null=True, blank=True
     )
-    salary_overridden = models.BooleanField(default=False)
+    # salary_overridden = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.fullname}  - {self.position}"
@@ -193,7 +192,7 @@ class Employee(models.Model):
         old_department = None
         old_gender = None
         old_is_active = None
-        
+
         # Get old values for comparison if updating
         if not is_new_employee:
             old_employee = Employee.objects.get(pk=self.pk)
@@ -208,8 +207,8 @@ class Employee(models.Model):
         if self.position and hasattr(self.position, "salary"):
             if is_new_employee:
                 self.salary = self.position.salary
-                self.salary_overridden = False
-            elif not self.salary_overridden:
+                # self.salary_overridden = False
+            else:
                 # Update salary if not overridden and position salary changed
                 self.salary = self.position.salary
 
@@ -219,10 +218,12 @@ class Employee(models.Model):
         should_initialize = (
             is_new_employee and self.is_active and self.department
         ) or (
-            not is_new_employee and self.is_active and (
-                old_department != self.department or  # Department changed
-                old_gender != self.gender or          # Gender changed
-                (not old_is_active and self.is_active)  # Reactivated
+            not is_new_employee
+            and self.is_active
+            and (
+                old_department != self.department  # Department changed
+                or old_gender != self.gender  # Gender changed
+                or (not old_is_active and self.is_active)  # Reactivated
             )
         )
 
@@ -252,11 +253,10 @@ class Employee(models.Model):
         for leave_type in leave_types:
             # First, clean up any duplicates for this employee and leave type
             self._cleanup_duplicate_balances(institution, leave_type, year)
-            
+
             # Check if this leave type applies to this employee
-            applies_to_employee = (
-                leave_type.gender_specific == "all" or 
-                (hasattr(self, 'gender') and self.gender == leave_type.gender_specific)
+            applies_to_employee = leave_type.gender_specific == "all" or (
+                hasattr(self, "gender") and self.gender == leave_type.gender_specific
             )
 
             if applies_to_employee:
@@ -275,7 +275,7 @@ class Employee(models.Model):
                         "used_days": Decimal("0"),
                         "pending_days": Decimal("0"),
                         "carried_forward_days": Decimal("0"),
-                    }
+                    },
                 )
 
                 # Update allocated days if balance already existed but entitlement changed
@@ -292,7 +292,7 @@ class Employee(models.Model):
                     leave_type=leave_type,
                     year=year,
                     used_days=0,  # Only remove unused balances
-                    pending_days=0
+                    pending_days=0,
                 ).delete()
 
         return synced_balances
@@ -303,21 +303,18 @@ class Employee(models.Model):
         Keeps the one with the most usage or the latest created one.
         """
         from leave_mgt.models import LeaveBalance
-        
+
         duplicates = LeaveBalance.objects.filter(
-            institution=institution,
-            employee=self,
-            leave_type=leave_type,
-            year=year
-        ).order_by('-used_days', '-pending_days', '-created_at')
+            institution=institution, employee=self, leave_type=leave_type, year=year
+        ).order_by("-used_days", "-pending_days", "-created_at")
 
         if duplicates.count() > 1:
             # Keep the first one (highest usage or latest created)
             keeper = duplicates.first()
-            
+
             # Delete the rest
             duplicates.exclude(id=keeper.id).delete()
-            
+
             return True
         return False
 
@@ -437,7 +434,6 @@ class EmployeeAttendance(models.Model):
             datetime_checkout = datetime.combine(self.date, self.check_out_time)
             datetime_end = datetime.combine(self.date, branch_end_time)
 
-
             if datetime_checkout > datetime_end:
                 overtime_duration = datetime_checkout - datetime_end
                 hours = round(overtime_duration.total_seconds() / 3600, 2)
@@ -448,7 +444,6 @@ class EmployeeAttendance(models.Model):
 
         if self.date is None:
             self.date = datetime.today().date()
-
 
         self.overtime_hours = self.calculate_overtime_hours()
         super().save(*args, **kwargs)

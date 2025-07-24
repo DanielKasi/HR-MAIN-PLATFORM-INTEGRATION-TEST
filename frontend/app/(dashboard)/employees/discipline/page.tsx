@@ -36,8 +36,9 @@ import {
   RefreshCw,
 } from "lucide-react"
 import { getDisciplinaryActions, deleteDisciplinaryAction } from "@/lib/utils"
-import { transformDisciplinaryActionData } from "@/app/types/types.utils"
+import { transformDisciplinaryActionData, PERMISSION_CODES } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import ProtectedComponent from "@/components/ProtectedComponent"
 
 interface DisciplinaryAction {
   id: string
@@ -342,14 +343,19 @@ export default function DisciplinaryActionsTable({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DISCIPLINE_CASES}>
                           <DropdownMenuItem onClick={() => setSelectedAction(action)}>
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
+                        </ProtectedComponent>
+                         <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_DISCIPLINE_CASES}>
                           <DropdownMenuItem onClick={() => handleEditAction(action.id)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
+                          </ProtectedComponent>
+                          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_DISCIPLINE_CASES}>
                           <DropdownMenuItem 
                             onClick={() => openDeleteDialog(action.id)}
                             className="text-red-600"
@@ -357,6 +363,7 @@ export default function DisciplinaryActionsTable({
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </DropdownMenuItem>
+                          </ProtectedComponent>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

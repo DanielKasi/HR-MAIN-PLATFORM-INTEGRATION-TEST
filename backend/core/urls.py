@@ -22,6 +22,7 @@ urlpatterns = [
     path("api/leave-mgt/", include("leave_mgt.urls")),
     path("api/payroll/", include("payroll.urls")),
     path("api/projects/", include("projects.urls")),
+    path("api/calendar/", include("calendar2.urls")),
 ]
 
 if settings.DEBUG:
