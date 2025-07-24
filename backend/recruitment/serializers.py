@@ -137,6 +137,12 @@ class JobPositionSerializer(serializers.ModelSerializer):
     department_details = DepartmentSerializer(source="department", read_only=True)
     reports_to_details = serializers.SerializerMethodField()
     job_adverts = serializers.SerializerMethodField(read_only=True)
+    apply_salary_to_employees = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False,
+        help_text="List of employee IDs to apply salary change to",
+    )
 
     class Meta:
         model = JobPosition
@@ -152,6 +158,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
             "offer_letter_template",
             "salary",
             "job_adverts",
+            "apply_salary_to_employees",
         ]
 
     def get_reports_to_details(self, obj):
@@ -166,6 +173,40 @@ class JobPositionSerializer(serializers.ModelSerializer):
     def get_job_adverts(self, obj):
         adverts = JobPositionAdvert.objects.filter(job_position=obj)
         return JobPositionAdvertSerializer(adverts, many=True).data
+
+    def validate(self, attrs):
+        employee_ids = attrs.get("apply_salary_to_employees", [])
+        if employee_ids:
+            from employee.models import Employee
+
+            invalid_ids = (
+                Employee.objects.exclude(id__in=employee_ids)
+                .filter(job_position=self.instance)
+                .values_list("id", flat=True)
+            )
+            if invalid_ids:
+                raise serializers.ValidationError(
+                    {
+                        "apply_salary_to_employees": f"Some employee IDs are invalid: {list(invalid_ids)}"
+                    }
+                )
+        return attrs
+
+    def update(self, instance, validated_data):
+        from employee.models import Employee
+
+        employee_ids = validated_data.pop("apply_salary_to_employees", [])
+        old_salary = instance.salary
+        new_salary = validated_data.get("salary", old_salary)
+
+        instance = super().update(instance, validated_data)
+
+        if new_salary is not None and old_salary != new_salary and employee_ids:
+            Employee.objects.filter(id__in=employee_ids, job_position=instance).update(
+                salary=new_salary
+            )
+
+        return instance
 
 
 class JobInterviewSerializer(serializers.ModelSerializer):
