@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import {Check, ChevronsUpDown} from "lucide-react";
+import { Check, ChevronsUpDown, X } from "lucide-react";
 
-import {cn} from "@/lib/utils";
-import {Button} from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -13,7 +13,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export type SearchableSelectItem = {
   id: number | string;
@@ -47,7 +47,7 @@ export function SearchableSelect({
   emptyMessage = "No items found.",
   searchPlaceholder = "Search items...",
   onSelect,
-  // onRemove,
+  onRemove,
   renderSelectedItems,
   multiple = false,
   disabled = false,
@@ -57,15 +57,21 @@ export function SearchableSelect({
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
 
-  // For single select, find the selected item to display in the trigger
   const selectedItem =
     !multiple && selectedItems.length > 0
       ? items.find((item) => item.id === selectedItems[0])
       : null;
 
   const handleSelect = (itemId: number | string) => {
-    onSelect(itemId);
-    if (!multiple) {
+    const isSelected = selectedItems.includes(itemId);
+    if (multiple) {
+      if (isSelected && onRemove) {
+        onRemove(itemId);
+      } else {
+        onSelect(itemId);
+      }
+    } else {
+      onSelect(itemId);
       setOpen(false);
     }
   };
@@ -95,21 +101,33 @@ export function SearchableSelect({
             <CommandEmpty>{emptyMessage}</CommandEmpty>
             <CommandGroup>
               <CommandList>
-                {items.map((item) => (
-                  <CommandItem
-                    key={item.id}
-                    value={item.value || item.label}
-                    onSelect={() => handleSelect(item.id)}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        selectedItems.includes(item.id) ? "opacity-100" : "opacity-0",
+                {items.map((item) => {
+                  const isSelected = selectedItems.includes(item.id);
+                  return (
+                    <CommandItem
+                      key={item.id}
+                      value={item.value || item.label}
+                      onSelect={() => handleSelect(item.id)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          isSelected ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {item.label}
+                      {multiple && isSelected && onRemove && (
+                        <X
+                          className="ml-auto h-4 w-4 text-red-500 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemove(item.id);
+                          }}
+                        />
                       )}
-                    />
-                    {item.label}
-                  </CommandItem>
-                ))}
+                    </CommandItem>
+                  );
+                })}
               </CommandList>
             </CommandGroup>
           </Command>

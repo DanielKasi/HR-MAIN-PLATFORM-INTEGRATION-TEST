@@ -438,17 +438,16 @@ export interface IInterviewStageFormData {
   job_position_advert: number;
   name: string;
   level: number;
-  interviewer: number;
+  interviewers: number[]; 
 }
 
-
-export interface IInterviewStage{
+export interface IInterviewStage {
   id: number;
   job_position_advert: number;
   name: string;
   level: number;
-  interviewer: number;
-  interviewer_details?: IEmployee;
+  interviewers: number[]; 
+  interviewers_details?: IEmployee[]; 
   candidates_count: number;
 }
 
