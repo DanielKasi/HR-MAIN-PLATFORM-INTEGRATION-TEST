@@ -1,4 +1,4 @@
-from .models import Employee, EmployeeAttendance, EmployeeType, WorkType
+from .models import Employee, EmployeeAttendance, EmployeeType, WorkType, Contract
 from rest_framework import serializers
 from users.serializers import CustomUserSerializer
 from datetime import date
@@ -158,3 +158,34 @@ class EmployeeActivationSerializer(serializers.Serializer):
     )
     department = serializers.CharField(max_length=100, required=False, allow_blank=True)
     date_of_joining = serializers.DateField(required=False, allow_null=True)
+
+
+class ContractSerializer(serializers.ModelSerializer):
+    employee = EmployeeSerializer(read_only=True)
+    employee_id = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = Contract
+        fields = [
+            'id', 'contract_id', 'employee', 'employee_id', 'contract_file',
+            'status', 'start_date', 'end_date', 'created_at', 'updated_at', 'notes'
+        ]
+        read_only_fields = ['id', 'contract_id', 'contract_file', 'created_at', 'updated_at']
+
+    def validate_employee_id(self, value):
+        try:
+            employee = Employee.objects.get(employee_id=value)
+        except Employee.DoesNotExist:
+            raise serializers.ValidationError("Employee with this ID does not exist.")
+        return employee
+
+    def create(self, validated_data):
+        employee = validated_data.pop('employee_id')
+        contract = Contract.objects.create(employee=employee, **validated_data)
+        return contract
+
+    def update(self, instance, validated_data):
+        employee = validated_data.pop('employee_id', None)
+        if employee:
+            instance.employee = employee
+        return super().update(instance, validated_data)
