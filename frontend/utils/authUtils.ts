@@ -1,4 +1,4 @@
-import {IPermission, IUser, IUserInstitution} from "@/app/types";
+import {IPermission, IUser, IUserInstitution, Permission} from "@/app/types";
 import apiRequest from "@/lib/apiRequest";
 import {getInstitutionById} from "@/lib/helpers";
 import {store} from "@/store";
@@ -64,11 +64,18 @@ export function hasTemporaryPermissions(): boolean {
 // Optional: Auto-clear temporary permissions after a certain time
 export function setTemporaryPermissionsWithTimeout(
   permissions: IPermission[],
-  timeoutMs: number = 30 * 60 * 1000, // 30 minutes default
+  timeoutMs: number = 30 * 60 * 1000 // 30 minutes default
 ) {
-  store.dispatch(setTemporaryPermissions(permissions));
+  store.dispatch(setTemporaryPermissions(
+    permissions.map(perm => ({
+      permission_code: perm.permission_code,
+      name: perm.name,
+      description: perm.description
+    }))
+  ));
 
   setTimeout(() => {
     store.dispatch(clearTemporaryPermissions());
   }, timeoutMs);
 }
+

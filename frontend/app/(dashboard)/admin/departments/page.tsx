@@ -12,8 +12,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Skeleton } from "@/components/ui/skeleton"
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getDepartments } from "@/lib/utils"
-import { IDepartment } from "@/app/types/types.utils"
+import { IDepartment, PERMISSION_CODES  } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import ProtectedComponent from "@/components/ProtectedComponent"
+
 
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<IDepartment[]>([])
@@ -220,32 +222,36 @@ export default function DepartmentsPage() {
                       <CardTitle className="text-lg">{department.name}</CardTitle>
                     </div>
                   </div>
-                  <DropdownMenu>
+                    <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => handleViewDepartment(department.id)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                          onClick={() => handleEditDepartment(department.id)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDeleteDepartment(department.id)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
+                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DEPARTMENTS}>
+                        <DropdownMenuItem onClick={() => handleViewDepartment(department.id)}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Details
+                        </DropdownMenuItem>
+                      </ProtectedComponent>
+                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_DEPARTMENTS}>
+                        <DropdownMenuItem onClick={() => handleEditDepartment(department.id)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                      </ProtectedComponent>
+                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_DEPARTMENTS}>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteDepartment(department.id)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </ProtectedComponent>
                     </DropdownMenuContent>
-                  </DropdownMenu>
+                    </DropdownMenu>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
