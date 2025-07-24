@@ -23,6 +23,7 @@ urlpatterns = [
     path("api/payroll/", include("payroll.urls")),
     path("api/projects/", include("projects.urls")),
     path("api/calendar/", include("calendar2.urls")),
+    path("api/assets/", include("assets.urls")),
 ]
 
 if settings.DEBUG:
