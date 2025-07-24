@@ -5,6 +5,8 @@ import {createAttendanceRecord} from "@/lib/utils.attendance";
 import {Input} from "@/components/ui/input";
 import {Badge} from "@/components/ui/badge";
 import {Search, X, Clock, Calendar} from "lucide-react";
+import ProtectedComponent from "@/components/ProtectedComponent"
+import { PERMISSION_CODES } from "@/app/types/types.utils"
 
 interface Employee {
   id: number;

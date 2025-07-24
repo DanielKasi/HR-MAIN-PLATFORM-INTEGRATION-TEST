@@ -59,8 +59,7 @@ export function AddUserForm({onAddSuccess}: AddUserFormProps) {
   const fetchBranches = async () => {
     try {
       const response = await fetchInstitutionBranchesFromAPI();
-
-      setBranches(response.data);
+      setBranches(response.data.results as Branch[]);
     } catch (error) {
       setErrorMessage("Failed to fetch branches");
       console.error("Error fetching branches:", error);

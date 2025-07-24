@@ -22,16 +22,17 @@ import {
 import { Icon } from "@iconify/react"
 import { Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import { getAllEmployees } from "@/lib/utils"
-import {useSelector} from "react-redux";
-import {selectAttachedInstitutions} from "@/store/auth/selectors";
+import { useSelector } from "react-redux";
+import { selectAttachedInstitutions } from "@/store/auth/selectors";
 import {
   selectSelectedInstitution,
 } from "@/store/auth/selectors";
 import { IUserInstitution } from "@/app/types"
-import { EmployeeFormData, EmployeeFromAPI} from "@/app/types/types.utils"
+import { EmployeeFormData, EmployeeFromAPI, PERMISSION_CODES } from "@/app/types/types.utils"
 import Link from "next/link"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
+import ProtectedComponent from "@/components/ProtectedComponent"
 
 // Union type to handle both data structures
 type EmployeeData = EmployeeFromAPI | EmployeeFormData
@@ -298,9 +299,12 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
                               localStorage.setItem(`employee_${employee.id || 'unknown'}`, JSON.stringify(employee));
                             }}
                           >
-                            <Button variant="ghost" size="sm" title="Update Employee">
-                              <Edit className="h-4 w-4" />
-                            </Button>
+                            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEES}>
+                              <Button variant="ghost" size="sm" title="Update Employee">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </ProtectedComponent>
+                            
                           </Link>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -411,17 +415,17 @@ export default function Component() {
   const [InstitutionId, setInstitutionId] = useState<string | null>(null);
   const InstitutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
 
-   useEffect(() => {
-      if (selectedInstitution) {
-        setInstitutionId(selectedInstitution.id.toString());
-      }
-      // Get the first Institution ID from attached Institutions
-      else if (InstitutionsAttached && InstitutionsAttached.length > 0) {
-        // Convert the numeric ID to a string
-        const id = String(InstitutionsAttached[0].id);
-        setInstitutionId(id);
-      }
-    }, [InstitutionsAttached, selectedInstitution]);
+  useEffect(() => {
+    if (selectedInstitution) {
+      setInstitutionId(selectedInstitution.id.toString());
+    }
+    // Get the first Institution ID from attached Institutions
+    else if (InstitutionsAttached && InstitutionsAttached.length > 0) {
+      // Convert the numeric ID to a string
+      const id = String(InstitutionsAttached[0].id);
+      setInstitutionId(id);
+    }
+  }, [InstitutionsAttached, selectedInstitution]);
 
   // function to load Employees
   useEffect(() => {

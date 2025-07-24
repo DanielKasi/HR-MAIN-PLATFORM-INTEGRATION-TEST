@@ -22,6 +22,7 @@ import { attachEmployeeBranch } from "@/lib/utils.branch";
 import { EmployeeFormData, EmployeeFormState, IDepartment, IJobPosition, IWorkType, IEmployeeType, IWorkTypeFormData, IEmployeeTypeFormData } from "@/app/types/types.utils";
 import { IUserInstitution } from "@/app/types";
 
+
 const maritalStatusOptions = [
   { value: "single", label: "Single" },
   { value: "married", label: "Married" },
