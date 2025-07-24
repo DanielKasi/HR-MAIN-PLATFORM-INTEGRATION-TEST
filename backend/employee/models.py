@@ -63,10 +63,7 @@ class Employee(models.Model):
         related_name="employees",
     )
     employee_id = models.CharField(
-        max_length=10, 
-        unique=True, 
-        editable=False, 
-        blank=True
+        max_length=10, unique=False, editable=False, blank=True
     )
     email = models.EmailField(unique=True, blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
@@ -145,47 +142,63 @@ class Employee(models.Model):
     def clean(self):
         """Custom validation for the Employee model"""
         super().clean()
-        
+
         # Validate minimum age of 18 years
         if self.date_of_birth:
             today = date.today()
-            age = today.year - self.date_of_birth.year - (
-                (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
+            age = (
+                today.year
+                - self.date_of_birth.year
+                - (
+                    (today.month, today.day)
+                    < (self.date_of_birth.month, self.date_of_birth.day)
+                )
             )
-            
+
             if age < 18:
-                raise ValidationError({
-                    'date_of_birth': f'Employee must be at least 18 years old. Current age: {age} years.'
-                })
-        
+                raise ValidationError(
+                    {
+                        "date_of_birth": f"Employee must be at least 18 years old. Current age: {age} years."
+                    }
+                )
+
         # Validate date of birth is not in the future
         if self.date_of_birth and self.date_of_birth > date.today():
-            raise ValidationError({
-                'date_of_birth': 'Date of birth cannot be in the future.'
-            })
+            raise ValidationError(
+                {"date_of_birth": "Date of birth cannot be in the future."}
+            )
 
     @property
     def age(self):
         """Calculate and return the employee's current age"""
         if not self.date_of_birth:
             return None
-        
+
         today = date.today()
-        return today.year - self.date_of_birth.year - (
-            (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
+        return (
+            today.year
+            - self.date_of_birth.year
+            - (
+                (today.month, today.day)
+                < (self.date_of_birth.month, self.date_of_birth.day)
+            )
         )
 
     def generate_employee_id(self):
         prefix = "EMP"
-        last_employee = Employee.objects.filter(employee_id__startswith=prefix).order_by('-employee_id').first()
+        last_employee = (
+            Employee.objects.filter(employee_id__startswith=prefix)
+            .order_by("-employee_id")
+            .first()
+        )
 
         if last_employee and last_employee.employee_id:
             last_number = int(last_employee.employee_id.replace(prefix, ""))
             new_number = last_number + 1
         else:
-            new_number =1
+            new_number = 1
 
-        return f"{prefix}{new_number:05d}"          
+        return f"{prefix}{new_number:05d}"
 
     def save(self, *args, **kwargs):
         is_new_employee = self.pk is None
