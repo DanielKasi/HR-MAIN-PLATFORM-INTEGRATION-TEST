@@ -1,5 +1,5 @@
 from django.db import models
-from utils.history import create_asset_history
+from .utils.history import create_asset_history
 
 
 class BaseModel(models.Model):
