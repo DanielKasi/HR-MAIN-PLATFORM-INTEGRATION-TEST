@@ -73,6 +73,7 @@ class InstitutionSerializer(serializers.ModelSerializer):
             "location",
             "latitude",
             "longitude",
+            "country_code",
             # "location_geodjango",
             "approval_status",
             "approval_status_display",

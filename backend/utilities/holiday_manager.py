@@ -1,6 +1,6 @@
 import holidays
 from datetime import date
-from utitlities.holiday_manager import HolidayManager
+
 
 
 class HolidayManager:
