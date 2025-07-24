@@ -52,6 +52,25 @@ class JobPositionAdvert(models.Model):
     def __str__(self):
         return f"{self.job_position.name} - {self.status} ({self.published_date})"
 
+    def _clean(self):
+        if self.status == "active":
+            existing_active = JobPositionAdvert.objects.filter(
+                job_position=self.job_position,
+                status="active",
+            )
+
+            if self.pk:
+                existing_active = existing_active.exclude(pk=self.pk)
+
+            if existing_active.exists():
+                raise ValidationError(
+                    f"There is already an active advert for '{self.job_position.name}'."
+                )
+
+    def save(self, *args, **kwargs):
+        self._clean()
+        super().save(*args, **kwargs)
+
 
 class JobAdvertApplication(models.Model):
     status_choices = [
@@ -190,9 +209,8 @@ class InterviewStage(models.Model):
     )
     name = models.CharField(max_length=255)
     level = models.PositiveIntegerField(default=1)
-    interviewer = models.ForeignKey(
+    interviewers = models.ManyToManyField(
         "employee.Employee",
-        on_delete=models.PROTECT,
         related_name="interview_stages",
     )
 

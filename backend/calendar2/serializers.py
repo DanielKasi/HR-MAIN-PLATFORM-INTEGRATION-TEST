@@ -19,6 +19,7 @@ class EventSerializer(serializers.ModelSerializer):
             "description",
             "date",
             "target_audience",
+            "event_mode",
             "department",
             "specific_employees",
             "created_at",
