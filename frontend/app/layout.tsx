@@ -19,7 +19,7 @@ const inter = Outfit({subsets: ["latin"]});
 
 
 export const metadata: Metadata = {
-  title: "BAIFAM HR SYSTEM",
+  title: "PERRAC",
   description: "A comprehensive SaaS solution for organisation management",
   generator: "v0.dev",
 };

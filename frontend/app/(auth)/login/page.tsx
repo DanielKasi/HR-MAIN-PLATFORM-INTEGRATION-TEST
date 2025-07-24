@@ -152,7 +152,7 @@ export default function LoginPage() {
           <div className="flex items-center justify-center mb-2">
             <ShoppingCart className="h-10 w-10 text-primary" />
           </div>
-          <CardTitle className="text-2xl text-center">BAIFAM HR SYSTEM</CardTitle>
+          <CardTitle className="text-2xl text-center">PERRAC</CardTitle>
           <CardDescription className="text-center">
             Enter your credentials to access your account
           </CardDescription>

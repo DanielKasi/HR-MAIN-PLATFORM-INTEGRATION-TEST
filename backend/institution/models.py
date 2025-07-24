@@ -84,9 +84,9 @@ class Institution(models.Model):
             from payroll.utils import PayrollProcessor
 
             PayrollProcessor.setup_default_payroll_types_for_institution(self)
-            _create_calender_for_institution(self)
+            self._create_calendar_for_institution()  # Call the instance method
 
-    def _create_calendar_for_institution(institution):
+    def _create_calendar_for_institution(self):  # Define as an instance method
         from calendar2.models import Calendar
 
         current_year = datetime.now().year
