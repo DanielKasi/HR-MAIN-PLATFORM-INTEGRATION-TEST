@@ -269,14 +269,25 @@ export const updateJobPosition = async ({
       formData.append("offer_letter_template", jobPositionData.offer_letter_template)
     }
 
+    // Add affected_employees as individual entries
+    if (jobPositionData.affected_employees && jobPositionData.affected_employees.length > 0) {
+      jobPositionData.affected_employees.forEach((employeeId) => {
+        formData.append("apply_salary_to_employees", employeeId.toString())
+      })
+    }
+
     const response = await apiRequest.patch(`recruitment/job-position/${jobPositionId}/`, formData)
     return response.data as IJobPosition
   } catch (error) {
     console.error("Error updating job position:", error)
+    if (error.response?.data?.apply_salary_to_employees) {
+      toast.error(error.response.data.apply_salary_to_employees.join(", "))
+    } else {
+      toast.error("Failed to update job position. Please try again.")
+    }
     return null
   }
 }
-
 
 export const createJobApplication = async ({
   institutionId,
@@ -721,7 +732,10 @@ export const updateEmployee = async ({
     });
 
     const response = await apiRequest.patch(`/employee/${employeeId}/update/`, formData);
+    console.log("..... *20")
+    console.log(response)
     return response.data;
+    
   } catch (error: any) {
     throw new Error("Failed to update employee. Please try again.");
   }
