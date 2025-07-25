@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Employment Contract - {{ contract_id }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @top-left {
+                content: "{{ institution_name }}";
+                font-family: 'Helvetica', Arial, sans-serif;
+                font-size: 10pt;
+                font-weight: bold;
+                color: #333;
+            }
+            @top-right {
+                content: "Contract ID: {{ contract_id }}";
+                font-family: 'Helvetica', Arial, sans-serif;
+                font-size: 10pt;
+                color: #333;
+            }
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: 'Helvetica', Arial, sans-serif;
+                font-size: 8pt;
+                color: #666;
+            }
+        }
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            font-size: 12pt;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #003087;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 24pt;
+            margin: 0;
+            color: #003087;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section h2 {
+            font-size: 16pt;
+            color: #003087;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        .section h3 {
+            font-size: 14pt;
+            color: #444;
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
+        p {
+            margin: 0 0 10px 0;
+        }
+        .signature {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+        .signature div {
+            width: 45%;
+            font-size: 11pt;
+        }
+        .signature hr {
+            border: 0;
+            border-top: 1px solid #000;
+            margin: 10px 0;
+        }
+        .terms-list {
+            list-style-type: decimal;
+            margin-left: 20px;
+        }
+        .terms-list li {
+            margin-bottom: 10px;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #003087;
+        }
+        /* Ensure consistent rendering for PDF */
+        * {
+            box-sizing: border-box;
+        }
+        @media print {
+            body {
+                font-size: 11pt;
+            }
+            .header h1 {
+                font-size: 22pt;
+            }
+            .section h2 {
+                font-size: 15pt;
+            }
+            .section h3 {
+                font-size: 13pt;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Employment Contract</h1>
+            <p>Contract ID: <span class="highlight">{{ contract_id }}</span></p>
+        </div>
+
+        <div class="section">
+            <h2>Parties</h2>
+            <p>This Employment Contract ("Agreement") is made and entered into on <span class="highlight">{{ start_date }}</span> by and between:</p>
+            <p><strong>Employer:</strong> {{ institution_name }}, a company organized and existing under the laws of {{ employee_country }}, with its principal office located at {{ institution_address }} ("Employer").</p>
+            <p><strong>Employee:</strong> {{ employee_name }}, residing at {{ employee_address }}, {{ employee_country }} ("Employee").</p>
+        </div>
+
+        <div class="section">
+            <h2>Terms of Employment</h2>
+            <h3>Position and Department</h3>
+            <p>The Employer agrees to employ the Employee in the position of <span class="highlight">{{ position_title }}</span> in the <span class="highlight">{{ department_name }}</span> department. The Employee’s duties and responsibilities shall be those typically associated with the position and as assigned by the Employer.</p>
+            
+            <h3>Commencement Date</h3>
+            <p>The Employee’s employment under this Agreement shall commence on <span class="highlight">{{ start_date }}</span>.</p>
+            
+            <h3>Compensation</h3>
+            <p>The Employee shall receive a salary of <span class="highlight">{{ salary }} {{ currency|default:"USD" }}</span> per annum, payable in accordance with the Employer’s standard payroll practices, subject to applicable tax withholdings and deductions.</p>
+            
+            <h3>Work Type</h3>
+            <p>The Employee shall be employed on a <span class="highlight">{{ work_type }}</span> basis.</p>
+            
+            <h3>Probationary Period</h3>
+            <p>The Employee’s employment is subject to a probationary period of <span class="highlight">{{ probation_period|default:"3 months" }}</span>, during which the Employer may terminate the employment with <span class="highlight">{{ probation_notice_period|default:"2 weeks" }}</span> notice.</p>
+            
+            <h3>Termination</h3>
+            <p>Either party may terminate this Agreement by providing <span class="highlight">{{ notice_period|default:"30 days" }}</span> written notice to the other party. The Employer reserves the right to terminate the Employee’s employment immediately for cause, including but not limited to misconduct, breach of company policy, or failure to perform duties satisfactorily.</p>
+        </div>
+
+        <div class="section">
+            <h2>Benefits</h2>
+            <p>The Employee shall be entitled to the Employer’s standard benefits package, including but not limited to:</p>
+            <ul class="terms-list">
+                <li>Leave entitlements as per the Employer’s policies and applicable laws.</li>
+                <li>{{ additional_benefits|default:"Other benefits as outlined in the Employee Handbook." }}</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Confidentiality</h2>
+            <p>The Employee agrees to maintain the confidentiality of all proprietary and sensitive information belonging to the Employer and shall not disclose such information to any third party without prior written consent.</p>
+        </div>
+
+        <div class="section">
+            <h2>Governing Law</h2>
+            <p>This Agreement shall be governed by and construed in accordance with the laws of <span class="highlight">{{ employee_country }}</span>.</p>
+        </div>
+
+        <div class="section">
+            <h2>Signatures</h2>
+            <p>IN WITNESS WHEREOF, the parties hereto have executed this Agreement as of the date first written above.</p>
+            <div class="signature">
+                <div>
+                    <strong>Employer</strong><br>
+                    <hr>
+                    <p>Name: {{ employer_representative_name|default:"Authorized Signatory" }}<br>
+                    Title: {{ employer_representative_title|default:"HR Manager" }}<br>
+                    Date: {{ signing_date }}</p>
+                </div>
+                <div>
+                    <strong>Employee</strong><br>
+                    <hr>
+                    <p>Name: {{ employee_name }}<br>
+                    Date: {{ signing_date }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

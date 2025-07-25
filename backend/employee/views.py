@@ -12,8 +12,9 @@ from .serializers import (
     EmployeeSerializer,
     EmployeeTypeSerializer,
     WorkTypeSerializer,
+    ContractSerializer,
 )
-from .models import Employee, EmployeeAttendance, EmployeeType, WorkType
+from .models import Employee, EmployeeAttendance, EmployeeType, WorkType, Contract
 from .serializers import (
     EmployeeAttendanceSerializer,
     EmployeeSerializer,
@@ -25,7 +26,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from institution.utils import generate_compliant_password
 from employee.service import EmployeeBranchService
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse
-from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 import logging
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -1191,3 +1192,135 @@ class WorkTypeDetailAPIView(APIView):
         obj = self.get_object(pk)
         obj.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ContractListCreateView(APIView):
+
+    @extend_schema(
+        tags=['Contracts'],
+        summary='List all contracts for an institution',
+        description='Retrieve a paginated list of all employment contracts for a specific institution.',
+        parameters=[
+            OpenApiParameter(name='institution_id', type=str, location=OpenApiParameter.PATH, description='Institution ID to filter contracts'),
+            OpenApiParameter(name='page', type=int, location=OpenApiParameter.QUERY, description='Page number for pagination'),
+            OpenApiParameter(name='page_size', type=int, location=OpenApiParameter.QUERY, description='Number of results per page'),
+        ],
+        responses={200: ContractSerializer(many=True)},
+    )
+    def get(self, request, institution_id):
+        try:
+            contracts = Contract.objects.filter(
+                employee__department__institution_id=institution_id
+            ).order_by("-created_at")
+
+            paginator = CustomPageNumberPagination()
+            paginated_qs = paginator.paginate_queryset(contracts, request)
+            serializer = ContractSerializer(paginated_qs, many=True)
+            return paginator.get_paginated_response(serializer.data)
+        except Exception as e:
+            return Response(
+                {"detail": "Error retrieving contracts."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    # @extend_schema(
+    #     tags=['Contracts'],
+    #     summary='Create a new contract',
+    #     description='Create a new employment contract for an employee. The contract PDF is generated automatically.',
+    #     request=ContractSerializer,
+    #     responses={201: ContractSerializer},
+    # )
+    # def post(self, request, institution_id):
+    #     serializer = ContractSerializer(data=request.data)
+    #     if serializer.is_valid():
+    #         contract = serializer.save()
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ContractDetailView(APIView):
+
+    def get_object(self, id):  # Change parameter to `id`
+        try:
+            return Contract.objects.get(id=id)  # Query by `id`
+        except Contract.DoesNotExist:
+            return None
+
+    @extend_schema(
+        tags=['Contracts'],
+        summary='Retrieve a contract',
+        description='Retrieve details of a specific contract by its ID.',
+        parameters=[
+            OpenApiParameter(name='id', type=int, location=OpenApiParameter.PATH, description='Contract ID (primary key)'),
+        ],
+        responses={200: ContractSerializer, 404: None},
+    )
+    def get(self, request, id):  # Change parameter to `id`
+        contract = self.get_object(id)
+        if not contract:
+            return Response({'error': 'Contract not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ContractSerializer(contract)
+        return Response(serializer.data)
+
+    @extend_schema(
+        tags=['Contracts'],
+        summary='Update a contract',
+        description='Update details of a specific contract by its ID.',
+        parameters=[
+            OpenApiParameter(name='id', type=int, location=OpenApiParameter.PATH, description='Contract ID (primary key)'),
+        ],
+        request=ContractSerializer,
+        responses={200: ContractSerializer, 404: None},
+    )
+    def patch(self, request, id):  # Change parameter to `id`
+        contract = self.get_object(id)
+        if not contract:
+            return Response({'error': 'Contract not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ContractSerializer(contract, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        tags=['Contracts'],
+        summary='Delete a contract',
+        description='Delete a specific contract by its ID.',
+        parameters=[
+            OpenApiParameter(name='id', type=int, location=OpenApiParameter.PATH, description='Contract ID (primary key)'),
+        ],
+        responses={204: None, 404: None},
+    )
+    def delete(self, request, id):  # Change parameter to `id`
+        contract = self.get_object(id)
+        if not contract:
+            return Response({'error': 'Contract not found'}, status=status.HTTP_404_NOT_FOUND)
+        contract.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class ContractDownloadView(APIView):
+
+    def get_object(self, id):  # Change parameter to `id`
+        try:
+            return Contract.objects.get(id=id)  # Query by `id`
+        except Contract.DoesNotExist:
+            return None
+
+    @extend_schema(
+        tags=['Contracts'],
+        summary='Download contract PDF',
+        description='Download the PDF file of a specific contract by its ID.',
+        parameters=[
+            OpenApiParameter(name='id', type=int, location=OpenApiParameter.PATH, description='Contract ID (primary key)'),
+        ],
+        responses={
+            200: {'content': {'application/pdf': {}}},
+            404: None,
+        },
+    )
+    def get(self, request, id):  # Change parameter to `id`
+        contract = self.get_object(id)
+        if not contract:
+            return Response({'error': 'Contract not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not contract.contract_file:
+            return Response({'error': 'No contract file available'}, status=status.HTTP_404_NOT_FOUND)
+        return FileResponse(contract.contract_file, as_attachment=True, filename=f"contract_{contract.contract_id}.pdf")
