@@ -581,6 +581,7 @@ class Contract(models.Model):
             'employee_country': self.employee.country if self.employee.country else "Unknown Country",
             'signing_date': timezone.now().strftime("%B %d, %Y"),
             'contract_id': self.contract_id or self.generate_contract_id(),
+            'employer_representative_name' : self.employee.department.institution.institution_owner.fullname,
         }
         print(f"Prepared context: institution={context['institution_name']}, employee={context['employee_name']}")
 

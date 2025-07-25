@@ -1,5 +1,13 @@
 from django.db import models
 from datetime import time, datetime
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
+from django.core.exceptions import ValidationError
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
 
 # from django.contrib.gis.db import models as gis_models
 
@@ -76,15 +84,41 @@ class Institution(models.Model):
     def is_approved(self):
         return self.approval_status == "approved"
 
+    def _get_country_code_from_location(self):
+        """Determine country code from location or coordinates using geopy."""
+        geolocator = Nominatim(user_agent="hr_baifam_app")  # Unique user agent
+
+        try:
+            # Try geocoding with the location field (address)
+            if self.location:
+                location_data = geolocator.geocode(self.location, exactly_one=True, timeout=10)
+                if location_data and location_data.raw.get('address', {}).get('country_code'):
+                    return location_data.raw['address']['country_code'].upper()
+            
+            # Fallback to reverse geocoding with coordinates
+            if self.latitude is not None and self.longitude is not None:
+                location_data = geolocator.reverse((self.latitude, self.longitude), timeout=10)
+                if location_data and location_data.raw.get('address', {}).get('country_code'):
+                    return location_data.raw['address']['country_code'].upper()
+
+            logger.warning(f"Could not determine country code for institution: {self.institution_name}")
+            return None  # Return None if no country code is found
+        except (GeocoderTimedOut, GeocoderUnavailable) as e:
+            logger.error(f"Geocoding failed for institution {self.institution_name}: {str(e)}")
+            return None    
+
     def save(self, *args, **kwargs):
+        # Set country_code if not provided
+        if not self.country_code:
+            self.country_code = self._get_country_code_from_location()
+
         is_new = self._state.adding
         super().save(*args, **kwargs)
 
         if is_new:
             from payroll.utils import PayrollProcessor
-
             PayrollProcessor.setup_default_payroll_types_for_institution(self)
-            self._create_calendar_for_institution()  # Call the instance method
+            self._create_calendar_for_institution()
 
     def _create_calendar_for_institution(self):  # Define as an instance method
         from calendar2.models import Calendar

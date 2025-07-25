@@ -203,9 +203,11 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       href: "#1",
       icon: <Icon icon="hugeicons:user-multiple-02" width="20" height="20" />,
       submenu: [
-        {title: "All Employees", href: "/employees/employee-list"},
+        {title: "Employees", href: "/employees/employee-list"},
+        {title: "Contracts", href: "/employees/contracts"},
         {title: "Attendance", href: "/employees/attendance"},
         {title: "Discipline", href: "/employees/discipline"},
+
       ],
       requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES
     },
