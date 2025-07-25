@@ -12,13 +12,16 @@ import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition,
    IEmployeeAllowance,IEmployeeAllowanceFormData,IEmployeeDeduction, IEmployeeDeductionFormData, IPayrollPeriod, IPayrollPeriodFormData,
    IPayslipFormData, IPayslip, IPayslipItem, PaginatedEmployeeResponse,
    EmployeeFromAPI, PaginatedIOnboardingResponse,ILeaveBalance,
-   PaginatedResponse
+   PaginatedResponse,
+   IContract,
+   IContractFormData
   } from "@/app/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
 import { IEmployee } from "@/app/types/types.utils";
 import { IPaginatedResponse } from "@/app/types";
 import { AxiosError, AxiosRequestConfig } from "axios"; 
+import { toast } from "sonner";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -183,6 +186,7 @@ export const getJobPositions = async ({ institutionId }: { institutionId: number
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`)
     const data = response.data as PaginatedResponse<IJobPosition>
+    console.log("Job Position Data:", data)
     return data.results
   } catch (error) {
     console.error("Error fetching job positions:", error)
@@ -271,18 +275,18 @@ export const updateJobPosition = async ({
     }
 
     // Add affected_employees as individual entries
-    if (jobPositionData.affected_employees && jobPositionData.affected_employees.length > 0) {
-      jobPositionData.affected_employees.forEach((employeeId) => {
-        formData.append("apply_salary_to_employees", employeeId.toString())
-      })
-    }
+    // if (jobPositionData.affected_employees && jobPositionData.affected_employees.length > 0) {
+    //   jobPositionData.affected_employees.forEach((employeeId) => {
+    //     formData.append("apply_salary_to_employees", employeeId.toString())
+    //   })
+    // }
 
     const response = await apiRequest.patch(`recruitment/job-position/${jobPositionId}/`, formData)
     return response.data as IJobPosition
   } catch (error) {
     console.error("Error updating job position:", error)
-    if (error.response?.data?.apply_salary_to_employees) {
-      toast.error(error.response.data.apply_salary_to_employees.join(", "))
+    if ((error as any).response?.data?.apply_salary_to_employees) {
+      toast.error((error as any)?.response?.data?.apply_salary_to_employees.join(", ")|| "Failed to update job position ")
     } else {
       toast.error("Failed to update job position. Please try again.")
     }

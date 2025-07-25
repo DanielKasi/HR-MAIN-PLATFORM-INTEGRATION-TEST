@@ -406,10 +406,10 @@ export default function AddEmployeeForm() {
 
         try {
           await attachEmployeeBranch({
+            institution_id: institutionId,
             employee_id: employeeId,
-            branches
+            branches,
           });
-
           toast({
             title: "Success!",
             description: "Employee has been created successfully and added to the system, and branches attached.",

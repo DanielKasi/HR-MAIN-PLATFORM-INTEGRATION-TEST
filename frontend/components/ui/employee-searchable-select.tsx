@@ -26,7 +26,8 @@ export interface EmployeeSearchableSelectProps {
   showEmployeeId?: boolean
   showDepartment?: boolean
   className?: string
-  triggerClassName?: string
+  triggerClassName?: string,
+  multiple?:boolean
 }
 
 export const EmployeeSearchableSelect = ({
@@ -40,7 +41,10 @@ export const EmployeeSearchableSelect = ({
   showDepartment = true,
   className,
   triggerClassName,
+  multiple=false
 }: EmployeeSearchableSelectProps) => {
+
+  console.log("\n\n The passed in value : ", value)
   
   const getEmployeeName = (employee: Employee): string => {
     if (employee.user?.fullname) return employee.user.fullname
@@ -81,7 +85,12 @@ export const EmployeeSearchableSelect = ({
 
   const handleSelect = (selected: string | number) => {
     if (!selectedItems.includes(selected)) {
-      onValueChange([...selectedItems, selected])
+      if(multiple){
+        onValueChange([...selectedItems, selected])
+      }else {
+        onValueChange([selected])
+
+      }
     }
   }
 
@@ -90,7 +99,9 @@ export const EmployeeSearchableSelect = ({
   if (isLoading) {
     displayPlaceholder = "Loading employees..."
   } else if (selectedItems.length > 0) {
+    console.log("\n\n Selected items : ", selectedItems)
     const selectedNames = selectedItems
+    
       .map((id) => {
         const emp = employees.find((e) => e.id.toString() === id.toString())
         return emp ? getEmployeeName(emp) : null

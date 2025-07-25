@@ -1095,7 +1095,7 @@ export default function EmployeeDeductionComponent() {
                                     employees={availableEmployees.filter(emp => 
                                       emp.department === selectedDepartment
                                     )}
-                                    value=""
+                                  value={[""]}
                                    onValueChange={(value) => {
                                       const employeeId = +value;
                                       if (!isNaN(employeeId) && !selectedEmployees.includes(employeeId)) {
@@ -1156,7 +1156,7 @@ export default function EmployeeDeductionComponent() {
                               <Label>Select Employees</Label>
                               <EmployeeSearchableSelect
                                 employees={availableEmployees.filter(emp => !selectedEmployees.includes(parseInt(emp.id)))}
-                                value=""
+                                value={[""]}
                                 onValueChange={(value) => {
                                   const employeeId = +value;
                                   if (!isNaN(employeeId) && !selectedEmployees.includes(employeeId)) {
@@ -1534,7 +1534,7 @@ export default function EmployeeDeductionComponent() {
                       </Label>
                       <EmployeeSearchableSelect
                         employees={employees}
-                        value={formData.employee}
+                        value={[formData.employee]}
                         onValueChange={(value) => setFormData({ ...formData, employee: value.toString() })}
                         disabled={saving}
                         placeholder="Search and select employee"
