@@ -4,6 +4,7 @@ from employee.models import Employee
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.conf import settings
+from django.db import models, transaction
 
 
 class OnBoarding(models.Model):
@@ -107,7 +108,7 @@ class OnBoarding(models.Model):
 
 
 class OffboardingStage(models.Model):
-    institution = models.ForeignKeyField(
+    institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
         related_name="offboarding_stages",
@@ -122,6 +123,9 @@ class OffboardingStage(models.Model):
     def __str__(self):
         return f"{self.institution.name} - {self.stage_name}"
 
+    class Meta:
+        unique_together = (("institution", "stage_name"),)
+
 
 class InstitutionEmployeeSeparationTypes(models.Model):
 
@@ -133,7 +137,7 @@ class InstitutionEmployeeSeparationTypes(models.Model):
         ("other", "Other"),
     ]
 
-    institution = models.ForeignKeyField(
+    institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
         related_name="separation_types",
@@ -148,7 +152,7 @@ class InstitutionEmployeeSeparationTypes(models.Model):
     )
 
     category = models.CharField(
-        max_length=30, choices=SEPARATION_CATEGORY_CHOICES, default="resignation"
+        max_length=30, choices=SEPARATION_CATEGORY_CHOICES, default="other"
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -265,6 +269,44 @@ class ResignationRequest(models.Model):
     def __str__(self):
         return f"Resignation Request - {self.separation.employee.user.fullname} ({self.request_status})"
 
+    @transaction.atomic
+    def approve(self):
+        if self.request_status != "submitted":
+            raise ValidationError("Only submitted requests can be approved.")
+
+        self.request_status = "approved"
+        self.save()
+
+    def finish_workflow(self):
+        from workflows.models import ApprovalTask
+        from django.contrib.contenttypes.models import ContentType
+
+        content_type = ContentType.objects.get_for_model(self.__class__)
+
+        tasks = ApprovalTask.objects.filter(
+            content_type=content_type, object_id=self.pk
+        )
+
+        if tasks.exists() and tasks.filter(status="rejected").exists():
+            self.request_status = "rejected"
+            self.save()
+            return
+        if (
+            tasks.exists()
+            and not tasks.filter(
+                status__in=["not_started", "pending", "rejected"]
+            ).exists()
+        ):
+            self.approve()
+            return
+        elif not tasks.exists():
+            self.approve()
+            return
+        else:
+            raise Exception(
+                "Cannot finish workflow: Some tasks are not completed or rejected."
+            )
+
 
 class TerminationInitiation(models.Model):
     separation = models.OneToOneField(
@@ -306,6 +348,43 @@ class TerminationInitiation(models.Model):
                 "TerminationInitiation must be linked to a termination type separation."
             )
 
+    def approve(self):
+        if self.initiation_status != "submitted":
+            raise ValidationError("Only submitted requests can be approved.")
+
+        self.initiation_status = "approved"
+        self.save()
+
+    def finish_workflow(self):
+        from workflows.models import ApprovalTask
+        from django.contrib.contenttypes.models import ContentType
+
+        content_type = ContentType.objects.get_for_model(self.__class__)
+
+        tasks = ApprovalTask.objects.filter(
+            content_type=content_type, object_id=self.pk
+        )
+
+        if tasks.exists() and tasks.filter(status="rejected").exists():
+            self.initiation_status = "rejected"
+            self.save()
+            return
+        if (
+            tasks.exists()
+            and not tasks.filter(
+                status__in=["not_started", "pending", "rejected"]
+            ).exists()
+        ):
+            self.approve()
+            return
+        elif not tasks.exists():
+            self.approve()
+            return
+        else:
+            raise Exception(
+                "Cannot finish workflow: Some tasks are not completed or rejected."
+            )
+
 
 class RetirementRequest(models.Model):
     separation = models.OneToOneField(
@@ -341,6 +420,43 @@ class RetirementRequest(models.Model):
         if self.separation.employee_separation_type.category != "retirement":
             raise ValidationError(
                 "RetirementRequest must be linked to a retirement type separation."
+            )
+
+    def approve(self):
+        if self.request_status != "submitted":
+            raise ValidationError("Only submitted requests can be approved.")
+
+        self.request_status = "approved"
+        self.save()
+
+    def finish_workflow(self):
+        from workflows.models import ApprovalTask
+        from django.contrib.contenttypes.models import ContentType
+
+        content_type = ContentType.objects.get_for_model(self.__class__)
+
+        tasks = ApprovalTask.objects.filter(
+            content_type=content_type, object_id=self.pk
+        )
+
+        if tasks.exists() and tasks.filter(status="rejected").exists():
+            self.request_status = "rejected"
+            self.save()
+            return
+        if (
+            tasks.exists()
+            and not tasks.filter(
+                status__in=["not_started", "pending", "rejected"]
+            ).exists()
+        ):
+            self.approve()
+            return
+        elif not tasks.exists():
+            self.approve()
+            return
+        else:
+            raise Exception(
+                "Cannot finish workflow: Some tasks are not completed or rejected."
             )
 
 

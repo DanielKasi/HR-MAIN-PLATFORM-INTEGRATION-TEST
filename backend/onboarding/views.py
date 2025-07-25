@@ -7,9 +7,30 @@ from rest_framework import status
 from drf_spectacular.utils import extend_schema
 from django.db import transaction
 from rest_framework import serializers
+from workflows.serializers import (
+    ResignationRequestWorkflowSerializer,
+    TerminationInitiationWorkflowSerializer,
+    RetirementRequestWorkflowSerializer,
+)
 
-from .models import OnBoarding
-from .serializers import OnBoardingSerializer
+from .models import (
+    OnBoarding,
+    OffboardingStage,
+    InstitutionEmployeeSeparationTypes,
+    InstitutionSeparationPolicy,
+    ResignationRequest,
+    TerminationInitiation,
+    RetirementRequest,
+)
+from .serializers import (
+    OnBoardingSerializer,
+    OffboardingStageSerializer,
+    InstitutionEmployeeSeparationTypesSerializer,
+    InstitutionSeparationPolicySerializer,
+    ResignationRequestSerializer,
+    TerminationInitiationSerializer,
+    RetirementRequestSerializer,
+)
 
 
 class OnBoardingListAPI(APIView):
@@ -46,7 +67,6 @@ class OnBoardingListAPI(APIView):
 
 class OnBoardingDetailAPI(APIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
-
 
     @extend_schema(
         responses={200: OnBoardingSerializer},
@@ -190,3 +210,449 @@ class BulkOnBoardingCreateAPI(APIView):
         }
 
         return Response(response_data, status=status.HTTP_201_CREATED)
+
+
+class OffboardingStageListCreateView(APIView):
+
+    @extend_schema(
+        request=OffboardingStageSerializer,
+        responses={201: OffboardingStageSerializer},
+        summary="Create Offboarding Stage",
+        tags=["Offboarding"],
+    )
+    def post(self, request):
+        serializer = OffboardingStageSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+
+    @extend_schema(
+        responses={200: OffboardingStageSerializer(many=True)},
+        summary="List Offboarding Stages",
+        tags=["Offboarding"],
+    )
+    def get(self, request):
+        stages = OffboardingStage.objects.all().order_by("-created_at")
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(stages, request)
+        serializer = OffboardingStageSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
+class OffboardingStageDetailView(APIView):
+
+    @extend_schema(
+        responses={200: OffboardingStageSerializer},
+        summary="Get Offboarding Stage",
+        tags=["Offboarding"],
+    )
+    def get(self, request, stage_id):
+        try:
+            stage = OffboardingStage.objects.get(id=stage_id)
+            serializer = OffboardingStageSerializer(stage)
+            return Response(serializer.data)
+        except OffboardingStage.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)
+
+    @extend_schema(
+        request=OffboardingStageSerializer,
+        responses={200: OffboardingStageSerializer},
+        summary="Update Offboarding Stage",
+        tags=["Offboarding"],
+    )
+    def patch(self, request, stage_id):
+        try:
+            stage = OffboardingStage.objects.get(id=stage_id)
+            serializer = OffboardingStageSerializer(
+                stage, data=request.data, partial=True
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=400)
+        except OffboardingStage.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)
+
+    @extend_schema(
+        responses={204: None},
+        summary="Delete Offboarding Stage",
+        tags=["Offboarding"],
+    )
+    def delete(self, request, stage_id):
+        try:
+            stage = OffboardingStage.objects.get(id=stage_id)
+            stage.delete()
+            return Response(status=204)
+        except OffboardingStage.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)
+
+
+class InstitutionEmployeeSeparationTypesListCreateView(APIView):
+
+    @extend_schema(
+        request=InstitutionEmployeeSeparationTypesSerializer,
+        responses={201: InstitutionEmployeeSeparationTypesSerializer},
+        summary="Create Institution Employee Separation Type",
+        tags=["Offboarding"],
+    )
+    def post(self, request):
+        serializer = InstitutionEmployeeSeparationTypesSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+
+    @extend_schema(
+        responses={200: InstitutionEmployeeSeparationTypesSerializer(many=True)},
+        summary="List Institution Employee Separation Types",
+        tags=["Offboarding"],
+    )
+    def get(self, request):
+        separation_types = InstitutionEmployeeSeparationTypes.objects.all().order_by(
+            "-created_at"
+        )
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(separation_types, request)
+        serializer = InstitutionEmployeeSeparationTypesSerializer(
+            paginated_qs, many=True
+        )
+        return paginator.get_paginated_response(serializer.data)
+
+
+class InstitutionEmployeeSeparationTypesDetailView(APIView):
+
+    @extend_schema(
+        responses={200: InstitutionEmployeeSeparationTypesSerializer},
+        summary="Get Institution Employee Separation Type",
+        tags=["Offboarding"],
+    )
+    def get(self, request, separation_type_id):
+        try:
+            separation_type = InstitutionEmployeeSeparationTypes.objects.get(
+                id=separation_type_id
+            )
+            serializer = InstitutionEmployeeSeparationTypesSerializer(separation_type)
+            return Response(serializer.data)
+        except InstitutionEmployeeSeparationTypes.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)
+
+    @extend_schema(
+        request=InstitutionEmployeeSeparationTypesSerializer,
+        responses={200: InstitutionEmployeeSeparationTypesSerializer},
+        summary="Update Institution Employee Separation Type",
+        tags=["Offboarding"],
+    )
+    def patch(self, request, separation_type_id):
+        try:
+            separation_type = InstitutionEmployeeSeparationTypes.objects.get(
+                id=separation_type_id
+            )
+            serializer = InstitutionEmployeeSeparationTypesSerializer(
+                separation_type, data=request.data, partial=True
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=400)
+        except InstitutionEmployeeSeparationTypes.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)
+
+    @extend_schema(
+        responses={204: None},
+        summary="Delete Institution Employee Separation Type",
+        tags=["Offboarding"],
+    )
+    def delete(self, request, separation_type_id):
+        try:
+            separation_type = InstitutionEmployeeSeparationTypes.objects.get(
+                id=separation_type_id
+            )
+            separation_type.delete()
+            return Response(status=204)
+        except InstitutionEmployeeSeparationTypes.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)
+
+
+class InstitutionSeparationPolicyListCreateView(APIView):
+
+    @extend_schema(
+        request=InstitutionSeparationPolicySerializer,
+        responses={201: InstitutionSeparationPolicySerializer},
+        summary="Create Institution Separation Policy",
+        tags=["Offboarding"],
+    )
+    def post(self, request):
+        serializer = InstitutionSeparationPolicySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+
+    @extend_schema(
+        responses={200: InstitutionSeparationPolicySerializer(many=True)},
+        summary="List Institution Separation Policies",
+        tags=["Offboarding"],
+    )
+    def get(self, request):
+        policies = InstitutionSeparationPolicy.objects.all().order_by("-created_at")
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(policies, request)
+        serializer = InstitutionSeparationPolicySerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
+class InstitutionSeparationPolicyDetailView(APIView):
+
+    @extend_schema(
+        responses={200: InstitutionSeparationPolicySerializer},
+        summary="Get Institution Separation Policy",
+        tags=["Offboarding"],
+    )
+    def get(self, request, policy_id):
+        try:
+            policy = InstitutionSeparationPolicy.objects.get(id=policy_id)
+            serializer = InstitutionSeparationPolicySerializer(policy)
+            return Response(serializer.data)
+        except InstitutionSeparationPolicy.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)
+
+    @extend_schema(
+        request=InstitutionSeparationPolicySerializer,
+        responses={200: InstitutionSeparationPolicySerializer},
+        summary="Update Institution Separation Policy",
+        tags=["Offboarding"],
+    )
+    def patch(self, request, policy_id):
+        try:
+            policy = InstitutionSeparationPolicy.objects.get(id=policy_id)
+            serializer = InstitutionSeparationPolicySerializer(
+                policy, data=request.data, partial=True
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=400)
+        except InstitutionSeparationPolicy.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)
+
+    @extend_schema(
+        responses={204: None},
+        summary="Delete Institution Separation Policy",
+        tags=["Offboarding"],
+    )
+    def delete(self, request, policy_id):
+        try:
+            policy = InstitutionSeparationPolicy.objects.get(id=policy_id)
+            policy.delete()
+            return Response(status=204)
+        except InstitutionSeparationPolicy.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)
+
+
+class ResignationRequestListCreateView(APIView):
+    @extend_schema(
+        request=ResignationRequestSerializer,
+        responses={201: ResignationRequestSerializer},
+        summary="Create Resignation Request",
+        tags=["Offboarding"],
+    )
+    def post(self, request):
+        employee = getattr(request.user, "employee", None)
+        if not employee:
+            return Response(
+                {"detail": "Authenticated user is not linked to an employee."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = ResignationRequestSerializer(
+            data=request.data, context={"employee": employee}
+        )
+
+        if serializer.is_valid():
+            instance = serializer.save()
+            return Response(
+                ResignationRequestSerializer(instance).data,
+                status=status.HTTP_201_CREATED,
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        responses={200: ResignationRequestSerializer(many=True)},
+        summary="List Resignation Requests",
+        tags=["Offboarding"],
+    )
+    def get(self, request):
+        queryset = ResignationRequest.objects.all().order_by("-created_at")
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(queryset, request)
+        serializer = ResignationRequestSerializer(paginated_qs, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+
+class ResignationRequestDetailView(APIView):
+    @extend_schema(
+        responses={200: ResignationRequestSerializer},
+        summary="Get Resignation Request",
+        tags=["Offboarding"],
+    )
+    def get(self, request, resignation_request_id):
+        try:
+            resignation_request = ResignationRequest.objects.get(
+                id=resignation_request_id
+            )
+            serializer = ResignationRequestSerializer(resignation_request)
+            return Response(serializer.data)
+        except ResignationRequest.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)
+
+    @extend_schema(
+        request=ResignationRequestSerializer,
+        responses={200: ResignationRequestSerializer},
+        summary="Update Resignation Request",
+        tags=["Offboarding"],
+    )
+    def patch(self, request, resignation_request_id):
+        try:
+            resignation_request = ResignationRequest.objects.get(
+                id=resignation_request_id
+            )
+            serializer = ResignationRequestSerializer(
+                resignation_request, data=request.data, partial=True
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=400)
+        except ResignationRequest.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)
+
+    @extend_schema(
+        responses={204: None},
+        summary="Delete Resignation Request",
+        tags=["Offboarding"],
+    )
+    def delete(self, request, resignation_request_id):
+        try:
+            resignation_request = ResignationRequest.objects.get(
+                id=resignation_request_id
+            )
+            resignation_request.delete()
+            return Response(status=204)
+        except ResignationRequest.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)
+
+
+class ResignationRequestByLoggedInUser(APIView):
+    @extend_schema(
+        responses={200: ResignationRequestSerializer(many=True)},
+        summary="List Resignation Requests by Logged In User",
+        tags=["Offboarding"],
+    )
+    def get(self, request):
+        employee = getattr(request.user, "employee", None)
+        if not employee:
+            return Response(
+                {"detail": "Authenticated user is not linked to an employee."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        queryset = ResignationRequest.objects.filter(
+            separation__employee=employee
+        ).order_by("-created_at")
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(queryset, request)
+        serializer = ResignationRequestSerializer(paginated_qs, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+
+class TerminationInitiationListCreateView(APIView):
+    @extend_schema(
+        request=TerminationInitiationSerializer,
+        responses={201: TerminationInitiationSerializer},
+        summary="Create Termination Initiation",
+        tags=["Offboarding"],
+    )
+    def post(self, request):
+
+        serializer = TerminationInitiationSerializer(
+            data=request.data, context={"request": request}
+        )
+
+        if serializer.is_valid():
+            instance = serializer.save()
+            return Response(
+                TerminationInitiationSerializer(instance).data,
+                status=status.HTTP_201_CREATED,
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        responses={200: TerminationInitiationSerializer(many=True)},
+        summary="List Termination Initiations",
+        tags=["Offboarding"],
+    )
+    def get(self, request):
+        queryset = TerminationInitiation.objects.all().order_by("-created_at")
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(queryset, request)
+        serializer = TerminationInitiationSerializer(paginated_qs, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+
+class TerminationInitiationDetailView(APIView):
+    @extend_schema(
+        responses={200: TerminationInitiationSerializer},
+        summary="Get Termination Initiation",
+        tags=["Offboarding"],
+    )
+    def get(self, request, termination_initiation_id):
+        try:
+            termination_initiation = TerminationInitiation.objects.get(
+                id=termination_initiation_id
+            )
+            serializer = TerminationInitiationSerializer(termination_initiation)
+            return Response(serializer.data)
+        except TerminationInitiation.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)
+
+    @extend_schema(
+        request=TerminationInitiationSerializer,
+        responses={200: TerminationInitiationSerializer},
+        summary="Update Termination Initiation",
+        tags=["Offboarding"],
+    )
+    def patch(self, request, termination_initiation_id):
+        try:
+            termination_initiation = TerminationInitiation.objects.get(
+                id=termination_initiation_id
+            )
+            serializer = TerminationInitiationSerializer(
+                termination_initiation, data=request.data, partial=True
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=400)
+        except TerminationInitiation.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)
+
+    @extend_schema(
+        responses={204: None},
+        summary="Delete Termination Initiation",
+        tags=["Offboarding"],
+    )
+    def delete(self, request, termination_initiation_id):
+        try:
+            termination_initiation = TerminationInitiation.objects.get(
+                id=termination_initiation_id
+            )
+            termination_initiation.delete()
+            return Response(status=204)
+        except TerminationInitiation.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)

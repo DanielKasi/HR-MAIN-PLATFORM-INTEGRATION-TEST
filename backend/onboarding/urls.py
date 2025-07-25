@@ -1,5 +1,20 @@
 from django.urls import path
-from .views import BulkOnBoardingCreateAPI, OnBoardingListAPI, OnBoardingDetailAPI
+from .views import (
+    BulkOnBoardingCreateAPI,
+    OnBoardingListAPI,
+    OnBoardingDetailAPI,
+    OffboardingStageListCreateView,
+    OffboardingStageDetailView,
+    InstitutionEmployeeSeparationTypesListCreateView,
+    InstitutionEmployeeSeparationTypesDetailView,
+    InstitutionSeparationPolicyDetailView,
+    InstitutionSeparationPolicyListCreateView,
+    ResignationRequestListCreateView,
+    ResignationRequestDetailView,
+    ResignationRequestByLoggedInUser,
+    TerminationInitiationListCreateView,
+    TerminationInitiationDetailView,
+)
 
 urlpatterns = [
     path(
@@ -12,5 +27,62 @@ urlpatterns = [
         OnBoardingDetailAPI.as_view(),
         name="onboarding-detail",
     ),
-    path('bulk-create/', BulkOnBoardingCreateAPI.as_view(), name='bulk-onboarding-create'),
+    path(
+        "bulk-create/", BulkOnBoardingCreateAPI.as_view(), name="bulk-onboarding-create"
+    ),
+    path(
+        "offboarding-stages/",
+        OffboardingStageListCreateView.as_view(),
+        name="offboarding-stage-list-create",
+    ),
+    path(
+        "offboarding-stages/<int:stage_id>/",
+        OffboardingStageDetailView.as_view(),
+        name="offboarding-stage-detail",
+    ),
+    path(
+        "separation-types/",
+        InstitutionEmployeeSeparationTypesListCreateView.as_view(),
+        name="separation-types-list-create",
+    ),
+    path(
+        "separation-types/<int:separation_type_id>/",
+        InstitutionEmployeeSeparationTypesDetailView.as_view(),
+        name="separation-types-detail",
+    ),
+    path(
+        "separation-policies/",
+        InstitutionSeparationPolicyListCreateView.as_view(),
+        name="separation-policies-list-create",
+    ),
+    path(
+        "separation-policies/<int:policy_id>/",
+        InstitutionSeparationPolicyDetailView.as_view(),
+        name="separation-policies-detail",
+    ),
+    path(
+        "resignation-requests/",
+        ResignationRequestListCreateView.as_view(),
+        name="resignation-requests-list-create",
+    ),
+    path(
+        "resignation-requests/<int:request_id>/",
+        ResignationRequestDetailView.as_view(),
+        name="resignation-requests-detail",
+    ),
+    path(
+        "resignation-requests/by-loggedin-user/",
+        ResignationRequestByLoggedInUser.as_view(),
+        name="resignation-requests-by-user",
+    ),
+    path(
+        "termination-initiations/",
+        TerminationInitiationListCreateView.as_view(),
+        name="termination-initiations-list-create",
+    ),
+    path(
+        "termination-initiations/<int:termination_id>/",
+        TerminationInitiationDetailView.as_view(),
+        name="termination-initiations-detail",
+    ),
 ]
