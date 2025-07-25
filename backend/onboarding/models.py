@@ -106,29 +106,83 @@ class OnBoarding(models.Model):
         return f"OnBoarding for {self.application.applicant_name}"
 
 
-class EmployeeSeparation(models.Model):
-    EMPLOYEE_SEPARATION_CHOICES = [
-        ("resignation", "Resignation"),
-        ("termination", "Termination"),
-        ("retirement", "Retirement"),
-        ("layoff", "Layoff"),
-        ("contract_end", "Contract End"),
-        ("other", "Other"),
-    ]
+class OffboardingStage(models.Model):
+    institution = models.ForeignKeyField(
+        "institution.Institution",
+        on_delete=models.CASCADE,
+        related_name="offboarding_stages",
+    )
+    stage_name = models.CharField(max_length=100, blank=False, null=False)
+    stage_description = models.TextField(blank=True, null=True)
 
-    EMPLOYEE_SEPARATION_STATUS_CHOICES = [
-        ("planned", "Planned"),
-        ("completed", "Completed"),
-    ]
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.institution.name} - {self.stage_name}"
+
+
+class InstitutionEmployeeSeparationTypes(models.Model):
+    institution = models.ForeignKeyField(
+        "institution.Institution",
+        on_delete=models.CASCADE,
+        related_name="separation_types",
+    )
+    separation_type = models.CharField(max_length=50, blank=False, null=False)
+    description = models.TextField(blank=True, null=True)
+
+    supported_stages = models.ManyToManyField(
+        OffboardingStage,
+        related_name="supported_separation_types",
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.institution.name} - {self.separation_type}"
+
+
+class InstitutionSeparationPolicy(models.Model):
+    separation_type = models.ForeignKey(
+        InstitutionEmployeeSeparationTypes,
+        on_delete=models.CASCADE,
+        related_name="separation_policy",
+    )
+
+    policy_document = models.FileField(
+        upload_to="separation_policies/", null=True, blank=True
+    )
+    description = models.TextField(blank=True, null=True)
+    min_notice_days = models.IntegerField(default=30)
+    is_active = models.BooleanField(default=True)
+    enforce_policy = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return (
+            f"Separation Policy for {self.separation_type.institution.name} - "
+            f"{self.separation_type.separation_type}"
+        )
+
+
+class EmployeeSeparation(models.Model):
+    employee_separation_type = models.ForeignKey(
+        InstitutionEmployeeSeparationTypes,
+        on_delete=models.CASCADE,
+        related_name="employee_separations",
+    )
 
     employee = models.ForeignKey(
         "employee.Employee",
         on_delete=models.CASCADE,
         related_name="separations",
     )
-    separation_type = models.CharField(
-        max_length=20, choices=EMPLOYEE_SEPARATION_CHOICES
-    )
+
     initiated_by = models.ForeignKey(
         "employee.Employee",
         on_delete=models.CASCADE,
@@ -137,134 +191,68 @@ class EmployeeSeparation(models.Model):
     )
     effective_date = models.DateField()
 
-    reason = models.TextField()
-
+    additional_notes = models.TextField(blank=True, null=True)
     separation_status = models.CharField(
-        max_length=20, choices=EMPLOYEE_SEPARATION_STATUS_CHOICES, default="planned"
+        max_length=20,
+        choices=[
+            ("planned", "Planned"),
+            ("completed", "Completed"),
+            ("cancelled", "Cancelled"),
+        ],
+        default="planned",
     )
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.employee.user.fullname} - {self.separation_type}"
+        return (
+            self.employee.user.fullname
+            + " - "
+            + self.employee_separation_type.separation_type
+        )
 
 
-class ResignationDetail(models.Model):
+class ResignationRequest(model.Model):
     REQUEST_STATUS_CHOICES = [
         ("submitted", "Submitted"),
         ("under_review", "Under Review"),
         ("approved", "Approved"),
         ("rejected", "Rejected"),
     ]
-
-    resignation = models.OneToOneField(
+    separation = models.OneToOneField(
         EmployeeSeparation,
         on_delete=models.CASCADE,
-        related_name="resignation_detail",
+        related_name="resignation_request",
     )
     resignation_letter = models.FileField(
         upload_to="resignation_letters/", null=True, blank=True
     )
     comments = models.TextField(blank=True, null=True)
+
     last_working_day = models.DateField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     request_status = models.CharField(
         max_length=20, choices=REQUEST_STATUS_CHOICES, default="submitted"
     )
 
     def __str__(self):
-        return f"Resignation Detail for {self.resignation.employee.user.fullname}"
+        return self.separation.employee.user.fullname + " - Resignation Request"
 
 
-class DismissalDetail(models.Model):
-    dismissal = models.OneToOneField(
+class TerminationInitiation(models.Model):
+    separation = models.OneToOneField(
         EmployeeSeparation,
         on_delete=models.CASCADE,
-        related_name="dismissal_detail",
+        related_name="termination_initiation",
     )
-    dismissal_letter = models.FileField(
-        upload_to="dismissal_letters/", null=True, blank=True
+    termination_letter = models.FileField(
+        upload_to="termination_letters/", null=True, blank=True
     )
     comments = models.TextField(blank=True, null=True)
     last_working_day = models.DateField(null=True, blank=True)
 
-    def __str__(self):
-        return f"Dismissal Detail for {self.dismissal.employee.user.fullname}"
-
-
-class ResignationPolicy(models.Model):
-    institution = models.OneToOneField(
-        "institution.Institution",
-        on_delete=models.CASCADE,
-        related_name="resignation_policy",
-    )
-    policy_document = models.FileField(upload_to="resignation_policies/")
-    min_notice_days = models.IntegerField(default=30)
-    enforce_policy = models.BooleanField(default=True)
-
-    updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return (
-            f"Resignation Policy for {self.institution.name}"
-            if self.institution
-            else "Default Resignation Policy"
-        )
-
-
-class OffboardingStage(models.Model):
-    STAGE_TYPE_CHOICES = [
-        ("notice_period", "Notice Period"),
-        ("work_handover", "Work Handover"),
-        ("farewell", "Farewell"),
-        ("data_archival", "Data Archival"),
-    ]
-
-    STATUS_CHOICES = [
-        ("pending", "Pending"),
-        ("in_progress", "In Progress"),
-        ("completed", "Completed"),
-    ]
-
-    employee_separation = models.ForeignKey(
-        EmployeeSeparation, on_delete=models.CASCADE, related_name="offboarding_stages"
-    )
-    stage_type = models.CharField(max_length=50, choices=STAGE_TYPE_CHOICES)
-    stage_status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default="pending"
-    )
     updated_at = models.DateTimeField(auto_now=True)
-    notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.get_stage_type_display()} - {self.employee_separation.employee.user.get_full_name()}"
-
-
-class NoticePeriodDetail(models.Model):
-    stage = models.OneToOneField(OffboardingStage, on_delete=models.CASCADE)
-    expected_end_date = models.DateField()
-
-
-class WorkHandoverDetail(models.Model):
-    stage = models.OneToOneField(OffboardingStage, on_delete=models.CASCADE)
-    handover_doc = models.FileField(upload_to="handovers/", null=True)
-
-
-class FarewellDetail(models.Model):
-    stage = models.OneToOneField(OffboardingStage, on_delete=models.CASCADE)
-    farewell_date = models.DateField(blank=True, null=True)
-
-
-class DataArchivalDetail(models.Model):
-    stage = models.OneToOneField(OffboardingStage, on_delete=models.CASCADE)
-    archived_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-
-
-class OffboardingTask(models.Model):
-    stage = models.ForeignKey(OffboardingStage, on_delete=models.CASCADE)
-    description = models.CharField(max_length=255)
-    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    due_date = models.DateField()
-    completed = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"{self.description} for {self.stage.separation.employee.user.fullname}"
+        return self.separation.employee.user.fullname + " - Termination Initiation"
