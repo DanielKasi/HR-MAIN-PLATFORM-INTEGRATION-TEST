@@ -747,6 +747,7 @@ export default function CreateInterviewPage() {
                                     placeholder="Search and select interviewers"
                                     showEmployeeId={false}
                                     showDepartment={false}
+                                    multiple={true}
                                   />
 
 
