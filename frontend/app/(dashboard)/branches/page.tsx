@@ -435,10 +435,9 @@ export default function BranchesPage() {
                 <TableRow className="bg-muted/50">
                   <TableHead>Branch</TableHead>
                   <TableHead className="hidden md:table-cell">Location</TableHead>
-                  <TableHead className="text-right">Phone Number</TableHead>
+                  <TableHead>Phone Number</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Operating Time</TableHead>
-                  <TableHead>Tills</TableHead>
                   <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -495,12 +494,11 @@ export default function BranchesPage() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">{branch.branch_phone_number}</TableCell>
+                      <TableCell>{branch.branch_phone_number}</TableCell>
                       <TableCell>{branch.branch_email}</TableCell>
                       <TableCell>
                         Opens: {branch.branch_opening_time}, Closes: {branch.branch_closing_time}
                       </TableCell>
-                      <TableCell>{branch.tills?.length || 0}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2 opacity-70 group-hover:opacity-100">
                           {/* <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>

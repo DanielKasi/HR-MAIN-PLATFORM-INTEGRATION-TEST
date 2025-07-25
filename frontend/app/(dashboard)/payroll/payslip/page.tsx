@@ -562,9 +562,9 @@ export default function Payslips() {
 
 
       if (successCount > 0 && errorCount === 0) {
-        toast.success(`Successfully marked ${successCount} payslips as paid`)
+        toast.success(`Successfully processed payment for ${successCount} payslips`)
       } else if (successCount > 0 && errorCount > 0) {
-        toast.warning(`Marked ${successCount} payslips as paid, ${errorCount} failed`)
+        toast.warning(`Processed payments for ${successCount} payslips, ${errorCount} failed`)
       } else {
         toast.error("Failed to mark any payslips as paid")
       }
@@ -779,7 +779,7 @@ export default function Payslips() {
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>Bulk Mark as Paid</DialogTitle>
+                    <DialogTitle>Process Payments in Bulk</DialogTitle>
                     <DialogDescription>
                       Select a department to mark all unpaid payslips as paid
                     </DialogDescription>
@@ -814,8 +814,8 @@ export default function Payslips() {
                           </h4>
                           <div className="text-sm text-green-800">
                             {selectedDepartment === "all" 
-                              ? "This will mark all unpaid payslips across all departments as paid."
-                              : `This will mark all unpaid payslips in ${selectedDepartment} department as paid.`
+                              ? "This will process payments for all unpaid payslips across all departments."
+                              : `This will process payments for all unpaid payslips in ${selectedDepartment} department.`
                             }
                           </div>
                         </div>
@@ -840,7 +840,7 @@ export default function Payslips() {
                         disabled={bulkProcessing || !selectedDepartment || getUnpaidPayslipsByDepartment(selectedDepartment).length === 0}
                       >
                         {bulkProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Mark {getUnpaidPayslipsByDepartment(selectedDepartment).length} Payslips as Paid
+                        Process {getUnpaidPayslipsByDepartment(selectedDepartment).length} Payments
                       </Button>
                     </DialogFooter>
                   </div>
@@ -1072,7 +1072,7 @@ export default function Payslips() {
                               size="sm"
                               onClick={() => handleMarkAsPaid(payslip)}
                               className="h-8 w-8 p-0 hover:bg-green-100 rounded-full"
-                              title="Mark as paid"
+                              title="Process payment"
                               disabled={saving}
                             >
                               <CheckCircle className="w-4 h-4 text-green-600" />
