@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
-import { Megaphone, ArrowLeft, Check } from "lucide-react"
+import { Megaphone, ArrowLeft, Check, Calendar } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,6 +34,24 @@ export default function CreateJobAdvertPage() {
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const selectedBranch = useSelector(selectSelectedBranch)
+
+  // Get tomorrow's date in YYYY-MM-DD format (minimum selectable date)
+  const getTomorrowString = () => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    return tomorrow.toISOString().split("T")[0]
+  }
+
+  // Format date for display
+  const formatDateForDisplay = (dateString: string) => {
+    if (!dateString) return ""
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  }
 
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
@@ -71,6 +89,35 @@ export default function CreateJobAdvertPage() {
     }
   }
 
+  // Enhanced date validation
+  const validateExpiryDate = (dateString: string): string | null => {
+    if (!dateString) {
+      return "Expiry date is required"
+    }
+
+    const selectedDate = new Date(dateString)
+    const today = new Date()
+    
+    // Reset time to compare only dates
+    today.setHours(0, 0, 0, 0)
+    selectedDate.setHours(0, 0, 0, 0)
+
+    if (selectedDate <= today) {
+      return "Expiry date must be at least tomorrow"
+    }
+
+    // Optional: Add maximum date validation (e.g., not more than 1 year from now)
+    const maxDate = new Date()
+    maxDate.setFullYear(maxDate.getFullYear() + 1)
+    maxDate.setHours(0, 0, 0, 0)
+    
+    if (selectedDate > maxDate) {
+      return "Expiry date cannot be more than 1 year from now"
+    }
+
+    return null
+  }
+
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof JobPositionAdvertFormData, string>> = {}
 
@@ -78,15 +125,10 @@ export default function CreateJobAdvertPage() {
       newErrors.job_position = "Please select a job position"
     }
 
-    if (!formData.expiry_date) {
-      newErrors.expiry_date = "Expiry date is required"
-    } else {
-      const expiryDate = new Date(formData.expiry_date)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      if (expiryDate <= today) {
-        newErrors.expiry_date = "Expiry date must be in the future"
-      }
+    // Use enhanced date validation
+    const dateError = validateExpiryDate(formData.expiry_date)
+    if (dateError) {
+      newErrors.expiry_date = dateError
     }
 
     if (formData.number_of_employees_expected && formData.number_of_employees_expected < 1) {
@@ -95,6 +137,19 @@ export default function CreateJobAdvertPage() {
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
+  }
+
+  // Handle date change with immediate validation
+  const handleDateChange = (dateString: string) => {
+    updateFormData("expiry_date", dateString)
+    
+    // Immediate validation feedback
+    const dateError = validateExpiryDate(dateString)
+    if (dateError) {
+      setErrors((prev) => ({ ...prev, expiry_date: dateError }))
+    } else {
+      setErrors((prev) => ({ ...prev, expiry_date: undefined }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,6 +198,7 @@ export default function CreateJobAdvertPage() {
     router.back()
   }
 
+  // Set default expiry date to 30 days from now
   useEffect(() => {
     if (!formData.expiry_date) {
       const defaultExpiryDate = new Date()
@@ -215,21 +271,40 @@ export default function CreateJobAdvertPage() {
                   {errors.job_position && <p className="text-sm text-destructive">{errors.job_position}</p>}
                 </div>
 
-
-
                 {/* Expiry Date */}
                 <div className="space-y-2">
                   <Label htmlFor="expiry_date" className="text-sm font-medium">
                     Expiry Date *
                   </Label>
-                  <Input
-                    id="expiry_date"
-                    type="date"
-                    value={formData.expiry_date}
-                    onChange={(e) => updateFormData("expiry_date", e.target.value)}
-                    className={errors.expiry_date ? "border-destructive" : ""}
-                  />
-                  {errors.expiry_date && <p className="text-sm text-destructive">{errors.expiry_date}</p>}
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                    </div>
+                    <Input
+                      id="expiry_date"
+                      type="date"
+                      value={formData.expiry_date}
+                      onChange={(e) => handleDateChange(e.target.value)}
+                      onBlur={(e) => {
+                        // Additional validation on blur
+                        const selectedDate = new Date(e.target.value)
+                        const today = new Date()
+                        today.setHours(0, 0, 0, 0)
+                        selectedDate.setHours(0, 0, 0, 0)
+                        
+                        if (selectedDate <= today) {
+                          const tomorrow = new Date()
+                          tomorrow.setDate(tomorrow.getDate() + 1)
+                          const correctedDate = tomorrow.toISOString().split("T")[0]
+                          setFormData((prev) => ({ ...prev, expiry_date: correctedDate }))
+                          toast.error("Past dates are not allowed. Date corrected to tomorrow.")
+                        }
+                      }}
+                      className={`pl-10 ${errors.expiry_date ? "border-destructive" : ""}`}
+                      min={getTomorrowString()} // Restrict to tomorrow and future dates
+                      required
+                    />
+                  </div>
                 </div>
 
                 {/* Number of Employees Expected */}
@@ -241,6 +316,7 @@ export default function CreateJobAdvertPage() {
                     id="number_of_employees_expected"
                     type="number"
                     min="1"
+                    max="1000"
                     placeholder="1"
                     value={formData.number_of_employees_expected || ""}
                     onChange={(e) =>
@@ -265,7 +341,11 @@ export default function CreateJobAdvertPage() {
                   value={formData.extra_information || ""}
                   onChange={(e) => updateFormData("extra_information", e.target.value)}
                   rows={4}
+                  className="resize-none"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Provide additional details about the role, requirements, or company benefits
+                </p>
               </div>
 
               {/* Form Actions */}

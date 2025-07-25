@@ -186,7 +186,7 @@ export const getJobPositions = async ({ institutionId }: { institutionId: number
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`)
     const data = response.data as PaginatedResponse<IJobPosition>
-    console.log("Job Position Data:", data)
+    //console.log("Job Position Data:", data)
     return data.results
   } catch (error) {
     console.error("Error fetching job positions:", error)
@@ -198,6 +198,7 @@ export const getJobPosition = async ({jobPositionId}:{jobPositionId:number}) =>{
   try {
     const response = await apiRequest.get(`recruitment/job-position/${jobPositionId}/`)
     const data = response.data as IJobPosition
+    console.log("Job Position:", data)
     return data
   } catch (error) {
     console.error("Error fetching job position:", error)
@@ -504,6 +505,7 @@ export const updateJobPositionAdvert = async ({
 export const getInterviews = async ({ institutionId }: { institutionId: number }) => {
     try {
       const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-interview/`)
+      console.log(' Interviews data:', response.data)
       return response.data as IInterview[]
     } catch (error) {
       console.error("Error fetching job interviews:", error)
