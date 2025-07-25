@@ -333,16 +333,6 @@ export interface JobPositionFormData {
 }
 
 export interface CreateJobPositionData {
-<<<<<<< Updated upstream
-  affected_employees: any;
-  name: string
-  description?: string
-  department: number
-  reports_to?: number
-  contract_template?: File
-  offer_letter_template?: File
-  salary: number
-=======
   affected_employees: boolean; // or any other correct type
   name: string;
   description?: string;
@@ -351,7 +341,6 @@ export interface CreateJobPositionData {
   contract_template?: File;
   offer_letter_template?: File;
   salary: number;
->>>>>>> Stashed changes
 }
 
 

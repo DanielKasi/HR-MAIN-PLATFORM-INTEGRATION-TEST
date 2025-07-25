@@ -11,15 +11,8 @@ import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition,
    ILeavePolicyFormData, ILeavePolicyResponse, IAllowanceType, IAllowanceTypeFormData, IDeductionType, IDeductionTypeFormData,
    IEmployeeAllowance,IEmployeeAllowanceFormData,IEmployeeDeduction, IEmployeeDeductionFormData, IPayrollPeriod, IPayrollPeriodFormData,
    IPayslipFormData, IPayslip, IPayslipItem, PaginatedEmployeeResponse,
-<<<<<<< Updated upstream
-   EmployeeFromAPI, PaginatedIOnboardingResponse,
-   PaginatedResponse,
-   IContract,
-   IContractFormData
-=======
    EmployeeFromAPI, PaginatedIOnboardingResponse,ILeaveBalance,
    PaginatedResponse
->>>>>>> Stashed changes
   } from "@/app/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
