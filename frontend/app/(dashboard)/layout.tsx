@@ -218,6 +218,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       submenu: [
         {title: "Leave Types", href: "/leave/leave-types"},
         {title: "Leave Policy", href: "/leave/leave-policy"},
+        {title: "Leave Balances", href: "/leave/leave-balances"},
         {title: "Leave Application", href: "/leave/leave-application"},
       ],
     },

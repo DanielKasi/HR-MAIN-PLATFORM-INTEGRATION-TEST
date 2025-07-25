@@ -333,14 +333,14 @@ export interface JobPositionFormData {
 }
 
 export interface CreateJobPositionData {
-  affected_employees: any;
-  name: string
-  description?: string
-  department: number
-  reports_to?: number
-  contract_template?: File
-  offer_letter_template?: File
-  salary: number
+  affected_employees: boolean; // or any other correct type
+  name: string;
+  description?: string;
+  department: number;
+  reports_to?: number;
+  contract_template?: File;
+  offer_letter_template?: File;
+  salary: number;
 }
 
 
@@ -1074,6 +1074,32 @@ export interface ILeaveType extends LeaveType {
   updated_at?: string;
 }
 
+export interface ILeaveBalance {
+  id: number;
+  employee: number | {
+    id: number;
+    user: {
+      id: number;
+      fullname?: string;
+      first_name?: string;
+      last_name?: string;
+    };
+    employee_id: string;
+  };
+  leave_type: number | {
+    id: number;
+    name: string;
+  };
+  available_days: string | number;
+  institution: number;
+  year: number;
+  allocated_days: string;
+  used_days: string;
+  pending_days: string;
+  carried_forward_days: string;
+  created_at: string;
+  updated_at: string;
+}
 
 
 export interface ILeavePolicy {
@@ -1090,6 +1116,7 @@ export interface ILeavePolicy {
   created_at?: string;
   updated_at?: string;
 }
+
 
 
 export interface ILeavePolicyFormData {
@@ -1117,12 +1144,6 @@ export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelle
 
 export type DurationType = 'full_day' | 'half_day' | 'multiple_days';
 
-export interface LeaveBalance {
-  leave_type_id: string | number
-  available_days: number
-  used_days: number
-  total_days: number
-}
 
 
 export interface Employee {
@@ -1208,18 +1229,6 @@ export interface ILeaveRequestFilters {
   duration_type?: DurationType;
 }
 
-export interface ILeaveBalance {
-  id?: number;
-  employee: number;
-  leave_type: number;
-  allocated_days: number;
-  used_days: number;
-  pending_days: number;
-  remaining_days: number;
-  year: number;
-  created_at?: string;
-  updated_at?: string;
-}
 
 
 export interface IAllowanceType {

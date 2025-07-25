@@ -50,6 +50,7 @@ export default function BranchDetailPage() {
   const branchId = params.id as string;
 
   const [branch, setBranch] = useState<Branch | null>(null);
+  const [tills, setTills] = useState<ITill[]>([]); // Separate state for tills
   const [isLoading, setIsLoading] = useState(true);
   const [isEditingBranch, setIsEditingBranch] = useState(false);
   const [editedBranch, setEditedBranch] = useState<Branch | null>(null);
@@ -68,22 +69,44 @@ export default function BranchDetailPage() {
   const [editTillIndex, setEditTillIndex] = useState<number | null>(null);
 
   const fetchBranch = async () => {
-    // setIsLoading(true);
-    // try {
-    //   const response = await apiRequest.get(`institution/branch/${branchId}/`);
-    //   if (response.status === 200) {
-    //     setBranch(response.data);
-    //     setEditedBranch(response.data);
-    //   } else {
-    //     toast.error("Failed to fetch branch details");
-    //     router.push("/branches");
-    //   }
-    // } catch (error) {
-    //   toast.error("Error fetching branch details");
-    //   router.push("/branches");
-    // } finally {
-    //   setIsLoading(false);
-    // }
+    setIsLoading(true);
+    try {
+      const response = await apiRequest.get(`institution/branch/${branchId}/`);
+      if (response.status === 200) {
+        setBranch(response.data);
+        setEditedBranch(response.data);
+        
+        // If the response includes tills, set them, otherwise initialize as empty array
+        if (response.data.tills) {
+          setTills(response.data.tills);
+        } else {
+          setTills([]);
+          // Optionally fetch tills separately if needed
+          fetchTills();
+        }
+      } else {
+        toast.error("Failed to fetch branch details");
+        router.push("/branches");
+      }
+    } catch (error) {
+      toast.error("Error fetching branch details");
+      router.push("/branches");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchTills = async () => {
+    try {
+      const response = await apiRequest.get(`institution/branch/${branchId}/tills/`);
+      if (response.status === 200) {
+        setTills(response.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching tills:", error);
+      // Don't show error toast here as this might be expected if no tills exist
+      setTills([]);
+    }
   };
 
   useEffect(() => {
@@ -190,9 +213,9 @@ export default function BranchDetailPage() {
       const response = await apiRequest.post(`institution/branch/${branchId}/tills/`, newTill);
       if (response.status === 201) {
         setIsAddTillDialogOpen(false);
-        setNewTill((prev) => ({...prev, branch: Number.parseInt(branchId)}));
+        setNewTill({name: "", branch: Number.parseInt(branchId), id: 0});
         toast.success("Till added successfully");
-        fetchBranch(); // Refresh branch data to get updated tills
+        fetchTills(); // Refresh tills data
       } else {
         toast.error("Failed to add till");
       }
@@ -206,7 +229,7 @@ export default function BranchDetailPage() {
 
     try {
       const response = await apiRequest.patch(
-        `institution/branch/${branchId}/till/${editTillIndex}/`,
+        `institution/branch/${branchId}/till/${editTill.id}/`, // Use till ID instead of index
         editTill,
       );
       if (response.status === 200) {
@@ -214,7 +237,7 @@ export default function BranchDetailPage() {
         setEditTill(null);
         setEditTillIndex(null);
         toast.success("Till updated successfully");
-        fetchBranch(); // Refresh branch data
+        fetchTills(); // Refresh tills data
       } else {
         toast.error("Failed to update till");
       }
@@ -228,7 +251,7 @@ export default function BranchDetailPage() {
       const response = await apiRequest.delete(`institution/branch/${branchId}/till/${tillId}/`);
       if (response.status === 204) {
         toast.success("Till deleted successfully");
-        fetchBranch(); // Refresh branch data
+        fetchTills(); // Refresh tills data
       } else {
         toast.error("Failed to delete till");
       }
@@ -237,10 +260,9 @@ export default function BranchDetailPage() {
     }
   };
 
-  const filteredTills =
-    branch?.tills.filter(
-      (till) => searchQuery === "" || till.name.toLowerCase().includes(searchQuery.toLowerCase()),
-    ) || [];
+  const filteredTills = tills.filter(
+    (till) => searchQuery === "" || till.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   if (isLoading) {
     return (
@@ -576,7 +598,7 @@ export default function BranchDetailPage() {
                     </TableRow>
                   ) : (
                     filteredTills.map((till, index) => (
-                      <TableRow key={index} className="group">
+                      <TableRow key={till.id || index} className="group">
                         <TableCell className="font-medium">Till -- {till.name}</TableCell>
                         <TableCell>{branch.branch_name}</TableCell>
                         <TableCell className="text-right">
@@ -588,7 +610,7 @@ export default function BranchDetailPage() {
                                 variant="ghost"
                                 onClick={() => {
                                   setEditTill(till);
-                                  setEditTillIndex(index);
+                                  setEditTillIndex(till.id);
                                   setIsEditTillDialogOpen(true);
                                 }}
                               >
