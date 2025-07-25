@@ -307,15 +307,16 @@ export interface IReportsToDetails {
 }
 
 export interface IJobPosition {
+  job_adverts: any;
   id: number;
   name: string;
   description?: string | null;
-  department: number; // ForeignKey as ID
-  department_details?: IDepartment | null; // Embedded serializer
-  reportsTo?: number | null; // ForeignKey as ID
-  reportsToDetails?: IReportsToDetails | null; // SerializerMethodField
-  contractTemplate?: string | null; // FileField serialized as URL
-  offerLetterTemplate?: string | null; // FileField serialized as URL
+  department: number;
+  department_details?: IDepartment | null; 
+  reportsTo?: number | null; 
+  reportsToDetails?: IReportsToDetails | null; 
+  contractTemplate?: string | null; 
+  offerLetterTemplate?: string | null; 
   salary: number;
 }
 
@@ -400,7 +401,7 @@ export interface JobPositionAdvert {
 export interface JobPositionAdvertFormData {
   job_position: number;
   status?: JobAdvertStatus;
-  expiry_date: string; // ISO datetime string
+  expiry_date: string; 
   number_of_employees_expected?: number;
   extra_information?: string;
 }

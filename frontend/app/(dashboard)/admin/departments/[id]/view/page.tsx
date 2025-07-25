@@ -54,7 +54,7 @@ import {
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getDepartments, getAllEmployees, getOnBoardings, getJobPositions } from "@/lib/utils"
-import type { IDepartment, IOnBoarding, EmployeeFromAPI } from "@/app/types/types.utils"
+import type { IDepartment, IOnBoarding, EmployeeFromAPI, IJobPosition } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
 
@@ -137,6 +137,7 @@ export default function DepartmentDetailView() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState("")
   const [debugInfo, setDebugInfo] = useState<string>("")
+  const [allJobPositions, setJobPositions] = useState<IJobPosition[]>([])
 
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("overview")
@@ -201,6 +202,12 @@ export default function DepartmentDetailView() {
       }) || []
       setRecruitmentHistory(acceptedOnboardings)
 
+      const allJobPositions = await getJobPositions({ institutionId: selectedInstitution.id })
+      setJobPositions(allJobPositions || [])
+
+      console.log(allJobPositions)
+
+
     } catch (err) {
       setError("Failed to fetch department data")
       toast.error("Failed to load department data")
@@ -232,6 +239,7 @@ export default function DepartmentDetailView() {
       return matchesSearch && matchesStatus
     })
   }, [departmentEmployees, searchTerm, statusFilter])
+
   const filteredRecruitmentHistory = useMemo(() => {
     return recruitmentHistory.filter((onboarding) => {
       const { applicantName, applicantEmail, jobDesc, department: jobDepartment } = getApplicationData(onboarding)
@@ -253,6 +261,18 @@ export default function DepartmentDetailView() {
     })
   }, [recruitmentHistory, department, departmentEmployees, searchTerm])
 
+  // Filter job positions for current department
+  const filteredJobPositions = useMemo(() => {
+    return allJobPositions.filter((position) => {
+      const positionBelongsToDepartment = position.department === departmentId
+      
+      const matchesSearch = searchTerm === "" || 
+        position.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (position.description ?? "").toLowerCase().includes(searchTerm.toLowerCase())
+      return positionBelongsToDepartment && matchesSearch
+    })
+  }, [allJobPositions, departmentId, searchTerm])
+
   const paginatedEmployees = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
     return filteredEmployees.slice(startIndex, startIndex + itemsPerPage)
@@ -262,6 +282,11 @@ export default function DepartmentDetailView() {
     const startIndex = (currentPage - 1) * itemsPerPage
     return filteredRecruitmentHistory.slice(startIndex, startIndex + itemsPerPage)
   }, [filteredRecruitmentHistory, currentPage, itemsPerPage])
+
+  const paginatedJobPositions = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return filteredJobPositions.slice(startIndex, startIndex + itemsPerPage)
+  }, [filteredJobPositions, currentPage, itemsPerPage])
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A"
@@ -274,6 +299,16 @@ export default function DepartmentDetailView() {
     } catch {
       return "N/A"
     }
+  }
+
+  const formatCurrency = (amount: string | number) => {
+    if (!amount) return "N/A"
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount
+    return new Intl.NumberFormat('en-UG', { 
+      style: 'currency', 
+      currency: 'UGX',
+      minimumFractionDigits: 0 
+    }).format(num)
   }
 
   const getInitials = (name: string) => {
@@ -428,10 +463,10 @@ export default function DepartmentDetailView() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Recruitment History</p>
-                <p className="text-2xl font-bold">{filteredRecruitmentHistory.length}</p>
+                <p className="text-sm font-medium text-muted-foreground">Job Positions</p>
+                <p className="text-2xl font-bold">{filteredJobPositions.length}</p>
               </div>
-              <UserCheck className="h-8 w-8 text-blue-500" />
+              <Briefcase className="h-8 w-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
@@ -455,10 +490,11 @@ export default function DepartmentDetailView() {
         setSearchTerm("")
         setStatusFilter("all")
       }} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+        <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="employees">Employees</TabsTrigger>
-          <TabsTrigger value="recruitment">Recruitment History</TabsTrigger>
+          <TabsTrigger value="positions">Job Positions</TabsTrigger>
+          <TabsTrigger value="recruitment">Recruitment</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -507,8 +543,8 @@ export default function DepartmentDetailView() {
                     <span className="font-semibold">{departmentEmployees.filter(e => e.is_active).length}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span>Recruitment Records</span>
-                    <span className="font-semibold">{filteredRecruitmentHistory.length}</span>
+                    <span>Job Positions</span>
+                    <span className="font-semibold">{filteredJobPositions.length}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span>Recent Hires (This Year)</span>
@@ -563,8 +599,6 @@ export default function DepartmentDetailView() {
                 <div className="p-12 text-center">
                   <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No employees found</h3>
-
-
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -670,6 +704,182 @@ export default function DepartmentDetailView() {
                       })}
                     </TableBody>
                   </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Job Positions Tab */}
+        <TabsContent value="positions" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <CardTitle>Job Positions</CardTitle>
+                  <p className="text-sm text-muted-foreground">Manage positions available in this department</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search positions..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 w-[250px]"
+                    />
+                  </div>
+                  {/* <Button size="sm">
+                    <Briefcase className="h-4 w-4 mr-2" />
+                    Add Position
+                  </Button> */}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {paginatedJobPositions.length === 0 ? (
+                <div className="p-12 text-center">
+                  <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No job positions found</h3>
+                  <p className="text-muted-foreground">Create job positions for this department to get started.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Position Name</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Salary</TableHead>
+                        <TableHead>Current Employees</TableHead>
+                        <TableHead>Active Job Ads</TableHead>
+                        <TableHead>Reports To</TableHead>
+                        <TableHead className="w-[80px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedJobPositions.map((position) => {
+                        const employeesInPosition = departmentEmployees.filter(emp => getPositionId(emp) === position.id)
+                        const activeJobAds = position.job_adverts?.filter((ad: { status: string }) => ad.status === 'active').length || 0
+
+                        return (
+                          <TableRow key={position.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                                  <Briefcase className="h-4 w-4 text-blue-600" />
+                                </div>
+                                <div>
+                                  <p className="font-medium">{position.name}</p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <p className="text-sm text-muted-foreground max-w-[200px] truncate">
+                                {position.description || "No description available"}
+                              </p>
+                            </TableCell>
+                            <TableCell>
+                              <p className="font-medium">{formatCurrency(position.salary)}</p>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">{employeesInPosition.length}</span>
+                                {employeesInPosition.length > 0 && (
+                                  <span className="text-sm text-muted-foreground">employees</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {activeJobAds > 0 ? (
+                                <Badge className="bg-green-50 text-green-700 border-green-200">
+                                  <Calendar className="w-3 h-3 mr-1" />
+                                  {activeJobAds} active
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-gray-50 text-gray-700">
+                                  No active ads
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <p className="text-sm text-muted-foreground">
+                                {position.reportsToDetails?.name || "No supervisor"}
+                              </p>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                  <DropdownMenuItem>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem>
+                                    <Users className="h-4 w-4 mr-2" />
+                                    View Employees
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem>
+                                    <Calendar className="h-4 w-4 mr-2" />
+                                    Job Advertisements
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem>
+                                    <FileText className="h-4 w-4 mr-2" />
+                                    Edit Position
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-red-600">
+                                    <XCircle className="h-4 w-4 mr-2" />
+                                    Delete Position
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+
+              {/* Pagination for Job Positions */}
+              {filteredJobPositions.length > itemsPerPage && (
+                <div className="flex items-center justify-between px-6 py-4">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {((currentPage - 1) * itemsPerPage) + 1} to{" "}
+                    {Math.min(currentPage * itemsPerPage, filteredJobPositions.length)} of{" "}
+                    {filteredJobPositions.length} positions
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <span className="text-sm">
+                      Page {currentPage} of {Math.ceil(filteredJobPositions.length / itemsPerPage)}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredJobPositions.length / itemsPerPage)))}
+                      disabled={currentPage === Math.ceil(filteredJobPositions.length / itemsPerPage)}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -894,6 +1104,40 @@ export default function DepartmentDetailView() {
               size="sm"
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredEmployees.length / itemsPerPage)))}
               disabled={currentPage === Math.ceil(filteredEmployees.length / itemsPerPage)}
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Pagination for Job Positions Tab */}
+      {activeTab === "positions" && filteredJobPositions.length > itemsPerPage && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing {((currentPage - 1) * itemsPerPage) + 1} to{" "}
+            {Math.min(currentPage * itemsPerPage, filteredJobPositions.length)} of{" "}
+            {filteredJobPositions.length} positions
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </Button>
+            <span className="text-sm">
+              Page {currentPage} of {Math.ceil(filteredJobPositions.length / itemsPerPage)}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredJobPositions.length / itemsPerPage)))}
+              disabled={currentPage === Math.ceil(filteredJobPositions.length / itemsPerPage)}
             >
               Next
               <ChevronRight className="h-4 w-4" />

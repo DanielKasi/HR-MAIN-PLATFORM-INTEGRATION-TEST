@@ -23,6 +23,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Briefcase,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -130,10 +131,17 @@ export default function InterviewsPage() {
           interview.job_position_application_details?.applicant_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           interview.job_position_application_details?.applicant_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
           interview.interview_stage_details?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          interview.interview_stage_details?.interviewer_details?.first_name
+          interview.interview_stage_details?.interviewers_details?.[0]?.first_name
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
-          interview.interview_stage_details?.interviewer_details?.last_name
+          interview.interview_stage_details?.interviewers_details?.[0]?.last_name
+
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          interview.job_position_application_details?.job_position_advert_job_details?.name
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          interview.job_position_application_details?.job_position_advert_job_details?.department
             .toLowerCase()
             .includes(searchTerm.toLowerCase()),
       )
@@ -342,7 +350,7 @@ export default function InterviewsPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search interviews by applicant, interviewer, or stage..."
+            placeholder="Search interviews by applicant, job position, interviewer, or stage..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -493,6 +501,7 @@ export default function InterviewsPage() {
                     />
                   </TableHead>
                   <TableHead>Applicant</TableHead>
+                  <TableHead>Job Position</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Stage</TableHead>
                   <TableHead>Interview Date</TableHead>
@@ -530,6 +539,19 @@ export default function InterviewsPage() {
                           <div className="font-medium">{interview.job_position_application_details?.applicant_name}</div>
                           <div className="text-sm text-muted-foreground">
                             {interview.job_position_application_details?.applicant_email}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <div className="font-medium text-sm">
+                            {interview.job_position_application_details?.job_position_advert_job_details?.name || "N/A"}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {interview.job_position_application_details?.job_position_advert_job_details?.department || ""}
                           </div>
                         </div>
                       </div>
