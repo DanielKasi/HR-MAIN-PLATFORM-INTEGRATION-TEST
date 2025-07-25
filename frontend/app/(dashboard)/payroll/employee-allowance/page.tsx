@@ -715,7 +715,7 @@ export default function EmployeeAllowanceComponent() {
                       </Label>
                       <EmployeeSearchableSelect
                         employees={employees}
-                        value={formData.employee}
+                        value={[formData.employee]}
                         onValueChange={(value) => setFormData({ ...formData, employee: value.toString() })}
                         disabled={saving || isLoadingEmployees}
                         placeholder="Search and select employee"

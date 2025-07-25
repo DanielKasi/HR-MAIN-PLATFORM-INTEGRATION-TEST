@@ -30,7 +30,7 @@ import {
   fetchEmployees,
   getInterviews,
 } from "@/lib/utils"
-import type { JobApplication, IInterviewStage, IInterviewStageFormData, IInterview, IInterviewFormData, IEmployee } from "@/app/types/types.utils"
+import type { JobApplication, IInterviewStage, IInterview, IInterviewFormData, IEmployee } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
 interface MultiInterviewFormData extends Omit<IInterviewFormData, 'job_position_application'> {
@@ -704,7 +704,7 @@ export default function CreateInterviewPage() {
                               )}
                             </div>
 
-                            <div className="space-y-2">
+                            {/* <div className="space-y-2">
                               <Label htmlFor="stage_level">Level *</Label>
                               <Input
                                 id="stage_level"
@@ -721,29 +721,36 @@ export default function CreateInterviewPage() {
                               <p className="text-xs text-muted-foreground">
                                 Auto-assigned based on existing stages (Level {stageFormData.level})
                               </p>
-                            </div>
+                            </div> */}
 
                             <div className="space-y-2">
                               <Label htmlFor="stage_interviewer">Interviewers *</Label>
                               <div className="w-full max-w-full overflow-hidden">
                                 <EmployeeSearchableSelect
-                                  employees={employees}
-                                  value={stageFormData.interviewers.map((id) => id.toString())}
-                                  onValueChange={(values) => {
-                                    const numberValues = Array.isArray(values)
-                                      ? values.map((v) => Number(v))
-                                      : [Number(values)]
-                                    const uniqueValues = [...new Set(numberValues)]
-                                    if (uniqueValues.length !== numberValues.length) {
-                                      toast.info("Duplicate interviewers removed")
-                                    }
-                                    updateStageFormData("interviewers", uniqueValues)
-                                  }}
-                                  disabled={isCreatingStage}
-                                  placeholder="Search and select interviewers"
-                                  showEmployeeId={false}
-                                  showDepartment={false}
-                                />
+                                    employees={employees.map((emp) => ({
+                                      ...emp,
+                                      department: emp.department.toString(),
+                                      position: emp.position.toString(),
+                                    }))}
+                                    value={stageFormData.interviewers.map((id) => id.toString())}
+                                    onValueChange={(values) => {
+                                      const numberValues = Array.isArray(values)
+                                        ? values.map((v) => Number(v))
+                                        : [Number(values)];
+                                      const uniqueValues = [...new Set(numberValues)];
+                                      if (uniqueValues.length !== numberValues.length) {
+                                        toast.info("Duplicate interviewers removed");
+                                      }
+                                      updateStageFormData("interviewers", uniqueValues);
+                                    }}
+                                    disabled={isCreatingStage}
+                                    placeholder="Search and select interviewers"
+                                    showEmployeeId={false}
+                                    showDepartment={false}
+                                    multiple={true}
+                                  />
+
+
                               </div>
                               {stageErrors.interviewers && (
                                 <p className="text-sm text-destructive">{stageErrors.interviewers}</p>

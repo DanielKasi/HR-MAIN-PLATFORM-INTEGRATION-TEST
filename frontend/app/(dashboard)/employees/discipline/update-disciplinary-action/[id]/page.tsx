@@ -393,7 +393,7 @@ export default function DisciplinaryUpdateForm() {
                   <Label htmlFor="employee">Employee *</Label>
                   <EmployeeSearchableSelect
                     employees={employees}
-                    value={disciplinaryAction.employee}
+                    value={[disciplinaryAction.employee]}
                     onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, employee: value.toString() })}
                     disabled={isSubmitting || isLoadingEmployees}
                     placeholder="Search and select employee"
@@ -611,7 +611,7 @@ export default function DisciplinaryUpdateForm() {
                   <Label htmlFor="reported_by">Reported By *</Label>
                   <EmployeeSearchableSelect
                     employees={employees}
-                    value={disciplinaryAction.reported_by}
+                    value={[disciplinaryAction.reported_by]}
                     onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, reported_by: value.toString() })}
                     disabled={isSubmitting || isLoadingEmployees}
                     placeholder="Search and select reporter"
@@ -625,7 +625,7 @@ export default function DisciplinaryUpdateForm() {
                   <Label htmlFor="assigned_to">Assigned To</Label>
                   <EmployeeSearchableSelect
                     employees={employees}
-                    value={disciplinaryAction.assigned_to}
+                    value={[disciplinaryAction.assigned_to]}
                     onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, assigned_to: value.toString() })}
                     disabled={isSubmitting || isLoadingEmployees}
                     placeholder="Search and select assignee"

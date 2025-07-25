@@ -400,7 +400,7 @@ const InterviewStagesContent = ({
                       {stageErrors.name && <p className="text-sm text-destructive">{stageErrors.name}</p>}
                     </div>
 
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                       <Label htmlFor="stage_level">Level *</Label>
                       <Input
                         id="stage_level"
@@ -415,7 +415,7 @@ const InterviewStagesContent = ({
                       <p className="text-xs text-muted-foreground">
                         Auto-assigned based on existing stages (Level {stageFormData.level})
                       </p>
-                    </div>
+                    </div> */}
 
                     {/* Fixed interviewer selection */}
                     <div className="space-y-2">
@@ -444,6 +444,7 @@ const InterviewStagesContent = ({
                             placeholder="Search and select interviewers"
                             showEmployeeId={false}
                             showDepartment={false}
+                            multiple = {true}
                           />
                       </div>
 
@@ -616,7 +617,7 @@ const InterviewStagesContent = ({
                       />
                       {stageErrors.name && <p className="text-sm text-destructive">{stageErrors.name}</p>}
                     </div>
-
+{/* 
                     <div className="space-y-2">
                       <Label htmlFor="stage_level">Level *</Label>
                       <Input
@@ -632,7 +633,7 @@ const InterviewStagesContent = ({
                       <p className="text-xs text-muted-foreground">
                         Auto-assigned based on existing stages (Level {stageFormData.level})
                       </p>
-                    </div>
+                    </div> */}
 
                     {/* Updated: Enhanced interviewer selection with chips */}
                     <div className="space-y-2">
@@ -683,6 +684,7 @@ const InterviewStagesContent = ({
                           placeholder="Search and select interviewers"
                           showEmployeeId={false}
                           showDepartment={false}
+                          multiple = {true}
                         />
 
                       </div>

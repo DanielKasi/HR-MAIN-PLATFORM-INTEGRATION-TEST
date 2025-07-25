@@ -159,6 +159,7 @@ export default function CreateJobPositionPage() {
         description: formData.description.trim(),
         department: formData.department!,
         salary: Number(formData.salary),
+        affected_employees:false
       }
 
       if (formData.reportsTo) {

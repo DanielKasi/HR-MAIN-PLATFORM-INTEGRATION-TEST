@@ -37,8 +37,6 @@ import {
 } from "@/app/types/types.utils"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
 import { IUserInstitution } from "@/app/types"
-import { PERMISSION_CODES } from "@/app/types/types.utils"
-import ProtectedComponent from "@/components/ProtectedComponent"
 
 interface ApiEmployee {
   id: number
@@ -564,9 +562,9 @@ export default function Payslips() {
 
 
       if (successCount > 0 && errorCount === 0) {
-        toast.success(`Successfully marked ${successCount} payslips as paid`)
+        toast.success(`Successfully processed payment for ${successCount} payslips`)
       } else if (successCount > 0 && errorCount > 0) {
-        toast.warning(`Marked ${successCount} payslips as paid, ${errorCount} failed`)
+        toast.warning(`Processed payments for ${successCount} payslips, ${errorCount} failed`)
       } else {
         toast.error("Failed to mark any payslips as paid")
       }
@@ -674,102 +672,100 @@ export default function Payslips() {
             <div className="flex gap-2">
               {/* Generate Payslip Dialog */}
               <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                <DialogTrigger asChild>
-                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_GENERATE_PAYSLIPS}>
-                  <Button
-                    onClick={resetForm}
-                    className="bg-orange-600 hover:bg-orange-700 shadow-md"
-                    disabled={!selectedInstitution?.id || employees.length === 0 || availablePayrollPeriods.length === 0}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Generate Payslips
-                  </Button>
-                </ProtectedComponent>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Generate Payslips</DialogTitle>
-                    <DialogDescription>
-                      Select a payroll period to generate payslips for employees without existing payslips
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="payroll_period">Payroll Period *</Label>
-                        <Select
-                          value={formData.payroll_period_id}
-                          onValueChange={(value) => handleInputChange("payroll_period_id", value)}
-                          disabled={saving || availablePayrollPeriods.length === 0}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select payroll period" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availablePayrollPeriods.length > 0 ? (
-                              availablePayrollPeriods.map((period) => (
-                                <SelectItem key={period.id} value={period.id.toString()}>
-                                  {period.name}
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <div className="px-2 py-1.5 text-sm text-gray-500">
-                                All payroll periods have payslips generated for all employees
-                              </div>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
+  <DialogTrigger asChild>
+    <Button
+      onClick={resetForm}
+      className="bg-orange-600 hover:bg-orange-700 shadow-md"
+      disabled={!selectedInstitution?.id || employees.length === 0 || availablePayrollPeriods.length === 0}
+    >
+      <Plus className="w-4 h-4 mr-2" />
+      Generate Payslips
+    </Button>
+  </DialogTrigger>
+  <DialogContent className="max-w-2xl">
+    <DialogHeader>
+      <DialogTitle>Generate Payslips</DialogTitle>
+      <DialogDescription>
+        Select a payroll period to generate payslips for employees without existing payslips
+      </DialogDescription>
+    </DialogHeader>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="payroll_period">Payroll Period *</Label>
+          <Select
+            value={formData.payroll_period_id}
+            onValueChange={(value) => handleInputChange("payroll_period_id", value)}
+            disabled={saving || availablePayrollPeriods.length === 0}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select payroll period" />
+            </SelectTrigger>
+            <SelectContent>
+              {availablePayrollPeriods.length > 0 ? (
+                availablePayrollPeriods.map((period) => (
+                  <SelectItem key={period.id} value={period.id.toString()}>
+                    {period.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="px-2 py-1.5 text-sm text-gray-500">
+                  All payroll periods have payslips generated for all employees
+                </div>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
 
-                      {employees.length > 0 && formData.payroll_period_id && (
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <h4 className="font-semibold text-blue-900 mb-2">
-                            Payslips will be generated for{" "}
-                            {employees.length -
-                              payslips.filter(
-                                (p) => p.payroll_period.id.toString() === formData.payroll_period_id
-                              ).length}{" "}
-                            employees
-                          </h4>
-                          <div className="text-sm text-blue-800">
-                            This will create payslips for employees without existing payslips in the selected period.
-                          </div>
-                        </div>
-                      )}
-                    </div>
+        {employees.length > 0 && formData.payroll_period_id && (
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-blue-900 mb-2">
+              Payslips will be generated for{" "}
+              {employees.length -
+                payslips.filter(
+                  (p) => p.payroll_period.id.toString() === formData.payroll_period_id
+                ).length}{" "}
+              employees
+            </h4>
+            <div className="text-sm text-blue-800">
+              This will create payslips for employees without existing payslips in the selected period.
+            </div>
+          </div>
+        )}
+      </div>
 
-                    <DialogFooter>
-                      <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} disabled={saving}>
-                        Cancel
-                      </Button>
-                      <Button
-                        type="submit"
-                        className="bg-orange-600 hover:bg-orange-700"
-                        disabled={
-                            saving ||
-                            !formData.payroll_period_id || 
-                            availablePayrollPeriods.length === 0 ||
-                            (formData.payroll_period_id !== "" &&
-                              employees.length -
-                                payslips.filter(
-                                  (p) => p.payroll_period.id.toString() === formData.payroll_period_id
-                                ).length === 0)
-                          }
-                      >
-                        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Generate Payslips for{" "}
-                        {formData.payroll_period_id
-                          ? employees.length -
-                            payslips.filter(
-                              (p) => p.payroll_period.id.toString() === formData.payroll_period_id
-                            ).length
-                          : employees.length}{" "}
-                        Employees
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} disabled={saving}>
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          className="bg-orange-600 hover:bg-orange-700"
+          disabled={
+              saving ||
+              !formData.payroll_period_id || 
+              availablePayrollPeriods.length === 0 ||
+              (formData.payroll_period_id !== "" &&
+                employees.length -
+                  payslips.filter(
+                    (p) => p.payroll_period.id.toString() === formData.payroll_period_id
+                  ).length === 0)
+            }
+        >
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Generate Payslips for{" "}
+          {formData.payroll_period_id
+            ? employees.length -
+              payslips.filter(
+                (p) => p.payroll_period.id.toString() === formData.payroll_period_id
+              ).length
+            : employees.length}{" "}
+          Employees
+        </Button>
+      </DialogFooter>
+    </form>
+  </DialogContent>
+</Dialog>
               {/* Bulk Payment Dialog */}
               <Dialog open={bulkPaymentModalOpen} onOpenChange={setBulkPaymentModalOpen}>
                 <DialogTrigger asChild>
@@ -783,7 +779,7 @@ export default function Payslips() {
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>Bulk Mark as Paid</DialogTitle>
+                    <DialogTitle>Process Payments in Bulk</DialogTitle>
                     <DialogDescription>
                       Select a department to mark all unpaid payslips as paid
                     </DialogDescription>
@@ -818,8 +814,8 @@ export default function Payslips() {
                           </h4>
                           <div className="text-sm text-green-800">
                             {selectedDepartment === "all" 
-                              ? "This will mark all unpaid payslips across all departments as paid."
-                              : `This will mark all unpaid payslips in ${selectedDepartment} department as paid.`
+                              ? "This will process payments for all unpaid payslips across all departments."
+                              : `This will process payments for all unpaid payslips in ${selectedDepartment} department.`
                             }
                           </div>
                         </div>
@@ -844,7 +840,7 @@ export default function Payslips() {
                         disabled={bulkProcessing || !selectedDepartment || getUnpaidPayslipsByDepartment(selectedDepartment).length === 0}
                       >
                         {bulkProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Mark {getUnpaidPayslipsByDepartment(selectedDepartment).length} Payslips as Paid
+                        Process {getUnpaidPayslipsByDepartment(selectedDepartment).length} Payments
                       </Button>
                     </DialogFooter>
                   </div>
@@ -1076,7 +1072,7 @@ export default function Payslips() {
                               size="sm"
                               onClick={() => handleMarkAsPaid(payslip)}
                               className="h-8 w-8 p-0 hover:bg-green-100 rounded-full"
-                              title="Mark as paid"
+                              title="Process payment"
                               disabled={saving}
                             >
                               <CheckCircle className="w-4 h-4 text-green-600" />
