@@ -49,7 +49,7 @@ import {
   getAllEmployees,
   getLeavePolicies,
 } from "@/lib/utils"
-import { ILeaveRequest, ILeaveRequestFormData, ILeaveType, ILeavePolicy, Employee, LeaveBalance } from "@/app/types/types.utils"
+import { ILeaveRequest, ILeaveRequestFormData, ILeaveType, ILeavePolicy, Employee, ILeaveBalance } from "@/app/types/types.utils"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
 import { IUserInstitution } from "@/app/types"
 import { useSelector } from "react-redux"
@@ -73,7 +73,7 @@ const LeaveApplicationComponent = () => {
   const [applications, setApplications] = useState<ILeaveRequest[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [leavePolicies, setLeavePolicies] = useState<ILeavePolicy[]>([])
-  const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([])
+  const [leaveBalances, setLeaveBalances] = useState<ILeaveBalance[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
@@ -193,7 +193,7 @@ const LeaveApplicationComponent = () => {
   const getSelectedLeaveBalance = () => {
     if (!formData.employee || !formData.leave_type) return null
     return leaveBalances.find(balance =>
-      balance.leave_type_id.toString() === formData.leave_type
+      balance.leave_type.toString() === formData.leave_type
     )
   }
 
@@ -241,17 +241,17 @@ const LeaveApplicationComponent = () => {
       });
     }
 
-    if (selectedBalance && requestedDays > selectedBalance.available_days) {
+    if (selectedBalance && requestedDays > Number(selectedBalance.available_days)) {
       validations.push({
         type: 'error',
         message: `Insufficient leave balance. You have ${selectedBalance.available_days} days available, but requested ${requestedDays} days.`,
       });
     }
 
-    if (selectedBalance && requestedDays > selectedBalance.available_days * 0.8) {
+    if (selectedBalance && requestedDays > Number(selectedBalance.available_days) * 0.8) {
       validations.push({
         type: 'warning',
-        message: `This request will use ${Math.round((requestedDays / selectedBalance.total_days) * 100)}% of your annual leave balance.`,
+        message: `This request will use ${Math.round((requestedDays / Number(selectedBalance.allocated_days)) * 100)}% of your annual leave balance.`,
       });
     }
   }
@@ -809,7 +809,7 @@ const handleUpdateApplication = async () => {
                           </Label>
                           <EmployeeSearchableSelect
                             employees={employees}
-                            value={formData.employee}
+                            value={[formData.employee]}
                             onValueChange={(value) => setFormData({ ...formData, employee: value.toString() })}
                             disabled={isSubmitting || isLoadingEmployees}
                             placeholder="Search and select employee"
@@ -1273,7 +1273,7 @@ const handleUpdateApplication = async () => {
                 </Label>
                 <EmployeeSearchableSelect
                   employees={employees}
-                  value={formData.employee}
+                  value={[formData.employee]}
                   onValueChange={(value) => setFormData({ ...formData, employee: value.toString() })}
                   disabled={isSubmitting}
                   placeholder="Search and select employee"

@@ -444,6 +444,7 @@ const InterviewStagesContent = ({
                             placeholder="Search and select interviewers"
                             showEmployeeId={false}
                             showDepartment={false}
+                            multiple = {true}
                           />
                       </div>
 
@@ -683,6 +684,7 @@ const InterviewStagesContent = ({
                           placeholder="Search and select interviewers"
                           showEmployeeId={false}
                           showDepartment={false}
+                          multiple = {true}
                         />
 
                       </div>
