@@ -12,12 +12,15 @@ import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition,
    IEmployeeAllowance,IEmployeeAllowanceFormData,IEmployeeDeduction, IEmployeeDeductionFormData, IPayrollPeriod, IPayrollPeriodFormData,
    IPayslipFormData, IPayslip, IPayslipItem, PaginatedEmployeeResponse,
    EmployeeFromAPI, PaginatedIOnboardingResponse,
-   PaginatedResponse
+   PaginatedResponse,
+   IContract,
+   IContractFormData
   } from "@/app/types/types.utils";
 
-import apiRequest from "./apiRequest";
+import apiRequest, { apiGet } from "./apiRequest";
 import { IEmployee } from "@/app/types/types.utils";
 import { IPaginatedResponse } from "@/app/types";
+import { AxiosError, AxiosRequestConfig } from "axios"; 
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -2815,6 +2818,112 @@ export const getPayslipItems = async (
     return data.results
   } catch (error) {
     console.error("Failed to get payslip items:", error)
+    return null;
+  }
+};
+
+export const getContracts = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<IContract[] | null> => {
+  try {
+    const response = await apiRequest.get(`employee/institutions/${institutionId}/contracts/`);
+    const data = response.data as PaginatedResponse<IContract>;
+    return data.results;
+  } catch (error) {
+    console.error("Failed to fetch contracts:", error);
+    return null;
+  }
+};
+
+export const getContractById = async ({
+  contractId,
+}: {
+  contractId: number;
+}): Promise<IContract | null> => {
+  try {
+    const response = await apiRequest.get(`employee/contracts/${contractId}/`);
+    return response.data as IContract;
+  } catch (error) {
+    console.error("Failed to fetch contract:", error);
+    return null;
+  }
+};
+
+export const updateContract = async ({
+  contractId,
+  contractData,
+}: {
+  contractId: number;
+  contractData: Partial<IContractFormData>;
+}): Promise<IContract | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(contractData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (key === 'contract_file' && value instanceof File) {
+          formData.append(key, value);
+        } else {
+          formData.append(key, value.toString());
+        }
+      }
+    });
+
+    const response = await apiRequest.patch(`cemployee/ontracts/${contractId}/`, formData);
+    return response.data as IContract;
+  } catch (error) {
+    console.error("Failed to update contract:", error);
+    return null;
+  }
+};
+
+export const deleteContract = async ({
+  contractId,
+}: {
+  contractId: number;
+}): Promise<boolean> => {
+  try {
+    await apiRequest.delete(`employee/contracts/${contractId}/`);
+    return true;
+  } catch (error) {
+    console.error("Failed to delete contract:", error);
+    return false;
+  }
+};
+
+export const downloadContract = async ({
+  contractId,
+}: {
+  contractId: number;
+}): Promise<Blob | null> => {
+  try {
+    console.log('Downloading contract with ID:', contractId);
+    const response = await apiGet(`employee/contracts/${contractId}/download/`, null, {}, {
+      responseType: 'blob',
+    });
+
+    console.log('Response headers:', response.headers);
+    console.log('Response data type:', response.data instanceof Blob ? 'Blob' : typeof response.data);
+
+    if (!(response.data instanceof Blob)) {
+      console.error('Invalid response type, expected Blob but received:', typeof response.data);
+      return null;
+    }
+
+    return response.data as Blob;
+  } catch (error: unknown) {
+    console.error('Failed to download contract:', error);
+
+    if (error instanceof AxiosError && error.response && error.response.data instanceof Blob) {
+      try {
+        const text = await error.response.data.text();
+        console.error('Error response content:', text);
+      } catch (textError) {
+        console.error('Failed to read error response:', textError);
+      }
+    }
+
     return null;
   }
 };

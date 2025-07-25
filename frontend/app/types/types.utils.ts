@@ -333,9 +333,7 @@ export interface JobPositionFormData {
 }
 
 export interface CreateJobPositionData {
-  affected_employees(affected_employees: any): string | Blob;
   affected_employees: any;
-  affected_employees: boolean;
   name: string
   description?: string
   department: number
@@ -415,7 +413,7 @@ export interface IEmployee {
   last_name: string;
   email: string;
   phone_number: string;
-  position: number;
+  position: number | JobPositionFormData;
   department: number;
   date_of_birth: string;
   date_of_joining: string;
@@ -488,7 +486,9 @@ export interface EmployeeFormData {
   date_of_joining: string;
   address: string;
   country: string;             // Added
-  nin: string;                 // Added
+  nin: string;    
+  tin: string;
+  nssf: string;             // Added
   bank: string;                // Added
   bank_account_number: string; // Added
   is_active: boolean;
@@ -504,6 +504,8 @@ export interface EmployeeFormData {
 }
 
 export interface EmployeeFormState {
+  tin: string 
+  nssf: string 
   fullname: string;
   email: string;
   phone_number: string;
@@ -1375,4 +1377,29 @@ export interface IPayslipItem {
   name: string;
   amount: string;
   description: string;
+}
+
+export type ContractStatus = 'draft' | 'active' | 'expired' | 'terminated';
+
+export interface IContract {
+  id: number;
+  contract_id: string;
+  // employee: number;
+  employee?: IEmployee;
+  contract_file: string | null;
+  status: ContractStatus;
+  start_date: string;
+  end_date: string | null;
+  created_at: string;
+  updated_at: string;
+  notes: string | null;
+}
+
+export interface IContractFormData {
+  employee: number;
+  contract_file?: File | null;
+  status?: ContractStatus;
+  start_date: string;
+  end_date?: string | null;
+  notes?: string | null;
 }
