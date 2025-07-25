@@ -1079,8 +1079,7 @@ export default function ApplicationsPage() {
                       value={formData.application_date}
                       onChange={(e) => handleInputChange("application_date", e.target.value)}
                       className="pl-10"
-                      min={new Date().toISOString().split("T")[0]} // Restrict to today
-                      max={new Date().toISOString().split("T")[0]} // Restrict to today
+                      max={new Date().toISOString().split("T")[0]}  // Restrict to today
                       required
                     />
                   </div>

@@ -11,10 +11,15 @@ import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition,
    ILeavePolicyFormData, ILeavePolicyResponse, IAllowanceType, IAllowanceTypeFormData, IDeductionType, IDeductionTypeFormData,
    IEmployeeAllowance,IEmployeeAllowanceFormData,IEmployeeDeduction, IEmployeeDeductionFormData, IPayrollPeriod, IPayrollPeriodFormData,
    IPayslipFormData, IPayslip, IPayslipItem, PaginatedEmployeeResponse,
+<<<<<<< Updated upstream
    EmployeeFromAPI, PaginatedIOnboardingResponse,
    PaginatedResponse,
    IContract,
    IContractFormData
+=======
+   EmployeeFromAPI, PaginatedIOnboardingResponse,ILeaveBalance,
+   PaginatedResponse
+>>>>>>> Stashed changes
   } from "@/app/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -1722,6 +1727,75 @@ export const getAllowanceTypes = async (
   } catch (error) {
     console.error("Failed to get allowance types:", error);
     return null;
+  }
+};
+
+// Get all leave balances for an institution
+export const getAllLeaveBalances = async ({institutionId}: {institutionId: number}) => {
+  try {
+    const endpoint = `leave-mgt/${institutionId}/leave-balances/`;
+    const response = await apiRequest.get(endpoint);
+    const data = response.data as PaginatedResponse<ILeaveBalance>;
+    
+    // Return the results array instead of the entire response
+    return data.results;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Create a new leave balance
+export const createLeaveBalance = async ({
+  institutionId,
+  leaveBalanceData
+}: {
+  institutionId: number;
+  leaveBalanceData: Partial<ILeaveBalance>;
+}) => {
+  try {
+    const endpoint = `leave-mgt/${institutionId}/leave-balances/`;
+    const response = await apiRequest.post(endpoint, leaveBalanceData);
+    return response.data as ILeaveBalance;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get a specific leave balance by ID
+export const getLeaveBalanceById = async ({id}: {id: number}) => {
+  try {
+    const endpoint = `leave-mgt/leave-balances/${id}/`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as ILeaveBalance;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Update a leave balance by ID
+export const updateLeaveBalance = async ({
+  id,
+  leaveBalanceData
+}: {
+  id: number;
+  leaveBalanceData: Partial<ILeaveBalance>;
+}) => {
+  try {
+    const endpoint = `leave-mgt/leave-balances/${id}/`;
+    const response = await apiRequest.patch(endpoint, leaveBalanceData);
+    return response.data as ILeaveBalance;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Delete a leave balance by ID
+export const deleteLeaveBalance = async ({id}: {id: number}) => {
+  try {
+    const endpoint = `leave-mgt/leave-balances/${id}/`;
+    await apiRequest.delete(endpoint);
+  } catch (error) {
+    throw error;
   }
 };
 

@@ -171,6 +171,17 @@ export default function AdminPage() {
               <Separator className="my-6" />
               <div className="flex flex-col items-start justify-center gap-6">
                 
+                <div className="">
+                  <Link
+                    href="/branches"
+                    className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+                  >
+                    <GitBranch className="w-5 h-5 text-gray-500" />
+                    <span>Branches</span>
+                  </Link>
+                  {/* We'll keep the branch listing functionality but hide it since it's not in the image */}
+
+                </div>
 
                 <div className="">
                   <Link
