@@ -488,7 +488,7 @@ export interface EmployeeFormData {
   country: string;             // Added
   nin: string;    
   tin: string;
-  nssf: string;             // Added
+  nssf_no: string;             // Added
   bank: string;                // Added
   bank_account_number: string; // Added
   is_active: boolean;
@@ -505,7 +505,7 @@ export interface EmployeeFormData {
 
 export interface EmployeeFormState {
   tin: string 
-  nssf: string 
+  nssf_no: string 
   fullname: string;
   email: string;
   phone_number: string;

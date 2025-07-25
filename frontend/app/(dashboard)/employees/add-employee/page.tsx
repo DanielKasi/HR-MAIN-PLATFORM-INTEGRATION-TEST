@@ -108,7 +108,7 @@ export default function AddEmployeeForm() {
     bank: "",
     bank_account_number: "",
     tin: "",
-    nssf: "",
+    nssf_no: "",
     is_active: true,
     experience: 0,
     qualifications: "",
@@ -378,7 +378,7 @@ export default function AddEmployeeForm() {
         bank: formData.bank,
         bank_account_number: formData.bank_account_number,
         tin: formData.tin,
-        nssf: formData.nssf,
+        nssf_no: formData.nssf_no,
         is_active: formData.is_active,
         experience: formData.experience,
         qualifications: formData.qualifications,
@@ -944,11 +944,11 @@ export default function AddEmployeeForm() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="nssf">National Social Security Fund</Label>
+                <Label htmlFor="nssf_no">National Social Security Fund</Label>
                 <Input
-                  id="nssf"
-                  value={formData.nssf}
-                  onChange={(e) => handleInputChange("nssf", e.target.value)}
+                  id="nssf_no"
+                  value={formData.nssf_no}
+                  onChange={(e) => handleInputChange("nssf_no", e.target.value)}
                   placeholder="Enter NSSF"
                 />
               </div>

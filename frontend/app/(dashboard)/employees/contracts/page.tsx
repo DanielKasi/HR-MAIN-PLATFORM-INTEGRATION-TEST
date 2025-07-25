@@ -328,7 +328,12 @@ export default function ContractsPage() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell>{contract.employee?.position?.name}</TableCell>
+                      {
+                        typeof contract.employee?.position === 'object'
+                          ? contract.employee.position.name
+                          : null
+                      }
+
                       <TableCell>{getStatusBadge(contract.status)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
