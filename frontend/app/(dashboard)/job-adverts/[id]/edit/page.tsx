@@ -413,7 +413,7 @@ export default function EditJobAdvertPage() {
               {/* Extra Information - Full Width */}
               <div className="space-y-2">
                 <Label htmlFor="extra_information" className="text-sm font-medium">
-                  Extra Information (Optional)
+                  Job Description (Optional)
                 </Label>
                 <Textarea
                   id="extra_information"

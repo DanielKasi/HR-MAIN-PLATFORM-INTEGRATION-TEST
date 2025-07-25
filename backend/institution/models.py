@@ -1,5 +1,13 @@
 from django.db import models
-from datetime import time
+from datetime import time, datetime
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
+from django.core.exceptions import ValidationError
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
 
 # from django.contrib.gis.db import models as gis_models
 
@@ -29,9 +37,15 @@ class Institution(models.Model):
 
     # Location fields
     location = models.CharField(max_length=500, blank=True, null=True)
+    country_code = models.CharField(max_length=10, blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
     # location_geodjango = gis_models.PointField(geography=True, null=True, blank=True)
+
+    # Zoom Settings
+    zoom_account_id = models.CharField(max_length=100, blank=True, null=True)
+    zoom_client_id = models.CharField(max_length=100, blank=True, null=True)
+    zoom_client_secret = models.CharField(max_length=100, blank=True, null=True)
 
     approval_status = models.CharField(
         max_length=20,
@@ -70,14 +84,79 @@ class Institution(models.Model):
     def is_approved(self):
         return self.approval_status == "approved"
 
+    def _get_country_code_from_location(self):
+        """Determine country code from location or coordinates using geopy."""
+        geolocator = Nominatim(user_agent="hr_baifam_app")  # Unique user agent
+
+        try:
+            # Try geocoding with the location field (address)
+            if self.location:
+                location_data = geolocator.geocode(self.location, exactly_one=True, timeout=10)
+                if location_data and location_data.raw.get('address', {}).get('country_code'):
+                    return location_data.raw['address']['country_code'].upper()
+            
+            # Fallback to reverse geocoding with coordinates
+            if self.latitude is not None and self.longitude is not None:
+                location_data = geolocator.reverse((self.latitude, self.longitude), timeout=10)
+                if location_data and location_data.raw.get('address', {}).get('country_code'):
+                    return location_data.raw['address']['country_code'].upper()
+
+            logger.warning(f"Could not determine country code for institution: {self.institution_name}")
+            return None  # Return None if no country code is found
+        except (GeocoderTimedOut, GeocoderUnavailable) as e:
+            logger.error(f"Geocoding failed for institution {self.institution_name}: {str(e)}")
+            return None    
+
     def save(self, *args, **kwargs):
-        is_new = self.pk is None
+        # Set country_code if not provided
+        if not self.country_code:
+            self.country_code = self._get_country_code_from_location()
+
+        is_new = self._state.adding
         super().save(*args, **kwargs)
 
         if is_new:
             from payroll.utils import PayrollProcessor
-
             PayrollProcessor.setup_default_payroll_types_for_institution(self)
+            self._create_calendar_for_institution()
+
+    def _create_calendar_for_institution(self):  # Define as an instance method
+        from calendar2.models import Calendar
+
+        current_year = datetime.now().year
+        Calendar.create_with_holidays(institution=self, year=current_year)
+
+    def get_zoom_access_token(self):
+        import base64
+        import requests
+
+        if (
+            not self.zoom_account_id
+            or not self.zoom_client_id
+            or not self.zoom_client_secret
+        ):
+            raise Exception(f"Institution {self} has no Zoom credentials configured.")
+
+        credentials = f"{self.zoom_client_id}:{self.zoom_client_secret}"
+        encoded_credentials = base64.b64encode(credentials.encode()).decode()
+
+        headers = {
+            "Authorization": f"Basic {encoded_credentials}",
+        }
+
+        params = {
+            "grant_type": "account_credentials",
+            "account_id": self.zoom_account_id,
+        }
+
+        response = requests.post(
+            "https://zoom.us/oauth/token", headers=headers, params=params
+        )
+
+        if response.status_code == 200:
+            return response.json()["access_token"]
+        else:
+            raise Exception(f"Zoom token error: {response.text}")
 
 
 class InstitutionDocument(models.Model):
@@ -230,5 +309,3 @@ class Department(models.Model):
 
     def __str__(self):
         return self.name
-    
-    

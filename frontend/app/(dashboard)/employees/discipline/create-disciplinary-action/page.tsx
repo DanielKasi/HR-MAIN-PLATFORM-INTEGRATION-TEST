@@ -21,6 +21,7 @@ import { IUserInstitution } from "@/app/types";
 import { DisciplineTypeForm, DisciplinaryActionForm } from "@/app/types/types.utils";
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select";
 
+
 interface DisciplineType {
   id?: number;
   name: string;

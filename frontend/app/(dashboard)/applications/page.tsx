@@ -80,6 +80,8 @@ import {DropdownMenuItem} from "@/components/ui/dropdown-menu";
 import {toast} from "sonner";
 import {Checkbox} from "@/components/ui/checkbox";
 import {LocationAutocomplete} from "@/components/location-autocomplete";
+import ProtectedComponent from "@/components/ProtectedComponent"
+import { PERMISSION_CODES } from "@/app/types/types.utils"
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
@@ -1077,8 +1079,7 @@ export default function ApplicationsPage() {
                       value={formData.application_date}
                       onChange={(e) => handleInputChange("application_date", e.target.value)}
                       className="pl-10"
-                      min={new Date().toISOString().split("T")[0]} // Restrict to today
-                      max={new Date().toISOString().split("T")[0]} // Restrict to today
+                      max={new Date().toISOString().split("T")[0]}  // Restrict to today
                       required
                     />
                   </div>

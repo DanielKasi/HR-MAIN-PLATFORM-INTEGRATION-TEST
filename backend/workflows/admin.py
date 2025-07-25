@@ -1,5 +1,10 @@
 from django.contrib import admin
-from .models import WorkflowCategory, WorkflowAction, InstitutionApprovalStep, ApprovalTask
+from .models import (
+    WorkflowCategory,
+    WorkflowAction,
+    InstitutionApprovalStep,
+    ApprovalTask,
+)
 
 
 @admin.register(WorkflowCategory)

@@ -13,6 +13,10 @@ from .views import (
     EmployeeDeleteAPIView,
     WorkTypeDetailAPIView,
     WorkTypeListCreateAPIView,
+    EmployeeTemplateDownloadAPIView,
+    ContractListCreateView,
+    ContractDetailView,
+    ContractDownloadView
 )
 
 urlpatterns = [
@@ -28,6 +32,7 @@ urlpatterns = [
         EmployeeUpdateAPIView.as_view(),
         name="update-employee",
     ),
+    path("template/", EmployeeTemplateDownloadAPIView.as_view(), name='employee-template'),
     path(
         "<int:employee_id>/delete/",
         EmployeeDeleteAPIView.as_view(),
@@ -74,4 +79,7 @@ urlpatterns = [
     path(
         "work-types/<int:pk>/", WorkTypeDetailAPIView.as_view(), name="work-type-detail"
     ),
+    path('institutions/<int:institution_id>/contracts/', ContractListCreateView.as_view(), name='contract-list-create'),
+    path('contracts/<int:id>/', ContractDetailView.as_view(), name='contract-detail'),
+    path('contracts/<int:id>/download/', ContractDownloadView.as_view(), name='contract-download'),
 ]

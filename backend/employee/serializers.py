@@ -1,22 +1,22 @@
-from .models import Employee, EmployeeAttendance, EmployeeType, WorkType
+from .models import Employee, EmployeeAttendance, EmployeeType, WorkType, Contract
 from rest_framework import serializers
 from users.serializers import CustomUserSerializer
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
+
 class EmployeeTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeType
-        fields = '__all__'
-
+        fields = "__all__"
 
 
 class WorkTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkType
-        fields = '__all__'
+        fields = "__all__"
 
-    
+
 class EmployeeSerializer(serializers.ModelSerializer):
     user = CustomUserSerializer()
     department_details = serializers.SerializerMethodField()
@@ -25,7 +25,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Employee
-        fields = '__all__'
+        fields = "__all__"
 
     def validate_date_of_birth(self, value):
         """
@@ -35,7 +35,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
             today = date.today()
             age = relativedelta(today, value).years
             if age < 18:
-                raise serializers.ValidationError("Employee must be at least 18 years old.")
+                raise serializers.ValidationError(
+                    "Employee must be at least 18 years old."
+                )
         return value
 
     def create(self, validated_data):
@@ -54,9 +56,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
         if user_data:
             user_serializer = CustomUserSerializer(
-                instance.user,
-                data=user_data,
-                partial=True
+                instance.user, data=user_data, partial=True
             )
             user_serializer.is_valid(raise_exception=True)
             user_serializer.save()
@@ -72,13 +72,15 @@ class EmployeeSerializer(serializers.ModelSerializer):
         """Get roles for the employee's user"""
         if obj.user:
             try:
-                from .models import UserRole  # Import UserRole model here to avoid circular import issues
-                user_roles = UserRole.objects.filter(user=obj.user).select_related('role')
+                from .models import (
+                    UserRole,
+                )  # Import UserRole model here to avoid circular import issues
+
+                user_roles = UserRole.objects.filter(user=obj.user).select_related(
+                    "role"
+                )
                 return [
-                    {
-                        "id": user_role.role.id,
-                        "name": user_role.role.name
-                    }
+                    {"id": user_role.role.id, "name": user_role.role.name}
                     for user_role in user_roles
                 ]
             except:
@@ -90,7 +92,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             return {
                 "id": obj.department.id,
                 "name": obj.department.name,
-                "institution_id": obj.department.institution.id
+                "institution_id": obj.department.institution.id,
             }
         return None
 
@@ -99,7 +101,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
             return {
                 "id": obj.position.id,
                 "name": obj.position.name,
-                "department_id": obj.position.department.id if obj.position.department else None
+                "department_id": (
+                    obj.position.department.id if obj.position.department else None
+                ),
             }
         return None
 
@@ -108,43 +112,80 @@ class EmployeeSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
 
         # Replace department ID with department object containing name
-        if data['department_details']:
-            data['department'] = data['department_details']
+        if data["department_details"]:
+            data["department"] = data["department_details"]
 
         # Replace position ID with position object containing name
-        if data['position_details']:
-            data['position'] = data['position_details']
+        if data["position_details"]:
+            data["position"] = data["position_details"]
 
         # Remove the separate detail fields from final output
-        data.pop('department_details', None)
-        data.pop('position_details', None)
+        data.pop("department_details", None)
+        data.pop("position_details", None)
 
         return data
-    
+
+
 class EmployeeAttendanceSerializer(serializers.ModelSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
 
     class Meta:
         model = EmployeeAttendance
-        fields = '__all__'
+        fields = "__all__"
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-        rep['employee'] = EmployeeSerializer(instance.employee).data
+        rep["employee"] = EmployeeSerializer(instance.employee).data
         return rep
 
 
 class EmployeeActivationSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False, allow_blank=True)
-    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    phone_number = serializers.CharField(
+        max_length=20, required=False, allow_blank=True
+    )
     full_name = serializers.CharField(max_length=100, required=True)
     date_of_birth = serializers.DateField(required=False, allow_null=True)
     address = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     gender = serializers.ChoiceField(
         choices=[("male", "Male"), ("female", "Female"), ("other", "Other")],
-        required=False, allow_blank=True
+        required=False,
+        allow_blank=True,
     )
     # Optional fields for branch and department assignment
-    branch_location = serializers.CharField(max_length=200, required=False, allow_blank=True)
+    branch_location = serializers.CharField(
+        max_length=200, required=False, allow_blank=True
+    )
     department = serializers.CharField(max_length=100, required=False, allow_blank=True)
     date_of_joining = serializers.DateField(required=False, allow_null=True)
+
+
+class ContractSerializer(serializers.ModelSerializer):
+    employee = EmployeeSerializer(read_only=True)
+    employee_id = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = Contract
+        fields = [
+            'id', 'contract_id', 'employee', 'employee_id', 'contract_file',
+            'status', 'start_date', 'end_date', 'created_at', 'updated_at', 'notes'
+        ]
+        read_only_fields = ['id', 'contract_id', 'contract_file', 'created_at', 'updated_at']
+
+    def validate_employee_id(self, value):
+        try:
+            employee = Employee.objects.get(employee_id=value)
+        except Employee.DoesNotExist:
+            raise serializers.ValidationError("Employee with this ID does not exist.")
+        return employee
+
+    def create(self, validated_data):
+        employee = validated_data.pop('employee_id')
+        contract = Contract.objects.create(employee=employee, **validated_data)
+        return contract
+
+    def update(self, instance, validated_data):
+        employee = validated_data.pop('employee_id', None)
+        if employee:
+            instance.employee = employee
+        return super().update(instance, validated_data)

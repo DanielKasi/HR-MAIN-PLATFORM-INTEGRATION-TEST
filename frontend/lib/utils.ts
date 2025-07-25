@@ -11,13 +11,14 @@ import { IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition,
    ILeavePolicyFormData, ILeavePolicyResponse, IAllowanceType, IAllowanceTypeFormData, IDeductionType, IDeductionTypeFormData,
    IEmployeeAllowance,IEmployeeAllowanceFormData,IEmployeeDeduction, IEmployeeDeductionFormData, IPayrollPeriod, IPayrollPeriodFormData,
    IPayslipFormData, IPayslip, IPayslipItem, PaginatedEmployeeResponse,
-   EmployeeFromAPI, PaginatedIOnboardingResponse,
+   EmployeeFromAPI, PaginatedIOnboardingResponse,ILeaveBalance,
    PaginatedResponse
   } from "@/app/types/types.utils";
 
-import apiRequest from "./apiRequest";
+import apiRequest, { apiGet } from "./apiRequest";
 import { IEmployee } from "@/app/types/types.utils";
 import { IPaginatedResponse } from "@/app/types";
+import { AxiosError, AxiosRequestConfig } from "axios"; 
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -170,7 +171,7 @@ export const getDepartments = async ({institutionId}: {institutionId: number}) =
   try {
     const response = await apiRequest.get(`institution/${institutionId}/department/`)
     const data = response.data as PaginatedResponse<IDepartment>
-
+    console.log("data:", data)
     // Return the results array instead of the entire response
     return data.results
   } catch (error) {
@@ -269,14 +270,25 @@ export const updateJobPosition = async ({
       formData.append("offer_letter_template", jobPositionData.offer_letter_template)
     }
 
+    // Add affected_employees as individual entries
+    if (jobPositionData.affected_employees && jobPositionData.affected_employees.length > 0) {
+      jobPositionData.affected_employees.forEach((employeeId) => {
+        formData.append("apply_salary_to_employees", employeeId.toString())
+      })
+    }
+
     const response = await apiRequest.patch(`recruitment/job-position/${jobPositionId}/`, formData)
     return response.data as IJobPosition
   } catch (error) {
     console.error("Error updating job position:", error)
+    if (error.response?.data?.apply_salary_to_employees) {
+      toast.error(error.response.data.apply_salary_to_employees.join(", "))
+    } else {
+      toast.error("Failed to update job position. Please try again.")
+    }
     return null
   }
 }
-
 
 export const createJobApplication = async ({
   institutionId,
@@ -629,8 +641,12 @@ export const createInterviewStage = async ({
 }): Promise<IInterviewStage | null> => {
   try {
     const formData = new FormData();
-    Object.entries(stageData).forEach(([key, value]) => {
-      formData.append(key, value.toString());
+    formData.append('name', stageData.name);
+    formData.append('level', stageData.level.toString());
+    formData.append('job_position_advert', stageData.job_position_advert.toString());
+  
+    stageData.interviewers.forEach((interviewerId) => {
+      formData.append('interviewers', interviewerId.toString());
     });
 
     const response = await apiRequest.post(
@@ -644,6 +660,29 @@ export const createInterviewStage = async ({
   }
 };
 
+export const createInterviewStageJSON = async ({
+  institutionId,
+  stageData,
+}: {
+  institutionId: number;
+  stageData: IInterviewStageFormData;
+}): Promise<IInterviewStage | null> => {
+  try {
+    const response = await apiRequest.post(
+      `recruitment/institution/${institutionId}/interview-stage/`,
+      stageData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    return response.data as IInterviewStage;
+  } catch (error) {
+    console.error("Failed to create interview stage:", error);
+    return null;
+  }
+};
 
 export const getAllEmployees = async ({institutionId}:{institutionId:number}) => {
   try {
@@ -721,7 +760,10 @@ export const updateEmployee = async ({
     });
 
     const response = await apiRequest.patch(`/employee/${employeeId}/update/`, formData);
+    console.log("..... *20")
+    console.log(response)
     return response.data;
+    
   } catch (error: any) {
     throw new Error("Failed to update employee. Please try again.");
   }
@@ -1678,6 +1720,75 @@ export const getAllowanceTypes = async (
   } catch (error) {
     console.error("Failed to get allowance types:", error);
     return null;
+  }
+};
+
+// Get all leave balances for an institution
+export const getAllLeaveBalances = async ({institutionId}: {institutionId: number}) => {
+  try {
+    const endpoint = `leave-mgt/${institutionId}/leave-balances/`;
+    const response = await apiRequest.get(endpoint);
+    const data = response.data as PaginatedResponse<ILeaveBalance>;
+    
+    // Return the results array instead of the entire response
+    return data.results;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Create a new leave balance
+export const createLeaveBalance = async ({
+  institutionId,
+  leaveBalanceData
+}: {
+  institutionId: number;
+  leaveBalanceData: Partial<ILeaveBalance>;
+}) => {
+  try {
+    const endpoint = `leave-mgt/${institutionId}/leave-balances/`;
+    const response = await apiRequest.post(endpoint, leaveBalanceData);
+    return response.data as ILeaveBalance;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get a specific leave balance by ID
+export const getLeaveBalanceById = async ({id}: {id: number}) => {
+  try {
+    const endpoint = `leave-mgt/leave-balances/${id}/`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as ILeaveBalance;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Update a leave balance by ID
+export const updateLeaveBalance = async ({
+  id,
+  leaveBalanceData
+}: {
+  id: number;
+  leaveBalanceData: Partial<ILeaveBalance>;
+}) => {
+  try {
+    const endpoint = `leave-mgt/leave-balances/${id}/`;
+    const response = await apiRequest.patch(endpoint, leaveBalanceData);
+    return response.data as ILeaveBalance;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Delete a leave balance by ID
+export const deleteLeaveBalance = async ({id}: {id: number}) => {
+  try {
+    const endpoint = `leave-mgt/leave-balances/${id}/`;
+    await apiRequest.delete(endpoint);
+  } catch (error) {
+    throw error;
   }
 };
 
@@ -2774,6 +2885,112 @@ export const getPayslipItems = async (
     return data.results
   } catch (error) {
     console.error("Failed to get payslip items:", error)
+    return null;
+  }
+};
+
+export const getContracts = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<IContract[] | null> => {
+  try {
+    const response = await apiRequest.get(`employee/institutions/${institutionId}/contracts/`);
+    const data = response.data as PaginatedResponse<IContract>;
+    return data.results;
+  } catch (error) {
+    console.error("Failed to fetch contracts:", error);
+    return null;
+  }
+};
+
+export const getContractById = async ({
+  contractId,
+}: {
+  contractId: number;
+}): Promise<IContract | null> => {
+  try {
+    const response = await apiRequest.get(`employee/contracts/${contractId}/`);
+    return response.data as IContract;
+  } catch (error) {
+    console.error("Failed to fetch contract:", error);
+    return null;
+  }
+};
+
+export const updateContract = async ({
+  contractId,
+  contractData,
+}: {
+  contractId: number;
+  contractData: Partial<IContractFormData>;
+}): Promise<IContract | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(contractData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (key === 'contract_file' && value instanceof File) {
+          formData.append(key, value);
+        } else {
+          formData.append(key, value.toString());
+        }
+      }
+    });
+
+    const response = await apiRequest.patch(`cemployee/ontracts/${contractId}/`, formData);
+    return response.data as IContract;
+  } catch (error) {
+    console.error("Failed to update contract:", error);
+    return null;
+  }
+};
+
+export const deleteContract = async ({
+  contractId,
+}: {
+  contractId: number;
+}): Promise<boolean> => {
+  try {
+    await apiRequest.delete(`employee/contracts/${contractId}/`);
+    return true;
+  } catch (error) {
+    console.error("Failed to delete contract:", error);
+    return false;
+  }
+};
+
+export const downloadContract = async ({
+  contractId,
+}: {
+  contractId: number;
+}): Promise<Blob | null> => {
+  try {
+    console.log('Downloading contract with ID:', contractId);
+    const response = await apiGet(`employee/contracts/${contractId}/download/`, null, {}, {
+      responseType: 'blob',
+    });
+
+    console.log('Response headers:', response.headers);
+    console.log('Response data type:', response.data instanceof Blob ? 'Blob' : typeof response.data);
+
+    if (!(response.data instanceof Blob)) {
+      console.error('Invalid response type, expected Blob but received:', typeof response.data);
+      return null;
+    }
+
+    return response.data as Blob;
+  } catch (error: unknown) {
+    console.error('Failed to download contract:', error);
+
+    if (error instanceof AxiosError && error.response && error.response.data instanceof Blob) {
+      try {
+        const text = await error.response.data.text();
+        console.error('Error response content:', text);
+      } catch (textError) {
+        console.error('Failed to read error response:', textError);
+      }
+    }
+
     return null;
   }
 };

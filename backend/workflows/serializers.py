@@ -10,6 +10,8 @@ from workflows.models import (
 )
 from users.models import Profile, Role
 from django.contrib.contenttypes.models import ContentType
+from assets.serializers import AssetRequestSerializer
+
 
 class WorkflowCategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -30,6 +32,7 @@ class WorkFlowRoleSerializer(serializers.ModelSerializer):
         model = Role
         fields = ["name"]
 
+
 class InstitutionApproverUserSerializer(serializers.ModelSerializer):
     # This serializes the through‐model instance, exposing its own PK + nested profile
     approver_user = ProfileSerializer()
@@ -40,12 +43,12 @@ class InstitutionApproverUserSerializer(serializers.ModelSerializer):
 
 
 class InstitutionApprovalStepSerializer(serializers.ModelSerializer):
-   # returns a list of Role.name
+    # returns a list of Role.name
     roles_details = serializers.SerializerMethodField()
     # returns a list of Role.id
     roles = serializers.SerializerMethodField()
 
-    approvers_details  = serializers.SerializerMethodField()
+    approvers_details = serializers.SerializerMethodField()
     # raw list of approver‐user through‐model IDs
     approvers = serializers.SerializerMethodField()
 
@@ -69,24 +72,22 @@ class InstitutionApprovalStepSerializer(serializers.ModelSerializer):
     def get_roles(self, obj):
         # list of raw role-IDs
         return list(
-            InstitutionApprovalStepApprovorRole.objects
-                .filter(step=obj)
-                .values_list("approver_role_id", flat=True)
+            InstitutionApprovalStepApprovorRole.objects.filter(step=obj).values_list(
+                "approver_role_id", flat=True
+            )
         )
 
     def get_roles_details(self, obj):
         # fetch the actual Role objects and serialize them
-        qs = Role.objects.filter(
-            id__in=self.get_roles(obj)
-        )
+        qs = Role.objects.filter(id__in=self.get_roles(obj))
         return WorkFlowRoleSerializer(qs, many=True).data
 
     def get_approvers(self, obj):
         # return the PKs of the through‐model instances
         return list(
-            InstitutionApprovalStepApprovorUser.objects
-                .filter(step=obj)
-                .values_list("id", flat=True)
+            InstitutionApprovalStepApprovorUser.objects.filter(step=obj).values_list(
+                "id", flat=True
+            )
         )
 
     def get_approvers_details(self, obj):
@@ -95,7 +96,7 @@ class InstitutionApprovalStepSerializer(serializers.ModelSerializer):
         # serialize each with its own ID + nested Profile
         return InstitutionApproverUserSerializer(qs, many=True).data
 
-    def create(self, validated_data:dict):
+    def create(self, validated_data: dict):
         request = self.context.get("request")
         approver_roles = request.data.get("roles", [])
         validated_data.pop("approvers", None)
@@ -104,13 +105,20 @@ class InstitutionApprovalStepSerializer(serializers.ModelSerializer):
 
         for profile_id in approver_users:
             user_profile = Profile.objects.get(id=profile_id)
-            if user_profile and user_profile.institution.id == created_approval_step.Institution.id:
-                InstitutionApprovalStepApprovorUser.objects.create(step=created_approval_step, approver_user=user_profile)
+            if (
+                user_profile
+                and user_profile.institution.id == created_approval_step.Institution.id
+            ):
+                InstitutionApprovalStepApprovorUser.objects.create(
+                    step=created_approval_step, approver_user=user_profile
+                )
 
         for r in approver_roles:
             user_role = Role.objects.get(id=r)
-            if user_role :
-                InstitutionApprovalStepApprovorRole.objects.create(step=created_approval_step, approver_role=user_role)
+            if user_role:
+                InstitutionApprovalStepApprovorRole.objects.create(
+                    step=created_approval_step, approver_role=user_role
+                )
         return created_approval_step
 
 
@@ -120,16 +128,18 @@ class TaskStatusSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ApprovalTask
-        fields = ["id","step", "status", "comment", "approved_by"]
+        fields = ["id", "step", "status", "comment", "approved_by"]
 
 
 class ApprovalTaskStatusUpdateSerializer(serializers.ModelSerializer):
-    status = serializers.ChoiceField(choices= [
-        ("not_started", "Not Started"),
-        ("pending", "Pending"),
-        ("completed", "Completed"),
-        ("rejected", "Rejected"),
-    ])
+    status = serializers.ChoiceField(
+        choices=[
+            ("not_started", "Not Started"),
+            ("pending", "Pending"),
+            ("completed", "Completed"),
+            ("rejected", "Rejected"),
+        ]
+    )
 
     class Meta:
         model = ApprovalTask
@@ -142,7 +152,67 @@ class ApprovalTaskSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ApprovalTask
-        fields = ["id", "step", "status", "updated_at", "content_object", "object_id", "comment", "approved_by"]
+        fields = [
+            "id",
+            "step",
+            "status",
+            "updated_at",
+            "content_object",
+            "object_id",
+            "comment",
+            "approved_by",
+        ]
 
     def get_content_object(self, obj):
         return str(obj.content_object)
+
+
+class ReorderStepsSerializer(serializers.Serializer):
+    steps = serializers.ListField(
+        child=serializers.DictField(
+            child=serializers.IntegerField(),
+            validators=[
+                serializers.DictField(
+                    child=serializers.IntegerField(),
+                    required=True,
+                )
+            ],
+        ),
+        help_text="List of step objects, each with 'id' and 'level'.",
+    )
+
+    def validate_steps(self, value):
+        for item in value:
+            if set(item.keys()) != {"id", "level"}:
+                raise serializers.ValidationError(
+                    "Each entry must contain exactly 'id' and 'level'."
+                )
+        return value
+
+
+class AssetRequestWorkflowSerializer(AssetRequestSerializer):
+    status = serializers.SerializerMethodField()
+    tasks = serializers.SerializerMethodField()
+
+    class Meta(AssetRequestSerializer.Meta):
+        fields = AssetRequestSerializer.Meta.fields + ["status", "tasks"]
+
+    def get_status(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        if not tasks.exists():
+            return "not_started"
+        if all(t.status == "completed" for t in tasks):
+            return "completed"
+        if any(t.status == "rejected" for t in tasks):
+            return "rejected"
+        return "pending"
+
+    def get_tasks(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        return TaskStatusSerializer(tasks, many=True).data

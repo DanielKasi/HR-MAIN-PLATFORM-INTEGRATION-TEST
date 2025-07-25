@@ -52,6 +52,25 @@ class JobPositionAdvert(models.Model):
     def __str__(self):
         return f"{self.job_position.name} - {self.status} ({self.published_date})"
 
+    def _clean(self):
+        if self.status == "active":
+            existing_active = JobPositionAdvert.objects.filter(
+                job_position=self.job_position,
+                status="active",
+            )
+
+            if self.pk:
+                existing_active = existing_active.exclude(pk=self.pk)
+
+            if existing_active.exists():
+                raise ValidationError(
+                    f"There is already an active advert for '{self.job_position.name}'."
+                )
+
+    def save(self, *args, **kwargs):
+        self._clean()
+        super().save(*args, **kwargs)
+
 
 class JobAdvertApplication(models.Model):
     status_choices = [
@@ -148,10 +167,8 @@ class JobAdvertApplication(models.Model):
                 fail_silently=False,
             )
 
-
         except Exception as e:
             print(f"Error sending email: {e}")
-            
 
     def send_shortlist_email(self):
         """Send email notification when applicant is shortlisted"""
@@ -182,7 +199,6 @@ class JobAdvertApplication(models.Model):
                 fail_silently=False,
             )
 
-
         except Exception as e:
             print(f"Error sending shortlist email to {self.applicant_email}: {str(e)}")
 
@@ -193,9 +209,8 @@ class InterviewStage(models.Model):
     )
     name = models.CharField(max_length=255)
     level = models.PositiveIntegerField(default=1)
-    interviewer = models.ForeignKey(
+    interviewers = models.ManyToManyField(
         "employee.Employee",
-        on_delete=models.PROTECT,
         related_name="interview_stages",
     )
 
@@ -262,15 +277,18 @@ class JobInterview(models.Model):
         # Check if this is a new record or status change to scheduled
         is_new = self.pk is None
         send_email = False
+        create_event = False
 
         if is_new and self.status == "scheduled":
             # New interview being created with scheduled status
             send_email = True
+            create_event = True
         elif not is_new:
             # Existing interview - check if status changed to scheduled
             old_instance = JobInterview.objects.get(pk=self.pk)
             if old_instance.status != "scheduled" and self.status == "scheduled":
                 send_email = True
+                create_event = True
 
         # Call the parent save method first
         super().save(*args, **kwargs)
@@ -278,6 +296,9 @@ class JobInterview(models.Model):
         # Send email after saving
         if send_email:
             self.send_interview_scheduled_email()
+
+        if create_event:
+            self._create_interview_event()
 
     def send_interview_scheduled_email(self):
         """Send email notification when interview is scheduled"""
@@ -318,7 +339,6 @@ class JobInterview(models.Model):
                 fail_silently=False,
             )
 
-
         except Exception as e:
             print(
                 f"Error sending interview email to {self.job_position_application.applicant_email}: {str(e)}"
@@ -351,7 +371,6 @@ class JobInterview(models.Model):
                 html_message=html_message,
                 fail_silently=False,
             )
-
 
         except Exception as e:
             print(
@@ -425,3 +444,47 @@ class JobInterview(models.Model):
             print(
                 f"Error sending interview reschedule email to {self.job_position_application.applicant_email}: {str(e)}"
             )
+
+    def _create_interview_event(self):
+        from calendar2.models import Event
+        from datetime import datetime
+
+        application = self.job_position_application
+        applicant_name = application.applicant_name
+        job_advert = application.job_position_advert
+        institution = job_advert.job_position.department.institution
+
+        event_date = self.interview_date.date()
+        event_title = f"Interview: {job_advert.job_position.name} - {applicant_name}"
+        event_description = (
+            f"Stage: {self.interview_stage.name}\n"
+            f"Type: {self.interview_type}\n"
+            f"Location: {self.location}"
+        )
+
+        event_mode = "online" if self.interview_type == "online" else "physical"
+
+        event = Event.objects.create(
+            institution=institution,
+            title=event_title,
+            description=event_description,
+            date=event_date,
+            event_mode=event_mode,
+            target_audience="specific_employees",
+            created_by=(
+                self.created_by.profile
+                if self.created_by and hasattr(self.created_by, "profile")
+                else None
+            ),
+        )
+
+        interviewers = self.interview_stage.interviewers.select_related("user").all()
+
+        profile_ids = []
+        for employee in interviewers:
+            if employee.user and hasattr(employee.user, "profile"):
+                profile_ids.append(employee.user.profile.id)
+
+        event.specific_employees.set(Profile.objects.filter(id__in=profile_ids))
+
+        event.save()

@@ -22,6 +22,7 @@ import { attachEmployeeBranch } from "@/lib/utils.branch";
 import { EmployeeFormData, EmployeeFormState, IDepartment, IJobPosition, IWorkType, IEmployeeType, IWorkTypeFormData, IEmployeeTypeFormData } from "@/app/types/types.utils";
 import { IUserInstitution } from "@/app/types";
 
+
 const maritalStatusOptions = [
   { value: "single", label: "Single" },
   { value: "married", label: "Married" },
@@ -103,8 +104,11 @@ export default function AddEmployeeForm() {
     address: "",
     country: "",
     nin: "",
+
     bank: "",
     bank_account_number: "",
+    tin: "",
+    nssf_no: "",
     is_active: true,
     experience: 0,
     qualifications: "",
@@ -373,6 +377,8 @@ export default function AddEmployeeForm() {
         nin: formData.nin,
         bank: formData.bank,
         bank_account_number: formData.bank_account_number,
+        tin: formData.tin,
+        nssf_no: formData.nssf_no,
         is_active: formData.is_active,
         experience: formData.experience,
         qualifications: formData.qualifications,
@@ -933,6 +939,26 @@ export default function AddEmployeeForm() {
                   value={formData.bank_account_number}
                   onChange={(e) => handleInputChange("bank_account_number", e.target.value)}
                   placeholder="Enter bank account number"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="nssf_no">National Social Security Fund</Label>
+                <Input
+                  id="nssf_no"
+                  value={formData.nssf_no}
+                  onChange={(e) => handleInputChange("nssf_no", e.target.value)}
+                  placeholder="Enter NSSF"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tin">Tax Identification Number</Label>
+                <Input
+                  id="tin"
+                  value={formData.tin}
+                  onChange={(e) => handleInputChange("tin", e.target.value)}
+                  placeholder="Enter TIN"
                 />
               </div>
             </div>

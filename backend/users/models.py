@@ -103,9 +103,9 @@ class OneTimePassword(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=['otp_hash']),
-            models.Index(fields=['purpose']),
-            models.Index(fields=['expiry']),
+            models.Index(fields=["otp_hash"]),
+            models.Index(fields=["purpose"]),
+            models.Index(fields=["expiry"]),
         ]
 
     def __str__(self):
@@ -180,6 +180,7 @@ class Role(models.Model):
     def __str__(self):
         return self.name
 
+
 class RolePermission(models.Model):
     role = models.ForeignKey(Role, related_name="permissions", on_delete=models.CASCADE)
     permission = models.ForeignKey(
@@ -203,6 +204,7 @@ class UserRole(models.Model):
     def __str__(self):
         return f"{self.user.email} - {self.role.name}"
 
+
 class OTPModel(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     value = models.CharField(max_length=64, unique=True)
@@ -213,16 +215,18 @@ class OTPModel(models.Model):
 
     def is_expired(self):
         return timezone.now() > self.expires_at
-    
+
+
 class SystemType(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     def __str__(self):
         return self.name
-    
+
+
 class System(models.Model):
     code = models.CharField(max_length=100, unique=True)
     system_type = models.ForeignKey(SystemType, on_delete=models.CASCADE)
@@ -237,7 +241,6 @@ class System(models.Model):
         if not self.api_key:
             self.generate_api_credentials()
         super().save(*args, **kwargs)
-
 
     def __str__(self):
         return self.code

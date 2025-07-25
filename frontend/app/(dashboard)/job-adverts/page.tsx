@@ -29,6 +29,8 @@ import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/se
 import { getJobPositionAdverts, updateJobPositionAdvert } from "@/lib/utils"
 import type { JobPositionAdvert, JobAdvertStatus, PaginatedResponse } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import ProtectedComponent from "@/components/ProtectedComponent"
+import { PERMISSION_CODES } from "@/app/types/types.utils"
 
 
 type ApiResponse = PaginatedResponse<JobPositionAdvert> | null
@@ -354,31 +356,37 @@ export default function JobAdvertsPage() {
                       </Badge>
                     </div>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleViewJobAdvert(advert.id)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleEditJobAdvert(advert.id)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleCloseJobAdvert(advert.id)} 
-                        className="text-destructive"
-                        disabled={isClosing}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Close
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_JOB_ADVERTS}>
+                          <DropdownMenuItem onClick={() => handleViewJobAdvert(advert.id)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_JOB_ADVERTS}>
+                          <DropdownMenuItem onClick={() => handleEditJobAdvert(advert.id)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_JOB_ADVERTS}>
+                          <DropdownMenuItem
+                            onClick={() => handleCloseJobAdvert(advert.id)}
+                            className="text-destructive"
+                            disabled={isClosing}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Close
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3" onClick={() => handleViewJobAdvert(advert.id)}>

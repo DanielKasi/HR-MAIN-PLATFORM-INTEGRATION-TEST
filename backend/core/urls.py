@@ -14,7 +14,7 @@ urlpatterns = [
     ),
     path("api/user/", include("users.urls")),
     path("api/institution/", include("institution.urls")),
-    # path("api/workflow/", include("workflows.urls")),
+    path("api/workflow/", include("workflows.urls")),
     path("api/recruitment/", include("recruitment.urls")),
     path("api/on-boarding/", include("onboarding.urls")),
     path("api/employee/", include("employee.urls")),
@@ -22,6 +22,8 @@ urlpatterns = [
     path("api/leave-mgt/", include("leave_mgt.urls")),
     path("api/payroll/", include("payroll.urls")),
     path("api/projects/", include("projects.urls")),
+    path("api/calendar/", include("calendar2.urls")),
+    path("api/assets/", include("assets.urls")),
 ]
 
 if settings.DEBUG:

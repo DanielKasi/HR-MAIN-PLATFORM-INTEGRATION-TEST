@@ -67,6 +67,7 @@ interface Employee {
   marital_status: string;
   children_count: number;
   employee_profile_picture: string;
+  salary: number;
 }
 
 interface EmployeeUpdateFormState {
@@ -88,6 +89,7 @@ interface EmployeeUpdateFormState {
   marital_status: string;
   children_count: number;
   employee_profile_picture: File | null;
+  salary: number;
 }
 
 const maritalStatusOptions = [
@@ -134,6 +136,7 @@ export default function UpdateEmployeePage() {
     marital_status: "single",
     children_count: 0,
     employee_profile_picture: null,
+    salary: 0,
   });
 
   const [previewUrl, setPreviewUrl] = useState<string>("");
@@ -188,6 +191,7 @@ export default function UpdateEmployeePage() {
             marital_status: employeeData.marital_status || "single",
             children_count: employeeData.children_count || 0,
             employee_profile_picture: null,
+            salary: employeeData.salary || 0,
           });
 
           if (employeeData.employee_profile_picture) {
@@ -343,6 +347,7 @@ export default function UpdateEmployeePage() {
         marital_status: formData.marital_status,
         children_count: formData.children_count,
         employee_profile_picture: formData.employee_profile_picture,
+        salary: formData.salary,
       };
 
       const result = await updateEmployee({
@@ -697,6 +702,17 @@ export default function UpdateEmployeePage() {
                       value={formData.emergency_contact_relationship}
                       onChange={(e) => handleInputChange("emergency_contact_relationship", e.target.value)}
                       placeholder="Relationship to employee"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="emergencyContactRelationship">Salary</Label>
+                    <Input
+                      id="salary"
+                      type="number"
+                      min="0"
+                      value={formData.salary}
+                      onChange={(e) => handleInputChange("salary", parseInt(e.target.value) || 0)}
+                      placeholder="Salary"
                     />
                   </div>
                 </div>

@@ -128,6 +128,7 @@ export const apiRequest = async (
   method: string,
   data = null,
   customHeaders: object = {},
+  config: object = {}, // Add config parameter to pass additional Axios options
 ): Promise<any> => {
   const normalizedEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
   const response = await axiosJsonInstance({
@@ -136,6 +137,7 @@ export const apiRequest = async (
     headers: customHeaders,
     data: ["POST", "PUT", "PATCH"].includes(method.toUpperCase()) ? data : undefined,
     params: method.toUpperCase() === "GET" && data ? data : undefined,
+    ...config, // Spread additional config (e.g., responseType)
   });
 
   if (response.status >= 200 && response.status <= 300) {
@@ -146,14 +148,12 @@ export const apiRequest = async (
       status: response.status,
       custom_code: response.data?.custom_code || null,
     };
-
-    // console.log("\nThrowing apiRequest error", err)
     throw err;
   }
 };
 
-export const apiGet = (endpoint: string, params = null, customHeaders = {}) =>
-  apiRequest(endpoint, "GET", params, customHeaders);
+export const apiGet = (endpoint: string, params = null, customHeaders = {}, config = {}) =>
+  apiRequest(endpoint, "GET", params, customHeaders, config);
 
 export const apiPost = (endpoint: string, data: any, customHeaders = {}) =>
   apiRequest(endpoint, "POST", data, customHeaders);

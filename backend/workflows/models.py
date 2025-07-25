@@ -4,6 +4,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 
 from users.models import CustomUser, Profile
 
+
 class WorkflowCategory(models.Model):
     code = models.CharField(max_length=100, unique=True)
     label = models.CharField(max_length=255)
@@ -34,8 +35,11 @@ class InstitutionApprovalStep(models.Model):
     def __str__(self):
         return f"{self.Institution} - {self.action} (Level {self.level})"
 
+
 class InstitutionApprovalStepApprovorRole(models.Model):
-    step = models.ForeignKey(InstitutionApprovalStep, on_delete=models.CASCADE, related_name="roles")
+    step = models.ForeignKey(
+        InstitutionApprovalStep, on_delete=models.CASCADE, related_name="roles"
+    )
     approver_role = models.ForeignKey("users.Role", on_delete=models.CASCADE)
 
     class Meta:
@@ -46,7 +50,9 @@ class InstitutionApprovalStepApprovorRole(models.Model):
 
 
 class InstitutionApprovalStepApprovorUser(models.Model):
-    step = models.ForeignKey(InstitutionApprovalStep, on_delete=models.CASCADE, related_name="approver")
+    step = models.ForeignKey(
+        InstitutionApprovalStep, on_delete=models.CASCADE, related_name="approver"
+    )
     approver_user = models.ForeignKey("users.Profile", on_delete=models.CASCADE)
 
     class Meta:
@@ -91,13 +97,14 @@ class ApprovalTask(models.Model):
     def __str__(self):
         return f"{self.step} - {self.content_object} [{self.status}]"
 
-    def mark_completed(self, user:CustomUser):
+    def mark_completed(self, user: CustomUser):
         from django.db import transaction as db_transaction
+
         with db_transaction.atomic():
             if self.status != "pending":
                 raise ValueError("Task must be in pending state to be completed")
             try:
-                profile:Profile = user.profile
+                profile: Profile = user.profile
             except CustomUser.DoesNotExist:
                 raise ValueError(f"No Profile associated to user {user!r}")
 
@@ -119,20 +126,22 @@ class ApprovalTask(models.Model):
 
                 # Notify next approvers via WebSocket
                 from workflows.notifications import notify_task_update
+
                 notify_task_update(next_task)
             else:
                 self.content_object.finish_workflow()
 
             # Notify task completion
             from workflows.notifications import notify_task_completion
+
             notify_task_completion(self)
 
-    def mark_rejected(self, user:CustomUser):
+    def mark_rejected(self, user: CustomUser):
         with db_transaction.atomic():
             if self.status != "pending":
                 raise ValueError("Task must be in pending state to be rejected")
             try:
-                profile:Profile = user.profile
+                profile: Profile = user.profile
             except CustomUser.DoesNotExist:
                 raise ValueError(f"No Profile associated to user {user!r}")
 
@@ -141,19 +150,24 @@ class ApprovalTask(models.Model):
             self.save(update_fields=["status", "updated_at", "comment", "approved_by"])
 
             # Terminate other tasks
-            terminated_tasks = ApprovalTask.objects.filter(
-                content_type=self.content_type,
-                object_id=self.object_id
-            ).exclude(id=self.id).filter(status__in=["not_started", "pending"])
+            terminated_tasks = (
+                ApprovalTask.objects.filter(
+                    content_type=self.content_type, object_id=self.object_id
+                )
+                .exclude(id=self.id)
+                .filter(status__in=["not_started", "pending"])
+            )
 
             terminated_tasks.update(status="terminated")
 
             # Notify task rejection
             from workflows.notifications import notify_task_rejection
+
             notify_task_rejection(self)
 
             # Notify terminated tasks
             from workflows.notifications import notify_task_update
+
             for task in terminated_tasks:
                 notify_task_update(task)
 

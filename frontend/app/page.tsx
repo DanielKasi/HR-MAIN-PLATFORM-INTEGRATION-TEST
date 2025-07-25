@@ -99,7 +99,7 @@ export default function LandingPage() {
             <div className="bg-primary/10 p-2 rounded-full">
               <Users className="h-6 w-6 text-primary" />
             </div>
-            <span className="text-xl font-bold">BAIFAM HR SYSTEM</span>
+            <span className="text-xl font-bold">PERRAC</span>
           </div>
           <nav className="hidden gap-6 md:flex">
             <Link
@@ -177,7 +177,7 @@ export default function LandingPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.2 }}
                   >
-                    BAIFAM HR System empowers organizations to streamline HR processes, enhance employee engagement, and drive business growth through intelligent workforce management solutions.
+                    PERRAC empowers organizations to streamline HR processes, enhance employee engagement, and drive business growth through intelligent workforce management solutions.
                   </motion.p>
                 </div>
                 <motion.div
@@ -728,7 +728,7 @@ export default function LandingPage() {
                   Ready to Transform Your HR?
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Join hundreds of organizations already using BAIFAM HR System to streamline their human resource operations and improve employee satisfaction.
+                  Join hundreds of organizations already using PERRAC to streamline their human resource operations and improve employee satisfaction.
                 </p>
               </div>
               <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -763,7 +763,7 @@ export default function LandingPage() {
             <div className="bg-primary/10 p-2 rounded-full">
               <Users className="h-5 w-5 text-primary" />
             </div>
-            <span className="text-xl font-bold">BAIFAM HR SYSTEM</span>
+            <span className="text-xl font-bold">PERRAC</span>
           </div>
           <nav className="flex gap-6">
             <Link
@@ -789,7 +789,7 @@ export default function LandingPage() {
             </Link>
           </nav>
           <div className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} BAIFAM HR SYSTEM. All rights reserved.
+            © {new Date().getFullYear()} PERRAC. All rights reserved.
           </div>
         </div>
       </footer>

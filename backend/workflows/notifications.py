@@ -2,6 +2,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import json
 
+
 def notify_task_update(task):
     """Send WebSocket notification about task update"""
     channel_layer = get_channel_layer()
@@ -32,46 +33,50 @@ def notify_task_update(task):
             {
                 "type": "notification_message",
                 "message": f"You have a new task to approve: {task.step.step_name}",
-                "task": task_data
-            }
+                "task": task_data,
+            },
         )
 
         # Also send updated tasks list
         send_updated_tasks_to_user(user_id)
+
 
 def notify_task_completion(task):
     """Notify about task completion"""
     channel_layer = get_channel_layer()
 
     # Notify the task creator/owner if applicable
-    if hasattr(task.content_object, 'created_by') and task.content_object.created_by:
+    if hasattr(task.content_object, "created_by") and task.content_object.created_by:
         user_id = task.content_object.created_by.id
         async_to_sync(channel_layer.group_send)(
             f"user_{user_id}_notifications",
             {
                 "type": "notification_message",
-                "message": f"Your {task.step.action.label} was approved by {task.approved_by.user.fullname}"
-            }
+                "message": f"Your {task.step.action.label} was approved by {task.approved_by.user.fullname}",
+            },
         )
+
 
 def notify_task_rejection(task):
     """Notify about task rejection"""
     channel_layer = get_channel_layer()
 
     # Notify the task creator/owner if applicable
-    if hasattr(task.content_object, 'created_by') and task.content_object.created_by:
+    if hasattr(task.content_object, "created_by") and task.content_object.created_by:
         user_id = task.content_object.created_by.id
         async_to_sync(channel_layer.group_send)(
             f"user_{user_id}_notifications",
             {
                 "type": "notification_message",
-                "message": f"Your {task.step.action.label} was rejected by {task.approved_by.user.fullname}"
-            }
+                "message": f"Your {task.step.action.label} was rejected by {task.approved_by.user.fullname}",
+            },
         )
+
 
 def send_updated_tasks_to_user(user_id):
     """Send updated tasks list to a specific user"""
     from django.contrib.auth import get_user_model
+
     User = get_user_model()
 
     try:
@@ -84,8 +89,8 @@ def send_updated_tasks_to_user(user_id):
         from workflows.serializers import ApprovalTaskSerializer
 
         tasks = ApprovalTask.objects.filter(
-            Q(step__roles__approver_role__id__in=user_roles) |
-            Q(step__approver__approver_user__user__id=user.id)
+            Q(step__roles__approver_role__id__in=user_roles)
+            | Q(step__approver__approver_user__user__id=user.id)
         ).distinct()
 
         serializer = ApprovalTaskSerializer(tasks, many=True)
@@ -94,13 +99,11 @@ def send_updated_tasks_to_user(user_id):
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"user_{user_id}_notifications",
-            {
-                "type": "tasks_update",
-                "tasks": tasks_data
-            }
+            {"type": "tasks_update", "tasks": tasks_data},
         )
     except User.DoesNotExist:
         pass
+
 
 def notify_workflow_participants(task, status_change, user):
     """Notify all participants in a workflow about status changes"""
@@ -112,8 +115,7 @@ def notify_workflow_participants(task, status_change, user):
 
     # Get all tasks related to this workflow
     related_tasks = ApprovalTask.objects.filter(
-        content_type=task.content_type,
-        object_id=task.object_id
+        content_type=task.content_type, object_id=task.object_id
     )
 
     # Collect all users involved in this workflow
@@ -135,8 +137,8 @@ def notify_workflow_participants(task, status_change, user):
                 f"user_{user_id}_notifications",
                 {
                     "type": "notification_message",
-                    "message": f"Task '{task.step.step_name}' has been {status_change} by {user.fullname}"
-                }
+                    "message": f"Task '{task.step.step_name}' has been {status_change} by {user.fullname}",
+                },
             )
 
             # Also send updated tasks list

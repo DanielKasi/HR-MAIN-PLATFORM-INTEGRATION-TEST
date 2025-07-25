@@ -12,8 +12,9 @@ from .serializers import (
     EmployeeSerializer,
     EmployeeTypeSerializer,
     WorkTypeSerializer,
+    ContractSerializer,
 )
-from .models import Employee, EmployeeAttendance, EmployeeType, WorkType
+from .models import Employee, EmployeeAttendance, EmployeeType, WorkType, Contract
 from .serializers import (
     EmployeeAttendanceSerializer,
     EmployeeSerializer,
@@ -25,13 +26,15 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from institution.utils import generate_compliant_password
 from employee.service import EmployeeBranchService
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse
-from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 import logging
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.renderers import JSONRenderer
 from utilities.pagination import CustomPageNumberPagination
+from django.http import FileResponse
+
 
 
 class EmployeeListAPIView(APIView):
@@ -93,13 +96,18 @@ class EmployeeCreateAPIView(APIView):
 
     @extend_schema(
         request=EmployeeSerializer,
-        responses={201: EmployeeSerializer, 400: "Bad Request"},
-        summary="Create Employee",
+        responses={201: EmployeeSerializer(many=True), 400: "Bad Request"},
+        summary="Create Employee(s)",
+        description="Create a single employee with form data or multiple employees via CSV/Excel file upload.",
         tags=["Employee Management"],
     )
     def post(self, request):
-        """Create a new employee with user account."""
-
+        """Create a new employee or multiple employees via file upload."""
+        # Check if a file is uploaded
+        if 'file' in request.FILES:
+            return self.handle_bulk_upload(request)
+        
+        # Handle single employee creation (existing logic)
         def extract_value(data, key):
             """Extract single value from QueryDict list format"""
             value = data.get(key)
@@ -167,6 +175,133 @@ class EmployeeCreateAPIView(APIView):
         return Response(
             EmployeeSerializer(employee).data, status=status.HTTP_201_CREATED
         )
+
+    def handle_bulk_upload(self, request):
+        """Handle bulk employee creation from uploaded CSV/Excel file."""
+        file = request.FILES['file']
+        file_extension = file.name.split('.')[-1].lower()
+
+        if file_extension not in ['csv', 'xlsx']:
+            return Response(
+                {"detail": "Invalid file format. Only CSV or Excel files are supported."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Read the file
+            if file_extension == 'csv':
+                df = pd.read_csv(file)
+            else:  # xlsx
+                df = pd.read_excel(file)
+
+            # Validate required columns
+            required_columns = ['user.fullname', 'user.email']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            if missing_columns:
+                return Response(
+                    {"detail": f"Missing required columns: {', '.join(missing_columns)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Process each row
+            employees = []
+            errors = []
+            with transaction.atomic():  # Ensure all-or-nothing creation
+                for index, row in df.iterrows():
+                    employee_data = {}
+                    user_data = {
+                        "fullname": str(row['user.fullname']).strip(),
+                        "email": str(row['user.email']).strip(),
+                        "password": generate_compliant_password(),
+                    }
+                    employee_data["user"] = user_data
+
+                    # Map other fields
+                    for column in df.columns:
+                        if column not in ['user.fullname', 'user.email']:
+                            value = row[column]
+                            if pd.isna(value):
+                                employee_data[column] = None
+                            else:
+                                employee_data[column] = str(value).strip()
+
+                    # Convert data types
+                    if "is_active" in employee_data:
+                        employee_data["is_active"] = str(employee_data["is_active"]).lower() == "true"
+
+                    for field in ["position", "department", "experience", "children_count", "institutionId"]:
+                        if field in employee_data and employee_data[field]:
+                            try:
+                                employee_data[field] = int(float(employee_data[field]))
+                            except (ValueError, TypeError):
+                                employee_data[field] = 0
+
+                    # Validate and create employee
+                    serializer = EmployeeSerializer(data=employee_data)
+                    if serializer.is_valid():
+                        employee = serializer.save()
+                        employee.user.is_password_verified = False
+                        employee.user.save()
+                        employee.setup_employee_password(request)
+                        employees.append(employee)
+                    else:
+                        errors.append({
+                            "row": index + 2,  # +2 to account for header row and 1-based indexing
+                            "errors": serializer.errors
+                        })
+
+            if errors:
+                return Response(
+                    {"detail": "Some employees could not be created", "errors": errors},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            return Response(
+                EmployeeSerializer(employees, many=True).data,
+                status=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            return Response(
+                {"detail": f"Error processing file: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+class EmployeeTemplateDownloadAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        responses={200: None},
+        summary="Download Employee CSV Template",
+        description="Download a CSV template for bulk employee creation.",
+        tags=["Employee Management"],
+    )
+    def get(self, request):
+        """Generate and return a CSV template for bulk employee upload."""
+        # Define template columns based on Employee model
+        columns = [
+            'user.fullname', 'user.email', 'phone_number', 'position', 'gender',
+            'department', 'payroll_branch', 'date_of_birth', 'work_type',
+            'employee_type', 'date_of_joining', 'address', 'country', 'nin',
+            'bank', 'bank_account_number', 'is_active', 'experience',
+            'qualifications', 'skills', 'emergency_contact_name',
+            'emergency_contact_phone', 'emergency_contact_relationship',
+            'marital_status', 'children_count', 'salary'
+        ]
+        df = pd.DataFrame(columns=columns)
+
+        # Create CSV in memory
+        output = io.StringIO()
+        df.to_csv(output, index=False)
+        output.seek(0)
+
+        # Return CSV as downloadable file
+        response = HttpResponse(
+            content_type='text/csv',
+            headers={'Content-Disposition': 'attachment; filename="employee_template.csv"'}
+        )
+        response.write(output.getvalue())
+        return response
 
 
 class EmployeeUpdateAPIView(APIView):
@@ -450,7 +585,6 @@ class EmployeeBranchManagementAPIView(APIView):
             .select_related("branch")
             .order_by("-is_default", "branch__branch_name")
         )
-
 
         branches = []
         default_branch = None
@@ -759,17 +893,14 @@ class EmployeeAttendanceListCreateAPIView(APIView):
     def post(self, request, employee_id=None):
         data = request.data.copy()
 
-
         employee = data.get("employee")
         date = data.get("date")
-
 
         from datetime import date as dt_date
 
         if not date:
             date = str(dt_date.today())
             data["date"] = date
-
 
         existing = EmployeeAttendance.objects.filter(
             employee=employee, date=date
@@ -789,7 +920,6 @@ class EmployeeAttendanceListCreateAPIView(APIView):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 @extend_schema(tags=["Employee Attendance"])
@@ -1064,3 +1194,135 @@ class WorkTypeDetailAPIView(APIView):
         obj = self.get_object(pk)
         obj.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ContractListCreateView(APIView):
+
+    @extend_schema(
+        tags=['Contracts'],
+        summary='List all contracts for an institution',
+        description='Retrieve a paginated list of all employment contracts for a specific institution.',
+        parameters=[
+            OpenApiParameter(name='institution_id', type=str, location=OpenApiParameter.PATH, description='Institution ID to filter contracts'),
+            OpenApiParameter(name='page', type=int, location=OpenApiParameter.QUERY, description='Page number for pagination'),
+            OpenApiParameter(name='page_size', type=int, location=OpenApiParameter.QUERY, description='Number of results per page'),
+        ],
+        responses={200: ContractSerializer(many=True)},
+    )
+    def get(self, request, institution_id):
+        try:
+            contracts = Contract.objects.filter(
+                employee__department__institution_id=institution_id
+            ).order_by("-created_at")
+
+            paginator = CustomPageNumberPagination()
+            paginated_qs = paginator.paginate_queryset(contracts, request)
+            serializer = ContractSerializer(paginated_qs, many=True)
+            return paginator.get_paginated_response(serializer.data)
+        except Exception as e:
+            return Response(
+                {"detail": "Error retrieving contracts."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    # @extend_schema(
+    #     tags=['Contracts'],
+    #     summary='Create a new contract',
+    #     description='Create a new employment contract for an employee. The contract PDF is generated automatically.',
+    #     request=ContractSerializer,
+    #     responses={201: ContractSerializer},
+    # )
+    # def post(self, request, institution_id):
+    #     serializer = ContractSerializer(data=request.data)
+    #     if serializer.is_valid():
+    #         contract = serializer.save()
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ContractDetailView(APIView):
+
+    def get_object(self, id):  # Change parameter to `id`
+        try:
+            return Contract.objects.get(id=id)  # Query by `id`
+        except Contract.DoesNotExist:
+            return None
+
+    @extend_schema(
+        tags=['Contracts'],
+        summary='Retrieve a contract',
+        description='Retrieve details of a specific contract by its ID.',
+        parameters=[
+            OpenApiParameter(name='id', type=int, location=OpenApiParameter.PATH, description='Contract ID (primary key)'),
+        ],
+        responses={200: ContractSerializer, 404: None},
+    )
+    def get(self, request, id):  # Change parameter to `id`
+        contract = self.get_object(id)
+        if not contract:
+            return Response({'error': 'Contract not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ContractSerializer(contract)
+        return Response(serializer.data)
+
+    @extend_schema(
+        tags=['Contracts'],
+        summary='Update a contract',
+        description='Update details of a specific contract by its ID.',
+        parameters=[
+            OpenApiParameter(name='id', type=int, location=OpenApiParameter.PATH, description='Contract ID (primary key)'),
+        ],
+        request=ContractSerializer,
+        responses={200: ContractSerializer, 404: None},
+    )
+    def patch(self, request, id):  # Change parameter to `id`
+        contract = self.get_object(id)
+        if not contract:
+            return Response({'error': 'Contract not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ContractSerializer(contract, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        tags=['Contracts'],
+        summary='Delete a contract',
+        description='Delete a specific contract by its ID.',
+        parameters=[
+            OpenApiParameter(name='id', type=int, location=OpenApiParameter.PATH, description='Contract ID (primary key)'),
+        ],
+        responses={204: None, 404: None},
+    )
+    def delete(self, request, id):  # Change parameter to `id`
+        contract = self.get_object(id)
+        if not contract:
+            return Response({'error': 'Contract not found'}, status=status.HTTP_404_NOT_FOUND)
+        contract.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class ContractDownloadView(APIView):
+
+    def get_object(self, id):  # Change parameter to `id`
+        try:
+            return Contract.objects.get(id=id)  # Query by `id`
+        except Contract.DoesNotExist:
+            return None
+
+    @extend_schema(
+        tags=['Contracts'],
+        summary='Download contract PDF',
+        description='Download the PDF file of a specific contract by its ID.',
+        parameters=[
+            OpenApiParameter(name='id', type=int, location=OpenApiParameter.PATH, description='Contract ID (primary key)'),
+        ],
+        responses={
+            200: {'content': {'application/pdf': {}}},
+            404: None,
+        },
+    )
+    def get(self, request, id):  # Change parameter to `id`
+        contract = self.get_object(id)
+        if not contract:
+            return Response({'error': 'Contract not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not contract.contract_file:
+            return Response({'error': 'No contract file available'}, status=status.HTTP_404_NOT_FOUND)
+        return FileResponse(contract.contract_file, as_attachment=True, filename=f"contract_{contract.contract_id}.pdf")

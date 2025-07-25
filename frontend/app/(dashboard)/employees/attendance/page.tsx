@@ -6,6 +6,9 @@ import { getAllEmployees } from "@/lib/utils";
 import { useSelector } from "react-redux";
 import { selectAttachedInstitutions, selectSelectedInstitution } from "@/store/auth/selectors";
 import { IUserInstitution } from "@/app/types";
+import ProtectedPage from "@/components/ProtectedPage";
+import { PERMISSION_CODES } from "@/app/types/types.utils";
+import ProtectedComponent from "@/components/ProtectedComponent"
 
 const AttendancePage = () => {
   const [search, setSearch] = useState("");

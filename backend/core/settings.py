@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     "payroll",
     "performance",
     "projects",
+    "calendar2",
+    "assets",
 ]
 
 MIDDLEWARE = [
