@@ -451,10 +451,10 @@ export default function LeaveBalanceComponent() {
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-orange-600 hover:bg-orange-700 text-white">
+            {/* <Button className="bg-orange-600 hover:bg-orange-700 text-white">
               <Plus className="w-4 h-4 mr-2" />
               Add Balance
-            </Button>
+            </Button> */}
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
