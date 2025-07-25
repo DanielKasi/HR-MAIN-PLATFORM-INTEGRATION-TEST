@@ -10,7 +10,7 @@ from workflows.models import (
 )
 from users.models import Profile, Role
 from django.contrib.contenttypes.models import ContentType
-from assets.serializers import AssetRequestSerializer
+from assets.serializers import AssetRequestSerializer, AssetAllocationSerializer
 
 
 class WorkflowCategorySerializer(serializers.ModelSerializer):
@@ -196,6 +196,34 @@ class AssetRequestWorkflowSerializer(AssetRequestSerializer):
 
     class Meta(AssetRequestSerializer.Meta):
         fields = AssetRequestSerializer.Meta.fields + ["status", "tasks"]
+
+    def get_status(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        if not tasks.exists():
+            return "not_started"
+        if all(t.status == "completed" for t in tasks):
+            return "completed"
+        if any(t.status == "rejected" for t in tasks):
+            return "rejected"
+        return "pending"
+
+    def get_tasks(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        return TaskStatusSerializer(tasks, many=True).data
+
+
+class AssetAllocationWorkflowSerializer(AssetAllocationSerializer):
+    status = serializers.SerializerMethodField()
+    tasks = serializers.SerializerMethodField()
+
+    class Meta(AssetAllocationSerializer.Meta):
+        fields = AssetAllocationSerializer.Meta.fields + ["status", "tasks"]
 
     def get_status(self, obj):
         tasks = ApprovalTask.objects.filter(

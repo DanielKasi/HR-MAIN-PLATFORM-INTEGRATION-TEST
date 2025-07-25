@@ -44,6 +44,7 @@ class AssetSerializer(serializers.ModelSerializer):
             "updated_at",
             "created_by",
             "current_holder",
+            "asset_histories",
         ]
         read_only_fields = [
             "id",
@@ -123,6 +124,38 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def create(self, validated_data):
+        asset_allocation = AssetAllocation.objects.create(**validated_data)
+
+        institution = asset_allocation.asset.institution
+
+        content_type = ContentType.objects.get_for_model(AssetAllocation)
+
+        try:
+            action = WorkflowAction.objects.get(code="asset_allocation")
+        except WorkflowAction.DoesNotExist:
+            action = None
+
+        if action:
+            steps = InstitutionApprovalStep.objects.filter(
+                institution=institution, action=action
+            ).order_by("level")
+
+            if not steps.exists():
+                asset_allocation.finish_workflow()
+            else:
+                for i, step in enumerate(steps):
+                    ApprovalTask.objects.create(
+                        step=step,
+                        content_type=content_type,
+                        object_id=asset_allocation.id,
+                        status="pending" if i == 0 else "not_started",
+                    )
+        else:
+            asset_allocation.finish_workflow()
+
+        return asset_allocation
 
 
 class AssetReturnSerializer(serializers.ModelSerializer):
