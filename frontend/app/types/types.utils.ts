@@ -392,6 +392,7 @@ export interface JobApplicationFormData {
   address: string
   country: string
   source?: "website" | "referral" | "job_board" | "social_media" | "other"
+  created_by: number,
 }
 
 export type JobAdvertStatus = "expired" | "active" | "archived" | "closed";
@@ -1424,10 +1425,4 @@ export interface IContractFormData {
   start_date: string;
   end_date?: string | null;
   notes?: string | null;
-}
-
-export interface ICountry {
-  name: { common: string }
-  cca2: string
-  idd?: { root?: string; suffixes?: string[] }
 }
