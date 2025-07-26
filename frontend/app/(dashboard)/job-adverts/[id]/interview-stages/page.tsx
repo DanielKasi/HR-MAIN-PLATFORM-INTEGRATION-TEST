@@ -216,12 +216,12 @@ const InterviewStagesContent = ({
   const router = useRouter()
   const [isCreateStageDialogOpen, setIsCreateStageDialogOpen] = useState(false)
   const [isCreatingStage, setIsCreatingStage] = useState(false)
-  const [employees, setEmployees] = useState<IEmployee[]>([])
-  const [interviews, setInterviews] = useState<IInterview[]>([])
+  const [employees, setEmployees] = useState<IEmployee[]>([]) 
+  const [interviews, setInterviews] = useState<IInterview[]>([]) 
   const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
     name: "",
     level: 1,
-    interviewers: [],
+    interviewers: [], 
     job_position_advert: jobPositionAdvert.id,
   })
   const [stageErrors, setStageErrors] = useState<any>({})
@@ -420,24 +420,24 @@ const InterviewStagesContent = ({
                     {/* Fixed interviewer selection */}
                     <div className="space-y-2">
                       <Label htmlFor="stage_interviewer">Interviewers *</Label>
-
+                      
                       {/* Constrained select component */}
                       <div className="w-full max-w-full overflow-hidden">
                        <EmployeeSearchableSelect
                             employees={employees as any}
                             value={stageFormData.interviewers.map(id => id.toString())}
                             onValueChange={(values) => {
-                              const numberValues = Array.isArray(values)
+                              const numberValues = Array.isArray(values) 
                                 ? values.map(v => Number(v))
                                 : [Number(values)]
-
-
+                              
+                          
                               const uniqueValues = [...new Set(numberValues)]
-
+                              
                               if (uniqueValues.length !== numberValues.length) {
                                 toast.info("Duplicate interviewers removed")
                               }
-
+                              
                               updateStageFormData("interviewers", uniqueValues)
                             }}
                             disabled={isCreatingStage}
@@ -472,7 +472,7 @@ const InterviewStagesContent = ({
                               const employee = employees.find(emp => emp.id === interviewerId);
                               const fullName = employee?.user?.fullname || `Employee ${interviewerId}`;
                               const displayName = fullName.length > 30 ? `${fullName.substring(0, 30)}...` : fullName;
-
+                              
                               return (
                                 <div
                                   key={interviewerId}
@@ -546,7 +546,7 @@ const InterviewStagesContent = ({
     .sort((a, b) => a.level - b.level)
     .map((stage, index) => {
       const colors = getStageColors(index)
-
+      
       const interviewerNames = stage.interviewers_details && Array.isArray(stage.interviewers_details)
         ? stage.interviewers_details.map(emp => emp.user?.fullname || 'Unknown').join(', ')
         : 'Not assigned'
@@ -617,7 +617,7 @@ const InterviewStagesContent = ({
                       />
                       {stageErrors.name && <p className="text-sm text-destructive">{stageErrors.name}</p>}
                     </div>
-{/*
+{/* 
                     <div className="space-y-2">
                       <Label htmlFor="stage_level">Level *</Label>
                       <Input
@@ -638,32 +638,32 @@ const InterviewStagesContent = ({
                     {/* Updated: Enhanced interviewer selection with chips */}
                     <div className="space-y-2">
                       <Label htmlFor="stage_interviewer">Interviewers *</Label>
-
+                      
                       {/* Constrained select component */}
                       <div className="w-full max-w-full overflow-hidden">
                        <EmployeeSearchableSelect
                           employees={employees as any}
                           value={stageFormData.interviewers.map(id => id.toString())}
                           onValueChange={(values) => {
-                            const numberValues = Array.isArray(values)
+                            const numberValues = Array.isArray(values) 
                               ? values.map(v => Number(v))
                               : [Number(values)]
-
+                            
                             const currentInterviewers = stageFormData.interviewers || []
-
+                            
                             // Find what's being newly added (not what's already there)
                             const newlyAdded = numberValues.filter(id => !currentInterviewers.includes(id))
-
+                            
                             // Check if any of the newly added items already exist (this should be rare)
                             const actualDuplicates = newlyAdded.filter(id => currentInterviewers.includes(id))
-
+                            
                             // Only show error if there are actual duplicates being added
                             if (actualDuplicates.length > 0) {
                               const duplicateNames = actualDuplicates.map(id => {
                                 const employee = employees.find(emp => emp.id === id)
                                 return employee?.user?.fullname || `Employee ${id}`
                               })
-
+                              
                               if (duplicateNames.length === 1) {
                                 toast.error(`${duplicateNames[0]} is already selected`, {
                                   description: "This interviewer is already selected for this stage."
@@ -675,7 +675,7 @@ const InterviewStagesContent = ({
                               }
                               return
                             }
-
+                            
                             // Remove any potential duplicates from the final array and update
                             const uniqueValues = [...new Set(numberValues)]
                             updateStageFormData("interviewers", uniqueValues)
@@ -713,7 +713,7 @@ const InterviewStagesContent = ({
                               const employee = employees.find(emp => emp.id === interviewerId);
                               const fullName = employee?.user?.fullname || `Employee ${interviewerId}`;
                               const displayName = fullName.length > 30 ? `${fullName.substring(0, 30)}...` : fullName;
-
+                              
                               return (
                                 <div
                                   key={interviewerId}

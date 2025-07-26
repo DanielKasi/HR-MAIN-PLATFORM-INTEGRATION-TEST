@@ -130,13 +130,11 @@ export default function InterviewsPage() {
           interview.job_position_application_details?.applicant_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           interview.job_position_application_details?.applicant_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
           interview.interview_stage_details?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          interview.interview_stage_details?.interviewers_details?.some((employee) =>
-            employee.first_name.toLowerCase().includes(searchTerm.toLowerCase())
-          ) ||
-          interview.interview_stage_details?.interviewers_details?.some((employee) =>
-            employee.last_name.toLowerCase().includes(searchTerm.toLowerCase())
-          )
-            ?.toString().toLowerCase()
+          interview.interview_stage_details?.interviewer_details?.first_name
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          interview.interview_stage_details?.interviewer_details?.last_name
+            .toLowerCase()
             .includes(searchTerm.toLowerCase()),
       )
     }

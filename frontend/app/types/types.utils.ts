@@ -358,10 +358,6 @@ export interface CreateJobPositionData {
 
 
 export interface JobApplication {
-  shortlisted_by: any;
-  reviewed_by: any;
-  reviewed_by_details: any;
-  shortlisted_by_details: any;
   job_position_advert_job_details: {
     department: string; name: string, description: string, job_posted_date: string
   };
@@ -397,14 +393,6 @@ export interface JobApplicationFormData {
   country: string
   source?: "website" | "referral" | "job_board" | "social_media" | "other"
   created_by: number,
-  reviewed_by?: number;
-  shortlisted_by?: number;
-  recommended_by?: number;
-  reviewed_by_name?: string;
-  shortlisted_by_name?: string;
-  recommended_by_name?: string;
-
-
 }
 
 export type JobAdvertStatus = "expired" | "active" | "archived" | "closed";
@@ -688,7 +676,6 @@ export interface IInterviewFormData {
   interview_time: string,
   interview_type: string,
   status: string;
-  created_by: number;
 }
 
 
