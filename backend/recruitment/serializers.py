@@ -16,7 +16,6 @@ from users.serializers import CustomUserSerializer
 from users.models import CustomUser
 from django.contrib.contenttypes.models import ContentType
 from workflows.models import WorkflowAction
-from 
 
 
 class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
@@ -28,8 +27,12 @@ class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
 class JobAdvertApplicationSerializer(serializers.ModelSerializer):
     job_position_advert_job_details = serializers.SerializerMethodField()
     positions = serializers.SerializerMethodField()
-    reviewed_by = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False, allow_null=True)
-    shortlisted_by = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False, allow_null=True)
+    reviewed_by = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all(), required=False, allow_null=True
+    )
+    shortlisted_by = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all(), required=False, allow_null=True
+    )
 
     class Meta:
         model = JobAdvertApplication
@@ -67,12 +70,16 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data["reviewed_by"] = CustomUserSerializer(
-            instance.reviewed_by, context=self.context
-        ).data if instance.reviewed_by else None
-        data["shortlisted_by"] = CustomUserSerializer(
-            instance.shortlisted_by, context=self.context
-        ).data if instance.shortlisted_by else None
+        data["reviewed_by"] = (
+            CustomUserSerializer(instance.reviewed_by, context=self.context).data
+            if instance.reviewed_by
+            else None
+        )
+        data["shortlisted_by"] = (
+            CustomUserSerializer(instance.shortlisted_by, context=self.context).data
+            if instance.shortlisted_by
+            else None
+        )
         return data
 
 
@@ -323,7 +330,6 @@ class JobInterviewSerializer(serializers.ModelSerializer):
             "interview_time",
             "additional_notes",
             "created_by",
-
         ]
 
     def validate(self, attrs):
