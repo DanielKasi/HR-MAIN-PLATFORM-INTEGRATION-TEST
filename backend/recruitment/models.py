@@ -323,6 +323,20 @@ class JobAdvertApplication(models.Model):
         null=True,
         blank=True,
     )
+    reviewed_by = models.ForeignKey(
+        "users.CustomUser",
+        on_delete=models.SET_NULL,
+        related_name="job_advert_applications_reviewed",
+        null=True,
+        blank=True,
+    )
+    shortlisted_by = models.ForeignKey(
+        "users.CustomUser",
+        on_delete=models.SET_NULL,
+        related_name="job_advert_applications_shortlisted",
+        null=True,
+        blank=True,
+    )
 
     def __str__(self):
         return f"{self.applicant_name} - {self.job_position_advert.job_position.name} ({self.status})"

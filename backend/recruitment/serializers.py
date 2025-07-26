@@ -44,6 +44,9 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
             "country",
             "source",
             "positions",
+            "recommended_by",
+            "reviewed_by",
+            "shortlisted_by",
         ]
 
     def get_job_position_advert_job_details(self, obj):
