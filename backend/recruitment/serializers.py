@@ -6,14 +6,17 @@ from recruitment.models import (
     JobAdvertApplication,
     InterviewStage,
     JobInterview,
-    ContractTemplate,
+    #ContractTemplate,
 )
 from employee.serializers import EmployeeSerializer
 from django.db.models import Q, Count
 import PyPDF2
 from docx import Document
-from workflows.models import WorkflowAction, InstitutionApprovalStep, ApprovalTask
+from users.serializers import CustomUserSerializer
+from users.models import CustomUser
 from django.contrib.contenttypes.models import ContentType
+from workflows.models import WorkflowAction
+
 
 
 class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
@@ -45,6 +48,9 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
             "country",
             "source",
             "positions",
+            "created_by",
+            "reviewed_by",
+            "shortlisted_by",
         ]
 
     def get_job_position_advert_job_details(self, obj):
@@ -139,38 +145,6 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
             "description": obj.job_position.description,
         }
 
-    def create(self, validated_data):
-
-        advert = JobPositionAdvert.objects.create(**validated_data)
-
-        institution = advert.job_position.department.institution
-        content_type = ContentType.objects.get_for_model(JobPositionAdvert)
-
-        try:
-            action = WorkflowAction.objects.get(code="job_position_advertisement")
-        except WorkflowAction.DoesNotExist:
-            action = None
-
-        if action:
-            steps = InstitutionApprovalStep.objects.filter(
-                institution=institution, action=action
-            ).order_by("level")
-
-            if not steps.exists():
-                advert.finish_workflow()
-            else:
-                for i, step in enumerate(steps):
-                    ApprovalTask.objects.create(
-                        step=step,
-                        content_type=content_type,
-                        object_id=advert.id,
-                        status="pending" if i == 0 else "not_started",
-                    )
-        else:
-            advert.finish_workflow()
-
-        return advert    
-
 
 class JobPositionSerializer(serializers.ModelSerializer):
     department_details = DepartmentSerializer(source="department", read_only=True)
@@ -216,10 +190,6 @@ class JobPositionSerializer(serializers.ModelSerializer):
         adverts = JobPositionAdvert.objects.filter(job_position=obj)
         return JobPositionAdvertSerializer(adverts, many=True).data
 
-    def get_contract_template(self, obj):
-        template = obj.get_contract_template()
-        return ContractTemplateSerializer(template).data    
-
     def validate(self, attrs):
         employee_ids = attrs.get("apply_salary_to_employees", [])
         if employee_ids:
@@ -238,37 +208,6 @@ class JobPositionSerializer(serializers.ModelSerializer):
                 )
         return attrs
 
-    def create(self, validated_data):
-        job_position = JobPosition.objects.create(**validated_data)
-
-        institution = job_position.department.institution
-        content_type = ContentType.objects.get_for_model(JobPosition)
-
-        try:
-            action = WorkflowAction.objects.get(code="job_position_creation")
-        except WorkflowAction.DoesNotExist:
-            action = None
-
-        if action:
-            steps = InstitutionApprovalStep.objects.filter(
-                institution=institution, action=action
-            ).order_by("level")
-
-            if not steps.exists():
-                job_position.finish_workflow()
-            else:
-                for i, step in enumerate(steps):
-                    ApprovalTask.objects.create(
-                        step=step,
-                        content_type=content_type,
-                        object_id=job_position.id,
-                        status="pending" if i == 0 else "not_started",
-                    )
-        else:
-            job_position.finish_workflow()
-
-        return job_position    
-
     def update(self, instance, validated_data):
         from employee.models import Employee
 
@@ -284,87 +223,6 @@ class JobPositionSerializer(serializers.ModelSerializer):
             )
 
         return instance
-
-class ContractTemplateSerializer(serializers.ModelSerializer):
-    job_positions = serializers.PrimaryKeyRelatedField(
-        queryset=JobPosition.objects.all(),
-        many=True,
-        required=False,
-        help_text="Job positions this template applies to. Leave empty for institution-wide template."
-    )
-    file = serializers.FileField(required=False, allow_null=True)
-    content = serializers.CharField(required=False, allow_null=True, allow_blank=True)
-
-    class Meta:
-        model = ContractTemplate
-        fields = [
-            'id', 'name', 'template_type', 'file', 'content', 'job_positions',
-            'institution', 'is_default', 'created_at', 'updated_at'
-        ]
-        read_only_fields = ['created_at', 'updated_at']
-
-    def validate(self, data):
-        template_type = data.get('template_type', self.instance.template_type if self.instance else None)
-        file = data.get('file')
-        content = data.get('content')
-
-        # Ensure content or file is provided for non-richtext templates
-        if template_type in ('pdf', 'docx') and not file:
-            raise serializers.ValidationError({"file": "A file is required for PDF or DOCX template types."})
-        if template_type == 'richtext' and not content:
-            raise serializers.ValidationError({"content": "Content is required for rich text templates."})
-
-        # Validate file extension
-        if file:
-            if template_type == 'pdf' and not file.name.endswith('.pdf'):
-                raise serializers.ValidationError({"file": "File must be a PDF."})
-            if template_type == 'docx' and not file.name.endswith('.docx'):
-                raise serializers.ValidationError({"file": "File must be a DOCX."})
-
-        # Ensure only one default template per institution
-        if data.get('is_default', False):
-            institution = data.get('institution', self.instance.institution if self.instance else None)
-            if ContractTemplate.objects.filter(
-                institution=institution, is_default=True
-            ).exclude(id=self.instance.id if self.instance else None).exists():
-                raise serializers.ValidationError(
-                    {"is_default": "Another default template already exists for this institution."}
-                )
-
-        return data
-
-    def create(self, validated_data):
-        job_positions = validated_data.pop('job_positions', [])
-        file = validated_data.get('file')
-        if file and validated_data['template_type'] in ('pdf', 'docx'):
-            validated_data['content'] = self._extract_file_content(file, validated_data['template_type'])
-        instance = super().create(validated_data)
-        if job_positions:
-            instance.job_positions.set(job_positions)
-        return instance
-
-    def update(self, instance, validated_data):
-        job_positions = validated_data.pop('job_positions', None)
-        file = validated_data.get('file')
-        if file and validated_data['template_type'] in ('pdf', 'docx'):
-            validated_data['content'] = self._extract_file_content(file, validated_data['template_type'])
-        instance = super().update(instance, validated_data)
-        if job_positions is not None:
-            instance.job_positions.set(job_positions)
-        return instance
-
-    def _extract_file_content(self, file, template_type):
-        """Extract text from uploaded PDF or DOCX file."""
-        try:
-            if template_type == 'pdf':
-                reader = PyPDF2.PdfReader(file)
-                return '\n'.join(page.extract_text() for page in reader.pages if page.extract_text())
-            elif template_type == 'docx':
-                doc = Document(file)
-                return '\n'.join(p.text for p in doc.paragraphs)
-        except Exception as e:
-            raise serializers.ValidationError({"file": f"Error processing file: {str(e)}"})
-        return ""    
 
 
 class JobInterviewSerializer(serializers.ModelSerializer):

@@ -81,24 +81,24 @@ class JobPosition(models.Model):
                 "Cannot finish workflow: Some tasks are not completed or rejected."
             )
 
-    def get_contract_template(self):
-        """
-        Return the contract template for this job position.
-        - First, check for a specific template assigned to this job position.
-        - If none, use the institution's default template.
-        - If no default, use the system default template from the templates folder.
-        """
-        template = self.contract_templates.first()
-        if template:
-            return template
-        # Fallback to institution's default template
-        default_template = ContractTemplate.objects.filter(
-            institution=self.department.institution, is_default=True
-        ).first()
-        if default_template:
-            return default_template
-        # Fallback to system default template
-        return self._get_fallback_template()
+    # def get_contract_template(self):
+    #     """
+    #     Return the contract template for this job position.
+    #     - First, check for a specific template assigned to this job position.
+    #     - If none, use the institution's default template.
+    #     - If no default, use the system default template from the templates folder.
+    #     """
+    #     template = self.contract_templates.first()
+    #     if template:
+    #         return template
+    #     # Fallback to institution's default template
+    #     default_template = ContractTemplate.objects.filter(
+    #         institution=self.department.institution, is_default=True
+    #     ).first()
+    #     if default_template:
+    #         return default_template
+    #     # Fallback to system default template
+    #     return self._get_fallback_template()
 
     def _get_fallback_template(self):
         """Return the default template from the templates folder."""

@@ -5,7 +5,7 @@ from .views import (
     JobAdvertApplicationListAPI, JobAdvertApplicationDetailAPI,
     InterviewStageListAPI, InterviewStageDetailAPI,
     JobInterviewListAPI, JobInterviewDetailAPI,
-    ContractTemplateDetailAPI, ContractTemplateListAPI
+    #ontractTemplateDetailAPI, ContractTemplateListAPI
 )
 
 urlpatterns = [
@@ -24,8 +24,8 @@ urlpatterns = [
     path("institution/<int:institution_id>/job-interview/", JobInterviewListAPI.as_view()),
     path("job-interview/<int:interview_id>/", JobInterviewDetailAPI.as_view()),
 
-    path('institution/<int:institution_id>/contract-templates/',
-         ContractTemplateListAPI.as_view(), name='contract-template-list'),
-    path('contract-templates/<int:template_id>/',
-         ContractTemplateDetailAPI.as_view(), name='contract-template-detail'),
+    # path('institution/<int:institution_id>/contract-templates/',
+    #      ContractTemplateListAPI.as_view(), name='contract-template-list'),
+    # path('contract-templates/<int:template_id>/',
+    #      ContractTemplateDetailAPI.as_view(), name='contract-template-detail'),
 ]
