@@ -12,6 +12,10 @@ from employee.serializers import EmployeeSerializer
 from django.db.models import Q, Count
 import PyPDF2
 from docx import Document
+from users.serializers import CustomUserSerializer
+from users.models import CustomUser
+from django.contrib.contenttypes.models import ContentType
+from workflows.models import WorkflowAction
 
 
 
@@ -24,6 +28,8 @@ class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
 class JobAdvertApplicationSerializer(serializers.ModelSerializer):
     job_position_advert_job_details = serializers.SerializerMethodField()
     positions = serializers.SerializerMethodField()
+    reviewed_by = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False, allow_null=True)
+    shortlisted_by = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False, allow_null=True)
 
     class Meta:
         model = JobAdvertApplication
@@ -60,6 +66,16 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
 
     def get_positions(self, obj):
         return obj.job_position_advert.number_of_employees_expected
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["reviewed_by"] = CustomUserSerializer(
+            instance.reviewed_by, context=self.context
+        ).data if instance.reviewed_by else None
+        data["shortlisted_by"] = CustomUserSerializer(
+            instance.shortlisted_by, context=self.context
+        ).data if instance.shortlisted_by else None 
+        return data    
 
 
 class InterviewStageSerializer(serializers.ModelSerializer):

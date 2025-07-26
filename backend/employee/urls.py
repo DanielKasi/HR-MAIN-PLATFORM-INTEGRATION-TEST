@@ -14,10 +14,10 @@ from .views import (
     WorkTypeDetailAPIView,
     WorkTypeListCreateAPIView,
     EmployeeTemplateDownloadAPIView,
-    ContractListCreateView,
-    ContractDetailView,
-    ContractDownloadView,
-    ContractTemplateUploadView
+    # ContractListCreateView,
+    # ContractDetailView,
+    # ContractDownloadView,
+    # ContractTemplateUploadView
 )
 
 urlpatterns = [
@@ -80,8 +80,8 @@ urlpatterns = [
     path(
         "work-types/<int:pk>/", WorkTypeDetailAPIView.as_view(), name="work-type-detail"
     ),
-    path('institutions/<int:institution_id>/contracts/', ContractListCreateView.as_view(), name='contract-list-create'),
-    path('contracts/<int:id>/', ContractDetailView.as_view(), name='contract-detail'),
-    path('contracts/<int:id>/download/', ContractDownloadView.as_view(), name='contract-download'),
-    path('contracts/template/', ContractTemplateUploadView.as_view(), name='contract-template-upload'),
+    # path('institutions/<int:institution_id>/contracts/', ContractListCreateView.as_view(), name='contract-list-create'),
+    # path('contracts/<int:id>/', ContractDetailView.as_view(), name='contract-detail'),
+    # path('contracts/<int:id>/download/', ContractDownloadView.as_view(), name='contract-download'),
+    # path('contracts/template/', ContractTemplateUploadView.as_view(), name='contract-template-upload'),
 ]

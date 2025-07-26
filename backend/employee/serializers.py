@@ -160,63 +160,63 @@ class EmployeeActivationSerializer(serializers.Serializer):
     date_of_joining = serializers.DateField(required=False, allow_null=True)
 
 
-class ContractSerializer(serializers.ModelSerializer):
-    employee = EmployeeSerializer(read_only=True)
-    employee_id = serializers.CharField(write_only=True)
+# class ContractSerializer(serializers.ModelSerializer):
+#     employee = EmployeeSerializer(read_only=True)
+#     employee_id = serializers.CharField(write_only=True)
 
-    class Meta:
-        model = Contract
-        fields = [
-            'id', 'contract_id', 'employee', 'employee_id', 'contract_file',
-            'status', 'start_date', 'end_date', 'created_at', 'updated_at', 'notes'
-        ]
-        read_only_fields = ['id', 'contract_id', 'contract_file', 'created_at', 'updated_at']
+#     class Meta:
+#         model = Contract
+#         fields = [
+#             'id', 'contract_id', 'employee', 'employee_id', 'contract_file',
+#             'status', 'start_date', 'end_date', 'created_at', 'updated_at', 'notes'
+#         ]
+#         read_only_fields = ['id', 'contract_id', 'contract_file', 'created_at', 'updated_at']
 
-    def validate_employee_id(self, value):
-        try:
-            employee = Employee.objects.get(employee_id=value)
-        except Employee.DoesNotExist:
-            raise serializers.ValidationError("Employee with this ID does not exist.")
-        return employee
+#     def validate_employee_id(self, value):
+#         try:
+#             employee = Employee.objects.get(employee_id=value)
+#         except Employee.DoesNotExist:
+#             raise serializers.ValidationError("Employee with this ID does not exist.")
+#         return employee
 
-    def create(self, validated_data):
-        employee = validated_data.pop('employee_id')
-        contract = Contract.objects.create(employee=employee, **validated_data)
-        return contract
+#     def create(self, validated_data):
+#         employee = validated_data.pop('employee_id')
+#         contract = Contract.objects.create(employee=employee, **validated_data)
+#         return contract
 
-    def update(self, instance, validated_data):
-        employee = validated_data.pop('employee_id', None)
-        if employee:
-            instance.employee = employee
-        return super().update(instance, validated_data)
+#     def update(self, instance, validated_data):
+#         employee = validated_data.pop('employee_id', None)
+#         if employee:
+#             instance.employee = employee
+#         return super().update(instance, validated_data)
 
-class ContractTemplateSerializer(serializers.ModelSerializer):
-    user_template = serializers.FileField(required=True)
+# class ContractTemplateSerializer(serializers.ModelSerializer):
+#     user_template = serializers.FileField(required=True)
 
-    class Meta:
-        model = Contract
-        fields = ['user_template']
-        read_only_fields = []
+#     class Meta:
+#         model = Contract
+#         fields = ['user_template']
+#         read_only_fields = []
 
-    def validate_user_template(self, value):
-        if not value:
-            raise serializers.ValidationError("A template file is required.")
-        # Validate file extension
-        valid_extensions = ['.docx', '.pdf']
-        ext = os.path.splitext(value.name)[1].lower()
-        if ext not in valid_extensions:
-            raise serializers.ValidationError(
-                f"Invalid file type. Only {', '.join(valid_extensions)} files are allowed."
-            )
-        # Validate file size (e.g., max 5MB)
-        max_size = 5 * 1024 * 1024  # 5MB in bytes
-        if value.size > max_size:
-            raise serializers.ValidationError(
-                f"File size exceeds limit of {max_size / (1024 * 1024)}MB."
-            )
-        return value
+#     def validate_user_template(self, value):
+#         if not value:
+#             raise serializers.ValidationError("A template file is required.")
+#         # Validate file extension
+#         valid_extensions = ['.docx', '.pdf']
+#         ext = os.path.splitext(value.name)[1].lower()
+#         if ext not in valid_extensions:
+#             raise serializers.ValidationError(
+#                 f"Invalid file type. Only {', '.join(valid_extensions)} files are allowed."
+#             )
+#         # Validate file size (e.g., max 5MB)
+#         max_size = 5 * 1024 * 1024  # 5MB in bytes
+#         if value.size > max_size:
+#             raise serializers.ValidationError(
+#                 f"File size exceeds limit of {max_size / (1024 * 1024)}MB."
+#             )
+#         return value
 
-    def update(self, instance, validated_data):
-        instance.user_template = validated_data.get('user_template')
-        instance.save()
-        return instance        
+#     def update(self, instance, validated_data):
+#         instance.user_template = validated_data.get('user_template')
+#         instance.save()
+#         return instance        
