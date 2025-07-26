@@ -2,10 +2,11 @@ from django.utils import timezone
 from django.db import models
 from employee.models import Employee
 from django.template.loader import render_to_string
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMultiAlternatives
 from django.conf import settings
 from django.db import models, transaction
-
+from io import BytesIO
+from weasyprint import HTML
 
 class OnBoarding(models.Model):
     STATUS_CHOICES = [
@@ -66,15 +67,15 @@ class OnBoarding(models.Model):
                 "employee_name": self.application.applicant_name,
                 "position_title": job_position.name,
                 "department_name": job_position.department.name,
-                "institution_name": job_position.department.institution.name,
-                "institution_address": job_position.department.institution.address or "N/A",
+                "institution_name": job_position.department.institution.institution_name,
+                "institution_address": job_position.department.institution.location or "N/A",
                 "employee_address": self.application.address or "N/A",
                 "employee_country": self.application.country or "Unknown",
                 "start_date": timezone.now().date().strftime("%Y-%m-%d"),
                 "salary": str(job_position.salary) if job_position.salary else "N/A",
                 "currency": "UGX",
                 "contract_id": f"CON-{self.id}",
-                "work_type": self.application.work_type or "Full-time",
+                # "work_type": self.application.work_type or "Full-time",
                 "probation_period": "3 months",
                 "probation_notice_period": "2 weeks",
                 "notice_period": "30 days",
@@ -85,7 +86,7 @@ class OnBoarding(models.Model):
             }
 
             # Render the contract template
-            rendered_contract = render_to_string("contracts/default_contract.html", context)
+            rendered_contract = template.content
 
             # Convert HTML to PDF
             pdf_file = BytesIO()
@@ -97,26 +98,25 @@ class OnBoarding(models.Model):
             email_context = {
                 "employee_name": self.application.applicant_name,
                 "position_title": job_position.name,
-                "institution_name": job_position.department.institution.name,
+                "institution_name": job_position.department.institution.institution_name,
             }
             html_message = render_to_string("emails/contract_email.html", email_context)
             plain_message = render_to_string("emails/contract_email.txt", email_context)
 
-            # Send email with PDF attachment
-            from django.core.mail import EmailMessage
-            email = EmailMessage(
+            # Send email with PDF attachment using EmailMultiAlternatives
+            email = EmailMultiAlternatives(
                 subject=email_subject,
                 body=plain_message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 to=[self.application.applicant_email],
             )
+            email.attach_alternative(html_message, "text/html")
             email.attach(
                 f"contract_{context['contract_id']}.pdf",
                 pdf_file.read(),
                 "application/pdf"
             )
-            email.attach_alternative(html_message, "text/html")
-            email.send(fail_silently=False)
+            email.send(fail_silently=False) 
 
         except Exception as e:
             print(f"Error sending contract email: {str(e)}")
@@ -192,7 +192,7 @@ class OffboardingStage(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.institution.name} - {self.stage_name}"
+        return f"{self.institution.institution_name} - {self.stage_name}"
 
     class Meta:
         unique_together = (("institution", "stage_name"),)
@@ -231,7 +231,7 @@ class InstitutionEmployeeSeparationTypes(models.Model):
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.institution.name} - {self.separation_type}"
+        return f"{self.institution.institution_name} - {self.separation_type}"
 
 
 class InstitutionSeparationPolicy(models.Model):
@@ -258,7 +258,7 @@ class InstitutionSeparationPolicy(models.Model):
 
     def __str__(self):
         return (
-            f"Separation Policy for {self.separation_type.institution.name} - "
+            f"Separation Policy for {self.separation_type.institution.institution_name} - "
             f"{self.separation_type.separation_type}"
         )
 

@@ -6,6 +6,7 @@ from django.template.loader import render_to_string
 from ckeditor.fields import RichTextField
 import os
 from rest_framework.exceptions import ValidationError
+from users.models import Profile
 
 
 
