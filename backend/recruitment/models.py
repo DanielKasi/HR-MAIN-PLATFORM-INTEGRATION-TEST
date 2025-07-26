@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
+from ckeditor.fields import RichTextField
+import os
 
 
 class JobPosition(models.Model):
@@ -16,9 +18,6 @@ class JobPosition(models.Model):
         "institution.Department",
         on_delete=models.PROTECT,
         related_name="job_positions",
-    )
-    contract_template = models.FileField(
-        upload_to="job_positions/contracts/", blank=True, null=True
     )
     offer_letter_template = models.FileField(
         upload_to="job_positions/offer_letters/", blank=True, null=True
@@ -78,6 +77,115 @@ class JobPosition(models.Model):
             raise Exception(
                 "Cannot finish workflow: Some tasks are not completed or rejected."
             )
+
+    def get_contract_template(self):
+        """
+        Return the contract template for this job position.
+        - First, check for a specific template assigned to this job position.
+        - If none, use the institution's default template.
+        - If no default, use the system default template from the templates folder.
+        """
+        template = self.contract_templates.first()
+        if template:
+            return template
+        # Fallback to institution's default template
+        default_template = ContractTemplate.objects.filter(
+            institution=self.department.institution, is_default=True
+        ).first()
+        if default_template:
+            return default_template
+        # Fallback to system default template
+        return self._get_fallback_template()
+
+    def _get_fallback_template(self):
+        """Return the default template from the templates folder."""
+        from django.conf import settings
+        default_template_path = os.path.join(settings.TEMPLATES[0]['DIRS'][0], 'contracts', 'default_contract.html')
+        try:
+            with open(default_template_path, 'r') as file:
+                content = file.read()
+            return ContractTemplate(
+                name="System Default",
+                content=content,
+                template_type='richtext',
+                institution=self.department.institution
+            )
+        except FileNotFoundError:
+            # Fallback content if file is missing
+            return ContractTemplate(
+                name="System Default",
+                content="""
+                <h1>Employment Contract</h1>
+                <p>This agreement is made between {{employee_name}} and {{institution_name}}.</p>
+                <p>Position: {{position_title}}</p>
+                <p>Start Date: {{start_date}}</p>
+                <p>Salary: {{salary}}</p>
+                <p>Department: {{department_name}}</p>
+                <p>Signed: ____________________</p>
+                """,
+                template_type='richtext',
+                institution=self.department.institution
+            )
+
+class ContractTemplate(models.Model):
+    TEMPLATE_TYPES = (
+        ('pdf', 'PDF'),
+        ('docx', 'DOCX'),
+        ('richtext', 'Text'),
+    )
+
+    name = models.CharField(max_length=255, help_text="Name of the contract template")
+    template_type = models.CharField(max_length=10, choices=TEMPLATE_TYPES, default='richtext')
+    file = models.FileField(
+        upload_to="contract_templates/files/",
+        blank=True,
+        null=True,
+        help_text="Upload PDF or DOCX file if applicable"
+    )
+    content = RichTextField(
+        blank=True,
+        null=True,
+        help_text="Rich text content for the contract template (used if template_type is richtext)"
+    )
+    is_default = models.BooleanField(
+        default=False,
+        help_text="Mark as default template for the institution"
+    )
+    institution = models.ForeignKey(
+        "institution.Institution",
+        on_delete=models.CASCADE,
+        related_name="contract_templates",
+        help_text="Institution this template belongs to"
+    )
+    job_positions = models.ManyToManyField(
+        "JobPosition",
+        related_name="contract_templates",
+        blank=True,
+        help_text="Job positions using this template (leave blank for institution-wide default)"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['institution', 'is_default'],
+                condition=models.Q(is_default=True),
+                name='unique_default_template_per_institution'
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({'Default' if self.is_default else 'Custom'})"
+
+    def save(self, *args, **kwargs):
+        # Ensure only one default template per institution
+        if self.is_default:
+            ContractTemplate.objects.filter(
+                institution=self.institution, is_default=True
+            ).exclude(id=self.id).update(is_default=False)
+        super().save(*args, **kwargs)
+
 
 
 class JobPositionAdvert(models.Model):
@@ -212,6 +320,20 @@ class JobAdvertApplication(models.Model):
         "users.CustomUser",
         on_delete=models.PROTECT,
         related_name="job_advert_applications_created",
+        null=True,
+        blank=True,
+    )
+    reviewed_by = models.ForeignKey(
+        "users.CustomUser",
+        on_delete=models.SET_NULL,
+        related_name="job_advert_applications_reviewed",
+        null=True,
+        blank=True,
+    )
+    shortlisted_by = models.ForeignKey(
+        "users.CustomUser",
+        on_delete=models.SET_NULL,
+        related_name="job_advert_applications_shortlisted",
         null=True,
         blank=True,
     )

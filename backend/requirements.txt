@@ -1,4 +1,5 @@
 asgiref==3.8.1
+astroid==3.3.11
 async-timeout==5.0.1
 attrs==25.3.0
 autobahn==24.4.2
@@ -14,6 +15,7 @@ constantly==23.10.4
 cryptography==45.0.4
 cssselect2==0.8.0
 daphne==4.2.0
+dill==0.4.0
 dj-database-url==2.3.0
 Django==5.1.7
 django-ckeditor==6.7.3
@@ -37,19 +39,23 @@ hyperlink==21.0.0
 idna==3.10
 incremental==24.7.2
 inflection==0.5.1
+isort==6.0.1
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
 lxml==6.0.0
+mccabe==0.7.0
 msgpack==1.1.1
 oauthlib==3.3.0
 packaging==24.2
 pillow==11.1.0
+platformdirs==4.3.8
 psycopg2-binary==2.9.10
 pyasn1==0.6.1
 pyasn1_modules==0.4.2
 pycparser==2.22
 pydyf==0.11.0
 PyJWT==2.9.0
+pylint==3.3.7
 pyOpenSSL==25.1.0
 pyparsing==3.2.3
 PyPDF2==3.0.1
@@ -70,6 +76,7 @@ sqlparse==0.5.3
 tinycss2==1.4.0
 tinyhtml5==2.0.0
 tomli==2.2.1
+tomlkit==0.13.3
 Twisted==25.5.0
 txaio==23.1.1
 typing_extensions==4.13.0
