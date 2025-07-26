@@ -189,3 +189,34 @@ class ContractSerializer(serializers.ModelSerializer):
         if employee:
             instance.employee = employee
         return super().update(instance, validated_data)
+
+class ContractTemplateSerializer(serializers.ModelSerializer):
+    user_template = serializers.FileField(required=True)
+
+    class Meta:
+        model = Contract
+        fields = ['user_template']
+        read_only_fields = []
+
+    def validate_user_template(self, value):
+        if not value:
+            raise serializers.ValidationError("A template file is required.")
+        # Validate file extension
+        valid_extensions = ['.docx', '.pdf']
+        ext = os.path.splitext(value.name)[1].lower()
+        if ext not in valid_extensions:
+            raise serializers.ValidationError(
+                f"Invalid file type. Only {', '.join(valid_extensions)} files are allowed."
+            )
+        # Validate file size (e.g., max 5MB)
+        max_size = 5 * 1024 * 1024  # 5MB in bytes
+        if value.size > max_size:
+            raise serializers.ValidationError(
+                f"File size exceeds limit of {max_size / (1024 * 1024)}MB."
+            )
+        return value
+
+    def update(self, instance, validated_data):
+        instance.user_template = validated_data.get('user_template')
+        instance.save()
+        return instance        
