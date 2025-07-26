@@ -24,6 +24,7 @@ urlpatterns = [
     path("api/projects/", include("projects.urls")),
     path("api/calendar/", include("calendar2.urls")),
     path("api/assets/", include("assets.urls")),
+    path("ckeditor/", include("ckeditor_uploader.urls")),
 ]
 
 if settings.DEBUG:

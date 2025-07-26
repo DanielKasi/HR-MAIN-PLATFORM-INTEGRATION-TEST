@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     "projects",
     "calendar2",
     "assets",
+    'ckeditor',
+    'ckeditor_uploader',
 ]
 
 MIDDLEWARE = [
@@ -63,6 +65,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "core.urls"
+CKEDITOR_UPLOAD_PATH = "uploads/"
+
 
 TEMPLATES = [
     {
