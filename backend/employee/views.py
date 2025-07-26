@@ -20,6 +20,8 @@ from .serializers import (
     EmployeeSerializer,
     EmployeeTypeSerializer,
     WorkTypeSerializer,
+    ContractTemplateSerializer,
+    ContractSerializer,
 )
 from .models import Employee, EmployeeAttendance, EmployeeType, WorkType
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -1326,3 +1328,49 @@ class ContractDownloadView(APIView):
         if not contract.contract_file:
             return Response({'error': 'No contract file available'}, status=status.HTTP_404_NOT_FOUND)
         return FileResponse(contract.contract_file, as_attachment=True, filename=f"contract_{contract.contract_id}.pdf")
+
+
+class ContractTemplateUploadView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+
+    @extend_schema(
+        tags=['Contracts'],
+        summary='Upload a contract template',
+        description='Upload a DOCX or PDF template to be used for generating a contract PDF. Optionally associate with an existing contract by providing contract_id.',
+        parameters=[
+            OpenApiParameter(name='contract_id', type=str, location=OpenApiParameter.QUERY, description='Contract ID to associate the template with (optional)', required=False),
+        ],
+        request=ContractTemplateSerializer,
+        responses={201: ContractSerializer, 200: ContractSerializer, 400: None, 404: None},
+    )
+    def post(self, request):
+        serializer = ContractTemplateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        contract_id = request.query_params.get('contract_id')
+        try:
+            if contract_id:
+                # Update existing contract
+                try:
+                    contract = Contract.objects.get(contract_id=contract_id)
+                except Contract.DoesNotExist:
+                    return Response(
+                        {"detail": "Contract not found."},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+                serializer.update(contract, serializer.validated_data)
+                response_status = status.HTTP_200_OK
+            else:
+                # Create new draft contract with template
+                contract = Contract.objects.create(status='draft')
+                serializer.update(contract, serializer.validated_data)
+                response_status = status.HTTP_201_CREATED
+
+            serializer = ContractSerializer(contract)
+            return Response(serializer.data, status=response_status)
+        except Exception as e:
+            return Response(
+                {"detail": f"Error uploading template: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

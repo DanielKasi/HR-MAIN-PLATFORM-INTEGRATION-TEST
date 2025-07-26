@@ -525,6 +525,7 @@ class Contract(models.Model):
         max_length=15, unique=True, editable=False, blank=True
     )
     contract_file = models.FileField(upload_to="contracts/", blank=True, null=True)
+    user_template = models.FileField(upload_to="user_templates/", blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
     start_date = models.DateField(default=timezone.now)
     end_date = models.DateField(blank=True, null=True)
@@ -551,12 +552,12 @@ class Contract(models.Model):
         return f"{prefix}{new_number:06d}"
 
     def generate_contract_pdf(self):
-        print(f"Starting PDF generation for contract {self.contract_id}")
+        """Generate a PDF contract using a user-provided template (DOCX/PDF) or default HTML template."""
+        logger.info(f"Starting PDF generation for contract {self.contract_id}")
         output_dir = os.path.join(settings.MEDIA_ROOT, "contracts")
-        print(f"Output directory: {output_dir}")
         os.makedirs(output_dir, exist_ok=True)
 
-        # Prepare data for the contract
+        # Prepare context for placeholder replacement
         context = {
             "institution_name": (
                 self.employee.department.institution.institution_name
@@ -600,36 +601,146 @@ class Contract(models.Model):
             ),
             "signing_date": timezone.now().strftime("%B %d, %Y"),
             "contract_id": self.contract_id or self.generate_contract_id(),
-            "employer_representative_name": self.employee.department.institution.institution_owner.fullname,
+            "employer_representative_name": (
+                self.employee.department.institution.institution_owner.fullname
+                if self.employee.department and self.employee.department.institution
+                else "Authorized Signatory"
+            ),
+            "employer_representative_title": "Manager",
+            "probation_period": "3 months",
+            "probation_notice_period": "2 weeks",
+            "notice_period": "30 days",
+            "additional_benefits": "Other benefits as outlined in the Employee Handbook.",
+            "currency": "USD",
         }
-        print(
+        logger.info(
             f"Prepared context: institution={context['institution_name']}, employee={context['employee_name']}"
         )
 
-        # Render HTML template
-        try:
+        pdf_path = os.path.join(output_dir, f"contract_{self.contract_id}.pdf")
+
+        # Check if a user-provided template exists
+        if self.user_template and self.user_template.name:
+            template_path = self.user_template.path
+            file_extension = os.path.splitext(template_path)[1].lower()
+
+            # For DOCX
+            if file_extension == ".docx":
+                try:
+                    # Load DOCX file
+                    doc = Document(template_path)
+                    full_text = []
+                    for para in doc.paragraphs:
+                        full_text.append(para.text)
+                    template_content = "\n".join(full_text)
+
+                    # Replace placeholders (e.g., {{ employee_name }})
+                    for key, value in context.items():
+                        placeholder = f"{{{{ ?{key} ?}}}}"
+                        template_content = re.sub(
+                            placeholder, str(value), template_content
+                        )
+
+                    # Replace newlines with <br> outside the f-string
+                    formatted_content = template_content.replace("\n", "<br>")
+
+                    # Convert to HTML for WeasyPrint
+                    html_content = f"""
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>Employment Contract - {self.contract_id}</title>
+                        <style>
+                            body {{ font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.6; margin: 2cm; }}
+                            @page {{ size: A4; margin: 2cm; }}
+                        </style>
+                    </head>
+                    <body>
+                        <div>{formatted_content}</div>
+                    </body>
+                    </html>
+                    """
+                    logger.info("DOCX template processed successfully")
+                except Exception as e:
+                    logger.error(f"Failed to process DOCX template: {str(e)}")
+                    raise
+
+            # For PDF
+            elif file_extension == ".pdf":
+                try:
+                    # Extract text from PDF
+                    with open(template_path, "rb") as pdf_file:
+                        reader = PyPDF2.PdfReader(pdf_file)
+                        template_content = ""
+                        for page in reader.pages:
+                            template_content += page.extract_text() or ""
+
+                    # Replace placeholders
+                    for key, value in context.items():
+                        placeholder = f"{{{{ ?{key} ?}}}}"
+                        template_content = re.sub(
+                            placeholder, str(value), template_content
+                        )
+
+                    # Replace newlines with <br> outside the f-string
+                    formatted_content = template_content.replace("\n", "<br>")
+
+                    # Convert to HTML for WeasyPrint
+                    html_content = f"""
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>Employment Contract - {self.contract_id}</title>
+                        <style>
+                            body {{ font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.6; margin: 2cm; }}
+                            @page {{ size: A4; margin: 2cm; }}
+                        </style>
+                    </head>
+                    <body>
+                        <div>{formatted_content}</div>
+                    </body>
+                    </html>
+                    """
+                    logger.warning(
+                        "PDF template processed; note that PDF text extraction may be incomplete"
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to process PDF template: {str(e)}")
+                    raise
+            else:
+                logger.warning(
+                    f"Unsupported template format: {file_extension}. Falling back to default template."
+                )
+                html_content = render_to_string(
+                    "employment_contract_template.html", context
+                )
+        else:
+            # Use default HTML template
+            logger.info("Using default HTML template")
             html_content = render_to_string(
                 "employment_contract_template.html", context
             )
-            print("HTML template rendered successfully")
-        except Exception as e:
-            print(f"Failed to render HTML template: {str(e)}")
-            raise
 
-        # Convert to PDF
-        pdf_path = os.path.join(output_dir, f"contract_{self.contract_id}.pdf")
-        print(f"Saving PDF to: {pdf_path}")
+        # Convert to PDF using WeasyPrint
         try:
             HTML(string=html_content).write_pdf(pdf_path)
-            print("PDF generated successfully")
+            logger.info(f"PDF generated successfully at: {pdf_path}")
         except Exception as e:
-            print(f"Failed to generate PDF with WeasyPrint: {str(e)}")
+            logger.error(f"Failed to generate PDF with WeasyPrint: {str(e)}")
             raise
 
         # Save to contract_file
-        with open(pdf_path, "rb") as pdf_file:
-            self.contract_file.save(f"contract_{self.contract_id}.pdf", File(pdf_file))
-        print(f"PDF saved to contract_file: {self.contract_file.path}")
+        try:
+            with open(pdf_path, "rb") as pdf_file:
+                self.contract_file.save(
+                    f"contract_{self.contract_id}.pdf", File(pdf_file)
+                )
+            logger.info(f"PDF saved to contract_file: {self.contract_file.path}")
+        except Exception as e:
+            logger.error(f"Failed to save PDF to contract_file: {str(e)}")
+            raise
 
         return pdf_path
 
@@ -643,16 +754,16 @@ class Contract(models.Model):
                     not self.employee.department
                     or not self.employee.department.institution
                 ):
-                    print(
+                    logger.warning(
                         f"Skipping PDF generation for contract {self.contract_id}: Missing department or institution"
                     )
                     return
-                print(f"Generating PDF for contract {self.contract_id}")
+                logger.info(f"Generating PDF for contract {self.contract_id}")
                 self.generate_contract_pdf()
                 self.status = "active"
                 super().save(*args, **kwargs)
-                print(f"PDF generated and saved for contract {self.contract_id}")
+                logger.info(f"PDF generated and saved for contract {self.contract_id}")
             except Exception as e:
-                print(
+                logger.error(
                     f"Failed to generate contract PDF for contract {self.contract_id}: {str(e)}"
                 )
