@@ -1,7 +1,6 @@
 from django.db import models, transaction as db_transaction
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-
 from users.models import CustomUser, Profile
 
 

@@ -68,5 +68,25 @@
         "label": "When a termination initiation is made"
       }
     ]
+  },
+  {
+    "code": "job_position_advertisement",
+    "label": "All approvals on job position advertisement",
+    "workflow_actions": [
+      {
+        "code": "job_position_advertisement",
+        "label": "When a job position advertisement is made"
+      }
+    ]
+  },
+  {
+    "code": "job_position_creation",
+    "label": "All approvals on job position creation",
+    "workflow_actions": [
+      {
+        "code": "job_position_creation",
+        "label": "When a job position is created"
+      }
+    ]
   }
 ]

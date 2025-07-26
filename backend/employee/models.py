@@ -96,7 +96,7 @@ class Employee(models.Model):
         related_name="employees",
     )
     payroll_branch = models.ForeignKey(
-        'institution.Branch',
+        "institution.Branch",
         on_delete=models.PROTECT,
         blank=True,
         null=True,
@@ -382,7 +382,7 @@ class Employee(models.Model):
 
         def generate_compliant_password(length=12):
             characters = string.ascii_letters + string.digits + string.punctuation
-            password = ''.join(random.choice(characters) for _ in range(length))
+            password = "".join(random.choice(characters) for _ in range(length))
             return password
 
         random_password = generate_compliant_password()
@@ -404,20 +404,20 @@ class Employee(models.Model):
                 user=user,
                 token=token,
                 purpose=purpose,
-                expires_at=timezone.now() + timedelta(minutes=expiry_minutes)
+                expires_at=timezone.now() + timedelta(minutes=expiry_minutes),
             )
             return token
 
         def build_password_link(request, token):
             return request.build_absolute_uri(
-                reverse('set_password', kwargs={'token': token})
+                reverse("set_password", kwargs={"token": token})
             )
 
         def send_password_link_to_user(user, link):
             send_mail(
-                subject='Set Your Password',
-                message=f'Please use the following link to set your password: {link}',
-                from_email='no-reply@yourinstitution.com',
+                subject="Set Your Password",
+                message=f"Please use the following link to set your password: {link}",
+                from_email="no-reply@yourinstitution.com",
                 recipient_list=[user.email],
                 fail_silently=False,
             )
@@ -503,6 +503,7 @@ class Contract(models.Model):
     """
     Model to store employment contract details for an employee.
     """
+
     class Meta:
         verbose_name = "Contract"
         verbose_name_plural = "Contracts"
@@ -523,15 +524,9 @@ class Contract(models.Model):
     contract_id = models.CharField(
         max_length=15, unique=True, editable=False, blank=True
     )
-    contract_file = models.FileField(
-        upload_to="contracts/", blank=True, null=True
-    )
-    user_template = models.FileField(
-        upload_to="user_templates/", blank=True, null=True
-    )
-    status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default="draft"
-    )
+    contract_file = models.FileField(upload_to="contracts/", blank=True, null=True)
+    user_template = models.FileField(upload_to="user_templates/", blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
     start_date = models.DateField(default=timezone.now)
     end_date = models.DateField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -564,39 +559,63 @@ class Contract(models.Model):
 
         # Prepare context for placeholder replacement
         context = {
-            'institution_name': (
+            "institution_name": (
                 self.employee.department.institution.institution_name
                 if self.employee.department and self.employee.department.institution
                 else "Your Institution Name"
             ),
-            'institution_address': (
+            "institution_address": (
                 self.employee.department.institution.location
                 if self.employee.department and self.employee.department.institution
                 else "Your Institution Address"
             ),
-            'employee_name': self.employee.user.fullname if self.employee.user else "Unknown Employee",
-            'position_title': self.employee.position.name if self.employee.position else "Unknown Position",
-            'department_name': self.employee.department.name if self.employee.department else "Unknown Department",
-            'work_type': self.employee.work_type.name if self.employee.work_type else "Full-Time",
-            'salary': f"{int(self.employee.salary):,}" if self.employee.salary else "0",
-            'start_date': self.start_date.strftime("%B %d, %Y") if self.start_date else "Unknown Date",
-            'employee_address': self.employee.address if self.employee.address else "Unknown Address",
-            'employee_country': self.employee.country if self.employee.country else "Unknown Country",
-            'signing_date': timezone.now().strftime("%B %d, %Y"),
-            'contract_id': self.contract_id or self.generate_contract_id(),
-            'employer_representative_name': (
+            "employee_name": (
+                self.employee.user.fullname
+                if self.employee.user
+                else "Unknown Employee"
+            ),
+            "position_title": (
+                self.employee.position.name
+                if self.employee.position
+                else "Unknown Position"
+            ),
+            "department_name": (
+                self.employee.department.name
+                if self.employee.department
+                else "Unknown Department"
+            ),
+            "work_type": (
+                self.employee.work_type.name if self.employee.work_type else "Full-Time"
+            ),
+            "salary": f"{int(self.employee.salary):,}" if self.employee.salary else "0",
+            "start_date": (
+                self.start_date.strftime("%B %d, %Y")
+                if self.start_date
+                else "Unknown Date"
+            ),
+            "employee_address": (
+                self.employee.address if self.employee.address else "Unknown Address"
+            ),
+            "employee_country": (
+                self.employee.country if self.employee.country else "Unknown Country"
+            ),
+            "signing_date": timezone.now().strftime("%B %d, %Y"),
+            "contract_id": self.contract_id or self.generate_contract_id(),
+            "employer_representative_name": (
                 self.employee.department.institution.institution_owner.fullname
                 if self.employee.department and self.employee.department.institution
                 else "Authorized Signatory"
             ),
-            'employer_representative_title': "Manager",
-            'probation_period': "3 months",
-            'probation_notice_period': "2 weeks",
-            'notice_period': "30 days",
-            'additional_benefits': "Other benefits as outlined in the Employee Handbook.",
-            'currency': "USD",
+            "employer_representative_title": "Manager",
+            "probation_period": "3 months",
+            "probation_notice_period": "2 weeks",
+            "notice_period": "30 days",
+            "additional_benefits": "Other benefits as outlined in the Employee Handbook.",
+            "currency": "USD",
         }
-        logger.info(f"Prepared context: institution={context['institution_name']}, employee={context['employee_name']}")
+        logger.info(
+            f"Prepared context: institution={context['institution_name']}, employee={context['employee_name']}"
+        )
 
         pdf_path = os.path.join(output_dir, f"contract_{self.contract_id}.pdf")
 
@@ -606,22 +625,24 @@ class Contract(models.Model):
             file_extension = os.path.splitext(template_path)[1].lower()
 
             # For DOCX
-            if file_extension == '.docx':
+            if file_extension == ".docx":
                 try:
                     # Load DOCX file
                     doc = Document(template_path)
                     full_text = []
                     for para in doc.paragraphs:
                         full_text.append(para.text)
-                    template_content = '\n'.join(full_text)
+                    template_content = "\n".join(full_text)
 
                     # Replace placeholders (e.g., {{ employee_name }})
                     for key, value in context.items():
                         placeholder = f"{{{{ ?{key} ?}}}}"
-                        template_content = re.sub(placeholder, str(value), template_content)
+                        template_content = re.sub(
+                            placeholder, str(value), template_content
+                        )
 
                     # Replace newlines with <br> outside the f-string
-                    formatted_content = template_content.replace('\n', '<br>')
+                    formatted_content = template_content.replace("\n", "<br>")
 
                     # Convert to HTML for WeasyPrint
                     html_content = f"""
@@ -646,10 +667,10 @@ class Contract(models.Model):
                     raise
 
             # For PDF
-            elif file_extension == '.pdf':
+            elif file_extension == ".pdf":
                 try:
                     # Extract text from PDF
-                    with open(template_path, 'rb') as pdf_file:
+                    with open(template_path, "rb") as pdf_file:
                         reader = PyPDF2.PdfReader(pdf_file)
                         template_content = ""
                         for page in reader.pages:
@@ -658,10 +679,12 @@ class Contract(models.Model):
                     # Replace placeholders
                     for key, value in context.items():
                         placeholder = f"{{{{ ?{key} ?}}}}"
-                        template_content = re.sub(placeholder, str(value), template_content)
+                        template_content = re.sub(
+                            placeholder, str(value), template_content
+                        )
 
                     # Replace newlines with <br> outside the f-string
-                    formatted_content = template_content.replace('\n', '<br>')
+                    formatted_content = template_content.replace("\n", "<br>")
 
                     # Convert to HTML for WeasyPrint
                     html_content = f"""
@@ -680,17 +703,25 @@ class Contract(models.Model):
                     </body>
                     </html>
                     """
-                    logger.warning("PDF template processed; note that PDF text extraction may be incomplete")
+                    logger.warning(
+                        "PDF template processed; note that PDF text extraction may be incomplete"
+                    )
                 except Exception as e:
                     logger.error(f"Failed to process PDF template: {str(e)}")
                     raise
             else:
-                logger.warning(f"Unsupported template format: {file_extension}. Falling back to default template.")
-                html_content = render_to_string('employment_contract_template.html', context)
+                logger.warning(
+                    f"Unsupported template format: {file_extension}. Falling back to default template."
+                )
+                html_content = render_to_string(
+                    "employment_contract_template.html", context
+                )
         else:
             # Use default HTML template
             logger.info("Using default HTML template")
-            html_content = render_to_string('employment_contract_template.html', context)
+            html_content = render_to_string(
+                "employment_contract_template.html", context
+            )
 
         # Convert to PDF using WeasyPrint
         try:
@@ -703,7 +734,9 @@ class Contract(models.Model):
         # Save to contract_file
         try:
             with open(pdf_path, "rb") as pdf_file:
-                self.contract_file.save(f"contract_{self.contract_id}.pdf", File(pdf_file))
+                self.contract_file.save(
+                    f"contract_{self.contract_id}.pdf", File(pdf_file)
+                )
             logger.info(f"PDF saved to contract_file: {self.contract_file.path}")
         except Exception as e:
             logger.error(f"Failed to save PDF to contract_file: {str(e)}")
@@ -717,8 +750,13 @@ class Contract(models.Model):
         super().save(*args, **kwargs)
         if not self.contract_file:
             try:
-                if not self.employee.department or not self.employee.department.institution:
-                    logger.warning(f"Skipping PDF generation for contract {self.contract_id}: Missing department or institution")
+                if (
+                    not self.employee.department
+                    or not self.employee.department.institution
+                ):
+                    logger.warning(
+                        f"Skipping PDF generation for contract {self.contract_id}: Missing department or institution"
+                    )
                     return
                 logger.info(f"Generating PDF for contract {self.contract_id}")
                 self.generate_contract_pdf()
@@ -726,4 +764,6 @@ class Contract(models.Model):
                 super().save(*args, **kwargs)
                 logger.info(f"PDF generated and saved for contract {self.contract_id}")
             except Exception as e:
-                logger.error(f"Failed to generate contract PDF for contract {self.contract_id}: {str(e)}")
+                logger.error(
+                    f"Failed to generate contract PDF for contract {self.contract_id}: {str(e)}"
+                )

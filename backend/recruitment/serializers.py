@@ -138,6 +138,38 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
             "description": obj.job_position.description,
         }
 
+    def create(self, validated_data):
+
+        advert = JobPositionAdvert.objects.create(**validated_data)
+
+        institution = advert.job_position.department.institution
+        content_type = ContentType.objects.get_for_model(JobPositionAdvert)
+
+        try:
+            action = WorkflowAction.objects.get(code="job_position_advertisement")
+        except WorkflowAction.DoesNotExist:
+            action = None
+
+        if action:
+            steps = InstitutionApprovalStep.objects.filter(
+                institution=institution, action=action
+            ).order_by("level")
+
+            if not steps.exists():
+                advert.finish_workflow()
+            else:
+                for i, step in enumerate(steps):
+                    ApprovalTask.objects.create(
+                        step=step,
+                        content_type=content_type,
+                        object_id=advert.id,
+                        status="pending" if i == 0 else "not_started",
+                    )
+        else:
+            advert.finish_workflow()
+
+        return advert
+
 
 class JobPositionSerializer(serializers.ModelSerializer):
     department_details = DepartmentSerializer(source="department", read_only=True)
@@ -204,6 +236,37 @@ class JobPositionSerializer(serializers.ModelSerializer):
                     }
                 )
         return attrs
+
+    def create(self, validated_data):
+        job_position = JobPosition.objects.create(**validated_data)
+
+        institution = job_position.department.institution
+        content_type = ContentType.objects.get_for_model(JobPosition)
+
+        try:
+            action = WorkflowAction.objects.get(code="job_position_creation")
+        except WorkflowAction.DoesNotExist:
+            action = None
+
+        if action:
+            steps = InstitutionApprovalStep.objects.filter(
+                institution=institution, action=action
+            ).order_by("level")
+
+            if not steps.exists():
+                job_position.finish_workflow()
+            else:
+                for i, step in enumerate(steps):
+                    ApprovalTask.objects.create(
+                        step=step,
+                        content_type=content_type,
+                        object_id=job_position.id,
+                        status="pending" if i == 0 else "not_started",
+                    )
+        else:
+            job_position.finish_workflow()
+
+        return job_position
 
     def update(self, instance, validated_data):
         from employee.models import Employee

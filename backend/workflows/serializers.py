@@ -16,6 +16,7 @@ from onboarding.serializers import (
     TerminationInitiationSerializer,
     RetirementRequestSerializer,
 )
+from recruitment.serializers import JobPositionSerializer, JobPositionAdvertSerializer
 
 
 class WorkflowCategorySerializer(serializers.ModelSerializer):
@@ -313,6 +314,62 @@ class RetirementRequestWorkflowSerializer(RetirementRequestSerializer):
 
     class Meta(RetirementRequestSerializer.Meta):
         fields = RetirementRequestSerializer.Meta.fields + ["status", "tasks"]
+
+    def get_status(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        if not tasks.exists():
+            return "not_started"
+        if all(t.status == "completed" for t in tasks):
+            return "completed"
+        if any(t.status == "rejected" for t in tasks):
+            return "rejected"
+        return "pending"
+
+    def get_tasks(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        return TaskStatusSerializer(tasks, many=True).data
+
+
+class JobPositionWorkflowSerializer(JobPositionSerializer):
+    status = serializers.SerializerMethodField()
+    tasks = serializers.SerializerMethodField()
+
+    class Meta(JobPositionSerializer.Meta):
+        fields = JobPositionSerializer.Meta.fields + ["status", "tasks"]
+
+    def get_status(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        if not tasks.exists():
+            return "not_started"
+        if all(t.status == "completed" for t in tasks):
+            return "completed"
+        if any(t.status == "rejected" for t in tasks):
+            return "rejected"
+        return "pending"
+
+    def get_tasks(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        return TaskStatusSerializer(tasks, many=True).data
+
+
+class JobPositionAdvertWorkflowSerializer(JobPositionAdvertSerializer):
+    status = serializers.SerializerMethodField()
+    tasks = serializers.SerializerMethodField()
+
+    class Meta(JobPositionAdvertSerializer.Meta):
+        fields = JobPositionAdvertSerializer.Meta.fields + ["status", "tasks"]
 
     def get_status(self, obj):
         tasks = ApprovalTask.objects.filter(

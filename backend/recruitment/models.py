@@ -8,6 +8,10 @@ import os
 
 
 class JobPosition(models.Model):
+    JOB_POSITION_STATUS_CHOICES = [
+        ("active", "Active"),
+        ("inactive", "Inactive"),
+    ]
     name = models.CharField(max_length=255)
     description = models.TextField()
     department = models.ForeignKey(
@@ -26,10 +30,53 @@ class JobPosition(models.Model):
         blank=True,
         null=True,
     )
+
+    job_position_status = models.CharField(
+        max_length=20,
+        choices=JOB_POSITION_STATUS_CHOICES,
+        default="inactive",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.name}"
+
+    def activate_job_position(self):
+        if self.job_position_status != "inactive":
+            raise ValidationError("Only inactive job positions can be activated.")
+
+        self.job_position_status == "active"
+        self.save()
+
+    def finish_workflow(self):
+        from workflows.models import ApprovalTask
+        from django.contrib.contenttypes.models import ContentType
+
+        content_type = ContentType.objects.get_for_model(self.__class__)
+
+        tasks = ApprovalTask.objects.filter(
+            content_type=content_type, object_id=self.pk
+        )
+
+        if tasks.exists() and tasks.filter(status="rejected").exists():
+            self.job_position_status = "inactive"
+            self.save()
+            return
+        if (
+            tasks.exists()
+            and not tasks.filter(
+                status__in=["not_started", "pending", "rejected"]
+            ).exists()
+        ):
+            self.activate_job_position()
+            return
+        elif not tasks.exists():
+            self.activate_job_position()
+            return
+        else:
+            raise Exception(
+                "Cannot finish workflow: Some tasks are not completed or rejected."
+            )
 
     def get_contract_template(self):
         """
@@ -143,15 +190,19 @@ class ContractTemplate(models.Model):
 
 class JobPositionAdvert(models.Model):
     status_choices = [
+        ("pending_approval", "Pending Approval"),
         ("expired", "Expired"),
         ("active", "Active"),
         ("archived", "Archived"),
         ("closed", "Closed"),
+        ("inactive", "Inactive"),
     ]
     job_position = models.ForeignKey(
         JobPosition, on_delete=models.PROTECT, related_name="adverts"
     )
-    status = models.CharField(max_length=20, choices=status_choices, default="active")
+    status = models.CharField(
+        max_length=20, choices=status_choices, default="pending_approval"
+    )
     published_date = models.DateTimeField(default=datetime.now)
     expiry_date = models.DateTimeField()
     number_of_employees_expected = models.PositiveIntegerField(blank=True, null=True)
@@ -178,6 +229,45 @@ class JobPositionAdvert(models.Model):
     def save(self, *args, **kwargs):
         self._clean()
         super().save(*args, **kwargs)
+
+    def approve(self):
+        if self.status != "pending_approval":
+            raise ValidationError(
+                "Only pending approval job positions adeverts can be approved."
+            )
+
+        self.status == "active"
+        self.save()
+
+    def finish_workflow(self):
+        from workflows.models import ApprovalTask
+        from django.contrib.contenttypes.models import ContentType
+
+        content_type = ContentType.objects.get_for_model(self.__class__)
+
+        tasks = ApprovalTask.objects.filter(
+            content_type=content_type, object_id=self.pk
+        )
+
+        if tasks.exists() and tasks.filter(status="rejected").exists():
+            self.status = "inactive"
+            self.save()
+            return
+        if (
+            tasks.exists()
+            and not tasks.filter(
+                status__in=["not_started", "pending", "rejected"]
+            ).exists()
+        ):
+            self.approve()
+            return
+        elif not tasks.exists():
+            self.approve()
+            return
+        else:
+            raise Exception(
+                "Cannot finish workflow: Some tasks are not completed or rejected."
+            )
 
 
 class JobAdvertApplication(models.Model):
