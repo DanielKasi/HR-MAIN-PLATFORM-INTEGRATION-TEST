@@ -234,7 +234,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         employee_ids = attrs.get("apply_salary_to_employees", [])
-        if employee_ids:
+        if self.instance and employee_ids:
             from employee.models import Employee
 
             invalid_ids = (
@@ -290,7 +290,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
 
         instance = super().update(instance, validated_data)
 
-        if new_salary is not None and old_salary != new_salary and employee_ids:
+        if employee_ids and old_salary != new_salary:
             Employee.objects.filter(id__in=employee_ids, position=instance).update(
                 salary=new_salary
             )
