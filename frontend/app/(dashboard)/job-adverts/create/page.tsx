@@ -225,6 +225,7 @@ export default function CreateJobAdvertPage() {
                   <Input
                     id="expiry_date"
                     type="date"
+                    min={new Date().toISOString().split("T")[0]} 
                     value={formData.expiry_date}
                     onChange={(e) => updateFormData("expiry_date", e.target.value)}
                     className={errors.expiry_date ? "border-destructive" : ""}

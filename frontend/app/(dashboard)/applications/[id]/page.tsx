@@ -22,8 +22,19 @@ import {
   Clock,
   Globe,
   UserCheck,
+  Eye,
 } from "lucide-react"
-
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ConfirmationDialog } from "@/components/confirmation-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,10 +45,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { getJobApplicationById, updateJobApplicationStatus } from "@/lib/utils"
-import type { JobApplication } from "@/app/types/types.utils"
+import { getJobApplicationById, updateJobApplicationStatus, getInterviewStages, fetchEmployees,
+   createInterview} from "@/lib/utils"
+import type { JobApplication, IInterviewStage, IEmployee, IInterviewFormData } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import { downloadFile } from "@/lib/helpers"
+import { selectUser } from "@/store/auth/selectors"
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
@@ -76,9 +89,164 @@ export default function ApplicationViewPage() {
   const router = useRouter()
   const params = useParams()
   const applicationId = Number.parseInt(params?.id as string)
+  const currentUser = useSelector(selectUser)
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const selectedBranch = useSelector(selectSelectedBranch)
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false)
+  const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([])
+  const [employees, setEmployees] = useState<IEmployee[]>([])
+  const [isSchedulingInterview, setIsSchedulingInterview] = useState(false)
+  const [interviewFormData, setInterviewFormData] = useState({
+    interview_stage: 0,
+    interview_date: "",
+    location: "",
+    interview_type: "",
+    status: "scheduled",
+    feedback: "",
+    rating: undefined,
+  })
+  const [interviewErrors, setInterviewErrors] = useState<any>({})
+  const handleIndividualAction = async (
+    applicationId: number,
+    action: "reviewed" | "rejected"
+  ) => {
+    try {
+      await updateJobApplicationStatus({ applicationId, status: action });
+      setApplication(prev => prev ? { ...prev, status: action } : null);
+      toast.success(`Application ${action} successfully`);
+    } catch (error) {
+      toast.error(`Failed to ${action} application`);
+    }
+  }
+
+  const fetchInterviewData = async () => {
+    if (!selectedInstitution || !application) return
+
+    try {
+      const [stagesResponse, employeesResponse] = await Promise.all([
+        getInterviewStages({ institutionId: selectedInstitution.id }),
+        fetchEmployees({ institutionId: selectedInstitution.id })
+      ])
+
+      let stagesArray: IInterviewStage[] = []
+      if (stagesResponse && "results" in stagesResponse && Array.isArray(stagesResponse.results)) {
+        stagesArray = stagesResponse.results
+      } else if (Array.isArray(stagesResponse)) {
+        stagesArray = stagesResponse
+      }
+
+      // Filter stages for this job position
+      const filteredStages = stagesArray.filter(
+        stage => stage.job_position_advert === application.job_position_advert
+      )
+      setInterviewStages(filteredStages)
+
+      let employeesArray: IEmployee[] = []
+      if (employeesResponse && "results" in employeesResponse && Array.isArray(employeesResponse.results)) {
+        employeesArray = employeesResponse.results
+      } else if (Array.isArray(employeesResponse)) {
+        employeesArray = employeesResponse
+      }
+      setEmployees(employeesArray)
+
+      // Set default interview date to tomorrow at 10 AM
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      tomorrow.setHours(10, 0, 0, 0)
+      setInterviewFormData(prev => ({
+        ...prev,
+        interview_date: tomorrow.toISOString().slice(0, 16)
+      }))
+    } catch (error) {
+      console.error("Error fetching interview data:", error)
+      toast.error("Failed to load interview data")
+    }
+  }
+
+  const handleScheduleInterview = async () => {
+    if (!application || !selectedInstitution) return
+
+    // Validate form
+    const errors: any = {}
+    if (!interviewFormData.interview_stage || interviewFormData.interview_stage === 0) {
+      errors.interview_stage = "Please select an interview stage"
+    }
+    if (!interviewFormData.interview_date) {
+      errors.interview_date = "Interview date and time is required"
+    } else {
+      const interviewDate = new Date(interviewFormData.interview_date)
+      const now = new Date()
+      if (interviewDate <= now) {
+        errors.interview_date = "Interview date must be in the future"
+      }
+    }
+    if (!interviewFormData.location || interviewFormData.location.trim() === "") {
+      errors.location = "Interview location is required"
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setInterviewErrors(errors)
+      return
+    }
+
+    setIsSchedulingInterview(true)
+
+    try {
+      let interviewTime = ""
+      if (interviewFormData.interview_date) {
+        const dateTime = new Date(interviewFormData.interview_date)
+        const hours = dateTime.getHours().toString().padStart(2, "0")
+        const minutes = dateTime.getMinutes().toString().padStart(2, "0")
+        interviewTime = `${hours}:${minutes}`
+      }
+
+      const createData: IInterviewFormData = {
+        job_position_application: application.id,
+        interview_stage: interviewFormData.interview_stage,
+        interview_date: interviewFormData.interview_date,
+        location: interviewFormData.location,
+        interview_time: interviewTime,
+        interview_type: interviewFormData.interview_type,
+        status: interviewFormData.status || "scheduled",
+        feedback: interviewFormData.feedback || undefined,
+        rating: interviewFormData.rating || undefined,
+      }
+
+      const result = await createInterview({
+        institutionId: selectedInstitution.id,
+        interviewData: createData,
+      })
+
+      if (result) {
+        toast.success("Interview scheduled successfully!")
+        setShowScheduleDialog(false)
+        // Reset form
+        setInterviewFormData({
+          interview_stage: 0,
+          interview_date: "",
+          location: "",
+          interview_type: "",
+          status: "scheduled",
+          feedback: "",
+          rating: undefined,
+        })
+        setInterviewErrors({})
+      } else {
+        toast.error("Failed to schedule interview")
+      }
+    } catch (error) {
+      console.error("Error scheduling interview:", error)
+      toast.error("Failed to schedule interview")
+    } finally {
+      setIsSchedulingInterview(false)
+    }
+  }
+
+  const updateInterviewFormData = (field: string, value: any) => {
+    setInterviewFormData(prev => ({ ...prev, [field]: value }))
+    setInterviewErrors((prev: any) => ({ ...prev, [field]: undefined }))
+  }
 
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
@@ -271,9 +439,10 @@ export default function ApplicationViewPage() {
               {getStatusIcon(application.status)}
               <div>
                 <p className="font-medium">Application Status</p>
-                <Badge variant={getStatusBadgeVariant(application.status)} className="mt-1">
+                <Badge className="mt-1 bg-green-500 text-white">
                   {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
                 </Badge>
+
               </div>
             </div>
             <div className="text-right">
@@ -481,78 +650,281 @@ export default function ApplicationViewPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button className="w-full justify-start" variant="outline" onClick={handleEdit}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Application
-              </Button>
-              {/* <Button className="w-full justify-start" variant="outline">
-                <Mail className="h-4 w-4 mr-2" />
-                Send Email
-              </Button> */}
-              {application?.status !== "shortlisted" && (
-                <Button className="w-full justify-start" variant="outline">
-                  <Phone className="h-4 w-4 mr-2" />
-                  Schedule Call
-                </Button>
-              )}
-              {application?.status !== "shortlisted" && (
-                <>
-                  <Button className="w-full justify-start" variant="outline" onClick={() => setShowShortlistConfirm(true)}>
-                    <UserCheck className="h-4 w-4 mr-2" />
-                    Shortlist
-                  </Button>
-                  <ConfirmationDialog
-                    isOpen={showShortlistConfirm}
-                    onClose={() => setShowShortlistConfirm(false)}
-                    onConfirm={async () => {
-                      setShowShortlistConfirm(false);
-                      await handleShortlist();
-                    }}
-                    title="Shortlist Application"
-                    description="Are you sure you want to shortlist this application? This action cannot be undone."
-                    confirmText="Shortlist"
-                    cancelText="Cancel"
-                  />
-                </>
-              )}
-              <Separator />
-              <Button className="w-full justify-start text-destructive" variant="outline" onClick={handleDelete}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Application
-              </Button>
-            </CardContent>
-          </Card>
+         {/* Quick Actions */}
+<Card>
+  <CardHeader>
+    <CardTitle className="text-lg">Quick Actions</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-3">
+    <Button className="w-full justify-start" variant="outline" onClick={handleEdit}>
+      <Edit className="h-4 w-4 mr-2" />
+      Edit Application
+    </Button>
 
+    {/* Review Button - only show for new applications */}
+    {application?.status === "new" && (
+      <Button
+        className="w-full justify-start text-yellow-600 border-yellow-200 hover:bg-yellow-50"
+        variant="outline"
+        onClick={() => handleIndividualAction(application.id, "reviewed")}
+      >
+        <Eye className="h-4 w-4 mr-2" />
+        Mark as Reviewed
+      </Button>
+    )}
+
+    {/* Shortlist Button - only show for reviewed applications */}
+    {application?.status === "reviewed" && (
+      <Button
+        className="w-full justify-start text-green-600 border-green-200 hover:bg-green-50"
+        variant="outline"
+        onClick={() => setShowShortlistConfirm(true)}
+      >
+        <UserCheck className="h-4 w-4 mr-2" />
+        Shortlist
+      </Button>
+    )}
+
+    {/* Schedule Interview Button - only show for shortlisted applications */}
+    {application?.status === "shortlisted" && (
+      <Button
+        className="w-full justify-start text-blue-600 border-blue-200 hover:bg-blue-50"
+        variant="outline"
+        onClick={() => {
+          fetchInterviewData()
+          setShowScheduleDialog(true)
+        }}
+      >
+        <Calendar className="h-4 w-4 mr-2" />
+        Schedule Interview
+      </Button>
+    )}
+
+    {/* Schedule Call - show for reviewed and shortlisted */}
+    {(application?.status === "reviewed" || application?.status === "shortlisted") && (
+      <Button className="w-full justify-start" variant="outline">
+        <Phone className="h-4 w-4 mr-2" />
+        Schedule Call
+      </Button>
+    )}
+
+    <Separator />
+
+    {/* Reject Button - show for new and reviewed (not shortlisted) */}
+    {(application?.status === "new" || application?.status === "reviewed") && (
+      <Button
+        className="w-full justify-start text-destructive h-4 w-4 mr-2"
+        variant="outline"
+        onClick={() => handleIndividualAction(application.id, "rejected")}
+      >
+        Reject Application
+      </Button>
+    )}
+
+    <Button className="w-full justify-start text-destructive" variant="outline" onClick={handleDelete}>
+      <Trash2 className="h-4 w-4 mr-2" />
+      Delete Application
+    </Button>
+  </CardContent>
+</Card>
           {/* Application Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+           {/* Application Summary */}
+<Card>
+  <CardHeader>
+    <CardTitle className="text-lg">Summary</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-4">
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-muted-foreground">Status</span>
+      <div className="flex items-center gap-2">
+        <Badge variant={getStatusBadgeVariant(application.status)}>
+          {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+        </Badge>
+        {/* Show next step indicator */}
+        {application.status === "new" && (
+          <span className="text-xs text-muted-foreground">→ Needs Review</span>
+        )}
+        {application.status === "reviewed" && (
+          <span className="text-xs text-muted-foreground">→ Can Shortlist</span>
+        )}
+        {application.status === "shortlisted" && (
+          <span className="text-xs text-muted-foreground">→ Ready for Interview</span>
+        )}
+      </div>
+    </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Status</span>
-                <Badge variant={getStatusBadgeVariant(application.status)}>{application.status}</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Source</span>
-                <Badge variant="outline">{sourceLabels[application.source]}</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Documents</span>
-                <span className="text-sm font-medium">
-                  {[application.resume, application.cover_letter].filter(Boolean).length}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+    {/* Show who performed each action */}
+    {application.status === "reviewed" && currentUser && (
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-muted-foreground">Reviewed by</span>
+        <span className="text-sm font-medium">{currentUser.fullname}</span>
+      </div>
+    )}
+
+    {application.status === "shortlisted" && currentUser && (
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-muted-foreground">Shortlisted by</span>
+        <span className="text-sm font-medium">{currentUser.fullname}</span>
+      </div>
+    )}
+
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-muted-foreground">Source</span>
+      <Badge variant="outline">{sourceLabels[application.source]}</Badge>
+    </div>
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-muted-foreground">Documents</span>
+      <span className="text-sm font-medium">
+        {[application.resume, application.cover_letter].filter(Boolean).length}
+      </span>
+    </div>
+
+    {/* Application workflow progress */}
+    <div className="pt-2 border-t">
+      <span className="text-sm font-medium text-muted-foreground">Application Flow</span>
+      <div className="mt-2 flex items-center space-x-2">
+        <div className={`w-3 h-3 rounded-full ${application.status !== "new" ? "bg-green-500" : "bg-gray-300"}`} />
+        <span className="text-xs">New</span>
+        <div className="w-4 h-px bg-gray-300" />
+        <div className={`w-3 h-3 rounded-full ${["reviewed", "shortlisted"].includes(application.status) ? "bg-green-500" : "bg-gray-300"}`} />
+        <span className="text-xs">Reviewed</span>
+        <div className="w-4 h-px bg-gray-300" />
+        <div className={`w-3 h-3 rounded-full ${application.status === "shortlisted" ? "bg-green-500" : "bg-gray-300"}`} />
+        <span className="text-xs">Shortlisted</span>
+      </div>
+    </div>
+  </CardContent>
+</Card>
         </div>
       </div>
+      {/* Schedule Interview Dialog */}
+<Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
+  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <DialogHeader>
+      <DialogTitle>Schedule Interview</DialogTitle>
+      <DialogDescription>
+        Schedule an interview for {application?.applicant_name}
+      </DialogDescription>
+    </DialogHeader>
+
+    <div className="space-y-4">
+      {/* Interview Stage */}
+      <div className="space-y-2">
+        <Label htmlFor="interview_stage" className="text-sm font-medium">
+          Interview Stage *
+        </Label>
+        <Select
+          value={interviewFormData.interview_stage.toString()}
+          onValueChange={(value) => updateInterviewFormData("interview_stage", Number(value))}
+        >
+          <SelectTrigger className={interviewErrors.interview_stage ? "border-destructive" : ""}>
+            <SelectValue placeholder="Select interview stage" />
+          </SelectTrigger>
+          <SelectContent>
+            {interviewStages.map((stage) => (
+              <SelectItem key={stage.id} value={stage.id.toString()}>
+                <div className="flex items-center gap-2">
+                  <Building className="h-4 w-4" />
+                  {stage.name} (Level {stage.level})
+                </div>
+              </SelectItem>
+            ))}
+            {interviewStages.length === 0 && (
+              <SelectItem value="no-stages" disabled>
+                No interview stages available for this position
+              </SelectItem>
+            )}
+          </SelectContent>
+        </Select>
+        {interviewErrors.interview_stage && (
+          <p className="text-sm text-destructive">{interviewErrors.interview_stage}</p>
+        )}
+      </div>
+
+      {/* Interview Date */}
+      <div className="space-y-2">
+        <Label htmlFor="interview_date" className="text-sm font-medium">
+          Interview Date & Time *
+        </Label>
+        <Input
+          id="interview_date"
+          type="datetime-local"
+          value={interviewFormData.interview_date}
+          onChange={(e) => updateInterviewFormData("interview_date", e.target.value)}
+          className={interviewErrors.interview_date ? "border-destructive" : ""}
+          min={new Date().toISOString().slice(0, 16)}
+        />
+        {interviewErrors.interview_date && (
+          <p className="text-sm text-destructive">{interviewErrors.interview_date}</p>
+        )}
+      </div>
+
+      {/* Interview Location */}
+      <div className="space-y-2">
+        <Label htmlFor="location" className="text-sm font-medium">
+          Interview Location *
+        </Label>
+        <Input
+          id="location"
+          type="text"
+          value={interviewFormData.location}
+          onChange={(e) => updateInterviewFormData("location", e.target.value)}
+          className={interviewErrors.location ? "border-destructive" : ""}
+          placeholder="e.g., Conference Room A, or Zoom meeting"
+        />
+        {interviewErrors.location && (
+          <p className="text-sm text-destructive">{interviewErrors.location}</p>
+        )}
+      </div>
+
+      {/* Interview Type */}
+      <div className="space-y-2">
+        <Label htmlFor="interview_type" className="text-sm font-medium">
+          Interview Type
+        </Label>
+        <Select
+          value={interviewFormData.interview_type}
+          onValueChange={(value) => updateInterviewFormData("interview_type", value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select interview type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="online">Online</SelectItem>
+            <SelectItem value="in_person">In Person</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+
+    <div className="flex justify-end space-x-2 pt-4">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setShowScheduleDialog(false)}
+        disabled={isSchedulingInterview}
+      >
+        Cancel
+      </Button>
+      <Button
+        onClick={handleScheduleInterview}
+        disabled={isSchedulingInterview}
+      >
+        {isSchedulingInterview ? (
+          <>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+            Scheduling...
+          </>
+        ) : (
+          <>
+            <Calendar className="h-4 w-4 mr-2" />
+            Schedule Interview
+          </>
+        )}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
     </div>
   )
 }

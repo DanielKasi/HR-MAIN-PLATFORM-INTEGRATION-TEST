@@ -70,7 +70,7 @@ import type {
   JobPositionAdvert,
   PaginatedResponse,
 } from "@/app/types/types.utils";
-import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
+import {selectUser, selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -117,7 +117,7 @@ export default function ApplicationsPage() {
 
   const [sortField, setSortField] = useState<"application_date" | "posted_date" | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-
+  const userData = useSelector(selectUser);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
@@ -169,6 +169,7 @@ export default function ApplicationsPage() {
     country: "",
     source: "website",
     application_date: new Date().toISOString().split("T")[0],
+    created_by: userData?.id || 0, // Ensure created_by is set to user ID
   });
 
   const [jobPositionAdverts, setJobPositionAdverts] = useState<JobPositionAdvert[]>([]);
@@ -339,14 +340,26 @@ export default function ApplicationsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
-    if (!selectedInstitution || !selectedBranch) {
-      setError("Missing organization or branch information");
+    // Simple validation checks
+    if (!formData.applicant_name.trim()) {
+      setError("Please enter the applicant's name");
       return;
     }
 
-    if (!formData.resume) {
-      setError("Resume is required");
+    if (!formData.applicant_email.trim()) {
+      setError("Please enter the applicant's email");
+      return;
+    }
+
+    if (!formData.address.trim()) {
+      setError("Please enter the applicant's address");
+      return;
+    }
+
+    if (!formData.country.trim()) {
+      setError("Please enter the country");
       return;
     }
 
@@ -355,8 +368,22 @@ export default function ApplicationsPage() {
       return;
     }
 
+    if (!formData.resume) {
+      setError("Please upload a resume");
+      return;
+    }
+
+    if (!selectedInstitution || !selectedBranch) {
+      setError("Missing organization or branch information");
+      return;
+    }
+
+    if (!userData?.id) {
+      setError("User information not available. Please refresh and try again.");
+      return;
+    }
+
     setIsSubmitting(true);
-    setError(null);
 
     try {
       const applicationData: JobApplicationFormData = {
@@ -366,9 +393,12 @@ export default function ApplicationsPage() {
         applicant_phone: formData.applicant_phone || undefined,
         state: formData.state || undefined,
         application_date: formData.application_date,
-        address: formData.address || "",
-        country: formData.country || "",
+        address: formData.address,
+        country: formData.country,
+        created_by: userData.id,
       };
+
+      console.log("Application data being sent:", applicationData);
 
       const newApplication = await createJobApplication({
         institutionId: selectedInstitution.id,
@@ -395,26 +425,25 @@ export default function ApplicationsPage() {
           country: "",
           source: "website",
           application_date: new Date().toISOString().split("T")[0],
+          created_by: userData.id,
         });
-        toast.success("Application created successfully!")
+        toast.success("Application created successfully!");
       } else {
-        setError("Failed to create application - API returned null");
+        setError("Failed to create application");
       }
     } catch (err: any) {
-      let errorMessage = "An error occurred while creating the application";
       if (err?.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err?.response?.data?.error) {
-        errorMessage = err.response.data.error;
+        setError(err.response.data.message);
       } else if (err?.message) {
-        errorMessage = err.message;
+        setError(err.message);
+      } else {
+        setError("Failed to create application. Please check all fields and try again.");
       }
-
-      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
+
   const handleSelectApplication = (applicationId: number, checked: boolean) => {
     if (checked) {
       setSelectedApplications((prev) => [...prev, applicationId]);
@@ -588,7 +617,7 @@ export default function ApplicationsPage() {
           <Plus className="mr-2 h-4 w-4" />
           Create Application
         </Button>
-        
+
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
