@@ -1,0 +1,152 @@
+import { useState, useEffect } from "react";
+import { countryAPI } from "@/lib/helpers";
+import { CountryCode, isValidPhoneNumber } from "libphonenumber-js";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import CountrySelect from "@/components/common/country-select";
+import type { ICountry } from "@/app/types/types.utils";
+
+interface PhoneNumberInputProps {
+    label?: string;
+    required?: boolean;
+    value: string;
+    country: ICountry | null;
+    onChange: (data: {
+        country: ICountry | null;
+        countryCode: string;
+        phoneNumber: string;
+        isValid: boolean;
+    }) => void;
+    error?: string | null;
+    defaultCountry?: ICountry | null;
+    disabled?: boolean;
+}
+
+export default function PhoneNumberInput({
+    label = "Phone Number",
+    required = false,
+    value,
+    country,
+    onChange,
+    error,
+    defaultCountry = null,
+    disabled = false,
+}: PhoneNumberInputProps) {
+    const [countries, setCountries] = useState<ICountry[]>([]);
+    const [selectedCountry, setSelectedCountry] = useState<ICountry | null>(country || defaultCountry);
+    const [phoneNumber, setPhoneNumber] = useState<string>(value || "");
+    const [phoneError, setPhoneError] = useState<string | null>(error || null);
+
+    useEffect(() => {
+        countryAPI.getAll()
+            .then((data) => {
+                setCountries(data);
+                // Default to Uganda if not set
+                if (!selectedCountry) {
+                    const ug = data.find((c: any) => c.cca2 === "UG" || c.name.common === "Uganda");
+                    if (ug) setSelectedCountry(ug);
+                }
+            })
+            .catch(() => toast.error("Failed to load countries"));
+    }, []);
+
+    useEffect(() => {
+        setSelectedCountry(country || defaultCountry || null);
+    }, [country, defaultCountry]);
+
+    useEffect(() => {
+        setPhoneNumber(value || "");
+    }, [value]);
+
+    const getCountryCode = () => {
+        if (!selectedCountry?.idd?.root) return "";
+        const suffix = selectedCountry.idd.suffixes?.[0] || "";
+        return `${selectedCountry.idd.root}${suffix}`;
+    };
+
+    const getFlag = (cca2: string) =>
+        String.fromCodePoint(...cca2.split("").map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+
+    const handleCountryChange = (country: ICountry | null) => {
+        setSelectedCountry(country);
+        setPhoneError(null);
+        setPhoneNumber("");
+        onChange({
+            country,
+            countryCode: country ? getCountryCode() : "",
+            phoneNumber: "",
+            isValid: false,
+        });
+    };
+
+    const handlePhoneChange = (value: string) => {
+        // Remove leading zero if present
+        const sanitizedValue = value.replace(/^0+/, "");
+        setPhoneNumber(sanitizedValue);
+        if (selectedCountry && sanitizedValue) {
+            const code = selectedCountry.cca2 as CountryCode;
+            if (!isValidPhoneNumber(sanitizedValue, code)) {
+                setPhoneError("Invalid phone number for selected country");
+                onChange({
+                    country: selectedCountry,
+                    countryCode: getCountryCode(),
+                    phoneNumber: sanitizedValue,
+                    isValid: false,
+                });
+            } else {
+                setPhoneError(null);
+                onChange({
+                    country: selectedCountry,
+                    countryCode: getCountryCode(),
+                    phoneNumber: sanitizedValue,
+                    isValid: true,
+                });
+            }
+        } else {
+            setPhoneError(null);
+            onChange({
+                country: selectedCountry,
+                countryCode: getCountryCode(),
+                phoneNumber: sanitizedValue,
+                isValid: false,
+            });
+        }
+    };
+
+    return (
+        <div className="space-y-2">
+            {label && (
+                <Label htmlFor="phone-number-input">{label}{required && " *"}</Label>
+            )}
+            <div className="flex gap-2 items-center">
+                <div style={{ minWidth: 180 }}>
+                    <CountrySelect
+                        countries={countries}
+                        selectedCountry={selectedCountry}
+                        onCountryChange={handleCountryChange}
+                        disabled={disabled}
+                        compact={true}
+                    />
+                </div>
+                <Input
+                    id="country_code"
+                    value={getCountryCode()}
+                    disabled
+                    style={{ width: "80px" }}
+                    className="hidden" // Hide this, as code is now in CountrySelect
+                />
+                <Input
+                    id="phone-number-input"
+                    value={phoneNumber}
+                    onChange={e => handlePhoneChange(e.target.value)}
+                    placeholder="Enter phone number"
+                    required={required}
+                    type="tel"
+                    disabled={disabled}
+                />
+            </div>
+            {phoneError && <span className="text-red-500 text-xs">{phoneError}</span>}
+        </div>
+    );
+} 

@@ -1,13 +1,13 @@
 "use client";
 import type React from "react";
 
-import {useState, useEffect} from "react";
-import {useRouter} from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {Eye, EyeOff, CheckCircle2, XCircle} from "lucide-react";
-import {toast} from "sonner";
+import { Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
+import { toast } from "sonner";
 
-import {Button} from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -16,12 +16,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import apiRequest from "@/lib/apiRequest";
-import {handleApiError} from "@/lib/apiErrorHandler";
-import {USER_GENDER} from "@/app/types";
-import {Select, SelectContent, SelectItem, SelectTrigger} from "@/components/ui/select";
+import { handleApiError } from "@/lib/apiErrorHandler";
+import { USER_GENDER } from "@/app/types";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 
 const GENDER_LABELS: Record<USER_GENDER, string> = {
   [USER_GENDER.MALE]: "Male",
@@ -38,7 +38,7 @@ export default function SignupPage() {
   const [gender, setGender] = useState<USER_GENDER | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [isPasswordValid, setIsPasswordValid] = useState(true);
+  const [isPasswordValid, setIsPasswordValid] = useState(false);
   const [passwordValidation, setPasswordValidation] = useState({
     minLength: false,
     hasUppercase: false,
@@ -46,19 +46,38 @@ export default function SignupPage() {
     hasDigit: false,
     hasSpecialChar: false,
   });
-  const router = useRouter();
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordsMatch, setPasswordsMatch] = useState(false);
+  const router = useRouter();
 
-  // Check password strength
+  // Check password strength in real-time
   useEffect(() => {
-    setPasswordValidation({
+    const validation = {
       minLength: password.length >= 8,
       hasUppercase: /[A-Z]/.test(password),
       hasLowercase: /[a-z]/.test(password),
       hasDigit: /\d/.test(password),
       hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-    });
+    };
+
+    setPasswordValidation(validation);
+    setIsPasswordValid(Object.values(validation).every(Boolean));
   }, [password]);
+
+  // Check if passwords match in real-time
+  useEffect(() => {
+    setPasswordsMatch(password === confirmPassword && confirmPassword.length > 0);
+  }, [password, confirmPassword]);
+
+  // Get the first missing password requirement
+  const getFirstMissingRequirement = () => {
+    if (!passwordValidation.minLength) return "At least 8 characters";
+    if (!passwordValidation.hasUppercase) return "At least one uppercase letter (A-Z)";
+    if (!passwordValidation.hasLowercase) return "At least one lowercase letter (a-z)";
+    if (!passwordValidation.hasDigit) return "At least one number (0-9)";
+    if (!passwordValidation.hasSpecialChar) return "At least one special character (!@#$%^&*)";
+    return null;
+  };
 
   const showErrorMessage = (message: string) => {
     toast.error(message);
@@ -68,18 +87,18 @@ export default function SignupPage() {
     e.preventDefault();
     setErrorMessage("");
 
-    if (password !== confirmPassword) {
-      showErrorMessage("Passwords do not match");
-      return;
-    }
-    if (!gender) {
-      showErrorMessage("Please choose a gender");
+    if (!isPasswordValid) {
+      showErrorMessage("Please fix the password requirements");
       return;
     }
 
-    setIsPasswordValid(Object.values(passwordValidation).every(Boolean));
-    if (!isPasswordValid) {
-      setErrorMessage("Please fix the password requirements");
+    if (!passwordsMatch) {
+      showErrorMessage("Passwords do not match");
+      return;
+    }
+
+    if (!gender) {
+      showErrorMessage("Please choose a gender");
       return;
     }
 
@@ -104,7 +123,7 @@ export default function SignupPage() {
     }
   };
 
-  const ValidationItem = ({isValid, text}: {isValid: boolean; text: string}) => (
+  const ValidationItem = ({ isValid, text }: { isValid: boolean; text: string }) => (
     <div className="flex items-center gap-2 text-sm">
       {isValid ? (
         <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -200,6 +219,16 @@ export default function SignupPage() {
                 </Button>
               </div>
 
+              {/* Password requirements section - show only the first missing requirement */}
+              {password.length > 0 && !isPasswordValid && (
+                <div className="mt-2 text-sm">
+                  <div className="flex items-center gap-2 text-red-500">
+                    <XCircle className="h-4 w-4" />
+                    <span>{getFirstMissingRequirement()}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="grid gap-2">
                 <Label htmlFor="confirm-password" className="font-medium text-sm">
                   Confirm Password
@@ -230,36 +259,15 @@ export default function SignupPage() {
                     </span>
                   </Button>
                 </div>
-              </div>
 
-              {/* Password requirements section */}
-              {!isPasswordValid && (
-                <div className="mt-2 space-y-2 text-sm">
-                  <p className="font-medium text-muted-foreground mb-1 text-red-600">
-                    Password must have:
-                  </p>
-                  <div className="grid gap-2 ml-4">
-                    {[
-                      {isValid: passwordValidation.minLength, text: "At least 8 characters"},
-                      {
-                        isValid: passwordValidation.hasUppercase,
-                        text: "At least one uppercase letter (A-Z)",
-                      },
-                      {
-                        isValid: passwordValidation.hasLowercase,
-                        text: "At least one lowercase letter (a-z)",
-                      },
-                      {isValid: passwordValidation.hasDigit, text: "At least one number (0-9)"},
-                      {
-                        isValid: passwordValidation.hasSpecialChar,
-                        text: "At least one special character (!@#$%^&*)",
-                      },
-                    ].map((item, index) => (
-                      <ValidationItem key={index} isValid={item.isValid} text={item.text} />
-                    ))}
+                {/* Password match indicator - only show when passwords don't match */}
+                {confirmPassword.length > 0 && !passwordsMatch && (
+                  <div className="flex items-center gap-2 text-sm mt-1 text-red-500">
+                    <XCircle className="h-4 w-4" />
+                    <span>Passwords do not match</span>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Password Requirements Helper Text */}
               <p className="text-xs text-muted-foreground mt-1">
@@ -270,7 +278,7 @@ export default function SignupPage() {
           <CardFooter className="flex flex-col">
             <Button
               className="w-full h-12 rounded-xl"
-              disabled={isSubmitting || !isPasswordValid}
+              disabled={isSubmitting || !isPasswordValid || !passwordsMatch}
               type="submit"
             >
               {isSubmitting ? "Signing up..." : "Sign Up"}

@@ -1,11 +1,11 @@
-import {clsx, type ClassValue} from "clsx";
-import {twMerge} from "tailwind-merge";
-import {format} from "date-fns";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+import { format } from "date-fns";
 
 import apiRequest from "./apiRequest";
 
-import {IMarketPlaceOrder, IPaginatedResponse, IPermission, IUser, Permission, Role} from "@/app/types";
-import {store} from "@/store";
+import { IMarketPlaceOrder, IPaginatedResponse, IPermission, IUser, Permission, Role } from "@/app/types";
+import { store } from "@/store";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -175,9 +175,9 @@ export function formatCurrency(amount: any) {
   return numAmount % 1 === 0
     ? numAmount.toLocaleString("en-US")
     : numAmount.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 }
 
 export function formatTransactionDate(dateString: any) {
@@ -331,5 +331,14 @@ export const getInstitutionById = async (InstitutionId: number) =>
 
 
 export const downloadFile = (filePath: string, fileName: string) => {
-    window.open(`${process.env.NEXT_BASE_URL|| 'http://127.0.0.1:8000'}${filePath}`, "_blank")
-  }
+  window.open(`${process.env.NEXT_BASE_URL || 'http://127.0.0.1:8000'}${filePath}`, "_blank")
+}
+
+
+export const countryAPI = {
+  getAll: async () => {
+    const response = await fetch("https://restcountries.com/v3.1/all?fields=name,cca2,currencies,idd");
+    if (!response.ok) throw new Error("Failed to fetch countries");
+    return await response.json();
+  },
+};

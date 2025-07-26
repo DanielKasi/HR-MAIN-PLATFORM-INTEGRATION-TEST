@@ -30,8 +30,8 @@ export enum PERMISSION_CODES {
 
   // User Management
   CAN_CREATE_USERS = "can_create_users",
-  CAN_VIEW_USERS = "can_view_users", 
-  CAN_EDIT_USERS = "can_edit_users", 
+  CAN_VIEW_USERS = "can_view_users",
+  CAN_EDIT_USERS = "can_edit_users",
   CAN_DEACTIVATE_USERS = "can_deactivate_users",
   CAN_DELETE_USERS = "can_delete_users",
   CAN_RESET_USER_PASSWORDS = "can_reset_user_passwords",
@@ -116,7 +116,7 @@ export enum PERMISSION_CODES {
   CAN_LODGE_DISCIPLINARY_COMPLAINTS = "can_lodge_disciplinary_complaints",
 
   // Attendance Management
-  CAN_VIEW_ATTENDANCE_RECORDS= "can_view_attendance_records",
+  CAN_VIEW_ATTENDANCE_RECORDS = "can_view_attendance_records",
   CAN_EDIT_ATTENDANCE_RECORDS = "can_edit_attendance_records",
   CAN_APPROVE_ATTENDANCE_CORRECTIONS = "can_approve_attendance_corrections",
   CAN_VIEW_ATTENDANCE_REPORTS = "can_view_attendance_reports",
@@ -247,7 +247,19 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
- export interface EmployeeFromAPI {
+
+// export interface IUser {
+//   id: number;
+//   fullname: string;
+//   email: string;
+//   is_active: boolean;
+//   is_staff: boolean;
+//   roles: Role[];
+//   branches: Branch[];
+//   gender: USER_GENDER
+// }
+
+export interface EmployeeFromAPI {
   id: number
   user: {
     id: number
@@ -317,6 +329,7 @@ export interface IJobPosition {
   contractTemplate?: string | null; // FileField serialized as URL
   offerLetterTemplate?: string | null; // FileField serialized as URL
   salary: number;
+  employees: IEmployee
 }
 
 
@@ -346,8 +359,8 @@ export interface CreateJobPositionData {
 
 export interface JobApplication {
   job_position_advert_job_details: {
-    department: string;name:string, description:string, job_posted_date:string
-};
+    department: string; name: string, description: string, job_posted_date: string
+  };
   positions: number;
   id: number
   job_position_advert: number
@@ -392,7 +405,7 @@ export interface JobPositionAdvert {
   expiry_date: string; // ISO datetime string
   number_of_employees_expected?: number | null;
   extra_information?: string | null;
-  applications:JobApplication[];
+  applications: JobApplication[];
   interview_stages: JobApplication[]
 }
 
@@ -436,7 +449,7 @@ export interface IInterviewStageFormData {
   job_position_advert: number;
   name: string;
   level: number;
-  interviewers: number[]; 
+  interviewers: number[];
 }
 
 export interface IInterviewStage {
@@ -444,8 +457,8 @@ export interface IInterviewStage {
   job_position_advert: number;
   name: string;
   level: number;
-  interviewers: number[]; 
-  interviewers_details?: IEmployee[]; 
+  interviewers: number[];
+  interviewers_details?: IEmployee[];
   candidates_count: number;
 }
 
@@ -486,7 +499,7 @@ export interface EmployeeFormData {
   date_of_joining: string;
   address: string;
   country: string;             // Added
-  nin: string;    
+  nin: string;
   tin: string;
   nssf_no: string;             // Added
   bank: string;                // Added
@@ -504,8 +517,8 @@ export interface EmployeeFormData {
 }
 
 export interface EmployeeFormState {
-  tin: string 
-  nssf_no: string 
+  tin: string
+  nssf_no: string
   fullname: string;
   email: string;
   phone_number: string;
@@ -612,7 +625,7 @@ export interface IOnBoarding {
   updated_at: string;
 }
 
-export interface PaginatedIOnboardingResponse {     
+export interface PaginatedIOnboardingResponse {
   count: number;
   next: string | null;
   previous: string | null;
@@ -791,8 +804,8 @@ export function convertFormToApiRequest(formData: DisciplinaryActionForm): Disci
     action_taken: formData.action_taken,
     resolution_date: formData.resolution_date || null,
     follow_up_required: formData.follow_up_required,
-    follow_up_date: formData.follow_up_required && formData.follow_up_date 
-      ? formData.follow_up_date 
+    follow_up_date: formData.follow_up_required && formData.follow_up_date
+      ? formData.follow_up_date
       : null,
     notes: formData.notes,
   };
@@ -1411,4 +1424,10 @@ export interface IContractFormData {
   start_date: string;
   end_date?: string | null;
   notes?: string | null;
+}
+
+export interface ICountry {
+  name: { common: string }
+  cca2: string
+  idd?: { root?: string; suffixes?: string[] }
 }
