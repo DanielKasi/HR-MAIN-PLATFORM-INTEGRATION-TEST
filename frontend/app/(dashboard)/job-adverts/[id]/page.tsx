@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useSelector } from "react-redux"
-import { Megaphone, ArrowLeft, Edit, Calendar, Briefcase, Building2, DollarSign, User, FileText, X } from "lucide-react"
+import { Megaphone, ArrowLeft, Edit, Calendar, Briefcase, Building2, Coins, User, FileText, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -80,20 +80,20 @@ export default function JobAdvertDetailsPage() {
       setIsLoading(true)
       setError("")
 
-      const fetchedJobAdvert = await  getJobPositionAdvertById({ advertId:jobAdvertId })
+      const fetchedJobAdvert = await getJobPositionAdvertById({ advertId: jobAdvertId })
 
-      if(!fetchedJobAdvert){
+      if (!fetchedJobAdvert) {
         return null
       }
 
       const fetchedApplications = fetchedJobAdvert.applications
 
-        setJobAdvert(fetchedJobAdvert)
+      setJobAdvert(fetchedJobAdvert)
 
-        // Fetch job position details
-        const fetchedJobPosition = await getJobPosition({ jobPositionId: fetchedJobAdvert.job_position })
-        if (fetchedJobPosition) {
-          setJobPosition(fetchedJobPosition)
+      // Fetch job position details
+      const fetchedJobPosition = await getJobPosition({ jobPositionId: fetchedJobAdvert.job_position })
+      if (fetchedJobPosition) {
+        setJobPosition(fetchedJobPosition)
       } else {
         setError("Job advert not found")
         toast.error("Job advert not found")
@@ -105,7 +105,7 @@ export default function JobAdvertDetailsPage() {
 
       const fetchedInterviewStages = fetchedJobAdvert.interview_stages
 
-        setJobAdvert(fetchedJobAdvert)
+      setJobAdvert(fetchedJobAdvert)
 
       if (fetchedInterviewStages) {
         setInterviewStagesCount(fetchedInterviewStages.length)
@@ -284,7 +284,7 @@ export default function JobAdvertDetailsPage() {
                     className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
                   >
                     <User className="h-4 w-4" />
-                     {interviewStagesCount} Interview Stages
+                    {interviewStagesCount} Interview Stages
                   </Button>
                 </div>
                 <div className="flex items-center gap-2 mt-2">

@@ -8,7 +8,7 @@ import {
   TrendingUp,
   Calendar,
   Clock,
-  DollarSign,
+  Coins,
   Award,
   AlertTriangle,
   Building,
@@ -211,7 +211,7 @@ const WelcomeCard = () => {
 
   return (
     <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
-      <h2 className="text-2xl font-bold mb-2">{greeting}, {userData?.gender === USER_GENDER.MALE? "Mr" : userData?.gender === USER_GENDER.FEMALE? "Mrs" : ""} {fullName}</h2>
+      <h2 className="text-2xl font-bold mb-2">{greeting}, {userData?.gender === USER_GENDER.MALE ? "Mr" : userData?.gender === USER_GENDER.FEMALE ? "Mrs" : ""} {fullName}</h2>
       <p className="opacity-90">Here's your HR dashboard overview for today</p>
     </div>
   );
@@ -437,9 +437,9 @@ const StatsCards = ({
     {
       title: "Avg. Salary",
       subtitle: departmentId === "all" ? "Estimated average" : `In ${departmentId}`,
-      value: `$${stats.avgSalary.toLocaleString()}`,
+      value: `UGX ${stats.avgSalary.toLocaleString()}`,
       change: "+5.2% YoY",
-      icon: DollarSign,
+      icon: Coins,
       color: "bg-emerald-50 text-emerald-600",
       trend: "up"
     },

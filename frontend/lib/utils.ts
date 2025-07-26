@@ -12,7 +12,7 @@ import {
   ILeavePolicyFormData, ILeavePolicyResponse, IAllowanceType, IAllowanceTypeFormData, IDeductionType, IDeductionTypeFormData,
   IEmployeeAllowance, IEmployeeAllowanceFormData, IEmployeeDeduction, IEmployeeDeductionFormData, IPayrollPeriod, IPayrollPeriodFormData,
   IPayslipFormData, IPayslip, IPayslipItem, PaginatedEmployeeResponse,
-  EmployeeFromAPI, PaginatedIOnboardingResponse, ILeaveBalance,
+  PaginatedIOnboardingResponse, ILeaveBalance,
   PaginatedResponse,
   IContract,
   IContractFormData
@@ -276,11 +276,11 @@ export const updateJobPosition = async ({
     }
 
     // Add affected_employees as individual entries
-    // if (jobPositionData.affected_employees && jobPositionData.affected_employees.length > 0) {
-    //   jobPositionData.affected_employees.forEach((employeeId) => {
-    //     formData.append("apply_salary_to_employees", employeeId.toString())
-    //   })
-    // }
+    if (jobPositionData.affected_employees && jobPositionData.affected_employees.length > 0) {
+      jobPositionData.affected_employees.forEach((employeeId) => {
+        formData.append("apply_salary_to_employees", employeeId.toString())
+      })
+    }
 
     const response = await apiRequest.patch(`recruitment/job-position/${jobPositionId}/`, formData)
     return response.data as IJobPosition
@@ -717,10 +717,10 @@ export const getAllEmployees = async ({ institutionId }: { institutionId: number
   try {
     const endpoint = `employee/${institutionId}/employee/`;
     const response = await apiRequest.get(endpoint)
-    const data = response.data as PaginatedEmployeeResponse
+    const data = response.data as PaginatedResponse<IEmployee>
 
     // Return the results array instead of the entire response
-    return data.results as EmployeeFromAPI[]
+    return data.results
   } catch (error) {
     throw error;
   }

@@ -198,13 +198,15 @@ export interface IUser {
   email: string;
   is_active: boolean;
   is_staff: boolean;
-  is_email_verified: boolean,
-  is_password_verified: boolean
+  is_email_verified: boolean;
+  is_password_verified: boolean;
   roles: Role[];
   branches: Branch[];
-  gender: USER_GENDER;
   permissions: Record<any, any>;
-  user_type: USER_TYPES
+  last_login: string | null;
+  is_superuser: boolean;
+  gender?: USER_GENDER;
+  user_type?: USER_TYPES;
 }
 
 

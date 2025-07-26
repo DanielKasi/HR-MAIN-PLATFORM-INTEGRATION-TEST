@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { IUser } from ".";
+import { Branch, IUser, Permission, Role } from ".";
 
 export enum CUSTOM_CODES {
   BLOCKED_BY_ADMIN = "BLOCKED_BY_ADMIN",
@@ -259,55 +259,13 @@ export interface PaginatedResponse<T> {
 //   gender: USER_GENDER
 // }
 
-export interface EmployeeFromAPI {
-  id: number
-  user: {
-    id: number
-    email: string
-    fullname: string
-    is_active: boolean
-    is_email_verified: boolean
-    is_password_verified: boolean
-    is_staff: boolean
-    roles: any[]
-    branches: any[]
-    permissions: any[]
-  } | null
-  email: string
-  phone_number: string
-  position: {
-    id: number
-    name: string
-    department_id: number
-  }
-  department: {
-    id: number
-    name: string
-    institution_id: number
-  }
-  roles: any[]
-  date_of_birth: string | null
-  date_of_joining: string
-  address: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
-  experience: number
-  qualifications: string | null
-  skills: string | null
-  emergency_contact_name: string | null
-  emergency_contact_phone: string | null
-  emergency_contact_relationship: string | null
-  marital_status: string
-  children_count: number
-  employee_profile_picture: string | null
-}
+
 
 export interface PaginatedEmployeeResponse {
   count: number;
   next: string | null;
   previous: string | null;
-  results: EmployeeFromAPI[];
+  results: IEmployee[];
 }
 
 
@@ -329,7 +287,7 @@ export interface IJobPosition {
   contractTemplate?: string | null; // FileField serialized as URL
   offerLetterTemplate?: string | null; // FileField serialized as URL
   salary: number;
-  employees: IEmployee
+  employees: IEmployee[]
 }
 
 
@@ -346,7 +304,7 @@ export interface JobPositionFormData {
 }
 
 export interface CreateJobPositionData {
-  affected_employees: boolean; // or any other correct type
+  affected_employees: number[]; // or any other correct type
   name: string;
   description?: string;
   department: number;
@@ -434,28 +392,47 @@ export interface JobPositionAdvertFormData {
 
 export interface IEmployee {
   id: number;
-  user: IUser;
-  first_name: string;
-  last_name: string;
+  user: IUser | null;
   email: string;
   phone_number: string;
-  position: number | JobPositionFormData;
-  department: number;
+  employee_id: string;
+  position: {
+    id: number;
+    name: string;
+    department_id: number;
+  };
+  department: {
+    id: number;
+    name: string;
+    institution_id: number;
+  };
   date_of_birth: string;
   date_of_joining: string;
   address: string;
+  country: string;
+  nin: string;
+  nssf_no: string;
+  tin: string;
+  bank: string;
+  bank_account_number: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
   experience: number;
-  qualifications?: string | null;
-  skills?: string | null;
-  emergency_contact_name?: string | null;
-  emergency_contact_phone?: string | null;
+  qualifications: string;
+  skills: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
   emergency_contact_relationship: string;
   marital_status: string;
-  children_count?: number | null;
-  employee_profile_picture?: string | null;
+  children_count: number;
+  employee_profile_picture: string | null;
+  employee_type: number;
+  work_type: number;
+  payroll_branch: number;
+  gender: string;
+  salary: string;
+  roles: any[];
 }
 
 export interface IInterviewStageFormData {
@@ -1365,8 +1342,8 @@ export interface IPayrollPeriodFormData {
 
 export interface IPayslip {
   id: number;
-  employee: number;
-  payroll_period: number;
+  employee: IEmployee;
+  payroll_period: IPayrollPeriod;
   basic_salary: string;
   total_allowances: string;
   total_deductions: string;
@@ -1413,6 +1390,13 @@ export interface IPayslipItem {
   name: string;
   amount: string;
   description: string;
+}
+
+export interface PaginatedPayslipResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: IPayslip[];
 }
 
 export type ContractStatus = 'draft' | 'active' | 'expired' | 'terminated';
