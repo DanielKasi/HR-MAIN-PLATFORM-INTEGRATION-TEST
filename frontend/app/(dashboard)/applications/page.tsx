@@ -46,6 +46,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Filter,
 } from "lucide-react";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {
@@ -82,6 +83,19 @@ import {Checkbox} from "@/components/ui/checkbox";
 import {LocationAutocomplete} from "@/components/location-autocomplete";
 import ProtectedComponent from "@/components/ProtectedComponent"
 import { PERMISSION_CODES } from "@/app/types/types.utils"
+import {
+  createInterviewStage,
+  getInterviewStages,
+  fetchEmployees,
+  createInterview
+} from "@/lib/utils"
+import type {
+  IInterviewStage,
+  IEmployee,
+  IInterviewFormData,
+  IInterviewStageFormData
+} from "@/app/types/types.utils"
+import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
@@ -114,12 +128,263 @@ export default function ApplicationsPage() {
   const [individualLoadingStates, setIndividualLoadingStates] = useState<Record<number, boolean>>(
     {},
   );
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false)
+const [showCreateStageDialog, setShowCreateStageDialog] = useState(false)
+const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([])
+const [employees, setEmployees] = useState<IEmployee[]>([])
+const [isSchedulingInterview, setIsSchedulingInterview] = useState(false)
+const [isCreatingStage, setIsCreatingStage] = useState(false)
+const [selectedApplicationForInterview, setSelectedApplicationForInterview] = useState<JobApplication | null>(null)
 
-  const [sortField, setSortField] = useState<"application_date" | "posted_date" | null>(null);
+const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
+  name: "",
+  level: 1,
+  interviewers: [],
+  job_position_advert: 0,
+})
+
+const [stageErrors, setStageErrors] = useState<any>({})
+
+const [interviewFormData, setInterviewFormData] = useState({
+  interview_stage: 0,
+  interview_date: "",
+  location: "",
+  interview_type: "",
+  status: "scheduled",
+  feedback: "",
+  rating: undefined,
+})
+
+const [interviewErrors, setInterviewErrors] = useState<any>({})
+
+// Add these helper functions
+const updateStageFormData = (field: string, value: any) => {
+  setStageFormData((prev) => ({ ...prev, [field]: value }))
+  if (stageErrors[field]) {
+    setStageErrors((prev: any) => ({ ...prev, [field]: undefined }))
+  }
+}
+
+const updateInterviewFormData = (field: string, value: any) => {
+  setInterviewFormData(prev => ({ ...prev, [field]: value }))
+  setInterviewErrors((prev: any) => ({ ...prev, [field]: undefined }))
+}
+
+const fetchInterviewData = async () => {
+  if (!selectedInstitution || !selectedApplicationForInterview) return
+
+  try {
+    const [stagesResponse, employeesResponse] = await Promise.all([
+      getInterviewStages({ institutionId: selectedInstitution.id }),
+      fetchEmployees({ institutionId: selectedInstitution.id })
+    ])
+
+    let stagesArray: IInterviewStage[] = []
+    if (stagesResponse && "results" in stagesResponse && Array.isArray(stagesResponse.results)) {
+      stagesArray = stagesResponse.results
+    } else if (Array.isArray(stagesResponse)) {
+      stagesArray = stagesResponse
+    }
+
+    // Filter stages for this job position
+    const filteredStages = stagesArray.filter(
+      stage => stage.job_position_advert === selectedApplicationForInterview.job_position_advert
+    )
+    setInterviewStages(filteredStages)
+
+    let employeesArray: IEmployee[] = []
+    if (employeesResponse && "results" in employeesResponse && Array.isArray(employeesResponse.results)) {
+      employeesArray = employeesResponse.results
+    } else if (Array.isArray(employeesResponse)) {
+      employeesArray = employeesResponse
+    }
+    setEmployees(employeesArray)
+
+    // Set default interview date to tomorrow at 10 AM
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(10, 0, 0, 0)
+    setInterviewFormData(prev => ({
+      ...prev,
+      interview_date: tomorrow.toISOString().slice(0, 16)
+    }))
+  } catch (error) {
+    console.error("Error fetching interview data:", error)
+    toast.error("Failed to load interview data")
+  }
+}
+
+const handleCreateInterviewStage = async (e: React.FormEvent) => {
+  e.preventDefault()
+  e.stopPropagation()
+
+  if (!selectedInstitution || !selectedApplicationForInterview) {
+    toast.error("Missing organization or application information")
+    return
+  }
+
+  const newStageErrors: any = {}
+  if (!stageFormData.name.trim()) {
+    newStageErrors.name = "Stage name is required"
+  }
+  if (!stageFormData.interviewers || stageFormData.interviewers.length === 0) {
+    newStageErrors.interviewers = "Please select at least one interviewer"
+  }
+
+  if (Object.keys(newStageErrors).length > 0) {
+    setStageErrors(newStageErrors)
+    return
+  }
+
+  setIsCreatingStage(true)
+
+  try {
+    const stageDataWithJobAdvert = {
+      ...stageFormData,
+      job_position_advert: selectedApplicationForInterview.job_position_advert,
+      level: interviewStages.length + 1,
+    }
+
+    const newStage = await createInterviewStage({
+      institutionId: selectedInstitution.id,
+      stageData: stageDataWithJobAdvert,
+    })
+
+    if (newStage) {
+      setStageFormData({
+        name: "",
+        level: 1,
+        interviewers: [],
+        job_position_advert: selectedApplicationForInterview.job_position_advert,
+      })
+      setStageErrors({})
+      setShowCreateStageDialog(false)
+      await fetchInterviewData()
+      toast.success("Interview stage created successfully!")
+    } else {
+      toast.error("Failed to create interview stage")
+    }
+  } catch (error) {
+    console.error("Error creating interview stage:", error)
+    toast.error("Failed to create interview stage")
+  } finally {
+    setIsCreatingStage(false)
+  }
+}
+
+const handleScheduleInterview = async () => {
+  if (!selectedApplicationForInterview || !selectedInstitution) return
+
+  // Validate form
+  const errors: any = {}
+  if (!interviewFormData.interview_stage || interviewFormData.interview_stage === 0) {
+    errors.interview_stage = "Please select an interview stage"
+  }
+  if (!interviewFormData.interview_date) {
+    errors.interview_date = "Interview date and time is required"
+  } else {
+    const interviewDate = new Date(interviewFormData.interview_date)
+    const now = new Date()
+    if (interviewDate <= now) {
+      errors.interview_date = "Interview date must be in the future"
+    }
+  }
+  if (!interviewFormData.location || interviewFormData.location.trim() === "") {
+    errors.location = "Interview location is required"
+  }
+
+  if (Object.keys(errors).length > 0) {
+    setInterviewErrors(errors)
+    return
+  }
+
+  if (!userData?.id) {
+    toast.error("User information not available. Please refresh and try again.")
+    return
+  }
+
+  setIsSchedulingInterview(true)
+
+  try {
+    let interviewTime = ""
+    if (interviewFormData.interview_date) {
+      const dateTime = new Date(interviewFormData.interview_date)
+      const hours = dateTime.getHours().toString().padStart(2, "0")
+      const minutes = dateTime.getMinutes().toString().padStart(2, "0")
+      interviewTime = `${hours}:${minutes}`
+    }
+
+    const createData: IInterviewFormData = {
+      job_position_application: selectedApplicationForInterview.id,
+      interview_stage: interviewFormData.interview_stage,
+      interview_date: interviewFormData.interview_date,
+      location: interviewFormData.location,
+      interview_time: interviewTime,
+      interview_type: interviewFormData.interview_type,
+      status: interviewFormData.status || "scheduled",
+      feedback: interviewFormData.feedback || undefined,
+      rating: interviewFormData.rating || undefined,
+      created_by: userData.id,
+    }
+
+    const result = await createInterview({
+      institutionId: selectedInstitution.id,
+      interviewData: createData,
+    })
+
+    if (result) {
+      toast.success("Interview scheduled successfully!")
+      setShowScheduleDialog(false)
+      setSelectedApplicationForInterview(null)
+      // Reset form
+      setInterviewFormData({
+        interview_stage: 0,
+        interview_date: "",
+        location: "",
+        interview_type: "",
+        status: "scheduled",
+        feedback: "",
+        rating: undefined,
+      })
+      setInterviewErrors({})
+
+      // Refresh applications to show updated status
+      await loadApplications()
+    } else {
+      toast.error("Failed to schedule interview")
+    }
+  } catch (error) {
+    console.error("Error scheduling interview:", error)
+    toast.error("Failed to schedule interview")
+  } finally {
+    setIsSchedulingInterview(false)
+  }
+}
+
+// Add this function to handle opening the schedule interview dialog
+const handleOpenScheduleInterview = async (application: JobApplication) => {
+  setSelectedApplicationForInterview(application)
+  await fetchInterviewData()
+  setShowScheduleDialog(true)
+}
+
+  // Enhanced date filtering state
+  const [dateFilter, setDateFilter] = useState<{
+    startDate: string;
+    endDate: string;
+    type: "application_date" | "posted_date";
+  }>({
+    startDate: "",
+    endDate: "",
+    type: "application_date"
+  });
+
+  // Updated sorting with better defaults
+  const [sortField, setSortField] = useState<"application_date" | "posted_date">("application_date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const userData = useSelector(selectUser);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(5);
 
   const [confirmAction, setConfirmAction] = useState<{
     isOpen: boolean;
@@ -169,7 +434,7 @@ export default function ApplicationsPage() {
     country: "",
     source: "website",
     application_date: new Date().toISOString().split("T")[0],
-    created_by: userData?.id || 0, // Ensure created_by is set to user ID
+    created_by: userData?.id || 0,
   });
 
   const [jobPositionAdverts, setJobPositionAdverts] = useState<JobPositionAdvert[]>([]);
@@ -185,9 +450,11 @@ export default function ApplicationsPage() {
     loadJobPositionAdverts();
   }, [selectedInstitution, selectedBranch, router]);
 
+  // Enhanced filtering with date support
   useEffect(() => {
     let filtered = applications;
 
+    // Text search filter
     if (searchTerm) {
       filtered = filtered.filter(
         (app) =>
@@ -198,34 +465,55 @@ export default function ApplicationsPage() {
       );
     }
 
+    // Status filter
     if (statusFilter !== "all") {
       filtered = filtered.filter((app) => app.status === statusFilter);
     }
 
+    // Job filter
     if (jobFilter !== "all") {
       filtered = filtered.filter((app) => app.job_position_advert.toString() === jobFilter);
     }
 
-    if (sortField) {
-      filtered = [...filtered].sort((a, b) => {
-        let aValue: string, bValue: string;
+    // Date range filter
+    if (dateFilter.startDate || dateFilter.endDate) {
+      filtered = filtered.filter((app) => {
+        const dateToCheck = dateFilter.type === "application_date"
+          ? app.application_date
+          : app.job_position_advert_job_details?.job_posted_date;
 
-        if (sortField === "application_date") {
-          aValue = a.application_date;
-          bValue = b.application_date;
-        } else {
-          aValue = a.job_position_advert_job_details?.job_posted_date || "";
-          bValue = b.job_position_advert_job_details?.job_posted_date || "";
-        }
+        if (!dateToCheck) return false;
 
-        const comparison = new Date(aValue).getTime() - new Date(bValue).getTime();
-        return sortDirection === "asc" ? comparison : -comparison;
+        const appDate = new Date(dateToCheck);
+        const startDate = dateFilter.startDate ? new Date(dateFilter.startDate) : null;
+        const endDate = dateFilter.endDate ? new Date(dateFilter.endDate) : null;
+
+        if (startDate && appDate < startDate) return false;
+        if (endDate && appDate > endDate) return false;
+
+        return true;
       });
     }
 
-    setFilteredApplications(filtered);
+    // Apply sorting
+    const sortedFiltered = [...filtered].sort((a, b) => {
+      let aValue: string, bValue: string;
+
+      if (sortField === "application_date") {
+        aValue = a.application_date;
+        bValue = b.application_date;
+      } else {
+        aValue = a.job_position_advert_job_details?.job_posted_date || "";
+        bValue = b.job_position_advert_job_details?.job_posted_date || "";
+      }
+
+      const comparison = new Date(aValue).getTime() - new Date(bValue).getTime();
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+
+    setFilteredApplications(sortedFiltered);
     setCurrentPage(1);
-  }, [applications, searchTerm, statusFilter, jobFilter, sortField, sortDirection]);
+  }, [applications, searchTerm, statusFilter, jobFilter, dateFilter, sortField, sortDirection]);
 
   const loadApplications = async () => {
     if (!selectedInstitution) return;
@@ -237,16 +525,12 @@ export default function ApplicationsPage() {
       console.log("Loading applications for institution:", selectedInstitution.id);
       const response = await getJobApplications({institutionId: selectedInstitution.id});
       console.log("Applications response:", response);
-      console.log("Response type:", typeof response);
 
-      // Handle paginated response
       let applicationsArray: JobApplication[] = [];
 
       if (response && "results" in response && Array.isArray(response.results)) {
-        console.log("Setting applications from paginated response:", response.results);
         applicationsArray = response.results;
       } else if (Array.isArray(response)) {
-        console.log("Setting applications from direct array:", response);
         applicationsArray = response;
       } else if (response === null) {
         console.log("Response is null - API call failed");
@@ -258,11 +542,16 @@ export default function ApplicationsPage() {
         setError("Failed to load applications - unexpected response format");
       }
 
-      console.log("Final applications array:", applicationsArray);
-      setApplications(applicationsArray);
+      // Sort applications by application_date (newest first) by default
+      const sortedApplications = applicationsArray.sort((a, b) =>
+        new Date(b.application_date).getTime() - new Date(a.application_date).getTime()
+      );
+
+      console.log("Final applications array:", sortedApplications);
+      setApplications(sortedApplications);
     } catch (err: any) {
       console.error("Error loading applications:", err);
-      setApplications([]); // Ensure it's always an array
+      setApplications([]);
       setError(err?.message || "Failed to load applications");
     } finally {
       setIsLoading(false);
@@ -278,7 +567,6 @@ export default function ApplicationsPage() {
       const response = await getJobPositionAdverts({institutionId: selectedInstitution.id});
       console.log("Job adverts response:", response);
 
-      // Handle paginated response
       let advertsArray: JobPositionAdvert[] = [];
 
       if (response && "results" in response && Array.isArray(response.results)) {
@@ -292,7 +580,7 @@ export default function ApplicationsPage() {
       setJobPositionAdverts(advertsArray);
     } catch (err: any) {
       console.error("Error loading job adverts:", err);
-      setJobPositionAdverts([]); // Ensure it's always an array
+      setJobPositionAdverts([]);
       setError(err?.message || "Failed to load job position adverts");
     } finally {
       setIsLoadingAdverts(false);
@@ -336,6 +624,24 @@ export default function ApplicationsPage() {
     setStatusFilter("all");
     setSearchTerm("");
     setSelectedApplications([]);
+  };
+
+  // Enhanced filter clearing functions
+  const clearDateFilters = () => {
+    setDateFilter({
+      startDate: "",
+      endDate: "",
+      type: "application_date"
+    });
+  };
+
+  const clearAllFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setJobFilter("all");
+    clearDateFilters();
+    setSortField("application_date");
+    setSortDirection("desc");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -396,6 +702,9 @@ export default function ApplicationsPage() {
         address: formData.address,
         country: formData.country,
         created_by: userData.id,
+        reviewed_by: userData.id,
+        shortlisted_by: userData.id,
+        recommended_by: userData.id,
       };
 
       console.log("Application data being sent:", applicationData);
@@ -406,7 +715,14 @@ export default function ApplicationsPage() {
       });
 
       if (newApplication) {
-        setApplications((prev) => [newApplication, ...prev]);
+        // Maintain sorted order when adding new application
+        setApplications((prev) => {
+          const updated = [newApplication, ...prev];
+          return updated.sort((a, b) =>
+            new Date(b.application_date).getTime() - new Date(a.application_date).getTime()
+          );
+        });
+
         setIsCreateDialogOpen(false);
         resetFiltersAndShowNewApplication();
         setFormData({
@@ -426,6 +742,9 @@ export default function ApplicationsPage() {
           source: "website",
           application_date: new Date().toISOString().split("T")[0],
           created_by: userData.id,
+          reviewed_by: userData.id,
+          shortlisted_by: userData.id,
+          recommended_by: userData.id,
         });
         toast.success("Application created successfully!");
       } else {
@@ -460,9 +779,30 @@ export default function ApplicationsPage() {
     }
   };
 
-  const handleBulkAction = async (action: "shortlisted" | "reviewed" | "rejected") => {
+  const handleBulkAction = async (action: "shortlisted" | "reviewed" | "rejected" | "schedule_interview") => {
     if (selectedApplications.length === 0) {
       toast.error("Please select applications first");
+      return;
+    }
+
+    // For schedule interview, only allow shortlisted applications
+    if (action === "schedule_interview") {
+      const shortlistedApps = applications.filter(app =>
+        selectedApplications.includes(app.id) && app.status === "shortlisted"
+      );
+
+      if (shortlistedApps.length === 0) {
+        toast.error("Please select shortlisted applications to schedule interviews");
+        return;
+      }
+
+      if (shortlistedApps.length > 1) {
+        toast.error("Please select one application at a time for interview scheduling");
+        return;
+      }
+
+      // Open schedule dialog for the single shortlisted application
+      await handleOpenScheduleInterview(shortlistedApps[0]);
       return;
     }
 
@@ -476,7 +816,7 @@ export default function ApplicationsPage() {
       return;
     }
 
-    // Execute directly for "reviewed" action (no confirmation needed)
+    // Execute directly for "reviewed" action
     await executeBulkAction(action);
   };
 
@@ -486,9 +826,29 @@ export default function ApplicationsPage() {
     }
 
     try {
-      const promises = selectedApplications.map((applicationId) =>
-        updateJobApplicationStatus({applicationId, status: action}),
-      );
+      const promises = selectedApplications.map((applicationId) => {
+        const updateData: {
+          applicationId: number;
+          status: string;
+          shortlisted_by?: number;
+          reviewed_by?: number;
+          rejected_by?: number;
+        } = {
+          applicationId,
+          status: action
+        };
+
+        if (action === "shortlisted" && userData?.id) {
+          updateData.shortlisted_by = userData.id;
+        } else if (action === "reviewed" && userData?.id) {
+          updateData.reviewed_by = userData.id;
+        } else if (action === "rejected" && userData?.id) {
+          updateData.rejected_by = userData.id;
+        }
+
+        return updateJobApplicationStatus(updateData);
+      });
+
       await Promise.all(promises);
       setApplications((prev) =>
         prev.map((app) => (selectedApplications.includes(app.id) ? {...app, status: action} : app)),
@@ -524,7 +884,6 @@ export default function ApplicationsPage() {
     }
   };
 
-  // Ensure filteredApplications is always an array before using slice
   const safeFilteredApplications = Array.isArray(filteredApplications) ? filteredApplications : [];
   const totalPages = Math.ceil(safeFilteredApplications.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -560,7 +919,27 @@ export default function ApplicationsPage() {
     }
 
     try {
-      await updateJobApplicationStatus({applicationId, status: action});
+      const updateData: {
+        applicationId: number;
+        status: string;
+        shortlisted_by?: number;
+        reviewed_by?: number;
+        rejected_by?: number;
+      } = {
+        applicationId,
+        status: action
+      };
+
+      if (action === "shortlisted" && userData?.id) {
+        updateData.shortlisted_by = userData.id;
+      } else if (action === "reviewed" && userData?.id) {
+        updateData.reviewed_by = userData.id;
+      } else if (action === "rejected" && userData?.id) {
+        updateData.rejected_by = userData.id;
+      }
+
+      await updateJobApplicationStatus(updateData);
+
       setApplications((prev) =>
         prev.map((app) => (app.id === applicationId ? {...app, status: action} : app)),
       );
@@ -599,6 +978,7 @@ export default function ApplicationsPage() {
   if (!selectedInstitution || !selectedBranch) {
     return <div>Loading...</div>;
   }
+
   return (
     <div className="w-full py-8 space-y-6">
       <div className="flex items-center justify-between">
@@ -617,108 +997,228 @@ export default function ApplicationsPage() {
           <Plus className="mr-2 h-4 w-4" />
           Create Application
         </Button>
-
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search by name, email, or phone..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+      {/* Enhanced Filter Section */}
+      <div className="space-y-4">
+        {/* Main Filters Row */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search by name, email, or phone..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="new">New</SelectItem>
+              <SelectItem value="reviewed">Reviewed</SelectItem>
+              <SelectItem value="shortlisted">Shortlisted</SelectItem>
+              <SelectItem value="accepted">Accepted</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={jobFilter} onValueChange={setJobFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Filter by job" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Jobs</SelectItem>
+              {jobPositionAdverts.map((advert) => (
+                <SelectItem key={advert.id} value={advert.id.toString()}>
+                  {advert.job_position_details?.name || `Job Advert #${advert.id}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="new">New</SelectItem>
-            <SelectItem value="reviewed">Reviewed</SelectItem>
-            <SelectItem value="shortlisted">Shortlisted</SelectItem>
-            <SelectItem value="accepted">Accepted</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={jobFilter} onValueChange={setJobFilter}>
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Filter by job" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Jobs</SelectItem>
-            {jobPositionAdverts.map((advert) => (
-              <SelectItem key={advert.id} value={advert.id.toString()}>
-                {advert.job_position_details?.name || `Job Advert #${advert.id}`}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+
+        {/* Date Filter Row */}
+        <div className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-lg border">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-gray-700">Date Filter:</span>
+          </div>
+
+          <Select
+            value={dateFilter.type}
+            onValueChange={(value: "application_date" | "posted_date") =>
+              setDateFilter(prev => ({ ...prev, type: value }))
+            }
+          >
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="application_date">Application Date</SelectItem>
+              <SelectItem value="posted_date">Posted Date</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="flex items-center gap-2">
+            <Label htmlFor="start-date" className="text-sm whitespace-nowrap">From:</Label>
+            <Input
+              id="start-date"
+              type="date"
+              value={dateFilter.startDate}
+              onChange={(e) => setDateFilter(prev => ({ ...prev, startDate: e.target.value }))}
+              className="w-full sm:w-auto"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Label htmlFor="end-date" className="text-sm whitespace-nowrap">To:</Label>
+            <Input
+              id="end-date"
+              type="date"
+              value={dateFilter.endDate}
+              onChange={(e) => setDateFilter(prev => ({ ...prev, endDate: e.target.value }))}
+              className="w-full sm:w-auto"
+            />
+          </div>
+
+          {(dateFilter.startDate || dateFilter.endDate) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearDateFilters}
+              className="w-full sm:w-auto"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Clear Dates
+            </Button>
+          )}
+        </div>
+
+        {/* Active Filters Indicator */}
+        {(searchTerm || statusFilter !== "all" || jobFilter !== "all" || dateFilter.startDate || dateFilter.endDate) && (
+          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center gap-2 text-sm text-blue-800">
+              <Filter className="h-4 w-4" />
+              <span>
+                Filters active - showing {safeFilteredApplications.length} of {applications.length} applications
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearAllFilters}
+              className="text-blue-600 border-blue-300 hover:bg-blue-100"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Clear All Filters
+            </Button>
+          </div>
+        )}
       </div>
 
       {selectedApplications.length > 0 && (
-        <Card className="border-blue-200 bg-blue-50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-800">
-                  {selectedApplications.length} application(s) selected
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleBulkAction("shortlisted")}
-                  disabled={isBulkShortlisting}
-                  className="text-green-600 border-green-200 hover:bg-green-50"
-                >
-                  {isBulkShortlisting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2" />
-                      Shortlisting...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="h-4 w-4 mr-2" />
-                      Shortlist
-                    </>
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleBulkAction("reviewed")}
-                  className="text-yellow-600 border-yellow-200 hover:bg-yellow-50"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  Mark as Reviewed
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleBulkAction("rejected")}
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Reject
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setSelectedApplications([])}
-                  className="text-gray-600"
-                >
-                  Clear Selection
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+  <Card className="border-blue-200 bg-blue-50">
+    <CardContent className="p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-800">
+            {selectedApplications.length} application(s) selected
+          </span>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Review button - only show if there are 'new' applications selected */}
+          {selectedApplications.some(id => {
+            const app = applications.find(a => a.id === id);
+            return app?.status === "new";
+          }) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleBulkAction("reviewed")}
+              className="text-yellow-600 border-yellow-200 hover:bg-yellow-50"
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              Mark as Reviewed
+            </Button>
+          )}
+
+          {/* Shortlist button - only show if there are 'reviewed' applications selected */}
+          {selectedApplications.some(id => {
+            const app = applications.find(a => a.id === id);
+            return app?.status === "reviewed";
+          }) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleBulkAction("shortlisted")}
+              disabled={isBulkShortlisting}
+              className="text-green-600 border-green-200 hover:bg-green-50"
+            >
+              {isBulkShortlisting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2" />
+                  Shortlisting...
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Shortlist
+                </>
+              )}
+            </Button>
+          )}
+
+          {/* Schedule Interview button - only show if exactly one 'shortlisted' application is selected */}
+          {selectedApplications.length === 1 &&
+           selectedApplications.some(id => {
+             const app = applications.find(a => a.id === id);
+             return app?.status === "shortlisted";
+           }) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleBulkAction("schedule_interview")}
+              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Schedule Interview
+            </Button>
+          )}
+
+          {/* Reject button - only show if there are 'new' or 'reviewed' applications selected */}
+          {selectedApplications.some(id => {
+            const app = applications.find(a => a.id === id);
+            return app?.status === "new" || app?.status === "reviewed";
+          }) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleBulkAction("rejected")}
+              className="text-red-600 border-red-200 hover:bg-red-50"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Reject
+            </Button>
+          )}
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setSelectedApplications([])}
+            className="text-gray-600"
+          >
+            Clear Selection
+          </Button>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+)}
+
 
       {error && !isCreateDialogOpen && (
         <Alert variant="destructive">
@@ -743,7 +1243,7 @@ export default function ApplicationsPage() {
           {safeFilteredApplications.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">
-                {searchTerm || statusFilter !== "all"
+                {searchTerm || statusFilter !== "all" || jobFilter !== "all" || dateFilter.startDate || dateFilter.endDate
                   ? "No applications match your current filters."
                   : isLoading
                     ? "Loading applications..."
@@ -752,10 +1252,7 @@ export default function ApplicationsPage() {
               {applications.length > 0 && !isLoading && (
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    setSearchTerm("");
-                    setStatusFilter("all");
-                  }}
+                  onClick={clearAllFilters}
                   className="mt-2"
                 >
                   Clear Filters
@@ -938,47 +1435,68 @@ export default function ApplicationsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent
-                            align="end"
-                            className="!bg-white shadow-md shadow-black/20 rounded-md border border-black/20"
-                          >
-                            <DropdownMenuItem onClick={() => handleViewApplication(application.id)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditApplication(application.id)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Application
-                            </DropdownMenuItem>
-                            {application.status !== "shortlisted" &&
-                              application.status !== "rejected" && (
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleIndividualAction(application.id, "shortlisted")
-                                  }
-                                  disabled={individualLoadingStates[application.id]}
-                                >
-                                  {individualLoadingStates[application.id] ? (
-                                    <>
-                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2" />
-                                      Shortlisting...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Check className="h-4 w-4 mr-2" />
-                                      Shortlist
-                                    </>
-                                  )}
-                                </DropdownMenuItem>
-                              )}
-                            {application.status !== "rejected" && (
-                              <DropdownMenuItem
-                                onClick={() => handleIndividualAction(application.id, "rejected")}
-                              >
-                                <X className="h-4 w-4 mr-2" />
-                                Reject
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
+  align="end"
+  className="!bg-white shadow-md shadow-black/20 rounded-md border border-black/20"
+>
+  <DropdownMenuItem onClick={() => handleViewApplication(application.id)}>
+    <Eye className="h-4 w-4 mr-2" />
+    View Details
+  </DropdownMenuItem>
+  <DropdownMenuItem onClick={() => handleEditApplication(application.id)}>
+    <Edit className="h-4 w-4 mr-2" />
+    Edit Application
+  </DropdownMenuItem>
+
+  {/* Review option - only for new applications */}
+  {application.status === "new" && (
+    <DropdownMenuItem
+      onClick={() => handleIndividualAction(application.id, "reviewed")}
+    >
+      <Eye className="h-4 w-4 mr-2" />
+      Mark as Reviewed
+    </DropdownMenuItem>
+  )}
+
+  {/* Shortlist option - only for reviewed applications */}
+  {application.status === "reviewed" && (
+    <DropdownMenuItem
+      onClick={() => handleIndividualAction(application.id, "shortlisted")}
+      disabled={individualLoadingStates[application.id]}
+    >
+      {individualLoadingStates[application.id] ? (
+        <>
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2" />
+          Shortlisting...
+        </>
+      ) : (
+        <>
+          <Check className="h-4 w-4 mr-2" />
+          Shortlist
+        </>
+      )}
+    </DropdownMenuItem>
+  )}
+
+  {/* Schedule Interview option - only for shortlisted applications */}
+  {application.status === "shortlisted" && (
+    <DropdownMenuItem
+      onClick={() => handleOpenScheduleInterview(application)}
+    >
+      <Calendar className="h-4 w-4 mr-2" />
+      Schedule Interview
+    </DropdownMenuItem>
+  )}
+
+  {/* Reject option - only for new and reviewed applications */}
+  {(application.status === "new" || application.status === "reviewed") && (
+    <DropdownMenuItem
+      onClick={() => handleIndividualAction(application.id, "rejected")}
+    >
+      <X className="h-4 w-4 mr-2" />
+      Reject
+    </DropdownMenuItem>
+  )}
+</DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
@@ -1048,230 +1566,234 @@ export default function ApplicationsPage() {
         </CardContent>
       </Card>
 
+      {/* Create Application Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Application</DialogTitle>
-              <DialogDescription>
-                Fill in the details to create a new job application.
-              </DialogDescription>
-            </DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Application</DialogTitle>
+            <DialogDescription>
+              Fill in the details to create a new job application.
+            </DialogDescription>
+          </DialogHeader>
 
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="job_position_advert">Job Position *</Label>
-                  <Select
-                    value={formData.job_position_advert.toString()}
-                    onValueChange={(value) =>
-                      handleInputChange("job_position_advert", Number.parseInt(value))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          isLoadingAdverts ? "Loading job adverts..." : "Select a job advert"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {jobPositionAdverts
-                        .filter((advert) => advert.status === "active") // Only show active adverts
-                        .map((advert) => (
-                          <SelectItem key={advert.id} value={advert.id.toString()}>
-                            <div className="flex flex-col">
-                              <span className="font-medium">
-                                {advert.job_position_details?.name || `Job Advert #${advert.id}`}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="application_date">Application Date *</Label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                    </div>
-                    <Input
-                      id="application_date"
-                      type="date"
-                      value={formData.application_date}
-                      onChange={(e) => handleInputChange("application_date", e.target.value)}
-                      className="pl-10"
-                      max={new Date().toISOString().split("T")[0]}  // Restrict to today
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="applicant_name">Applicant Name *</Label>
-                  <Input
-                    id="applicant_name"
-                    value={formData.applicant_name}
-                    onChange={(e) => handleInputChange("applicant_name", e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Gender *</Label>
-                  <Select
-                    value={formData.gender}
-                    onValueChange={(value) => handleInputChange("gender", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="applicant_email">Email *</Label>
-                  <Input
-                    id="applicant_email"
-                    type="email"
-                    value={formData.applicant_email}
-                    onChange={(e) => handleInputChange("applicant_email", e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="applicant_phone">Phone</Label>
-                  <Input
-                    id="applicant_phone"
-                    value={formData.applicant_phone}
-                    onChange={(e) => handleInputChange("applicant_phone", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="source">Source</Label>
-                  <Select
-                    value={formData.source}
-                    onValueChange={(value) => handleInputChange("source", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="website">Website</SelectItem>
-                      <SelectItem value="referral">Referral</SelectItem>
-                      <SelectItem value="job_board">Job Board</SelectItem>
-                      <SelectItem value="social_media">Social Media</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address *</Label>
-                  <LocationAutocomplete
-                    value={formData.address}
-                    onChange={(value) => handleInputChange("address", value)}
-                    onCoordinatesChange={handleAddressCoordinatesChange}
-                    placeholder="Search for applicant's address..."
-                    showCurrentLocationButton={true}
-                  />
-                  {formData.address_latitude && formData.address_longitude && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Coordinates: {formData.address_latitude}, {formData.address_longitude}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="state">State</Label>
-                  <Input
-                    id="state"
-                    value={formData.state}
-                    onChange={(e) => handleInputChange("state", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="country">Country *</Label>
-                  <Input
-                    id="country"
-                    value={formData.country}
-                    onChange={(e) => handleInputChange("country", e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="resume">Curriculum Vitae /Resume *</Label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    id="resume"
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={(e) => handleFileChange("resume", e.target.files?.[0] || null)}
-                    required
-                  />
-                  <Upload className="h-4 w-4 text-muted-foreground" />
-                </div>
-                {formData.resume && (
-                  <p className="text-sm text-muted-foreground flex items-center">
-                    <FileText className="mr-1 h-3 w-3" />
-                    {formData.resume.name}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cover_letter">Cover Letter</Label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    id="cover_letter"
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={(e) => handleFileChange("cover_letter", e.target.files?.[0] || null)}
-                  />
-                  <Upload className="h-4 w-4 text-muted-foreground" />
-                </div>
-                {formData.cover_letter && (
-                  <p className="text-sm text-muted-foreground flex items-center">
-                    <FileText className="mr-1 h-3 w-3" />
-                    {formData.cover_letter.name}
-                  </p>
-                )}
-              </div>
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreateDialogOpen(false)}
+                <Label htmlFor="job_position_advert">Job Position *</Label>
+                <Select
+                  value={formData.job_position_advert.toString()}
+                  onValueChange={(value) =>
+                    handleInputChange("job_position_advert", Number.parseInt(value))
+                  }
                 >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Creating..." : "Create Application"}
-                </Button>
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        isLoadingAdverts ? "Loading job adverts..." : "Select a job advert"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {jobPositionAdverts
+                      .filter((advert) => advert.status === "active")
+                      .map((advert) => (
+                        <SelectItem key={advert.id} value={advert.id.toString()}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {advert.job_position_details?.name || `Job Advert #${advert.id}`}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+              <div className="space-y-2">
+                <Label htmlFor="application_date">Application Date *</Label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                  </div>
+                  <Input
+                    id="application_date"
+                    type="date"
+                    value={formData.application_date}
+                    onChange={(e) => handleInputChange("application_date", e.target.value)}
+                    className="pl-10"
+                    max={new Date().toISOString().split("T")[0]}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="applicant_name">Applicant Name *</Label>
+                <Input
+                  id="applicant_name"
+                  value={formData.applicant_name}
+                  onChange={(e) => handleInputChange("applicant_name", e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="gender">Gender *</Label>
+                <Select
+                  value={formData.gender}
+                  onValueChange={(value) => handleInputChange("gender", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="applicant_email">Email *</Label>
+                <Input
+                  id="applicant_email"
+                  type="email"
+                  value={formData.applicant_email}
+                  onChange={(e) => handleInputChange("applicant_email", e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="applicant_phone">Phone</Label>
+                <Input
+                  id="applicant_phone"
+                  value={formData.applicant_phone}
+                  onChange={(e) => handleInputChange("applicant_phone", e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="source">Source</Label>
+                <Select
+                  value={formData.source}
+                  onValueChange={(value) => handleInputChange("source", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="website">Website</SelectItem>
+                    <SelectItem value="referral">Referral</SelectItem>
+                    <SelectItem value="job_board">Job Board</SelectItem>
+                    <SelectItem value="social_media">Social Media</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address">Address *</Label>
+                <LocationAutocomplete
+                  value={formData.address}
+                  onChange={(value) => handleInputChange("address", value)}
+                  onCoordinatesChange={handleAddressCoordinatesChange}
+                  placeholder="Search for applicant's address..."
+                  showCurrentLocationButton={true}
+                />
+                {formData.address_latitude && formData.address_longitude && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Coordinates: {formData.address_latitude}, {formData.address_longitude}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="state">State</Label>
+                <Input
+                  id="state"
+                  value={formData.state}
+                  onChange={(e) => handleInputChange("state", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="country">Country *</Label>
+                <Input
+                  id="country"
+                  value={formData.country}
+                  onChange={(e) => handleInputChange("country", e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="resume">Curriculum Vitae /Resume *</Label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  id="resume"
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={(e) => handleFileChange("resume", e.target.files?.[0] || null)}
+                  required
+                />
+                <Upload className="h-4 w-4 text-muted-foreground" />
+              </div>
+              {formData.resume && (
+                <p className="text-sm text-muted-foreground flex items-center">
+                  <FileText className="mr-1 h-3 w-3" />
+                  {formData.resume.name}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cover_letter">Cover Letter</Label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  id="cover_letter"
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={(e) => handleFileChange("cover_letter", e.target.files?.[0] || null)}
+                />
+                <Upload className="h-4 w-4 text-muted-foreground" />
+              </div>
+              {formData.cover_letter && (
+                <p className="text-sm text-muted-foreground flex items-center">
+                  <FileText className="mr-1 h-3 w-3" />
+                  {formData.cover_letter.name}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCreateDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Creating..." : "Create Application"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Individual Action Confirmation Dialog */}
       <AlertDialog
         open={confirmAction.isOpen}
         onOpenChange={(open) => {
