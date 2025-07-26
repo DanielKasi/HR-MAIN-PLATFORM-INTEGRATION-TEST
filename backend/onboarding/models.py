@@ -33,23 +33,96 @@ class OnBoarding(models.Model):
         return f"OnBoarding for {self.application.applicant_name}"
 
     def save(self, *args, **kwargs):
-        """Override save method to create employee when status is accepted_offer"""
+        """Override save method to handle status changes."""
         is_new = self.pk is None
         old_status = None
 
         if not is_new:
-            # Get the old status before saving
             old_instance = OnBoarding.objects.get(pk=self.pk)
             old_status = old_instance.status
 
         super().save(*args, **kwargs)
 
+        # Send contract email if status changed to issued_contract
+        if self.status == "issued_contract" and old_status != "issued_contract":
+            self.send_contract_email()
+
         # Create employee if status changed to accepted_offer
         if self.status == "accepted_offer" and old_status != "accepted_offer":
             self.create_employee_record()
 
+    def send_contract_email(self):
+        """Send the contract template as a PDF attachment to the applicant's email."""
+        if not self.application or not self.application.applicant_email:
+            return
+
+        try:
+            # Get the job position and its contract template
+            job_position = self.application.job_position_advert.job_position
+            template = job_position.get_contract_template()
+
+            # Prepare context for rendering the template
+            context = {
+                "employee_name": self.application.applicant_name,
+                "position_title": job_position.name,
+                "department_name": job_position.department.name,
+                "institution_name": job_position.department.institution.name,
+                "institution_address": job_position.department.institution.address or "N/A",
+                "employee_address": self.application.address or "N/A",
+                "employee_country": self.application.country or "Unknown",
+                "start_date": timezone.now().date().strftime("%Y-%m-%d"),
+                "salary": str(job_position.salary) if job_position.salary else "N/A",
+                "currency": "UGX",
+                "contract_id": f"CON-{self.id}",
+                "work_type": self.application.work_type or "Full-time",
+                "probation_period": "3 months",
+                "probation_notice_period": "2 weeks",
+                "notice_period": "30 days",
+                "additional_benefits": "Other benefits as outlined in the Employee Handbook.",
+                "employer_representative_name": "Authorized Signatory",
+                "employer_representative_title": "Manager",
+                "signing_date": timezone.now().date().strftime("%Y-%m-%d"),
+            }
+
+            # Render the contract template
+            rendered_contract = render_to_string("contracts/default_contract.html", context)
+
+            # Convert HTML to PDF
+            pdf_file = BytesIO()
+            HTML(string=rendered_contract).write_pdf(pdf_file)
+            pdf_file.seek(0)
+
+            # Prepare email
+            email_subject = f"Employment Contract for {job_position.name}"
+            email_context = {
+                "employee_name": self.application.applicant_name,
+                "position_title": job_position.name,
+                "institution_name": job_position.department.institution.name,
+            }
+            html_message = render_to_string("emails/contract_email.html", email_context)
+            plain_message = render_to_string("emails/contract_email.txt", email_context)
+
+            # Send email with PDF attachment
+            from django.core.mail import EmailMessage
+            email = EmailMessage(
+                subject=email_subject,
+                body=plain_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[self.application.applicant_email],
+            )
+            email.attach(
+                f"contract_{context['contract_id']}.pdf",
+                pdf_file.read(),
+                "application/pdf"
+            )
+            email.attach_alternative(html_message, "text/html")
+            email.send(fail_silently=False)
+
+        except Exception as e:
+            print(f"Error sending contract email: {str(e)}")
+
     def create_employee_record(self):
-        """Create an employee record from the accepted application"""
+        """Create an employee record from the accepted application."""
         from users.models import CustomUser  # Import here to avoid circular imports
 
         if not self.application:
@@ -68,7 +141,6 @@ class OnBoarding(models.Model):
             )
 
             # Create Employee record
-
             employee = Employee.objects.create(
                 user=user,
                 email=self.application.applicant_email,
@@ -104,7 +176,6 @@ class OnBoarding(models.Model):
 
         except Exception as e:
             print(f"Error creating employee record: {str(e)}")
-        return f"OnBoarding for {self.application.applicant_name}"
 
 
 class OffboardingStage(models.Model):
