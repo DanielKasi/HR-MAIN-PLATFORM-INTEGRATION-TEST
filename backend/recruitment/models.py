@@ -89,6 +89,7 @@ class JobAdvertApplication(models.Model):
         ("referral", "Referral"),
         ("job_board", "Job Board"),
         ("social_media", "Social Media"),
+        ("head_hunt", "Head Hunt"),
         ("other", "Other"),
     ]
     job_position_advert = models.ForeignKey(
@@ -108,6 +109,13 @@ class JobAdvertApplication(models.Model):
     address = models.CharField(max_length=255)
     country = models.CharField(max_length=100)
     source = models.CharField(max_length=20, choices=source_choices, default="website")
+    recommended_by = models.ForeignKey(
+        "users.CustomUser",
+        on_delete=models.SET_NULL,
+        related_name="recommended_headhunt",
+        null=True,
+        blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
