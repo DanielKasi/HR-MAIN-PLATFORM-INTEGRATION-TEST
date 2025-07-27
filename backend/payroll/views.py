@@ -423,3 +423,19 @@ class PayslipItemAPIView(APIView):
         paginated_qs = paginator.paginate_queryset(items, request)
         serializer = PayslipItemSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
+
+
+class PayslipsByPayrollAPIView(APIView):
+    """
+    API view to list all payslips associated with a given payroll (payroll_id).
+    """
+    @extend_schema(
+        summary="List payslips by payroll",
+        responses=PayslipSerializer(many=True),
+    )
+    def get(self, request, payroll_id):
+        payslips = Payslip.objects.filter(payroll_period__id=payroll_id)
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(payslips, request)
+        serializer = PayslipSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)

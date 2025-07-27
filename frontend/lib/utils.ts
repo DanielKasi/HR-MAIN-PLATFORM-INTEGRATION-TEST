@@ -12,7 +12,7 @@ import {
   ILeavePolicyFormData, ILeavePolicyResponse, IAllowanceType, IAllowanceTypeFormData, IDeductionType, IDeductionTypeFormData,
   IEmployeeAllowance, IEmployeeAllowanceFormData, IEmployeeDeduction, IEmployeeDeductionFormData, IPayrollPeriod, IPayrollPeriodFormData,
   IPayslipFormData, IPayslip, IPayslipItem, PaginatedEmployeeResponse,
-  EmployeeFromAPI, PaginatedIOnboardingResponse, ILeaveBalance,
+  PaginatedIOnboardingResponse, ILeaveBalance,
   PaginatedResponse,
   IContract,
   IContractFormData
@@ -276,11 +276,11 @@ export const updateJobPosition = async ({
     }
 
     // Add affected_employees as individual entries
-    // if (jobPositionData.affected_employees && jobPositionData.affected_employees.length > 0) {
-    //   jobPositionData.affected_employees.forEach((employeeId) => {
-    //     formData.append("apply_salary_to_employees", employeeId.toString())
-    //   })
-    // }
+    if (jobPositionData.affected_employees && jobPositionData.affected_employees.length > 0) {
+      jobPositionData.affected_employees.forEach((employeeId) => {
+        formData.append("apply_salary_to_employees", employeeId.toString())
+      })
+    }
 
     const response = await apiRequest.patch(`recruitment/job-position/${jobPositionId}/`, formData)
     return response.data as IJobPosition
@@ -347,6 +347,7 @@ export const getJobApplicationById = async ({
 }): Promise<JobApplication | null> => {
   try {
     const response = await apiRequest.get(`recruitment/job-application/${applicationId}/`);
+    console.log("Job Application Response:", response.data);
     return response.data as JobApplication;
   } catch (error) {
     console.error("Failed to fetch job application", error);
@@ -383,10 +384,33 @@ export const updateJobApplication = async ({
 };
 
 
-export const updateJobApplicationStatus = async ({ applicationId, status }: { applicationId: number, status: string }): Promise<JobApplication | null> => {
+export const updateJobApplicationStatus = async ({
+  applicationId,
+  status,
+  shortlisted_by,
+  reviewed_by,
+  rejected_by
+}: {
+  applicationId: number;
+  status: string;
+  shortlisted_by?: number;
+  reviewed_by?: number;
+  rejected_by?: number;
+}): Promise<JobApplication | null> => {
   try {
     const formData = new FormData();
     formData.append("status", status);
+
+    // Add user tracking fields based on the action - just like how created_by works
+    if (shortlisted_by) {
+      formData.append("shortlisted_by", shortlisted_by.toString());
+    }
+    if (reviewed_by) {
+      formData.append("reviewed_by", reviewed_by.toString());
+    }
+    if (rejected_by) {
+      formData.append("rejected_by", rejected_by.toString());
+    }
 
     const response = await apiRequest.patch(
       `recruitment/job-application/${applicationId}/`,
@@ -398,7 +422,7 @@ export const updateJobApplicationStatus = async ({ applicationId, status }: { ap
     console.error("Failed to update job application", error);
     return null;
   }
-}
+};
 
 export const fetchEmployees = async ({ institutionId }: { institutionId: number }) => {
   try {
@@ -693,10 +717,10 @@ export const getAllEmployees = async ({ institutionId }: { institutionId: number
   try {
     const endpoint = `employee/${institutionId}/employee/`;
     const response = await apiRequest.get(endpoint)
-    const data = response.data as PaginatedEmployeeResponse
+    const data = response.data as PaginatedResponse<IEmployee>
 
     // Return the results array instead of the entire response
-    return data.results as EmployeeFromAPI[]
+    return data.results
   } catch (error) {
     throw error;
   }

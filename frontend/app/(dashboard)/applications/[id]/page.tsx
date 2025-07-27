@@ -43,8 +43,13 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Plus, Check } from "lucide-react"
+import { createInterviewStage } from "@/lib/utils"
+import type { IInterviewStageFormData } from "@/app/types/types.utils"
+import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"
 
-import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
+
+import {  selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getJobApplicationById, updateJobApplicationStatus, getInterviewStages, fetchEmployees,
    createInterview} from "@/lib/utils"
 import type { JobApplication, IInterviewStage, IEmployee, IInterviewFormData } from "@/app/types/types.utils"
@@ -75,13 +80,31 @@ export default function ApplicationViewPage() {
   const handleShortlist = async () => {
     if (!application) return;
     try {
-      await updateJobApplicationStatus({ applicationId: application.id, status: "shortlisted" });
+      const updateData: {
+        applicationId: number;
+        status: string;
+        shortlisted_by?: number;
+      } = {
+        applicationId: application.id,
+        status: "shortlisted"
+      };
+
+      // Add the current user as the one who shortlisted
+      if (currentUser?.id) {
+        updateData.shortlisted_by = currentUser.id;
+      }
+
+      await updateJobApplicationStatus(updateData);
       setApplication({ ...application, status: "shortlisted" });
       toast.success("Application shortlisted successfully");
+
+      // Refresh the application data to get updated user details
+      await fetchApplication();
     } catch (error) {
       toast.error("Failed to shortlist application");
     }
   }
+
   const [application, setApplication] = useState<JobApplication | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
@@ -97,6 +120,22 @@ export default function ApplicationViewPage() {
   const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([])
   const [employees, setEmployees] = useState<IEmployee[]>([])
   const [isSchedulingInterview, setIsSchedulingInterview] = useState(false)
+  const [showCreateStageDialog, setShowCreateStageDialog] = useState(false)
+  const [isCreatingStage, setIsCreatingStage] = useState(false)
+  const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
+  name: "",
+  level: 1,
+  interviewers: [],
+  job_position_advert: 0,
+})
+
+const updateStageFormData = (field: string, value: any) => {
+  setStageFormData((prev) => ({ ...prev, [field]: value }))
+  if (stageErrors[field]) {
+    setStageErrors((prev: any) => ({ ...prev, [field]: undefined }))
+  }
+}
+const [stageErrors, setStageErrors] = useState<any>({})
   const [interviewFormData, setInterviewFormData] = useState({
     interview_stage: 0,
     interview_date: "",
@@ -107,14 +146,101 @@ export default function ApplicationViewPage() {
     rating: undefined,
   })
   const [interviewErrors, setInterviewErrors] = useState<any>({})
+
+  const handleCreateInterviewStage = async (e: React.FormEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (!selectedInstitution || !application) {
+      toast.error("Missing organization or application information")
+      return
+    }
+
+    const newStageErrors: any = {}
+    if (!stageFormData.name.trim()) {
+      newStageErrors.name = "Stage name is required"
+    }
+    if (!stageFormData.interviewers || stageFormData.interviewers.length === 0) {
+      newStageErrors.interviewers = "Please select at least one interviewer"
+    }
+
+    if (Object.keys(newStageErrors).length > 0) {
+      setStageErrors(newStageErrors)
+      return
+    }
+
+    setIsCreatingStage(true)
+
+    try {
+      // Set the job position advert ID
+      const stageDataWithJobAdvert = {
+        ...stageFormData,
+        job_position_advert: application.job_position_advert,
+        level: interviewStages.length + 1, // Auto-assign next level
+      }
+
+      const newStage = await createInterviewStage({
+        institutionId: selectedInstitution.id,
+        stageData: stageDataWithJobAdvert,
+      })
+
+      if (newStage) {
+        // Reset form
+        setStageFormData({
+          name: "",
+          level: 1,
+          interviewers: [],
+          job_position_advert: application.job_position_advert,
+        })
+        setStageErrors({})
+        setShowCreateStageDialog(false)
+
+        // Refresh interview stages
+        await fetchInterviewData()
+
+        toast.success("Interview stage created successfully!")
+      } else {
+        toast.error("Failed to create interview stage")
+      }
+    } catch (error) {
+      console.error("Error creating interview stage:", error)
+      toast.error("Failed to create interview stage")
+    } finally {
+      setIsCreatingStage(false)
+    }
+  }
+
   const handleIndividualAction = async (
     applicationId: number,
     action: "reviewed" | "rejected"
   ) => {
     try {
-      await updateJobApplicationStatus({ applicationId, status: action });
+      // Prepare the update data with user tracking - just like created_by works
+      const updateData: {
+        applicationId: number;
+        status: string;
+        reviewed_by?: number;
+        rejected_by?: number;
+      } = {
+        applicationId,
+        status: action
+      };
+
+      // Add the appropriate user field based on the action - automatically populate like created_by
+      if (action === "reviewed" && currentUser?.id) {
+        updateData.reviewed_by = currentUser.id;
+      } else if (action === "rejected" && currentUser?.id) {
+        updateData.rejected_by = currentUser.id;
+      }
+
+      await updateJobApplicationStatus(updateData);
       setApplication(prev => prev ? { ...prev, status: action } : null);
       toast.success(`Application ${action} successfully`);
+
+      await fetchApplication();
+
+
+      // Refresh the application
     } catch (error) {
       toast.error(`Failed to ${action} application`);
     }
@@ -190,6 +316,11 @@ export default function ApplicationViewPage() {
       return
     }
 
+    if (!currentUser?.id) {
+      toast.error("User information not available. Please refresh and try again.")
+      return
+    }
+
     setIsSchedulingInterview(true)
 
     try {
@@ -211,6 +342,9 @@ export default function ApplicationViewPage() {
         status: interviewFormData.status || "scheduled",
         feedback: interviewFormData.feedback || undefined,
         rating: interviewFormData.rating || undefined,
+        // Add the current user as the one who created/scheduled the interview
+        created_by: currentUser.id,
+
       }
 
       const result = await createInterview({
@@ -727,7 +861,6 @@ export default function ApplicationViewPage() {
     </Button>
   </CardContent>
 </Card>
-          {/* Application Summary */}
            {/* Application Summary */}
 <Card>
   <CardHeader>
@@ -754,19 +887,25 @@ export default function ApplicationViewPage() {
     </div>
 
     {/* Show who performed each action */}
-    {application.status === "reviewed" && currentUser && (
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">Reviewed by</span>
-        <span className="text-sm font-medium">{currentUser.fullname}</span>
-      </div>
-    )}
+    {application.reviewed_by && (
+  <div className="flex items-center justify-between">
+    <span className="text-sm text-muted-foreground">Reviewed by</span>
+    <span className="text-sm font-medium">
+      {application.reviewed_by.fullname || application.reviewed_by.email}
+      {application.reviewed_by.id === currentUser?.id}
+    </span>
+  </div>
+)}
 
-    {application.status === "shortlisted" && currentUser && (
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">Shortlisted by</span>
-        <span className="text-sm font-medium">{currentUser.fullname}</span>
-      </div>
-    )}
+{application.shortlisted_by && (
+  <div className="flex items-center justify-between">
+    <span className="text-sm text-muted-foreground">Shortlisted by</span>
+    <span className="text-sm font-medium">
+      {application.shortlisted_by.fullname || application.shortlisted_by.email}
+      {application.shortlisted_by.id === currentUser?.id}
+    </span>
+  </div>
+)}
 
     <div className="flex items-center justify-between">
       <span className="text-sm text-muted-foreground">Source</span>
@@ -797,6 +936,165 @@ export default function ApplicationViewPage() {
 </Card>
         </div>
       </div>
+      <Dialog open={showShortlistConfirm} onOpenChange={setShowShortlistConfirm}>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Shortlist Application</DialogTitle>
+      <DialogDescription>
+        Are you sure you want to shortlist the application from{" "}
+        <strong>{application?.applicant_name}</strong>?
+      </DialogDescription>
+    </DialogHeader>
+    <div className="flex justify-end space-x-2 pt-4">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setShowShortlistConfirm(false)}
+      >
+        Cancel
+      </Button>
+      <Button
+        onClick={async () => {
+          await handleShortlist();
+          setShowShortlistConfirm(false);
+        }}
+      >
+        <UserCheck className="h-4 w-4 mr-2" />
+        Shortlist
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
+
+{/* Create Interview Stage Dialog */}
+<Dialog open={showCreateStageDialog} onOpenChange={setShowCreateStageDialog}>
+  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <DialogHeader>
+      <DialogTitle>Create Interview Stage</DialogTitle>
+      <DialogDescription>
+        Create a new interview stage for {application?.job_position_advert_job_details?.name || 'this position'}.
+      </DialogDescription>
+    </DialogHeader>
+
+    <div onClick={(e) => e.stopPropagation()}>
+      <form onSubmit={handleCreateInterviewStage} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="stage_name">Stage Name *</Label>
+          <Input
+            id="stage_name"
+            value={stageFormData.name}
+            onChange={(e) => updateStageFormData("name", e.target.value)}
+            placeholder="e.g., Technical Interview, HR Round"
+            className={stageErrors.name ? "border-destructive" : ""}
+          />
+          {stageErrors.name && <p className="text-sm text-destructive">{stageErrors.name}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="stage_interviewer">Interviewers *</Label>
+          <div className="w-full max-w-full overflow-hidden">
+            <EmployeeSearchableSelect
+              employees={employees as any}
+              value={stageFormData.interviewers.map(id => id.toString())}
+              onValueChange={(values) => {
+                const numberValues = Array.isArray(values)
+                  ? values.map(v => Number(v))
+                  : [Number(values)]
+                const uniqueValues = [...new Set(numberValues)]
+                updateStageFormData("interviewers", uniqueValues)
+              }}
+              disabled={isCreatingStage}
+              placeholder="Search and select interviewers"
+              showEmployeeId={false}
+              showDepartment={false}
+              multiple={true}
+            />
+          </div>
+
+          {stageErrors.interviewers && (
+            <p className="text-sm text-destructive">{stageErrors.interviewers}</p>
+          )}
+
+          {/* Show selected interviewers as chips */}
+          {stageFormData.interviewers.length > 0 && (
+            <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-gray-700">
+                  Selected Interviewers ({stageFormData.interviewers.length})
+                </p>
+                <button
+                  type="button"
+                  onClick={() => updateStageFormData("interviewers", [])}
+                  className="text-xs text-red-600 hover:text-red-800"
+                >
+                  Clear all
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                {stageFormData.interviewers.map((interviewerId) => {
+                  const employee = employees.find(emp => emp.id === interviewerId);
+                  const fullName = employee?.user?.fullname || `Employee ${interviewerId}`;
+                  const displayName = fullName.length > 30 ? `${fullName.substring(0, 30)}...` : fullName;
+
+                  return (
+                    <div
+                      key={interviewerId}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm max-w-xs"
+                      title={fullName}
+                    >
+                      <span className="truncate flex-1 min-w-0">{displayName}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newInterviewers = stageFormData.interviewers.filter(id => id !== interviewerId);
+                          updateStageFormData("interviewers", newInterviewers);
+                        }}
+                        className="flex-shrink-0 w-4 h-4 rounded-full bg-blue-200 text-blue-600 hover:bg-blue-300 flex items-center justify-center text-xs font-bold"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <p className="text-xs text-muted-foreground">
+            Search and select multiple interviewers for this stage
+          </p>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowCreateStageDialog(false)
+            }}
+            disabled={isCreatingStage}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isCreatingStage} onClick={(e) => e.stopPropagation()}>
+            {isCreatingStage ? (
+              <>
+                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4 mr-2" />
+                Create Stage
+              </>
+            )}
+          </Button>
+        </div>
+      </form>
+    </div>
+  </DialogContent>
+</Dialog>
       {/* Schedule Interview Dialog */}
 <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -810,36 +1108,58 @@ export default function ApplicationViewPage() {
     <div className="space-y-4">
       {/* Interview Stage */}
       <div className="space-y-2">
-        <Label htmlFor="interview_stage" className="text-sm font-medium">
-          Interview Stage *
-        </Label>
-        <Select
-          value={interviewFormData.interview_stage.toString()}
-          onValueChange={(value) => updateInterviewFormData("interview_stage", Number(value))}
-        >
-          <SelectTrigger className={interviewErrors.interview_stage ? "border-destructive" : ""}>
-            <SelectValue placeholder="Select interview stage" />
-          </SelectTrigger>
-          <SelectContent>
-            {interviewStages.map((stage) => (
-              <SelectItem key={stage.id} value={stage.id.toString()}>
-                <div className="flex items-center gap-2">
-                  <Building className="h-4 w-4" />
-                  {stage.name} (Level {stage.level})
-                </div>
-              </SelectItem>
-            ))}
-            {interviewStages.length === 0 && (
-              <SelectItem value="no-stages" disabled>
-                No interview stages available for this position
-              </SelectItem>
-            )}
-          </SelectContent>
-        </Select>
-        {interviewErrors.interview_stage && (
-          <p className="text-sm text-destructive">{interviewErrors.interview_stage}</p>
+  <Label htmlFor="interview_stage" className="text-sm font-medium">
+    Interview Stage *
+  </Label>
+  <div className="flex items-center gap-2">
+    <Select
+      value={interviewFormData.interview_stage.toString()}
+      onValueChange={(value) => updateInterviewFormData("interview_stage", Number(value))}
+    >
+      <SelectTrigger className={`flex-1 ${interviewErrors.interview_stage ? "border-destructive" : ""}`}>
+        <SelectValue placeholder="Select interview stage" />
+      </SelectTrigger>
+      <SelectContent>
+        {interviewStages.map((stage) => (
+          <SelectItem key={stage.id} value={stage.id.toString()}>
+            <div className="flex items-center gap-2">
+              <Building className="h-4 w-4" />
+              {stage.name} (Level {stage.level})
+            </div>
+          </SelectItem>
+        ))}
+        {interviewStages.length === 0 && (
+          <SelectItem value="no-stages" disabled>
+            No interview stages available for this position
+          </SelectItem>
         )}
-      </div>
+      </SelectContent>
+    </Select>
+
+    {/* Plus icon button to create new stage */}
+    <Button
+      type="button"
+      variant="outline"
+      size="icon"
+      onClick={() => setShowCreateStageDialog(true)}
+      className="flex-shrink-0"
+      title="Create new interview stage"
+    >
+      <Plus className="h-4 w-4" />
+    </Button>
+  </div>
+
+  {interviewErrors.interview_stage && (
+    <p className="text-sm text-destructive">{interviewErrors.interview_stage}</p>
+  )}
+
+  {interviewStages.length === 0 && (
+    <p className="text-xs text-muted-foreground">
+      No interview stages available. Click the + button to create one.
+    </p>
+  )}
+</div>
+
 
       {/* Interview Date */}
       <div className="space-y-2">

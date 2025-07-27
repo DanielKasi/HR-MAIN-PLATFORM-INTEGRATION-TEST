@@ -1,19 +1,19 @@
 "use client";
-import {usePathname, useRouter} from "next/navigation";
-import {Building, ChevronDown, DollarSign, FileText, Shield, Settings, Users} from "lucide-react";
-import {useEffect, useState} from "react";
-import {useSelector} from "react-redux";
+import { usePathname, useRouter } from "next/navigation";
+import { Building, ChevronDown, Coins, FileText, Shield, Settings, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 
-import {Button} from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {hasPermission} from "@/lib/helpers";
-import {PERMISSION_CODES} from "@/app/types/types.utils";
-import {selectTemporaryPermissions, selectUser} from "@/store/auth/selectors";
+import { hasPermission } from "@/lib/helpers";
+import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { selectTemporaryPermissions, selectUser } from "@/store/auth/selectors";
 
 export function TopNavigation() {
   const pathname = usePathname();
@@ -62,7 +62,7 @@ export function TopNavigation() {
             Accounting
           </DropdownMenuItem>
           <DropdownMenuItem className="cursor-pointer">
-            <DollarSign className="mr-2 h-4 w-4" />
+            <Coins className="mr-2 h-4 w-4" />
             Finance
           </DropdownMenuItem>
         </DropdownMenuContent>

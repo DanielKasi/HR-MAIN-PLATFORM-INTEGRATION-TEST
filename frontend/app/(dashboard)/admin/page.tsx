@@ -23,7 +23,7 @@ import {
   ShoppingCart,
   GitBranch,
   BookOpen,
-  BadgeDollarSign,
+
   LucideHouse,
   BriefcaseBusinessIcon,
 } from "lucide-react";
@@ -172,7 +172,7 @@ export default function AdminPage() {
               <h2 className="text-lg font-semibold mb-6">Branch Management</h2>
               <Separator className="my-6" />
               <div className="flex flex-col items-start justify-center gap-6">
-                
+
                 <div className="">
                   <Link
                     href="/branches"

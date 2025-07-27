@@ -47,14 +47,14 @@ export default function CreateJobPositionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Partial<Record<keyof JobPositionFormData, string>>>({})
   const [salaryDisplay, setSalaryDisplay] = useState(
-  formData.salary ? formatWithCommas(String(formData.salary)) : ""
+    formData.salary ? formatWithCommas(String(formData.salary)) : ""
   )
 
 
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const selectedBranch = useSelector(selectSelectedBranch)
- 
+
   useEffect(() => {
     setSalaryDisplay(formData.salary ? formatWithCommas(String(formData.salary)) : "")
   }, [formData.salary])
@@ -136,7 +136,7 @@ export default function CreateJobPositionPage() {
     return Object.keys(newErrors).length === 0
   }
 
-  
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -159,7 +159,7 @@ export default function CreateJobPositionPage() {
         description: formData.description.trim(),
         department: formData.department!,
         salary: Number(formData.salary),
-        affected_employees:false
+        affected_employees: []
       }
 
       if (formData.reportsTo) {

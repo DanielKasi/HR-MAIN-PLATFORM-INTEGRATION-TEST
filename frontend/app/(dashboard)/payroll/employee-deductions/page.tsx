@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Edit, Trash2, DollarSign, Percent } from "lucide-react"
+import { Plus, Edit, Trash2, Coins, Percent } from "lucide-react"
 import {
   Search,
   Download,
   Users,
-  DollarSignIcon as DollarSign2,
+  Coins as Coins2,
   CalendarPlus2Icon as CalendarIcon2,
   Loader2,
   MoreHorizontal,
@@ -224,53 +224,53 @@ export default function EmployeeDeductionComponent() {
   })
 
 
- useEffect(() => {
-  const fetchDeductionTypes = async () => {
-    if (!selectedInstitution?.id) {
-      return
-    }
-    
-    try {
-      const types = await getDeductionTypes(selectedInstitution.id)
-      
-      if (types && Array.isArray(types)) {
-        // Only get active types and simplify to just id and name
-        const activeTypes = types
-          .filter(type => type.is_active !== false)
-          .map(type => ({
-            id: type.id,
-            name: type.name
-          }))
-        
-        setDeductionTypes(activeTypes)
-        
-        if (activeTypes.length === 0) {
-          toast.error("No active deduction types found for this institution")
-        }
-      } else {
-        setDeductionTypes([])
-        toast.error("Invalid deduction types data received")
+  useEffect(() => {
+    const fetchDeductionTypes = async () => {
+      if (!selectedInstitution?.id) {
+        return
       }
-    } catch (error) {
-      console.warn("Error fetching deduction types:", error)
-      setDeductionTypes([])
-      toast.error("Failed to load deduction types")
+
+      try {
+        const types = await getDeductionTypes(selectedInstitution.id)
+
+        if (types && Array.isArray(types)) {
+          // Only get active types and simplify to just id and name
+          const activeTypes = types
+            .filter(type => type.is_active !== false)
+            .map(type => ({
+              id: type.id,
+              name: type.name
+            }))
+
+          setDeductionTypes(activeTypes)
+
+          if (activeTypes.length === 0) {
+            toast.error("No active deduction types found for this institution")
+          }
+        } else {
+          setDeductionTypes([])
+          toast.error("Invalid deduction types data received")
+        }
+      } catch (error) {
+        console.warn("Error fetching deduction types:", error)
+        setDeductionTypes([])
+        toast.error("Failed to load deduction types")
+      }
     }
-  }
-  
-  // ADD THIS LINE - You're missing the function call!
-  fetchDeductionTypes()
-}, [selectedInstitution?.id])
+
+    // ADD THIS LINE - You're missing the function call!
+    fetchDeductionTypes()
+  }, [selectedInstitution?.id])
 
   useEffect(() => {
     const fetchEmployees = async () => {
       if (!selectedInstitution?.id) {
         return
       }
-      
+
       try {
         const fetchedEmployees = await getAllEmployees({ institutionId: selectedInstitution.id })
-        
+
         if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
           const formattedEmployees: Employee[] = fetchedEmployees.map((emp: any) => {
             return {
@@ -283,9 +283,9 @@ export default function EmployeeDeductionComponent() {
               user: emp.user || null
             }
           }).filter(emp => emp.id && emp.id !== "0") // Filter out invalid IDs including "0"
-          
+
           setEmployees(formattedEmployees)
-          
+
           if (formattedEmployees.length === 0) {
             toast.error("No employees found for this institution")
           }
@@ -307,10 +307,10 @@ export default function EmployeeDeductionComponent() {
       if (!selectedInstitution?.id) {
         return
       }
-      
+
       try {
         const deductionsData = await getEmployeeDeductions(selectedInstitution.id)
-        
+
         if (deductionsData && Array.isArray(deductionsData)) {
           const displayDeductions = deductionsData.map(convertToDisplayDeduction)
           setDeductions(displayDeductions)
@@ -322,7 +322,7 @@ export default function EmployeeDeductionComponent() {
         toast.error("Failed to load deductions")
       }
     }
-    
+
     fetchDeductions()
   }, [selectedInstitution?.id, employees])
 
@@ -395,9 +395,9 @@ export default function EmployeeDeductionComponent() {
       setSelectedDepartments((prev) => [...prev, department])
       const deptEmployees = availableEmployees.filter(emp => emp.department === department)
       const newEmployeeIds = deptEmployees.map(emp => parseInt(emp.id))
-      
+
       setSelectedEmployees((prev) => [...new Set([...prev, ...newEmployeeIds])])
-      
+
       const newBulkData = deptEmployees.map(employee => ({
         employee_id: parseInt(employee.id),
         calculation_method: bulkDefaults.calculation_method,
@@ -407,7 +407,7 @@ export default function EmployeeDeductionComponent() {
         effective_from: bulkDefaults.effective_from,
         effective_to: bulkDefaults.effective_to,
       }))
-      
+
       setBulkDeductionData((prev) => {
         const existingIds = prev.map(d => d.employee_id)
         const filteredNewData = newBulkData.filter(d => !existingIds.includes(d.employee_id))
@@ -417,7 +417,7 @@ export default function EmployeeDeductionComponent() {
       setSelectedDepartments((prev) => prev.filter((d) => d !== department))
       const deptEmployees = availableEmployees.filter(emp => emp.department === department)
       const deptEmployeeIds = deptEmployees.map(emp => parseInt(emp.id))
-      
+
       setSelectedEmployees((prev) => prev.filter(id => !deptEmployeeIds.includes(id)))
       setBulkDeductionData((prev) => prev.filter(data => !deptEmployeeIds.includes(data.employee_id)))
     }
@@ -485,7 +485,7 @@ export default function EmployeeDeductionComponent() {
 
   const handleBulkSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!selectedInstitution?.id) {
       toast.error("Institution ID is required")
       return
@@ -502,7 +502,7 @@ export default function EmployeeDeductionComponent() {
       const createdDeductions: DisplayEmployeeDeduction[] = []
       const skippedEmployees: string[] = []
       const errors: string[] = []
-      
+
       for (const data of bulkDeductionData) {
         try {
           const deductionData: IEmployeeDeductionFormData = {
@@ -520,14 +520,14 @@ export default function EmployeeDeductionComponent() {
             institutionId: selectedInstitution.id,
             employeeDeductionData: deductionData
           })
-          
+
           if (newDeduction) {
             createdDeductions.push(convertToDisplayDeduction(newDeduction))
           }
         } catch (error: any) {
           const employee = employees.find(emp => parseInt(emp.id) === data.employee_id)
           const employeeName = employee?.name || `Employee ${data.employee_id}`
-          
+
           if (error.response?.data?.non_field_errors) {
             const nonFieldErrors = error.response.data.non_field_errors
             if (nonFieldErrors.some((err: string) => err.includes("unique"))) {
@@ -548,11 +548,11 @@ export default function EmployeeDeductionComponent() {
       if (createdDeductions.length > 0) {
         toast.success(`${createdDeductions.length} deductions created successfully`)
       }
-      
+
       if (skippedEmployees.length > 0) {
         toast.warning(`Skipped ${skippedEmployees.length} employees (already have this deduction): ${skippedEmployees.join(', ')}`)
       }
-      
+
       if (errors.length > 0) {
         toast.error(`Errors occurred for: ${errors.join('; ')}`)
       }
@@ -590,7 +590,7 @@ export default function EmployeeDeductionComponent() {
     if (formData.calculation_method === 'fixed' && !formData.amount) {
       return true
     }
-    
+
     if (formData.calculation_method === 'percentage' && !formData.percentage) {
       return true
     }
@@ -789,13 +789,13 @@ export default function EmployeeDeductionComponent() {
       // Create HTML table
       const headers = Object.keys(excelData[0] || {})
       let htmlTable = '<table border="1"><thead><tr>'
-      
+
       // Add headers
       headers.forEach(header => {
         htmlTable += `<th>${header}</th>`
       })
       htmlTable += '</tr></thead><tbody>'
-      
+
       // Add data rows
       excelData.forEach(row => {
         htmlTable += '<tr>'
@@ -843,7 +843,7 @@ export default function EmployeeDeductionComponent() {
       a.click()
       document.body.removeChild(a)
       window.URL.revokeObjectURL(url)
-      
+
       toast.success("Excel file downloaded successfully")
     } catch (error) {
       toast.error("Failed to export Excel file")
@@ -906,9 +906,9 @@ export default function EmployeeDeductionComponent() {
               {/* Bulk Add Deductions Dialog */}
               <Dialog open={isBulkModalOpen} onOpenChange={setIsBulkModalOpen}>
                 <DialogTrigger asChild>
-                  <Button 
-                    onClick={resetBulkForm} 
-                    variant="outline" 
+                  <Button
+                    onClick={resetBulkForm}
+                    variant="outline"
                     className="shadow-md bg-transparent"
                     disabled={!selectedInstitution?.id || employees.length === 0 || deductionTypes.length === 0}
                   >
@@ -944,12 +944,12 @@ export default function EmployeeDeductionComponent() {
                         {/* Step 2: Set Default Values */}
                         <div className="space-y-4">
                           <h3 className="text-lg font-semibold">Step 2: Set Default Values</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
                             <div className="space-y-2">
                               <Label>Calculation Method</Label>
                               <Select
                                 value={bulkDefaults.calculation_method}
-                                onValueChange={(value: "fixed" | "percentage") => 
+                                onValueChange={(value: "fixed" | "percentage") =>
                                   setBulkDefaults((prev) => ({ ...prev, calculation_method: value }))
                                 }
                               >
@@ -962,8 +962,8 @@ export default function EmployeeDeductionComponent() {
                                 </SelectContent>
                               </Select>
                             </div>
-  
-                          {/* Conditionally render amount or percentage field based on calculation method */}
+
+                            {/* Conditionally render amount or percentage field based on calculation method */}
                             {bulkDefaults.calculation_method === "fixed" ? (
                               <div className="space-y-2">
                                 <Label>Default Amount</Label>
@@ -989,7 +989,7 @@ export default function EmployeeDeductionComponent() {
                                 />
                               </div>
                             )}
-                            
+
                             <div className="space-y-2">
                               <Label>Effective From</Label>
                               <Input
@@ -1024,79 +1024,79 @@ export default function EmployeeDeductionComponent() {
                           </Button>
                         </div>
 
-                      
+
                         {/* Step 3: Select Employees */}
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-semibold">Step 3: Select Employees</h3>
-                          <div className="flex items-center space-x-4">
-                            <Label className="text-sm font-medium">Selection Mode:</Label>
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="radio"
-                                id="individual"
-                                name="selectionMode"
-                                checked={bulkSelectionMode === "individual"}
-                                onChange={() => setBulkSelectionMode("individual")}
-                                className="text-red-600"
-                              />
-                              <Label htmlFor="individual" className="text-sm">Individual</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="radio"
-                                id="department"
-                                name="selectionMode"
-                                checked={bulkSelectionMode === "department"}
-                                onChange={() => setBulkSelectionMode("department")}
-                                className="text-red-600"
-                              />
-                              <Label htmlFor="department" className="text-sm">By Department</Label>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold">Step 3: Select Employees</h3>
+                            <div className="flex items-center space-x-4">
+                              <Label className="text-sm font-medium">Selection Mode:</Label>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  id="individual"
+                                  name="selectionMode"
+                                  checked={bulkSelectionMode === "individual"}
+                                  onChange={() => setBulkSelectionMode("individual")}
+                                  className="text-red-600"
+                                />
+                                <Label htmlFor="individual" className="text-sm">Individual</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  id="department"
+                                  name="selectionMode"
+                                  checked={bulkSelectionMode === "department"}
+                                  onChange={() => setBulkSelectionMode("department")}
+                                  className="text-red-600"
+                                />
+                                <Label htmlFor="department" className="text-sm">By Department</Label>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        {bulkSelectionMode === "department" ? (
-                          // Department-based selection with employee filtering
-                          <div className="space-y-4">
-                            {/* Department selection */}
-                            <div className="space-y-2">
-                              <Label>Select Department</Label>
-                             <Select
-                                value={selectedDepartment}
-                                onValueChange={(value) => {
-                                  setSelectedDepartment(value);
-                                  // Reset selections when switching departments
-                                  setSelectedEmployees([]);
-                                  setBulkDeductionData([]);
-                                }}
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Choose a department..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {departments.map((dept) => {
-                                    const deptEmployees = availableEmployees.filter(emp => emp.department === dept);
-                                    return (
-                                      <SelectItem key={dept} value={dept}>
-                                        {dept} ({deptEmployees.length} employees)
-                                      </SelectItem>
-                                    );
-                                  })}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                          {bulkSelectionMode === "department" ? (
+                            // Department-based selection with employee filtering
+                            <div className="space-y-4">
+                              {/* Department selection */}
+                              <div className="space-y-2">
+                                <Label>Select Department</Label>
+                                <Select
+                                  value={selectedDepartment}
+                                  onValueChange={(value) => {
+                                    setSelectedDepartment(value);
+                                    // Reset selections when switching departments
+                                    setSelectedEmployees([]);
+                                    setBulkDeductionData([]);
+                                  }}
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Choose a department..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {departments.map((dept) => {
+                                      const deptEmployees = availableEmployees.filter(emp => emp.department === dept);
+                                      return (
+                                        <SelectItem key={dept} value={dept}>
+                                          {dept} ({deptEmployees.length} employees)
+                                        </SelectItem>
+                                      );
+                                    })}
+                                  </SelectContent>
+                                </Select>
+                              </div>
 
-                            {/* Employee selection within chosen department */}
+                              {/* Employee selection within chosen department */}
                               {selectedDepartment && (
                                 <div className="space-y-2">
                                   <Label>Select Employees from Department</Label>
                                   <EmployeeSearchableSelect
-                                    employees={availableEmployees.filter(emp => 
+                                    employees={availableEmployees.filter(emp =>
                                       emp.department === selectedDepartment
                                     )}
-                                  value={[""]}
-                                   onValueChange={(value) => {
+                                    value={[""]}
+                                    onValueChange={(value) => {
                                       const employeeId = +value;
                                       if (!isNaN(employeeId) && !selectedEmployees.includes(employeeId)) {
                                         handleBulkEmployeeSelection(employeeId, true);
@@ -1109,384 +1109,384 @@ export default function EmployeeDeductionComponent() {
                                 </div>
                               )}
 
-                            {/* Quick actions for department */}
-                            {selectedDepartment && (
-                              <div className="flex gap-2">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    const deptEmployees = availableEmployees.filter(emp => 
-                                      emp.department === selectedDepartment
-                                    );
-                                    deptEmployees.forEach(emp => {
-                                      if (!selectedEmployees.includes(parseInt(emp.id))) {
-                                        handleBulkEmployeeSelection(parseInt(emp.id), true);
-                                      }
-                                    });
+                              {/* Quick actions for department */}
+                              {selectedDepartment && (
+                                <div className="flex gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const deptEmployees = availableEmployees.filter(emp =>
+                                        emp.department === selectedDepartment
+                                      );
+                                      deptEmployees.forEach(emp => {
+                                        if (!selectedEmployees.includes(parseInt(emp.id))) {
+                                          handleBulkEmployeeSelection(parseInt(emp.id), true);
+                                        }
+                                      });
+                                    }}
+                                    className="text-green-600 hover:bg-green-50"
+                                  >
+                                    Select All in Department ({availableEmployees.filter(emp => emp.department === selectedDepartment).length})
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const deptEmployees = availableEmployees.filter(emp =>
+                                        emp.department === selectedDepartment
+                                      );
+                                      deptEmployees.forEach(emp => {
+                                        handleBulkEmployeeSelection(parseInt(emp.id), false);
+                                      });
+                                    }}
+                                    className="text-red-600 hover:bg-red-50"
+                                  >
+                                    Deselect All in Department
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            // Individual employee selection with searchable dropdown
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label>Select Employees</Label>
+                                <EmployeeSearchableSelect
+                                  employees={availableEmployees.filter(emp => !selectedEmployees.includes(parseInt(emp.id)))}
+                                  value={[""]}
+                                  onValueChange={(value) => {
+                                    const employeeId = +value;
+                                    if (!isNaN(employeeId) && !selectedEmployees.includes(employeeId)) {
+                                      handleBulkEmployeeSelection(employeeId, true);
+                                    }
                                   }}
-                                  className="text-green-600 hover:bg-green-50"
-                                >
-                                  Select All in Department ({availableEmployees.filter(emp => emp.department === selectedDepartment).length})
-                                </Button>
+                                  placeholder="Search and select employees..."
+                                  showEmployeeId={false}
+                                  showDepartment={true}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Selected employees display - common for both modes */}
+                          {selectedEmployees.length > 0 && (
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium">Selected Employees ({selectedEmployees.length})</Label>
+                              <div className="max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
+                                <div className="space-y-2">
+                                  {selectedEmployees.map((employeeId) => {
+                                    const employee = employees.find(emp => parseInt(emp.id) === employeeId);
+                                    if (!employee) return null;
+
+                                    return (
+                                      <div key={employeeId} className="flex items-center justify-between p-2 bg-white rounded border">
+                                        <div className="flex-1">
+                                          <div className="font-medium text-sm">{employee.name}</div>
+                                          <div className="text-xs text-gray-500">
+                                            {employee.department} • ${(employee.salary || 0).toLocaleString()}
+                                          </div>
+                                        </div>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 w-6 p-0 hover:bg-red-100"
+                                          onClick={() => handleBulkEmployeeSelection(employeeId, false)}
+                                        >
+                                          <X className="h-3 w-3 text-red-500" />
+                                        </Button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center">
                                 <Button
                                   type="button"
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
-                                    const deptEmployees = availableEmployees.filter(emp => 
-                                      emp.department === selectedDepartment
-                                    );
-                                    deptEmployees.forEach(emp => {
-                                      handleBulkEmployeeSelection(parseInt(emp.id), false);
-                                    });
+                                    setSelectedEmployees([]);
+                                    setBulkDeductionData([]);
                                   }}
                                   className="text-red-600 hover:bg-red-50"
                                 >
-                                  Deselect All in Department
+                                  Clear All
                                 </Button>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          // Individual employee selection with searchable dropdown
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label>Select Employees</Label>
-                              <EmployeeSearchableSelect
-                                employees={availableEmployees.filter(emp => !selectedEmployees.includes(parseInt(emp.id)))}
-                                value={[""]}
-                                onValueChange={(value) => {
-                                  const employeeId = +value;
-                                  if (!isNaN(employeeId) && !selectedEmployees.includes(employeeId)) {
-                                    handleBulkEmployeeSelection(employeeId, true);
-                                  }
-                                }}
-                                placeholder="Search and select employees..."
-                                showEmployeeId={false}
-                                showDepartment={true}
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Selected employees display - common for both modes */}
-                        {selectedEmployees.length > 0 && (
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">Selected Employees ({selectedEmployees.length})</Label>
-                            <div className="max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
-                              <div className="space-y-2">
-                                {selectedEmployees.map((employeeId) => {
-                                  const employee = employees.find(emp => parseInt(emp.id) === employeeId);
-                                  if (!employee) return null;
-                                  
-                                  return (
-                                    <div key={employeeId} className="flex items-center justify-between p-2 bg-white rounded border">
-                                      <div className="flex-1">
-                                        <div className="font-medium text-sm">{employee.name}</div>
-                                        <div className="text-xs text-gray-500">
-                                          {employee.department} • ${(employee.salary || 0).toLocaleString()}
-                                        </div>
-                                      </div>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 w-6 p-0 hover:bg-red-100"
-                                        onClick={() => handleBulkEmployeeSelection(employeeId, false)}
-                                      >
-                                        <X className="h-3 w-3 text-red-500" />
-                                      </Button>
-                                    </div>
-                                  );
-                                })}
+                                <span className="text-sm text-gray-600">
+                                  {selectedEmployees.length} of {availableEmployees.length} employees selected
+                                </span>
                               </div>
                             </div>
-                            <div className="flex justify-between items-center">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedEmployees([]);
-                                  setBulkDeductionData([]);
-                                }}
-                                className="text-red-600 hover:bg-red-50"
-                              >
-                                Clear All
-                              </Button>
-                              <span className="text-sm text-gray-600">
-                                {selectedEmployees.length} of {availableEmployees.length} employees selected
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                          )}
+                        </div>
 
                         {/* Step 4: Review and Customize */}
-                          {/* Step 4: Configure and Review */}
-{selectedEmployees.length > 0 && (
-  <div className="space-y-6">
-    <h3 className="text-lg font-semibold">Step 4: Configure All Selected Employees</h3>
-    
-    {/* Bulk Configuration */}
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4">
-      <h4 className="font-medium text-blue-800">Apply Same Settings to All {selectedEmployees.length} Employees</h4>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="space-y-2">
-          <Label>Calculation Method for All</Label>
-          <Select
-            value={bulkDefaults.calculation_method}
-            onValueChange={(value: "fixed" | "percentage") => {
-              setBulkDefaults((prev) => ({ ...prev, calculation_method: value }));
-              setBulkDeductionData((prevData) =>
-                prevData.map((data) => ({
-                  ...data,
-                  calculation_method: value,
-                }))
-              );
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="fixed">Fixed Amount</SelectItem>
-              <SelectItem value="percentage">Percentage</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        {/* Conditionally render amount or percentage input */}
-        {bulkDefaults.calculation_method === "fixed" ? (
-          <div className="space-y-2">
-            <Label>Fixed Amount for All</Label>
-            <Input
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={bulkDefaults.amount}
-              onChange={(e) => {
-                const newAmount = e.target.value;
-                setBulkDefaults((prev) => ({ ...prev, amount: newAmount }));
-                setBulkDeductionData((prevData) =>
-                  prevData.map((data) => ({
-                    ...data,
-                    amount: newAmount,
-                  }))
-                );
-              }}
-            />
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <Label>Percentage for All</Label>
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              max="100"
-              placeholder="0.00"
-              value={bulkDefaults.percentage}
-              onChange={(e) => {
-                const newPercentage = e.target.value;
-                setBulkDefaults((prev) => ({ ...prev, percentage: newPercentage }));
-                setBulkDeductionData((prevData) =>
-                  prevData.map((data) => ({
-                    ...data,
-                    percentage: newPercentage,
-                  }))
-                );
-              }}
-            />
-          </div>
-        )}
-        
-        <div className="space-y-2">
-          <Label>Status for All</Label>
-          <div className="flex items-center space-x-2 pt-2">
-            <Checkbox
-              id="bulk_active_all"
-              checked={bulkDefaults.is_active}
-              onCheckedChange={(checked) => {
-                const isActive = checked as boolean;
-                setBulkDefaults((prev) => ({ ...prev, is_active: isActive }));
-                setBulkDeductionData((prevData) =>
-                  prevData.map((data) => ({
-                    ...data,
-                    is_active: isActive,
-                  }))
-                );
-              }}
-            />
-            <Label htmlFor="bulk_active_all" className="text-sm">
-              Mark all as Active
-            </Label>
-          </div>
-        </div>
-      </div>
-      
-      {/* Summary */}
-      <div className="bg-white rounded p-3 border">
-        <div className="text-sm text-gray-600">
-          <strong>Summary:</strong> Setting{' '}
-          {bulkDefaults.calculation_method === "fixed" 
-            ? `fixed amount of $${bulkDefaults.amount || '0'}` 
-            : `${bulkDefaults.percentage || '0'}% of salary`
-          } for {selectedEmployees.length} employees
-        </div>
-        {bulkDefaults.calculation_method === "percentage" && (
-          <div className="text-xs text-gray-500 mt-1">
-            Total estimated deduction: $
-            {selectedEmployees.reduce((total, empId) => {
-              const emp = employees.find(e => parseInt(e.id) === empId);
-              return total + ((emp?.salary || 0) * parseFloat(bulkDefaults.percentage || '0') / 100);
-            }, 0).toLocaleString()}
-          </div>
-        )}
-      </div>
-    </div>
+                        {/* Step 4: Configure and Review */}
+                        {selectedEmployees.length > 0 && (
+                          <div className="space-y-6">
+                            <h3 className="text-lg font-semibold">Step 4: Configure All Selected Employees</h3>
 
-    {/* Individual Review (Optional) */}
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h4 className="font-medium">Review Individual Employees (Optional)</h4>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setIsDetailedReview(!isDetailedReview);
-          }}
-        >
-          {isDetailedReview ? 'Show Summary' : 'Show Details'}
-        </Button>
-      </div>
-      
-      {isDetailedReview ? (
-        <div className="max-h-80 overflow-y-auto border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Value</TableHead>
-                <TableHead>Calculated Amount</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {bulkDeductionData.map((data) => {
-                const employee = employees.find((emp) => parseInt(emp.id) === data.employee_id)!;
-                const calculatedAmount = data.calculation_method === "percentage" && employee.salary
-                  ? (employee.salary * parseFloat(data.percentage)) / 100
-                  : parseFloat(data.amount) || 0;
-                return (
-                  <TableRow key={data.employee_id}>
-                    <TableCell>
-                      <div>
-                        <span className="text-sm font-medium">{employee.name}</span>
-                        <div className="text-xs text-gray-500">{employee.department}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={data.calculation_method}
-                        onValueChange={(value: "fixed" | "percentage") =>
-                          handleBulkDataChange(data.employee_id, "calculation_method", value)
-                        }
-                      >
-                        <SelectTrigger className="w-32 h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="fixed">Fixed</SelectItem>
-                          <SelectItem value="percentage">Percentage</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    {data.calculation_method === "fixed" ? (
-                      <TableCell>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          value={data.amount}
-                          onChange={(e) =>
-                            handleBulkDataChange(data.employee_id, "amount", e.target.value)
-                          }
-                          className="w-24 h-8"
-                        />
-                      </TableCell>
-                    ) : (
-                      <TableCell>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          max="100"
-                          placeholder="0.00"
-                          value={data.percentage}
-                          onChange={(e) =>
-                            handleBulkDataChange(data.employee_id, "percentage", e.target.value)
-                          }
-                          className="w-20 h-8"
-                        />
-                      </TableCell>
-                    )}
-                    <TableCell>
-                      <span className="font-semibold text-red-700">
-                        ${calculatedAmount.toLocaleString()}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Checkbox
-                        checked={data.is_active}
-                        onCheckedChange={(checked) =>
-                          handleBulkDataChange(data.employee_id, "is_active", checked as boolean)
-                        }
-                      />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        // Simple summary view
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-60 overflow-y-auto">
-          {selectedEmployees.map((employeeId) => {
-            const employee = employees.find(emp => parseInt(emp.id) === employeeId);
-            const data = bulkDeductionData.find(d => d.employee_id === employeeId);
-            if (!employee || !data) return null;
-            
-            const calculatedAmount = data.calculation_method === "percentage" && employee.salary
-              ? (employee.salary * parseFloat(data.percentage)) / 100
-              : parseFloat(data.amount) || 0;
-            
-            return (
-              <div key={employeeId} className="p-3 border rounded-lg bg-gray-50">
-                <div className="font-medium text-sm">{employee.name}</div>
-                <div className="text-xs text-gray-500">{employee.department}</div>
-                <div className="text-sm mt-1">
-                  <span className="font-semibold text-red-600">
-                    ${calculatedAmount.toLocaleString()}
-                  </span>
-                  <span className="text-gray-500 ml-1">
-                    ({data.calculation_method === "fixed" ? "Fixed" : `${data.percentage}%`})
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  </div>
-)}
+                            {/* Bulk Configuration */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4">
+                              <h4 className="font-medium text-blue-800">Apply Same Settings to All {selectedEmployees.length} Employees</h4>
+
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                  <Label>Calculation Method for All</Label>
+                                  <Select
+                                    value={bulkDefaults.calculation_method}
+                                    onValueChange={(value: "fixed" | "percentage") => {
+                                      setBulkDefaults((prev) => ({ ...prev, calculation_method: value }));
+                                      setBulkDeductionData((prevData) =>
+                                        prevData.map((data) => ({
+                                          ...data,
+                                          calculation_method: value,
+                                        }))
+                                      );
+                                    }}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="fixed">Fixed Amount</SelectItem>
+                                      <SelectItem value="percentage">Percentage</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                {/* Conditionally render amount or percentage input */}
+                                {bulkDefaults.calculation_method === "fixed" ? (
+                                  <div className="space-y-2">
+                                    <Label>Fixed Amount for All</Label>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      placeholder="0.00"
+                                      value={bulkDefaults.amount}
+                                      onChange={(e) => {
+                                        const newAmount = e.target.value;
+                                        setBulkDefaults((prev) => ({ ...prev, amount: newAmount }));
+                                        setBulkDeductionData((prevData) =>
+                                          prevData.map((data) => ({
+                                            ...data,
+                                            amount: newAmount,
+                                          }))
+                                        );
+                                      }}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="space-y-2">
+                                    <Label>Percentage for All</Label>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      max="100"
+                                      placeholder="0.00"
+                                      value={bulkDefaults.percentage}
+                                      onChange={(e) => {
+                                        const newPercentage = e.target.value;
+                                        setBulkDefaults((prev) => ({ ...prev, percentage: newPercentage }));
+                                        setBulkDeductionData((prevData) =>
+                                          prevData.map((data) => ({
+                                            ...data,
+                                            percentage: newPercentage,
+                                          }))
+                                        );
+                                      }}
+                                    />
+                                  </div>
+                                )}
+
+                                <div className="space-y-2">
+                                  <Label>Status for All</Label>
+                                  <div className="flex items-center space-x-2 pt-2">
+                                    <Checkbox
+                                      id="bulk_active_all"
+                                      checked={bulkDefaults.is_active}
+                                      onCheckedChange={(checked) => {
+                                        const isActive = checked as boolean;
+                                        setBulkDefaults((prev) => ({ ...prev, is_active: isActive }));
+                                        setBulkDeductionData((prevData) =>
+                                          prevData.map((data) => ({
+                                            ...data,
+                                            is_active: isActive,
+                                          }))
+                                        );
+                                      }}
+                                    />
+                                    <Label htmlFor="bulk_active_all" className="text-sm">
+                                      Mark all as Active
+                                    </Label>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Summary */}
+                              <div className="bg-white rounded p-3 border">
+                                <div className="text-sm text-gray-600">
+                                  <strong>Summary:</strong> Setting{' '}
+                                  {bulkDefaults.calculation_method === "fixed"
+                                    ? `fixed amount of $${bulkDefaults.amount || '0'}`
+                                    : `${bulkDefaults.percentage || '0'}% of salary`
+                                  } for {selectedEmployees.length} employees
+                                </div>
+                                {bulkDefaults.calculation_method === "percentage" && (
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    Total estimated deduction: $
+                                    {selectedEmployees.reduce((total, empId) => {
+                                      const emp = employees.find(e => parseInt(e.id) === empId);
+                                      return total + ((emp?.salary || 0) * parseFloat(bulkDefaults.percentage || '0') / 100);
+                                    }, 0).toLocaleString()}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Individual Review (Optional) */}
+                            <div className="space-y-4">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium">Review Individual Employees (Optional)</h4>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setIsDetailedReview(!isDetailedReview);
+                                  }}
+                                >
+                                  {isDetailedReview ? 'Show Summary' : 'Show Details'}
+                                </Button>
+                              </div>
+
+                              {isDetailedReview ? (
+                                <div className="max-h-80 overflow-y-auto border rounded-lg">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Employee</TableHead>
+                                        <TableHead>Method</TableHead>
+                                        <TableHead>Value</TableHead>
+                                        <TableHead>Calculated Amount</TableHead>
+                                        <TableHead>Status</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {bulkDeductionData.map((data) => {
+                                        const employee = employees.find((emp) => parseInt(emp.id) === data.employee_id)!;
+                                        const calculatedAmount = data.calculation_method === "percentage" && employee.salary
+                                          ? (employee.salary * parseFloat(data.percentage)) / 100
+                                          : parseFloat(data.amount) || 0;
+                                        return (
+                                          <TableRow key={data.employee_id}>
+                                            <TableCell>
+                                              <div>
+                                                <span className="text-sm font-medium">{employee.name}</span>
+                                                <div className="text-xs text-gray-500">{employee.department}</div>
+                                              </div>
+                                            </TableCell>
+                                            <TableCell>
+                                              <Select
+                                                value={data.calculation_method}
+                                                onValueChange={(value: "fixed" | "percentage") =>
+                                                  handleBulkDataChange(data.employee_id, "calculation_method", value)
+                                                }
+                                              >
+                                                <SelectTrigger className="w-32 h-8">
+                                                  <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  <SelectItem value="fixed">Fixed</SelectItem>
+                                                  <SelectItem value="percentage">Percentage</SelectItem>
+                                                </SelectContent>
+                                              </Select>
+                                            </TableCell>
+                                            {data.calculation_method === "fixed" ? (
+                                              <TableCell>
+                                                <Input
+                                                  type="number"
+                                                  step="0.01"
+                                                  placeholder="0.00"
+                                                  value={data.amount}
+                                                  onChange={(e) =>
+                                                    handleBulkDataChange(data.employee_id, "amount", e.target.value)
+                                                  }
+                                                  className="w-24 h-8"
+                                                />
+                                              </TableCell>
+                                            ) : (
+                                              <TableCell>
+                                                <Input
+                                                  type="number"
+                                                  step="0.01"
+                                                  min="0"
+                                                  max="100"
+                                                  placeholder="0.00"
+                                                  value={data.percentage}
+                                                  onChange={(e) =>
+                                                    handleBulkDataChange(data.employee_id, "percentage", e.target.value)
+                                                  }
+                                                  className="w-20 h-8"
+                                                />
+                                              </TableCell>
+                                            )}
+                                            <TableCell>
+                                              <span className="font-semibold text-red-700">
+                                                ${calculatedAmount.toLocaleString()}
+                                              </span>
+                                            </TableCell>
+                                            <TableCell>
+                                              <Checkbox
+                                                checked={data.is_active}
+                                                onCheckedChange={(checked) =>
+                                                  handleBulkDataChange(data.employee_id, "is_active", checked as boolean)
+                                                }
+                                              />
+                                            </TableCell>
+                                          </TableRow>
+                                        );
+                                      })}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              ) : (
+                                // Simple summary view
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-60 overflow-y-auto">
+                                  {selectedEmployees.map((employeeId) => {
+                                    const employee = employees.find(emp => parseInt(emp.id) === employeeId);
+                                    const data = bulkDeductionData.find(d => d.employee_id === employeeId);
+                                    if (!employee || !data) return null;
+
+                                    const calculatedAmount = data.calculation_method === "percentage" && employee.salary
+                                      ? (employee.salary * parseFloat(data.percentage)) / 100
+                                      : parseFloat(data.amount) || 0;
+
+                                    return (
+                                      <div key={employeeId} className="p-3 border rounded-lg bg-gray-50">
+                                        <div className="font-medium text-sm">{employee.name}</div>
+                                        <div className="text-xs text-gray-500">{employee.department}</div>
+                                        <div className="text-sm mt-1">
+                                          <span className="font-semibold text-red-600">
+                                            ${calculatedAmount.toLocaleString()}
+                                          </span>
+                                          <span className="text-gray-500 ml-1">
+                                            ({data.calculation_method === "fixed" ? "Fixed" : `${data.percentage}%`})
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
 
@@ -1509,8 +1509,8 @@ export default function EmployeeDeductionComponent() {
 
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button 
-                    onClick={openNewDeductionDialog} 
+                  <Button
+                    onClick={openNewDeductionDialog}
                     className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2.5"
                     disabled={!selectedInstitution?.id}
                   >
@@ -1548,19 +1548,18 @@ export default function EmployeeDeductionComponent() {
                         </p>
                       )}
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="deduction_type" className="text-sm font-medium">
                         Deduction Type *
                       </Label>
-                      <Select 
+                      <Select
                         value={formData.deduction_type}
                         onValueChange={(value) => setFormData({ ...formData, deduction_type: value })}
                         disabled={saving}
                       >
-                        <SelectTrigger className={`focus:ring-red-500 focus:border-red-500 ${
-                          validationErrors.deduction_type ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                        }`}>
+                        <SelectTrigger className={`focus:ring-red-500 focus:border-red-500 ${validationErrors.deduction_type ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}>
                           <SelectValue placeholder="Please select a deduction type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1593,7 +1592,7 @@ export default function EmployeeDeductionComponent() {
                       <Label htmlFor="calculation_method" className="text-sm font-medium">
                         Calculation Method *
                       </Label>
-                      <Select 
+                      <Select
                         value={formData.calculation_method}
                         onValueChange={(value: "fixed" | "percentage") => setFormData({ ...formData, calculation_method: value })}
                         disabled={saving}
@@ -1622,9 +1621,8 @@ export default function EmployeeDeductionComponent() {
                           value={formData.amount}
                           onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                           disabled={saving}
-                          className={`focus:ring-red-500 focus:border-red-500 ${
-                            validationErrors.amount ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                          }`}
+                          className={`focus:ring-red-500 focus:border-red-500 ${validationErrors.amount ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                            }`}
                         />
                         {validationErrors.amount ? (
                           <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -1652,9 +1650,8 @@ export default function EmployeeDeductionComponent() {
                           value={formData.percentage}
                           onChange={(e) => setFormData({ ...formData, percentage: e.target.value })}
                           disabled={saving}
-                          className={`focus:ring-red-500 focus:border-red-500 ${
-                            validationErrors.percentage ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                          }`}
+                          className={`focus:ring-red-500 focus:border-red-500 ${validationErrors.percentage ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                            }`}
                         />
                         {validationErrors.percentage ? (
                           <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -1678,9 +1675,8 @@ export default function EmployeeDeductionComponent() {
                         type="date"
                         value={formData.effective_from}
                         onChange={(e) => setFormData({ ...formData, effective_from: e.target.value })}
-                        className={`focus:ring-red-500 focus:border-red-500 ${
-                          validationErrors.effective_from ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                        }`}
+                        className={`focus:ring-red-500 focus:border-red-500 ${validationErrors.effective_from ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
                         disabled={saving}
                       />
                       {validationErrors.effective_from && (
@@ -1700,9 +1696,8 @@ export default function EmployeeDeductionComponent() {
                         type="date"
                         value={formData.effective_to}
                         onChange={(e) => setFormData({ ...formData, effective_to: e.target.value })}
-                        className={`focus:ring-red-500 focus:border-red-500 ${
-                          validationErrors.effective_to ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                        }`}
+                        className={`focus:ring-red-500 focus:border-red-500 ${validationErrors.effective_to ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
                         disabled={saving}
                         min={formData.effective_from}
                       />
@@ -1728,7 +1723,7 @@ export default function EmployeeDeductionComponent() {
                         />
                       </div>
                     </div>
-               
+
                     {/* Warning message for high percentage */}
                     {validationErrors.warning && (
                       <div className="md:col-span-2 space-y-2">
@@ -1741,17 +1736,17 @@ export default function EmployeeDeductionComponent() {
                       </div>
                     )}
                   </div>
-                  
+
                   <DialogFooter>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={() => setIsDialogOpen(false)}
                       disabled={saving}
                     >
                       Cancel
                     </Button>
-                    <Button 
+                    <Button
                       onClick={handleSubmit}
                       className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
                       disabled={saving || !employees.length || !deductionTypes.length || hasValidationErrors()}
@@ -1781,7 +1776,7 @@ export default function EmployeeDeductionComponent() {
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <div className="flex items-center">
                 <div className="p-2 bg-green-100 rounded-lg">
-                  <DollarSign2 className="h-5 w-5 text-green-600" />
+                  <Coins2 className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-600">Active Deductions</p>
@@ -1891,14 +1886,14 @@ export default function EmployeeDeductionComponent() {
             </h3>
             <p className="text-sm text-gray-600 mt-1">Overview of all employee deductions and their calculated amounts</p>
           </div>
-          
+
           {filteredDeductions.length === 0 ? (
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No deductions found</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {deductions.length === 0 
-                  ? "No deductions have been created yet." 
+                {deductions.length === 0
+                  ? "No deductions have been created yet."
                   : "No deductions match your current filters."}
               </p>
               {deductions.length > 0 && (
@@ -1930,7 +1925,7 @@ export default function EmployeeDeductionComponent() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge 
+                      <Badge
                         className={`${getCategoryColor()} border font-medium`}
                       >
                         {deduction.deduction_type.name}
