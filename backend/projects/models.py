@@ -30,6 +30,7 @@ class Project(BaseModel):
         ("in_progress", "In Progress"),
         ("completed", "Completed"),
         ("on_hold", "On Hold"),
+        ("cancelled", "Cancelled"),
     ]
 
     institution = models.ForeignKey(
@@ -50,7 +51,7 @@ class Project(BaseModel):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
 
-    status = models.CharField(
+    project_status = models.CharField(
         max_length=20,
         choices=PROJECT_STATUS_CHOICES,
         default="not_started",
@@ -120,7 +121,7 @@ class Task(BaseModel):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
 
-    status = models.CharField(
+    task_status = models.CharField(
         max_length=20,
         choices=TASK_STATUS_CHOICES,
         default="not_started",

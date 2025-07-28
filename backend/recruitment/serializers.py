@@ -14,6 +14,7 @@ import PyPDF2
 from docx import Document
 from workflows.models import WorkflowAction, InstitutionApprovalStep, ApprovalTask
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
 
 
 class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
@@ -144,11 +145,16 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
             "description": obj.job_position.description,
         }
 
+    @transaction.atomic
     def create(self, validated_data):
 
         advert = JobPositionAdvert.objects.create(**validated_data)
 
         institution = advert.job_position.department.institution
+
+        print(
+            f"Creating advert for institution: {institution.institution_name}\n\n\n\n"
+        )
         content_type = ContentType.objects.get_for_model(JobPositionAdvert)
 
         try:
