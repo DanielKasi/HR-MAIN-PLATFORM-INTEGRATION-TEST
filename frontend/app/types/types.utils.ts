@@ -277,15 +277,16 @@ export interface IReportsToDetails {
 }
 
 export interface IJobPosition {
+  job_adverts: any;
   id: number;
   name: string;
   description?: string | null;
-  department: number; // ForeignKey as ID
-  department_details?: IDepartment | null; // Embedded serializer
-  reportsTo?: number | null; // ForeignKey as ID
-  reportsToDetails?: IReportsToDetails | null; // SerializerMethodField
-  contractTemplate?: string | null; // FileField serialized as URL
-  offerLetterTemplate?: string | null; // FileField serialized as URL
+  department: number;
+  department_details?: IDepartment | null; 
+  reportsTo?: number | null; 
+  reportsToDetails?: IReportsToDetails | null; 
+  contractTemplate?: string | null; 
+  offerLetterTemplate?: string | null; 
   salary: number;
   employees: IEmployee[]
 }
@@ -447,6 +448,7 @@ export interface IInterviewStageFormData {
 }
 
 export interface IInterviewStage {
+  candidates: any[];
   id: number;
   job_position_advert: number;
   name: string;
@@ -454,10 +456,13 @@ export interface IInterviewStage {
   interviewers: number[];
   interviewers_details?: IEmployee[];
   candidates_count: number;
+  
 }
 
 
 export interface IInterview {
+  updated_at: any;
+  created_at: any;
   id: number;
   job_position_application: number;
   job_position_application_details?: JobApplication | null;
@@ -663,13 +668,14 @@ export interface IInterviewFormData {
   job_position_application: number;
   interview_stage: number;
   interview_date: string;
-  feedback?: string;
-  rating?: number;
+  feedback?: string | null;
+  rating?: number | null;
   location: string,
   interview_time: string,
   interview_type: string,
   status: string;
   created_by: number;
+  
 }
 
 

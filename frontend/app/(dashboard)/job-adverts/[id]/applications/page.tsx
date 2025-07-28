@@ -47,7 +47,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
-  ArrowLeft,
+  Building,
 } from "lucide-react";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {
@@ -111,6 +111,7 @@ const sourceLabels = {
   referral: "Referral",
   job_board: "Job Board",
   social_media: "Social Media",
+  head_hunt : "Head Hunt",
   other: "Other",
 };
 
@@ -1077,22 +1078,14 @@ const handleSelectAll = (checked: boolean) => {
     return <div>Loading...</div>;
   }
 
-  const handleBack = () => {
-    const jobAdvertId = selectedApplicationForInterview?.job_position_advert || "unknown";
-    router.push(`/job-adverts/${jobAdvertId}`);
-  }
-
   return (
     <div className="w-full py-8 space-y-6">
-      <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Job Advert
-          </Button>
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-2xl font-bold">Job Applications</h3>
-          <p className="text-sm text-muted-foreground">
-            Manage applications for the job position: {selectedBranch?.branch_name || "Unknown Job"}
+          <h1 className="text-3xl font-bold">Job Applications</h1>
+          <p className="text-muted-foreground">
+            Manage and track all job applications for {selectedBranch.branch_name} -{" "}
+            {selectedInstitution.institution_name}
           </p>
         </div>
         <Button
@@ -1737,8 +1730,8 @@ const handleSelectAll = (checked: boolean) => {
       <SelectContent>
         {jobPositionAdverts
           .filter((advert) =>
-            advert.status !== "expired" &&
-            advert.status !== "closed"
+            advert.job_position_advert_status !== "expired" &&
+            advert.job_position_advert_status !== "closed"
           )
           .map((advert) => (
             <SelectItem key={advert.id} value={advert.id.toString()}>
@@ -1835,6 +1828,7 @@ const handleSelectAll = (checked: boolean) => {
                     <SelectItem value="referral">Referral</SelectItem>
                     <SelectItem value="job_board">Job Board</SelectItem>
                     <SelectItem value="social_media">Social Media</SelectItem>
+                    <SelectItem value="head_hunt">Head Hunt</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
@@ -2021,14 +2015,14 @@ const handleSelectAll = (checked: boolean) => {
         </AlertDialogContent>
       </AlertDialog>
       <Dialog open={showBulkScheduleDialog} onOpenChange={setShowBulkScheduleDialog}>
-  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
     <DialogHeader>
       <DialogTitle>Schedule Bulk Interviews</DialogTitle>
       <DialogDescription>
         Schedule interviews for {selectedApplications.filter(id => {
           const app = applications.find(a => a.id === id);
           return app?.status === "shortlisted";
-        }).length} shortlisted applicants. Interviews will be scheduled 30 minutes apart starting from your selected time.
+        }).length} shortlisted applicants. Each interview will be scheduled 30 minutes apart starting from your selected time.
       </DialogDescription>
     </DialogHeader>
 
@@ -2045,130 +2039,412 @@ const handleSelectAll = (checked: boolean) => {
       </Button>
     </div>
 
-    <form onSubmit={(e) => {
+    <form onSubmit={async (e) => {
       e.preventDefault();
-      handleScheduleInterview();
-    }} className="space-y-4">
+      
+      const shortlistedApps = applications.filter(app =>
+        selectedApplications.includes(app.id) && app.status === "shortlisted"
+      );
 
-      <div className="space-y-2">
-        <Label htmlFor="bulk_interview_stage">Interview Stage *</Label>
-        <Select
-          value={bulkInterviewFormData.interview_stage.toString()}
-          onValueChange={(value) => setBulkInterviewFormData(prev => ({
-            ...prev,
-            interview_stage: parseInt(value)
-          }))}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select interview stage" />
-          </SelectTrigger>
-          <SelectContent>
-            {interviewStages.map((stage) => (
-              <SelectItem key={stage.id} value={stage.id.toString()}>
-                {stage.name} (Level {stage.level})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {interviewErrors.interview_stage && (
-          <p className="text-sm text-red-600">{interviewErrors.interview_stage}</p>
-        )}
-      </div>
+      if (shortlistedApps.length === 0) {
+        toast.error("No shortlisted applications selected");
+        return;
+      }
 
-      <div className="space-y-2">
-        <Label htmlFor="bulk_interview_date">Start Interview Date & Time *</Label>
-        <Input
-          id="bulk_interview_date"
-          type="datetime-local"
-          value={bulkInterviewFormData.interview_date}
-          onChange={(e) => setBulkInterviewFormData(prev => ({
-            ...prev,
-            interview_date: e.target.value
-          }))}
-          min={new Date().toISOString().slice(0, 16)}
-        />
-        {interviewErrors.interview_date && (
-          <p className="text-sm text-red-600">{interviewErrors.interview_date}</p>
-        )}
-        <p className="text-xs text-muted-foreground">
-          First interview starts at this time. Subsequent interviews will be scheduled 30 minutes apart.
-        </p>
-      </div>
+      // Validate form
+      const errors: any = {};
+      if (!bulkInterviewFormData.interview_stage || bulkInterviewFormData.interview_stage === 0) {
+        errors.interview_stage = "Please select an interview stage";
+      }
+      if (!bulkInterviewFormData.interview_date) {
+        errors.interview_date = "Interview date and time is required";
+      } else {
+        const interviewDate = new Date(bulkInterviewFormData.interview_date);
+        const now = new Date();
+        if (interviewDate <= now) {
+          errors.interview_date = "Interview date must be in the future";
+        }
+      }
+      if (!bulkInterviewFormData.location || bulkInterviewFormData.location.trim() === "") {
+        errors.location = "Interview location is required";
+      }
 
-      <div className="space-y-2">
-        <Label htmlFor="bulk_location">Interview Location *</Label>
-        <Input
-          id="bulk_location"
-          value={bulkInterviewFormData.location}
-          onChange={(e) => setBulkInterviewFormData(prev => ({
-            ...prev,
-            location: e.target.value
-          }))}
-          placeholder="e.g., Conference Room A, Zoom Link, etc."
-        />
-        {interviewErrors.location && (
-          <p className="text-sm text-red-600">{interviewErrors.location}</p>
-        )}
-      </div>
+      if (Object.keys(errors).length > 0) {
+        setInterviewErrors(errors);
+        return;
+      }
 
-      <div className="space-y-2">
-        <Label htmlFor="bulk_interview_type">Interview Type</Label>
-        <Select
-          value={bulkInterviewFormData.interview_type}
-          onValueChange={(value) => setBulkInterviewFormData(prev => ({
-            ...prev,
-            interview_type: value
-          }))}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select interview type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="in_person">In Person</SelectItem>
-            <SelectItem value="video_call">Video Call</SelectItem>
-            <SelectItem value="phone_call">Phone Call</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      if (!userData?.id) {
+        toast.error("User information not available. Please refresh and try again.");
+        return;
+      }
 
-      {/* Preview of selected applicants */}
-      <div className="space-y-2">
-        <Label>Selected Applicants</Label>
-        <div className="border rounded-lg p-3 max-h-40 overflow-y-auto bg-gray-50">
-          {applications
-            .filter(app => selectedApplications.includes(app.id) && app.status === "shortlisted")
-            .map((app, index) => {
-              const startTime = new Date(bulkInterviewFormData.interview_date || Date.now());
-              startTime.setMinutes(startTime.getMinutes() + (index * 30));
-              return (
-                <div key={app.id} className="flex justify-between items-center py-1">
-                  <span className="font-medium">{app.applicant_name}</span>
-                  <span className="text-sm text-gray-600">
-                    {bulkInterviewFormData.interview_date ?
-                      startTime.toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                      }) :
-                      'Time TBD'
-                    }
-                  </span>
-                </div>
-              );
-            })}
+      setIsBulkScheduling(true);
+
+      try {
+        const interviewPromises = shortlistedApps.map(async (application, index) => {
+          // Calculate interview time (30 minutes apart)
+          const baseDateTime = new Date(bulkInterviewFormData.interview_date);
+          const interviewDateTime = new Date(baseDateTime.getTime() + (index * 30 * 60 * 1000));
+          
+          let interviewTime = "";
+          if (bulkInterviewFormData.interview_date) {
+            const hours = interviewDateTime.getHours().toString().padStart(2, "0");
+            const minutes = interviewDateTime.getMinutes().toString().padStart(2, "0");
+            interviewTime = `${hours}:${minutes}`;
+          }
+
+          const createData: IInterviewFormData = {
+            job_position_application: application.id,
+            interview_stage: bulkInterviewFormData.interview_stage,
+            interview_date: interviewDateTime.toISOString().slice(0, 16),
+            location: bulkInterviewFormData.location,
+            interview_time: interviewTime,
+            interview_type: bulkInterviewFormData.interview_type,
+            status: bulkInterviewFormData.status || "scheduled",
+            feedback: undefined,
+            rating: undefined,
+            created_by: userData.id,
+          };
+
+          return await createInterview({
+            institutionId: selectedInstitution.id,
+            interviewData: createData,
+          });
+        });
+
+        const results = await Promise.all(interviewPromises);
+        const successCount = results.filter(result => result !== null).length;
+        const failureCount = results.length - successCount;
+
+        if (successCount > 0) {
+          toast.success(
+            `${successCount} interview(s) scheduled successfully!${
+              failureCount > 0 ? ` ${failureCount} failed.` : ""
+            }`
+          );
+          setShowBulkScheduleDialog(false);
+          setSelectedApplications([]);
+          // Reset form
+          setBulkInterviewFormData({
+            interview_stage: 0,
+            interview_date: "",
+            location: "",
+            interview_type: "",
+            status: "scheduled",
+          });
+          setInterviewErrors({});
+          await loadApplications();
+        } else {
+          toast.error("Failed to schedule any interviews");
+        }
+      } catch (error) {
+        toast.error("Failed to schedule interviews");
+      } finally {
+        setIsBulkScheduling(false);
+      }
+    }} className="space-y-6">
+
+      {/* Form Fields - Responsive Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Interview Stage */}
+        <div className="space-y-2">
+          <Label htmlFor="bulk_interview_stage" className="text-sm font-medium">
+            Interview Stage *
+          </Label>
+          <Select
+            value={bulkInterviewFormData.interview_stage.toString()}
+            onValueChange={(value) => {
+              setBulkInterviewFormData(prev => ({
+                ...prev,
+                interview_stage: parseInt(value)
+              }));
+              if (interviewErrors.interview_stage) {
+                setInterviewErrors((prev: any) => ({ ...prev, interview_stage: undefined }));
+              }
+            }}
+          >
+            <SelectTrigger className={interviewErrors.interview_stage ? "border-destructive" : ""}>
+              <SelectValue placeholder={
+                interviewStages.length === 0 
+                  ? "No stages available" 
+                  : "Select interview stage"
+              } />
+            </SelectTrigger>
+            <SelectContent>
+              {interviewStages.map((stage) => (
+                <SelectItem key={stage.id} value={stage.id.toString()}>
+                  <div className="flex items-center gap-2">
+                    <Building className="h-4 w-4" />
+                    {stage.name} (Level {stage.level})
+                  </div>
+                </SelectItem>
+              ))}
+              {interviewStages.length === 0 && (
+                <SelectItem value="no-stages" disabled>
+                  No interview stages available
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+          {interviewErrors.interview_stage && (
+            <p className="text-sm text-destructive">{interviewErrors.interview_stage}</p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Can't find the right stage? Click "Create New Stage" to add one.
+          </p>
+        </div>
+
+        {/* Interview Date */}
+        <div className="space-y-2">
+          <Label htmlFor="bulk_interview_date" className="text-sm font-medium">
+            Start Interview Date & Time *
+          </Label>
+          <Input
+            id="bulk_interview_date"
+            type="datetime-local"
+            value={bulkInterviewFormData.interview_date}
+            onChange={(e) => {
+              setBulkInterviewFormData(prev => ({
+                ...prev,
+                interview_date: e.target.value
+              }));
+              if (interviewErrors.interview_date) {
+                setInterviewErrors((prev: any) => ({ ...prev, interview_date: undefined }));
+              }
+            }}
+            className={interviewErrors.interview_date ? "border-destructive" : ""}
+            min={new Date().toISOString().slice(0, 16)}
+          />
+          {interviewErrors.interview_date && (
+            <p className="text-sm text-destructive">{interviewErrors.interview_date}</p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            First interview starts at this time. Subsequent interviews will be scheduled 30 minutes apart.
+          </p>
+        </div>
+
+        {/* Interview Location */}
+        <div className="space-y-2">
+          <Label htmlFor="bulk_location" className="text-sm font-medium">
+            Interview Location *
+          </Label>
+          <Input
+            id="bulk_location"
+            value={bulkInterviewFormData.location}
+            onChange={(e) => {
+              setBulkInterviewFormData(prev => ({
+                ...prev,
+                location: e.target.value
+              }));
+              if (interviewErrors.location) {
+                setInterviewErrors((prev: any) => ({ ...prev, location: undefined }));
+              }
+            }}
+            placeholder="e.g., Conference Room A, Zoom Link, etc."
+            className={interviewErrors.location ? "border-destructive" : ""}
+          />
+          {interviewErrors.location && (
+            <p className="text-sm text-destructive">{interviewErrors.location}</p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Specify if interview is in-person or virtual
+          </p>
+        </div>
+
+        {/* Interview Type */}
+        <div className="space-y-2">
+          <Label htmlFor="bulk_interview_type" className="text-sm font-medium">
+            Interview Type
+          </Label>
+          <Select
+            value={bulkInterviewFormData.interview_type}
+            onValueChange={(value) => setBulkInterviewFormData(prev => ({
+              ...prev,
+              interview_type: value
+            }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select interview type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="in_person">In Person</SelectItem>
+              <SelectItem value="video_call">Video Call</SelectItem>
+              <SelectItem value="phone_call">Phone Call</SelectItem>
+              <SelectItem value="online">Online</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      <div className="flex justify-end space-x-2 pt-4">
+
+      {/* Form Actions */}
+      <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
         <Button
           type="button"
           variant="outline"
           onClick={() => setShowBulkScheduleDialog(false)}
+          disabled={isBulkScheduling}
+          className="w-full sm:w-auto"
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isBulkScheduling}>
-          {isBulkScheduling ? "Scheduling..." : "Schedule All Interviews"}
+        <Button
+          type="submit"
+          disabled={isBulkScheduling || selectedApplications.filter(id => {
+            const app = applications.find(a => a.id === id);
+            return app?.status === "shortlisted";
+          }).length === 0}
+          className="flex items-center justify-center gap-2 w-full sm:w-auto"
+        >
+          {isBulkScheduling ? (
+            <>
+              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              Scheduling interviews...
+            </>
+          ) : (
+            <>
+              <Check className="h-4 w-4" />
+              Schedule {applications
+                .filter(app => selectedApplications.includes(app.id) && app.status === "shortlisted")
+                .length} Interview{applications
+                .filter(app => selectedApplications.includes(app.id) && app.status === "shortlisted")
+                .length !== 1 ? "s" : ""}
+            </>
+          )}
+        </Button>
+      </div>
+    </form>
+  </DialogContent>
+</Dialog>
+
+{/* Create Interview Stage Dialog */}
+<Dialog open={showCreateStageDialog} onOpenChange={setShowCreateStageDialog}>
+  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <DialogHeader>
+      <DialogTitle>Create Interview Stage</DialogTitle>
+      <DialogDescription>
+        Create a new interview stage for the selected applications.
+      </DialogDescription>
+    </DialogHeader>
+
+    <form onSubmit={handleCreateInterviewStage} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="stage_name">Stage Name *</Label>
+        <Input
+          id="stage_name"
+          value={stageFormData.name}
+          onChange={(e) => updateStageFormData("name", e.target.value)}
+          placeholder="e.g., Technical Interview, HR Round"
+          className={stageErrors.name ? "border-destructive" : ""}
+        />
+        {stageErrors.name && (
+          <p className="text-sm text-destructive">{stageErrors.name}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="stage_interviewers">Interviewers *</Label>
+        <div className="w-full max-w-full overflow-hidden">
+          <EmployeeSearchableSelect
+            employees={employees.map(emp => ({
+            ...emp,
+            department: emp.department.name,  
+            position: emp.position.name,  
+            user: emp.user ? { fullname: emp.user.fullname, email: emp.user.email } : undefined,
+          }))}
+
+            value={stageFormData.interviewers.map((id) => id.toString())}
+            onValueChange={(values) => {
+              const numberValues = Array.isArray(values)
+                ? values.map((v) => Number(v))
+                : [Number(values)];
+              const uniqueValues = [...new Set(numberValues)];
+              if (uniqueValues.length !== numberValues.length) {
+                toast.info("Duplicate interviewers removed");
+              }
+              updateStageFormData("interviewers", uniqueValues);
+            }}
+            disabled={isCreatingStage}
+            placeholder="Search and select interviewers"
+            showEmployeeId={false}
+            showDepartment={false}
+            multiple={true}
+          />
+        </div>
+        {stageErrors.interviewers && (
+          <p className="text-sm text-destructive">{stageErrors.interviewers}</p>
+        )}
+
+        {stageFormData.interviewers.length > 0 && (
+          <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-gray-700">
+                Selected Interviewers ({stageFormData.interviewers.length})
+              </p>
+              <button
+                type="button"
+                onClick={() => updateStageFormData("interviewers", [])}
+                className="text-xs text-red-600 hover:text-red-800"
+              >
+                Clear all
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+              {stageFormData.interviewers.map((interviewerId) => {
+                const employee = employees.find((emp) => emp.id === interviewerId);
+                const fullName = employee?.user?.fullname || `Employee ${interviewerId}`;
+                const displayName = fullName.length > 30 ? `${fullName.substring(0, 30)}...` : fullName;
+
+                return (
+                  <div
+                    key={interviewerId}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm max-w-xs"
+                    title={fullName}
+                  >
+                    <span className="truncate flex-1 min-w-0">{displayName}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newInterviewers = stageFormData.interviewers.filter(
+                          (id) => id !== interviewerId
+                        );
+                        updateStageFormData("interviewers", newInterviewers);
+                      }}
+                      className="flex-shrink-0 w-4 h-4 rounded-full bg-blue-200 text-blue-600 hover:bg-blue-300 flex items-center justify-center text-xs font-bold"
+                    >
+                      ×
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-end gap-2 pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setShowCreateStageDialog(false)}
+          disabled={isCreatingStage}
+        >
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isCreatingStage}>
+          {isCreatingStage ? (
+            <>
+              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <Check className="h-4 w-4 mr-2" />
+              Create Stage
+            </>
+          )}
         </Button>
       </div>
     </form>

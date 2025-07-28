@@ -1,7 +1,6 @@
 "use client"
 
 import  React, { useState, useEffect, use } from "react"
-import type React from "react"
 import { useSelector } from "react-redux"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -74,8 +73,9 @@ import {
 import { toast } from "sonner"
 import type { JobPositionAdvert, IInterviewStage, IInterviewStageFormData, IEmployee, IInterview, IInterviewFormData } from "@/app/types/types.utils"
 import { getJobPositionAdvertById, createInterviewStage, fetchEmployees, getInterviews, updateInterview, createInterview, bulkCreateOnBoarding, getOnBoardings } from "@/lib/utils"
-import { selectSelectedInstitution } from "@/store/auth/selectors"
+import { selectUser, selectSelectedInstitution } from "@/store/auth/selectors"
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"
+
 
 interface UnifiedInterviewPipelineProps {
   params: Promise<{
@@ -154,7 +154,8 @@ interface CandidateWithHistory extends Candidate {
   overall_rating: number
   completion_rate: number
 }
-
+  const userData = useSelector(selectUser);
+  const createdBy = userData?.id ?? 0;
 // Utility functions from original components
 const recalculateStageCandidateCounts = (
   stages: IInterviewStage[],
@@ -214,7 +215,6 @@ const buildCandidateHistory = (
   stages: ProcessedStage[]
 ): CandidateWithHistory[] => {
   return candidates.map(candidate => {
-    // Get all interviews for this candidate, sorted by stage level
     const candidateInterviews = interviews
       .filter(interview => interview.job_position_application === candidate.id)
       .sort((a, b) => {
@@ -223,8 +223,8 @@ const buildCandidateHistory = (
         return (stageA?.level || 0) - (stageB?.level || 0);
       });
 
-    // Build history entries
-    const interview_history: InterviewHistoryEntry[] = candidateInterviews.map(interview => {
+    // 🧱 Build interview history entries once
+    const interview_history = candidateInterviews.map(interview => {
       const stage = stages.find(s => s.id === interview.interview_stage.toString());
       return {
         stage_id: interview.interview_stage,
@@ -235,29 +235,33 @@ const buildCandidateHistory = (
         interview_time: interview.interview_time,
         location: interview.location,
         feedback: interview.feedback,
-        rating: interview.rating,
+        rating: interview.rating ?? undefined,
         status: interview.status || 'completed',
         created_at: interview.created_at,
-        updated_at: interview.updated_at
+        updated_at: interview.updated_at,
       };
     });
 
-    // Get current stage (highest level stage they've completed)
-    const currentStageInterview = candidateInterviews.length > 0 ? candidateInterviews[candidateInterviews.length - 1] : null;
-    const currentStage = currentStageInterview ? stages.find(s => s.id === currentStageInterview.interview_stage.toString()) : null;
-    const current_stage_level = currentStage?.level || 0;
-    const current_stage_name = currentStage?.name || 'Not Started';
+    // 🎯 Determine current stage (last one)
+    const currentStageEntry = interview_history.length > 0
+      ? interview_history[interview_history.length - 1]
+      : null;
 
-    // Calculate overall rating (average of all ratings)
-    const ratingsWithValues = interview_history.filter(h => h.rating && h.rating > 0);
-    const overall_rating = ratingsWithValues.length > 0
-      ? ratingsWithValues.reduce((sum, h) => sum + (h.rating || 0), 0) / ratingsWithValues.length
+    const current_stage_level = currentStageEntry?.stage_level || 0;
+    const current_stage_name = currentStageEntry?.stage_name || 'Not Started';
+
+    // ⭐ Calculate overall rating
+    const ratings = interview_history.filter(h => h.rating && h.rating > 0);
+    const overall_rating = ratings.length > 0
+      ? Math.round(
+          (ratings.reduce((sum, h) => sum + (h.rating || 0), 0) / ratings.length) * 10
+        ) / 10
       : 0;
 
-    // Calculate completion rate (stages with feedback / total stages completed)
-    const stagesWithFeedback = interview_history.filter(h => h.feedback && h.feedback.trim().length > 0);
+    // 📊 Completion rate
+    const feedbacks = interview_history.filter(h => h.feedback && h.feedback.trim().length > 0);
     const completion_rate = interview_history.length > 0
-      ? (stagesWithFeedback.length / interview_history.length) * 100
+      ? Math.round((feedbacks.length / interview_history.length) * 100)
       : 0;
 
     return {
@@ -265,11 +269,13 @@ const buildCandidateHistory = (
       interview_history,
       current_stage_level,
       current_stage_name,
-      overall_rating: Math.round(overall_rating * 10) / 10,
-      completion_rate: Math.round(completion_rate)
-    };
+      overall_rating,
+      completion_rate,
+    } as CandidateWithHistory;
   });
 };
+
+
 
 const getStageIcon = (stageName: string, index: number) => {
   const iconMap: { [key: string]: React.ReactNode } = {
@@ -1502,6 +1508,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
           status: "scheduled",
           feedback: null,
           rating: null,
+          created_by: createdBy, 
         };
 
         // Validation check
@@ -2690,7 +2697,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
         }}
         onSchedule={handleScheduleAndMove}
         candidates={candidatesToSchedule}
-        targetStage={nextStageForActive}
+        targetStage={nextStageForActive ?? null}
         isScheduling={isProcessingProgression}
       />
 

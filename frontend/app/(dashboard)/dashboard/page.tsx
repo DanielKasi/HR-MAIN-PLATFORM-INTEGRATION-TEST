@@ -189,6 +189,11 @@ interface LeavePolicy {
   requires_hr_approval: boolean;
 }
 
+const capitalizeFirstLetter = (str: string) => {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
 const WelcomeCard = () => {
   const userData = useSelector(selectUser);
   const now = new Date();
@@ -201,17 +206,22 @@ const WelcomeCard = () => {
     greeting = "Good afternoon";
   } else if (hour >= 17 && hour < 22) {
     greeting = "Good evening";
-  } else {
-    greeting = "Hello";
   }
 
-
-  const fullName = userData?.fullname || "User";
-  console.log("User Data:", userData);
+  const fullNameRaw = userData?.fullname || "User";
+  const fullName = capitalizeFirstLetter(fullNameRaw);
 
   return (
     <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
-      <h2 className="text-2xl font-bold mb-2">{greeting}, {userData?.gender === USER_GENDER.MALE ? "Mr" : userData?.gender === USER_GENDER.FEMALE ? "Mrs" : ""}. {fullName}</h2>
+      <h2 className="text-2xl font-bold mb-2">
+        {greeting},{" "}
+        {userData?.gender === USER_GENDER.MALE
+          ? "Mr"
+          : userData?.gender === USER_GENDER.FEMALE
+          ? "Mrs"
+          : ""}{" "}
+        {fullName}
+      </h2>
       <p className="opacity-90">Here's your HR dashboard overview for today</p>
     </div>
   );
