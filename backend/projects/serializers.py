@@ -156,7 +156,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "description",
             "start_date",
             "end_date",
-            "status",
+            "project_status",
             "project_tasks",
         ]
         read_only_fields = [
@@ -269,7 +269,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "description",
             "leaders",
             "assigned_to",
-            "status",
+            "task_status",
             "start_date",
             "end_date",
             "priority",
