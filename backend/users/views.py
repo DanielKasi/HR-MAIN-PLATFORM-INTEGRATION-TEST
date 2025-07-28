@@ -64,6 +64,22 @@ from institution.utils import generate_compliant_password
 logger = logging.getLogger(__name__)
 
 
+class CountryListAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        responses={200: {"countries": "array"}},
+        description="Retrieve a list of countries.",
+        summary="Get countries",
+        tags=["Location Management"],
+    )
+    def get(self, request):
+        from django_countries import countries
+
+        country_list = [{"code": code, "name": name} for code, name in countries]
+        return Response({"countries": country_list}, status=status.HTTP_200_OK)
+
+
 class UserListAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 

@@ -12,7 +12,7 @@ import {
   Edit,
   Trash2,
   RefreshCw,
-  DollarSign,
+  Coins,
   Users,
   Eye,
 } from "lucide-react"

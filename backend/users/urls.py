@@ -20,6 +20,7 @@ from .views import (
     GoogleAuthURLView,
     GoogleAuthCallbackView,
     UserDetailsWithInstitutions,
+    CountryListAPIView,
 )
 
 
@@ -73,4 +74,5 @@ urlpatterns = [
         name="google_auth_callback",
     ),
     path("details/", UserDetailsWithInstitutions.as_view(), name="user-dets"),
+    path("countries/", CountryListAPIView.as_view(), name="country-list"),
 ]

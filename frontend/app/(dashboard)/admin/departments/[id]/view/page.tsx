@@ -41,7 +41,7 @@ import {
   Mail,
   Phone,
   MapPin,
-  DollarSign,
+  Coins,
   Filter,
   Briefcase,
   GraduationCap,
@@ -144,7 +144,7 @@ export default function DepartmentDetailView() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
-  
+
 
   // Effects
   useEffect(() => {
@@ -245,8 +245,8 @@ export default function DepartmentDetailView() {
       const { applicantName, applicantEmail, jobDesc, department: jobDepartment } = getApplicationData(onboarding)
 
       const belongsToCurrentDepartment = jobDepartment.toLowerCase().includes(department?.name.toLowerCase() || '') ||
-                                        department?.name.toLowerCase().includes(jobDepartment.toLowerCase()) ||
-                                        jobDepartment === department?.name
+        department?.name.toLowerCase().includes(jobDepartment.toLowerCase()) ||
+        jobDepartment === department?.name
 
 
       const matchesCurrentEmployee = departmentEmployees.some(emp => emp.email === applicantEmail)
@@ -386,12 +386,12 @@ export default function DepartmentDetailView() {
     <div className="w-full h-full p-6 space-y-6">
       {/* Header */}
       <Button
-            variant="ghost"
-            onClick={() => router.push("/admin/departments")}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Departments
+        variant="ghost"
+        onClick={() => router.push("/admin/departments")}
+        className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Departments
       </Button>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">

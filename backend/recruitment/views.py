@@ -5,7 +5,10 @@ from rest_framework import status
 from drf_spectacular.utils import extend_schema
 from django.db.models import Sum, Q
 from django.db.models.functions import Coalesce
-
+from workflows.serializers import (
+    JobPositionWorkflowSerializer,
+    JobPositionAdvertWorkflowSerializer,
+)
 from utilities.pagination import CustomPageNumberPagination
 
 from .serializers import (
@@ -14,6 +17,7 @@ from .serializers import (
     JobInterviewSerializer,
     JobPositionAdvertSerializer,
     JobPositionSerializer,
+    ContractTemplateSerializer,
 )
 from .models import (
     InterviewStage,
@@ -21,6 +25,7 @@ from .models import (
     JobInterview,
     JobPosition,
     JobPositionAdvert,
+    ContractTemplate,
 )
 
 
@@ -42,7 +47,7 @@ class JobPositionListAPI(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
-        responses={200: JobPositionSerializer(many=True)},
+        responses={200: JobPositionWorkflowSerializer(many=True)},
         description="List all job positions",
         summary="List Job Positions",
         tags=["Recruitment"],
@@ -53,7 +58,7 @@ class JobPositionListAPI(APIView):
         ).order_by("-created_at")
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(job_positions, request)
-        serializer = JobPositionSerializer(paginated_qs, many=True)
+        serializer = JobPositionWorkflowSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -61,7 +66,7 @@ class JobPositionDetailAPI(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
     @extend_schema(
-        responses={200: JobPositionSerializer},
+        responses={200: JobPositionWorkflowSerializer},
         description="Retrieve a job position by ID",
         summary="Get Job Position",
         tags=["Recruitment"],
@@ -69,7 +74,7 @@ class JobPositionDetailAPI(APIView):
     def get(self, request, job_position_id):
         try:
             job_position = JobPosition.objects.get(id=job_position_id)
-            serializer = JobPositionSerializer(job_position)
+            serializer = JobPositionWorkflowSerializer(job_position)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except JobPosition.DoesNotExist:
             return Response(
@@ -98,6 +103,95 @@ class JobPositionDetailAPI(APIView):
                 {"detail": "Job position not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
+class ContractTemplateListAPI(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+
+    @extend_schema(
+        request=ContractTemplateSerializer,
+        responses={201: ContractTemplateSerializer},
+        description="Create a new contract template for an institution",
+        summary="Create Contract Template",
+        tags=["Contract Templates"],
+    )
+    def post(self, request, institution_id):
+        serializer = ContractTemplateSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(institution_id=institution_id)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        responses={200: ContractTemplateSerializer(many=True)},
+        description="List all contract templates for an institution",
+        summary="List Contract Templates",
+        tags=["Contract Templates"],
+    )
+    def get(self, request, institution_id):
+        templates = ContractTemplate.objects.filter(
+            institution_id=institution_id
+        ).order_by("-created_at")
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(templates, request)
+        serializer = ContractTemplateSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+class ContractTemplateDetailAPI(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+
+    @extend_schema(
+        responses={200: ContractTemplateSerializer},
+        description="Retrieve a contract template by ID",
+        summary="Get Contract Template",
+        tags=["Contract Templates"],
+    )
+    def get(self, request, template_id):
+        try:
+            template = ContractTemplate.objects.get(id=template_id)
+            serializer = ContractTemplateSerializer(template)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except ContractTemplate.DoesNotExist:
+            return Response(
+                {"detail": "Contract template not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @extend_schema(
+        request=ContractTemplateSerializer,
+        responses={200: ContractTemplateSerializer},
+        description="Update a contract template by ID",
+        summary="Update Contract Template",
+        tags=["Contract Templates"],
+    )
+    def patch(self, request, template_id):
+        try:
+            template = ContractTemplate.objects.get(id=template_id)
+            serializer = ContractTemplateSerializer(
+                template, data=request.data, partial=True
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except ContractTemplate.DoesNotExist:
+            return Response(
+                {"detail": "Contract template not found."},
+                status=status.HTTP_404_NOT_FOUND
+            ) 
+
+    def delete(self, request, template_id):
+        try:
+            template = ContractTemplate.objects.get(id=template_id)
+            template.delete()
+            return Response(
+                {"detail": "Contract template deleted successfully."},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        except ContractTemplate.DoesNotExist:
+            return Response(
+                {"detail": "Contract template not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )                   
+
 
 class JobPositionAdvertListAPI(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -116,7 +210,7 @@ class JobPositionAdvertListAPI(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
-        responses={200: JobPositionAdvertSerializer(many=True)},
+        responses={200: JobPositionAdvertWorkflowSerializer(many=True)},
         summary="List Job Position Adverts",
         tags=["Recruitment"],
     )
@@ -127,7 +221,7 @@ class JobPositionAdvertListAPI(APIView):
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(adverts, request)
-        serializer = JobPositionAdvertSerializer(paginated_qs, many=True)
+        serializer = JobPositionAdvertWorkflowSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -135,14 +229,14 @@ class JobPositionAdvertDetailAPI(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
     @extend_schema(
-        responses={200: JobPositionAdvertSerializer},
+        responses={200: JobPositionAdvertWorkflowSerializer},
         summary="Get Job Position Advert",
         tags=["Recruitment"],
     )
     def get(self, request, advert_id):
         try:
             advert = JobPositionAdvert.objects.get(id=advert_id)
-            serializer = JobPositionAdvertSerializer(advert)
+            serializer = JobPositionAdvertWorkflowSerializer(advert)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except JobPositionAdvert.DoesNotExist:
             return Response(

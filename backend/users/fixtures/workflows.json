@@ -38,5 +38,55 @@
         "label": "When an asset request is made"
       }
     ]
+  },
+  {
+    "code": "resignation_request",
+    "label": "All approvals on resignation request",
+    "workflow_actions": [
+      {
+        "code": "resignation_request",
+        "label": "When a resignation request is made"
+      }
+    ]
+  },
+  {
+    "code": "retirement_request",
+    "label": "All approvals on retirement request",
+    "workflow_actions": [
+      {
+        "code": "retirement_request",
+        "label": "When a retirement request is made"
+      }
+    ]
+  },
+  {
+    "code": "termination_initiation",
+    "label": "All approvals on termination initiation",
+    "workflow_actions": [
+      {
+        "code": "termination_initiation",
+        "label": "When a termination initiation is made"
+      }
+    ]
+  },
+  {
+    "code": "job_position_advertisement",
+    "label": "All approvals on job position advertisement",
+    "workflow_actions": [
+      {
+        "code": "job_position_advertisement",
+        "label": "When a job position advertisement is made"
+      }
+    ]
+  },
+  {
+    "code": "job_position_creation",
+    "label": "All approvals on job position creation",
+    "workflow_actions": [
+      {
+        "code": "job_position_creation",
+        "label": "When a job position is created"
+      }
+    ]
   }
 ]

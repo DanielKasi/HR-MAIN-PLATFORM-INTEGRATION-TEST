@@ -10,7 +10,13 @@ from workflows.models import (
 )
 from users.models import Profile, Role
 from django.contrib.contenttypes.models import ContentType
-from assets.serializers import AssetRequestSerializer
+from assets.serializers import AssetRequestSerializer, AssetAllocationSerializer
+from onboarding.serializers import (
+    ResignationRequestSerializer,
+    TerminationInitiationSerializer,
+    RetirementRequestSerializer,
+)
+from recruitment.serializers import JobPositionSerializer, JobPositionAdvertSerializer
 
 
 class WorkflowCategorySerializer(serializers.ModelSerializer):
@@ -196,6 +202,174 @@ class AssetRequestWorkflowSerializer(AssetRequestSerializer):
 
     class Meta(AssetRequestSerializer.Meta):
         fields = AssetRequestSerializer.Meta.fields + ["status", "tasks"]
+
+    def get_status(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        if not tasks.exists():
+            return "not_started"
+        if all(t.status == "completed" for t in tasks):
+            return "completed"
+        if any(t.status == "rejected" for t in tasks):
+            return "rejected"
+        return "pending"
+
+    def get_tasks(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        return TaskStatusSerializer(tasks, many=True).data
+
+
+class AssetAllocationWorkflowSerializer(AssetAllocationSerializer):
+    status = serializers.SerializerMethodField()
+    tasks = serializers.SerializerMethodField()
+
+    class Meta(AssetAllocationSerializer.Meta):
+        fields = AssetAllocationSerializer.Meta.fields + ["status", "tasks"]
+
+    def get_status(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        if not tasks.exists():
+            return "not_started"
+        if all(t.status == "completed" for t in tasks):
+            return "completed"
+        if any(t.status == "rejected" for t in tasks):
+            return "rejected"
+        return "pending"
+
+    def get_tasks(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        return TaskStatusSerializer(tasks, many=True).data
+
+
+class ResignationRequestWorkflowSerializer(ResignationRequestSerializer):
+    status = serializers.SerializerMethodField()
+    tasks = serializers.SerializerMethodField()
+
+    class Meta(ResignationRequestSerializer.Meta):
+        fields = ResignationRequestSerializer.Meta.fields + ["status", "tasks"]
+
+    def get_status(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        if not tasks.exists():
+            return "not_started"
+        if all(t.status == "completed" for t in tasks):
+            return "completed"
+        if any(t.status == "rejected" for t in tasks):
+            return "rejected"
+        return "pending"
+
+    def get_tasks(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        return TaskStatusSerializer(tasks, many=True).data
+
+
+class TerminationInitiationWorkflowSerializer(TerminationInitiationSerializer):
+    status = serializers.SerializerMethodField()
+    tasks = serializers.SerializerMethodField()
+
+    class Meta(TerminationInitiationSerializer.Meta):
+        fields = TerminationInitiationSerializer.Meta.fields + ["status", "tasks"]
+
+    def get_status(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        if not tasks.exists():
+            return "not_started"
+        if all(t.status == "completed" for t in tasks):
+            return "completed"
+        if any(t.status == "rejected" for t in tasks):
+            return "rejected"
+        return "pending"
+
+    def get_tasks(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        return TaskStatusSerializer(tasks, many=True).data
+
+
+class RetirementRequestWorkflowSerializer(RetirementRequestSerializer):
+    status = serializers.SerializerMethodField()
+    tasks = serializers.SerializerMethodField()
+
+    class Meta(RetirementRequestSerializer.Meta):
+        fields = RetirementRequestSerializer.Meta.fields + ["status", "tasks"]
+
+    def get_status(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        if not tasks.exists():
+            return "not_started"
+        if all(t.status == "completed" for t in tasks):
+            return "completed"
+        if any(t.status == "rejected" for t in tasks):
+            return "rejected"
+        return "pending"
+
+    def get_tasks(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        return TaskStatusSerializer(tasks, many=True).data
+
+
+class JobPositionWorkflowSerializer(JobPositionSerializer):
+    status = serializers.SerializerMethodField()
+    tasks = serializers.SerializerMethodField()
+
+    class Meta(JobPositionSerializer.Meta):
+        fields = JobPositionSerializer.Meta.fields + ["status", "tasks"]
+
+    def get_status(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        if not tasks.exists():
+            return "not_started"
+        if all(t.status == "completed" for t in tasks):
+            return "completed"
+        if any(t.status == "rejected" for t in tasks):
+            return "rejected"
+        return "pending"
+
+    def get_tasks(self, obj):
+        tasks = ApprovalTask.objects.filter(
+            content_type=ContentType.objects.get_for_model(obj.__class__),
+            object_id=obj.id,
+        )
+        return TaskStatusSerializer(tasks, many=True).data
+
+
+class JobPositionAdvertWorkflowSerializer(JobPositionAdvertSerializer):
+    status = serializers.SerializerMethodField()
+    tasks = serializers.SerializerMethodField()
+
+    class Meta(JobPositionAdvertSerializer.Meta):
+        fields = JobPositionAdvertSerializer.Meta.fields + ["status", "tasks"]
 
     def get_status(self, obj):
         tasks = ApprovalTask.objects.filter(

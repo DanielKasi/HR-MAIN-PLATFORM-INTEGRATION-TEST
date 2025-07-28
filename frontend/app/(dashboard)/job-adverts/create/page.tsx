@@ -276,35 +276,15 @@ export default function CreateJobAdvertPage() {
                   <Label htmlFor="expiry_date" className="text-sm font-medium">
                     Expiry Date *
                   </Label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                    </div>
-                    <Input
-                      id="expiry_date"
-                      type="date"
-                      value={formData.expiry_date}
-                      onChange={(e) => handleDateChange(e.target.value)}
-                      onBlur={(e) => {
-                        // Additional validation on blur
-                        const selectedDate = new Date(e.target.value)
-                        const today = new Date()
-                        today.setHours(0, 0, 0, 0)
-                        selectedDate.setHours(0, 0, 0, 0)
-                        
-                        if (selectedDate <= today) {
-                          const tomorrow = new Date()
-                          tomorrow.setDate(tomorrow.getDate() + 1)
-                          const correctedDate = tomorrow.toISOString().split("T")[0]
-                          setFormData((prev) => ({ ...prev, expiry_date: correctedDate }))
-                          toast.error("Past dates are not allowed. Date corrected to tomorrow.")
-                        }
-                      }}
-                      className={`pl-10 ${errors.expiry_date ? "border-destructive" : ""}`}
-                      min={getTomorrowString()} // Restrict to tomorrow and future dates
-                      required
-                    />
-                  </div>
+                  <Input
+                    id="expiry_date"
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]} 
+                    value={formData.expiry_date}
+                    onChange={(e) => updateFormData("expiry_date", e.target.value)}
+                    className={errors.expiry_date ? "border-destructive" : ""}
+                  />
+                  {errors.expiry_date && <p className="text-sm text-destructive">{errors.expiry_date}</p>}
                 </div>
 
                 {/* Number of Employees Expected */}

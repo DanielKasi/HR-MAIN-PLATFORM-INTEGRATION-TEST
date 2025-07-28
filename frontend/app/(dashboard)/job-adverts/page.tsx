@@ -91,7 +91,7 @@ export default function JobAdvertsPage() {
       setError("")
 
       const response: ApiResponse = await getJobPositionAdverts({ institutionId: selectedInstitution.id })
-      
+
       // Handle paginated response structure
       let advertsArray: JobPositionAdvert[] = []
       let pagination: {
@@ -99,7 +99,7 @@ export default function JobAdvertsPage() {
         next: string | null
         previous: string | null
       } = { count: 0, next: null, previous: null }
-      
+
       if (response && 'results' in response && Array.isArray(response.results)) {
         // Paginated response structure (which is what your API returns)
         advertsArray = response.results
@@ -117,7 +117,7 @@ export default function JobAdvertsPage() {
       setPaginationInfo(pagination)
 
     } catch (err) {
-      console.error("Error fetching job adverts:", err)
+
       setJobAdverts([])
       setError(`Failed to fetch job adverts: ${err instanceof Error ? err.message : 'Unknown error'}`)
       toast.error("Failed to load job adverts")
@@ -144,10 +144,10 @@ export default function JobAdvertsPage() {
     if (!Array.isArray(jobAdverts)) {
       return []
     }
-    
+
     return jobAdverts.filter((advert) => {
       if (!searchTerm.trim()) return true
-      
+
       return (
         advert.extra_information?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         advert.job_position_details?.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -155,18 +155,18 @@ export default function JobAdvertsPage() {
     })
   }, [jobAdverts, searchTerm])
 
-  const publishedAdverts = useMemo(() => 
-    Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.status === "active") : [], 
+  const publishedAdverts = useMemo(() =>
+    Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.status === "active") : [],
     [jobAdverts]
   )
-  
-  const draftAdverts = useMemo(() => 
-    Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.status === "archived") : [], 
+
+  const draftAdverts = useMemo(() =>
+    Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.status === "archived") : [],
     [jobAdverts]
   )
-  
-  const expiredAdverts = useMemo(() => 
-    Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.status === "expired" || isExpired(advert.expiry_date)) : [], 
+
+  const expiredAdverts = useMemo(() =>
+    Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.status === "expired" || isExpired(advert.expiry_date)) : [],
     [jobAdverts]
   )
 
@@ -294,9 +294,9 @@ export default function JobAdvertsPage() {
         <div className="text-sm font-medium text-destructive bg-destructive/10 p-4 rounded-md border border-destructive/20">
           <div className="font-semibold mb-2">Error Loading Job Adverts</div>
           <div className="text-sm">{error}</div>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleRefresh}
             className="mt-3"
             disabled={isRefreshing}

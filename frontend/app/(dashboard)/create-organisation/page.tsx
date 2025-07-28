@@ -2,8 +2,8 @@
 
 import type React from "react";
 
-import {useState, useEffect} from "react";
-import {useRouter} from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Store,
   Building2,
@@ -19,15 +19,15 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import {useSelector} from "react-redux";
-import {useDispatch} from "react-redux";
+import { useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import apiRequest from "@/lib/apiRequest";
-import {selectRefreshToken, selectSelectedInstitution, selectUser} from "@/store/auth/selectors";
+import { selectRefreshToken, selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
 import {
   logoutStart,
   setAccessToken,
@@ -37,12 +37,14 @@ import {
   setSelectedInstitution,
   setUserAction,
 } from "@/store/auth/actions";
-import {toast} from "sonner";
-import type {LoginResponse} from "@/utils/authUtils";
+import { toast } from "sonner";
+import type { LoginResponse } from "@/utils/authUtils";
 import axios from "axios";
-import {LocationAutocomplete} from "@/components/location-autocomplete";
-import {Textarea} from "@/components/ui/textarea";
-import {Progress} from "@radix-ui/react-progress";
+import { LocationAutocomplete } from "@/components/location-autocomplete";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@radix-ui/react-progress";
+import PhoneNumberInput from "@/components/phone-number-input";
+import type { ICountry } from "@/app/types/types.utils";
 
 interface DocumentFile {
   id: string;
@@ -79,7 +81,7 @@ const STEPS = [
     title: "Location Details",
     description: "Where is your organisation located",
   },
-  {id: 3, title: "Documents", description: "Upload required documents"},
+  { id: 3, title: "Documents", description: "Upload required documents" },
 ];
 
 export default function CreateOrganisationWizard() {
@@ -107,13 +109,26 @@ export default function CreateOrganisationWizard() {
     documents: [],
   });
 
+  const [firstPhone, setFirstPhone] = useState<{
+    country: ICountry | null;
+    countryCode: string;
+    phoneNumber: string;
+    isValid: boolean;
+  }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
+  const [secondPhone, setSecondPhone] = useState<{
+    country: ICountry | null;
+    countryCode: string;
+    phoneNumber: string;
+    isValid: boolean;
+  }>({ country: null, countryCode: "", phoneNumber: "", isValid: true }); // not required
+
   useEffect(() => {
     if (userData) {
       try {
         const user = userData;
         setUserId(user.id);
         if (user.email) {
-          setFormData((prev) => ({...prev, institutionEmail: user.email}));
+          setFormData((prev) => ({ ...prev, institutionEmail: user.email }));
         }
       } catch (error) {
         toast.error("Error retrieving user information. Please log out and log in again.");
@@ -136,7 +151,7 @@ export default function CreateOrganisationWizard() {
   }
 
   const updateFormData = (field: keyof OrganisationFormData, value: any) => {
-    setFormData((prev) => ({...prev, [field]: value}));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const addDocument = () => {
@@ -155,7 +170,7 @@ export default function CreateOrganisationWizard() {
   const updateDocument = (id: string, field: keyof DocumentFile, value: any) => {
     setFormData((prev) => ({
       ...prev,
-      documents: prev.documents.map((doc) => (doc.id === id ? {...doc, [field]: value} : doc)),
+      documents: prev.documents.map((doc) => (doc.id === id ? { ...doc, [field]: value } : doc)),
     }));
   };
 
@@ -177,7 +192,7 @@ export default function CreateOrganisationWizard() {
         return !!(
           formData.institutionName &&
           formData.institutionEmail &&
-          formData.firstPhoneNumber
+          firstPhone.isValid && firstPhone.phoneNumber // use validated phone
         );
       case 2:
         return !!(formData.location && formData.latitude && formData.longitude);
@@ -256,9 +271,9 @@ export default function CreateOrganisationWizard() {
 
       formdata.append("institution_name", formData.institutionName);
       formdata.append("institution_email", formData.institutionEmail);
-      formdata.append("first_phone_number", formData.firstPhoneNumber);
-      if (formData.secondPhoneNumber) {
-        formdata.append("second_phone_number", formData.secondPhoneNumber);
+      formdata.append("first_phone_number", `${firstPhone.countryCode}${firstPhone.phoneNumber}`);
+      if (secondPhone.phoneNumber) {
+        formdata.append("second_phone_number", `${secondPhone.countryCode}${secondPhone.phoneNumber}`);
       }
 
       if (formData.description && formData.description.trim()) {
@@ -316,7 +331,7 @@ export default function CreateOrganisationWizard() {
           console.log("Refreshing user data...");
           const fetchedUserResponse = await axios.post(
             `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/user/token/refresh/`,
-            {refresh: refreshToken},
+            { refresh: refreshToken },
             {
               headers: {
                 "Content-Type": "application/json",
@@ -342,8 +357,7 @@ export default function CreateOrganisationWizard() {
 
       if (error.response) {
         toast.error(
-          `Server error: ${error.response.status} - ${
-            error.response.data?.detail || "Unknown error"
+          `Server error: ${error.response.status} - ${error.response.data?.detail || "Unknown error"
           }`,
         );
 
@@ -432,44 +446,21 @@ export default function CreateOrganisationWizard() {
               </div>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="firstPhoneNumber" className="text-sm font-medium">
-                Primary Phone Number *
-              </Label>
-              <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  <Phone className="h-4 w-4" />
-                </div>
-                <Input
-                  id="firstPhoneNumber"
-                  type="tel"
-                  placeholder="+1 (555) 123-4567"
-                  value={formData.firstPhoneNumber}
-                  onChange={(e) => updateFormData("firstPhoneNumber", e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
+            <PhoneNumberInput
+              label="Primary Phone Number"
+              required
+              value={firstPhone.phoneNumber}
+              country={firstPhone.country}
+              onChange={setFirstPhone}
+            />
 
-            <div className="grid gap-2">
-              <Label htmlFor="secondPhoneNumber" className="text-sm font-medium">
-                Secondary Phone Number (Optional)
-              </Label>
-              <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  <PhoneCall className="h-4 w-4" />
-                </div>
-                <Input
-                  id="secondPhoneNumber"
-                  type="tel"
-                  placeholder="+1 (555) 987-6543"
-                  value={formData.secondPhoneNumber}
-                  onChange={(e) => updateFormData("secondPhoneNumber", e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
+            <PhoneNumberInput
+              label="Secondary Phone Number (Optional)"
+              required={false}
+              value={secondPhone.phoneNumber}
+              country={secondPhone.country}
+              onChange={setSecondPhone}
+            />
 
             <div className="grid gap-2">
               <Label htmlFor="description" className="text-sm font-medium">
@@ -699,9 +690,8 @@ export default function CreateOrganisationWizard() {
                       <Check className="h-3 w-3 text-primary" />
                     ) : (
                       <div
-                        className={`h-3 w-3 rounded-full ${
-                          currentStep === step.id ? "bg-primary" : "bg-muted"
-                        }`}
+                        className={`h-3 w-3 rounded-full ${currentStep === step.id ? "bg-primary" : "bg-muted"
+                          }`}
                       />
                     )}
                     <span className={currentStep === step.id ? "font-medium" : ""}>

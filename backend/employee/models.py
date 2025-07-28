@@ -96,7 +96,7 @@ class Employee(models.Model):
         related_name="employees",
     )
     payroll_branch = models.ForeignKey(
-        'institution.Branch',
+        "institution.Branch",
         on_delete=models.PROTECT,
         blank=True,
         null=True,
@@ -382,7 +382,7 @@ class Employee(models.Model):
 
         def generate_compliant_password(length=12):
             characters = string.ascii_letters + string.digits + string.punctuation
-            password = ''.join(random.choice(characters) for _ in range(length))
+            password = "".join(random.choice(characters) for _ in range(length))
             return password
 
         random_password = generate_compliant_password()
@@ -404,20 +404,20 @@ class Employee(models.Model):
                 user=user,
                 token=token,
                 purpose=purpose,
-                expires_at=timezone.now() + timedelta(minutes=expiry_minutes)
+                expires_at=timezone.now() + timedelta(minutes=expiry_minutes),
             )
             return token
 
         def build_password_link(request, token):
             return request.build_absolute_uri(
-                reverse('set_password', kwargs={'token': token})
+                reverse("set_password", kwargs={"token": token})
             )
 
         def send_password_link_to_user(user, link):
             send_mail(
-                subject='Set Your Password',
-                message=f'Please use the following link to set your password: {link}',
-                from_email='no-reply@yourinstitution.com',
+                subject="Set Your Password",
+                message=f"Please use the following link to set your password: {link}",
+                from_email="no-reply@yourinstitution.com",
                 recipient_list=[user.email],
                 fail_silently=False,
             )
@@ -500,129 +500,49 @@ class EmployeeAttendance(models.Model):
 
 
 class Contract(models.Model):
-    """
-    Model to store employment contract details for an employee.
-    """
-    class Meta:
-        verbose_name = "Contract"
-        verbose_name_plural = "Contracts"
-        ordering = ["-created_at"]
-
-    STATUS_CHOICES = (
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name="contracts"
+    )
+    start_date = models.DateField()
+    end_date = models.DateField(blank=True, null=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[
         ("draft", "Draft"),
+        ("issued", "Issued"),
+        ("under_review", "Under Review"),
         ("active", "Active"),
         ("expired", "Expired"),
         ("terminated", "Terminated"),
+        ]
     )
-
-    employee = models.ForeignKey(
-        Employee,
-        on_delete=models.PROTECT,
-        related_name="contracts",
+    contract_reference = models.CharField(
+        max_length=20, unique=True, blank=True, null=True
     )
-    contract_id = models.CharField(
-        max_length=15, unique=True, editable=False, blank=True
+    original_contract = models.FileField(
+        upload_to="contracts/original/", blank=True, null=True
     )
-    contract_file = models.FileField(
-        upload_to="contracts/", blank=True, null=True
+    signed_contract = models.FileField(
+        upload_to="contracts/signed/", blank=True, null=True
     )
-    status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default="draft"
-    )
-    start_date = models.DateField(default=timezone.now)
-    end_date = models.DateField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
-    notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"Contract {self.contract_id} - {self.employee.user.fullname}"
+        return f"Contract {self.contract_reference} - {self.employee.user.fullname}"
 
-    def generate_contract_id(self):
-        """Generate a unique contract ID."""
+    def generate_contract_reference(self):
         prefix = "CON"
         last_contract = (
-            Contract.objects.filter(contract_id__startswith=prefix)
-            .order_by("-contract_id")
+            Contract.objects.filter(contract_reference__startswith=prefix)
+            .order_by("-contract_reference")
             .first()
         )
-        if last_contract and last_contract.contract_id:
-            last_number = int(last_contract.contract_id.replace(prefix, ""))
+
+        if last_contract and last_contract.contract_reference:
+            last_number = int(last_contract.contract_reference.replace(prefix, ""))
             new_number = last_number + 1
         else:
             new_number = 1
-        return f"{prefix}{new_number:06d}"
 
-    def generate_contract_pdf(self):
-        print(f"Starting PDF generation for contract {self.contract_id}")
-        output_dir = os.path.join(settings.MEDIA_ROOT, "contracts")
-        print(f"Output directory: {output_dir}")
-        os.makedirs(output_dir, exist_ok=True)
-
-        # Prepare data for the contract
-        context = {
-            'institution_name': (
-                self.employee.department.institution.institution_name
-                if self.employee.department and self.employee.department.institution
-                else "Your Institution Name"
-            ),
-            'institution_address': (
-                self.employee.department.institution.location
-                if self.employee.department and self.employee.department.institution
-                else "Your Institution Address"
-            ),
-            'employee_name': self.employee.user.fullname if self.employee.user else "Unknown Employee",
-            'position_title': self.employee.position.name if self.employee.position else "Unknown Position",
-            'department_name': self.employee.department.name if self.employee.department else "Unknown Department",
-            'work_type': self.employee.work_type.name if self.employee.work_type else "Full-Time",
-            'salary': f"{int(self.employee.salary):,}" if self.employee.salary else "0",
-            'start_date': self.start_date.strftime("%B %d, %Y") if self.start_date else "Unknown Date",
-            'employee_address': self.employee.address if self.employee.address else "Unknown Address",
-            'employee_country': self.employee.country if self.employee.country else "Unknown Country",
-            'signing_date': timezone.now().strftime("%B %d, %Y"),
-            'contract_id': self.contract_id or self.generate_contract_id(),
-            'employer_representative_name' : self.employee.department.institution.institution_owner.fullname,
-        }
-        print(f"Prepared context: institution={context['institution_name']}, employee={context['employee_name']}")
-
-        # Render HTML template
-        try:
-            html_content = render_to_string('employment_contract_template.html', context)
-            print("HTML template rendered successfully")
-        except Exception as e:
-            print(f"Failed to render HTML template: {str(e)}")
-            raise
-
-        # Convert to PDF
-        pdf_path = os.path.join(output_dir, f"contract_{self.contract_id}.pdf")
-        print(f"Saving PDF to: {pdf_path}")
-        try:
-            HTML(string=html_content).write_pdf(pdf_path)
-            print("PDF generated successfully")
-        except Exception as e:
-            print(f"Failed to generate PDF with WeasyPrint: {str(e)}")
-            raise
-
-        # Save to contract_file
-        with open(pdf_path, "rb") as pdf_file:
-            self.contract_file.save(f"contract_{self.contract_id}.pdf", File(pdf_file))
-        print(f"PDF saved to contract_file: {self.contract_file.path}")
-
-        return pdf_path
-
-    def save(self, *args, **kwargs):
-        if not self.contract_id:
-            self.contract_id = self.generate_contract_id()
-        super().save(*args, **kwargs)
-        if not self.contract_file:
-            try:
-                if not self.employee.department or not self.employee.department.institution:
-                    print(f"Skipping PDF generation for contract {self.contract_id}: Missing department or institution")
-                    return
-                print(f"Generating PDF for contract {self.contract_id}")
-                self.generate_contract_pdf()
-                self.status = "active"
-                super().save(*args, **kwargs)
-                print(f"PDF generated and saved for contract {self.contract_id}")
-            except Exception as e:
-                print(f"Failed to generate contract PDF for contract {self.contract_id}: {str(e)}")
+        return f"{prefix}{new_number:05d}"    

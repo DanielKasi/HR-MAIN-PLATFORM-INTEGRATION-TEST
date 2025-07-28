@@ -1,4 +1,4 @@
-import {PERMISSION_CODES} from "./types.utils";
+import { PERMISSION_CODES } from "./types.utils";
 
 export interface IProductCategoryDetail {
   id: number;
@@ -10,9 +10,9 @@ export interface IProductCategoryDetail {
 export interface IUserInstitution {
   id: number;
   institution_email: string,
-  approval_date?:string|null,
-  approval_status:string,
-  approval_status_display:string,
+  approval_date?: string | null,
+  approval_status: string,
+  approval_status_display: string,
   institution_owner_id: number;
   institution_name: string;
   institution_logo: string | null;
@@ -20,9 +20,9 @@ export interface IUserInstitution {
   branches?: Branch[];
   first_phone_number: string;
   second_phone_number: string;
-  latitude:number,
-  longitude:number,
-  location:string
+  latitude: number,
+  longitude: number,
+  location: string
 }
 
 
@@ -183,9 +183,13 @@ export interface Branch {
 }
 
 export enum USER_GENDER {
-  MALE="male",
-  FEMALE="female",
-  OTHER="other"
+  MALE = "male",
+  FEMALE = "female",
+  OTHER = "other"
+}
+
+export enum USER_TYPES {
+  STAFF = "STAFF"
 }
 
 export interface IUser {
@@ -194,10 +198,18 @@ export interface IUser {
   email: string;
   is_active: boolean;
   is_staff: boolean;
+  is_email_verified: boolean;
+  is_password_verified: boolean;
   roles: Role[];
   branches: Branch[];
-  gender:USER_GENDER
+  permissions: Record<any, any>;
+  last_login: string | null;
+  is_superuser: boolean;
+  gender?: USER_GENDER;
+  user_type?: USER_TYPES;
 }
+
+
 
 export interface ICustomerProfile {
   user: IUser;

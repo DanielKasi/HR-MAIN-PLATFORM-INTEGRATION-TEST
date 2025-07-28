@@ -160,32 +160,4 @@ class EmployeeActivationSerializer(serializers.Serializer):
     date_of_joining = serializers.DateField(required=False, allow_null=True)
 
 
-class ContractSerializer(serializers.ModelSerializer):
-    employee = EmployeeSerializer(read_only=True)
-    employee_id = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = Contract
-        fields = [
-            'id', 'contract_id', 'employee', 'employee_id', 'contract_file',
-            'status', 'start_date', 'end_date', 'created_at', 'updated_at', 'notes'
-        ]
-        read_only_fields = ['id', 'contract_id', 'contract_file', 'created_at', 'updated_at']
-
-    def validate_employee_id(self, value):
-        try:
-            employee = Employee.objects.get(employee_id=value)
-        except Employee.DoesNotExist:
-            raise serializers.ValidationError("Employee with this ID does not exist.")
-        return employee
-
-    def create(self, validated_data):
-        employee = validated_data.pop('employee_id')
-        contract = Contract.objects.create(employee=employee, **validated_data)
-        return contract
-
-    def update(self, instance, validated_data):
-        employee = validated_data.pop('employee_id', None)
-        if employee:
-            instance.employee = employee
-        return super().update(instance, validated_data)
+      

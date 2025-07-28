@@ -17,17 +17,19 @@ import {
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Calendar, 
-  CheckCircle, 
-  Clock, 
-  DollarSign, 
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Coins,
   Loader2,
   Info,
-  AlertTriangle 
+  AlertTriangle,
+  Eye,
+  MoreHorizontal
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -45,6 +47,8 @@ import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/a
 import { IUserInstitution } from "@/app/types"
 import { useSelector } from "react-redux"
 import { select } from "redux-saga/effects"
+import Link from "next/link"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 interface PayrollPeriodsProps {
   institutionId?: number
@@ -71,7 +75,7 @@ export default function PayrollPeriods() {
 
   // Redux selectors
   const selectedInstitution = useSelector(selectSelectedInstitution)
-  const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
+  const institutionsAttached = useSelector(selectAttachedInstitutions)
   // const [institutionId, setInstitutionId] = useState<number | null>(propInstitutionId || null)
 
   // Filtered payroll periods logic
@@ -93,15 +97,15 @@ export default function PayrollPeriods() {
     pay_date: "",
   })
 
-   useEffect(() => {
+  useEffect(() => {
     const fetchPayrollPeriods = async () => {
       if (!selectedInstitution?.id) {
         return
       }
-      
+
       try {
         const periodsData = await getPayrollPeriods(selectedInstitution?.id)
-        
+
         if (periodsData && Array.isArray(periodsData)) {
           setPayrollPeriods(periodsData)
         } else {
@@ -113,7 +117,7 @@ export default function PayrollPeriods() {
         toast.error("Failed to load payroll periods")
       }
     }
-    
+
     fetchPayrollPeriods()
   }, [selectedInstitution?.id])
 
@@ -122,7 +126,7 @@ export default function PayrollPeriods() {
       if (!selectedInstitution?.id) {
         return
       }
-      
+
       try {
         const periodsData = await getPayrollPeriods(selectedInstitution?.id)
 
@@ -137,7 +141,7 @@ export default function PayrollPeriods() {
         toast.error("Failed to load payroll periods")
       }
     }
-    
+
     fetchPayrollPeriods()
   }, [selectedInstitution?.id])
 
@@ -356,8 +360,8 @@ export default function PayrollPeriods() {
             </div>
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
               <DialogTrigger asChild>
-                <Button 
-                  onClick={resetForm} 
+                <Button
+                  onClick={resetForm}
                   className="bg-orange-600 hover:bg-orange-700 shadow-md"
                   disabled={!selectedInstitution?.id}
                 >
@@ -381,9 +385,8 @@ export default function PayrollPeriods() {
                       value={formData.name}
                       onChange={(e) => handleInputChange("name", e.target.value)}
                       disabled={saving}
-                      className={`focus:ring-orange-500 focus:border-orange-500 ${
-                        validationErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                      }`}
+                      className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}
                     />
                     {validationErrors.name && (
                       <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -402,9 +405,8 @@ export default function PayrollPeriods() {
                         value={formData.start_date}
                         onChange={(e) => handleInputChange("start_date", e.target.value)}
                         disabled={saving}
-                        className={`focus:ring-orange-500 focus:border-orange-500 ${
-                          validationErrors.start_date ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                        }`}
+                        className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.start_date ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
                       />
                       {validationErrors.start_date && (
                         <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -423,9 +425,8 @@ export default function PayrollPeriods() {
                         onChange={(e) => handleInputChange("end_date", e.target.value)}
                         disabled={saving}
                         min={formData.start_date}
-                        className={`focus:ring-orange-500 focus:border-orange-500 ${
-                          validationErrors.end_date ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                        }`}
+                        className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.end_date ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
                       />
                       {validationErrors.end_date && (
                         <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -444,9 +445,8 @@ export default function PayrollPeriods() {
                       value={formData.pay_date}
                       onChange={(e) => handleInputChange("pay_date", e.target.value)}
                       disabled={saving}
-                      className={`focus:ring-orange-500 focus:border-orange-500 ${
-                        validationErrors.pay_date ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                      }`}
+                      className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.pay_date ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}
                     />
                     {validationErrors.pay_date && (
                       <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -468,16 +468,16 @@ export default function PayrollPeriods() {
                   )}
 
                   <DialogFooter>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={() => setIsModalOpen(false)}
                       disabled={saving}
                     >
                       Cancel
                     </Button>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       className="bg-orange-600 hover:bg-orange-700"
                       disabled={saving || hasValidationErrors()}
                     >
@@ -526,8 +526,8 @@ export default function PayrollPeriods() {
               <Calendar className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No payroll periods found</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {payrollPeriods.length === 0 
-                  ? "No payroll periods have been created yet." 
+                {payrollPeriods.length === 0
+                  ? "No payroll periods have been created yet."
                   : "No periods match your current search."}
               </p>
             </div>
@@ -545,7 +545,7 @@ export default function PayrollPeriods() {
                     </TableHead>
                     <TableHead className="font-semibold text-gray-700">
                       <div className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4" />
+                        <Coins className="w-4 h-4" />
                         Pay Date
                       </div>
                     </TableHead>
@@ -558,9 +558,8 @@ export default function PayrollPeriods() {
                   {filteredPeriods.map((period, index) => (
                     <TableRow
                       key={period.id}
-                      className={`hover:bg-orange-50/30 transition-colors border-b ${
-                        index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
-                      }`}
+                      className={`hover:bg-orange-50/30 transition-colors border-b ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                        }`}
                     >
                       <TableCell className="py-4">
                         <div className="text-gray-900">{period.name}</div>
@@ -573,7 +572,7 @@ export default function PayrollPeriods() {
                           <div className="text-xs text-gray-500">
                             {Math.ceil(
                               (new Date(period.end_date).getTime() - new Date(period.start_date).getTime()) /
-                                (1000 * 60 * 60 * 24),
+                              (1000 * 60 * 60 * 24),
                             )}{" "}
                             days
                           </div>
@@ -585,11 +584,10 @@ export default function PayrollPeriods() {
                       <TableCell>
                         <Badge
                           variant={period.is_processed ? "default" : "secondary"}
-                          className={`${
-                            period.is_processed
-                              ? "bg-green-100 text-green-800 border-green-200"
-                              : "bg-yellow-100 text-yellow-800 border-yellow-200"
-                          } font-medium px-3 py-1`}
+                          className={`${period.is_processed
+                            ? "bg-green-100 text-green-800 border-green-200"
+                            : "bg-yellow-100 text-yellow-800 border-yellow-200"
+                            } font-medium px-3 py-1`}
                         >
                           <div className="flex items-center gap-1">
                             {period.is_processed ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
@@ -613,31 +611,53 @@ export default function PayrollPeriods() {
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-center space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(period)}
-                            className="h-8 w-8 p-0 hover:bg-orange-100 rounded-full"
-                            title="Edit period"
-                          >
-                            <Edit className="w-4 h-4 text-gray-600" />
-                          </Button>
 
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
+                                title="Actions"
+                              >
+                                <MoreHorizontal className="w-5 h-5 text-gray-600" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem>
+                                <Link
+                                  href={`/payroll/payroll-period/${period.id}`}
+                                  passHref
+                                  legacyBehavior
+                                >
+                                  <div className="flex items-center">
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </div>
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleEdit(period)}
+                                className="flex items-center"
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setDeleteConfirmId(period.id)}
+                                className="flex items-center text-red-600 focus:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           <Dialog
                             open={deleteConfirmId === period.id}
                             onOpenChange={(open) => !open && setDeleteConfirmId(null)}
                           >
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setDeleteConfirmId(period.id)}
-                                className="h-8 w-8 p-0 hover:bg-red-100 rounded-full"
-                                title="Delete period"
-                              >
-                                <Trash2 className="w-4 h-4 text-gray-600" />
-                              </Button>
-                            </DialogTrigger>
                             <DialogContent>
                               <DialogHeader>
                                 <DialogTitle>Confirm Deletion</DialogTitle>

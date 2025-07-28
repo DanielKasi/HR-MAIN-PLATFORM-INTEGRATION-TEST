@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { IUser } from ".";
+import { Branch, IUser, Permission, Role } from ".";
 
 export enum CUSTOM_CODES {
   BLOCKED_BY_ADMIN = "BLOCKED_BY_ADMIN",
@@ -30,8 +30,8 @@ export enum PERMISSION_CODES {
 
   // User Management
   CAN_CREATE_USERS = "can_create_users",
-  CAN_VIEW_USERS = "can_view_users", 
-  CAN_EDIT_USERS = "can_edit_users", 
+  CAN_VIEW_USERS = "can_view_users",
+  CAN_EDIT_USERS = "can_edit_users",
   CAN_DEACTIVATE_USERS = "can_deactivate_users",
   CAN_DELETE_USERS = "can_delete_users",
   CAN_RESET_USER_PASSWORDS = "can_reset_user_passwords",
@@ -116,7 +116,7 @@ export enum PERMISSION_CODES {
   CAN_LODGE_DISCIPLINARY_COMPLAINTS = "can_lodge_disciplinary_complaints",
 
   // Attendance Management
-  CAN_VIEW_ATTENDANCE_RECORDS= "can_view_attendance_records",
+  CAN_VIEW_ATTENDANCE_RECORDS = "can_view_attendance_records",
   CAN_EDIT_ATTENDANCE_RECORDS = "can_edit_attendance_records",
   CAN_APPROVE_ATTENDANCE_CORRECTIONS = "can_approve_attendance_corrections",
   CAN_VIEW_ATTENDANCE_REPORTS = "can_view_attendance_reports",
@@ -247,55 +247,25 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
- export interface EmployeeFromAPI {
-  id: number
-  user: {
-    id: number
-    email: string
-    fullname: string
-    is_active: boolean
-    is_email_verified: boolean
-    is_password_verified: boolean
-    is_staff: boolean
-    roles: any[]
-    branches: any[]
-    permissions: any[]
-  } | null
-  email: string
-  phone_number: string
-  position: {
-    id: number
-    name: string
-    department_id: number
-  }
-  department: {
-    id: number
-    name: string
-    institution_id: number
-  }
-  roles: any[]
-  date_of_birth: string | null
-  date_of_joining: string
-  address: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
-  experience: number
-  qualifications: string | null
-  skills: string | null
-  emergency_contact_name: string | null
-  emergency_contact_phone: string | null
-  emergency_contact_relationship: string | null
-  marital_status: string
-  children_count: number
-  employee_profile_picture: string | null
-}
+
+// export interface IUser {
+//   id: number;
+//   fullname: string;
+//   email: string;
+//   is_active: boolean;
+//   is_staff: boolean;
+//   roles: Role[];
+//   branches: Branch[];
+//   gender: USER_GENDER
+// }
+
+
 
 export interface PaginatedEmployeeResponse {
   count: number;
   next: string | null;
   previous: string | null;
-  results: EmployeeFromAPI[];
+  results: IEmployee[];
 }
 
 
@@ -318,6 +288,7 @@ export interface IJobPosition {
   contractTemplate?: string | null; 
   offerLetterTemplate?: string | null; 
   salary: number;
+  employees: IEmployee[]
 }
 
 
@@ -334,7 +305,7 @@ export interface JobPositionFormData {
 }
 
 export interface CreateJobPositionData {
-  affected_employees: boolean; // or any other correct type
+  affected_employees: number[]; // or any other correct type
   name: string;
   description?: string;
   department: number;
@@ -346,9 +317,13 @@ export interface CreateJobPositionData {
 
 
 export interface JobApplication {
+  shortlisted_by: any;
+  reviewed_by: any;
+  reviewed_by_details: any;
+  shortlisted_by_details: any;
   job_position_advert_job_details: {
-    department: string;name:string, description:string, job_posted_date:string
-};
+    department: string; name: string, description: string, job_posted_date: string
+  };
   positions: number;
   id: number
   job_position_advert: number
@@ -380,6 +355,15 @@ export interface JobApplicationFormData {
   address: string
   country: string
   source?: "website" | "referral" | "job_board" | "social_media" | "other"
+  created_by: number,
+  reviewed_by?: number;
+  shortlisted_by?: number;
+  recommended_by?: number;
+  reviewed_by_name?: string;
+  shortlisted_by_name?: string;
+  recommended_by_name?: string;
+
+
 }
 
 export type JobAdvertStatus = "expired" | "active" | "archived" | "closed";
@@ -393,7 +377,7 @@ export interface JobPositionAdvert {
   expiry_date: string; // ISO datetime string
   number_of_employees_expected?: number | null;
   extra_information?: string | null;
-  applications:JobApplication[];
+  applications: JobApplication[];
   interview_stages: JobApplication[]
 }
 
@@ -409,35 +393,54 @@ export interface JobPositionAdvertFormData {
 
 export interface IEmployee {
   id: number;
-  user: IUser;
-  first_name: string;
-  last_name: string;
+  user: IUser | null;
   email: string;
   phone_number: string;
-  position: number | JobPositionFormData;
-  department: number;
+  employee_id: string;
+  position: {
+    id: number;
+    name: string;
+    department_id: number;
+  };
+  department: {
+    id: number;
+    name: string;
+    institution_id: number;
+  };
   date_of_birth: string;
   date_of_joining: string;
   address: string;
+  country: string;
+  nin: string;
+  nssf_no: string;
+  tin: string;
+  bank: string;
+  bank_account_number: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
   experience: number;
-  qualifications?: string | null;
-  skills?: string | null;
-  emergency_contact_name?: string | null;
-  emergency_contact_phone?: string | null;
+  qualifications: string;
+  skills: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
   emergency_contact_relationship: string;
   marital_status: string;
-  children_count?: number | null;
-  employee_profile_picture?: string | null;
+  children_count: number;
+  employee_profile_picture: string | null;
+  employee_type: number;
+  work_type: number;
+  payroll_branch: number;
+  gender: string;
+  salary: string;
+  roles: any[];
 }
 
 export interface IInterviewStageFormData {
   job_position_advert: number;
   name: string;
   level: number;
-  interviewers: number[]; 
+  interviewers: number[];
 }
 
 export interface IInterviewStage {
@@ -445,8 +448,8 @@ export interface IInterviewStage {
   job_position_advert: number;
   name: string;
   level: number;
-  interviewers: number[]; 
-  interviewers_details?: IEmployee[]; 
+  interviewers: number[];
+  interviewers_details?: IEmployee[];
   candidates_count: number;
 }
 
@@ -487,7 +490,7 @@ export interface EmployeeFormData {
   date_of_joining: string;
   address: string;
   country: string;             // Added
-  nin: string;    
+  nin: string;
   tin: string;
   nssf_no: string;             // Added
   bank: string;                // Added
@@ -505,8 +508,8 @@ export interface EmployeeFormData {
 }
 
 export interface EmployeeFormState {
-  tin: string 
-  nssf_no: string 
+  tin: string
+  nssf_no: string
   fullname: string;
   email: string;
   phone_number: string;
@@ -613,7 +616,7 @@ export interface IOnBoarding {
   updated_at: string;
 }
 
-export interface PaginatedIOnboardingResponse {     
+export interface PaginatedIOnboardingResponse {
   count: number;
   next: string | null;
   previous: string | null;
@@ -663,6 +666,7 @@ export interface IInterviewFormData {
   interview_time: string,
   interview_type: string,
   status: string;
+  created_by: number;
 }
 
 
@@ -792,8 +796,8 @@ export function convertFormToApiRequest(formData: DisciplinaryActionForm): Disci
     action_taken: formData.action_taken,
     resolution_date: formData.resolution_date || null,
     follow_up_required: formData.follow_up_required,
-    follow_up_date: formData.follow_up_required && formData.follow_up_date 
-      ? formData.follow_up_date 
+    follow_up_date: formData.follow_up_required && formData.follow_up_date
+      ? formData.follow_up_date
       : null,
     notes: formData.notes,
   };
@@ -1339,8 +1343,8 @@ export interface IPayrollPeriodFormData {
 
 export interface IPayslip {
   id: number;
-  employee: number;
-  payroll_period: number;
+  employee: IEmployee;
+  payroll_period: IPayrollPeriod;
   basic_salary: string;
   total_allowances: string;
   total_deductions: string;
@@ -1387,6 +1391,13 @@ export interface IPayslipItem {
   name: string;
   amount: string;
   description: string;
+}
+
+export interface PaginatedPayslipResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: IPayslip[];
 }
 
 export type ContractStatus = 'draft' | 'active' | 'expired' | 'terminated';
