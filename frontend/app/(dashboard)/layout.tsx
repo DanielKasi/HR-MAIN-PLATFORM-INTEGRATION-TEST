@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { ChevronDown, ChevronRight, Settings, User, LogOut, Shield, ChevronLeft } from "lucide-react";
+import React, {useState, useEffect} from "react";
+import {useRouter, usePathname} from "next/navigation";
+import {ChevronDown, ChevronRight, Settings, User, LogOut, Shield, ChevronLeft} from "lucide-react";
 import Image from "next/image";
-import { useSelector, useDispatch } from "react-redux";
-import { Icon } from "@iconify/react";
+import {useSelector, useDispatch} from "react-redux";
+import {Icon} from "@iconify/react";
 
-import { IUserInstitution } from "../types";
-import { PERMISSION_CODES } from "../types/types.utils";
+import {IUserInstitution} from "../types";
+import {PERMISSION_CODES} from "../types/types.utils";
 
-import { useSetupProgress } from "@/components/guide";
-import { selectAttachedInstitutions, selectTemporaryPermissions } from "@/store/auth/selectors";
-import { Button } from "@/components/ui/button";
+import {useSetupProgress} from "@/components/guide";
+import {selectAttachedInstitutions, selectTemporaryPermissions} from "@/store/auth/selectors";
+import {Button} from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,9 +28,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useMobile } from "@/hooks/use-mobile";
-import { InstitutionBranchSelector } from "@/components/institution-branch-selector";
-import { TaskNotification } from "@/components/task-notification";
+import {useMobile} from "@/hooks/use-mobile";
+import {InstitutionBranchSelector} from "@/components/institution-branch-selector";
+import {TaskNotification} from "@/components/task-notification";
 import Modules from "@/components/modules";
 import {
   selectAccessToken,
@@ -45,12 +45,12 @@ import {
   logoutStart,
 } from "@/store/auth/actions";
 import FixedLoader from "@/components/fixed-loader";
-import { hasPermission } from "@/lib/helpers";
+import {hasPermission} from "@/lib/helpers";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import apiRequest from "@/lib/apiRequest";
 import CreateOrganisationWizard from "./create-organisation/page";
-import { selectSidebarOpened } from "@/store/miscellaneous/selectors";
-import { closeSideBar, openSideBar } from "@/store/miscellaneous/actions";
+import {selectSidebarOpened} from "@/store/miscellaneous/selectors";
+import {closeSideBar, openSideBar} from "@/store/miscellaneous/actions";
 import Link from "next/link";
 
 export function hexToHSL(hex: string) {
@@ -104,7 +104,7 @@ interface NavItem {
   requiredPermission?: string;
 }
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({children}: {children: React.ReactNode}) {
   const pathname = usePathname();
   const isMobile = useMobile();
   const [userName, setUserName] = useState("");
@@ -114,7 +114,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [canViewAdmin, setCanViewAdmin] = useState(false);
   const [canViewSettings, setCanViewSettings] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
+  const [expandedItems, setExpandedItems] = useState<{[key: string]: boolean}>({});
 
   const [InstitutionId, setInstitutionId] = useState<string | null>(null);
 
@@ -173,7 +173,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ) {
       let role = selectedInstitution.institution_owner_id === userData.id ? "Owner" : "";
       if (!role && Array.isArray(userData.roles) && userData.roles.length > 0) {
-        const matchingRole = userData.roles.find((r: { name: string }) => !!r.name);
+        const matchingRole = userData.roles.find((r: {name: string}) => !!r.name);
         if (matchingRole)
           role =
             matchingRole.name.charAt(0).toUpperCase() + matchingRole.name.slice(1).toLowerCase();
@@ -199,11 +199,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       href: "#1",
       icon: <Icon icon="hugeicons:user-add-02" width="20" height="20" />,
       submenu: [
-        { title: "Job Adverts", href: "/job-adverts" },
-        { title: "Applications", href: "/applications" },
-        { title: "Interviews", href: "/job-interviews" },
+        {title: "Job Adverts", href: "/job-adverts"},
+        {title: "Applications", href: "/applications"},
+        {title: "Interviews", href: "/job-interviews"},
       ],
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS,
     },
     {
       title: "Onboarding",
@@ -215,23 +215,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       href: "#1",
       icon: <Icon icon="hugeicons:user-multiple-02" width="20" height="20" />,
       submenu: [
-        { title: "Employees", href: "/employees/employee-list" },
-        { title: "Contracts", href: "/employees/contracts" },
-        { title: "Attendance", href: "/employees/attendance" },
-        { title: "Discipline", href: "/employees/discipline" },
-
+        {title: "Employees", href: "/employees/employee-list"},
+        {title: "Contracts", href: "/employees/contracts"},
+        {title: "Attendance", href: "/employees/attendance"},
+        {title: "Discipline", href: "/employees/discipline"},
       ],
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
     },
     {
       title: "Leave",
       href: "#1",
       icon: <Icon icon="hugeicons:calendar-03" className="!w-5 !h-5" width="20" height="20" />,
       submenu: [
-        { title: "Leave Types", href: "/leave/leave-types" },
-        { title: "Leave Policy", href: "/leave/leave-policy" },
-        { title: "Leave Balances", href: "/leave/leave-balances" },
-        { title: "Leave Application", href: "/leave/leave-application" },
+        {title: "Leave Types", href: "/leave/leave-types"},
+        {title: "Leave Policy", href: "/leave/leave-policy"},
+        {title: "Leave Balances", href: "/leave/leave-balances"},
+        {title: "Leave Application", href: "/leave/leave-application"},
       ],
     },
     {
@@ -239,12 +238,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       href: "#1",
       icon: <Icon icon="hugeicons:dollar-01" width="20" height="20" />,
       submenu: [
-        { title: "Allowance Types", href: "/payroll/allowance-types" },
-        { title: "Deduction Types", href: "/payroll/deduction-types" },
-        { title: "Employee Allowance", href: "/payroll/employee-allowance" },
-        { title: "Employee Deductions", href: "/payroll/employee-deductions" },
-        { title: "Payroll Period", href: "/payroll/payroll-period" },
-        { title: "Payslip", href: "/payroll/payslip" },
+        {title: "Allowance Types", href: "/payroll/allowance-types"},
+        {title: "Deduction Types", href: "/payroll/deduction-types"},
+        {title: "Employee Allowance", href: "/payroll/employee-allowance"},
+        {title: "Employee Deductions", href: "/payroll/employee-deductions"},
+        {title: "Payroll Period", href: "/payroll/payroll-period"},
+        {title: "Payslip", href: "/payroll/payslip"},
       ],
     },
     {
@@ -253,16 +252,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       icon: <Icon icon="hugeicons:package" width="20" height="20" />,
     },
     {
+      title: "Projects",
+      href: "/projects",
+      icon: <Icon icon="hugeicons:folder-01" width="20" height="20" />,
+    },
+    {
       title: "Help Desk",
       href: "#1",
       icon: <Icon icon="hugeicons:help-circle" width="20" height="20" />,
       submenu: [
-        { title: "Support Tickets", href: "/help-desk/tickets" },
-        { title: "Knowledge Base", href: "/help-desk/knowledge-base" },
-        { title: "FAQs", href: "/help-desk/faqs" },
-        { title: "Contact Support", href: "/help-desk/contact" },
-        { title: "Feedback & Suggestions", href: "/help-desk/feedback" },
-        { title: "Help Desk Reports", href: "/help-desk/reports" },
+        {title: "Support Tickets", href: "/help-desk/tickets"},
+        {title: "Knowledge Base", href: "/help-desk/knowledge-base"},
+        {title: "FAQs", href: "/help-desk/faqs"},
+        {title: "Contact Support", href: "/help-desk/contact"},
+        {title: "Feedback & Suggestions", href: "/help-desk/feedback"},
+        {title: "Help Desk Reports", href: "/help-desk/reports"},
       ],
     },
     {
@@ -270,24 +274,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       href: "#1",
       icon: <Icon icon="hugeicons:analytics-01" width="20" height="20" />,
       submenu: [
-        { title: "Employee Reports", href: "/reports/employees" },
-        { title: "Attendance Reports", href: "/reports/attendance" },
-        { title: "Leave Reports", href: "/reports/leave" },
-        { title: "Payroll Reports", href: "/reports/payroll" },
-        { title: "Recruitment Reports", href: "/reports/recruitment" },
-        { title: "Asset Management Reports", href: "/reports/assets" },
-      ],
-    },
-    {
-      title: "Projects",
-      href: "#1",
-      icon: <Icon icon="hugeicons:folder-01" width="20" height="20" />,
-      submenu: [
-        { title: "Project Dashboard", href: "/projects/dashboard" },
-        { title: "Create Project", href: "/projects/create" },
-        { title: "Project Timeline", href: "/projects/timeline" },
-        { title: "Task Management", href: "/projects/tasks" },
-        { title: "Project Reports", href: "/projects/reports" },
+        {title: "Employee Reports", href: "/reports/employees"},
+        {title: "Attendance Reports", href: "/reports/attendance"},
+        {title: "Leave Reports", href: "/reports/leave"},
+        {title: "Payroll Reports", href: "/reports/payroll"},
+        {title: "Recruitment Reports", href: "/reports/recruitment"},
+        {title: "Asset Management Reports", href: "/reports/assets"},
       ],
     },
     {
@@ -295,12 +287,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       href: "#1",
       icon: <Icon icon="hugeicons:chart-line-data-01" width="25" height="25" />,
       submenu: [
-        { title: "Performance Reviews", href: "/performance/reviews" },
-        { title: "Goal Setting", href: "/performance/goals" },
-        { title: "Feedback & Recognition", href: "/performance/feedback" },
-        { title: "Training & Development", href: "/performance/training" },
-        { title: "Competency Management", href: "/performance/competency" },
-        { title: "Performance Reports", href: "/performance/reports" },
+        {title: "Performance Reviews", href: "/performance/reviews"},
+        {title: "Goal Setting", href: "/performance/goals"},
+        {title: "Feedback & Recognition", href: "/performance/feedback"},
+        {title: "Training & Development", href: "/performance/training"},
+        {title: "Competency Management", href: "/performance/competency"},
+        {title: "Performance Reports", href: "/performance/reports"},
       ],
     },
   ];
@@ -388,7 +380,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const filteredSubmenu = item.submenu.filter(
             (subItem) => !subItem.requiredPermission || hasPermission(subItem.requiredPermission),
           );
-          return { ...item, submenu: filteredSubmenu };
+          return {...item, submenu: filteredSubmenu};
         }
         return item;
       })
@@ -424,7 +416,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const toggleExpand = (title: string) => {
-    setExpandedItems((prev) => ({ ...prev, [title]: !prev[title] }));
+    setExpandedItems((prev) => ({...prev, [title]: !prev[title]}));
   };
 
   const renderNavigationItem = (item: NavItem) => {
@@ -520,7 +512,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col" style={{ marginLeft: isSideBarOpen ? "16rem" : "4rem" }}>
+      <div className="flex-1 flex flex-col" style={{marginLeft: isSideBarOpen ? "16rem" : "4rem"}}>
         {/* Header */}
         <div className="bg-white p-4 flex justify-between items-center border-b">
           <button

@@ -206,7 +206,7 @@ class JobPositionAdvert(models.Model):
     job_position = models.ForeignKey(
         JobPosition, on_delete=models.PROTECT, related_name="adverts"
     )
-    status = models.CharField(
+    job_position_advert_status = models.CharField(
         max_length=20, choices=status_choices, default="pending_approval"
     )
     published_date = models.DateTimeField(default=datetime.now)
@@ -237,12 +237,12 @@ class JobPositionAdvert(models.Model):
         super().save(*args, **kwargs)
 
     def approve(self):
-        if self.status != "pending_approval":
+        if self.job_position_advert_status != "pending_approval":
             raise ValidationError(
                 "Only pending approval job positions adeverts can be approved."
             )
 
-        self.status == "active"
+        self.job_position_advert_status == "active"
         self.save()
 
     def finish_workflow(self):
