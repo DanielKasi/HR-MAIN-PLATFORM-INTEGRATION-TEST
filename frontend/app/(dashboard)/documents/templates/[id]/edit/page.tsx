@@ -150,7 +150,7 @@ export default function EditTemplatePage() {
       <div className="container mx-auto py-8 px-4 max-w-2xl">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Template Not Found</h1>
-          <Link href="/templates">
+          <Link href="/documents/templates">
             <Button>Back to Templates</Button>
           </Link>
         </div>
@@ -162,7 +162,7 @@ export default function EditTemplatePage() {
     <div className="w-full py-8 px-4">
       <div className="mb-8">
         <Link
-          href="/templates"
+          href="/documents/templates"
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -368,7 +368,7 @@ export default function EditTemplatePage() {
           <Button type="submit" disabled={!isFormValid || isSubmitting} className="flex-1">
             {isSubmitting ? "Updating..." : "Update Template"}
           </Button>
-          <Link href="/templates">
+          <Link href="/documents/templates">
             <Button type="button" variant="outline">
               Cancel
             </Button>

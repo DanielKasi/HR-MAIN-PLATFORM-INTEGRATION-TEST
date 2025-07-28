@@ -3120,6 +3120,7 @@ export const deleteDocumentType = async ({
 };
 
 
+// utils.ts
 export const createDocumentTemplate = async ({
   institutionId,
   documentTemplateData,
@@ -3132,6 +3133,8 @@ export const createDocumentTemplate = async ({
     Object.entries(documentTemplateData).forEach(([key, value]) => {
       if (key === 'placeholders' && Array.isArray(value)) {
         formData.append(key, JSON.stringify(value));
+      } else if (key === 'file' && value instanceof File) {
+        formData.append(key, value);
       } else if (value !== null && value !== undefined) {
         formData.append(key, value.toString());
       }
@@ -3144,6 +3147,38 @@ export const createDocumentTemplate = async ({
     return response.data as IDocumentTemplate;
   } catch (error) {
     console.error("Failed to create document template:", error);
+    return null;
+  }
+};
+
+export const updateDocumentTemplate = async ({
+  institutionId,
+  documentTemplateId,
+  documentTemplateData,
+}: {
+  institutionId: number;
+  documentTemplateId: number;
+  documentTemplateData: IDocumentTemplateFormData;
+}): Promise<IDocumentTemplate | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(documentTemplateData).forEach(([key, value]) => {
+      if (key === 'placeholders' && Array.isArray(value)) {
+        formData.append(key, JSON.stringify(value));
+      } else if (key === 'file' && value instanceof File) {
+        formData.append(key, value);
+      } else if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.patch(
+      `documents/templates/${documentTemplateId}/`,
+      formData
+    );
+    return response.data as IDocumentTemplate;
+  } catch (error) {
+    console.error("Failed to update document template:", error);
     return null;
   }
 };
@@ -3165,35 +3200,6 @@ export const getDocumentTemplates = async ({
   }
 };
 
-export const updateDocumentTemplate = async ({
-  institutionId,
-  documentTemplateId,
-  documentTemplateData,
-}: {
-  institutionId: number;
-  documentTemplateId: number;
-  documentTemplateData: IDocumentTemplateFormData;
-}): Promise<IDocumentTemplate | null> => {
-  try {
-    const formData = new FormData();
-    Object.entries(documentTemplateData).forEach(([key, value]) => {
-      if (key === 'placeholders' && Array.isArray(value)) {
-        formData.append(key, JSON.stringify(value));
-      } else if (value !== null && value !== undefined) {
-        formData.append(key, value.toString());
-      }
-    });
-
-    const response = await apiRequest.patch(
-      `documents/templates/${documentTemplateId}/`,
-      formData
-    );
-    return response.data as IDocumentTemplate;
-  } catch (error) {
-    console.error("Failed to update document template:", error);
-    return null;
-  }
-};
 
 export const deleteDocumentTemplate = async ({
   institutionId,

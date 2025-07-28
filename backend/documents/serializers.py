@@ -21,11 +21,6 @@ class DocumentTypeSerializer(serializers.ModelSerializer):
         data['institution'] = InstitutionSerializer(instance.institution).data
         return data    
 
-import re
-from docx import Document
-import PyPDF2
-from rest_framework import serializers
-from .models import DocumentTemplate, DocumentType
 
 class DocumentTemplateSerializer(serializers.ModelSerializer):
     document_type = serializers.PrimaryKeyRelatedField(queryset=DocumentType.objects.all())
@@ -58,12 +53,13 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
         placeholders = []
         lines = content.split("\n")
 
-        # Define multiple placeholder patterns
+        # Define multiple placeholder patterns, all allowing apostrophes
         placeholder_patterns = [
-            r'\{\{[\w\s-]+\}\}',  # {{variable_name}}
-            r'<<[\w\s-]+>>',      # <<variable_name>>
-            r'_{10,}',            # ___________________
-            r'\[\[[\w\s-]+\]\]',  # [[variable_name]]
+            r'\{\{[\w\s\'-]+\}\}',  # {{variable_name}} with apostrophes
+            r'<<[\w\s\'-]+>>',      # <<variable_name>> with apostrophes
+            r'_{10,}',              # ___________________
+            r'\[\[[\w\s\'-]+\]\]',  # [[variable_name]] with apostrophes
+            r'\[[\w\s\'-]+\]',      # [variable_name] with apostrophes
         ]
 
         # Combine patterns into a single regex with alternation
@@ -76,13 +72,12 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
         # Handle underscore placeholders by extracting the preceding word or phrase
         for line in lines:
             line_lower = line.lower().strip()
-            # Find phrases (one or more words, allowing spaces and hyphens) before underscores
-            # Match phrases like "employee", "job title", "mailing address"
-            match = re.search(r'([\w\s-]+?)\s*:?\s*_{10,}', line_lower)
+            # Find phrases (one or more words, allowing spaces, hyphens, apostrophes) before underscores
+            match = re.search(r'([\w\s\'-]+?)\s*:?\s*_{10,}', line_lower)
             if match:
                 phrase = match.group(1).strip()
-                # Convert phrase to snake_case and wrap in {{}}
-                placeholder_name = '{{' + re.sub(r'\s+', '_', phrase) + '}}'
+                # Convert phrase to snake_case and wrap in {{}}, removing apostrophes
+                placeholder_name = '{{' + re.sub(r'\s+', '_', phrase.replace("'", "")) + '}}'
                 if placeholder_name not in placeholders:
                     placeholders.append(placeholder_name)
             # Handle special cases like "initials" and "signature"
@@ -98,13 +93,13 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
                 if "state" in line_lower and "{{state}}" not in placeholders:
                     placeholders.append("{{state}}")
 
-        # Handle other placeholder formats ({{}}, <<>>, [[]])
+        # Handle other placeholder formats ({{}}, <<>>, [[]], [])
         for match in matches:
             if not re.match(r'_{10,}', match):  # Skip underscores as they were handled above
                 # Extract the variable name by removing the delimiters
                 cleaned_name = re.sub(r'[\{\}<>\[\]]+', '', match).strip()
-                # Standardize to snake_case
-                normalized_name = '{{' + re.sub(r'\s+', '_', cleaned_name.lower()) + '}}'
+                # Standardize to snake_case, removing apostrophes
+                normalized_name = '{{' + re.sub(r'\s+', '_', cleaned_name.lower().replace("'", "")) + '}}'
                 if normalized_name not in placeholders:
                     placeholders.append(normalized_name)
 

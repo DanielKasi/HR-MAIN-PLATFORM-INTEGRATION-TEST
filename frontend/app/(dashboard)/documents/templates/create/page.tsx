@@ -93,7 +93,7 @@ export default function CreateTemplatePage() {
       })
 
       if (result) {
-        router.push("/templates")
+        router.push("/documents/templates")
       } else {
         console.error("Failed to create template")
       }
@@ -126,7 +126,7 @@ export default function CreateTemplatePage() {
     <div className="w-full py-8 px-4 ">
       <div className="mb-8">
         <Link
-          href="/templates"
+          href="/documents/templates"
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -281,7 +281,7 @@ export default function CreateTemplatePage() {
           <Button type="submit" disabled={!isFormValid || isSubmitting} className="flex-1">
             {isSubmitting ? "Creating..." : "Create Template"}
           </Button>
-          <Link href="/templates">
+          <Link href="/documents/templates">
             <Button type="button" variant="outline">
               Cancel
             </Button>   
