@@ -182,7 +182,26 @@ export enum PERMISSION_CODES {
   CAN_CREATE_DEPARTMENTS = "can_create_departments",
   CAN_EDIT_DEPARTMENTS = "can_edit_departments",
   CAN_DELETE_DEPARTMENTS = "can_delete_departments",
-  CAN_MANAGE_DEPARTMENT_HEADS = "can_manage_department_heads"
+  CAN_MANAGE_DEPARTMENT_HEADS = "can_manage_department_heads",
+
+  // Document Management
+  CAN_CREATE_DOCUMENT_TYPES = "can_create_document_types",
+  CAN_VIEW_DOCUMENT_TYPES = "can_view_document_types",
+  CAN_EDIT_DOCUMENT_TYPES = "can_edit_document_types",
+  CAN_DELETE_DOCUMENT_TYPES = "can_delete_document_types",
+
+  CAN_CREATE_DOCUMENT_TEMPLATES = "can_create_document_templates",
+  CAN_VIEW_DOCUMENT_TEMPLATES = "can_view_document_templates",
+  CAN_EDIT_DOCUMENT_TEMPLATES = "can_edit_document_templates",
+  CAN_DELETE_DOCUMENT_TEMPLATES = "can_delete_document_templates",
+
+  CAN_UPLOAD_DOCUMENTS = "can_upload_documents",
+  CAN_VIEW_DOCUMENTS = "can_view_documents",
+  CAN_EDIT_DOCUMENTS = "can_edit_documents",
+  CAN_DELETE_DOCUMENTS = "can_delete_documents",
+  CAN_APPROVE_DOCUMENTS = "can_approve_documents",
+  CAN_ARCHIVE_DOCUMENTS = "can_archive_documents"
+
 }
 
 
@@ -1426,4 +1445,16 @@ export interface IContractFormData {
   start_date: string;
   end_date?: string | null;
   notes?: string | null;
+}
+
+export interface IDocumentType {
+  id: number;
+  name: string;
+  description: string;
+  code: string;
+}
+
+export interface IDocumentTypeFormData {
+  name: string;
+  description: string;
 }

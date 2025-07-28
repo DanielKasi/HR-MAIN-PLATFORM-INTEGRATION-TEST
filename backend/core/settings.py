@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "assets",
     'ckeditor',
     'ckeditor_uploader',
+    'documents',
 ]
 
 MIDDLEWARE = [
