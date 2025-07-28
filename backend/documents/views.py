@@ -8,6 +8,8 @@ from .serializers import DocumentTypeSerializer, DocumentTemplateSerializer
 from utilities.pagination import CustomPageNumberPagination
 from rest_framework.parsers import MultiPartParser, FormParser
 from institution.models import Institution
+from audit.models import AuditLog
+from django.contrib.contenttypes.models import ContentType
 
 
 class DocumentTypeListCreateAPIView(APIView):
@@ -112,7 +114,15 @@ class DocumentTemplateListCreateAPIView(APIView):
             context={'request': request, 'institution_id': institution_id}
         )
         if serializer.is_valid():
-            serializer.save()
+            template = serializer.save()
+            # Create audit log
+            AuditLog.objects.create(
+                content_type=ContentType.objects.get_for_model(DocumentTemplate),
+                object_id=template.pk,
+                action='CREATE',
+                user=request.user if request.user.is_authenticated else None,
+                description=f"Created DocumentTemplate: {template.name}"
+            )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -132,7 +142,6 @@ class DocumentTemplateListCreateAPIView(APIView):
         paginated_templates = paginator.paginate_queryset(templates, request)
         serializer = DocumentTemplateSerializer(paginated_templates, many=True, context={'request': request})
         return paginator.get_paginated_response(serializer.data)
-
 
 class DocumentTemplateDetailAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -165,9 +174,44 @@ class DocumentTemplateDetailAPIView(APIView):
         template = self.get_object(pk)
         if not template:
             return Response({"error": "Document template not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Capture old state for changes
+        old_data = {
+            'document_type': template.document_type_id,
+            'name': template.name,
+            'template_type': template.template_type,
+            'file': template.file.name if template.file else None,
+            'content': template.content,
+            'placeholders': template.placeholders,
+        }
+        
         serializer = DocumentTemplateSerializer(template, data=request.data, partial=True, context={'request': request})
         if serializer.is_valid():
-            serializer.save()
+            updated_template = serializer.save()
+            # Calculate changes
+            changes = {}
+            new_data = {
+                'document_type': updated_template.document_type_id,
+                'name': updated_template.name,
+                'template_type': updated_template.template_type,
+                'file': updated_template.file.name if updated_template.file else None,
+                'content': updated_template.content,
+                'placeholders': updated_template.placeholders,
+            }
+            for field, old_value in old_data.items():
+                new_value = new_data[field]
+                if old_value != new_value:
+                    changes[field] = {'old': old_value, 'new': new_value}
+            
+            # Create audit log
+            AuditLog.objects.create(
+                content_type=ContentType.objects.get_for_model(DocumentTemplate),
+                object_id=updated_template.pk,
+                action='UPDATE',
+                user=request.user if request.user.is_authenticated else None,
+                changes=changes if changes else None,
+                description=f"Updated DocumentTemplate: {updated_template.name}"
+            )
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -180,5 +224,45 @@ class DocumentTemplateDetailAPIView(APIView):
         template = self.get_object(pk)
         if not template:
             return Response({"error": "Document template not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Create audit log before deletion
+        AuditLog.objects.create(
+            content_type=ContentType.objects.get_for_model(DocumentTemplate),
+            object_id=template.pk,
+            action='DELETE',
+            user=request.user if request.user.is_authenticated else None,
+            description=f"Deleted DocumentTemplate: {template.name}"
+        )
         template.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class AuditLogListAPIView(APIView):
+    @extend_schema(
+        responses={200: None, 404: None},  # Add serializer if needed
+        description="Retrieve audit logs for a specific document template.",
+        tags=["Document Templates"]
+    )
+    def get(self, request, institution_id, template_id):
+        try:
+            DocumentTemplate.objects.get(pk=template_id)
+        except DocumentTemplate.DoesNotExist:
+            return Response({"error": "Document template not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        content_type = ContentType.objects.get_for_model(DocumentTemplate)
+        audit_logs = AuditLog.objects.filter(
+            content_type=content_type,
+            object_id=template_id
+        ).select_related('user').order_by('-timestamp')
+        
+        response_data = [
+            {
+                'id': log.id,
+                'action': log.action,
+                'user': log.user.username if log.user else None,
+                'timestamp': log.timestamp.isoformat(),
+                'changes': log.changes,
+                'description': log.description
+            }
+            for log in audit_logs
+        ]
+        return Response(response_data, status=status.HTTP_200_OK)
