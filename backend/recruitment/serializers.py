@@ -118,7 +118,7 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
             "id",
             "job_position",
             "job_position_details",
-            "status",
+            "job_position_advert_status",
             "published_date",
             "expiry_date",
             "number_of_employees_expected",
@@ -206,6 +206,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
             "employees",
             "apply_salary_to_employees",
             "contract_template",
+            "job_position_status",
         ]
 
     def get_reports_to_details(self, obj):
