@@ -45,6 +45,11 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
             "country",
             "source",
             "positions",
+            "created_at",
+            "updated_at",
+            "created_by",
+            "reviewed_by",
+            "shortlisted_by",
         ]
 
     def get_job_position_advert_job_details(self, obj):
@@ -422,6 +427,9 @@ class JobInterviewSerializer(serializers.ModelSerializer):
             "location",
             "interview_time",
             "additional_notes",
+            "created_at",
+            "updated_at",
+            "created_by",
         ]
 
     def validate(self, attrs):
