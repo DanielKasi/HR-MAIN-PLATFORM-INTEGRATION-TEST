@@ -128,6 +128,7 @@ export default function ApplicationsPage() {
   const [individualLoadingStates, setIndividualLoadingStates] = useState<Record<number, boolean>>(
     {},
   );
+
   const [showScheduleDialog, setShowScheduleDialog] = useState(false)
 const [showCreateStageDialog, setShowCreateStageDialog] = useState(false)
 const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([])
@@ -135,7 +136,15 @@ const [employees, setEmployees] = useState<IEmployee[]>([])
 const [isSchedulingInterview, setIsSchedulingInterview] = useState(false)
 const [isCreatingStage, setIsCreatingStage] = useState(false)
 const [selectedApplicationForInterview, setSelectedApplicationForInterview] = useState<JobApplication | null>(null)
-
+const [showBulkScheduleDialog, setShowBulkScheduleDialog] = useState(false)
+const [bulkInterviewFormData, setBulkInterviewFormData] = useState({
+  interview_stage: 0,
+  interview_date: "",
+  location: "",
+  interview_type: "",
+  status: "scheduled",
+})
+const [isBulkScheduling, setIsBulkScheduling] = useState(false)
 const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
   name: "",
   level: 1,
@@ -209,7 +218,6 @@ const fetchInterviewData = async () => {
       interview_date: tomorrow.toISOString().slice(0, 16)
     }))
   } catch (error) {
-    console.error("Error fetching interview data:", error)
     toast.error("Failed to load interview data")
   }
 }
@@ -265,7 +273,6 @@ const handleCreateInterviewStage = async (e: React.FormEvent) => {
       toast.error("Failed to create interview stage")
     }
   } catch (error) {
-    console.error("Error creating interview stage:", error)
     toast.error("Failed to create interview stage")
   } finally {
     setIsCreatingStage(false)
@@ -354,7 +361,6 @@ const handleScheduleInterview = async () => {
       toast.error("Failed to schedule interview")
     }
   } catch (error) {
-    console.error("Error scheduling interview:", error)
     toast.error("Failed to schedule interview")
   } finally {
     setIsSchedulingInterview(false)
@@ -409,6 +415,14 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
   });
 
   const router = useRouter();
+  const handleSort = (field: "application_date" | "posted_date") => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const selectedBranch = useSelector(selectSelectedBranch);
 
@@ -450,7 +464,6 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
     loadJobPositionAdverts();
   }, [selectedInstitution, selectedBranch, router]);
 
-  // Enhanced filtering with date support
   useEffect(() => {
     let filtered = applications;
 
@@ -522,9 +535,7 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
     setError(null);
 
     try {
-      console.log("Loading applications for institution:", selectedInstitution.id);
       const response = await getJobApplications({institutionId: selectedInstitution.id});
-      console.log("Applications response:", response);
 
       let applicationsArray: JobApplication[] = [];
 
@@ -533,11 +544,9 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
       } else if (Array.isArray(response)) {
         applicationsArray = response;
       } else if (response === null) {
-        console.log("Response is null - API call failed");
         applicationsArray = [];
         setError("Failed to load applications");
       } else {
-        console.log("Unexpected response structure:", response);
         applicationsArray = [];
         setError("Failed to load applications - unexpected response format");
       }
@@ -547,10 +556,8 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
         new Date(b.application_date).getTime() - new Date(a.application_date).getTime()
       );
 
-      console.log("Final applications array:", sortedApplications);
       setApplications(sortedApplications);
     } catch (err: any) {
-      console.error("Error loading applications:", err);
       setApplications([]);
       setError(err?.message || "Failed to load applications");
     } finally {
@@ -563,9 +570,8 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
 
     setIsLoadingAdverts(true);
     try {
-      console.log("Loading job position adverts for institution:", selectedInstitution.id);
+
       const response = await getJobPositionAdverts({institutionId: selectedInstitution.id});
-      console.log("Job adverts response:", response);
 
       let advertsArray: JobPositionAdvert[] = [];
 
@@ -579,7 +585,6 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
 
       setJobPositionAdverts(advertsArray);
     } catch (err: any) {
-      console.error("Error loading job adverts:", err);
       setJobPositionAdverts([]);
       setError(err?.message || "Failed to load job position adverts");
     } finally {
@@ -707,8 +712,6 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
         recommended_by: userData.id,
       };
 
-      console.log("Application data being sent:", applicationData);
-
       const newApplication = await createJobApplication({
         institutionId: selectedInstitution.id,
         applicationData,
@@ -771,62 +774,54 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
     }
   };
 
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedApplications(safeFilteredApplications.map((app) => app.id));
-    } else {
-      setSelectedApplications([]);
-    }
-  };
+  // NEW SMART VERSION:
+const handleSelectAll = (checked: boolean) => {
+  if (checked) {
+    // Only select applications that are eligible for bulk actions
+    // This prevents selecting applications that shouldn't be processed together
+    const eligibleApps = currentApplications.filter(app => {
+      // Count different statuses on current page
+      const statusCounts = currentApplications.reduce((acc, a) => {
+        acc[a.status] = (acc[a.status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
 
-  const handleBulkAction = async (action: "shortlisted" | "reviewed" | "rejected" | "schedule_interview") => {
-    if (selectedApplications.length === 0) {
-      toast.error("Please select applications first");
-      return;
-    }
+      const hasShortlisted = statusCounts.shortlisted > 0;
+      const hasNewOrReviewed = (statusCounts.new || 0) + (statusCounts.reviewed || 0) > 0;
 
-    // For schedule interview, only allow shortlisted applications
-    if (action === "schedule_interview") {
-      const shortlistedApps = applications.filter(app =>
-        selectedApplications.includes(app.id) && app.status === "shortlisted"
-      );
-
-      if (shortlistedApps.length === 0) {
-        toast.error("Please select shortlisted applications to schedule interviews");
-        return;
+      // If we have ONLY shortlisted applications, select all shortlisted
+      if (hasShortlisted && !hasNewOrReviewed) {
+        return app.status === "shortlisted";
+      }
+      // If we have ONLY new/reviewed applications, select all new/reviewed
+      else if (!hasShortlisted && hasNewOrReviewed) {
+        return app.status === "new" || app.status === "reviewed";
+      }
+      // If we have MIXED statuses, only select new/reviewed (protect shortlisted)
+      else if (hasShortlisted && hasNewOrReviewed) {
+        return app.status === "new" || app.status === "reviewed";
       }
 
-      if (shortlistedApps.length > 1) {
-        toast.error("Please select one application at a time for interview scheduling");
-        return;
-      }
+      return false; // Default: don't select anything
+    });
 
-      // Open schedule dialog for the single shortlisted application
-      await handleOpenScheduleInterview(shortlistedApps[0]);
-      return;
-    }
-
-    // Show confirmation for shortlist and reject actions
-    if (action === "shortlisted" || action === "rejected") {
-      setConfirmBulkAction({
-        isOpen: true,
-        action,
-        count: selectedApplications.length,
-      });
-      return;
-    }
-
-    // Execute directly for "reviewed" action
-    await executeBulkAction(action);
-  };
-
-  const executeBulkAction = async (action: "shortlisted" | "reviewed" | "rejected") => {
+    setSelectedApplications(eligibleApps.map((app) => app.id));
+  } else {
+    setSelectedApplications([]);
+  }
+};
+  const executeBulkAction = async (
+    action: "shortlisted" | "reviewed" | "rejected",
+    applicationIds?: number[]
+  ) => {
+    const idsToProcess = applicationIds || selectedApplications;
     if (action === "shortlisted") {
       setIsBulkShortlisting(true);
     }
 
     try {
-      const promises = selectedApplications.map((applicationId) => {
+      const promises = idsToProcess.map((applicationId) => {
+
         const updateData: {
           applicationId: number;
           status: string;
@@ -851,12 +846,14 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
 
       await Promise.all(promises);
       setApplications((prev) =>
-        prev.map((app) => (selectedApplications.includes(app.id) ? {...app, status: action} : app)),
+        prev.map((app) => (idsToProcess.includes(app.id) ? {...app, status: action} : app)),
       );
       setSelectedApplications([]);
-      toast.success(`${selectedApplications.length} applications updated to ${action}`);
+
+      toast.success(`${idsToProcess.length} application${idsToProcess.length > 1 ? 's' : ''} updated to ${action}`);
     } catch (error) {
-      toast.error("Failed to update applications");
+
+      toast.error(`Failed to update application${idsToProcess.length > 1 ? 's' : ''}`);
     } finally {
       if (action === "shortlisted") {
         setIsBulkShortlisting(false);
@@ -864,9 +861,117 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
     }
   };
 
+  const handleBulkAction = async (action: "shortlisted" | "reviewed" | "rejected" | "schedule_interview") => {
+    if (selectedApplications.length === 0) {
+      toast.error("Please select applications first");
+      return;
+    }
+
+    // For schedule interview, only allow shortlisted applications
+    if (action === "schedule_interview") {
+      const shortlistedApps = applications.filter(app =>
+        selectedApplications.includes(app.id) && app.status === "shortlisted"
+      );
+
+      if (shortlistedApps.length === 0) {
+        toast.error("Please select shortlisted applications to schedule interviews");
+        return;
+      }
+
+      // Set default date to tomorrow at 10 AM
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(10, 0, 0, 0);
+
+      setBulkInterviewFormData({
+        interview_stage: 0,
+        interview_date: tomorrow.toISOString().slice(0, 16),
+        location: "",
+        interview_type: "",
+        status: "scheduled",
+      });
+
+      await fetchInterviewData();
+      setShowBulkScheduleDialog(true);
+      return;
+    }
+
+    let eligibleApps: JobApplication[] = [];
+    let actionText = "";
+
+    if (action === "reviewed") {
+      // Only "new" applications can be marked as reviewed
+      eligibleApps = applications.filter(app =>
+        selectedApplications.includes(app.id) && app.status === "new"
+      );
+      actionText = "mark as reviewed";
+    } else if (action === "shortlisted") {
+      // Only "reviewed" applications can be shortlisted
+      eligibleApps = applications.filter(app =>
+        selectedApplications.includes(app.id) && app.status === "reviewed"
+      );
+      actionText = "shortlist";
+    } else if (action === "rejected") {
+      // Only "new" or "reviewed" applications can be rejected
+      eligibleApps = applications.filter(app =>
+        selectedApplications.includes(app.id) &&
+        (app.status === "new" || app.status === "reviewed")
+      );
+      actionText = "reject";
+    }
+
+    if (eligibleApps.length === 0) {
+      const statusRequirement = {
+        reviewed: "new",
+        shortlisted: "reviewed",
+        rejected: "new or reviewed"
+      }[action];
+
+      toast.error(`No eligible applications selected. Only ${statusRequirement} applications can be ${actionText}.`);
+      return;
+    }
+
+    // Show different message if not all selected apps are eligible
+    if (eligibleApps.length < selectedApplications.length) {
+      const skippedCount = selectedApplications.length - eligibleApps.length;
+      toast.warning(`${skippedCount} application(s) skipped - only eligible applications will be ${actionText}.`);
+    }
+
+    // Show confirmation for shortlist and reject actions
+    if (action === "shortlisted" || action === "rejected") {
+      setConfirmBulkAction({
+        isOpen: true,
+        action,
+        count: eligibleApps.length, // Use eligible apps count, not total selected
+      });
+      return;
+    }
+
+    // Execute directly for "reviewed" action
+    await executeBulkAction(action, eligibleApps.map(app => app.id));
+  };
+
+
   const handleConfirmBulkAction = async () => {
     if (confirmBulkAction.action) {
-      await executeBulkAction(confirmBulkAction.action);
+      // Filter eligible applications again for the confirmed action
+      let eligibleApps: JobApplication[] = [];
+
+      if (confirmBulkAction.action === "shortlisted") {
+        eligibleApps = applications.filter(app =>
+          selectedApplications.includes(app.id) && app.status === "reviewed"
+        );
+      } else if (confirmBulkAction.action === "rejected") {
+        eligibleApps = applications.filter(app =>
+          selectedApplications.includes(app.id) &&
+          (app.status === "new" || app.status === "reviewed")
+        );
+      }
+
+      // FIXED: Use the executeBulkAction function instead of individual executeAction calls
+      // This ensures only eligible applications are processed
+      await executeBulkAction(confirmBulkAction.action, eligibleApps.map(app => app.id));
+
       setConfirmBulkAction({
         isOpen: false,
         action: null,
@@ -875,14 +980,6 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
     }
   };
 
-  const handleSort = (field: "application_date" | "posted_date") => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("desc");
-    }
-  };
 
   const safeFilteredApplications = Array.isArray(filteredApplications) ? filteredApplications : [];
   const totalPages = Math.ceil(safeFilteredApplications.length / itemsPerPage);
@@ -1118,7 +1215,6 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
           </div>
         )}
       </div>
-
       {selectedApplications.length > 0 && (
   <Card className="border-blue-200 bg-blue-50">
     <CardContent className="p-4">
@@ -1130,7 +1226,7 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
           </span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Review button - only show if there are 'new' applications selected */}
+          {/* Your existing review button */}
           {selectedApplications.some(id => {
             const app = applications.find(a => a.id === id);
             return app?.status === "new";
@@ -1146,7 +1242,7 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
             </Button>
           )}
 
-          {/* Shortlist button - only show if there are 'reviewed' applications selected */}
+          {/* Your existing shortlist button */}
           {selectedApplications.some(id => {
             const app = applications.find(a => a.id === id);
             return app?.status === "reviewed";
@@ -1172,12 +1268,11 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
             </Button>
           )}
 
-          {/* Schedule Interview button - only show if exactly one 'shortlisted' application is selected */}
-          {selectedApplications.length === 1 &&
-           selectedApplications.some(id => {
-             const app = applications.find(a => a.id === id);
-             return app?.status === "shortlisted";
-           }) && (
+          {/* UPDATED: Schedule Interview button - now works for multiple selections */}
+          {selectedApplications.some(id => {
+            const app = applications.find(a => a.id === id);
+            return app?.status === "shortlisted";
+          }) && (
             <Button
               size="sm"
               variant="outline"
@@ -1185,11 +1280,14 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
               className="text-blue-600 border-blue-200 hover:bg-blue-50"
             >
               <Calendar className="h-4 w-4 mr-2" />
-              Schedule Interview
+              Schedule Interview{selectedApplications.filter(id => {
+                const app = applications.find(a => a.id === id);
+                return app?.status === "shortlisted";
+              }).length > 1 ? 's' : ''}
             </Button>
           )}
 
-          {/* Reject button - only show if there are 'new' or 'reviewed' applications selected */}
+          {/* Your existing reject button */}
           {selectedApplications.some(id => {
             const app = applications.find(a => a.id === id);
             return app?.status === "new" || app?.status === "reviewed";
@@ -1264,30 +1362,61 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={
-                          currentApplications.length > 0 &&
-                          selectedApplications.length === currentApplications.length &&
-                          currentApplications.every((app) => selectedApplications.includes(app.id))
-                        }
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            const newSelections = currentApplications
-                              .filter((app) => app.status !== "shortlisted")
-                              .map((app) => app.id);
-                            setSelectedApplications((prev) => [
-                              ...new Set([...prev, ...newSelections]),
-                            ]);
-                          } else {
-                            const currentIds = currentApplications.map((app) => app.id);
-                            setSelectedApplications((prev) =>
-                              prev.filter((id) => !currentIds.includes(id)),
-                            );
-                          }
-                        }}
-                      />
-                    </TableHead>
+
+                  <TableHead className="w-12">
+  <div className="flex items-center">
+    <Checkbox
+      checked={
+        currentApplications.length > 0 && (() => {
+          // Count different statuses on current page
+          const statusCounts = currentApplications.reduce((acc, a) => {
+            acc[a.status] = (acc[a.status] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+
+          const hasShortlisted = statusCounts.shortlisted > 0;
+          const hasNewOrReviewed = (statusCounts.new || 0) + (statusCounts.reviewed || 0) > 0;
+
+          let selectableApps: typeof currentApplications = [];
+
+          // Determine which apps should be selectable based on the mix
+          if (hasShortlisted && !hasNewOrReviewed) {
+            // Only shortlisted apps
+            selectableApps = currentApplications.filter(app => app.status === "shortlisted");
+          } else if (!hasShortlisted && hasNewOrReviewed) {
+            // Only new/reviewed apps
+            selectableApps = currentApplications.filter(app => app.status === "new" || app.status === "reviewed");
+          } else if (hasShortlisted && hasNewOrReviewed) {
+            // Mixed: only select new/reviewed (protect shortlisted)
+            selectableApps = currentApplications.filter(app => app.status === "new" || app.status === "reviewed");
+          }
+
+          // Check if all selectable apps are selected
+          return selectableApps.length > 0 && selectableApps.every((app) => selectedApplications.includes(app.id));
+        })()
+      }
+      onCheckedChange={handleSelectAll}
+      title={(() => {
+        const statusCounts = currentApplications.reduce((acc, a) => {
+          acc[a.status] = (acc[a.status] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const hasShortlisted = statusCounts.shortlisted > 0;
+        const hasNewOrReviewed = (statusCounts.new || 0) + (statusCounts.reviewed || 0) > 0;
+
+        if (hasShortlisted && !hasNewOrReviewed) {
+          return "Select all shortlisted applications";
+        } else if (!hasShortlisted && hasNewOrReviewed) {
+          return "Select all new and reviewed applications";
+        } else if (hasShortlisted && hasNewOrReviewed) {
+          return "Select new and reviewed applications (protecting shortlisted)";
+        }
+        return "Select applications";
+      })()}
+    />
+  </div>
+</TableHead>
                     <TableHead>Applicant</TableHead>
                     <TableHead>Job Position</TableHead>
                     <TableHead
@@ -1330,16 +1459,12 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
                   {currentApplications.map((application) => (
                     <TableRow key={application.id}>
                       <TableCell>
-                        {application.status !== "shortlisted" ? (
-                          <Checkbox
-                            checked={selectedApplications.includes(application.id)}
-                            onCheckedChange={(checked) =>
-                              handleSelectApplication(application.id, checked as boolean)
-                            }
-                          />
-                        ) : (
-                          <div className="w-4 h-4" />
-                        )}
+                        <Checkbox
+                          checked={selectedApplications.includes(application.id)}
+                          onCheckedChange={(checked) =>
+                            handleSelectApplication(application.id, checked as boolean)
+                          }
+                        />
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
@@ -1585,36 +1710,40 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="job_position_advert">Job Position *</Label>
-                <Select
-                  value={formData.job_position_advert.toString()}
-                  onValueChange={(value) =>
-                    handleInputChange("job_position_advert", Number.parseInt(value))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        isLoadingAdverts ? "Loading job adverts..." : "Select a job advert"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {jobPositionAdverts
-                      .filter((advert) => advert.status === "active")
-                      .map((advert) => (
-                        <SelectItem key={advert.id} value={advert.id.toString()}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">
-                              {advert.job_position_details?.name || `Job Advert #${advert.id}`}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+  <div className="space-y-2">
+    <Label htmlFor="job_position_advert">Job Position *</Label>
+    <Select
+      value={formData.job_position_advert.toString()}
+      onValueChange={(value) =>
+        handleInputChange("job_position_advert", Number.parseInt(value))
+      }
+    >
+      <SelectTrigger>
+        <SelectValue
+          placeholder={
+            isLoadingAdverts ? "Loading job adverts..." : "Select a job advert"
+          }
+        />
+      </SelectTrigger>
+      <SelectContent>
+        {jobPositionAdverts
+          .filter((advert) =>
+            advert.status !== "expired" &&
+            advert.status !== "closed"
+          )
+          .map((advert) => (
+            <SelectItem key={advert.id} value={advert.id.toString()}>
+              <div className="flex flex-col">
+                <span className="font-medium">
+                  {advert.job_position_details.name || `Job Advert #${advert.id}`}
+                </span>
               </div>
+            </SelectItem>
+          ))}
+      </SelectContent>
+    </Select>
+  </div>
+  {/* ... rest of your form fields */}
               <div className="space-y-2">
                 <Label htmlFor="application_date">Application Date *</Label>
                 <div className="relative">
@@ -1882,6 +2011,160 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <Dialog open={showBulkScheduleDialog} onOpenChange={setShowBulkScheduleDialog}>
+  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <DialogHeader>
+      <DialogTitle>Schedule Bulk Interviews</DialogTitle>
+      <DialogDescription>
+        Schedule interviews for {selectedApplications.filter(id => {
+          const app = applications.find(a => a.id === id);
+          return app?.status === "shortlisted";
+        }).length} shortlisted applicants. Interviews will be scheduled 30 minutes apart starting from your selected time.
+      </DialogDescription>
+    </DialogHeader>
+
+    {/* Create Interview Stage Button */}
+    <div className="flex justify-end mb-4">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setShowCreateStageDialog(true)}
+        size="sm"
+      >
+        <Plus className="h-4 w-4 mr-2" />
+        Create New Stage
+      </Button>
+    </div>
+
+    <form onSubmit={(e) => {
+      e.preventDefault();
+      handleScheduleInterview();
+    }} className="space-y-4">
+
+      <div className="space-y-2">
+        <Label htmlFor="bulk_interview_stage">Interview Stage *</Label>
+        <Select
+          value={bulkInterviewFormData.interview_stage.toString()}
+          onValueChange={(value) => setBulkInterviewFormData(prev => ({
+            ...prev,
+            interview_stage: parseInt(value)
+          }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select interview stage" />
+          </SelectTrigger>
+          <SelectContent>
+            {interviewStages.map((stage) => (
+              <SelectItem key={stage.id} value={stage.id.toString()}>
+                {stage.name} (Level {stage.level})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {interviewErrors.interview_stage && (
+          <p className="text-sm text-red-600">{interviewErrors.interview_stage}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="bulk_interview_date">Start Interview Date & Time *</Label>
+        <Input
+          id="bulk_interview_date"
+          type="datetime-local"
+          value={bulkInterviewFormData.interview_date}
+          onChange={(e) => setBulkInterviewFormData(prev => ({
+            ...prev,
+            interview_date: e.target.value
+          }))}
+          min={new Date().toISOString().slice(0, 16)}
+        />
+        {interviewErrors.interview_date && (
+          <p className="text-sm text-red-600">{interviewErrors.interview_date}</p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          First interview starts at this time. Subsequent interviews will be scheduled 30 minutes apart.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="bulk_location">Interview Location *</Label>
+        <Input
+          id="bulk_location"
+          value={bulkInterviewFormData.location}
+          onChange={(e) => setBulkInterviewFormData(prev => ({
+            ...prev,
+            location: e.target.value
+          }))}
+          placeholder="e.g., Conference Room A, Zoom Link, etc."
+        />
+        {interviewErrors.location && (
+          <p className="text-sm text-red-600">{interviewErrors.location}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="bulk_interview_type">Interview Type</Label>
+        <Select
+          value={bulkInterviewFormData.interview_type}
+          onValueChange={(value) => setBulkInterviewFormData(prev => ({
+            ...prev,
+            interview_type: value
+          }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select interview type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="in_person">In Person</SelectItem>
+            <SelectItem value="video_call">Video Call</SelectItem>
+            <SelectItem value="phone_call">Phone Call</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Preview of selected applicants */}
+      <div className="space-y-2">
+        <Label>Selected Applicants</Label>
+        <div className="border rounded-lg p-3 max-h-40 overflow-y-auto bg-gray-50">
+          {applications
+            .filter(app => selectedApplications.includes(app.id) && app.status === "shortlisted")
+            .map((app, index) => {
+              const startTime = new Date(bulkInterviewFormData.interview_date || Date.now());
+              startTime.setMinutes(startTime.getMinutes() + (index * 30));
+              return (
+                <div key={app.id} className="flex justify-between items-center py-1">
+                  <span className="font-medium">{app.applicant_name}</span>
+                  <span className="text-sm text-gray-600">
+                    {bulkInterviewFormData.interview_date ?
+                      startTime.toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      }) :
+                      'Time TBD'
+                    }
+                  </span>
+                </div>
+              );
+            })}
+        </div>
+      </div>
+
+      <div className="flex justify-end space-x-2 pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setShowBulkScheduleDialog(false)}
+        >
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isBulkScheduling}>
+          {isBulkScheduling ? "Scheduling..." : "Schedule All Interviews"}
+        </Button>
+      </div>
+    </form>
+  </DialogContent>
+</Dialog>
     </div>
   );
 }
