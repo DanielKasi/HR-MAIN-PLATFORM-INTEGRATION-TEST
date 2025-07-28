@@ -9,7 +9,6 @@ from rest_framework.exceptions import ValidationError
 from users.models import Profile
 
 
-
 class JobPosition(models.Model):
     JOB_POSITION_STATUS_CHOICES = [
         ("active", "Active"),
@@ -103,15 +102,18 @@ class JobPosition(models.Model):
     def _get_fallback_template(self):
         """Return the default template from the templates folder."""
         from django.conf import settings
-        default_template_path = os.path.join(settings.TEMPLATES[0]['DIRS'][0], 'contracts', 'default_contract.html')
+
+        default_template_path = os.path.join(
+            settings.TEMPLATES[0]["DIRS"][0], "contracts", "default_contract.html"
+        )
         try:
-            with open(default_template_path, 'r') as file:
+            with open(default_template_path, "r") as file:
                 content = file.read()
             return ContractTemplate(
                 name="System Default",
                 content=content,
-                template_type='richtext',
-                institution=self.department.institution
+                template_type="richtext",
+                institution=self.department.institution,
             )
         except FileNotFoundError:
             # Fallback content if file is missing
@@ -126,45 +128,47 @@ class JobPosition(models.Model):
                 <p>Department: {{department_name}}</p>
                 <p>Signed: ____________________</p>
                 """,
-                template_type='richtext',
-                institution=self.department.institution
+                template_type="richtext",
+                institution=self.department.institution,
             )
+
 
 class ContractTemplate(models.Model):
     TEMPLATE_TYPES = (
-        ('pdf', 'PDF'),
-        ('docx', 'DOCX'),
-        ('richtext', 'Text'),
+        ("pdf", "PDF"),
+        ("docx", "DOCX"),
+        ("richtext", "Text"),
     )
 
     name = models.CharField(max_length=255, help_text="Name of the contract template")
-    template_type = models.CharField(max_length=10, choices=TEMPLATE_TYPES, default='richtext')
+    template_type = models.CharField(
+        max_length=10, choices=TEMPLATE_TYPES, default="richtext"
+    )
     file = models.FileField(
         upload_to="contract_templates/files/",
         blank=True,
         null=True,
-        help_text="Upload PDF or DOCX file if applicable"
+        help_text="Upload PDF or DOCX file if applicable",
     )
     content = RichTextField(
         blank=True,
         null=True,
-        help_text="Rich text content for the contract template (used if template_type is richtext)"
+        help_text="Rich text content for the contract template (used if template_type is richtext)",
     )
     is_default = models.BooleanField(
-        default=False,
-        help_text="Mark as default template for the institution"
+        default=False, help_text="Mark as default template for the institution"
     )
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
         related_name="contract_templates",
-        help_text="Institution this template belongs to"
+        help_text="Institution this template belongs to",
     )
     job_positions = models.ManyToManyField(
         "JobPosition",
         related_name="contract_templates",
         blank=True,
-        help_text="Job positions using this template (leave blank for institution-wide default)"
+        help_text="Job positions using this template (leave blank for institution-wide default)",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -172,9 +176,9 @@ class ContractTemplate(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['institution', 'is_default'],
+                fields=["institution", "is_default"],
                 condition=models.Q(is_default=True),
-                name='unique_default_template_per_institution'
+                name="unique_default_template_per_institution",
             )
         ]
 
@@ -188,7 +192,6 @@ class ContractTemplate(models.Model):
                 institution=self.institution, is_default=True
             ).exclude(id=self.id).update(is_default=False)
         super().save(*args, **kwargs)
-
 
 
 class JobPositionAdvert(models.Model):
