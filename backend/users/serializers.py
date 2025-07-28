@@ -89,7 +89,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = '__all__'
+        fields = "__all__"
         read_only_fields = [
             "is_active",
             "is_staff",
@@ -195,6 +195,7 @@ class UserOTPVerificationSerializer(serializers.Serializer):
             raise serializers.ValidationError("OTP must contain only digits")
         return value
 
+
 class ResendOTPSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
 
@@ -203,12 +204,15 @@ class UserPasswordResetSerializer(serializers.Serializer):
     token = serializers.CharField()
     new_password = serializers.CharField(write_only=True, min_length=8)
 
+
 class UserResendOTPVerificationSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
 
 class UserSendForgotPasswordTokenSerializer(serializers.Serializer):
     email = serializers.EmailField()
     frontend_url = serializers.CharField()
+
 
 class LoginRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()

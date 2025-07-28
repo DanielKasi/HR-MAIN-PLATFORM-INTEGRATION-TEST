@@ -22,17 +22,17 @@ class WorkflowAction(models.Model):
 
 
 class InstitutionApprovalStep(models.Model):
-    Institution = models.ForeignKey("institution.Institution", on_delete=models.CASCADE)
+    institution = models.ForeignKey("institution.Institution", on_delete=models.CASCADE)
     step_name = models.CharField(max_length=255)
     action = models.ForeignKey(WorkflowAction, on_delete=models.CASCADE)
     level = models.PositiveIntegerField(help_text="Lower number = first to approve")
 
     class Meta:
-        unique_together = ("Institution", "action", "level")
+        unique_together = ("institution", "action", "level")
         ordering = ["level"]
 
     def __str__(self):
-        return f"{self.Institution} - {self.action} (Level {self.level})"
+        return f"{self.institution} - {self.action} (Level {self.level})"
 
 
 class InstitutionApprovalStepApprovorRole(models.Model):
