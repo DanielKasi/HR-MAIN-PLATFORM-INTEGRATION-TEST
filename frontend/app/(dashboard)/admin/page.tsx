@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { fetchAndSetData, fetchInstitutionBranchesFromAPI } from "@/lib/helpers";
-import { useEffect, useState } from "react";
-import type { Branch } from "@/app/types";
+import {fetchAndSetData, fetchInstitutionBranchesFromAPI} from "@/lib/helpers";
+import {useEffect, useState} from "react";
+import type {Branch} from "@/app/types";
 
 import {
   Users,
@@ -23,14 +23,13 @@ import {
   ShoppingCart,
   GitBranch,
   BookOpen,
-
   LucideHouse,
   BriefcaseBusinessIcon,
 } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import {Separator} from "@/components/ui/separator";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
-import { PERMISSION_CODES } from "@/app/types/types.utils";
+import {PERMISSION_CODES} from "@/app/types/types.utils";
 
 export default function AdminPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -172,7 +171,6 @@ export default function AdminPage() {
               <h2 className="text-lg font-semibold mb-6">Branch Management</h2>
               <Separator className="my-6" />
               <div className="flex flex-col items-start justify-center gap-6">
-
                 <div className="">
                   <Link
                     href="/branches"
@@ -182,7 +180,6 @@ export default function AdminPage() {
                     <span>Branches</span>
                   </Link>
                   {/* We'll keep the branch listing functionality but hide it since it's not in the image */}
-
                 </div>
 
                 <div className="">
@@ -194,7 +191,6 @@ export default function AdminPage() {
                     <span>Departments</span>
                   </Link>
                   {/* We'll keep the branch listing functionality but hide it since it's not in the image */}
-
                 </div>
 
                 <div className="">
@@ -206,7 +202,6 @@ export default function AdminPage() {
                     <span>Job Positions</span>
                   </Link>
                   {/* We'll keep the branch listing functionality but hide it since it's not in the image */}
-
                 </div>
               </div>
             </div>
@@ -218,7 +213,7 @@ export default function AdminPage() {
 
               <div className="space-y-4">
                 <Link
-                  href="/admin/Institution-approval-steps/"
+                  href="/admin/institution-approval-steps/"
                   className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
                 >
                   <Store className="w-5 h-5 text-gray-500" />

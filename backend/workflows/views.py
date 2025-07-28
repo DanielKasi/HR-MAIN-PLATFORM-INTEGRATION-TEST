@@ -168,23 +168,23 @@ class InstitutionApprovalStepAPIView(APIView):
         summary="View Institution's approval steps",
         tags=["WorkFlows"],
     )
-    def get(self, request, Institution_id):
+    def get(self, request, institution_id):
         step_id = request.query_params.get("step", None)
         if step_id:
-            single_Institution_approval_step = InstitutionApprovalStep.objects.filter(
-                id=step_id, Institution__id=Institution_id
+            single_institution_approval_step = InstitutionApprovalStep.objects.filter(
+                id=step_id, institution__id=institution_id
             ).first()
             serializer = InstitutionApprovalStepSerializer(
-                single_Institution_approval_step
+                single_institution_approval_step
             )
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-        Institution_approval_steps = InstitutionApprovalStep.objects.filter(
-            Institution__id=Institution_id
+        institution_approval_steps = InstitutionApprovalStep.objects.filter(
+            institution__id=institution_id
         )
 
         paginator = CustomPageNumberPagination()
-        paginated_qs = paginator.paginate_queryset(Institution_approval_steps, request)
+        paginated_qs = paginator.paginate_queryset(institution_approval_steps, request)
         serializer = InstitutionApprovalStepSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
 
@@ -195,13 +195,13 @@ class InstitutionApprovalStepAPIView(APIView):
         summary="Create a Institution approval step.",
         tags=["WorkFlows"],
     )
-    def post(self, request, Institution_id):
+    def post(self, request, institution_id):
 
         mutable_data = request.data.copy()
-        mutable_data["Institution"] = Institution_id
+        mutable_data["institution"] = institution_id
         action_id = request.data.get("action")
         last_level_step = InstitutionApprovalStep.objects.filter(
-            action__id=action_id, Institution__id=Institution_id
+            action__id=action_id, institution__id=institution_id
         ).last()
 
         new_level = 1
@@ -229,14 +229,14 @@ class InstitutionApprovalStepAPIView(APIView):
         summary="Update Institution approval step",
         tags=["WorkFlows"],
     )
-    def patch(self, request, Institution_id):
+    def patch(self, request, institution_id):
         # 1. fetch the step or 404
         try:
             step_id = request.query_params.get("step", None)
             if step_id is None:
                 raise InstitutionApprovalStep.DoesNotExist()
             step = InstitutionApprovalStep.objects.get(
-                pk=step_id, Institution_id=Institution_id
+                pk=step_id, institution_id=institution_id
             )
         except InstitutionApprovalStep.DoesNotExist:
             return Response(
@@ -271,7 +271,7 @@ class InstitutionApprovalStepAPIView(APIView):
             # add new
             for profile_id in data["approvers"]:
                 profile = Profile.objects.get(id=profile_id)
-                if profile.institution_id == Institution_id:
+                if profile.institution_id == institution_id:
                     InstitutionApprovalStepApprovorUser.objects.create(
                         step=step, approver_user=profile
                     )
@@ -285,13 +285,13 @@ class InstitutionApprovalStepAPIView(APIView):
         summary="Delete Institution approval step",
         tags=["WorkFlows"],
     )
-    def delete(self, request, Institution_id):
+    def delete(self, request, institution_id):
         try:
             step_id = request.query_params.get("step", None)
             if step_id is None:
                 raise InstitutionApprovalStep.DoesNotExist()
             step = InstitutionApprovalStep.objects.get(
-                pk=step_id, Institution_id=Institution_id
+                pk=step_id, institution_id=institution_id
             )
         except InstitutionApprovalStep.DoesNotExist:
             return Response(
@@ -319,7 +319,7 @@ class InstitutionApprovalStepReorderAPIView(APIView):
         ),
         tags=["WorkFlows"],
     )
-    def patch(self, request, Institution_id):
+    def patch(self, request, institution_id):
         steps_payload = request.data.get("steps")
         if not isinstance(steps_payload, list) or not steps_payload:
             return Response(
@@ -339,7 +339,7 @@ class InstitutionApprovalStepReorderAPIView(APIView):
         ids = list(new_levels.keys())
 
         qs = InstitutionApprovalStep.objects.filter(
-            Institution_id=Institution_id, id__in=ids
+            institution_id=institution_id, id__in=ids
         )
         if qs.count() != len(ids):
             return Response(
@@ -379,7 +379,7 @@ class InstitutionApprovalStepReorderAPIView(APIView):
         # Return the newly ordered list
         action_id = action_ids.pop()
         updated = InstitutionApprovalStep.objects.filter(
-            Institution_id=Institution_id, action_id=action_id
+            institution_id=institution_id, action_id=action_id
         ).order_by("level")
         serializer = InstitutionApprovalStepSerializer(updated, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

@@ -69,7 +69,7 @@ class InstitutionApprovalStepSerializer(serializers.ModelSerializer):
             "approvers",
             "approvers_details",
             "roles",
-            "Institution",
+            "institution",
             "action",
             "action_details",
             "level",
@@ -113,7 +113,7 @@ class InstitutionApprovalStepSerializer(serializers.ModelSerializer):
             user_profile = Profile.objects.get(id=profile_id)
             if (
                 user_profile
-                and user_profile.institution.id == created_approval_step.Institution.id
+                and user_profile.institution.id == created_approval_step.institution.id
             ):
                 InstitutionApprovalStepApprovorUser.objects.create(
                     step=created_approval_step, approver_user=user_profile
