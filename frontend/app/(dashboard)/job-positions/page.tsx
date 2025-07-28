@@ -12,7 +12,6 @@ import {
   Edit,
   Trash2,
   RefreshCw,
-  Coins,
   Users,
   Eye,
 } from "lucide-react"
@@ -23,6 +22,13 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getJobPositions } from "@/lib/utils"
@@ -38,6 +44,7 @@ export default function JobPositionsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [error, setError] = useState("")
+  const [selectedSalaryRange, setSelectedSalaryRange] = useState<string>("all")
 
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
@@ -84,12 +91,53 @@ export default function JobPositionsPage() {
     fetchJobPositions(true)
   }
 
+  // Function to generate salary ranges
+  const generateSalaryRanges = (positions: IJobPosition[]) => {
+    if (!positions.length) return [];
+
+    const salaries = positions.map(pos => Number(pos.salary));
+    const minSalary = Math.min(...salaries);
+    const maxSalary = Math.max(...salaries);
+    
+    // Calculate range size to create 4 ranges
+    const rangeSize = Math.ceil((maxSalary - minSalary) / 4);
+    
+    const ranges = [];
+    let start = minSalary;
+    
+    while (start < maxSalary) {
+      const end = Math.min(start + rangeSize, maxSalary);
+      ranges.push({
+        id: `${start}-${end}`,
+        label: `UGX ${formatCurrency(start)} - ${formatCurrency(end)}`,
+        min: start,
+        max: end
+      });
+      start = end + 1;
+    }
+
+    return ranges;
+  };
+
+  // Get salary ranges based on available positions
+  const salaryRanges = generateSalaryRanges(jobPositions);
+
+  // Update filtered positions to include salary range filter
   const filteredJobPositions = jobPositions.filter(
-    (position) =>
-      position.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      position.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      position.department_details?.name.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+    (position) => {
+      const matchesSearch = position.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        position.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        position.department_details?.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+      if (!matchesSearch) return false;
+
+      if (selectedSalaryRange === "all") return true;
+
+      const [min, max] = selectedSalaryRange.split("-").map(Number);
+      const salary = Number(position.salary);
+      return salary >= min && salary <= max;
+    }
+  );
 
   const handleCreateJobPosition = () => {
     router.push("/job-positions/create")
@@ -142,7 +190,7 @@ export default function JobPositionsPage() {
 
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
+        <div className="relative flex-1 ">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Search job positions..."
@@ -151,15 +199,32 @@ export default function JobPositionsPage() {
             className="pl-10"
           />
         </div>
-        <Button variant="outline" className="flex items-center gap-2">
-          <Filter className="h-4 w-4" />
-          Filter
-        </Button>
+        <div className="flex gap-2 min-w-80">
+          <Select
+            value={selectedSalaryRange}
+            onValueChange={setSelectedSalaryRange}
+          >
+            <SelectTrigger className="w-full px-6">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <SelectValue placeholder="Filter by salary" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Salary Ranges</SelectItem>
+              {salaryRanges.map((range) => (
+                <SelectItem className="!text-xs" key={range.id} value={range.id}>
+                  {range.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Stats */}
       {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">{jobPositions.length}</div>
@@ -178,6 +243,16 @@ export default function JobPositionsPage() {
                 {formatCurrency(jobPositions.reduce((sum, pos) => Number(sum) + Number(pos.salary), 0))}
               </div>
               <p className="text-xs text-muted-foreground">Total Salary Budget</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold">
+                {formatCurrency(
+                  Math.round(jobPositions.reduce((sum, pos) => Number(sum) + Number(pos.salary), 0) / jobPositions.length) || 0
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Average Salary</p>
             </CardContent>
           </Card>
         </div>
@@ -215,12 +290,7 @@ export default function JobPositionsPage() {
               ? "No job positions match your search criteria."
               : "Get started by creating your first job position."}
           </p>
-          {!searchTerm && (
-            <Button onClick={handleCreateJobPosition} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Create First Job Position
-            </Button>
-          )}
+
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -285,25 +355,25 @@ export default function JobPositionsPage() {
                     <span className="font-medium">{formatCurrency(position.salary.toLocaleString())}</span>
                   </div>
 
-                  {position.reportsToDetails && (
+                  {position?.reports_to_details && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground flex items-center gap-1">
                         <Users className="h-3 w-3" />
                         Reports to:
                       </span>
-                      <span className="font-medium text-xs">{position.reportsToDetails.name}</span>
+                      <span className="font-medium text-xs">{position.reports_to_details?.name}</span>
                     </div>
                   )}
                 </div>
 
                 <div className="pt-2 border-t">
                   <div className="flex gap-2">
-                    {position.contractTemplate && (
+                    {position.contract_template && (
                       <Badge variant="outline" className="text-xs">
                         Contract
                       </Badge>
                     )}
-                    {position.offerLetterTemplate && (
+                    {position.offer_letter_template && (
                       <Badge variant="outline" className="text-xs">
                         Offer Letter
                       </Badge>

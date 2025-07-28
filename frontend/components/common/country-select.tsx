@@ -4,18 +4,17 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-
 import { ICountry } from "@/app/types/types.utils"
-
+import { countryAPI } from "@/lib/helpers"
 
 export default function CountrySelect({
-    countries,
+    countries: propCountries,
     selectedCountry,
     onCountryChange,
     disabled = false,
     compact = false
 }: {
-    countries: ICountry[];
+    countries?: ICountry[];
     selectedCountry: ICountry | null;
     onCountryChange: (country: ICountry | null) => void;
     disabled?: boolean;
@@ -23,8 +22,19 @@ export default function CountrySelect({
 }) {
     const [isOpen, setIsOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
-    const [filteredCountries, setFilteredCountries] = useState<ICountry[]>(countries)
+    const [countries, setCountries] = useState<ICountry[]>(propCountries || [])
+    const [filteredCountries, setFilteredCountries] = useState<ICountry[]>(propCountries || [])
 
+    // Fetch countries if not provided
+    useEffect(() => {
+        if (!propCountries) {
+            countryAPI.getAll()
+                .then((data) => setCountries(data))
+                .catch(() => setCountries([]))
+        }
+    }, [propCountries])
+
+    // Update filteredCountries when countries or searchTerm changes
     useEffect(() => {
         setFilteredCountries(
             !searchTerm
@@ -40,7 +50,6 @@ export default function CountrySelect({
     const getFlag = (cca2: string) =>
         String.fromCodePoint(...cca2.split("").map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
 
-    // NEW: Get country code for compact mode
     const getCountryCode = (country: ICountry) =>
         country.idd?.root
             ? `${country.idd.root}${country.idd.suffixes?.[0] || ""}`

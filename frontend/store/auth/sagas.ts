@@ -97,12 +97,15 @@ function* fetchRemoteUser() {
 }
 
 function* fetchRemoteInstitution() {
+
   try {
     const selectedInstitution: IUserInstitution | null = yield select(selectSelectedInstitution);
 
     if (selectedInstitution) {
-      const upToDateInstitution: IUserInstitution | null = yield call(fetchRemoteInstitutionById, selectedInstitution.id);
-      const attachedInstitutions: IUserInstitution[] | null = yield call(fetchUserAttachedInstitutions);
+      const attachedInstitutions: IUserInstitution[] = yield call(fetchUserAttachedInstitutions);
+      const upToDateInstitution  = attachedInstitutions?.find(
+        (institution) => institution.id === selectedInstitution.id,
+      );
 
       if (upToDateInstitution) {
         yield put(setSelectedInstitution(upToDateInstitution));

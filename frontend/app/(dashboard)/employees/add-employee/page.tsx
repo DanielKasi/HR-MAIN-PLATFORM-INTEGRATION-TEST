@@ -18,9 +18,11 @@ import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
 import { createEmployee, getPositions, getDepartments, createWorkType, createEmployeeType, getWorkTypes, getEmployeeTypes } from "@/lib/utils";
-import { attachEmployeeBranch } from "@/lib/utils.branch";
 import { EmployeeFormData, EmployeeFormState, IDepartment, IJobPosition, IWorkType, IEmployeeType, IWorkTypeFormData, IEmployeeTypeFormData } from "@/app/types/types.utils";
+import { ICountry } from "@/app/types/types.utils";
 import { IUserInstitution } from "@/app/types";
+import PhoneNumberInput from "@/components/phone-number-input";
+import CountrySelect from "@/components/common/country-select";
 
 
 const maritalStatusOptions = [
@@ -125,6 +127,22 @@ export default function AddEmployeeForm() {
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+
+  const [selectedCountry, setSelectedCountry] = useState<ICountry | null>(null);
+  const [phoneInput, setPhoneInput] = useState<{
+    country: ICountry | null;
+    countryCode: string;
+    phoneNumber: string;
+    isValid: boolean;
+  }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
+
+  // Add state for emergency contact phone input
+  const [emergencyPhoneInput, setEmergencyPhoneInput] = useState<{
+    country: ICountry | null;
+    countryCode: string;
+    phoneNumber: string;
+    isValid: boolean;
+  }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
 
   useEffect(() => {
     if (selectedInstitution) {
@@ -404,29 +422,6 @@ export default function AddEmployeeForm() {
           is_default: i === 0
         }));
 
-        try {
-          await attachEmployeeBranch({
-            institution_id: institutionId,
-            employee_id: employeeId,
-            branches,
-          });
-          toast({
-            title: "Success!",
-            description: "Employee has been created successfully and added to the system, and branches attached.",
-            variant: "default",
-            duration: 4000,
-          });
-
-          router.push("/employees/employee-list");
-        } catch (error: unknown) {
-          const errorMessage = error instanceof Error ? error.message : "An unknown error occurred while attaching branches.";
-          toast({
-            title: "Error",
-            description: errorMessage,
-            variant: "destructive",
-            duration: 5000,
-          });
-        }
       } else {
         setSubmitError("Failed to create employee. Please try again.");
       }
@@ -443,6 +438,20 @@ export default function AddEmployeeForm() {
       setIsSubmitting(false);
     }
   };
+
+  // Sync main phone and country to formData
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      phone_number: phoneInput.countryCode && phoneInput.phoneNumber
+        ? `${phoneInput.countryCode}${phoneInput.phoneNumber}`
+        : "",
+      country: selectedCountry?.name?.common || "",
+      emergency_contact_phone: emergencyPhoneInput.countryCode && emergencyPhoneInput.phoneNumber
+        ? `${emergencyPhoneInput.countryCode}${emergencyPhoneInput.phoneNumber}`
+        : "",
+    }));
+  }, [phoneInput, selectedCountry, emergencyPhoneInput]);
 
   const renderStep = () => {
     switch (currentStep) {
@@ -473,12 +482,15 @@ export default function AddEmployeeForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Phone Number</Label>
-                <Input
-                  id="phoneNumber"
-                  value={formData.phone_number}
-                  onChange={(e) => handleInputChange("phone_number", e.target.value)}
-                  placeholder="Enter phone number"
+                <PhoneNumberInput
+                  label="Phone Number"
+                  required={false}
+                  value={phoneInput.phoneNumber}
+                  country={phoneInput.country}
+                  onChange={setPhoneInput}
+                  error={undefined}
+                  defaultCountry={null}
+                  disabled={false}
                 />
               </div>
               <div className="space-y-2">
@@ -530,11 +542,11 @@ export default function AddEmployeeForm() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="country">Country</Label>
-                <Input
-                  id="country"
-                  value={formData.country}
-                  onChange={(e) => handleInputChange("country", e.target.value)}
-                  placeholder="Enter country"
+                <CountrySelect
+                  selectedCountry={selectedCountry}
+                  onCountryChange={setSelectedCountry}
+                  disabled={false}
+                  compact={false}
                 />
               </div>
               <div className="space-y-2">
@@ -556,12 +568,15 @@ export default function AddEmployeeForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="emergencyContactPhone">Contact Phone</Label>
-                <Input
-                  id="emergencyContactPhone"
-                  value={formData.emergency_contact_phone}
-                  onChange={(e) => handleInputChange("emergency_contact_phone", e.target.value)}
-                  placeholder="Emergency contact phone"
+                <PhoneNumberInput
+                  label="Contact Phone"
+                  required={false}
+                  value={emergencyPhoneInput.phoneNumber}
+                  country={emergencyPhoneInput.country}
+                  onChange={setEmergencyPhoneInput}
+                  error={undefined}
+                  defaultCountry={null}
+                  disabled={false}
                 />
               </div>
               <div className="space-y-2">

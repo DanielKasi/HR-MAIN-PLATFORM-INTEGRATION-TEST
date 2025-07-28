@@ -322,6 +322,7 @@ export default function PayrollPeriods() {
     }
     setDeleteConfirmId(null)
   }
+  
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {

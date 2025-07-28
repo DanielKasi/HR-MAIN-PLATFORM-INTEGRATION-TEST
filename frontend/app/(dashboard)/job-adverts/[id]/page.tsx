@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useSelector } from "react-redux"
-import { Megaphone, ArrowLeft, Edit, Calendar, Briefcase, Building2, Coins, User, FileText, X } from "lucide-react"
+import { Megaphone, ArrowLeft, Edit, Calendar, Briefcase, Building2, User, FileText, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -147,7 +147,7 @@ export default function JobAdvertDetailsPage() {
 
       const updatedAdvert = await updateJobPositionAdvert({
         advertId: jobAdvert.id,
-        advertData: { status: "closed" },
+        advertData: { job_position_advert_status: "closed" },
       })
 
       if (updatedAdvert) {
@@ -234,7 +234,7 @@ export default function JobAdvertDetailsPage() {
             Back to Job Adverts
           </Button>
           <div className="flex items-center gap-2">
-            {jobAdvert.status !== "closed" && (
+            {jobAdvert.job_position_advert_status !== "closed" && (
               <Button
                 variant="outline"
                 onClick={handleCloseAdvert}
@@ -288,7 +288,7 @@ export default function JobAdvertDetailsPage() {
                   </Button>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
-                  <Badge className={`${getStatusColor(jobAdvert.status)}`}>{jobAdvert.status.toUpperCase()}</Badge>
+                  <Badge className={`${getStatusColor(jobAdvert.job_position_advert_status)}`}>{jobAdvert.job_position_advert_status.toUpperCase()}</Badge>
                   {expired && <Badge variant="destructive">EXPIRED</Badge>}
                 </div>
               </div>
@@ -342,8 +342,8 @@ export default function JobAdvertDetailsPage() {
                 <CardContent className="space-y-3">
                   <div>
                     <p className="text-sm font-medium">Status</p>
-                    <Badge className={`text-xs ${getStatusColor(jobAdvert.status)}`}>
-                      {jobAdvert.status.toUpperCase()}
+                    <Badge className={`text-xs ${getStatusColor(jobAdvert.job_position_advert_status)}`}>
+                      {jobAdvert.job_position_advert_status.toUpperCase()}
                     </Badge>
                   </div>
                   <div>
@@ -380,15 +380,15 @@ export default function JobAdvertDetailsPage() {
                       <p className="text-sm font-medium">Department</p>
                       <p className="text-sm text-muted-foreground">{jobPosition.department_details?.name}</p>
                     </div>
-                    {jobPosition.reportsToDetails ? (
+                    {jobPosition.reports_to_details ? (
                       <>
                         <div>
                           <p className="text-sm font-medium">Reports To</p>
-                          <p className="text-sm text-muted-foreground">{jobPosition.reportsToDetails.name}</p>
+                          <p className="text-sm text-muted-foreground">{jobPosition.reports_to_details.name}</p>
                         </div>
                         <div>
                           <p className="text-sm font-medium">Manager Email</p>
-                          <p className="text-sm text-muted-foreground">{jobPosition.reportsToDetails.email}</p>
+                          <p className="text-sm text-muted-foreground">{jobPosition.reports_to_details.email}</p>
                         </div>
                       </>
                     ) : (
@@ -416,13 +416,13 @@ export default function JobAdvertDetailsPage() {
             )}
 
             {/* Document Templates */}
-            {jobPosition && (jobPosition.contractTemplate || jobPosition.offerLetterTemplate) && (
+            {jobPosition && (jobPosition.contract_template || jobPosition.offer_letter_template) && (
               <>
                 <Separator />
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Available Templates</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {jobPosition.contractTemplate && (
+                    {jobPosition.contract_template && (
                       <Card>
                         <CardContent className="p-4">
                           <div className="flex items-center gap-3">
@@ -436,7 +436,7 @@ export default function JobAdvertDetailsPage() {
                       </Card>
                     )}
 
-                    {jobPosition.offerLetterTemplate && (
+                    {jobPosition.offer_letter_template && (
                       <Card>
                         <CardContent className="p-4">
                           <div className="flex items-center gap-3">

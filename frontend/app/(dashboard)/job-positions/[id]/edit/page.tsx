@@ -475,7 +475,7 @@ export default function EditJobPositionPage() {
           name: fetchedJobPosition.name,
           description: fetchedJobPosition.description || "",
           department: fetchedJobPosition.department,
-          reportsTo: fetchedJobPosition.reportsTo || null,
+          reportsTo: fetchedJobPosition.reports_to || null,
           contractTemplate: null,
           offerLetterTemplate: null,
           salary: salaryValue,
@@ -658,12 +658,12 @@ export default function EditJobPositionPage() {
         updateData.reports_to = formData.reportsTo
       }
 
-      if (formData.contractTemplate) {
-        updateData.contract_template = formData.contractTemplate
+      if (formDatacontract_template) {
+        updateData.contract_template = formDatacontract_template
       }
 
-      if (formData.offerLetterTemplate) {
-        updateData.offer_letter_template = formData.offerLetterTemplate
+      if (formData.offer_letter_template) {
+        updateData.offer_letter_template = formData.offer_letter_template
       }
 
       const updatedJobPosition = await updateJobPosition({
@@ -922,11 +922,11 @@ export default function EditJobPositionPage() {
               </div>
 
               {/* Current Files Display */}
-              {(jobPosition?.contractTemplate || jobPosition?.offerLetterTemplate) && (
+              {(jobPosition?.contract_template || jobPosition?.offer_letter_template) && (
                 <div className="space-y-4">
                   <h4 className="font-medium text-sm">Current Templates</h4>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {jobPosition.contractTemplate && (
+                    {jobPosition.contract_template && (
                       <div className="border rounded-lg p-3 bg-muted/30">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-primary" />
@@ -935,7 +935,7 @@ export default function EditJobPositionPage() {
                         <p className="text-xs text-muted-foreground mt-1">Upload a new file to replace</p>
                       </div>
                     )}
-                    {jobPosition.offerLetterTemplate && (
+                    {jobPosition.offer_letter_template && (
                       <div className="border rounded-lg p-3 bg-muted/30">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-primary" />
@@ -953,19 +953,19 @@ export default function EditJobPositionPage() {
                 {/* Contract Template */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Contract Template (Optional)</Label>
-                  {formData.contractTemplate ? (
+                  {formDatacontract_template ? (
                     <div className="border rounded-lg p-4 bg-muted/50">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">{formData.contractTemplate.name}</span>
+                          <span className="text-sm font-medium">{formDatacontract_template.name}</span>
                         </div>
                         <Button type="button" variant="ghost" size="sm" onClick={() => removeFile("contractTemplate")}>
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {(formData.contractTemplate.size / 1024 / 1024).toFixed(2)} MB
+                        {(formDatacontract_template.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
                   ) : (
@@ -993,12 +993,12 @@ export default function EditJobPositionPage() {
                 {/* Offer Letter Template */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Offer Letter Template (Optional)</Label>
-                  {formData.offerLetterTemplate ? (
+                  {formData.offer_letter_template ? (
                     <div className="border rounded-lg p-4 bg-muted/50">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">{formData.offerLetterTemplate.name}</span>
+                          <span className="text-sm font-medium">{formData.offer_letter_template.name}</span>
                         </div>
                         <Button
                           type="button"
@@ -1010,7 +1010,7 @@ export default function EditJobPositionPage() {
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {(formData.offerLetterTemplate.size / 1024 / 1024).toFixed(2)} MB
+                        {(formData.offer_letter_template.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
                   ) : (

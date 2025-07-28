@@ -81,6 +81,7 @@ export const authReducer = (
       return {...state, refreshToken: action.payload as string};
 
     case AUTH_ACTION_TYPES.SET_ATTACHED_InstitutionS:
+      console.log("\n\n Setting attached institutions:", action.payload, "From action:", action);
       return {
         ...state,
         InstitutionsAttached: {
