@@ -48,9 +48,9 @@ INSTALLED_APPS = [
     "projects",
     "calendar2",
     "assets",
-    'ckeditor',
-    'ckeditor_uploader',
-    'documents',
+    "django_ckeditor_5",
+    "documents",
+    "audit",
 ]
 
 MIDDLEWARE = [
@@ -67,6 +67,13 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "core.urls"
 CKEDITOR_UPLOAD_PATH = "uploads/"
+
+DJANGO_CKEDITOR_5_CONFIGS = {
+    'default': {
+        'toolbar': ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote'],
+        'language': 'en',
+    },
+}
 
 
 TEMPLATES = [

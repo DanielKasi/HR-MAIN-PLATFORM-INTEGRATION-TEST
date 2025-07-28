@@ -233,6 +233,13 @@ export default function AdminPage() {
                   <ShieldAlert className="w-5 h-5 text-gray-500" />
                   <span>Document Types</span>
                 </Link>
+                <Link
+                  href="/documents/templates"
+                  className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+                >
+                  <ShieldAlert className="w-5 h-5 text-gray-500" />
+                  <span>Document Templates</span>
+                </Link>
               </div>
             </div>
           </div>
