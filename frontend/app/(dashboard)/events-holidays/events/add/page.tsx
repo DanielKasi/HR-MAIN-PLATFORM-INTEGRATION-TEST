@@ -47,7 +47,7 @@ export default function AddEventPage() {
 
     try {
       await apiPost("/calendar/events/", formData);
-      router.push("/calendar");
+      router.push("/events-holidays");
     } catch (error) {
       console.error("Error creating event:", error);
     } finally {
@@ -111,13 +111,12 @@ export default function AddEventPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-full mx-auto space-y-8">
         {/* Header */}
         <div className="flex items-center gap-6">
-          <Link href="/calendar">
+          <Link href="/events-holidays">
             <Button variant="outline" size="sm" className="shadow-sm bg-transparent">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Calendar
             </Button>
           </Link>
           <div className="space-y-2">
@@ -505,7 +504,7 @@ export default function AddEventPage() {
                     </div>
 
                     <div className="flex gap-3">
-                      <Link href="/calendar">
+                      <Link href="/events-holidays">
                         <Button
                           variant="outline"
                           type="button"
@@ -520,16 +519,11 @@ export default function AddEventPage() {
                           type="button"
                           onClick={() => setCurrentStep(currentStep + 1)}
                           disabled={!isStepComplete(currentStep)}
-                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
                         >
                           Next Step
                         </Button>
                       ) : (
-                        <Button
-                          type="submit"
-                          disabled={loading}
-                          className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg"
-                        >
+                        <Button type="submit" disabled={loading}>
                           <Save className="h-4 w-4 mr-2" />
                           {loading ? "Creating..." : "Create Event"}
                         </Button>

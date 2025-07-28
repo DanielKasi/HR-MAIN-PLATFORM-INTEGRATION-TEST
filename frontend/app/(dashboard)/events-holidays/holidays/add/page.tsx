@@ -30,7 +30,7 @@ export default function AddHolidayPage() {
 
     try {
       await apiPost("/calendar/public-holidays/", formData);
-      router.push("/calendar");
+      router.push("/events-holidays");
     } catch (error) {
       console.error("Error creating holiday:", error);
     } finally {
@@ -59,13 +59,12 @@ export default function AddHolidayPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-full mx-auto space-y-8">
         {/* Header */}
         <div className="flex items-center gap-6">
-          <Link href="/calendar">
+          <Link href="/events-holidays">
             <Button variant="outline" size="sm" className="shadow-sm bg-transparent">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Calendar
             </Button>
           </Link>
           <div className="space-y-2">
@@ -141,15 +140,11 @@ export default function AddHolidayPage() {
                   </div>
 
                   <div className="flex gap-4 pt-6 border-t border-slate-200">
-                    <Button
-                      type="submit"
-                      disabled={loading}
-                      className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 shadow-lg"
-                    >
+                    <Button type="submit" disabled={loading}>
                       <Save className="h-4 w-4 mr-2" />
                       {loading ? "Creating..." : "Create Holiday"}
                     </Button>
-                    <Link href="/calendar">
+                    <Link href="/events-holidays">
                       <Button variant="outline" type="button" className="shadow-sm bg-transparent">
                         Cancel
                       </Button>

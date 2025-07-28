@@ -154,7 +154,7 @@ export default function EventsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-full mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-2">
@@ -163,8 +163,8 @@ export default function EventsPage() {
             </h1>
             <p className="text-slate-600 text-lg">Manage all your organization events</p>
           </div>
-          <Link href="/calendar/events/add">
-            <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg">
+          <Link href="/events-holidays/events/add">
+            <Button>
               <Plus className="mr-2 h-5 w-5" />
               Create Event
             </Button>
@@ -316,13 +316,13 @@ export default function EventsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/calendar/events/${event.id}`}>
+                          <Link href={`/events-holidays/events/${event.id}`}>
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/calendar/events/edit/${event.id}`}>
+                          <Link href={`/events-holidays/events/edit/${event.id}`}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit Event
                           </Link>
@@ -361,13 +361,13 @@ export default function EventsPage() {
 
                   {/* Action Buttons */}
                   <div className="flex gap-2 pt-2">
-                    <Link href={`/calendar/events/${event.id}`} className="flex-1">
+                    <Link href={`/events-holidays/events/${event.id}`} className="flex-1">
                       <Button variant="outline" size="sm" className="w-full bg-transparent">
                         <Eye className="mr-2 h-4 w-4" />
                         View
                       </Button>
                     </Link>
-                    <Link href={`/calendar/events/edit/${event.id}`} className="flex-1">
+                    <Link href={`/events-holidays/events/edit/${event.id}`} className="flex-1">
                       <Button variant="outline" size="sm" className="w-full bg-transparent">
                         <Edit className="mr-2 h-4 w-4" />
                         Edit

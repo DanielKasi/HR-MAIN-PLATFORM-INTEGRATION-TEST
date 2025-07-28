@@ -299,20 +299,8 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       title: "Events & Holidays",
       href: "/events-holidays",
       icon: <Icon icon="hugeicons:calendar-03" className="w-5 h-5" />,
-      submenu: [
-        {title: "Calender", href: "/events-holidays"},
-        {title: "Events", href: "/events-holidays/events"},
-        {title: "Holidays", href: "/events-holidays/holidays"},
-      ],
     },
   ];
-
-  // const adminItem: NavItem = {
-  //   title: "Admin",
-  //   href: "/admin",
-  //   icon: <Shield className="w-5 h-5" />,
-  //   requiredPermission: PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD,
-  // };
 
   const updateThemeColors = (hexColor: string) => {
     if (!hexColor) return;

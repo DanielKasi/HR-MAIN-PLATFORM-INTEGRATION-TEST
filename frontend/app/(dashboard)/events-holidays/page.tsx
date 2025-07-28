@@ -180,12 +180,10 @@ export default function CalendarPage() {
 
     const days = [];
 
-    // Add empty cells for days before the first day of the month
     for (let i = 0; i < startingDayOfWeek; i++) {
       days.push(null);
     }
 
-    // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       days.push(new Date(year, month, day));
     }
@@ -255,7 +253,7 @@ export default function CalendarPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-full mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-2">
@@ -265,13 +263,13 @@ export default function CalendarPage() {
             <p className="text-slate-600 text-lg">Manage events, holidays, and schedules</p>
           </div>
           <div className="flex gap-3">
-            <Link href="/calendar/events/add">
-              <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg">
+            <Link href="/events-holidays/events/add">
+              <Button>
                 <Plus className="mr-2 h-5 w-5" />
                 Add Event
               </Button>
             </Link>
-            <Link href="/calendar/holidays/add">
+            <Link href="/events-holidays/holidays/add">
               <Button variant="outline" className="shadow-sm bg-transparent">
                 <Star className="mr-2 h-5 w-5" />
                 Add Holiday
@@ -644,19 +642,19 @@ export default function CalendarPage() {
                 <CardTitle className="text-lg">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Link href="/calendar/events/add">
+                <Link href="/events-holidays/events/add">
                   <Button variant="outline" className="w-full justify-start bg-transparent">
                     <Plus className="mr-2 h-4 w-4" />
                     Add Event
                   </Button>
                 </Link>
-                <Link href="/calendar/holidays/add">
+                <Link href="/events-holidays/holidays/add">
                   <Button variant="outline" className="w-full justify-start bg-transparent">
                     <Star className="mr-2 h-4 w-4" />
                     Add Holiday
                   </Button>
                 </Link>
-                <Link href="/calendar/events">
+                <Link href="/events-holidays/events">
                   <Button variant="outline" className="w-full justify-start bg-transparent">
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     View All Events
