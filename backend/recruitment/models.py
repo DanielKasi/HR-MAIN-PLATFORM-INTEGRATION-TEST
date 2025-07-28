@@ -80,7 +80,6 @@ class JobPosition(models.Model):
             )
 
 
-
 class JobPositionAdvert(models.Model):
     status_choices = [
         ("pending_approval", "Pending Approval"),

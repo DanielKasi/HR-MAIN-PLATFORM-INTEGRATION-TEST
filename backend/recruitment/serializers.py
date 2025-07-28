@@ -225,7 +225,6 @@ class JobPositionSerializer(serializers.ModelSerializer):
         adverts = JobPositionAdvert.objects.filter(job_position=obj)
         return JobPositionAdvertSerializer(adverts, many=True).data
 
-
     def validate(self, attrs):
         employee_ids = attrs.get("apply_salary_to_employees", [])
         if employee_ids:
@@ -290,9 +289,6 @@ class JobPositionSerializer(serializers.ModelSerializer):
             )
 
         return instance
-
-
-
 
 
 class JobInterviewSerializer(serializers.ModelSerializer):
