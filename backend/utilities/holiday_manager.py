@@ -2,7 +2,6 @@ import holidays
 from datetime import date
 
 
-
 class HolidayManager:
     def __init__(self, country_code, year):
         self.country_code = country_code
@@ -35,12 +34,13 @@ class HolidayManager:
             date(self.year, 1, 1): "New Year's Day",
             date(self.year, 1, 26): "NRM Liberation Day",
             date(self.year, 2, 16): "Archbishop Janani Luwum Day",
+            date(self.year, 3, 8): "International Women's Day",
             date(self.year, 5, 1): "Labour Day",
+            date(self.year, 6, 3): "Martyrs' Day",
+            date(self.year, 6, 9): "National Heroes' Day",
             date(self.year, 10, 9): "Independence Day",
             date(self.year, 12, 25): "Christmas Day",
             date(self.year, 12, 26): "Boxing Day",
-            date(self.year, 6, 3): "Martyrs' Day",
-            date(self.year, 8, 9): "Heroes' Day",
             date(self.year, 11, 1): "All Saints' Day",
             date(self.year, 12, 31): "New Year's Eve",
         }

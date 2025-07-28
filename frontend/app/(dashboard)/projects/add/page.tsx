@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
 import {useRouter} from "next/navigation";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
@@ -14,17 +14,37 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {ArrowLeft, Save, Calendar, FileText, Settings, Users, Target} from "lucide-react";
+import {ArrowLeft, Save, Calendar, FileText, Settings, Users, Target, X} from "lucide-react";
 import Link from "next/link";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {Badge} from "@/components/ui/badge";
+import {apiGet, apiPost} from "@/lib/apiRequest";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
+import {Check, ChevronsUpDown} from "lucide-react";
+import {cn} from "@/lib/utils";
+import {UserProfile} from "@/app/types";
 
 export default function AddProjectPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [leadersOpen, setLeadersOpen] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
+
   const selectedInstitution = useSelector(selectSelectedInstitution);
+  const institutionId = selectedInstitution?.id;
 
   const [formData, setFormData] = useState({
     project_name: "",
@@ -33,16 +53,56 @@ export default function AddProjectPage() {
     end_date: "",
     project_status: "planning" as const,
     institution: selectedInstitution?.id,
+    leaders: [] as number[],
+    members: [] as number[],
   });
+
+  // Function to fetch users
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const response = await apiGet(`/institution/profile/${institutionId}/`);
+      if (response.status === 200) {
+        const data = await response.data;
+        setUsers(data.results);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentStep === 3) {
+      fetchUsers();
+    }
+  }, [currentStep]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
+    // Validate required fields
+    const newErrors: Record<string, string[]> = {};
+    if (formData.leaders.length === 0) {
+      newErrors.leaders = ["This field is required."];
+    }
+    if (formData.members.length === 0) {
+      newErrors.members = ["This field is required."];
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setLoading(true);
     try {
       console.log("Creating project:", formData);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      router.push("/projects");
+      const response = await apiPost(`/projects/projects/${institutionId}/`, formData);
+      if (response.status === 201) {
+        router.push("/projects");
+      }
     } catch (error) {
       console.error("Error creating project:", error);
     } finally {
@@ -55,12 +115,49 @@ export default function AddProjectPage() {
       ...prev,
       [field]: value,
     }));
+
+    // Clear errors when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({
+        ...prev,
+        [field]: [],
+      }));
+    }
+  };
+
+  const handleUserSelection = (userId: number, field: "leaders" | "members") => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: prev[field].includes(userId)
+        ? prev[field].filter((id) => id !== userId)
+        : [...prev[field], userId],
+    }));
+
+    // Clear errors when user makes selection
+    if (errors[field]) {
+      setErrors((prev) => ({
+        ...prev,
+        [field]: [],
+      }));
+    }
+  };
+
+  const removeUser = (userId: number, field: "leaders" | "members") => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: prev[field].filter((id) => id !== userId),
+    }));
+  };
+
+  const getSelectedUsers = (userIds: number[]) => {
+    return users.filter((user) => userIds.includes(user.id));
   };
 
   const steps = [
     {id: 1, title: "Basic Info", icon: FileText},
     {id: 2, title: "Timeline", icon: Calendar},
-    {id: 3, title: "Settings", icon: Settings},
+    {id: 3, title: "Team", icon: Users},
+    {id: 4, title: "Settings", icon: Settings},
   ];
 
   const isStepComplete = (step: number) => {
@@ -70,6 +167,8 @@ export default function AddProjectPage() {
       case 2:
         return formData.start_date && formData.end_date;
       case 3:
+        return formData.leaders.length > 0 && formData.members.length > 0;
+      case 4:
         return formData.project_status;
       default:
         return false;
@@ -82,7 +181,7 @@ export default function AddProjectPage() {
         {/* Header */}
         <div className="flex items-center gap-6">
           <Link href="/projects">
-            <Button variant="outline" size="sm" className="shadow-sm">
+            <Button variant="outline" size="sm" className="shadow-sm bg-transparent">
               <ArrowLeft className="h-4 w-4 mr-2" />
             </Button>
           </Link>
@@ -169,7 +268,6 @@ export default function AddProjectPage() {
                       required
                     />
                   </div>
-
                   <div className="space-y-3">
                     <Label htmlFor="description" className="text-base font-medium">
                       Project Description *
@@ -203,7 +301,6 @@ export default function AddProjectPage() {
                         required
                       />
                     </div>
-
                     <div className="space-y-3">
                       <Label htmlFor="end_date" className="text-base font-medium">
                         End Date *
@@ -239,6 +336,184 @@ export default function AddProjectPage() {
               )}
 
               {currentStep === 3 && (
+                <div className="space-y-6">
+                  {/* Leaders Selection */}
+                  <div className="space-y-3">
+                    <Label className="text-base font-medium">Project Leaders *</Label>
+                    <Popover open={leadersOpen} onOpenChange={setLeadersOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={leadersOpen}
+                          className={cn(
+                            "h-12 justify-between text-base border-slate-200 focus:border-blue-500",
+                            errors.leaders?.length > 0 && "border-red-500",
+                          )}
+                        >
+                          {formData.leaders.length > 0
+                            ? `${formData.leaders.length} leader(s) selected`
+                            : "Select project leaders..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Search users..." />
+                          <CommandList>
+                            <CommandEmpty>
+                              {loadingUsers ? "Loading users..." : "No users found."}
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {users.map((user) => (
+                                <CommandItem
+                                  key={user.id}
+                                  onSelect={() => handleUserSelection(user.id, "leaders")}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      formData.leaders.includes(user.id)
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span>{user.user.fullname}</span>
+                                    <span className="text-sm text-slate-500">
+                                      {user.user.email}
+                                    </span>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Selected Leaders */}
+                    {formData.leaders.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {getSelectedUsers(formData.leaders).map((user) => (
+                          <Badge
+                            key={user.id}
+                            variant="secondary"
+                            className="flex items-center gap-1"
+                          >
+                            {user.user.fullname}
+                            <X
+                              className="h-3 w-3 cursor-pointer"
+                              onClick={() => removeUser(user.id, "leaders")}
+                            />
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    {errors.leaders && errors.leaders.length > 0 && (
+                      <p className="text-sm text-red-600">{errors.leaders[0]}</p>
+                    )}
+                  </div>
+
+                  {/* Members Selection */}
+                  <div className="space-y-3">
+                    <Label className="text-base font-medium">Project Members *</Label>
+                    <Popover open={membersOpen} onOpenChange={setMembersOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={membersOpen}
+                          className={cn(
+                            "h-12 justify-between text-base border-slate-200 focus:border-blue-500",
+                            errors.members?.length > 0 && "border-red-500",
+                          )}
+                        >
+                          {formData.members.length > 0
+                            ? `${formData.members.length} member(s) selected`
+                            : "Select project members..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Search users..." />
+                          <CommandList>
+                            <CommandEmpty>
+                              {loadingUsers ? "Loading users..." : "No users found."}
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {users.map((user) => (
+                                <CommandItem
+                                  key={user.id}
+                                  onSelect={() => handleUserSelection(user.id, "members")}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      formData.members.includes(user.id)
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span>{user.user.fullname}</span>
+                                    <span className="text-sm text-slate-500">
+                                      {user.user.email}
+                                    </span>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Selected Members */}
+                    {formData.members.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {getSelectedUsers(formData.members).map((user) => (
+                          <Badge
+                            key={user.id}
+                            variant="outline"
+                            className="flex items-center gap-1"
+                          >
+                            {user.user.fullname}
+                            <X
+                              className="h-3 w-3 cursor-pointer"
+                              onClick={() => removeUser(user.id, "members")}
+                            />
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    {errors.members && errors.members.length > 0 && (
+                      <p className="text-sm text-red-600">{errors.members[0]}</p>
+                    )}
+                  </div>
+
+                  {/* Team Summary */}
+                  {(formData.leaders.length > 0 || formData.members.length > 0) && (
+                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center gap-2 text-green-800 mb-2">
+                        <Users className="h-5 w-5" />
+                        <span className="font-medium">Team Summary</span>
+                      </div>
+                      <div className="text-green-700 text-sm">
+                        <p>
+                          {formData.leaders.length} leader(s) and {formData.members.length}{" "}
+                          member(s) selected
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {currentStep === 4 && (
                 <div className="space-y-6">
                   <div className="space-y-3">
                     <Label htmlFor="project_status" className="text-base font-medium">
@@ -285,9 +560,21 @@ export default function AddProjectPage() {
                         <span className="text-slate-600">Duration:</span>
                         <span className="font-medium">
                           {formData.start_date && formData.end_date
-                            ? `${Math.ceil((new Date(formData.end_date).getTime() - new Date(formData.start_date).getTime()) / (1000 * 60 * 60 * 24))} days`
+                            ? `${Math.ceil(
+                                (new Date(formData.end_date).getTime() -
+                                  new Date(formData.start_date).getTime()) /
+                                  (1000 * 60 * 60 * 24),
+                              )} days`
                             : "Not set"}
                         </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Leaders:</span>
+                        <span className="font-medium">{formData.leaders.length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Members:</span>
+                        <span className="font-medium">{formData.members.length}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-600">Status:</span>
@@ -314,15 +601,13 @@ export default function AddProjectPage() {
                     </Button>
                   )}
                 </div>
-
                 <div className="flex gap-3">
                   <Link href="/projects">
-                    <Button variant="outline" type="button" className="shadow-sm">
+                    <Button variant="outline" type="button" className="shadow-sm bg-transparent">
                       Cancel
                     </Button>
                   </Link>
-
-                  {currentStep < 3 ? (
+                  {currentStep < 4 ? (
                     <Button
                       type="button"
                       onClick={() => setCurrentStep(currentStep + 1)}
