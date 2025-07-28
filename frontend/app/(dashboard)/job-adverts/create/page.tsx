@@ -5,27 +5,27 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
 import { Megaphone, ArrowLeft, Check } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getJobPositions, createJobPositionAdvert } from "@/lib/utils"
-import type { JobPositionAdvertFormData, IJobPosition, JobAdvertStatus } from "@/app/types/types.utils"
+import type { JobPositionAdvertFormData, IJobPosition, JobAdvertStatus, JobAdvertTypes } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
 export default function CreateJobAdvertPage() {
   const [formData, setFormData] = useState<JobPositionAdvertFormData>({
     job_position: 0,
-    status: "active" as JobAdvertStatus,
+    job_position_advert_status: "active" as JobAdvertStatus,
     expiry_date: "",
     number_of_employees_expected: 1,
     extra_information: "",
+    advert_type: "external" as JobAdvertTypes,
   })
+
   const [jobPositions, setJobPositions] = useState<IJobPosition[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -40,7 +40,6 @@ export default function CreateJobAdvertPage() {
       router.push("/dashboard")
       return
     }
-
     fetchJobPositions()
   }, [selectedInstitution, selectedBranch, router])
 
@@ -50,7 +49,6 @@ export default function CreateJobAdvertPage() {
     try {
       setIsLoading(true)
       const fetchedJobPositions = await getJobPositions({ institutionId: selectedInstitution.id })
-
       if (fetchedJobPositions) {
         setJobPositions(fetchedJobPositions)
       } else {
@@ -63,7 +61,7 @@ export default function CreateJobAdvertPage() {
     }
   }
 
-  const updateFormData = (field: keyof Exclude<JobPositionAdvertFormData, "status">, value: any) => {
+  const updateFormData = (field: keyof Exclude<JobPositionAdvertFormData, "job_position_advert_status">, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     // Clear error when user starts typing
     if (errors[field]) {
@@ -93,6 +91,10 @@ export default function CreateJobAdvertPage() {
       newErrors.number_of_employees_expected = "Number of employees must be at least 1"
     }
 
+    if (!formData.advert_type) {
+      newErrors.advert_type = "Please select an advert type"
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -115,10 +117,11 @@ export default function CreateJobAdvertPage() {
     try {
       const createData: JobPositionAdvertFormData = {
         job_position: formData.job_position,
-        status: formData.status,
+        job_position_advert_status: formData.job_position_advert_status,
         expiry_date: formData.expiry_date,
         number_of_employees_expected: formData.number_of_employees_expected || undefined,
         extra_information: formData.extra_information || undefined,
+        advert_type: formData.advert_type,
       }
 
       const newJobAdvert = await createJobPositionAdvert({
@@ -215,7 +218,25 @@ export default function CreateJobAdvertPage() {
                   {errors.job_position && <p className="text-sm text-destructive">{errors.job_position}</p>}
                 </div>
 
-
+                {/* Advert Type */}
+                <div className="space-y-2">
+                  <Label htmlFor="advert_type" className="text-sm font-medium">
+                    Advert Type *
+                  </Label>
+                  <Select
+                    value={formData.advert_type}
+                    onValueChange={(value) => updateFormData("advert_type", value as JobAdvertTypes)}
+                  >
+                    <SelectTrigger className={errors.advert_type ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Select advert type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="external">External</SelectItem>
+                      <SelectItem value="internal">Internal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.advert_type && <p className="text-sm text-destructive">{errors.advert_type}</p>}
+                </div>
 
                 {/* Expiry Date */}
                 <div className="space-y-2">
@@ -225,7 +246,7 @@ export default function CreateJobAdvertPage() {
                   <Input
                     id="expiry_date"
                     type="date"
-                    min={new Date().toISOString().split("T")[0]} 
+                    min={new Date().toISOString().split("T")[0]}
                     value={formData.expiry_date}
                     onChange={(e) => updateFormData("expiry_date", e.target.value)}
                     className={errors.expiry_date ? "border-destructive" : ""}
@@ -276,7 +297,7 @@ export default function CreateJobAdvertPage() {
                   variant="outline"
                   onClick={handleBack}
                   disabled={isSubmitting}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto bg-transparent"
                 >
                   Cancel
                 </Button>
