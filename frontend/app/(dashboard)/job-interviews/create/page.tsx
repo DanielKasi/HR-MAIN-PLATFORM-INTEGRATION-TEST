@@ -33,8 +33,12 @@ import {
 import type { JobApplication, IInterviewStage, IInterview, IInterviewFormData, IEmployee } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
+
 interface MultiInterviewFormData extends Omit<IInterviewFormData, 'job_position_application'> {
   selected_applications: number[]
+  interviewers: number[]
+  job_position_advert: number
+  job_position: number // Added property to fix the error
 }
 
 interface IInterviewStageFormData {
@@ -55,6 +59,10 @@ export default function CreateInterviewPage() {
     status: "scheduled",
     feedback: "",
     rating: undefined,
+    interviewers: [],
+    job_position_advert: 0,
+    job_position: 0, // This will be set based on selectedJobPosition
+    created_by: 0, // Add the created_by property with a default value
   })
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([])
   const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([])
@@ -440,6 +448,7 @@ export default function CreateInterviewPage() {
           status: formData.status || "scheduled",
           feedback: formData.feedback || undefined,
           rating: formData.rating || undefined,
+          created_by: formData.created_by, // Ensure this value is set in the formData state
         }
 
         try {
