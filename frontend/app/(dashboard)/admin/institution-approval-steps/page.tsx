@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import {Fragment, useEffect, useState} from "react";
 import {useRouter} from "next/navigation";
-import {toast} from "sonner";
+import {toast} from "react-toastify";
 
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
@@ -29,13 +29,13 @@ import {
 import {Input} from "@/components/ui/input";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
 import apiRequest from "@/lib/apiRequest";
-import {capitalizeEachWord, getDefaultInstitutionId} from "@/lib/helpers";
 import {DeleteConfirmationDialog} from "@/components/delete-confirmation-dialog";
-import ProtectedComponent from "@/components/ProtectedComponent";
-import {PERMISSION_CODES} from "@/app/types/types.utils";
-import {handleApiError} from "@/lib/apiErrorHandler";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {useSelector} from "react-redux";
+import {capitalizeEachWord} from "@/lib/helpers";
 
-export default function InstitutionApprovalStepsPage() {
+export default function ShopApprovalStepsPage() {
+  const institutionId = useSelector(selectSelectedInstitution)?.id;
   const [searchQuery, setSearchQuery] = useState("");
   const [approvalSteps, setApprovalSteps] = useState<ApprovalStep[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,33 +46,32 @@ export default function InstitutionApprovalStepsPage() {
   const [deleteDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingStepId, setDeletingStepId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [reorderedActions, setReorderedActions] = useState<Record<number, boolean>>({});
-  const [savingOrder, setSavingOrder] = useState<Record<number, boolean>>({});
+  const [reorderedActions, setReorderedActions] = useState<Record<string, boolean>>({});
+  const [savingOrder, setSavingOrder] = useState<Record<string, boolean>>({});
 
   const fetchApprovalSteps = async () => {
     try {
-      const InstitutionId = getDefaultInstitutionId();
-
-      if (!InstitutionId) {
-        throw new Error("No Institution context found");
+      if (!institutionId) {
+        throw new Error("No institution context found");
       }
 
-      const response = await apiRequest.get(`workflow/Institution-approval-step/${InstitutionId}/`);
-      const responseData: ApprovalStep[] = response.data;
+      const response = await apiRequest.get(`workflow/institution-approval-step/${institutionId}/`);
+      const responseData: ApprovalStep[] = response.data.results;
 
       setApprovalSteps(responseData.sort((a, b) => a.level - b.level));
       setReorderedActions({});
     } catch (error: any) {
       setError(error.message || "Failed to fetch approval steps");
-      handleApiError(error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchApprovalSteps();
-  }, []);
+    if (institutionId) {
+      fetchApprovalSteps();
+    }
+  }, [institutionId]);
 
   const filteredSteps = approvalSteps.filter(
     (step) =>
@@ -98,7 +97,7 @@ export default function InstitutionApprovalStepsPage() {
 
       return acc;
     },
-    {} as Record<number, {action: ApprovalStep["action_details"]; steps: ApprovalStep[]}>,
+    {} as Record<string, {action: ApprovalStep["action_details"]; steps: ApprovalStep[]}>,
   );
 
   // Sort steps by level within each action group
@@ -113,7 +112,7 @@ export default function InstitutionApprovalStepsPage() {
   };
 
   const handleEditStep = (stepId: number) => {
-    router.push(`/admin/Institution-approval-steps/edit/${stepId}`);
+    router.push(`/admin/institution-approval-steps/edit/${stepId}`);
   };
 
   const handleDelete = async (stepId: number) => {
@@ -124,21 +123,20 @@ export default function InstitutionApprovalStepsPage() {
   const confirmDelete = async () => {
     try {
       setIsDeleting(true);
-      const InstitutionId = getDefaultInstitutionId();
+      const institutionId = useSelector(selectSelectedInstitution);
 
-      if (!InstitutionId) {
-        throw new Error("No Institution context found");
+      if (!institutionId) {
+        throw new Error("No institution context found");
       }
 
       await apiRequest.delete(
-        `workflow/Institution-approval-step/${InstitutionId}/?step=${deletingStepId}`,
+        `workflow/institution-approval-step/${institutionId}/?step=${deletingStepId}`,
       );
       await fetchApprovalSteps();
       setDeleteDialogOpen(false);
       toast.info("Approval step deleted successfully");
     } catch (error: any) {
       setError(error.message || "Failed to delete approval step");
-      handleApiError(error);
     } finally {
       setIsDeleting(false);
       setDeletingStepId(null);
@@ -146,7 +144,7 @@ export default function InstitutionApprovalStepsPage() {
   };
 
   const moveStepUp = (actionId: number, stepIndex: number) => {
-    if (stepIndex === 0) return; // Already at the top
+    if (stepIndex === 0) return;
 
     setApprovalSteps((prevSteps) => {
       const newSteps = [...prevSteps];
@@ -230,10 +228,10 @@ export default function InstitutionApprovalStepsPage() {
   const saveReorderedSteps = async (actionId: number) => {
     try {
       setSavingOrder((prev) => ({...prev, [actionId]: true}));
-      const InstitutionId = getDefaultInstitutionId();
+      const institutionId = useSelector(selectSelectedInstitution);
 
-      if (!InstitutionId) {
-        throw new Error("No Institution context found");
+      if (!institutionId) {
+        throw new Error("No institution context found");
       }
 
       // Get all steps for this action
@@ -245,7 +243,7 @@ export default function InstitutionApprovalStepsPage() {
         }));
 
       // Send the update request
-      await apiRequest.patch(`workflow/Institution-approval-step/${InstitutionId}/reorder/`, {
+      await apiRequest.patch(`workflow/institution-approval-step/${institutionId}/reorder/`, {
         steps: stepsToUpdate,
       });
 
@@ -273,7 +271,6 @@ export default function InstitutionApprovalStepsPage() {
     }
   };
 
-  // Helper function to safely get a nested property value using a path string
   const getNestedValue = (obj: any, path: string) => {
     if (!obj) return undefined;
 
@@ -328,26 +325,24 @@ export default function InstitutionApprovalStepsPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => router.push("/admin")}>
+          <Button size="sm" variant="outline" onClick={() => router.back()}>
             Back to Admin
           </Button>
           <h1 className="text-2xl font-bold tracking-tight">Approval Steps</h1>
         </div>
-        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_ADD_Institution_APPROVAL_STEPS}>
-          <Button
-            className="gap-2"
-            onClick={() => router.push("/admin/Institution-approval-steps/create")}
-          >
-            <Plus className="h-4 w-4" /> New Approval Step
-          </Button>
-        </ProtectedComponent>
+        <Button
+          className="gap-2"
+          onClick={() => router.push("/admin/institution-approval-steps/create")}
+        >
+          <Plus className="h-4 w-4" /> New Approval Step
+        </Button>
       </div>
 
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Institution Approval Workflow</CardTitle>
           <CardDescription>
-            Manage the multi-step approval process for your Institution workflows
+            Manage the multi-step approval process for your institution workflows
           </CardDescription>
         </CardHeader>
 
@@ -597,8 +592,10 @@ export default function InstitutionApprovalStepsPage() {
         isDeleting={isDeleting}
         isOpen={deleteDeleteDialogOpen}
         title="Delete Approval Step"
-        onClose={() => setDeleteDialogOpen(false)}
         onConfirm={confirmDelete}
+        onClose={function (): void {
+          throw new Error("Function not implemented.");
+        }}
       />
     </div>
   );

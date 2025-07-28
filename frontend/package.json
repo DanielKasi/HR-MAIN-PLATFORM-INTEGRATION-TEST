@@ -75,6 +75,7 @@
     "react-leaflet": "^5.0.0",
     "react-redux": "^9.2.0",
     "react-resizable-panels": "^2.1.7",
+    "react-toastify": "^11.0.5",
     "react-virtuoso": "^4.13.0",
     "recharts": "^2.15.0",
     "redux": "^5.0.1",

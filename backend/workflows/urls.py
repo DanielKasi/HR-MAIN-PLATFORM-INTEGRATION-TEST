@@ -16,14 +16,14 @@ urlpatterns = [
         name="update-task-status",
     ),
     path(
-        "Institution-approval-step/<int:Institution_id>/",
+        "institution-approval-step/<int:institution_id>/",
         InstitutionApprovalStepAPIView.as_view(),
-        name="Institution-approval-step",
+        name="institution-approval-step",
     ),
     path(
-        "Institution-approval-step/<int:Institution_id>/reorder/",
+        "institution-approval-step/<int:institution_id>/reorder/",
         InstitutionApprovalStepReorderAPIView.as_view(),
-        name="Institution-approval-step-reorder",
+        name="institution-approval-step-reorder",
     ),
     path("workflow-action/", WorkflowActionAPIView.as_view(), name="workflow-action"),
 ]

@@ -1,6 +1,12 @@
 "use client";
 import type React from "react";
-import type {ApprovalStep, Role, UserProfile, WorkflowAction} from "@/app/types";
+import type {
+  ApprovalStep,
+  IPaginatedResponse,
+  Role,
+  UserProfile,
+  WorkflowAction,
+} from "@/app/types";
 
 import {useParams, useRouter} from "next/navigation";
 import {useEffect, useState} from "react";
@@ -10,12 +16,14 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/compo
 import {Input} from "@/components/ui/input";
 import {SearchableSelect, type SearchableSelectItem} from "@/components/searchable-select";
 import apiRequest from "@/lib/apiRequest";
-import {fetchInstitutionRoles, getDefaultInstitutionId} from "@/lib/helpers";
-import {handleApiError} from "@/lib/apiErrorHandler";
+import {fetchInstitutionRoles} from "@/lib/helpers";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {useSelector} from "react-redux";
 
 export default function EditApprovalStep() {
+  const institutionId = useSelector(selectSelectedInstitution)?.id;
   const params = useParams();
-  const stepId = Number.parseInt(params.id as string);
+  const stepId = params.id as string;
   const [stepName, setStepName] = useState("");
   const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
@@ -34,12 +42,10 @@ export default function EditApprovalStep() {
         const [rolesResponse, actionsResponse, stepResponse] = await Promise.all([
           fetchInstitutionRoles(),
           apiRequest.get("workflow/workflow-action/"),
-          apiRequest.get(
-            `workflow/Institution-approval-step/${getDefaultInstitutionId()}/?step=${stepId}`,
-          ),
+          apiRequest.get(`workflow/institution-approval-step/${institutionId}/?step=${stepId}`),
         ]);
 
-        setRoles(rolesResponse.data);
+        setRoles(rolesResponse.data.results);
         setActions(actionsResponse.data);
 
         // Set form data from the step
@@ -51,7 +57,6 @@ export default function EditApprovalStep() {
         setActionId(stepData.action);
       } catch (err: any) {
         setError("Failed to load required data for approval step");
-        handleApiError(err);
       } finally {
         setLoading(false);
       }
@@ -65,13 +70,11 @@ export default function EditApprovalStep() {
 
   const fetchUserProfiles = async () => {
     try {
-      const InstitutionId = getDefaultInstitutionId();
-      const response = await apiRequest.get("institution/profile/" + InstitutionId);
-
-      setUserProfiles(response.data);
+      const response = await apiRequest.get("institution/profile/" + institutionId);
+      const profilesResponse = (response.data as IPaginatedResponse<UserProfile>).results;
+      setUserProfiles(profilesResponse);
     } catch (error: any) {
-      setError("Failed to fetch Institution users");
-      handleApiError(error);
+      setError("Failed to fetch institution users");
     }
   };
 
@@ -95,31 +98,28 @@ export default function EditApprovalStep() {
     try {
       setSubmitting(true);
 
-      const InstitutionId = getDefaultInstitutionId();
-
-      if (!InstitutionId) {
-        throw new Error("No Institution context found");
+      if (!institutionId) {
+        throw new Error("No institution context found");
       }
 
       const payload = {
         step_name: stepName,
         roles: selectedRoleIds,
         approvers: selectedUserIds,
-        institution: InstitutionId,
+        institution: institutionId,
         action: actionId,
       };
 
       // Send PATCH request to update the step
       await apiRequest.patch(
-        `workflow/Institution-approval-step/${InstitutionId}/?step=${stepId}`,
+        `workflow/institution-approval-step/${institutionId}/?step=${stepId}`,
         payload,
       );
 
       // Redirect to approval steps list
-      router.push("/admin/Institution-approval-steps");
+      router.push("/admin/institution-approval-steps");
     } catch (err: any) {
       setError("Failed to update approval step");
-      handleApiError(err);
     } finally {
       setSubmitting(false);
     }
@@ -200,7 +200,7 @@ export default function EditApprovalStep() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => router.push("/admin/Institution-approval-steps")}
+            onClick={() => router.push("/admin/institution-approval-steps")}
           >
             Back to Approval Steps
           </Button>
@@ -298,7 +298,7 @@ export default function EditApprovalStep() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.push("/admin/Institution-approval-steps")}
+                  onClick={() => router.push("/admin/institution-approval-steps")}
                 >
                   Cancel
                 </Button>
