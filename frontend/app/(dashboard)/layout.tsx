@@ -295,6 +295,16 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Performance Reports", href: "/performance/reports"},
       ],
     },
+    {
+      title: "Events & Holidays",
+      href: "/events-holidays",
+      icon: <Icon icon="hugeicons:calendar-03" className="w-5 h-5" />,
+      submenu: [
+        {title: "Calender", href: "/events-holidays"},
+        {title: "Events", href: "/events-holidays/events"},
+        {title: "Holidays", href: "/events-holidays/holidays"},
+      ],
+    },
   ];
 
   // const adminItem: NavItem = {
