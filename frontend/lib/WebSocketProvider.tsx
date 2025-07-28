@@ -98,7 +98,7 @@ export const WebSocketProvider: React.FC<{children: React.ReactNode}> = ({childr
       return;
     }
 
-    const socket = new WebSocket(`${WS_URL}/ws/notifications/?token=${token}`);
+    const socket = new WebSocket(`${WS_URL}/api/ws/notifications/?token=${token}`);
 
     socketRef.current = socket;
 
@@ -152,11 +152,6 @@ export const WebSocketProvider: React.FC<{children: React.ReactNode}> = ({childr
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
-
-      // TODO: readd web socket reconnection
-      // reconnectTimeoutRef.current = setTimeout(() => {
-      //   connectWebSocket();
-      // }, 5000);
     };
 
     socket.onerror = () => {};

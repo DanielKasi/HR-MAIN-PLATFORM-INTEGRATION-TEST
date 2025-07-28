@@ -48,9 +48,9 @@ INSTALLED_APPS = [
     "projects",
     "calendar2",
     "assets",
-    'ckeditor',
-    'ckeditor_uploader',
-    'documents',
+    "ckeditor",
+    "ckeditor_uploader",
+    "documents",
 ]
 
 MIDDLEWARE = [
