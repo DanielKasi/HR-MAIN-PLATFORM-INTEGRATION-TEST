@@ -156,17 +156,17 @@ export default function JobAdvertsPage() {
   }, [jobAdverts, searchTerm])
 
   const publishedAdverts = useMemo(() =>
-    Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.status === "active") : [],
+    Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.job_position_advert_status === "active") : [],
     [jobAdverts]
   )
 
   const draftAdverts = useMemo(() =>
-    Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.status === "archived") : [],
+    Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.job_position_advert_status === "archived") : [],
     [jobAdverts]
   )
 
   const expiredAdverts = useMemo(() =>
-    Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.status === "expired" || isExpired(advert.expiry_date)) : [],
+    Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.job_position_advert_status === "expired" || isExpired(advert.expiry_date)) : [],
     [jobAdverts]
   )
 
@@ -351,8 +351,8 @@ export default function JobAdvertsPage() {
                     </div>
                     <div>
                       <CardTitle className="text-lg">Job Advert</CardTitle>
-                      <Badge className={`text-xs ${getStatusColor(advert.status)}`}>
-                        {advert.status.toUpperCase()}
+                      <Badge className={`text-xs ${getStatusColor(advert.job_position_advert_status)}`}>
+                        {advert.job_position_advert_status.toUpperCase()}
                       </Badge>
                     </div>
                   </div>

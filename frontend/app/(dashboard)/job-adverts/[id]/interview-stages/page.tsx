@@ -224,8 +224,16 @@ const buildCandidateHistory = (
       });
 
     // Build history entries
-    const interview_history: InterviewHistoryEntry[] = candidateInterviews.map(interview => {
-      const stage = stages.find(s => s.id === interview.interview_stage.toString());
+
+    // Get current stage (highest level stage they've completed)
+    const currentStageInterview = candidateInterviews.length > 0 ? candidateInterviews[candidateInterviews.length - 1] : null;
+    const currentStage = currentStageInterview ? stages.find(s => s.id === currentStageInterview.interview_stage.toString()) : null;
+    const current_stage_level = currentStage?.level || 0;
+    const current_stage_name = currentStage?.name || 'Not Started';
+
+    // Calculate overall rating (average of all ratings)
+    const ratingsWithValues = (candidateInterviews.map(interview => {
+      const stage = stages.find(s => s.id === interview.interview_stage.toString())
       return {
         stage_id: interview.interview_stage,
         stage_name: stage?.name || 'Unknown Stage',
@@ -239,30 +247,85 @@ const buildCandidateHistory = (
         status: interview.status || 'completed',
         created_at: interview.created_at,
         updated_at: interview.updated_at
-      };
-    });
-
-    // Get current stage (highest level stage they've completed)
-    const currentStageInterview = candidateInterviews.length > 0 ? candidateInterviews[candidateInterviews.length - 1] : null;
-    const currentStage = currentStageInterview ? stages.find(s => s.id === currentStageInterview.interview_stage.toString()) : null;
-    const current_stage_level = currentStage?.level || 0;
-    const current_stage_name = currentStage?.name || 'Not Started';
-
-    // Calculate overall rating (average of all ratings)
-    const ratingsWithValues = interview_history.filter(h => h.rating && h.rating > 0);
+      }
+    })).filter(h => h.rating && h.rating > 0);
     const overall_rating = ratingsWithValues.length > 0
       ? ratingsWithValues.reduce((sum, h) => sum + (h.rating || 0), 0) / ratingsWithValues.length
       : 0;
 
     // Calculate completion rate (stages with feedback / total stages completed)
-    const stagesWithFeedback = interview_history.filter(h => h.feedback && h.feedback.trim().length > 0);
-    const completion_rate = interview_history.length > 0
-      ? (stagesWithFeedback.length / interview_history.length) * 100
+    const stagesWithFeedback = (candidateInterviews.map(interview => {
+      const stage = stages.find(s => s.id === interview.interview_stage.toString())
+      return {
+        stage_id: interview.interview_stage,
+        stage_name: stage?.name || 'Unknown Stage',
+        stage_level: stage?.level || 0,
+        interviewer: stage?.interviewer || 'Unknown',
+        interview_date: interview.interview_date,
+        interview_time: interview.interview_time,
+        location: interview.location,
+        feedback: interview.feedback,
+        rating: interview.rating,
+        status: interview.status || 'completed',
+        created_at: interview.created_at,
+        updated_at: interview.updated_at
+      }
+    })).filter(h => h.feedback && h.feedback.trim().length > 0);
+    const completion_rate = (candidateInterviews.map(interview => {
+      const stage = stages.find(s => s.id === interview.interview_stage.toString())
+      return {
+        stage_id: interview.interview_stage,
+        stage_name: stage?.name || 'Unknown Stage',
+        stage_level: stage?.level || 0,
+        interviewer: stage?.interviewer || 'Unknown',
+        interview_date: interview.interview_date,
+        interview_time: interview.interview_time,
+        location: interview.location,
+        feedback: interview.feedback,
+        rating: interview.rating,
+        status: interview.status || 'completed',
+        created_at: interview.created_at,
+        updated_at: interview.updated_at
+      }
+    })).length > 0
+      ? (stagesWithFeedback.length / (candidateInterviews.map(interview => {
+        const stage = stages.find(s => s.id === interview.interview_stage.toString())
+        return {
+          stage_id: interview.interview_stage,
+          stage_name: stage?.name || 'Unknown Stage',
+          stage_level: stage?.level || 0,
+          interviewer: stage?.interviewer || 'Unknown',
+          interview_date: interview.interview_date,
+          interview_time: interview.interview_time,
+          location: interview.location,
+          feedback: interview.feedback,
+          rating: interview.rating,
+          status: interview.status || 'completed',
+          created_at: interview.created_at,
+          updated_at: interview.updated_at
+        }
+      })).length) * 100
       : 0;
 
     return {
       ...candidate,
-      interview_history,
+      interview_history: candidateInterviews.map(interview => {
+        const stage = stages.find(s => s.id === interview.interview_stage.toString())
+        return {
+          stage_id: interview.interview_stage,
+          stage_name: stage?.name || 'Unknown Stage',
+          stage_level: stage?.level || 0,
+          interviewer: stage?.interviewer || 'Unknown',
+          interview_date: interview.interview_date,
+          interview_time: interview.interview_time,
+          location: interview.location,
+          feedback: interview.feedback,
+          rating: interview.rating,
+          status: interview.status || 'completed',
+          created_at: interview.created_at,
+          updated_at: interview.updated_at
+        }
+      }),
       current_stage_level,
       current_stage_name,
       overall_rating: Math.round(overall_rating * 10) / 10,

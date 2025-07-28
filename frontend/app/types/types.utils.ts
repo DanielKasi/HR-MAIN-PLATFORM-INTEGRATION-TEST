@@ -372,7 +372,7 @@ export interface JobPositionAdvert {
   job_position_details: any;
   id: number;
   job_position: number; // Foreign key to JobPosition
-  status: JobAdvertStatus;
+  job_position_advert_status: JobAdvertStatus;
   published_date: string; // ISO datetime string
   expiry_date: string; // ISO datetime string
   number_of_employees_expected?: number | null;
@@ -455,6 +455,8 @@ export interface IInterviewStage {
 
 
 export interface IInterview {
+  updated_at: any;
+  created_at: any;
   id: number;
   job_position_application: number;
   job_position_application_details?: JobApplication | null;
