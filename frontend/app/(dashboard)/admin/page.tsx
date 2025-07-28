@@ -226,6 +226,20 @@ export default function AdminPage() {
                 </Link>
               </div>
             </div>
+            <div>
+              <h2 className="text-lg font-semibold mb-6">Documents Management</h2>
+              <Separator className="my-6" />
+
+              <div className="space-y-4">
+                <Link
+                  href="/documents/document_types"
+                  className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+                >
+                  <ShieldAlert className="w-5 h-5 text-gray-500" />
+                  <span>Document Types</span>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -249,6 +249,80 @@
     }
   ],
 
+  "Document Management": [
+  {
+    "code": "can_create_document_types",
+    "name": "Can Create Document Types",
+    "description": "Allows creating new document types"
+  },
+  {
+    "code": "can_view_document_types",
+    "name": "Can View Document Types",
+    "description": "Allows viewing document type listings"
+  },
+  {
+    "code": "can_edit_document_types",
+    "name": "Can Edit Document Types",
+    "description": "Allows editing existing document types"
+  },
+  {
+    "code": "can_delete_document_types",
+    "name": "Can Delete Document Types",
+    "description": "Allows deleting document types"
+  },
+  {
+    "code": "can_create_document_templates",
+    "name": "Can Create Document Templates",
+    "description": "Allows creating new document templates"
+  },
+  {
+    "code": "can_view_document_templates",
+    "name": "Can View Document Templates",
+    "description": "Allows viewing document template listings"
+  },
+  {
+    "code": "can_edit_document_templates",
+    "name": "Can Edit Document Templates",
+    "description": "Allows editing existing document templates"
+  },
+  {
+    "code": "can_delete_document_templates",
+    "name": "Can Delete Document Templates",
+    "description": "Allows deleting document templates"
+  },
+  {
+    "code": "can_upload_documents",
+    "name": "Can Upload Documents",
+    "description": "Allows uploading documents to the system"
+  },
+  {
+    "code": "can_view_documents",
+    "name": "Can View Documents",
+    "description": "Allows viewing documents stored in the system"
+  },
+  {
+    "code": "can_edit_documents",
+    "name": "Can Edit Documents",
+    "description": "Allows editing or replacing uploaded documents"
+  },
+  {
+    "code": "can_delete_documents",
+    "name": "Can Delete Documents",
+    "description": "Allows deleting documents from the system"
+  },
+  {
+    "code": "can_approve_documents",
+    "name": "Can Approve Documents",
+    "description": "Allows approving or reviewing documents submitted for approval"
+  },
+  {
+    "code": "can_archive_documents",
+    "name": "Can Archive Documents",
+    "description": "Allows archiving or marking documents as inactive"
+  }
+],
+
+
   "Leave Management": [
     {
       "code": "can_view_leave_applications",
