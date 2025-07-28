@@ -651,122 +651,120 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
     setSortDirection("desc");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError(null);
 
-    // Simple validation checks
-    if (!formData.applicant_name.trim()) {
-      setError("Please enter the applicant's name");
-      return;
-    }
+  // Simple validation checks
+  if (!formData.applicant_name.trim()) {
+    setError("Please enter the applicant's name");
+    return;
+  }
 
-    if (!formData.applicant_email.trim()) {
-      setError("Please enter the applicant's email");
-      return;
-    }
+  if (!formData.applicant_email.trim()) {
+    setError("Please enter the applicant's email");
+    return;
+  }
 
-    if (!formData.address.trim()) {
-      setError("Please enter the applicant's address");
-      return;
-    }
+  if (!formData.address.trim()) {
+    setError("Please enter the applicant's address");
+    return;
+  }
 
-    if (!formData.country.trim()) {
-      setError("Please enter the country");
-      return;
-    }
+  if (!formData.country.trim()) {
+    setError("Please enter the country");
+    return;
+  }
 
-    if (formData.job_position_advert === 0) {
-      setError("Please select a job position");
-      return;
-    }
+  if (formData.job_position_advert === 0) {
+    setError("Please select a job position");
+    return;
+  }
 
-    if (!formData.resume) {
-      setError("Please upload a resume");
-      return;
-    }
+  if (!formData.resume) {
+    setError("Please upload a resume");
+    return;
+  }
 
-    if (!selectedInstitution || !selectedBranch) {
-      setError("Missing organization or branch information");
-      return;
-    }
+  if (!selectedInstitution || !selectedBranch) {
+    setError("Missing organization or branch information");
+    return;
+  }
 
-    if (!userData?.id) {
-      setError("User information not available. Please refresh and try again.");
-      return;
-    }
+  if (!userData?.id) {
+    setError("User information not available. Please refresh and try again.");
+    return;
+  }
 
-    setIsSubmitting(true);
+  setIsSubmitting(true);
 
-    try {
-      const applicationData: JobApplicationFormData = {
-        ...formData,
-        resume: formData.resume,
-        cover_letter: formData.cover_letter || undefined,
-        applicant_phone: formData.applicant_phone || undefined,
-        state: formData.state || undefined,
-        application_date: formData.application_date,
-        address: formData.address,
-        country: formData.country,
-        created_by: userData.id,
-        reviewed_by: userData.id,
-        shortlisted_by: userData.id,
-        recommended_by: userData.id,
-      };
+  try {
+    const applicationData: JobApplicationFormData = {
+      ...formData,
+      resume: formData.resume,
+      cover_letter: formData.cover_letter || undefined,
+      applicant_phone: formData.applicant_phone || undefined,
+      state: formData.state || undefined,
+      application_date: formData.application_date,
+      address: formData.address,
+      country: formData.country,
+      created_by: userData.id,
+      // REMOVED: Don't set reviewed_by and shortlisted_by on creation
+      // reviewed_by: userData.id,
+      // shortlisted_by: userData.id,
+      // recommended_by: userData.id,
+    };
 
-      const newApplication = await createJobApplication({
-        institutionId: selectedInstitution.id,
-        applicationData,
+    const newApplication = await createJobApplication({
+      institutionId: selectedInstitution.id,
+      applicationData,
+    });
+
+    if (newApplication) {
+      // Maintain sorted order when adding new application
+      setApplications((prev) => {
+        const updated = [newApplication, ...prev];
+        return updated.sort((a, b) =>
+          new Date(b.application_date).getTime() - new Date(a.application_date).getTime()
+        );
       });
 
-      if (newApplication) {
-        // Maintain sorted order when adding new application
-        setApplications((prev) => {
-          const updated = [newApplication, ...prev];
-          return updated.sort((a, b) =>
-            new Date(b.application_date).getTime() - new Date(a.application_date).getTime()
-          );
-        });
-
-        setIsCreateDialogOpen(false);
-        resetFiltersAndShowNewApplication();
-        setFormData({
-          job_position_advert: 0,
-          applicant_name: "",
-          applicant_email: "",
-          applicant_phone: "",
-          resume: null,
-          cover_letter: undefined,
-          status: "new",
-          gender: "male",
-          state: "",
-          address: "",
-          address_latitude: "",
-          address_longitude: "",
-          country: "",
-          source: "website",
-          application_date: new Date().toISOString().split("T")[0],
-          created_by: userData.id,
-          reviewed_by: userData.id,
-          shortlisted_by: userData.id,
-          recommended_by: userData.id,
-        });
-        toast.success("Application created successfully!");
-      } else {
-        setError("Failed to create application");
-      }
-    } catch (err: any) {
-      if (err?.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err?.message) {
-        setError(err.message);
-      } else {
-        setError("Failed to create application. Please check all fields and try again.");
-      }
-    } finally {
-      setIsSubmitting(false);
+      setIsCreateDialogOpen(false);
+      resetFiltersAndShowNewApplication();
+      setFormData({
+        job_position_advert: 0,
+        applicant_name: "",
+        applicant_email: "",
+        applicant_phone: "",
+        resume: null,
+        cover_letter: undefined,
+        status: "new",
+        gender: "male",
+        state: "",
+        address: "",
+        address_latitude: "",
+        address_longitude: "",
+        country: "",
+        source: "website",
+        application_date: new Date().toISOString().split("T")[0],
+        created_by: userData.id,
+      });
+      toast.success("Application created successfully!");
+    } else {
+      setError("Failed to create application");
     }
-  };
+  } catch (err: any) {
+    if (err?.response?.data?.message) {
+      setError(err.response.data.message);
+    } else if (err?.message) {
+      setError(err.message);
+    } else {
+      setError("Failed to create application. Please check all fields and try again.");
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleSelectApplication = (applicationId: number, checked: boolean) => {
     if (checked) {
