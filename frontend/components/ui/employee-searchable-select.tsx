@@ -43,8 +43,6 @@ export const EmployeeSearchableSelect = ({
   triggerClassName,
   multiple=false
 }: EmployeeSearchableSelectProps) => {
-
-  console.log("\n\n The passed in value : ", value)
   
   const getEmployeeName = (employee: Employee): string => {
     if (employee.user?.fullname) return employee.user.fullname
@@ -99,9 +97,7 @@ export const EmployeeSearchableSelect = ({
   if (isLoading) {
     displayPlaceholder = "Loading employees..."
   } else if (selectedItems.length > 0) {
-    console.log("\n\n Selected items : ", selectedItems)
     const selectedNames = selectedItems
-    
       .map((id) => {
         const emp = employees.find((e) => e.id.toString() === id.toString())
         return emp ? getEmployeeName(emp) : null

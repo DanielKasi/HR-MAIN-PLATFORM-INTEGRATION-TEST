@@ -15,7 +15,9 @@ import {
   PaginatedIOnboardingResponse, ILeaveBalance,
   PaginatedResponse,
   IContract,
-  IContractFormData
+  IContractFormData,
+  IDocumentTypeFormData,
+  IDocumentType
 } from "@/app/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -187,7 +189,7 @@ export const getJobPositions = async ({ institutionId }: { institutionId: number
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`)
     const data = response.data as PaginatedResponse<IJobPosition>
-    console.log("Job Position Data:", data)
+    //console.log("Job Position Data:", data)
     return data.results
   } catch (error) {
     console.error("Error fetching job positions:", error)
@@ -199,6 +201,7 @@ export const getJobPosition = async ({ jobPositionId }: { jobPositionId: number 
   try {
     const response = await apiRequest.get(`recruitment/job-position/${jobPositionId}/`)
     const data = response.data as IJobPosition
+    console.log("Job Position:", data)
     return data
   } catch (error) {
     console.error("Error fetching job position:", error)
@@ -3022,5 +3025,94 @@ export const downloadContract = async ({
     }
 
     return null;
+  }
+};
+
+export const createDocumentType = async ({
+  institutionId,
+  documentTypeData,
+}: {
+  institutionId: number;
+  documentTypeData: IDocumentTypeFormData;
+}): Promise<IDocumentType | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(documentTypeData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.post(
+      `documents/institution/${institutionId}/types/`,
+      formData
+    );
+    return response.data as IDocumentType;
+  } catch (error) {
+    console.error("Failed to create document type:", error);
+    return null;
+  }
+};
+
+export const getDocumentTypes = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<IDocumentType[]> => {
+  try {
+    const response = await apiRequest.get(
+      `documents/institution/${institutionId}/types/`
+    );
+    const data = response.data as PaginatedResponse<IDocumentType>;
+    return data.results;
+  } catch (error) {
+    console.error("Failed to fetch document types:", error);
+    return [];
+  }
+};
+
+export const updateDocumentType = async ({
+  institutionId,
+  documentTypeId,
+  documentTypeData,
+}: {
+  institutionId: number;
+  documentTypeId: number;
+  documentTypeData: IDocumentTypeFormData;
+}): Promise<IDocumentType | null> => {
+  try {
+    const formData = new FormData();
+    Object.entries(documentTypeData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    const response = await apiRequest.patch(
+      `documents/types/${documentTypeId}/`,
+      formData
+    );
+    return response.data as IDocumentType;
+  } catch (error) {
+    console.error("Failed to update document type:", error);
+    return null;
+  }
+};
+
+export const deleteDocumentType = async ({
+  institutionId,
+  documentTypeId,
+}: {
+  institutionId: number;
+  documentTypeId: number;
+}): Promise<boolean> => {
+  try {
+    await apiRequest.delete(
+      `documents/types/${documentTypeId}/`
+    );
+    return true;
+  } catch (error) {
+    console.error("Failed to delete document type:", error);
+    return false;
   }
 };

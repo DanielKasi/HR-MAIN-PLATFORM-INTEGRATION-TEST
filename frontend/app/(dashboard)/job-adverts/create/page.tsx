@@ -1,30 +1,22 @@
 "use client";
 
-import type React from "react";
-import {useState, useEffect} from "react";
-import {useRouter} from "next/navigation";
-import {useSelector} from "react-redux";
-import {Megaphone, ArrowLeft, Check} from "lucide-react";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
-import {Textarea} from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
-import {getJobPositions, createJobPositionAdvert} from "@/lib/utils";
-import type {
-  JobPositionAdvertFormData,
-  IJobPosition,
-  JobAdvertTypes,
-} from "@/app/types/types.utils";
-import {toast} from "sonner";
+import type React from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useSelector } from "react-redux"
+import { Megaphone, ArrowLeft, Check, Calendar } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
+import { getJobPositions, createJobPositionAdvert } from "@/lib/utils"
+import type { JobPositionAdvertFormData, IJobPosition, JobAdvertStatus, JobAdvertTypes } from "@/app/types/types.utils"
+import { toast } from "sonner"
 
 export default function CreateJobAdvertPage() {
   const [formData, setFormData] = useState<JobPositionAdvertFormData>({
@@ -160,6 +152,7 @@ export default function CreateJobAdvertPage() {
     router.back();
   };
 
+  // Set default expiry date to 30 days from now
   useEffect(() => {
     if (!formData.expiry_date) {
       const defaultExpiryDate = new Date();
@@ -291,6 +284,7 @@ export default function CreateJobAdvertPage() {
                     id="number_of_employees_expected"
                     type="number"
                     min="1"
+                    max="1000"
                     placeholder="1"
                     value={formData.number_of_employees_expected || ""}
                     onChange={(e) =>
@@ -320,7 +314,11 @@ export default function CreateJobAdvertPage() {
                   value={formData.extra_information || ""}
                   onChange={(e) => updateFormData("extra_information", e.target.value)}
                   rows={4}
+                  className="resize-none"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Provide additional details about the role, requirements, or company benefits
+                </p>
               </div>
 
               {/* Form Actions */}
