@@ -199,7 +199,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       href: "#1",
       icon: <Icon icon="hugeicons:user-add-02" width="20" height="20" />,
       submenu: [
-        {title: "Job Adverts", href: "/job-adverts"},
+        {title: "Job Openings", href: "/job-adverts"},
         {title: "Applications", href: "/applications"},
         {title: "Interviews", href: "/job-interviews"},
       ],

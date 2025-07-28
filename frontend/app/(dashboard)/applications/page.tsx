@@ -47,6 +47,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  Building,
 } from "lucide-react";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {
@@ -1729,8 +1730,8 @@ const handleSelectAll = (checked: boolean) => {
       <SelectContent>
         {jobPositionAdverts
           .filter((advert) =>
-            advert.status !== "expired" &&
-            advert.status !== "closed"
+            advert.job_position_advert_status !== "expired" &&
+            advert.job_position_advert_status !== "closed"
           )
           .map((advert) => (
             <SelectItem key={advert.id} value={advert.id.toString()}>
@@ -2160,7 +2161,7 @@ const handleSelectAll = (checked: boolean) => {
                 interview_stage: parseInt(value)
               }));
               if (interviewErrors.interview_stage) {
-                setInterviewErrors(prev => ({ ...prev, interview_stage: undefined }));
+                setInterviewErrors((prev: any) => ({ ...prev, interview_stage: undefined }));
               }
             }}
           >
@@ -2210,7 +2211,7 @@ const handleSelectAll = (checked: boolean) => {
                 interview_date: e.target.value
               }));
               if (interviewErrors.interview_date) {
-                setInterviewErrors(prev => ({ ...prev, interview_date: undefined }));
+                setInterviewErrors((prev: any) => ({ ...prev, interview_date: undefined }));
               }
             }}
             className={interviewErrors.interview_date ? "border-destructive" : ""}
@@ -2238,7 +2239,7 @@ const handleSelectAll = (checked: boolean) => {
                 location: e.target.value
               }));
               if (interviewErrors.location) {
-                setInterviewErrors(prev => ({ ...prev, location: undefined }));
+                setInterviewErrors((prev: any) => ({ ...prev, location: undefined }));
               }
             }}
             placeholder="e.g., Conference Room A, Zoom Link, etc."
@@ -2347,11 +2348,13 @@ const handleSelectAll = (checked: boolean) => {
         <Label htmlFor="stage_interviewers">Interviewers *</Label>
         <div className="w-full max-w-full overflow-hidden">
           <EmployeeSearchableSelect
-            employees={employees.map((emp) => ({
-              ...emp,
-              department: emp.department.toString(),
-              position: emp.position.toString(),
-            }))}
+            employees={employees.map(emp => ({
+            ...emp,
+            department: emp.department.name,  
+            position: emp.position.name,  
+            user: emp.user ? { fullname: emp.user.fullname, email: emp.user.email } : undefined,
+          }))}
+
             value={stageFormData.interviewers.map((id) => id.toString())}
             onValueChange={(values) => {
               const numberValues = Array.isArray(values)

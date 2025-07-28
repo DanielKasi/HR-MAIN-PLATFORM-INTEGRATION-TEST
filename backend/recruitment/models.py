@@ -209,19 +209,27 @@ class JobPositionAdvert(models.Model):
     job_position_advert_status = models.CharField(
         max_length=20, choices=status_choices, default="pending_approval"
     )
+    advert_type = models.CharField(
+        max_length=20,
+        choices=[
+            ("internal", "Internal"),
+            ("external", "External"),
+        ],
+        default="external",
+    )
     published_date = models.DateTimeField(default=datetime.now)
     expiry_date = models.DateTimeField()
     number_of_employees_expected = models.PositiveIntegerField(blank=True, null=True)
     extra_information = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.job_position.name} - {self.status} ({self.published_date})"
+        return f"{self.job_position.name} - {self.job_position_advert_status} ({self.published_date})"
 
     def _clean(self):
-        if self.status == "active":
+        if self.job_position_advert_status == "active":
             existing_active = JobPositionAdvert.objects.filter(
                 job_position=self.job_position,
-                status="active",
+                job_position_advert_status="active",
             )
 
             if self.pk:
@@ -256,7 +264,7 @@ class JobPositionAdvert(models.Model):
         )
 
         if tasks.exists() and tasks.filter(status="rejected").exists():
-            self.status = "inactive"
+            self.job_position_advert_status = "inactive"
             self.save()
             return
         if (

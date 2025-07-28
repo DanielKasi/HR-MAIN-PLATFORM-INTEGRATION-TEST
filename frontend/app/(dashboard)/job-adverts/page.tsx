@@ -190,7 +190,7 @@ export default function JobAdvertsPage() {
 
       const updatedAdvert = await updateJobPositionAdvert({
         advertId: advertId,
-        advertData: { status: "closed" },
+        advertData: { job_position_advert_status: "closed" },
       })
 
       if (updatedAdvert) {

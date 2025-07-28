@@ -368,6 +368,8 @@ export interface JobApplicationFormData {
 
 export type JobAdvertStatus = "expired" | "active" | "archived" | "closed";
 
+export type JobAdvertTypes = "internal" | "external";
+
 export interface JobPositionAdvert {
   job_position_details: any;
   id: number;
@@ -379,15 +381,17 @@ export interface JobPositionAdvert {
   extra_information?: string | null;
   applications: JobApplication[];
   interview_stages: JobApplication[]
+  advert_type: JobAdvertTypes;
 }
 
 // For creating/updating job adverts
 export interface JobPositionAdvertFormData {
   job_position: number;
-  status?: JobAdvertStatus;
-  expiry_date: string; 
+  job_position_advert_status?: JobAdvertStatus;
+  expiry_date: string; // ISO datetime string
   number_of_employees_expected?: number;
   extra_information?: string;
+  advert_type?: JobAdvertTypes;
 }
 
 
@@ -444,6 +448,7 @@ export interface IInterviewStageFormData {
 }
 
 export interface IInterviewStage {
+  candidates: any[];
   id: number;
   job_position_advert: number;
   name: string;
@@ -451,6 +456,7 @@ export interface IInterviewStage {
   interviewers: number[];
   interviewers_details?: IEmployee[];
   candidates_count: number;
+  
 }
 
 
@@ -662,13 +668,14 @@ export interface IInterviewFormData {
   job_position_application: number;
   interview_stage: number;
   interview_date: string;
-  feedback?: string;
-  rating?: number;
+  feedback?: string | null;
+  rating?: number | null;
   location: string,
   interview_time: string,
   interview_type: string,
   status: string;
   created_by: number;
+  
 }
 
 
