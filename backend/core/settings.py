@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "django_ckeditor_5",
     "documents",
     "audit",
+    "settings",
 ]
 
 MIDDLEWARE = [

@@ -25,6 +25,7 @@ urlpatterns = [
     path("api/calendar/", include("calendar2.urls")),
     path("api/assets/", include("assets.urls")),
     path("api/documents/", include("documents.urls")),
+    path("api/settings/", include("settings.urls")),
 ]
 
 if settings.DEBUG:
