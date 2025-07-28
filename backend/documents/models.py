@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils.text import slugify
 from institution.models import Institution
+# from django_ckeditor_5.fields import CKEditor5Field
+
 
 class DocumentType(models.Model):
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
@@ -16,11 +18,40 @@ class DocumentType(models.Model):
     def save(self, *args, **kwargs):
         # Auto-generate code from name
         if not self.code:
-            self.code = slugify(self.name).replace('-', '_')
+            self.code = slugify(self.name).replace("-", "_")
             # Ensure code uniqueness
             base_code = self.code
             counter = 1
-            while DocumentType.objects.filter(code=self.code).exclude(pk=self.pk).exists():
+            while (
+                DocumentType.objects.filter(code=self.code).exclude(pk=self.pk).exists()
+            ):
                 self.code = f"{base_code}_{counter}"
                 counter += 1
         super().save(*args, **kwargs)
+
+
+# class DocumentTemplate(models.Model):
+#     document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE)
+#     name = models.CharField(max_length=255)
+#     template_type = models.CharField(
+#         max_length=50,
+#         choices=[
+#             ("pdf", "PDF"),
+#             ("word", "Word Document"),
+#             ("richtext", "Text"),
+#         ],
+#     )
+#     file = models.FileField(upload_to="document_templates/")
+#     content = CKEditor5Field(
+#         verbose_name="Content",
+#         blank=True,
+#         null=True,
+#         help_text="Rich text content for the contract template (used if template_type is richtext)",
+#         config_name="default",  
+#     )
+#     placeholders = models.JSONField(
+#         default=list,
+#         help_text="List of placeholders used in the template, e.g. ['{{employee_name}}', '{{date}}']",
+#     )
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
