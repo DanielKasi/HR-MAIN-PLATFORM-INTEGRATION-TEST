@@ -154,8 +154,7 @@ interface CandidateWithHistory extends Candidate {
   overall_rating: number
   completion_rate: number
 }
-  const userData = useSelector(selectUser);
-  const createdBy = userData?.id ?? 0;
+  
 // Utility functions from original components
 const recalculateStageCandidateCounts = (
   stages: IInterviewStage[],
@@ -1107,6 +1106,8 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
   const resolvedParams = use(params)
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
+  const userData = useSelector(selectUser);
+  const createdBy = userData?.id ?? 0;
 
   // State management
   const [jobPositionAdvert, setJobPositionAdvert] = useState<JobPositionAdvert | null>(null)
@@ -1121,6 +1122,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCandidates, setSelectedCandidates] = useState<number[]>([])
   const [viewMode, setViewMode] = useState<'current' | 'history'>('current')
+  const [showPipeline, setShowPipeline] = useState(true)
 
   // Dialog states
   const [isCreateStageDialogOpen, setIsCreateStageDialogOpen] = useState(false)
@@ -1963,7 +1965,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 
       {processedStages.length === 0 ? (
         /* No stages state */
-        <Card className="p-6">
+        <Card className="mt-6">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -1996,7 +1998,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
           </div>
 
           <TabsContent value="current">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-500px)]">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[400px]">
               {/* Left Panel - Stages List */}
               <div className="lg:col-span-1">
                 <Card className="h-full">
@@ -2615,55 +2617,57 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
       )}
 
       {/* Progress Indicator (only show in current view) */}
-      {processedStages.length > 0 && viewMode === 'current' && (
-        <Card>
-          <CardContent className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Pipeline Progress</h3>
-            <div className="flex items-center space-x-2 overflow-x-auto pb-4">
-              {processedStages.map((stage, index) => (
-                <div key={stage.id} className="flex items-center flex-shrink-0">
-                  <div
-                    className={`flex items-center justify-center w-12 h-12 rounded-full border-2 cursor-pointer transition-all ${
-                      stage.count > 0
-                        ? 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100'
-                        : 'border-gray-300 bg-gray-50 text-gray-400 hover:bg-gray-100'
-                    } ${activeStageId === stage.id ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
-                    onClick={() => setActiveStageId(stage.id)}
-                    title={`Click to view ${stage.name}`}
-                  >
-                    <span className="text-sm font-bold">{stage.count}</span>
-                  </div>
-                  {index < processedStages.length - 1 && (
-                    <div className={`h-0.5 w-8 mx-2 ${
-                      stage.count > 0 ? 'bg-green-500' : 'bg-gray-300'
-                    }`} />
-                  )}
-                </div>
-              ))}
+    {processedStages.length > 0 && viewMode === 'current' && (
+  <div className="mt-6"> {/* Added margin-top to push it down */}
+    <Card>
+      <CardContent className="p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Pipeline Progress</h3>
+        <div className="flex items-center space-x-2 overflow-x-auto pb-4">
+          {processedStages.map((stage, index) => (
+            <div key={stage.id} className="flex items-center flex-shrink-0">
+              <div
+                className={`flex items-center justify-center w-12 h-12 rounded-full border-2 cursor-pointer transition-all ${
+                  stage.count > 0
+                    ? 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100'
+                    : 'border-gray-300 bg-gray-50 text-gray-400 hover:bg-gray-100'
+                } ${activeStageId === stage.id ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
+                onClick={() => setActiveStageId(stage.id)}
+                title={`Click to view ${stage.name}`}
+              >
+                <span className="text-sm font-bold">{stage.count}</span>
+              </div>
+              {index < processedStages.length - 1 && (
+                <div className={`h-0.5 w-8 mx-2 ${
+                  stage.count > 0 ? 'bg-green-500' : 'bg-gray-300'
+                }`} />
+              )}
             </div>
-            <div className="flex items-center space-x-2 mt-2 overflow-x-auto">
-              {processedStages.map((stage, index) => (
-                <div key={stage.id} className="flex items-center flex-shrink-0">
-                  <div className="w-12 text-center">
-                    <span
-                      className={`text-xs font-medium truncate block cursor-pointer ${
-                        activeStageId === stage.id ? 'text-blue-600' : 'text-gray-600'
-                      }`}
-                      onClick={() => setActiveStageId(stage.id)}
-                      title={stage.name}
-                    >
-                      {stage.name}
-                    </span>
-                  </div>
-                  {index < processedStages.length - 1 && (
-                    <div className="w-8 mx-2" />
-                  )}
-                </div>
-              ))}
+          ))}
+        </div>
+        <div className="flex items-center space-x-2 mt-2 overflow-x-auto">
+          {processedStages.map((stage, index) => (
+            <div key={stage.id} className="flex items-center flex-shrink-0">
+              <div className="w-12 text-center">
+                <span
+                  className={`text-xs font-medium truncate block cursor-pointer ${
+                    activeStageId === stage.id ? 'text-blue-600' : 'text-gray-600'
+                  }`}
+                  onClick={() => setActiveStageId(stage.id)}
+                  title={stage.name}
+                >
+                  {stage.name}
+                </span>
+              </div>
+              {index < processedStages.length - 1 && (
+                <div className="w-8 mx-2" />
+              )}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+)}
 
       {/* Dialogs */}
       <FeedbackDialog

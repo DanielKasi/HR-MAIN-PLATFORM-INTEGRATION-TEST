@@ -415,6 +415,8 @@ export interface JobPositionAdvertFormData {
 
 
 export interface IEmployee {
+  first_name: any;
+  last_name: any;
   id: number;
   user: IUser | null;
   email: string;
