@@ -244,7 +244,6 @@ interface IInterviewStageFormData {
       }
       setExistingInterviews(interviewsArray)
     } catch (error) {
-      console.error("Error fetching initial data:", error)
       toast.error("Failed to load applications and interview stages")
     }
   }
@@ -465,7 +464,6 @@ interface IInterviewStageFormData {
           })
           return result
         } catch (individualError) {
-          console.error(`Error creating interview ${index + 1}:`, individualError)
           return null
         }
       })
@@ -485,7 +483,6 @@ interface IInterviewStageFormData {
         toast.error("Failed to schedule any interviews.")
       }
     } catch (error) {
-      console.error("Error in handleSubmit:", error)
       toast.error("Failed to schedule interviews. Please try again.")
     } finally {
       setIsSubmitting(false)

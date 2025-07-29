@@ -329,36 +329,38 @@ export default function InterviewViewPage() {
                   <div className="flex items-start gap-4">
                     <Avatar className="h-12 w-12">
                       <AvatarImage
-                        src={
-                          interview.interview_stage_details?.interviewer_details
-                            ?.employee_profile_picture ?? undefined
-                        }
-                      />
+                            src={
+                              interview.interview_stage_details?.interviewers_details?.[0]
+                                ?.employee_profile_picture ?? undefined
+                            }
+                          />
+
                       <AvatarFallback>
                         {getInitials(
-                          interview.interview_stage_details?.interviewer_details?.first_name || "",
-                          interview.interview_stage_details?.interviewer_details?.last_name || "",
+                          interview.interview_stage_details?.interviewers_details?.[0]?.first_name || "",
+                          interview.interview_stage_details?.interviewers_details?.[0]?.last_name || ""
                         )}
+
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
                       <h4 className="font-medium">
-                        {interview.interview_stage_details?.interviewer_details?.first_name}{" "}
-                        {interview.interview_stage_details?.interviewer_details?.last_name}
+                        {interview.interview_stage_details?.interviewers_details?.[0]?.first_name}{" "}
+                        {interview.interview_stage_details?.interviewers_details?.[0]?.last_name}
                       </h4>
                       <p className="text-sm text-muted-foreground">
-                        {interview.interview_stage_details?.interviewer_details?.email}
+                        {interview.interview_stage_details?.interviewers_details?.[0]?.email}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {interview.interview_stage_details?.interviewer_details?.phone_number}
+                        {interview.interview_stage_details?.interviewers_details?.[0]?.phone_number}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         <Badge variant="outline">
-                          {interview.interview_stage_details?.interviewer_details?.experience} years
+                          {interview.interview_stage_details?.interviewers_details?.[0]?.experience} years
                           exp
                         </Badge>
                         <Badge variant="outline">
-                          {interview.interview_stage_details?.interviewer_details?.qualifications}
+                          {interview.interview_stage_details?.interviewers_details?.[0]?.qualifications}
                         </Badge>
                       </div>
                     </div>
