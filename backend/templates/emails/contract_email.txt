@@ -1,11 +1,11 @@
-Subject: Employment Contract for {{ position_title }}
+Subject: Your Employment Contract
 
 Dear {{ employee_name }},
 
-We are pleased to offer you the position of {{ position_title }} at {{ institution_name }}. Attached to this email, you will find your employment contract in PDF format.
+Congratulations on your new role as {{ position_title }} at {{ institution_name }}! We are excited to welcome you to our team.
 
-Please review the contract carefully. If you accept the terms, kindly sign and return a copy to us. If you have any questions, feel free to contact us.
+Attached to this email is your employment contract in PDF format. Please review the terms carefully and sign and return a copy to {{ hr_email }} by {{ due_date }}.
 
-Best regards,
-{{ institution_name }}
-Human Resources Team
+If you have any questions, contact our Human Resources team at {{ hr_email }}.
+
+Best regards, {{ institution_name }} Human Resources Team

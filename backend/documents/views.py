@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from .models import DocumentType, DocumentTemplate, Document
-from .serializers import DocumentTypeSerializer, DocumentTemplateSerializer, GenerateDocumentResponseSerializer, GenerateDocumentRequestSerializer, DocumentContentPreviewSerializer
+from .serializers import DocumentTypeSerializer, DocumentTemplateSerializer, GenerateDocumentResponseSerializer, GenerateDocumentRequestSerializer, DocumentContentPreviewSerializer, DocumentStatusUpdateSerializer
 from utilities.pagination import CustomPageNumberPagination
 from rest_framework.parsers import MultiPartParser, FormParser
 from institution.models import Institution
@@ -13,8 +13,19 @@ from django.contrib.contenttypes.models import ContentType
 from onboarding.models import OnBoarding
 from settings.models import SystemConfiguration
 from django.shortcuts import get_object_or_404
-from datetime import datetime
+from django.core.mail import EmailMultiAlternatives
+from django.conf import settings
+from django.template.loader import render_to_string
+from datetime import datetime, timedelta
 import re
+from django.core.files.base import ContentFile
+from weasyprint import HTML
+from employee.models import EmployeeContract
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
 
 
 
@@ -516,4 +527,199 @@ class DocumentContentPreviewView(APIView):
         serializer = DocumentContentPreviewSerializer({
             'preview': preview
         })
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class DocumentStatusUpdateView(APIView):
+    def _replace_placeholders(self, content, placeholder_values):
+        """Replace all placeholder formats, removing underscores when values are provided."""
+        if not content:
+            logger.warning("Template content is empty")
+            return ""
+
+        preview = content
+        lines = content.split("\n")
+        placeholder_values = {k.lower(): v for k, v in placeholder_values.items() if v is not None}
+        logger.debug(f"Placeholder values: {placeholder_values}")
+
+        placeholder_patterns = [
+            r'\{\{[\w\s\'-]+\}\}',  # {{variable_name}} or {{Employee's Name}}
+            r'<<[\w\s\'-]+>>',      # <<variable_name>> or <<Employee's Name>>
+            r'\[\[[\w\s\'-]+\]\]',  # [[variable_name]] or [[Employee's Name]]
+            r'\[[\w\s\'-]+\]',      # [variable_name] or [Employee's Name]
+            r'_{10,}',              # ___________________
+        ]
+        combined_pattern = '|'.join(f'({pattern})' for pattern in placeholder_patterns)
+        all_matches = re.findall(combined_pattern, content)
+        matches = [match for group in all_matches for match in group if match]
+        logger.debug(f"Found placeholders: {matches}")
+
+        for match in matches:
+            if not re.match(r'_{10,}', match):
+                cleaned_name = re.sub(r'[\{\}<>\[\]]+', '', match).strip()
+                normalized_key = re.sub(r'\s+', '_', cleaned_name.replace("'", "")).lower()
+                value = placeholder_values.get(normalized_key, match)
+                logger.debug(f"Replacing {match} with {value}")
+                preview = preview.replace(match, str(value))
+
+        for line in lines:
+            line_lower = line.lower().strip()
+            match = re.search(r'([\w\s\'-]+?)\s*:?\s*_{10,}', line_lower)
+            if match:
+                phrase = match.group(1).strip()
+                normalized_key = re.sub(r'\s+', '_', phrase.replace("'", "")).lower()
+                value = placeholder_values.get(normalized_key, None)
+                replacement = f"{phrase}: {value}" if value is not None else f"{phrase}: __________"
+                logger.debug(f"Replacing underscore in '{line}' with '{replacement}'")
+                preview = re.sub(r'([\w\s\'-]+?)\s*:?\s*_{10,}', replacement, preview, count=1)
+            if "initials" in line_lower and "initials" in placeholder_values:
+                value = placeholder_values.get("initials", None)
+                replacement = str(value) if value is not None else "__________"
+                preview = re.sub(r'initials\s*:?\s*_{10,}', f"initials: {replacement}", preview, count=1)
+            if "signature" in line_lower and "signature" in placeholder_values:
+                value = placeholder_values.get("signature", None)
+                replacement = str(value) if value is not None else "__________"
+                preview = re.sub(r'signature\s*:?\s*_{10,}', f"signature: {replacement}", preview, count=1)
+            if "days" in line_lower and "days" in placeholder_values:
+                value = placeholder_values.get("days", None)
+                replacement = str(value) if value is not None else "__________"
+                preview = re.sub(r'days\s*:?\s*_{10,}', f"days: {replacement}", preview, count=1)
+            if "state" in line_lower and "state" in placeholder_values:
+                value = placeholder_values.get("state", None)
+                replacement = str(value) if value is not None else "__________"
+                preview = re.sub(r'state\s*:?\s*_{10,}', f"state: {replacement}", preview, count=1)
+            if re.search(r'_{10,}', line_lower) and not match:
+                preview = re.sub(r'_{10,}', "__________", preview, count=1)
+
+        return preview
+
+    def _generate_pdf(self, content, placeholder_values):
+        """Generate a PDF from content using weasyprint."""
+        logger.debug(f"Generating PDF with content: {content[:100]}... and placeholders: {placeholder_values}")
+        rendered_content = self._replace_placeholders(content, placeholder_values)
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 20px; }}
+                h1 {{ color: #003087; }}
+            </style>
+        </head>
+        <body>
+            <h1>Employment Contract</h1>
+            <pre>{rendered_content}</pre>
+        </body>
+        </html>
+        """
+        try:
+            pdf_file = HTML(string=html_content).write_pdf()
+            logger.info("PDF generated successfully")
+            return pdf_file
+        except Exception as e:
+            logger.error(f"Error generating PDF: {str(e)}")
+            raise
+
+    def _get_email_values(self, placeholder_values, onboarding):
+        """Derive email values from OnBoarding and defaults, with placeholder_values overrides."""
+        job_position = (onboarding.application.job_position_advert.job_position
+                       if onboarding.application and onboarding.application.job_position_advert else None)
+        email_values = {
+            'employee_name': onboarding.application.applicant_name if onboarding.application else '',
+            'position_title': job_position.name if job_position else '',
+            'institution_name': (onboarding.application.job_position_advert.job_position.department.institution.institution_name
+                                if onboarding.application and onboarding.application.job_position_advert and
+                                onboarding.application.job_position_advert.job_position and
+                                onboarding.application.job_position_advert.job_position.department else ''),
+            'hr_email': getattr(settings, 'HR_EMAIL', settings.DEFAULT_FROM_EMAIL),
+            'due_date': str(datetime.now().date() + timedelta(days=7)),
+        }
+        for key in email_values:
+            if key in placeholder_values:
+                email_values[key] = placeholder_values[key]
+        logger.debug(f"Email values: {email_values}")
+        return email_values
+
+    @extend_schema(
+        tags=['Document Generation'],
+        request=DocumentStatusUpdateSerializer,
+        responses={
+            200: DocumentContentPreviewSerializer,
+            400: {'description': 'Invalid input or missing required placeholders'},
+            404: {'description': 'Document or context record not found'}
+        },
+        description='Updates the status of a document, sends PDF email and creates EmployeeContract if status is reviewed and context is onboarding'
+    )
+    def patch(self, request, document_id):
+        document = get_object_or_404(Document, pk=document_id)
+        serializer = DocumentStatusUpdateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        new_status = serializer.validated_data['status']
+        context = serializer.validated_data['context']
+        context_id = serializer.validated_data['context_id']
+
+        template = document.document_template
+        template_content = template.content or ''
+        placeholder_values = document.placeholder_values or {}
+        system_config = SystemConfiguration.objects.filter(code='doc_required_fields').first()
+        required_placeholders = system_config.content if system_config else []
+
+        for placeholder in required_placeholders:
+            if placeholder not in placeholder_values or not placeholder_values[placeholder]:
+                return Response(
+                    {'error': f'Missing required placeholder: {placeholder}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        document.status = new_status
+        document.save()
+
+        if context == 'onboarding' and new_status == 'reviewed':
+            try:
+                onboarding = OnBoarding.objects.get(pk=context_id)
+                job_position = (onboarding.application.job_position_advert.job_position
+                               if onboarding.application and onboarding.application.job_position_advert else None)
+                template_content = (job_position.contract_template.content
+                                   if job_position and job_position.contract_template else template.content)
+                logger.debug(f"Using template content: {template_content[:100]}...")
+                email_values = self._get_email_values(placeholder_values, onboarding)
+                pdf_content = self._generate_pdf(template_content, placeholder_values)
+                contract_file = ContentFile(pdf_content, name=f"contract_{document.pk}.pdf")
+
+                employee_contract = EmployeeContract.objects.create(
+                    applicant=onboarding.application,
+                    is_active=False,
+                    original_contract=contract_file
+                )
+
+                applicant_email = getattr(onboarding.application, 'applicant_email', None)
+                if applicant_email:
+                    try:
+                        html_message = render_to_string('emails/contract_email.html', email_values)
+                        text_message = render_to_string('emails/contract_email.txt', email_values)
+                        email = EmailMultiAlternatives(
+                            subject='Your Employment Contract',
+                            body=text_message,
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            to=[applicant_email],
+                        )
+                        email.attach_alternative(html_message, 'text/html')
+                        email.attach('contract.pdf', pdf_content, 'application/pdf')
+                        email.send(fail_silently=False)
+                        logger.info(f"Email sent to {applicant_email}")
+                    except Exception as e:
+                        logger.error(f"Error sending contract email: {str(e)}")
+                        raise
+
+                onboarding.status = 'issued_contract'
+                onboarding.save()
+            except OnBoarding.DoesNotExist:
+                return Response(
+                    {'error': 'OnBoarding record not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        preview = self._replace_placeholders(template_content, placeholder_values)
+        serializer = DocumentContentPreviewSerializer({'preview': preview})
         return Response(serializer.data, status=status.HTTP_200_OK)

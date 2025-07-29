@@ -197,3 +197,18 @@ class DocumentContentPreviewSerializer(serializers.Serializer):
         help_text="Preview of the document content with placeholders replaced by stored values",
         allow_blank=True
     )
+
+class DocumentStatusUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(
+        choices=['pending', 'in_review', 'reviewed'],
+        required=True,
+        help_text="New status for the document"
+    )
+    context = serializers.CharField(
+        required=True,
+        help_text="Context of the document (e.g., onboarding, employee, leave)"
+    )
+    context_id = serializers.IntegerField(
+        required=True,
+        help_text="ID of the context record (e.g., OnBoarding ID)"
+    )    

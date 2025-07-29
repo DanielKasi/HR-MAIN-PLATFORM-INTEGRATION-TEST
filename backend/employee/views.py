@@ -13,8 +13,9 @@ from .serializers import (
     EmployeeSerializer,
     EmployeeTypeSerializer,
     WorkTypeSerializer,
+    EmployeeContractSerializer,
 )
-from .models import Employee, EmployeeAttendance, EmployeeType, WorkType
+from .models import Employee, EmployeeAttendance, EmployeeType, WorkType, EmployeeContract
 from rest_framework.parsers import MultiPartParser, FormParser
 from institution.utils import generate_compliant_password
 from employee.service import EmployeeBranchService
@@ -1230,3 +1231,67 @@ class WorkTypeDetailAPIView(APIView):
         obj = self.get_object(pk)
         obj.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class EmployeeContractListAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        responses=EmployeeContractSerializer(many=True),
+        description="Get list of all employee contracts",
+        tags=["Employee Contract"],
+    )
+    def get(self, request):
+        contracts = EmployeeContract.objects.all().order_by("-created_at")
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(contracts, request)
+        serializer = EmployeeContractSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    @extend_schema(
+        request=EmployeeContractSerializer,
+        responses=EmployeeContractSerializer,
+        description="Create a new employee contract",
+        tags=["Employee Contract"],
+    )
+    def post(self, request):
+        serializer = EmployeeContractSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class EmployeeContractDetailAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get_object(self, pk):
+        return get_object_or_404(EmployeeContract, pk=pk)
+
+    @extend_schema(
+        responses=EmployeeContractSerializer,
+        description="Get an employee contract by ID",
+        tags=["Employee Contract"],
+    )
+    def get(self, request, pk):
+        contract = self.get_object(pk)
+        serializer = EmployeeContractSerializer(contract)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=EmployeeContractSerializer,
+        responses=EmployeeContractSerializer,
+        description="Update an employee contract",
+        tags=["Employee Contract"],
+    )
+    def patch(self, request, pk):
+        contract = self.get_object(pk)
+        serializer = EmployeeContractSerializer(contract, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(description="Delete an employee contract", responses={204: None}, tags=["Employee Contract"])
+    def delete(self, request, pk):
+        contract = self.get_object(pk)
+        contract.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)        
