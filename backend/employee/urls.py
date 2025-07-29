@@ -14,6 +14,8 @@ from .views import (
     WorkTypeDetailAPIView,
     WorkTypeListCreateAPIView,
     EmployeeTemplateDownloadAPIView,
+    EmployeeContractDetailAPIView,
+    EmployeeContractListAPIView,
 
 )
 
@@ -76,5 +78,15 @@ urlpatterns = [
     ),
     path(
         "work-types/<int:pk>/", WorkTypeDetailAPIView.as_view(), name="work-type-detail"
-    )
+    ),
+    path(
+        "employee-contracts/<int:pk>/",
+        EmployeeContractDetailAPIView.as_view(),
+        name="employee-contract-detail",
+    ),
+    path(
+        "employee-contracts/",
+        EmployeeContractListAPIView.as_view(),
+        name="employee-contract-list-create",
+    ),
 ]

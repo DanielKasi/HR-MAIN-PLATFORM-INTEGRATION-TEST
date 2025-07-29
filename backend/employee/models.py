@@ -512,7 +512,7 @@ class EmployeeContract(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Contract {self.contract_reference} - {self.employee.user.fullname} "
+        return f"Contract {self.contract_reference} "
 
     def generate_contract_reference(self):
         prefix = "CON"
