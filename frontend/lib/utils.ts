@@ -749,8 +749,13 @@ export const createEmployee = async ({
 
     Object.entries(employeeData).forEach(([key, value]) => {
       if (key === "user") return;
+
       if (key === "employee_profile_picture" && value instanceof File) {
         formData.append(key, value);
+      } else if (key === "selected_branches" && Array.isArray(value)) {
+        value.forEach((branchId) => {
+          formData.append("selected_branches", branchId.toString());
+        });
       } else if (value !== undefined && value !== null && value !== "") {
         formData.append(key, value.toString());
       }

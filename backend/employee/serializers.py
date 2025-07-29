@@ -3,6 +3,8 @@ from rest_framework import serializers
 from users.serializers import CustomUserSerializer
 from datetime import date
 from dateutil.relativedelta import relativedelta
+from django.db import transaction
+from institution.models import Branch, UserBranch
 
 
 class EmployeeTypeSerializer(serializers.ModelSerializer):
@@ -23,6 +25,10 @@ class EmployeeSerializer(serializers.ModelSerializer):
     position_details = serializers.SerializerMethodField()
     roles = serializers.SerializerMethodField()
 
+    selected_branches = serializers.ListField(
+        child=serializers.IntegerField(), write_only=True, required=False
+    )
+
     class Meta:
         model = Employee
         fields = "__all__"
@@ -40,8 +46,11 @@ class EmployeeSerializer(serializers.ModelSerializer):
                 )
         return value
 
+    @transaction.atomic
     def create(self, validated_data):
         user_data = validated_data.pop("user", None)
+
+        selected_branches = validated_data.pop("selected_branches", None)
 
         if user_data:
             user_serializer = CustomUserSerializer(data=user_data)
@@ -49,8 +58,26 @@ class EmployeeSerializer(serializers.ModelSerializer):
             user = user_serializer.save()
             validated_data["user"] = user
 
-        return Employee.objects.create(**validated_data)
+        employee = Employee.objects.create(**validated_data)
 
+        for i, branch_id in enumerate(selected_branches or []):
+            try:
+                branch = Branch.objects.get(id=branch_id)
+                UserBranch.objects.get_or_create(
+                    user=employee.user,
+                    branch=branch,
+                    defaults={
+                        "is_default": i == 0,
+                    },
+                )
+            except Branch.DoesNotExist:
+                raise serializers.ValidationError(
+                    f"Branch with ID {branch_id} does not exist."
+                )
+
+        return employee
+
+    @transaction.atomic
     def update(self, instance, validated_data):
         user_data = validated_data.pop("user", None)
 
@@ -158,6 +185,3 @@ class EmployeeActivationSerializer(serializers.Serializer):
     )
     department = serializers.CharField(max_length=100, required=False, allow_blank=True)
     date_of_joining = serializers.DateField(required=False, allow_null=True)
-
-
-      

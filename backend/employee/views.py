@@ -29,7 +29,6 @@ from utilities.pagination import CustomPageNumberPagination
 from django.http import FileResponse
 
 
-
 class EmployeeListAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -95,11 +94,16 @@ class EmployeeCreateAPIView(APIView):
         tags=["Employee Management"],
     )
     def post(self, request):
+        print(
+            "\n\n\nReceived data:",
+            request.data,
+        )
+
         """Create a new employee or multiple employees via file upload."""
         # Check if a file is uploaded
-        if 'file' in request.FILES:
+        if "file" in request.FILES:
             return self.handle_bulk_upload(request)
-        
+
         # Handle single employee creation (existing logic)
         def extract_value(data, key):
             """Extract single value from QueryDict list format"""
@@ -128,6 +132,8 @@ class EmployeeCreateAPIView(APIView):
         for key, value in request.data.items():
             if key not in ["user.fullname", "user.email"]:
                 final_data[key] = extract_value(request.data, key)
+
+        final_data["selected_branches"] = request.data.getlist("selected_branches", [])
 
         # Add user data
         final_data["user"] = user_data
@@ -171,29 +177,33 @@ class EmployeeCreateAPIView(APIView):
 
     def handle_bulk_upload(self, request):
         """Handle bulk employee creation from uploaded CSV/Excel file."""
-        file = request.FILES['file']
-        file_extension = file.name.split('.')[-1].lower()
+        file = request.FILES["file"]
+        file_extension = file.name.split(".")[-1].lower()
 
-        if file_extension not in ['csv', 'xlsx']:
+        if file_extension not in ["csv", "xlsx"]:
             return Response(
-                {"detail": "Invalid file format. Only CSV or Excel files are supported."},
-                status=status.HTTP_400_BAD_REQUEST
+                {
+                    "detail": "Invalid file format. Only CSV or Excel files are supported."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
             # Read the file
-            if file_extension == 'csv':
+            if file_extension == "csv":
                 df = pd.read_csv(file)
             else:  # xlsx
                 df = pd.read_excel(file)
 
             # Validate required columns
-            required_columns = ['user.fullname', 'user.email']
+            required_columns = ["user.fullname", "user.email"]
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
                 return Response(
-                    {"detail": f"Missing required columns: {', '.join(missing_columns)}"},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {
+                        "detail": f"Missing required columns: {', '.join(missing_columns)}"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
             # Process each row
@@ -203,15 +213,15 @@ class EmployeeCreateAPIView(APIView):
                 for index, row in df.iterrows():
                     employee_data = {}
                     user_data = {
-                        "fullname": str(row['user.fullname']).strip(),
-                        "email": str(row['user.email']).strip(),
+                        "fullname": str(row["user.fullname"]).strip(),
+                        "email": str(row["user.email"]).strip(),
                         "password": generate_compliant_password(),
                     }
                     employee_data["user"] = user_data
 
                     # Map other fields
                     for column in df.columns:
-                        if column not in ['user.fullname', 'user.email']:
+                        if column not in ["user.fullname", "user.email"]:
                             value = row[column]
                             if pd.isna(value):
                                 employee_data[column] = None
@@ -220,9 +230,17 @@ class EmployeeCreateAPIView(APIView):
 
                     # Convert data types
                     if "is_active" in employee_data:
-                        employee_data["is_active"] = str(employee_data["is_active"]).lower() == "true"
+                        employee_data["is_active"] = (
+                            str(employee_data["is_active"]).lower() == "true"
+                        )
 
-                    for field in ["position", "department", "experience", "children_count", "institutionId"]:
+                    for field in [
+                        "position",
+                        "department",
+                        "experience",
+                        "children_count",
+                        "institutionId",
+                    ]:
                         if field in employee_data and employee_data[field]:
                             try:
                                 employee_data[field] = int(float(employee_data[field]))
@@ -238,27 +256,31 @@ class EmployeeCreateAPIView(APIView):
                         employee.setup_employee_password(request)
                         employees.append(employee)
                     else:
-                        errors.append({
-                            "row": index + 2,  # +2 to account for header row and 1-based indexing
-                            "errors": serializer.errors
-                        })
+                        errors.append(
+                            {
+                                "row": index
+                                + 2,  # +2 to account for header row and 1-based indexing
+                                "errors": serializer.errors,
+                            }
+                        )
 
             if errors:
                 return Response(
                     {"detail": "Some employees could not be created", "errors": errors},
-                    status=status.HTTP_400_BAD_REQUEST
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
             return Response(
                 EmployeeSerializer(employees, many=True).data,
-                status=status.HTTP_201_CREATED
+                status=status.HTTP_201_CREATED,
             )
 
         except Exception as e:
             return Response(
                 {"detail": f"Error processing file: {str(e)}"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
+
 
 class EmployeeTemplateDownloadAPIView(APIView):
     permission_classes = [AllowAny]
@@ -273,13 +295,32 @@ class EmployeeTemplateDownloadAPIView(APIView):
         """Generate and return a CSV template for bulk employee upload."""
         # Define template columns based on Employee model
         columns = [
-            'user.fullname', 'user.email', 'phone_number', 'position', 'gender',
-            'department', 'payroll_branch', 'date_of_birth', 'work_type',
-            'employee_type', 'date_of_joining', 'address', 'country', 'nin',
-            'bank', 'bank_account_number', 'is_active', 'experience',
-            'qualifications', 'skills', 'emergency_contact_name',
-            'emergency_contact_phone', 'emergency_contact_relationship',
-            'marital_status', 'children_count', 'salary'
+            "user.fullname",
+            "user.email",
+            "phone_number",
+            "position",
+            "gender",
+            "department",
+            "payroll_branch",
+            "date_of_birth",
+            "work_type",
+            "employee_type",
+            "date_of_joining",
+            "address",
+            "country",
+            "nin",
+            "bank",
+            "bank_account_number",
+            "is_active",
+            "experience",
+            "qualifications",
+            "skills",
+            "emergency_contact_name",
+            "emergency_contact_phone",
+            "emergency_contact_relationship",
+            "marital_status",
+            "children_count",
+            "salary",
         ]
         df = pd.DataFrame(columns=columns)
 
@@ -290,8 +331,10 @@ class EmployeeTemplateDownloadAPIView(APIView):
 
         # Return CSV as downloadable file
         response = HttpResponse(
-            content_type='text/csv',
-            headers={'Content-Disposition': 'attachment; filename="employee_template.csv"'}
+            content_type="text/csv",
+            headers={
+                "Content-Disposition": 'attachment; filename="employee_template.csv"'
+            },
         )
         response.write(output.getvalue())
         return response
@@ -1187,4 +1230,3 @@ class WorkTypeDetailAPIView(APIView):
         obj = self.get_object(pk)
         obj.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-

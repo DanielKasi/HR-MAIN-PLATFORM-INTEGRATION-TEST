@@ -508,13 +508,13 @@ class Contract(models.Model):
     status = models.CharField(
         max_length=20,
         choices=[
-        ("draft", "Draft"),
-        ("issued", "Issued"),
-        ("under_review", "Under Review"),
-        ("active", "Active"),
-        ("expired", "Expired"),
-        ("terminated", "Terminated"),
-        ]
+            ("draft", "Draft"),
+            ("issued", "Issued"),
+            ("under_review", "Under Review"),
+            ("active", "Active"),
+            ("expired", "Expired"),
+            ("terminated", "Terminated"),
+        ],
     )
     contract_reference = models.CharField(
         max_length=20, unique=True, blank=True, null=True
@@ -545,4 +545,4 @@ class Contract(models.Model):
         else:
             new_number = 1
 
-        return f"{prefix}{new_number:05d}"    
+        return f"{prefix}{new_number:05d}"

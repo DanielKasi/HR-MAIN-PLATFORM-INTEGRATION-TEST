@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 import logging
 from utilities.default_document_types import DEFAULT_DOCUMENT_TYPES
 from django.db import transaction
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -89,32 +90,44 @@ class Institution(models.Model):
         geolocator = Nominatim(user_agent="hr_baifam_app")
         try:
             if self.location:
-                location_data = geolocator.geocode(self.location, exactly_one=True, timeout=10)
-                if location_data and location_data.raw.get('address', {}).get('country_code'):
-                    return location_data.raw['address']['country_code'].upper()
-            
-            if self.latitude is not None and self.longitude is not None:
-                location_data = geolocator.reverse((self.latitude, self.longitude), timeout=10)
-                if location_data and location_data.raw.get('address', {}).get('country_code'):
-                    return location_data.raw['address']['country_code'].upper()
+                location_data = geolocator.geocode(
+                    self.location, exactly_one=True, timeout=10
+                )
+                if location_data and location_data.raw.get("address", {}).get(
+                    "country_code"
+                ):
+                    return location_data.raw["address"]["country_code"].upper()
 
-            logger.warning(f"Could not determine country code for institution: {self.institution_name}")
+            if self.latitude is not None and self.longitude is not None:
+                location_data = geolocator.reverse(
+                    (self.latitude, self.longitude), timeout=10
+                )
+                if location_data and location_data.raw.get("address", {}).get(
+                    "country_code"
+                ):
+                    return location_data.raw["address"]["country_code"].upper()
+
+            logger.warning(
+                f"Could not determine country code for institution: {self.institution_name}"
+            )
             return None
         except (GeocoderTimedOut, GeocoderUnavailable) as e:
-            logger.error(f"Geocoding failed for institution {self.institution_name}: {str(e)}")
+            logger.error(
+                f"Geocoding failed for institution {self.institution_name}: {str(e)}"
+            )
             return None
 
     def _create_default_document_types(self):
         """Create default document types for the institution."""
-        from documents.models import DocumentType  
+        from documents.models import DocumentType
 
         for doc_type in DEFAULT_DOCUMENT_TYPES:
             DocumentType.objects.get_or_create(
                 institution=self,
-                name=doc_type['name'],
+                name=doc_type["name"],
                 defaults={
-                    'description': doc_type['description'],
-                }
+                    "description": doc_type["description"],
+                },
             )
 
     def save(self, *args, **kwargs):
@@ -128,6 +141,7 @@ class Institution(models.Model):
 
             if is_new:
                 from payroll.utils import PayrollProcessor
+
                 PayrollProcessor.setup_default_payroll_types_for_institution(self)
                 self._create_calendar_for_institution()
                 self._create_default_document_types()
@@ -321,5 +335,3 @@ class Department(models.Model):
 
     def __str__(self):
         return self.name
-
-

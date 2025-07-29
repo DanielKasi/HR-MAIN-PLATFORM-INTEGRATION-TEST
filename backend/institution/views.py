@@ -634,7 +634,7 @@ class SystemActivationView(APIView):
                     "fullname": full_name,
                     "is_active": True,
                     "gender": gender,
-                }
+                },
             )
 
             return user
@@ -748,7 +748,9 @@ class SystemActivationView(APIView):
     def post(self, request):
         """Handle HR system activation."""
 
-        api_key = request.headers.get("X-API-Key") or request.headers.get("Authorization")
+        api_key = request.headers.get("X-API-Key") or request.headers.get(
+            "Authorization"
+        )
 
         if not api_key:
             return Response(
@@ -808,7 +810,6 @@ class SystemActivationView(APIView):
                         if employee.email == owner_email:
                             owner_employee = employee
                             break
-
 
                 response_data = {
                     "success": True,
