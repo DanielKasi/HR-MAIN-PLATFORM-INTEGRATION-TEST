@@ -360,11 +360,10 @@ class GenerateDocumentView(APIView):
         ).first()
         required_placeholders = system_config.content if system_config else []
 
-        # remove placeholders from required_placeholders that are not in template_placeholders 
+        # remove placeholders from required_placeholders that are not in template_placeholders
         required_placeholders = [
             ph for ph in required_placeholders if ph in template_placeholders
         ]
-        
 
         # Combine placeholders (remove duplicates, preserve template formatting for non-required placeholders)
         # Convert template placeholders to clean format (strip {{}})
@@ -615,78 +614,113 @@ class DocumentStatusUpdateView(APIView):
 
         preview = content
         lines = content.split("\n")
-        placeholder_values = {k.lower(): v for k, v in placeholder_values.items() if v is not None}
+        placeholder_values = {
+            k.lower(): v for k, v in placeholder_values.items() if v is not None
+        }
         logger.debug(f"Placeholder values: {placeholder_values}")
 
         placeholder_patterns = [
-            r'\{\{[\w\s\'-]+\}\}',  # {{variable_name}} or {{Employee's Name}}
-            r'<<[\w\s\'-]+>>',      # <<variable_name>> or <<Employee's Name>>
-            r'\[\[[\w\s\'-]+\]\]',  # [[variable_name]] or [[Employee's Name]]
-            r'\[[\w\s\'-]+\]',      # [variable_name] or [Employee's Name]
-            r'_{10,}',              # ___________________
+            r"\{\{[\w\s\'-]+\}\}",  # {{variable_name}} or {{Employee's Name}}
+            r"<<[\w\s\'-]+>>",  # <<variable_name>> or <<Employee's Name>>
+            r"\[\[[\w\s\'-]+\]\]",  # [[variable_name]] or [[Employee's Name]]
+            r"\[[\w\s\'-]+\]",  # [variable_name] or [Employee's Name]
+            r"_{10,}",  # ___________________
         ]
-        combined_pattern = '|'.join(f'({pattern})' for pattern in placeholder_patterns)
+        combined_pattern = "|".join(f"({pattern})" for pattern in placeholder_patterns)
         all_matches = re.findall(combined_pattern, content)
         matches = [match for group in all_matches for match in group if match]
         logger.debug(f"Found placeholders: {matches}")
 
         for match in matches:
-            if not re.match(r'_{10,}', match):
-                cleaned_name = re.sub(r'[\{\}<>\[\]]+', '', match).strip()
-                normalized_key = re.sub(r'\s+', '_', cleaned_name.replace("'", "")).lower()
+            if not re.match(r"_{10,}", match):
+                cleaned_name = re.sub(r"[\{\}<>\[\]]+", "", match).strip()
+                normalized_key = re.sub(
+                    r"\s+", "_", cleaned_name.replace("'", "")
+                ).lower()
                 value = placeholder_values.get(normalized_key, match)
                 logger.debug(f"Replacing {match} with {value}")
                 preview = preview.replace(match, str(value))
 
         for line in lines:
             line_lower = line.lower().strip()
-            match = re.search(r'([\w\s\'-]+?)\s*:?\s*_{10,}', line_lower)
+            match = re.search(r"([\w\s\'-]+?)\s*:?\s*_{10,}", line_lower)
             if match:
                 phrase = match.group(1).strip()
-                normalized_key = re.sub(r'\s+', '_', phrase.replace("'", "")).lower()
+                normalized_key = re.sub(r"\s+", "_", phrase.replace("'", "")).lower()
                 value = placeholder_values.get(normalized_key, None)
-                replacement = f"{phrase}: {value}" if value is not None else f"{phrase}: __________"
+                replacement = (
+                    f"{phrase}: {value}"
+                    if value is not None
+                    else f"{phrase}: __________"
+                )
                 logger.debug(f"Replacing underscore in '{line}' with '{replacement}'")
-                preview = re.sub(r'([\w\s\'-]+?)\s*:?\s*_{10,}', replacement, preview, count=1)
+                preview = re.sub(
+                    r"([\w\s\'-]+?)\s*:?\s*_{10,}", replacement, preview, count=1
+                )
             if "initials" in line_lower and "initials" in placeholder_values:
                 value = placeholder_values.get("initials", None)
                 replacement = str(value) if value is not None else "__________"
-                preview = re.sub(r'initials\s*:?\s*_{10,}', f"initials: {replacement}", preview, count=1)
+                preview = re.sub(
+                    r"initials\s*:?\s*_{10,}",
+                    f"initials: {replacement}",
+                    preview,
+                    count=1,
+                )
             if "signature" in line_lower and "signature" in placeholder_values:
                 value = placeholder_values.get("signature", None)
                 replacement = str(value) if value is not None else "__________"
-                preview = re.sub(r'signature\s*:?\s*_{10,}', f"signature: {replacement}", preview, count=1)
+                preview = re.sub(
+                    r"signature\s*:?\s*_{10,}",
+                    f"signature: {replacement}",
+                    preview,
+                    count=1,
+                )
             if "days" in line_lower and "days" in placeholder_values:
                 value = placeholder_values.get("days", None)
                 replacement = str(value) if value is not None else "__________"
-                preview = re.sub(r'days\s*:?\s*_{10,}', f"days: {replacement}", preview, count=1)
+                preview = re.sub(
+                    r"days\s*:?\s*_{10,}", f"days: {replacement}", preview, count=1
+                )
             if "state" in line_lower and "state" in placeholder_values:
                 value = placeholder_values.get("state", None)
                 replacement = str(value) if value is not None else "__________"
-                preview = re.sub(r'state\s*:?\s*_{10,}', f"state: {replacement}", preview, count=1)
-            if re.search(r'_{10,}', line_lower) and not match:
-                preview = re.sub(r'_{10,}', "__________", preview, count=1)
+                preview = re.sub(
+                    r"state\s*:?\s*_{10,}", f"state: {replacement}", preview, count=1
+                )
+            if re.search(r"_{10,}", line_lower) and not match:
+                preview = re.sub(r"_{10,}", "__________", preview, count=1)
 
         return preview
 
     def _generate_pdf(self, content, placeholder_values):
         """Generate a PDF from content using weasyprint."""
-        logger.debug(f"Generating PDF with content: {content[:100]}... and placeholders: {placeholder_values}")
+        logger.debug(
+            f"Generating PDF with content: {content[:100]}... and placeholders: {placeholder_values}"
+        )
         rendered_content = self._replace_placeholders(content, placeholder_values)
-        html_content = f"""
+        html_content = f"""        
         <!DOCTYPE html>
-        <html>
-        <head>
-            <style>
-                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 20px; }}
-                h1 {{ color: #003087; }}
-            </style>
-        </head>
-        <body>
-            <h1>Document</h1>
-            <pre>{rendered_content}</pre>
-        </body>
+            <html>
+            <head>
+                <meta charset="utf-8" />
+                <title>Employment Contract</title>
+                <style>
+                body {
+                    font-family: sans-serif;
+                }
+                h1 {
+                    text-align: center;
+                }
+                p {
+                    margin-bottom: 10px;
+                }
+                </style>
+            </head>
+            <body>
+                { rendered_content|safe }
+            </body>
         </html>
+
         """
         try:
             pdf_file = HTML(string=html_content).write_pdf()
@@ -699,36 +733,69 @@ class DocumentStatusUpdateView(APIView):
     def _get_email_values(self, placeholder_values, context, context_obj):
         """Derive email values based on context and context object, with placeholder_values overrides."""
         email_values = {
-            'due_date': str(datetime.now().date() + timedelta(days=7)),
-            'hr_email': getattr(settings, 'HR_EMAIL', settings.DEFAULT_FROM_EMAIL),
+            "due_date": str(datetime.now().date() + timedelta(days=7)),
+            "hr_email": getattr(settings, "HR_EMAIL", settings.DEFAULT_FROM_EMAIL),
         }
 
-        if context == 'onboarding':
+        if context == "onboarding":
             onboarding = context_obj
-            job_position = (onboarding.application.job_position_advert.job_position
-                           if onboarding.application and onboarding.application.job_position_advert else None)
-            email_values.update({
-                'employee_name': onboarding.application.applicant_name if onboarding.application else '',
-                'position_title': job_position.name if job_position else '',
-                'institution_name': (onboarding.application.job_position_advert.job_position.department.institution.institution_name
-                                    if onboarding.application and onboarding.application.job_position_advert and
-                                    onboarding.application.job_position_advert.job_position and
-                                    onboarding.application.job_position_advert.job_position.department else ''),
-            })
-        elif context == 'employee':
+            job_position = (
+                onboarding.application.job_position_advert.job_position
+                if onboarding.application and onboarding.application.job_position_advert
+                else None
+            )
+            email_values.update(
+                {
+                    "employee_name": (
+                        onboarding.application.applicant_name
+                        if onboarding.application
+                        else ""
+                    ),
+                    "position_title": job_position.name if job_position else "",
+                    "institution_name": (
+                        onboarding.application.job_position_advert.job_position.department.institution.institution_name
+                        if onboarding.application
+                        and onboarding.application.job_position_advert
+                        and onboarding.application.job_position_advert.job_position
+                        and onboarding.application.job_position_advert.job_position.department
+                        else ""
+                    ),
+                }
+            )
+        elif context == "employee":
             employee = context_obj
-            email_values.update({
-                'employee_name': employee.user.fullname if hasattr(employee, 'user') else '',
-                'position_title': employee.job_position.name if hasattr(employee, 'job_position') else '',
-            })
-        elif context == 'leave':
+            email_values.update(
+                {
+                    "employee_name": (
+                        employee.user.fullname if hasattr(employee, "user") else ""
+                    ),
+                    "position_title": (
+                        employee.job_position.name
+                        if hasattr(employee, "job_position")
+                        else ""
+                    ),
+                }
+            )
+        elif context == "leave":
             leave = context_obj
-            email_values.update({
-                'employee_name': leave.employee.user.fullname if hasattr(leave.employee, 'user') else '',
-                'leave_type': leave.leave_type if hasattr(leave, 'leave_type') else '',
-                'start_date': str(leave.start_date) if hasattr(leave, 'start_date') else '',
-                'end_date': str(leave.end_date) if hasattr(leave, 'end_date') else '',
-            })
+            email_values.update(
+                {
+                    "employee_name": (
+                        leave.employee.user.fullname
+                        if hasattr(leave.employee, "user")
+                        else ""
+                    ),
+                    "leave_type": (
+                        leave.leave_type if hasattr(leave, "leave_type") else ""
+                    ),
+                    "start_date": (
+                        str(leave.start_date) if hasattr(leave, "start_date") else ""
+                    ),
+                    "end_date": (
+                        str(leave.end_date) if hasattr(leave, "end_date") else ""
+                    ),
+                }
+            )
 
         for key in email_values:
             if key in placeholder_values:
@@ -738,50 +805,50 @@ class DocumentStatusUpdateView(APIView):
 
     def _get_context_object(self, context, context_id):
         """Retrieve the context object based on context type and ID."""
-        if context == 'onboarding':
+        if context == "onboarding":
             return get_object_or_404(OnBoarding, pk=context_id)
-        elif context == 'employee':
+        elif context == "employee":
             return get_object_or_404(Employee, pk=context_id)
-        elif context == 'leave':
+        elif context == "leave":
             return get_object_or_404(Leave, pk=context_id)
         else:
-            raise ValueError('Invalid context')
+            raise ValueError("Invalid context")
 
     @extend_schema(
-        tags=['Document Generation'],
+        tags=["Document Generation"],
         parameters=[
             OpenApiParameter(
-                name='context',
+                name="context",
                 type=str,
                 location=OpenApiParameter.QUERY,
                 required=True,
-                enum=['onboarding', 'employee', 'leave'],
-                description='The context for document generation (e.g., onboarding, employee, leave)'
+                enum=["onboarding", "employee", "leave"],
+                description="The context for document generation (e.g., onboarding, employee, leave)",
             ),
             OpenApiParameter(
-                name='context_id',
+                name="context_id",
                 type=int,
                 location=OpenApiParameter.QUERY,
                 required=True,
-                description='The ID of the context record (e.g., OnBoarding ID, Employee ID, Leave ID)'
+                description="The ID of the context record (e.g., OnBoarding ID, Employee ID, Leave ID)",
             ),
         ],
         request=DocumentStatusUpdateSerializer,
         responses={
             200: DocumentContentPreviewSerializer,
-            400: {'description': 'Invalid input or missing required placeholders'},
-            404: {'description': 'Document or context record not found'}
+            400: {"description": "Invalid input or missing required placeholders"},
+            404: {"description": "Document or context record not found"},
         },
-        description='Updates the status of a document, sends PDF email, and creates context-specific records (e.g., EmployeeContract for onboarding) if status is reviewed'
+        description="Updates the status of a document, sends PDF email, and creates context-specific records (e.g., EmployeeContract for onboarding) if status is reviewed",
     )
     def patch(self, request, document_id):
         # Validate query parameters
-        context = request.query_params.get('context')
-        context_id = request.query_params.get('context_id')
+        context = request.query_params.get("context")
+        context_id = request.query_params.get("context_id")
         if not context or not context_id:
             return Response(
-                {'error': 'context and context_id are required'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "context and context_id are required"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Fetch document and validate serializer
@@ -790,17 +857,22 @@ class DocumentStatusUpdateView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        new_status = serializer.validated_data['status']
+        new_status = serializer.validated_data["status"]
         placeholder_values = document.placeholder_values or {}
-        system_config = SystemConfiguration.objects.filter(code='doc_required_fields').first()
+        system_config = SystemConfiguration.objects.filter(
+            code="doc_required_fields"
+        ).first()
         required_placeholders = system_config.content if system_config else []
 
         # Validate required placeholders
         for placeholder in required_placeholders:
-            if placeholder not in placeholder_values or not placeholder_values[placeholder]:
+            if (
+                placeholder not in placeholder_values
+                or not placeholder_values[placeholder]
+            ):
                 return Response(
-                    {'error': f'Missing required placeholder: {placeholder}'},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {"error": f"Missing required placeholder: {placeholder}"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
         # Update document status
@@ -812,73 +884,87 @@ class DocumentStatusUpdateView(APIView):
             context_obj = self._get_context_object(context, context_id)
         except ValueError:
             return Response(
-                {'error': 'Invalid context'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "Invalid context"}, status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
             return Response(
-                {'error': f'Context record not found: {str(e)}'},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": f"Context record not found: {str(e)}"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         # Determine template content based on context
         template = document.document_template
-        template_content = template.content or ''
-        if context == 'onboarding' and hasattr(context_obj, 'application') and context_obj.application.job_position_advert:
+        template_content = template.content or ""
+        if (
+            context == "onboarding"
+            and hasattr(context_obj, "application")
+            and context_obj.application.job_position_advert
+        ):
             job_position = context_obj.application.job_position_advert.job_position
-            template_content = (job_position.contract_template.content
-                               if job_position and job_position.contract_template else template.content)
+            template_content = (
+                job_position.contract_template.content
+                if job_position and job_position.contract_template
+                else template.content
+            )
         # Add more context-specific template logic here if needed for employee or leave
 
-        if new_status == 'reviewed':
+        if new_status == "reviewed":
             try:
                 # Generate email values and PDF
-                email_values = self._get_email_values(placeholder_values, context, context_obj)
+                email_values = self._get_email_values(
+                    placeholder_values, context, context_obj
+                )
                 pdf_content = self._generate_pdf(template_content, placeholder_values)
                 pdf_filename = f"document_{context}_{document.pk}.pdf"
                 document_file = ContentFile(pdf_content, name=pdf_filename)
 
                 # Context-specific logic
-                if context == 'onboarding':
+                if context == "onboarding":
                     employee_contract = EmployeeContract.objects.create(
                         applicant=context_obj.application,
                         is_active=False,
-                        original_contract=document_file
+                        original_contract=document_file,
                     )
-                    context_obj.status = 'issued_contract'
+                    context_obj.status = "issued_contract"
                     context_obj.save()
-                elif context == 'employee':
+                elif context == "employee":
                     employee_contract = EmployeeContract.objects.create(
                         employee=context_obj,
                         is_active=False,
-                        original_contract=document_file
+                        original_contract=document_file,
                     )
                     pass
-                elif context == 'leave':
+                elif context == "leave":
                     # Example: Save document to leave record or perform leave-specific action
                     pass
 
                 # Send email if applicable
                 recipient_email = None
-                if context == 'onboarding' and hasattr(context_obj, 'application'):
-                    recipient_email = getattr(context_obj.application, 'applicant_email', None)
-                elif context == 'employee' and hasattr(context_obj, 'email'):
+                if context == "onboarding" and hasattr(context_obj, "application"):
+                    recipient_email = getattr(
+                        context_obj.application, "applicant_email", None
+                    )
+                elif context == "employee" and hasattr(context_obj, "email"):
                     recipient_email = context_obj.email
-                elif context == 'leave' and hasattr(context_obj.employee, 'email'):
+                elif context == "leave" and hasattr(context_obj.employee, "email"):
                     recipient_email = context_obj.employee.email
 
                 if recipient_email:
                     try:
-                        html_message = render_to_string('emails/contract_email.html', email_values)
-                        text_message = render_to_string('emails/contract_email.txt', email_values)
+                        html_message = render_to_string(
+                            "emails/contract_email.html", email_values
+                        )
+                        text_message = render_to_string(
+                            "emails/contract_email.txt", email_values
+                        )
                         email = EmailMultiAlternatives(
-                            subject=f'Your {context.capitalize()} Document',
+                            subject=f"Your {context.capitalize()} Document",
                             body=text_message,
                             from_email=settings.DEFAULT_FROM_EMAIL,
                             to=[recipient_email],
                         )
-                        email.attach_alternative(html_message, 'text/html')
-                        email.attach(pdf_filename, pdf_content, 'application/pdf')
+                        email.attach_alternative(html_message, "text/html")
+                        email.attach(pdf_filename, pdf_content, "application/pdf")
                         email.send(fail_silently=False)
                         logger.info(f"Email sent to {recipient_email}")
                     except Exception as e:
@@ -888,11 +974,11 @@ class DocumentStatusUpdateView(APIView):
             except Exception as e:
                 logger.error(f"Error processing {context} document: {str(e)}")
                 return Response(
-                    {'error': f'Error processing document: {str(e)}'},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    {"error": f"Error processing document: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
         # Generate preview
         preview = self._replace_placeholders(template_content, placeholder_values)
-        serializer = DocumentContentPreviewSerializer({'preview': preview})
+        serializer = DocumentContentPreviewSerializer({"preview": preview})
         return Response(serializer.data, status=status.HTTP_200_OK)
