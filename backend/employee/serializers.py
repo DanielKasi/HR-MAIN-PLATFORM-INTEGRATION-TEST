@@ -5,6 +5,15 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 from django.db import transaction
 from institution.models import Branch, UserBranch
+from employee.models import EmployeeContract
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+import os
+from django.conf import settings
+
+from django.template.loader import render_to_string
+from weasyprint import HTML
+from django.utils.text import slugify
 
 
 class EmployeeTypeSerializer(serializers.ModelSerializer):
@@ -74,6 +83,79 @@ class EmployeeSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     f"Branch with ID {branch_id} does not exist."
                 )
+
+        # === Create Contract and Send Email ===
+        job_position = employee.position
+
+        template = job_position.contract_template if job_position else None
+
+        if template and template.content:
+            content = template.content
+            placeholders = template.placeholders or []
+
+            placeholder_mapping = {
+                "employee_name": employee.user.fullname,
+                "governing_law_jurisdiction": employee.department.institution.location,
+                "company_name": employee.department.institution.institution_name,
+                "job_title": (
+                    employee.position.name if employee.position else "Unknown Position"
+                ),
+                "salary_amount": employee.salary,
+                "salary_period": "Monthly",
+                "start_date": employee.date_of_joining.strftime("%Y-%m-%d"),
+                "end_time": "5:00 PM",
+                "start_time": "9:00 AM",
+                "working_days": "Monday to Friday",
+                "work_hours": "40",
+                "notice_period": "30 days",
+            }
+
+            for placeholder in placeholders:
+                key = placeholder.strip("{{}}")
+                value = str(placeholder_mapping.get(key, ""))
+                content = content.replace(placeholder, value)
+
+            filename = f"{slugify(employee.user.fullname)}_contract_{employee.id}.pdf"
+            relative_path = os.path.join("contracts/original", filename)
+            full_path = os.path.join(settings.MEDIA_ROOT, relative_path)
+            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+
+            html_content = render_to_string(
+                "contracts/contract_template.html", {"content": content}
+            )
+
+            # Generate and write PDF
+            HTML(string=html_content).write_pdf(full_path)
+
+            EmployeeContract.objects.create(
+                employee=employee,
+                is_active=False,
+                original_contract=relative_path,
+            )
+
+            context_data = {
+                "position_title": (
+                    job_position.name if job_position else "Unknown Position"
+                ),
+                "employee_name": employee.user.fullname,
+                "institution_name": (
+                    employee.department.institution.institution_name
+                    if employee.department
+                    else "Unknown Institution"
+                ),
+            }
+
+            if employee.user and employee.user.email:
+                subject = f"Employment Contract for {context_data['position_title']}"
+                body = render_to_string("emails/contract_email.txt", context_data)
+                email = EmailMessage(
+                    subject=subject,
+                    body=body,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[employee.user.email],
+                )
+                email.attach_file(full_path)
+                email.send()
 
         return employee
 
