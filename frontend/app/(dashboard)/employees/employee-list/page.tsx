@@ -32,17 +32,17 @@ import {useSelector} from "react-redux";
 import {selectAttachedInstitutions} from "@/store/auth/selectors";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {IUserInstitution} from "@/app/types";
-import {EmployeeFormData, EmployeeFromAPI, PERMISSION_CODES} from "@/app/types/types.utils";
+import {EmployeeFormData, IEmployee, PERMISSION_CODES} from "@/app/types/types.utils";
 import Link from "next/link";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {Skeleton} from "@/components/ui/skeleton";
 import ProtectedComponent from "@/components/ProtectedComponent";
 
 // Union type to handle both data structures
-type EmployeeData = EmployeeFromAPI | EmployeeFormData;
+type EmployeeData = IEmployee | EmployeeFormData;
 
-// Helper function to check if data is EmployeeFromAPI type
-const isEmployeeFromAPI = (data: EmployeeData): data is EmployeeFromAPI => {
+// Helper function to check if data is IEmployee type
+const isEmployeeFromAPI = (data: EmployeeData): data is IEmployee => {
   return (
     "created_at" in data &&
     typeof data.position === "object" &&
