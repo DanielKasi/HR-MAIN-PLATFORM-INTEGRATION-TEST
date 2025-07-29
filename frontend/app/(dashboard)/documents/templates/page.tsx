@@ -19,8 +19,8 @@ import {
 import { Plus, Search, MoreVertical, Edit, Download, Trash2, FileText, File, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { getDocumentTemplates, createDocumentTemplate, updateDocumentTemplate, deleteDocumentTemplate } from "@/lib/utils"
-import { IDocumentTemplate, IDocumentTemplateFormData } from "@/app/types/types.utils"
+import { getDocumentTemplates, deleteDocumentTemplate } from "@/lib/utils"
+import { IDocumentTemplate } from "@/app/types/types.utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 

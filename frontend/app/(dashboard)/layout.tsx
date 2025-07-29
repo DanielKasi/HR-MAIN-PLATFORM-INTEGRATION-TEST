@@ -524,7 +524,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col" style={{marginLeft: isSideBarOpen ? "16rem" : "4rem"}}>
+      <div className="flex-1 flex flex-col" style={{marginLeft: isSideBarOpen ? "16rem" : "5rem"}}>
         {/* Header */}
         <div className="bg-white p-4 flex justify-between items-center border-b">
           <button

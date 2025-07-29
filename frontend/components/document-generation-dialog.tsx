@@ -1,0 +1,215 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { FileText } from "lucide-react"
+import { PDFDownloadLink } from "@react-pdf/renderer"
+import DocumentPreviewPDF from "./document-preview-pdf"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "sonner"
+import { getDocumentTemplates, generateDocument, getGeneratedDocumentTemplate, getDocumentPreview } from "@/lib/document-utils"
+import { IDocumentTemplate, IGeneratedDocumentTemplate } from "@/app/types/types.utils"
+
+
+import { useSelector } from "react-redux"
+import { selectSelectedInstitution } from "@/store/auth/selectors"
+
+interface DocumentGenerationDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  contextId: number;
+}
+
+export function DocumentGenerationDialog({ open, onOpenChange, contextId }: DocumentGenerationDialogProps) {
+  const [templates, setTemplates] = useState<IDocumentTemplate[]>([])
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("")
+  const [loading, setLoading] = useState(false)
+  const [placeholders, setPlaceholders] = useState<Record<string, string>>({})
+  const [generatedTemplate, setGeneratedTemplate] = useState<IGeneratedDocumentTemplate | null>(null)
+  const [generatedDocumentId, setGeneratedDocumentId] = useState<number | null>(null)
+  const [previewContent, setPreviewContent] = useState<string | null>(null)
+  const currentInstitution  = useSelector(selectSelectedInstitution)
+
+  useEffect(() => {
+    if (open) {
+      loadTemplates()
+    }
+  }, [open])
+
+  const loadTemplates = async () => {
+    console.log("\n\n Loading document templates...")
+    if(!currentInstitution) {return}
+    setLoading(true)
+    try {
+      const data = await getDocumentTemplates({ institutionId: currentInstitution.id })
+      if (data) {
+        setTemplates(data)
+      }
+    } catch (error) {
+      toast.error("Failed to load document templates")
+    }finally {
+      setLoading(false)
+    }
+  }
+
+  const handleTemplateSelect = async (templateId: string) => {
+    setSelectedTemplate(templateId)
+    setLoading(true)
+    try {
+      const response = await getGeneratedDocumentTemplate(
+        parseInt(templateId),
+        'onboarding',
+        contextId
+      )
+      
+      if (response?.placeholders) {
+        setGeneratedTemplate(response)
+        const initialPlaceholders: { [key: string]: string } = {}
+        Object.keys(response.placeholders).forEach(key => {
+          if (response.placeholders && response.placeholders[key]) {
+            initialPlaceholders[key] = response.placeholders[key].value || ''
+          }
+        })
+        setPlaceholders(initialPlaceholders)
+      }
+    } catch (error) {
+      toast.error("Failed to load template placeholders")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGenerateDocument = async () => {
+    setLoading(true)
+    try {
+      const response = await generateDocument(
+        parseInt(selectedTemplate),
+        'onboarding',
+        contextId,
+        placeholders
+      )
+      
+      if (response?.status === 'success' && response.document_id) {
+        setGeneratedDocumentId(response.document_id)
+        const preview = await getDocumentPreview(response.document_id)
+        if (preview) {
+          setPreviewContent(preview)
+          toast.success("Document generated successfully")
+        }
+      } else {
+        toast.error("Failed to generate document")
+      }
+    } catch (error) {
+      toast.error("Failed to generate document")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Generate Document</DialogTitle>
+          <DialogDescription>
+            Select a template and fill in the required information.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Template</Label>
+            <Select onValueChange={handleTemplateSelect} value={selectedTemplate}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a template" />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.map((template) => (
+                  <SelectItem key={template.id} value={template.id.toString()}>
+                    {template.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {loading && <div className="space-y-3">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+          </div>}
+
+          {!loading && selectedTemplate && generatedTemplate?.placeholders && (
+            <div className="space-y-4">
+              {Object.entries(generatedTemplate.placeholders).map(([key, placeholder]) => (
+                <div key={key} className="space-y-2">
+                  <Label>{key}</Label>
+                  <Input
+                    value={placeholders[key] || ''}
+                    onChange={(e) => setPlaceholders({
+                      ...placeholders,
+                      [key]: e.target.value
+                    })}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {previewContent && (
+            <div className="mt-6 space-y-4">
+              <div className="border rounded-lg p-4 bg-muted/50 mb-8">
+                <Label className="mb-2 block">Document Preview</Label>
+                <div className="prose prose-sm max-h-[200px] overflow-y-auto">
+                  <pre className="text-sm whitespace-pre-wrap">{previewContent}</pre>
+                </div>
+              </div>
+              <PDFDownloadLink
+                document={
+                  <DocumentPreviewPDF 
+                    content={previewContent} 
+                    templateName={templates.find(t => t.id.toString() === selectedTemplate)?.name || 'Document'} 
+                  />
+                }
+                fileName={`${templates.find(t => t.id.toString() === selectedTemplate)?.name || 'document'}.pdf`}
+                className="w-full"
+              >
+                {({ loading: pdfLoading }) => (
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    disabled={pdfLoading}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    {pdfLoading ? "Preparing PDF..." : "Preview PDF"}
+                  </Button>
+                )}
+              </PDFDownloadLink>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button onClick={handleGenerateDocument} disabled={loading || !selectedTemplate}>
+            {loading ? "Generating..." : "Generate Document"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

@@ -1504,6 +1504,16 @@ export interface IDocumentTemplate {
   updated_at: string;
 }
 
+export type DocumentGenerationContext = 'employee' | 'leave' | 'onboarding';
+
+export interface DocumentGenerationRequest {
+  context: DocumentGenerationContext;
+  context_id: number;
+  placeholders: {
+    [key: string]: string;
+  };
+}
+
 export interface IDocumentTemplateFormData {
   document_type: number;
   name: string;
@@ -1511,6 +1521,20 @@ export interface IDocumentTemplateFormData {
   file?: File | null;
   content?: string | null;
   placeholders?: string[] | null;
+}
+
+interface IPlaceholder {
+  value: string;
+}
+
+interface IPlaceholders {
+  [key: string]: IPlaceholder;
+}
+
+export interface IGeneratedDocumentTemplate {
+  id: number;
+  template_id:number
+  placeholders:  IPlaceholders | null; 
 }
 
 

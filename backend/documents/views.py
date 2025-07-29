@@ -359,6 +359,7 @@ class GenerateDocumentView(APIView):
             code="doc_required_fields"
         ).first()
         required_placeholders = system_config.content if system_config else []
+        
 
         # Combine placeholders (remove duplicates, preserve template formatting for non-required placeholders)
         # Convert template placeholders to clean format (strip {{}})

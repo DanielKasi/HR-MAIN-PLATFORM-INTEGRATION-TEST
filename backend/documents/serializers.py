@@ -71,13 +71,13 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
 
         # Handle underscore placeholders
         for line in lines:
-            line_lower = line.lower().strip()
+            line_lower = line.strip()
             # Find phrases before underscores, allowing apostrophes
             match = re.search(r'([\w\s\'-]+?)\s*:?\s*_{10,}', line_lower)
             if match:
                 phrase = match.group(1).strip()
                 # Normalize to snake_case, removing apostrophes
-                placeholder_name = '{{' + re.sub(r'\s+', '_', phrase.replace("'", "")).lower() + '}}'
+                placeholder_name = '{{' + re.sub(r'\s+', '_', phrase.replace("'", "")) + '}}'
                 if placeholder_name not in placeholders:
                     placeholders.append(placeholder_name)
             # Handle special cases
@@ -96,7 +96,7 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
                 # Extract variable name by removing delimiters
                 cleaned_name = re.sub(r'[\{\}<>\[\]]+', '', match).strip()
                 # Normalize to snake_case, removing apostrophes
-                normalized_name = '{{' + re.sub(r'\s+', '_', cleaned_name.replace("'", "")).lower() + '}}'
+                normalized_name = '{{' + re.sub(r'\s+', '_', cleaned_name.replace("'", "")) + '}}'
                 if normalized_name not in placeholders:
                     placeholders.append(normalized_name)
 
@@ -165,10 +165,7 @@ class PlaceholderDataSerializer(serializers.Serializer):
 class GenerateDocumentResponseSerializer(serializers.Serializer):
     placeholders = serializers.DictField(child=PlaceholderDataSerializer())
     template_id = serializers.IntegerField()
-    preview = serializers.CharField(
-        help_text="Preview of the template content with placeholders replaced by values",
-        allow_blank=True
-    )
+
 
 class GenerateDocumentRequestSerializer(serializers.Serializer):
     context = serializers.CharField(
