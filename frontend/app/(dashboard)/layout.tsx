@@ -255,61 +255,62 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Payroll Period", href: "/payroll/payroll-period"},
         {title: "Payslip", href: "/payroll/payslip"},
       ],
-    },
-    {
-      title: "Assets",
-      href: "/assets",
-      icon: <Icon icon="hugeicons:package" width="20" height="20" />,
-    },
-    {
-      title: "Projects",
-      href: "/projects",
-      icon: <Icon icon="hugeicons:folder-01" width="20" height="20" />,
-    },
-    {
-      title: "Help Desk",
-      href: "#1",
-      icon: <Icon icon="hugeicons:help-circle" width="20" height="20" />,
-      submenu: [
-        {title: "Support Tickets", href: "/help-desk/tickets"},
-        {title: "Knowledge Base", href: "/help-desk/knowledge-base"},
-        {title: "FAQs", href: "/help-desk/faqs"},
-        {title: "Contact Support", href: "/help-desk/contact"},
-        {title: "Feedback & Suggestions", href: "/help-desk/feedback"},
-        {title: "Help Desk Reports", href: "/help-desk/reports"},
-      ],
-    },
-    {
-      title: "Reports",
-      href: "#1",
-      icon: <Icon icon="hugeicons:analytics-01" width="20" height="20" />,
-      submenu: [
-        {title: "Employee Reports", href: "/reports/employees"},
-        {title: "Attendance Reports", href: "/reports/attendance"},
-        {title: "Leave Reports", href: "/reports/leave"},
-        {title: "Payroll Reports", href: "/reports/payroll"},
-        {title: "Recruitment Reports", href: "/reports/recruitment"},
-        {title: "Asset Management Reports", href: "/reports/assets"},
-      ],
-    },
-    {
-      title: "Performance",
-      href: "#1",
-      icon: <Icon icon="hugeicons:chart-line-data-01" width="25" height="25" />,
-      submenu: [
-        {title: "Performance Reviews", href: "/performance/reviews"},
-        {title: "Goal Setting", href: "/performance/goals"},
-        {title: "Feedback & Recognition", href: "/performance/feedback"},
-        {title: "Training & Development", href: "/performance/training"},
-        {title: "Competency Management", href: "/performance/competency"},
-        {title: "Performance Reports", href: "/performance/reports"},
-      ],
-    },
-    {
-      title: "Events & Holidays",
-      href: "/events-holidays",
-      icon: <Icon icon="hugeicons:calendar-03" className="w-5 h-5" />,
-    },
+    }
+    // ,
+    // {
+    //   title: "Assets",
+    //   href: "/assets",
+    //   icon: <Icon icon="hugeicons:package" width="20" height="20" />,
+    // },
+    // {
+    //   title: "Projects",
+    //   href: "/projects",
+    //   icon: <Icon icon="hugeicons:folder-01" width="20" height="20" />,
+    // },
+    // {
+    //   title: "Help Desk",
+    //   href: "#1",
+    //   icon: <Icon icon="hugeicons:help-circle" width="20" height="20" />,
+    //   submenu: [
+    //     {title: "Support Tickets", href: "/help-desk/tickets"},
+    //     {title: "Knowledge Base", href: "/help-desk/knowledge-base"},
+    //     {title: "FAQs", href: "/help-desk/faqs"},
+    //     {title: "Contact Support", href: "/help-desk/contact"},
+    //     {title: "Feedback & Suggestions", href: "/help-desk/feedback"},
+    //     {title: "Help Desk Reports", href: "/help-desk/reports"},
+    //   ],
+    // },
+    // {
+    //   title: "Reports",
+    //   href: "#1",
+    //   icon: <Icon icon="hugeicons:analytics-01" width="20" height="20" />,
+    //   submenu: [
+    //     {title: "Employee Reports", href: "/reports/employees"},
+    //     {title: "Attendance Reports", href: "/reports/attendance"},
+    //     {title: "Leave Reports", href: "/reports/leave"},
+    //     {title: "Payroll Reports", href: "/reports/payroll"},
+    //     {title: "Recruitment Reports", href: "/reports/recruitment"},
+    //     {title: "Asset Management Reports", href: "/reports/assets"},
+    //   ],
+    // },
+    // {
+    //   title: "Performance",
+    //   href: "#1",
+    //   icon: <Icon icon="hugeicons:chart-line-data-01" width="25" height="25" />,
+    //   submenu: [
+    //     {title: "Performance Reviews", href: "/performance/reviews"},
+    //     {title: "Goal Setting", href: "/performance/goals"},
+    //     {title: "Feedback & Recognition", href: "/performance/feedback"},
+    //     {title: "Training & Development", href: "/performance/training"},
+    //     {title: "Competency Management", href: "/performance/competency"},
+    //     {title: "Performance Reports", href: "/performance/reports"},
+    //   ],
+    // },
+    // {
+    //   title: "Events & Holidays",
+    //   href: "/events-holidays",
+    //   icon: <Icon icon="hugeicons:calendar-03" className="w-5 h-5" />,
+    // },
   ];
 
   const updateThemeColors = (hexColor: string) => {
