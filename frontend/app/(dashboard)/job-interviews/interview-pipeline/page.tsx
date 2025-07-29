@@ -146,6 +146,7 @@ const getStageColors = (index: number) => {
   return colors[index % colors.length]
 }
 
+
 // Helper function to process interviews into candidates for a specific job
 const processInterviewsForJob = (interviews: IInterview[], jobPositionId: number): InterviewCandidate[] => {
   return interviews
@@ -174,63 +175,51 @@ const processInterviewsForJob = (interviews: IInterview[], jobPositionId: number
 }
 
 // Group interviews by stage for a specific job
-const groupInterviewsByStageForJob = (
+const buildStagesForJob = (
+  interviewStages: IInterviewStage[],
   interviews: IInterview[],
   jobPositionId: number
 ): ProcessedStage[] => {
-  // Filter interviews for the specific job position
-  const jobInterviews = interviews.filter(
-    interview =>
-      interview.job_position_application_details?.job_position_advert === jobPositionId
+  // Filter stages for the specific job position
+  const jobStages = interviewStages.filter(
+    stage => stage.job_position_advert === jobPositionId
   )
 
-  const stageMap = new Map<string, {
-    stage: IInterview['interview_stage_details'],
-    interviews: IInterview[]
-  }>()
+  // Filter interviews for the specific job position
+  const jobInterviews = interviews.filter(
+    interview => interview.job_position_application_details?.job_position_advert === jobPositionId
+  )
 
-  // Group interviews by stage
-  jobInterviews.forEach(interview => {
-    const stage = interview.interview_stage_details
-    if (stage) {
-      const stageKey = stage.id.toString()
-      if (!stageMap.has(stageKey)) {
-        stageMap.set(stageKey, {
-          stage,
-          interviews: []
-        })
-      }
-      stageMap.get(stageKey)!.interviews.push(interview)
+  // Build processed stages
+  const processedStages: ProcessedStage[] = jobStages.map((stage, index) => {
+    const colors = getStageColors(index)
+    
+    // Find interviews for this stage
+    const stageInterviews = jobInterviews.filter(
+      interview => interview.interview_stage_details?.id === stage.id
+    )
+
+    // Process candidates for this stage
+    const candidates = processInterviewsForJob(stageInterviews, jobPositionId)
+
+    // Get interviewer names
+    const interviewerNames = Array.isArray(stage.interviewers_details)
+      ? stage.interviewers_details.map(emp =>
+          emp.user?.fullname || `${emp.first_name} ${emp.last_name}` || 'Unknown'
+        ).join(', ')
+      : 'Not assigned'
+
+    return {
+      id: stage.id.toString(),
+      name: stage.name,
+      count: stageInterviews.length,
+      level: stage.level,
+      interviewer: interviewerNames,
+      icon: getStageIcon(stage.name, index),
+      candidates,
+      ...colors
     }
   })
-
-  // Convert to processed stages
-  const processedStages: ProcessedStage[] = Array.from(stageMap.entries())
-    .map(([stageId, { stage, interviews }], index) => {
-      if (!stage) return null // 👈 Defensive check for TypeScript
-
-      const colors = getStageColors(index)
-      const candidates = processInterviewsForJob(interviews, jobPositionId)
-
-      // Get interviewer names
-      const interviewerNames = Array.isArray(stage.interviewers_details)
-        ? stage.interviewers_details.map(emp =>
-            emp.user?.fullname || `${emp.first_name} ${emp.last_name}` || 'Unknown'
-          ).join(', ')
-        : 'Not assigned'
-
-      return {
-        id: stageId,
-        name: stage.name,
-        count: interviews.length,
-        level: stage.level,
-        interviewer: interviewerNames,
-        icon: getStageIcon(stage.name, index),
-        candidates,
-        ...colors
-      }
-    })
-    .filter((s): s is ProcessedStage => s !== null) 
 
   // Sort by level
   return processedStages.sort((a, b) => a.level - b.level)
@@ -643,6 +632,7 @@ export default function JobSpecificInterviewPipeline() {
 
   // State management
   const [interviews, setInterviews] = useState<IInterview[]>([])
+  const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([])
   const [processedStages, setProcessedStages] = useState<ProcessedStage[]>([])
   const [employees, setEmployees] = useState<IEmployee[]>([])
   const [loading, setLoading] = useState(true)
@@ -709,12 +699,14 @@ export default function JobSpecificInterviewPipeline() {
         throw new Error('Institution information is missing')
       }
 
-      const [fetchedInterviews, fetchedEmployees] = await Promise.all([
-        getInterviews({ institutionId: selectedInstitution.id }),
-        fetchEmployees({ institutionId: selectedInstitution.id })
-      ])
+    const [fetchedInterviews, fetchedEmployees, fetchedStages] = await Promise.all([
+      getInterviews({ institutionId: selectedInstitution.id }),
+      fetchEmployees({ institutionId: selectedInstitution.id }),
+      getInterviewStages({ institutionId: selectedInstitution.id })
+    ])
 
-      setInterviews(fetchedInterviews || [])
+      setInterviews(fetchedInterviews || []),
+      setInterviewStages(fetchedStages || [])
 
       let employeesArray: IEmployee[] = []
       if (fetchedEmployees && 'results' in fetchedEmployees && Array.isArray(fetchedEmployees.results)) {
@@ -745,6 +737,8 @@ export default function JobSpecificInterviewPipeline() {
         }
       })
 
+
+
       const positions = Array.from(jobPositionsMap.values()).sort((a, b) => a.name.localeCompare(b.name))
       setAvailableJobPositions(positions)
 
@@ -759,22 +753,32 @@ export default function JobSpecificInterviewPipeline() {
       setLoading(false)
     }
   }
+  
 
+
+
+
+useEffect(() => {
+  if (selectedInstitution?.id) {
+    console.log("Interview Stages from state:", interviewStages);
+  }
+}, [interviewStages]); // Watch the state, not call the API
   // Process interviews into stages when job position changes
-  useEffect(() => {
-    if (interviews.length > 0 && selectedJobPosition) {
-      const stages = groupInterviewsByStageForJob(interviews, selectedJobPosition.id)
-      setProcessedStages(stages)
+ // Update the useEffect that processes interviews into stages
+useEffect(() => {
+  if (interviewStages.length > 0 && selectedJobPosition) {
+    const stages = buildStagesForJob(interviewStages, interviews, selectedJobPosition.id)
+    setProcessedStages(stages)
 
-      // Set active stage to first stage if none selected
-      if (!activeStageId && stages.length > 0) {
-        setActiveStageId(stages[0].id)
-      }
-    } else {
-      setProcessedStages([])
-      setActiveStageId(null)
+    // Set active stage to first stage if none selected
+    if (!activeStageId && stages.length > 0) {
+      setActiveStageId(stages[0].id)
     }
-  }, [interviews, selectedJobPosition])
+  } else {
+    setProcessedStages([])
+    setActiveStageId(null)
+  }
+}, [interviewStages, interviews, selectedJobPosition]) 
 
   useEffect(() => {
     if (selectedInstitution) {

@@ -139,6 +139,22 @@ export default function AddEmployeeForm() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
+  const [selectedCountry, setSelectedCountry] = useState<ICountry | null>(null);
+  const [phoneInput, setPhoneInput] = useState<{
+    country: ICountry | null;
+    countryCode: string;
+    phoneNumber: string;
+    isValid: boolean;
+  }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
+
+  // Add state for emergency contact phone input
+  const [emergencyPhoneInput, setEmergencyPhoneInput] = useState<{
+    country: ICountry | null;
+    countryCode: string;
+    phoneNumber: string;
+    isValid: boolean;
+  }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
+
   useEffect(() => {
     if (selectedInstitution) {
       setInstitutionId(selectedInstitution.id);
@@ -567,6 +583,22 @@ export default function AddEmployeeForm() {
       setIsSubmitting(false);
     }
   };
+
+  // Sync main phone and country to formData
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      phone_number:
+        phoneInput.countryCode && phoneInput.phoneNumber
+          ? `${phoneInput.countryCode}${phoneInput.phoneNumber}`
+          : "",
+      country: selectedCountry?.name?.common || "",
+      emergency_contact_phone:
+        emergencyPhoneInput.countryCode && emergencyPhoneInput.phoneNumber
+          ? `${emergencyPhoneInput.countryCode}${emergencyPhoneInput.phoneNumber}`
+          : "",
+    }));
+  }, [phoneInput, selectedCountry, emergencyPhoneInput]);
 
   const renderStep = () => {
     switch (currentStep) {

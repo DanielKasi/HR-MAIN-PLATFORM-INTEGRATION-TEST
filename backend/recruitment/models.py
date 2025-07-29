@@ -31,7 +31,13 @@ class JobPosition(models.Model):
         blank=True,
         null=True,
     )
-
+    contract_template = models.ForeignKey(
+        "documents.DocumentTemplate",
+        on_delete=models.SET_NULL,
+        related_name="job_positions",
+        blank=True,
+        null=True,
+    )
     job_position_status = models.CharField(
         max_length=20,
         choices=JOB_POSITION_STATUS_CHOICES,

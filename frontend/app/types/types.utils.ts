@@ -295,6 +295,27 @@ export interface IReportsToDetails {
   department: string; // Department name
 }
 
+// Interface for Job Position response
+export interface IJobPositionResponse {
+  id: number
+  name: string
+  description: string
+  department: number
+  department_details: {
+    id: number
+    name: string
+    description: string
+    institution: number
+    institution_details: any
+  }
+  reports_to: number
+  reports_to_details: string
+  contract_template: string
+  offer_letter_template: string
+  salary: string
+  job_adverts: string
+}
+
 export interface IJobPosition {
   job_adverts: any;
   id: number;
@@ -302,12 +323,12 @@ export interface IJobPosition {
   description?: string | null;
   department: number;
   department_details?: IDepartment | null; 
-  reportsTo?: number | null; 
-  reportsToDetails?: IReportsToDetails | null; 
-  contractTemplate?: string | null; 
-  offerLetterTemplate?: string | null; 
+  reports_to?: number | null; 
+  reports_to_details?: IReportsToDetails | null; 
+  contract_template?: string | null; 
+  offer_letter_template?: string | null; 
   salary: number;
-  employees: IEmployee[]
+  employees: IEmployee[],
 }
 
 
@@ -317,9 +338,9 @@ export interface JobPositionFormData {
   name: string
   description: string
   department: number | null
-  reportsTo: number | null
-  contractTemplate: File | null
-  offerLetterTemplate: File | null
+  reports_to: number | null
+  job_position_status: "active"| "inactive",
+  offer_letter_template: File | null
   salary: string
 }
 
@@ -329,7 +350,7 @@ export interface CreateJobPositionData {
   description?: string;
   department: number;
   reports_to?: number;
-  contract_template?: File;
+  job_position_status: "active"| "inactive",
   offer_letter_template?: File;
   salary: number;
 }
@@ -358,6 +379,7 @@ export interface JobApplication {
   address: string
   country: string
   source: "website" | "referral" | "job_board" | "social_media" | "other"
+  created_by: number
 }
 
 export interface JobApplicationFormData {
@@ -374,7 +396,7 @@ export interface JobApplicationFormData {
   address: string
   country: string
   source?: "website" | "referral" | "job_board" | "social_media" | "other"
-  created_by: number,
+  created_by?: number,
   reviewed_by?: number;
   shortlisted_by?: number;
   recommended_by?: number;
@@ -455,10 +477,10 @@ export interface IEmployee {
   employee_profile_picture: string | null;
   employee_type: number;
   work_type: number;
-  payroll_branch: number;
+  payroll_branch: Branch | null;
   gender: string;
   salary: string;
-  roles: any[];
+  roles: Role[];
 }
 
 export interface IInterviewStageFormData {
@@ -1487,4 +1509,11 @@ export interface IDocumentTemplateFormData {
   file?: File | null;
   content?: string | null;
   placeholders?: string[] | null;
+}
+
+
+export interface ICountry {
+  name: { common: string }
+  cca2: string
+  idd?: { root?: string; suffixes?: string[] }
 }

@@ -4,7 +4,7 @@ from .models import SystemConfiguration
 class SystemConfigurationSerializer(serializers.ModelSerializer):
     class Meta:
         model = SystemConfiguration
-        fields = ['id', 'institution', 'name', 'code', 'content']
+        fields = ['id', 'name', 'code', 'content']
         read_only_fields = ['code']  
 
     def validate(self, data):

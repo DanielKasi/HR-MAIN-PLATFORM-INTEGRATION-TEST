@@ -509,9 +509,9 @@ class UserInstitutionsListAPIView(APIView):
         try:
             user = request.user
 
-            if not user or user.user_type != UserType.POS:
+            if not user:
                 return Response(status=status.HTTP_403_FORBIDDEN)
-            institution_attached = user.institution_owned.all()
+            institution_attached = user.institutions_owned.all()
 
             if not institution_attached or not len(institution_attached):
                 try:
@@ -535,6 +535,7 @@ class UserInstitutionsListAPIView(APIView):
             )
 
         except Exception as e:
+            print("\n\n Exception getting user institutions:", str(e))
             return Response(status=status.HTTP_404_NOT_FOUND)
 
 

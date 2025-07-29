@@ -233,11 +233,8 @@ export const createJobPosition = async ({
       formData.append("reports_to", jobPositionData.reports_to.toString())
     }
     formData.append("salary", jobPositionData.salary.toString())
+    formData.append("job_position_status", jobPositionData.job_position_status.toString())
 
-    // Add file fields
-    if (jobPositionData.contract_template) {
-      formData.append("contract_template", jobPositionData.contract_template)
-    }
     if (jobPositionData.offer_letter_template) {
       formData.append("offer_letter_template", jobPositionData.offer_letter_template)
     }
@@ -272,10 +269,9 @@ export const updateJobPosition = async ({
     }
     formData.append("salary", jobPositionData.salary.toString())
 
-    // Add file fields
-    if (jobPositionData.contract_template) {
-      formData.append("contract_template", jobPositionData.contract_template)
-    }
+
+    formData.append("job_position_status", jobPositionData.job_position_status.toString())
+ 
     if (jobPositionData.offer_letter_template) {
       formData.append("offer_letter_template", jobPositionData.offer_letter_template)
     }
@@ -659,7 +655,10 @@ export const getInterviewStages = async ({
     const response = await apiRequest.get(
       `recruitment/institution/${institutionId}/interview-stage/`
     );
-    return response.data as IInterviewStage[];
+    const data = response.data as PaginatedResponse<IInterviewStage>
+
+    // Return the results array instead of the entire response
+    return data.results
   } catch (error) {
     console.error("Failed to fetch interview stages:", error);
     return null;

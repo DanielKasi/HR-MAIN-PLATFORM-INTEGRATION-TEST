@@ -2,7 +2,17 @@
 
 import React, {useState, useEffect} from "react";
 import {useRouter, usePathname} from "next/navigation";
-import {ChevronDown, ChevronRight, Settings, User, LogOut, Shield, ChevronLeft} from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Settings,
+  User,
+  LogOut,
+  Shield,
+  ChevronLeft,
+  ArrowLeft,
+  CircleArrowLeft,
+} from "lucide-react";
 import Image from "next/image";
 import {useSelector, useDispatch} from "react-redux";
 import {Icon} from "@iconify/react";
@@ -340,6 +350,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     }
   };
 
+  const handleBack = () => {
+    router.back();
+  };
+
   useEffect(() => {
     const fallbackColor = "#078c24";
     const themeColorToUse = selectedInstitution?.theme_color || fallbackColor;
@@ -583,8 +597,24 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 relative">
-          {selectedInstitution ? children : <CreateOrganisationWizard />}
+        <div className="flex-1 w-full overflow-y-auto p-4 relative">
+          {selectedInstitution ? (
+            <>
+        <div className={`flex items-center gap-4 my-2 ${isSideBarOpen ? "pl-0" : "pl-4"}`}>
+                <Button
+                  variant={"outline"}
+                  size="sm"
+                  onClick={handleBack}
+                  className="flex items-center gap-2 !rounded-full !border-gray-300 !text-gray-600 hover:!border-gray-400 hover:!text-gray-700 !aspect-square !w-10 !h-10"
+                >
+                  <Icon icon="hugeicons:arrow-left-02" className="!w-8 !h-8" />
+                </Button>
+              </div>
+              {children}
+            </>
+          ) : (
+            <CreateOrganisationWizard />
+          )}
           {isPathLoading ? <FixedLoader fixed={false} className="!bg-white/90 z-[100]" /> : <></>}
         </div>
       </div>

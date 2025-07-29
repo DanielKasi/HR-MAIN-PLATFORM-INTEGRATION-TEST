@@ -27,9 +27,9 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
+import { selectSelectedInstitution, selectSelectedBranch, selectUser } from "@/store/auth/selectors"
 import { getJobApplicationById, updateJobApplication, getJobPositionAdverts } from "@/lib/utils"
-import type { JobApplication, JobApplicationFormData, JobPositionAdvert, PaginatedResponse } from "@/app/types/types.utils"
+import type { JobApplication, JobApplicationFormData, JobPositionAdvert} from "@/app/types/types.utils"
 import { toast } from "sonner"
 
 const statusOptions = [
@@ -63,7 +63,7 @@ export default function EditApplicationPage() {
   const router = useRouter()
   const params = useParams()
   const applicationId = Number.parseInt(params?.id as string)
-
+  const userData = useSelector(selectUser);
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const selectedBranch = useSelector(selectSelectedBranch)
 
@@ -87,6 +87,7 @@ export default function EditApplicationPage() {
     country: "",
     source: "website",
     application_date: "",
+    created_by: userData?.id || 0,
   })
 
   useEffect(() => {
@@ -125,6 +126,7 @@ export default function EditApplicationPage() {
           address: fetchedApplication.address,
           country: fetchedApplication.country,
           source: fetchedApplication.source,
+          created_by: fetchedApplication.created_by,
           application_date: fetchedApplication.application_date,
           currentResumeUrl: fetchedApplication.resume,
           currentCoverLetterUrl: fetchedApplication.cover_letter || undefined,
@@ -422,7 +424,7 @@ export default function EditApplicationPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {safeJobPositionAdverts
-                        .filter((advert) => advert.status === "active")
+                        .filter((advert) => advert.job_position_advert_status === "active")
                         .map((advert) => (
                           <SelectItem key={advert.id} value={advert.id.toString()}>
                             <div className="flex flex-col">

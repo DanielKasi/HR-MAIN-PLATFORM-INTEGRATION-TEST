@@ -414,10 +414,10 @@ export default function EditJobPositionPage() {
     name: "",
     description: "",
     department: null,
-    reportsTo: null,
-    contractTemplate: null,
-    offerLetterTemplate: null,
+    reports_to: null,
+    offer_letter_template: null,
     salary: "",
+    job_position_status: "inactive",
   })
   const [departments, setDepartments] = useState<IDepartment[]>([])
   const [jobPositions, setJobPositions] = useState<IJobPosition[]>([])
@@ -475,10 +475,10 @@ export default function EditJobPositionPage() {
           name: fetchedJobPosition.name,
           description: fetchedJobPosition.description || "",
           department: fetchedJobPosition.department,
-          reportsTo: fetchedJobPosition.reportsTo || null,
-          contractTemplate: null,
-          offerLetterTemplate: null,
+          reports_to: fetchedJobPosition.reports_to || null,
+          offer_letter_template: null,
           salary: salaryValue,
+          job_position_status:"inactive"
         })
       } else {
         toast.error("Job position not found")
@@ -583,11 +583,8 @@ export default function EditJobPositionPage() {
     }
   }
 
-  const handleFileChange = (field: "contractTemplate" | "offerLetterTemplate", file: File | null) => {
-    updateFormData(field, file)
-  }
 
-  const removeFile = (field: "contractTemplate" | "offerLetterTemplate") => {
+  const removeFile = (field: "offer_letter_template") => {
     updateFormData(field, null)
   }
 
@@ -646,7 +643,8 @@ export default function EditJobPositionPage() {
         description: formData.description.trim(),
         department: formData.department!,
         salary: Number(formData.salary),
-        affected_employees: []
+        affected_employees: [],
+        job_position_status: "active"
       }
 
       // Only include affected employees if salary has changed
@@ -654,16 +652,12 @@ export default function EditJobPositionPage() {
         updateData.affected_employees = selectedEmployees.map(emp => emp.id)
       }
 
-      if (formData.reportsTo) {
-        updateData.reports_to = formData.reportsTo
+      if (formData.reports_to) {
+        updateData.reports_to = formData.reports_to
       }
 
-      if (formData.contractTemplate) {
-        updateData.contract_template = formData.contractTemplate
-      }
-
-      if (formData.offerLetterTemplate) {
-        updateData.offer_letter_template = formData.offerLetterTemplate
+      if (formData.offer_letter_template) {
+        updateData.offer_letter_template = formData.offer_letter_template
       }
 
       const updatedJobPosition = await updateJobPosition({
@@ -731,6 +725,10 @@ export default function EditJobPositionPage() {
         </div>
       </div>
     )
+  }
+
+  function handleFileChange(arg0: string, arg1: File | null): void {
+    throw new Error("Function not implemented.")
   }
 
   return (
@@ -887,8 +885,8 @@ export default function EditJobPositionPage() {
                     Reports To (Optional)
                   </Label>
                   <Select
-                    value={formData.reportsTo?.toString() || "0"}
-                    onValueChange={(value) => updateFormData("reportsTo", value === "0" ? null : Number(value))}
+                    value={formData.reports_to?.toString() || "0"}
+                    onValueChange={(value) => updateFormData("reports_to", value === "0" ? null : Number(value))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a position (optional)" />
@@ -922,11 +920,11 @@ export default function EditJobPositionPage() {
               </div>
 
               {/* Current Files Display */}
-              {(jobPosition?.contractTemplate || jobPosition?.offerLetterTemplate) && (
+              {(jobPosition?.contract_template || jobPosition?.offer_letter_template) && (
                 <div className="space-y-4">
                   <h4 className="font-medium text-sm">Current Templates</h4>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {jobPosition.contractTemplate && (
+                    {jobPosition.contract_template && (
                       <div className="border rounded-lg p-3 bg-muted/30">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-primary" />
@@ -935,7 +933,7 @@ export default function EditJobPositionPage() {
                         <p className="text-xs text-muted-foreground mt-1">Upload a new file to replace</p>
                       </div>
                     )}
-                    {jobPosition.offerLetterTemplate && (
+                    {jobPosition.offer_letter_template && (
                       <div className="border rounded-lg p-3 bg-muted/30">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-primary" />
@@ -950,67 +948,28 @@ export default function EditJobPositionPage() {
 
               {/* File Uploads */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Contract Template */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Contract Template (Optional)</Label>
-                  {formData.contractTemplate ? (
-                    <div className="border rounded-lg p-4 bg-muted/50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">{formData.contractTemplate.name}</span>
-                        </div>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => removeFile("contractTemplate")}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {(formData.contractTemplate.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
-                      <div className="text-center">
-                        <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                        <Label htmlFor="contractTemplate" className="cursor-pointer">
-                          <span className="text-sm font-medium text-primary hover:text-primary/80">
-                            Click to upload new contract template
-                          </span>
-                          <Input
-                            id="contractTemplate"
-                            type="file"
-                            accept=".pdf,.doc,.docx"
-                            onChange={(e) => handleFileChange("contractTemplate", e.target.files?.[0] || null)}
-                            className="hidden"
-                          />
-                        </Label>
-                        <p className="text-xs text-muted-foreground mt-1">PDF, DOC, DOCX up to 10MB</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
 
                 {/* Offer Letter Template */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Offer Letter Template (Optional)</Label>
-                  {formData.offerLetterTemplate ? (
+                  {formData.offer_letter_template ? (
                     <div className="border rounded-lg p-4 bg-muted/50">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">{formData.offerLetterTemplate.name}</span>
+                          <span className="text-sm font-medium">{formData.offer_letter_template.name}</span>
                         </div>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeFile("offerLetterTemplate")}
+                          onClick={() => removeFile("offer_letter_template")}
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {(formData.offerLetterTemplate.size / 1024 / 1024).toFixed(2)} MB
+                        {(formData.offer_letter_template.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
                   ) : (

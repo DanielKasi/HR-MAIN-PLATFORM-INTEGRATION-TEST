@@ -34,6 +34,13 @@ export function getDefaultInstitutionId() {
   }
 }
 
+export function getCUrrentInstitution() {
+  if (typeof window !== "undefined") {
+    return store.getState().auth.selectedInstitution.value;
+  }
+  return null;
+}
+
 export const fetchAndSetData = async <T>(
   fetchFn: () => Promise<any>,
   setFn: (data: T) => void,
