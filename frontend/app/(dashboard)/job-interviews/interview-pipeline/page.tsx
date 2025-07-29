@@ -760,11 +760,8 @@ export default function JobSpecificInterviewPipeline() {
 
 useEffect(() => {
   if (selectedInstitution?.id) {
-    console.log("Interview Stages from state:", interviewStages);
   }
-}, [interviewStages]); // Watch the state, not call the API
-  // Process interviews into stages when job position changes
- // Update the useEffect that processes interviews into stages
+}, [interviewStages]); 
 useEffect(() => {
   if (interviewStages.length > 0 && selectedJobPosition) {
     const stages = buildStagesForJob(interviewStages, interviews, selectedJobPosition.id)
@@ -1022,7 +1019,6 @@ useEffect(() => {
           });
           return result
         } catch (apiError) {
-          console.error('Failed to create interview:', apiError)
           return null
         }
       });

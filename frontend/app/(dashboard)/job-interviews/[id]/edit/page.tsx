@@ -15,13 +15,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
+import { selectSelectedInstitution, selectSelectedBranch, selectUser } from "@/store/auth/selectors"
 import { updateInterview, getInterviewById, getJobApplications, getInterviewStages } from "@/lib/utils"
 import type { IInterviewFormData, IInterview, JobApplication, IInterviewStage } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
 export default function EditInterviewPage() {
   const [interview, setInterview] = useState<IInterview | null>(null)
+  
+  const [jobApplications, setJobApplications] = useState<JobApplication[]>([])
+  const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([])
+  const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null)
+  const [selectedStage, setSelectedStage] = useState<IInterviewStage | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errors, setErrors] = useState<Partial<Record<keyof IInterviewFormData, string>>>({})
+  const userData = useSelector(selectUser);
+  const router = useRouter()
+  const params = useParams()
+  const interviewId = Number.parseInt(params.id as string)
+
+  const selectedInstitution = useSelector(selectSelectedInstitution)
+  const selectedBranch = useSelector(selectSelectedBranch)
+
   const [formData, setFormData] = useState<IInterviewFormData>({
     job_position_application: 0,
     interview_stage: 0,
@@ -31,22 +47,9 @@ export default function EditInterviewPage() {
     rating: undefined,
     location: "",
     interview_time: "",
-    interview_type: "in_person"
+    interview_type: "in_person",
+    created_by: userData?.id || 0,
   })
-  const [jobApplications, setJobApplications] = useState<JobApplication[]>([])
-  const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([])
-  const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null)
-  const [selectedStage, setSelectedStage] = useState<IInterviewStage | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [errors, setErrors] = useState<Partial<Record<keyof IInterviewFormData, string>>>({})
-
-  const router = useRouter()
-  const params = useParams()
-  const interviewId = Number.parseInt(params.id as string)
-
-  const selectedInstitution = useSelector(selectSelectedInstitution)
-  const selectedBranch = useSelector(selectSelectedBranch)
 
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
@@ -112,7 +115,8 @@ export default function EditInterviewPage() {
         rating: fetchedInterview.rating || undefined,
         location: fetchedInterview.location || "",
         interview_time: fetchedInterview.interview_time || "",
-        interview_type: fetchedInterview.interview_type || "in_person"
+        interview_type: fetchedInterview.interview_type || "in_person",
+        created_by: userData?.id || 0,
       })
     } catch (error) {
       console.error("Error fetching initial data:", error)
@@ -279,7 +283,7 @@ export default function EditInterviewPage() {
 
   return (
     <div className="w-full h-full p-6">
-      <div className="w-full max-w-6xl mx-auto space-y-6">
+      <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
@@ -314,7 +318,6 @@ export default function EditInterviewPage() {
                       <p>
                         <span className="font-medium">ID:</span> #{interview.id}
                       </p>
-                      {/* Change <p> to <div> when containing Badge */}
                       <div>
                         <span className="font-medium">Current Status:</span>
                         <Badge variant="outline" className="ml-1 capitalize">
@@ -337,34 +340,8 @@ export default function EditInterviewPage() {
               )}
 
               {/* Selected Application Info */}
-              {selectedApplication && (
-                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                  <h4 className="font-medium text-sm mb-2 text-blue-800">Selected Applicant</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-700">
-                    <div>
-                      <p>
-                        <span className="font-medium">Name:</span> {selectedApplication.applicant_name}
-                      </p>
-                      <p>
-                        <span className="font-medium">Email:</span> {selectedApplication.applicant_email}
-                      </p>
-                    </div>
-                    <div>
-                      <p>
-                        <span className="font-medium">Phone:</span> {selectedApplication.applicant_phone}
-                      </p>
-                      <p>
-                        <span className="font-medium">Status:</span>
-                        <Badge variant="outline" className="ml-1 capitalize">
-                          {selectedApplication.status}
-                        </Badge>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Selected Stage Info */}
+             selectedApplication   
+                        {/* Selected Stage Info */}
               {selectedStage && (
                 <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
                   <h4 className="font-medium text-sm mb-2 text-green-800">Selected Interview Stage</h4>
@@ -380,10 +357,10 @@ export default function EditInterviewPage() {
                     <div>
                       <p>
                         <span className="font-medium">Interviewer:</span>
-                        {selectedStage.interviewer_details?.first_name} {selectedStage.interviewer_details?.last_name}
+                        {selectedStage.interviewers_details?.[0]?.first_name} {selectedStage.interviewers_details?.[0]?.last_name}
                       </p>
                       <p>
-                        <span className="font-medium">Email:</span> {selectedStage.interviewer_details?.email}
+                        <span className="font-medium">Email:</span> {selectedStage.interviewers_details?.[0]?.email}
                       </p>
                     </div>
                   </div>
