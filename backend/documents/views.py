@@ -355,11 +355,8 @@ class GenerateDocumentView(APIView):
         placeholder_data = {}
         for placeholder in all_placeholders:
             value = known_values.get(placeholder, '')
-            is_required = placeholder in required_placeholders
             placeholder_data[placeholder] = {
-                'value': value,
-                'is_editable': not bool(value) or not is_required,  # Required placeholders with values are non-editable
-                'is_required': is_required
+                'value': value
             }
 
         serializer = GenerateDocumentResponseSerializer({
