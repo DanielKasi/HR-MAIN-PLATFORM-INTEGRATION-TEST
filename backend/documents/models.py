@@ -60,7 +60,7 @@ class Document(models.Model):
     status = models.CharField(
         max_length=20,
         choices=[
-            ('penging', 'Pending'),
+            ('pending', 'Pending'),
             ('in_review', 'In Review'),
             ('reviewed', 'Reviewed'),
         ]

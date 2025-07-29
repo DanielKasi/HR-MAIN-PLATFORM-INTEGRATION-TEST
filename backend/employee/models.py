@@ -238,14 +238,6 @@ class Employee(models.Model):
 
         super().save(*args, **kwargs)
 
-        # Create contract for new employees
-        if is_new_employee:
-            try:
-                contract = Contract(employee=self, start_date=self.date_of_joining)
-                contract.save()  # This will trigger contract generation
-            except Exception as e:
-                print(f"Failed to create contract for employee {self.employee_id}: {e}")
-
         # Initialize or update leave balances based on changes
         should_initialize = (
             is_new_employee and self.is_active and self.department
@@ -499,23 +491,11 @@ class EmployeeAttendance(models.Model):
         super().save(*args, **kwargs)
 
 
-class Contract(models.Model):
+class EmployeeContract(models.Model):
     employee = models.ForeignKey(
-        Employee, on_delete=models.CASCADE, related_name="contracts"
+        Employee, on_delete=models.CASCADE, related_name="contracts", null=True, blank=True
     )
-    start_date = models.DateField()
-    end_date = models.DateField(blank=True, null=True)
-    status = models.CharField(
-        max_length=20,
-        choices=[
-            ("draft", "Draft"),
-            ("issued", "Issued"),
-            ("under_review", "Under Review"),
-            ("active", "Active"),
-            ("expired", "Expired"),
-            ("terminated", "Terminated"),
-        ],
-    )
+    is_active = models.BooleanField(default=True)
     contract_reference = models.CharField(
         max_length=20, unique=True, blank=True, null=True
     )

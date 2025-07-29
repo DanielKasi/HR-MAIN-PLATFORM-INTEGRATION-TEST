@@ -46,60 +46,57 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
         return ""
 
     def _extract_placeholders(self, content):
-        """Extract placeholders from content in various formats."""
+        """Extract placeholders from content in various formats, handling apostrophes."""
         if not content:
             return []
 
         placeholders = []
         lines = content.split("\n")
 
-        # Define multiple placeholder patterns, all allowing apostrophes
+        # Define placeholder patterns, supporting apostrophes
         placeholder_patterns = [
-            r'\{\{[\w\s\'-]+\}\}',  # {{variable_name}} with apostrophes
-            r'<<[\w\s\'-]+>>',      # <<variable_name>> with apostrophes
+            r'\{\{[\w\s\'-]+\}\}',  # {{variable_name}} or {{Employee's Name}}
+            r'<<[\w\s\'-]+>>',      # <<variable_name>> or <<Employee's Name>>
+            r'\[\[[\w\s\'-]+\]\]',  # [[variable_name]] or [[Employee's Name]]
+            r'\[[\w\s\'-]+\]',      # [variable_name] or [Employee's Name]
             r'_{10,}',              # ___________________
-            r'\[\[[\w\s\'-]+\]\]',  # [[variable_name]] with apostrophes
-            r'\[[\w\s\'-]+\]',      # [variable_name] with apostrophes
         ]
 
-        # Combine patterns into a single regex with alternation
+        # Combine patterns into a single regex
         combined_pattern = '|'.join(f'({pattern})' for pattern in placeholder_patterns)
         all_matches = re.findall(combined_pattern, content)
 
         # Flatten matches (since re.findall with groups returns tuples)
         matches = [match for group in all_matches for match in group if match]
 
-        # Handle underscore placeholders by extracting the preceding word or phrase
+        # Handle underscore placeholders
         for line in lines:
             line_lower = line.lower().strip()
-            # Find phrases (one or more words, allowing spaces, hyphens, apostrophes) before underscores
+            # Find phrases before underscores, allowing apostrophes
             match = re.search(r'([\w\s\'-]+?)\s*:?\s*_{10,}', line_lower)
             if match:
                 phrase = match.group(1).strip()
-                # Convert phrase to snake_case and wrap in {{}}, removing apostrophes
-                placeholder_name = '{{' + re.sub(r'\s+', '_', phrase.replace("'", "")) + '}}'
+                # Normalize to snake_case, removing apostrophes
+                placeholder_name = '{{' + re.sub(r'\s+', '_', phrase.replace("'", "")).lower() + '}}'
                 if placeholder_name not in placeholders:
                     placeholders.append(placeholder_name)
-            # Handle special cases like "initials" and "signature"
+            # Handle special cases
             if "initials" in line_lower and "{{initials}}" not in placeholders:
                 placeholders.append("{{initials}}")
             if "signature" in line_lower and "{{signature}}" not in placeholders:
                 placeholders.append("{{signature}}")
-            # Handle cases where underscores appear without a clear label (e.g., standalone _____)
-            if re.search(r'_{10,}', line_lower) and not match:
-                # Check for specific contexts without a direct preceding word
-                if "days" in line_lower and "{{days}}" not in placeholders:
-                    placeholders.append("{{days}}")
-                if "state" in line_lower and "{{state}}" not in placeholders:
-                    placeholders.append("{{state}}")
+            if "days" in line_lower and "{{days}}" not in placeholders:
+                placeholders.append("{{days}}")
+            if "state" in line_lower and "{{state}}" not in placeholders:
+                placeholders.append("{{state}}")
 
-        # Handle other placeholder formats ({{}}, <<>>, [[]], [])
+        # Handle other placeholder formats
         for match in matches:
-            if not re.match(r'_{10,}', match):  # Skip underscores as they were handled above
-                # Extract the variable name by removing the delimiters
+            if not re.match(r'_{10,}', match):  # Skip underscores
+                # Extract variable name by removing delimiters
                 cleaned_name = re.sub(r'[\{\}<>\[\]]+', '', match).strip()
-                # Standardize to snake_case, removing apostrophes
-                normalized_name = '{{' + re.sub(r'\s+', '_', cleaned_name.lower().replace("'", "")) + '}}'
+                # Normalize to snake_case, removing apostrophes
+                normalized_name = '{{' + re.sub(r'\s+', '_', cleaned_name.replace("'", "")).lower() + '}}'
                 if normalized_name not in placeholders:
                     placeholders.append(normalized_name)
 
@@ -135,14 +132,13 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
         file = validated_data.get("file")
         content = validated_data.get("content")
 
-        # Extract content from file if provided (PDF/Word)
+        # Extract content from file if provided
         if template_type in ("pdf", "word") and file:
             validated_data["content"] = self._extract_file_content(file, template_type)
-        # For richtext, use provided content or empty string
         else:
             validated_data["content"] = content or ""
 
-        # Extract placeholders from content
+        # Extract placeholders
         validated_data["placeholders"] = self._extract_placeholders(validated_data["content"])
 
         return super().create(validated_data)
@@ -152,26 +148,27 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
         file = validated_data.get("file")
         content = validated_data.get("content")
 
-        # Extract content from file if provided (PDF/Word)
+        # Extract content from file if provided
         if template_type in ("pdf", "word") and file:
             validated_data["content"] = self._extract_file_content(file, template_type)
-        # For richtext or if no file is provided, use provided content or keep existing
         elif template_type == "text":
             validated_data["content"] = content or instance.content
 
-        # Extract placeholders from content
+        # Extract placeholders
         validated_data["placeholders"] = self._extract_placeholders(validated_data.get("content", instance.content))
 
         return super().update(instance, validated_data)
 
 class PlaceholderDataSerializer(serializers.Serializer):
     value = serializers.CharField(allow_blank=True)
-    is_editable = serializers.BooleanField()
-    is_required = serializers.BooleanField()
 
 class GenerateDocumentResponseSerializer(serializers.Serializer):
     placeholders = serializers.DictField(child=PlaceholderDataSerializer())
     template_id = serializers.IntegerField()
+    preview = serializers.CharField(
+        help_text="Preview of the template content with placeholders replaced by values",
+        allow_blank=True
+    )
 
 class GenerateDocumentRequestSerializer(serializers.Serializer):
     context = serializers.CharField(
@@ -184,5 +181,19 @@ class GenerateDocumentRequestSerializer(serializers.Serializer):
     )
     placeholders = serializers.DictField(
         child=serializers.CharField(),
-        help_text="Dictionary of placeholder names and their values, e.g., {'FULLNAME': 'John Doe', 'SALARY': '50000'}"
-    )       
+        help_text="Dictionary of placeholder names and their values, e.g., {'full_name': 'John Doe', 'salary': '50000'}"
+    )
+
+class GenerateDocumentPostResponseSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    document_id = serializers.IntegerField()
+    preview = serializers.CharField(
+        help_text="Preview of the generated document with placeholders replaced by provided values",
+        allow_blank=True
+    )
+
+class DocumentContentPreviewSerializer(serializers.Serializer):
+    preview = serializers.CharField(
+        help_text="Preview of the document content with placeholders replaced by stored values",
+        allow_blank=True
+    )

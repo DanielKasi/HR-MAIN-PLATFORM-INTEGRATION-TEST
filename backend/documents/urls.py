@@ -6,6 +6,7 @@ from .views import (
     DocumentTemplateListCreateAPIView,
     DocumentTemplateDetailAPIView,
     GenerateDocumentView,
+    DocumentContentPreviewView,
 )
 
 urlpatterns = [
@@ -34,4 +35,5 @@ urlpatterns = [
         GenerateDocumentView.as_view(),
         name="generate-document",
     ),
+    path('preview-document-content/<int:document_id>/', DocumentContentPreviewView.as_view(), name='preview-document-content'),
 ]

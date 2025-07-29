@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from .models import DocumentType, DocumentTemplate, Document
-from .serializers import DocumentTypeSerializer, DocumentTemplateSerializer, GenerateDocumentResponseSerializer, GenerateDocumentRequestSerializer
+from .serializers import DocumentTypeSerializer, DocumentTemplateSerializer, GenerateDocumentResponseSerializer, GenerateDocumentRequestSerializer, DocumentContentPreviewSerializer
 from utilities.pagination import CustomPageNumberPagination
 from rest_framework.parsers import MultiPartParser, FormParser
 from institution.models import Institution
@@ -14,6 +14,7 @@ from onboarding.models import OnBoarding
 from settings.models import SystemConfiguration
 from django.shortcuts import get_object_or_404
 from datetime import datetime
+import re
 
 
 
@@ -424,3 +425,95 @@ class GenerateDocumentView(APIView):
             {'status': 'success', 'document_id': document.pk},
             status=status.HTTP_201_CREATED
         )
+
+class DocumentContentPreviewView(APIView):
+    def _normalize_placeholder(self, placeholder):
+        """Normalize placeholder to snake_case {{variable_name}} format, removing apostrophes."""
+        # Remove delimiters ({{}}, <<>>, [[]], [])
+        cleaned_name = re.sub(r'[\{\}<>\[\]]+', '', placeholder).strip()
+        # Convert to snake_case, remove apostrophes
+        normalized_name = re.sub(r'\s+', '_', cleaned_name.replace("'", "")).lower()
+        return f"{{{{{normalized_name}}}}}" if normalized_name else placeholder
+
+    def _replace_placeholders(self, content, placeholder_values):
+        """Replace all placeholder formats in content with values, handling apostrophes."""
+        if not content:
+            return ""
+
+        preview = content
+        lines = content.split("\n")
+        placeholder_values = {k.lower(): v for k, v in placeholder_values.items()}  # Normalize keys
+
+        # Define placeholder patterns, supporting apostrophes
+        placeholder_patterns = [
+            r'\{\{[\w\s\'-]+\}\}',  # {{variable_name}} or {{Employee's Name}}
+            r'<<[\w\s\'-]+>>',      # <<variable_name>> or <<Employee's Name>>
+            r'\[\[[\w\s\'-]+\]\]',  # [[variable_name]] or [[Employee's Name]]
+            r'\[[\w\s\'-]+\]',      # [variable_name] or [Employee's Name]
+            r'_{10,}',              # ___________________
+        ]
+        combined_pattern = '|'.join(f'({pattern})' for pattern in placeholder_patterns)
+        all_matches = re.findall(combined_pattern, content)
+
+        # Flatten matches
+        matches = [match for group in all_matches for match in group if match]
+
+        # Handle standard placeholders
+        for match in matches:
+            if not re.match(r'_{10,}', match):  # Skip underscores
+                normalized = self._normalize_placeholder(match)
+                normalized_key = normalized.strip('{}').lower()
+                value = placeholder_values.get(normalized_key, match)  # Keep placeholder if no value
+                preview = preview.replace(match, value)
+
+        # Handle underscore placeholders
+        for line in lines:
+            line_lower = line.lower().strip()
+            # Find phrases before underscores, allowing apostrophes
+            match = re.search(r'([\w\s\'-]+?)\s*:?\s*_{10,}', line_lower)
+            if match:
+                phrase = match.group(1).strip()
+                normalized_key = re.sub(r'\s+', '_', phrase.replace("'", "")).lower()
+                value = placeholder_values.get(normalized_key, None)
+                # Replace with value if provided, else keep underscores
+                replacement = f"{phrase}: {value}" if value else f"{phrase}: __________"
+                preview = re.sub(r'([\w\s\'-]+?)\s*:?\s*_{10,}', replacement, preview, count=1)
+            # Handle special cases
+            if "initials" in line_lower and "initials" in placeholder_values:
+                preview = preview.replace("initials", placeholder_values["initials"], 1)
+            if "signature" in line_lower and "signature" in placeholder_values:
+                preview = preview.replace("signature", placeholder_values["signature"], 1)
+            if "days" in line_lower and "days" in placeholder_values:
+                preview = preview.replace("days", placeholder_values["days"], 1)
+            if "state" in line_lower and "state" in placeholder_values:
+                preview = preview.replace("state", placeholder_values["state"], 1)
+            # Handle standalone underscores
+            if re.search(r'_{10,}', line_lower) and not match:
+                preview = re.sub(r'_{10,}', "__________", preview, count=1)
+
+        return preview
+
+    @extend_schema(
+        tags=['Document Generation'],
+        responses={
+            200: DocumentContentPreviewSerializer,
+            404: {'description': 'Document not found'}
+        },
+        description='Generates a preview of the document content by replacing placeholders (including those with apostrophes) with stored values, removing underscores when values are provided'
+    )
+    def get(self, request, document_id):
+        # Fetch the document
+        document = get_object_or_404(Document, pk=document_id)
+        template = document.document_template
+        template_content = template.content or ''
+
+        # Get placeholder values
+        placeholder_values = document.placeholder_values or {}
+
+        # Generate preview
+        preview = self._replace_placeholders(template_content, placeholder_values)
+
+        serializer = DocumentContentPreviewSerializer({
+            'preview': preview
+        })
+        return Response(serializer.data, status=status.HTTP_200_OK)
