@@ -7,3 +7,4 @@ admin.site.register(JobAdvertApplication)
 admin.site.register(JobInterview)
 admin.site.register(JobPosition)
 admin.site.register(InterviewStage)
+

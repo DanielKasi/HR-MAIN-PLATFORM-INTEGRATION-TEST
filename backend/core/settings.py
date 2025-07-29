@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
+    "django_countries",
     "users",
     "institution",
     "workflows",
@@ -47,6 +48,10 @@ INSTALLED_APPS = [
     "projects",
     "calendar2",
     "assets",
+    "django_ckeditor_5",
+    "documents",
+    "audit",
+    "settings",
 ]
 
 MIDDLEWARE = [
@@ -62,6 +67,15 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "core.urls"
+CKEDITOR_UPLOAD_PATH = "uploads/"
+
+DJANGO_CKEDITOR_5_CONFIGS = {
+    'default': {
+        'toolbar': ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote'],
+        'language': 'en',
+    },
+}
+
 
 TEMPLATES = [
     {

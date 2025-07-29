@@ -2,7 +2,17 @@
 
 import React, {useState, useEffect} from "react";
 import {useRouter, usePathname} from "next/navigation";
-import {ChevronDown, ChevronRight, Settings, User, LogOut, Shield, ChevronLeft} from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Settings,
+  User,
+  LogOut,
+  Shield,
+  ChevronLeft,
+  ArrowLeft,
+  CircleArrowLeft,
+} from "lucide-react";
 import Image from "next/image";
 import {useSelector, useDispatch} from "react-redux";
 import {Icon} from "@iconify/react";
@@ -117,12 +127,15 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const [expandedItems, setExpandedItems] = useState<{[key: string]: boolean}>({});
 
   const [InstitutionId, setInstitutionId] = useState<string | null>(null);
+
+  const [isPathLoading, setIsPathLoading] = useState(false);
+
   const InstitutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
-  const {getCompletionPercentage, isSetupComplete, getNextStep} = useSetupProgress(
-    InstitutionId || undefined,
-  );
-  const completionPercentage = getCompletionPercentage();
-  const nextStep = getNextStep();
+  // const {getCompletionPercentage, isSetupComplete, getNextStep} = useSetupProgress(
+  //   InstitutionId || undefined,
+  // );
+  // const completionPercentage = getCompletionPercentage();
+  // const nextStep = getNextStep();
 
   const [InstitutionLogo, setInstitutionLogo] = useState<string | null>(null);
   const [InstitutionName, setInstitutionName] = useState("BAIFAM HR");
@@ -135,6 +148,15 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const isSideBarOpen = useSelector(selectSidebarOpened);
   const dispatch = useDispatch();
   const router = useRouter();
+
+  useEffect(() => {
+    setIsPathLoading(true);
+    const timer = setTimeout(() => {
+      setIsPathLoading(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [pathname]);
 
   useEffect(() => {
     dispatch(fetchRemoteUserStart());
@@ -187,11 +209,11 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       href: "#1",
       icon: <Icon icon="hugeicons:user-add-02" width="20" height="20" />,
       submenu: [
-        {title: "Job Adverts", href: "/job-adverts"},
+        {title: "Job Openings", href: "/job-adverts"},
         {title: "Applications", href: "/applications"},
         {title: "Interviews", href: "/job-interviews"},
       ],
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS,
     },
     {
       title: "Onboarding",
@@ -207,9 +229,8 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Contracts", href: "/employees/contracts"},
         {title: "Attendance", href: "/employees/attendance"},
         {title: "Discipline", href: "/employees/discipline"},
-
       ],
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
     },
     {
       title: "Leave",
@@ -241,6 +262,11 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       icon: <Icon icon="hugeicons:package" width="20" height="20" />,
     },
     {
+      title: "Projects",
+      href: "/projects",
+      icon: <Icon icon="hugeicons:folder-01" width="20" height="20" />,
+    },
+    {
       title: "Help Desk",
       href: "#1",
       icon: <Icon icon="hugeicons:help-circle" width="20" height="20" />,
@@ -267,18 +293,6 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       ],
     },
     {
-      title: "Projects",
-      href: "#1",
-      icon: <Icon icon="hugeicons:folder-01" width="20" height="20" />,
-      submenu: [
-        {title: "Project Dashboard", href: "/projects/dashboard"},
-        {title: "Create Project", href: "/projects/create"},
-        {title: "Project Timeline", href: "/projects/timeline"},
-        {title: "Task Management", href: "/projects/tasks"},
-        {title: "Project Reports", href: "/projects/reports"},
-      ],
-    },
-    {
       title: "Performance",
       href: "#1",
       icon: <Icon icon="hugeicons:chart-line-data-01" width="25" height="25" />,
@@ -291,14 +305,12 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Performance Reports", href: "/performance/reports"},
       ],
     },
+    {
+      title: "Events & Holidays",
+      href: "/events-holidays",
+      icon: <Icon icon="hugeicons:calendar-03" className="w-5 h-5" />,
+    },
   ];
-
-  // const adminItem: NavItem = {
-  //   title: "Admin",
-  //   href: "/admin",
-  //   icon: <Shield className="w-5 h-5" />,
-  //   requiredPermission: PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD,
-  // };
 
   const updateThemeColors = (hexColor: string) => {
     if (!hexColor) return;
@@ -336,6 +348,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     } catch (error) {
       console.error("Error updating theme colors:", error);
     }
+  };
+
+  const handleBack = () => {
+    router.back();
   };
 
   useEffect(() => {
@@ -508,7 +524,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col" style={{marginLeft: isSideBarOpen ? "16rem" : "4rem"}}>
+      <div className="flex-1 flex flex-col" style={{marginLeft: isSideBarOpen ? "16rem" : "5rem"}}>
         {/* Header */}
         <div className="bg-white p-4 flex justify-between items-center border-b">
           <button
@@ -581,8 +597,25 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {selectedInstitution ? children : <CreateOrganisationWizard />}
+        <div className="flex-1 w-full overflow-y-auto p-4 relative">
+          {selectedInstitution ? (
+            <>
+        <div className={`flex items-center gap-4 my-2 ${isSideBarOpen ? "pl-0" : "pl-4"}`}>
+                <Button
+                  variant={"outline"}
+                  size="sm"
+                  onClick={handleBack}
+                  className="flex items-center gap-2 !rounded-full !border-gray-300 !text-gray-600 hover:!border-gray-400 hover:!text-gray-700 !aspect-square !w-10 !h-10"
+                >
+                  <Icon icon="hugeicons:arrow-left-02" className="!w-8 !h-8" />
+                </Button>
+              </div>
+              {children}
+            </>
+          ) : (
+            <CreateOrganisationWizard />
+          )}
+          {isPathLoading ? <FixedLoader fixed={false} className="!bg-white/90 z-[100]" /> : <></>}
         </div>
       </div>
 

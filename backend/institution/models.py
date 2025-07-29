@@ -4,6 +4,8 @@ from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 from django.core.exceptions import ValidationError
 import logging
+from utilities.default_document_types import DEFAULT_DOCUMENT_TYPES
+from django.db import transaction
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -40,7 +42,6 @@ class Institution(models.Model):
     country_code = models.CharField(max_length=10, blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
-    # location_geodjango = gis_models.PointField(geography=True, null=True, blank=True)
 
     # Zoom Settings
     zoom_account_id = models.CharField(max_length=100, blank=True, null=True)
@@ -50,7 +51,7 @@ class Institution(models.Model):
     approval_status = models.CharField(
         max_length=20,
         choices=APPROVAL_STATUS_CHOICES,
-        default="approved",  # This will later be changed to pending when a whole implementation of approval at the management side is done
+        default="approved",
     )
     approval_date = models.DateTimeField(blank=True, null=True)
     approved_by = models.ForeignKey(
@@ -86,41 +87,66 @@ class Institution(models.Model):
 
     def _get_country_code_from_location(self):
         """Determine country code from location or coordinates using geopy."""
-        geolocator = Nominatim(user_agent="hr_baifam_app")  # Unique user agent
-
+        geolocator = Nominatim(user_agent="hr_baifam_app")
         try:
-            # Try geocoding with the location field (address)
             if self.location:
-                location_data = geolocator.geocode(self.location, exactly_one=True, timeout=10)
-                if location_data and location_data.raw.get('address', {}).get('country_code'):
-                    return location_data.raw['address']['country_code'].upper()
-            
-            # Fallback to reverse geocoding with coordinates
-            if self.latitude is not None and self.longitude is not None:
-                location_data = geolocator.reverse((self.latitude, self.longitude), timeout=10)
-                if location_data and location_data.raw.get('address', {}).get('country_code'):
-                    return location_data.raw['address']['country_code'].upper()
+                location_data = geolocator.geocode(
+                    self.location, exactly_one=True, timeout=10
+                )
+                if location_data and location_data.raw.get("address", {}).get(
+                    "country_code"
+                ):
+                    return location_data.raw["address"]["country_code"].upper()
 
-            logger.warning(f"Could not determine country code for institution: {self.institution_name}")
-            return None  # Return None if no country code is found
+            if self.latitude is not None and self.longitude is not None:
+                location_data = geolocator.reverse(
+                    (self.latitude, self.longitude), timeout=10
+                )
+                if location_data and location_data.raw.get("address", {}).get(
+                    "country_code"
+                ):
+                    return location_data.raw["address"]["country_code"].upper()
+
+            logger.warning(
+                f"Could not determine country code for institution: {self.institution_name}"
+            )
+            return None
         except (GeocoderTimedOut, GeocoderUnavailable) as e:
-            logger.error(f"Geocoding failed for institution {self.institution_name}: {str(e)}")
-            return None    
+            logger.error(
+                f"Geocoding failed for institution {self.institution_name}: {str(e)}"
+            )
+            return None
+
+    def _create_default_document_types(self):
+        """Create default document types for the institution."""
+        from documents.models import DocumentType
+
+        for doc_type in DEFAULT_DOCUMENT_TYPES:
+            DocumentType.objects.get_or_create(
+                institution=self,
+                name=doc_type["name"],
+                defaults={
+                    "description": doc_type["description"],
+                },
+            )
 
     def save(self, *args, **kwargs):
-        # Set country_code if not provided
-        if not self.country_code:
-            self.country_code = self._get_country_code_from_location()
+        with transaction.atomic():
+            # Set country_code if not provided
+            if not self.country_code:
+                self.country_code = self._get_country_code_from_location()
 
-        is_new = self._state.adding
-        super().save(*args, **kwargs)
+            is_new = self._state.adding
+            super().save(*args, **kwargs)
 
-        if is_new:
-            from payroll.utils import PayrollProcessor
-            PayrollProcessor.setup_default_payroll_types_for_institution(self)
-            self._create_calendar_for_institution()
+            if is_new:
+                from payroll.utils import PayrollProcessor
 
-    def _create_calendar_for_institution(self):  # Define as an instance method
+                PayrollProcessor.setup_default_payroll_types_for_institution(self)
+                self._create_calendar_for_institution()
+                self._create_default_document_types()
+
+    def _create_calendar_for_institution(self):
         from calendar2.models import Calendar
 
         current_year = datetime.now().year

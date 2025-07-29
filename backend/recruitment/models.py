@@ -3,18 +3,22 @@ from datetime import datetime, timezone
 from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
+import os
+from rest_framework.exceptions import ValidationError
+from users.models import Profile
 
 
 class JobPosition(models.Model):
+    JOB_POSITION_STATUS_CHOICES = [
+        ("active", "Active"),
+        ("inactive", "Inactive"),
+    ]
     name = models.CharField(max_length=255)
     description = models.TextField()
     department = models.ForeignKey(
         "institution.Department",
         on_delete=models.PROTECT,
         related_name="job_positions",
-    )
-    contract_template = models.FileField(
-        upload_to="job_positions/contracts/", blank=True, null=True
     )
     offer_letter_template = models.FileField(
         upload_to="job_positions/offer_letters/", blank=True, null=True
@@ -27,36 +31,97 @@ class JobPosition(models.Model):
         blank=True,
         null=True,
     )
+    contract_template = models.ForeignKey(
+        "documents.DocumentTemplate",
+        on_delete=models.SET_NULL,
+        related_name="job_positions",
+        blank=True,
+        null=True,
+    )
+    job_position_status = models.CharField(
+        max_length=20,
+        choices=JOB_POSITION_STATUS_CHOICES,
+        default="inactive",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.name}"
 
+    def activate_job_position(self):
+        # if self.job_position_status != "inactive":
+        #     raise ValidationError("Only inactive job positions can be activated.")
+
+        self.job_position_status == "active"
+        self.save()
+
+    def finish_workflow(self):
+        from workflows.models import ApprovalTask
+        from django.contrib.contenttypes.models import ContentType
+
+        content_type = ContentType.objects.get_for_model(self.__class__)
+
+        tasks = ApprovalTask.objects.filter(
+            content_type=content_type, object_id=self.pk
+        )
+
+        if tasks.exists() and tasks.filter(status="rejected").exists():
+            self.job_position_status = "inactive"
+            self.save()
+            return
+        if (
+            tasks.exists()
+            and not tasks.filter(
+                status__in=["not_started", "pending", "rejected"]
+            ).exists()
+        ):
+            self.activate_job_position()
+            return
+        elif not tasks.exists():
+            self.activate_job_position()
+            return
+        else:
+            raise Exception(
+                "Cannot finish workflow: Some tasks are not completed or rejected."
+            )
+
 
 class JobPositionAdvert(models.Model):
     status_choices = [
+        ("pending_approval", "Pending Approval"),
         ("expired", "Expired"),
         ("active", "Active"),
         ("archived", "Archived"),
         ("closed", "Closed"),
+        ("inactive", "Inactive"),
     ]
     job_position = models.ForeignKey(
         JobPosition, on_delete=models.PROTECT, related_name="adverts"
     )
-    status = models.CharField(max_length=20, choices=status_choices, default="active")
+    job_position_advert_status = models.CharField(
+        max_length=20, choices=status_choices, default="pending_approval"
+    )
+    advert_type = models.CharField(
+        max_length=20,
+        choices=[
+            ("internal", "Internal"),
+            ("external", "External"),
+        ],
+        default="external",
+    )
     published_date = models.DateTimeField(default=datetime.now)
     expiry_date = models.DateTimeField()
     number_of_employees_expected = models.PositiveIntegerField(blank=True, null=True)
     extra_information = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.job_position.name} - {self.status} ({self.published_date})"
+        return f"{self.job_position.name} - {self.job_position_advert_status} ({self.published_date})"
 
     def _clean(self):
-        if self.status == "active":
+        if self.job_position_advert_status == "active":
             existing_active = JobPositionAdvert.objects.filter(
                 job_position=self.job_position,
-                status="active",
+                job_position_advert_status="active",
             )
 
             if self.pk:
@@ -70,6 +135,45 @@ class JobPositionAdvert(models.Model):
     def save(self, *args, **kwargs):
         self._clean()
         super().save(*args, **kwargs)
+
+    def approve(self):
+        if self.job_position_advert_status != "pending_approval":
+            raise ValidationError(
+                "Only pending approval job positions adeverts can be approved."
+            )
+
+        self.job_position_advert_status == "active"
+        self.save()
+
+    def finish_workflow(self):
+        from workflows.models import ApprovalTask
+        from django.contrib.contenttypes.models import ContentType
+
+        content_type = ContentType.objects.get_for_model(self.__class__)
+
+        tasks = ApprovalTask.objects.filter(
+            content_type=content_type, object_id=self.pk
+        )
+
+        if tasks.exists() and tasks.filter(status="rejected").exists():
+            self.job_position_advert_status = "inactive"
+            self.save()
+            return
+        if (
+            tasks.exists()
+            and not tasks.filter(
+                status__in=["not_started", "pending", "rejected"]
+            ).exists()
+        ):
+            self.approve()
+            return
+        elif not tasks.exists():
+            self.approve()
+            return
+        else:
+            raise Exception(
+                "Cannot finish workflow: Some tasks are not completed or rejected."
+            )
 
 
 class JobAdvertApplication(models.Model):
@@ -89,6 +193,7 @@ class JobAdvertApplication(models.Model):
         ("referral", "Referral"),
         ("job_board", "Job Board"),
         ("social_media", "Social Media"),
+        ("head_hunt", "Head Hunt"),
         ("other", "Other"),
     ]
     job_position_advert = models.ForeignKey(
@@ -108,12 +213,33 @@ class JobAdvertApplication(models.Model):
     address = models.CharField(max_length=255)
     country = models.CharField(max_length=100)
     source = models.CharField(max_length=20, choices=source_choices, default="website")
+    recommended_by = models.ForeignKey(
+        "users.CustomUser",
+        on_delete=models.SET_NULL,
+        related_name="recommended_headhunt",
+        null=True,
+        blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
         "users.CustomUser",
         on_delete=models.PROTECT,
         related_name="job_advert_applications_created",
+        null=True,
+        blank=True,
+    )
+    reviewed_by = models.ForeignKey(
+        "users.CustomUser",
+        on_delete=models.SET_NULL,
+        related_name="job_advert_applications_reviewed",
+        null=True,
+        blank=True,
+    )
+    shortlisted_by = models.ForeignKey(
+        "users.CustomUser",
+        on_delete=models.SET_NULL,
+        related_name="job_advert_applications_shortlisted",
         null=True,
         blank=True,
     )

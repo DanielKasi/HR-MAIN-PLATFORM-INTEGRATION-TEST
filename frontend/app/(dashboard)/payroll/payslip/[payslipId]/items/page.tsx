@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter, usePathname } from "next/navigation"
-import { DollarSign, TrendingUp, TrendingDown, ArrowLeft } from "lucide-react"
+import { Coins, TrendingUp, TrendingDown, ArrowLeft } from "lucide-react"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -72,13 +72,13 @@ export default function PayslipItems() {
   const params = useParams()
   const router = useRouter()
   const pathname = usePathname()
-  
+
 
   let payslipId = (params?.id || params?.payslipId || params?.slug) as string
-  
+
   if (!payslipId && pathname) {
     const pathSegments = pathname.split('/')
-    
+
     const payslipIndex = pathSegments.findIndex(segment => segment === 'payslip')
     if (payslipIndex !== -1 && pathSegments[payslipIndex + 1]) {
       payslipId = pathSegments[payslipIndex + 1]
@@ -107,22 +107,22 @@ export default function PayslipItems() {
 
       try {
         setError(null)
-        
+
         const response = await getPayslipItems(parseInt(payslipId))
-        
+
         if (response === null) {
           setError("Failed to fetch payslip items")
           setItems([])
           setPayslipInfo(null)
           return
         }
-        
+
         if (Array.isArray(response)) {
           if (response.length > 0) {
             const typedResponse = response as PayslipItemData[]
             const convertedItems = typedResponse.map(convertApiItemToPayslipItem)
             setItems(convertedItems)
-            
+
             setPayslipInfo(typedResponse[0].payslip)
           } else {
             setItems([])
@@ -151,7 +151,7 @@ export default function PayslipItems() {
       case "deduction":
         return <TrendingDown className="h-4 w-4 text-red-600" />
       case "overtime":
-        return <DollarSign className="h-4 w-4 text-orange-600" />
+        return <Coins className="h-4 w-4 text-orange-600" />
     }
   }
 
@@ -168,7 +168,7 @@ export default function PayslipItems() {
 
   const formatCurrency = (amount: number) => {
     const cleanAmount = amount % 1 === 0 ? Math.floor(amount) : amount
-    return `USh ${cleanAmount.toLocaleString()}`
+    return `UGX ${cleanAmount.toLocaleString()}`
   }
 
   const getTotals = () => {
@@ -292,7 +292,7 @@ export default function PayslipItems() {
                 <p className="text-xl font-bold text-orange-600">{formatCurrency(totals.overtime)}</p>
               </div>
               <div className="p-2 bg-orange-200 rounded-full">
-                <DollarSign className="h-4 w-4 text-orange-600" />
+                <Coins className="h-4 w-4 text-orange-600" />
               </div>
             </div>
           </CardContent>
@@ -308,7 +308,7 @@ export default function PayslipItems() {
                 </p>
               </div>
               <div className={`p-2 rounded-full ${totals.net >= 0 ? "bg-blue-200" : "bg-rose-200"}`}>
-                <DollarSign className={`h-4 w-4 ${totals.net >= 0 ? "text-blue-600" : "text-rose-600"}`} />
+                <Coins className={`h-4 w-4 ${totals.net >= 0 ? "text-blue-600" : "text-rose-600"}`} />
               </div>
             </div>
           </CardContent>
@@ -328,7 +328,7 @@ export default function PayslipItems() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-gray-50 border">
             <CardContent className="p-4">
               <div>
@@ -339,7 +339,7 @@ export default function PayslipItems() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-gray-50 border">
             <CardContent className="p-4">
               <div>
@@ -350,7 +350,7 @@ export default function PayslipItems() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-gray-50 border">
             <CardContent className="p-4">
               <div>
@@ -391,7 +391,7 @@ export default function PayslipItems() {
                   <TableRow>
                     <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                       <div className="flex flex-col items-center space-y-2">
-                        <DollarSign className="h-8 w-8 text-gray-400" />
+                        <Coins className="h-8 w-8 text-gray-400" />
                         <p>No payslip items found.</p>
                         <p className="text-sm">This payslip doesn't have any specific allowances, deductions, or overtime items.</p>
                       </div>
@@ -410,8 +410,8 @@ export default function PayslipItems() {
                       <TableCell className="text-muted-foreground">{item.description || "—"}</TableCell>
                       <TableCell className="text-right text-black font-semibold">
                         <span className={
-                          item.item_type === "allowance" || item.item_type === "overtime" 
-                            ? "text-green-600" 
+                          item.item_type === "allowance" || item.item_type === "overtime"
+                            ? "text-green-600"
                             : "text-red-600"
                         }>
                           {item.item_type === "deduction" ? "-" : "+"}{formatCurrency(item.amount)}
@@ -423,7 +423,7 @@ export default function PayslipItems() {
               </TableBody>
             </Table>
           </div>
-          
+
           {/* Summary totals at bottom of table */}
           {items.length > 0 && (
             <div className="mt-4 border-t pt-4">

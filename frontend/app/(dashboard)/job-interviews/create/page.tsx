@@ -21,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"
-import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
+import { selectSelectedInstitution, selectSelectedBranch, selectUser } from "@/store/auth/selectors"
 import {
   createInterview,
   getJobApplications,
@@ -33,8 +33,14 @@ import {
 import type { JobApplication, IInterviewStage, IInterview, IInterviewFormData, IEmployee } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
+
 interface MultiInterviewFormData extends Omit<IInterviewFormData, 'job_position_application'> {
+  userData: any
   selected_applications: number[]
+  interviewers: number[]
+  job_position_advert: number
+  job_position: number // Added property to fix the error
+  created_by: number
 }
 
 interface IInterviewStageFormData {
@@ -44,19 +50,11 @@ interface IInterviewStageFormData {
   job_position_advert: number
 }
 
-export default function CreateInterviewPage() {
-  const [formData, setFormData] = useState<MultiInterviewFormData>({
-    selected_applications: [],
-    interview_stage: 0,
-    interview_date: "",
-    location: "",
-    interview_time: "",
-    interview_type: "",
-    status: "scheduled",
-    feedback: "",
-    rating: undefined,
-  })
-  const [jobApplications, setJobApplications] = useState<JobApplication[]>([])
+
+  
+
+  export default function CreateInterviewPage() {
+    const [jobApplications, setJobApplications] = useState<JobApplication[]>([])
   const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([])
   const [selectedApplications, setSelectedApplications] = useState<JobApplication[]>([])
   const [selectedStage, setSelectedStage] = useState<IInterviewStage | null>(null)
@@ -74,10 +72,27 @@ export default function CreateInterviewPage() {
     job_position_advert: 0,
   })
   const [stageErrors, setStageErrors] = useState<any>({})
-
+  const userData = useSelector(selectUser);
+  const createdBy = userData?.id || 0;
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const selectedBranch = useSelector(selectSelectedBranch)
+  const [formData, setFormData] = useState<MultiInterviewFormData>({
+    selected_applications: [],
+    interview_stage: 0,
+    interview_date: "",
+    location: "",
+    interview_time: "",
+    interview_type: "",
+    status: "scheduled",
+    feedback: "",
+    rating: undefined,
+    interviewers: [],
+    job_position_advert: 0,
+    job_position: 0, // This will be set based on selectedJobPosition
+    created_by: createdBy,
+    userData: {}// Add the created_by property with a default value
+  })
 
   // Memoize filteredInterviewStages to prevent unnecessary re-computation
   const filteredInterviewStages = useMemo(
@@ -229,7 +244,6 @@ export default function CreateInterviewPage() {
       }
       setExistingInterviews(interviewsArray)
     } catch (error) {
-      console.error("Error fetching initial data:", error)
       toast.error("Failed to load applications and interview stages")
     }
   }
@@ -440,6 +454,7 @@ export default function CreateInterviewPage() {
           status: formData.status || "scheduled",
           feedback: formData.feedback || undefined,
           rating: formData.rating || undefined,
+          created_by: formData.created_by, // Ensure this value is set in the formData state
         }
 
         try {
@@ -449,7 +464,6 @@ export default function CreateInterviewPage() {
           })
           return result
         } catch (individualError) {
-          console.error(`Error creating interview ${index + 1}:`, individualError)
           return null
         }
       })
@@ -469,7 +483,6 @@ export default function CreateInterviewPage() {
         toast.error("Failed to schedule any interviews.")
       }
     } catch (error) {
-      console.error("Error in handleSubmit:", error)
       toast.error("Failed to schedule interviews. Please try again.")
     } finally {
       setIsSubmitting(false)
@@ -727,11 +740,7 @@ export default function CreateInterviewPage() {
                               <Label htmlFor="stage_interviewer">Interviewers *</Label>
                               <div className="w-full max-w-full overflow-hidden">
                                 <EmployeeSearchableSelect
-                                    employees={employees.map((emp) => ({
-                                      ...emp,
-                                      department: emp.department.toString(),
-                                      position: emp.position.toString(),
-                                    }))}
+                                    employees={employees as any}
                                     value={stageFormData.interviewers.map((id) => id.toString())}
                                     onValueChange={(values) => {
                                       const numberValues = Array.isArray(values)

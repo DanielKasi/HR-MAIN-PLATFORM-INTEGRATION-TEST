@@ -58,6 +58,8 @@ class InstitutionSerializer(serializers.ModelSerializer):
         allow_empty=True,
     )
 
+    branches = serializers.SerializerMethodField()
+
     class Meta:
         model = Institution
         fields = [
@@ -81,6 +83,7 @@ class InstitutionSerializer(serializers.ModelSerializer):
             "documents",
             "document_files",
             "document_titles",
+            "branches",
         ]
 
     def create(self, validated_data):
@@ -98,6 +101,19 @@ class InstitutionSerializer(serializers.ModelSerializer):
             created_by=request.user,
             **validated_data,
         )
+
+    def get_branches(self, institution):
+        user = self.context.get("user")
+
+        if user and institution.institution_owner == user:
+            branches = institution.branches.all()
+        else:
+            user_branches = UserBranch.objects.filter(user=user).values_list(
+                "branch_id", flat=True
+            )
+            branches = institution.branches.filter(id__in=user_branches)
+
+        return BranchSerializer(branches, many=True).data
 
 
 class BranchSerializer(serializers.ModelSerializer):

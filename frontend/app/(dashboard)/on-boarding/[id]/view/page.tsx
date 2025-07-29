@@ -30,6 +30,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { getOnBoardingById } from "@/lib/utils"
 import type { IOnBoarding } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import { DocumentGenerationDialog } from "@/components/document-generation-dialog"
 
 const ONBOARDING_STAGES = [
   { value: 'initial', label: 'Initial', icon: AlertTriangle, color: 'text-gray-500' },
@@ -43,6 +44,7 @@ type BadgeVariant = "default" | "secondary" | "outline" | "destructive"
 
 export default function ViewOnboardingDetails() {
   const [isLoading, setIsLoading] = useState(true)
+  const [showDocumentDialog, setShowDocumentDialog] = useState(false)
   const params = useParams()
   const onboardingId = params.id as unknown as number
   const [onboarding, setOnboarding] = useState<IOnBoarding | null>(null)
@@ -241,10 +243,6 @@ export default function ViewOnboardingDetails() {
             </Badge>
           </div>
         </div>
-        <Button variant="outline" onClick={() => router.push("/on-boarding")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Onboarding
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -376,8 +374,27 @@ export default function ViewOnboardingDetails() {
                   </span>
                 </div>
               </div>
+
+              {onboarding.status === 'training' && (
+                <div className="pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDocumentDialog(true)}
+                    className="w-full"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Generate Document
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          <DocumentGenerationDialog
+            open={showDocumentDialog}
+            onOpenChange={setShowDocumentDialog}
+            contextId={onboardingId}
+          />
 
           {/* Timeline */}
           <Card>

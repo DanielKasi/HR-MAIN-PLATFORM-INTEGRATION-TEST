@@ -64,6 +64,22 @@ from institution.utils import generate_compliant_password
 logger = logging.getLogger(__name__)
 
 
+class CountryListAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        responses={200: {"countries": "array"}},
+        description="Retrieve a list of countries.",
+        summary="Get countries",
+        tags=["Location Management"],
+    )
+    def get(self, request):
+        from django_countries import countries
+
+        country_list = [{"code": code, "name": name} for code, name in countries]
+        return Response({"countries": country_list}, status=status.HTTP_200_OK)
+
+
 class UserListAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -493,9 +509,9 @@ class UserInstitutionsListAPIView(APIView):
         try:
             user = request.user
 
-            if not user or user.user_type != UserType.POS:
+            if not user:
                 return Response(status=status.HTTP_403_FORBIDDEN)
-            institution_attached = user.institution_owned.all()
+            institution_attached = user.institutions_owned.all()
 
             if not institution_attached or not len(institution_attached):
                 try:
@@ -519,6 +535,7 @@ class UserInstitutionsListAPIView(APIView):
             )
 
         except Exception as e:
+            print("\n\n Exception getting user institutions:", str(e))
             return Response(status=status.HTTP_404_NOT_FOUND)
 
 

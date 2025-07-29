@@ -249,6 +249,80 @@
     }
   ],
 
+  "Document Management": [
+  {
+    "code": "can_create_document_types",
+    "name": "Can Create Document Types",
+    "description": "Allows creating new document types"
+  },
+  {
+    "code": "can_view_document_types",
+    "name": "Can View Document Types",
+    "description": "Allows viewing document type listings"
+  },
+  {
+    "code": "can_edit_document_types",
+    "name": "Can Edit Document Types",
+    "description": "Allows editing existing document types"
+  },
+  {
+    "code": "can_delete_document_types",
+    "name": "Can Delete Document Types",
+    "description": "Allows deleting document types"
+  },
+  {
+    "code": "can_create_document_templates",
+    "name": "Can Create Document Templates",
+    "description": "Allows creating new document templates"
+  },
+  {
+    "code": "can_view_document_templates",
+    "name": "Can View Document Templates",
+    "description": "Allows viewing document template listings"
+  },
+  {
+    "code": "can_edit_document_templates",
+    "name": "Can Edit Document Templates",
+    "description": "Allows editing existing document templates"
+  },
+  {
+    "code": "can_delete_document_templates",
+    "name": "Can Delete Document Templates",
+    "description": "Allows deleting document templates"
+  },
+  {
+    "code": "can_upload_documents",
+    "name": "Can Upload Documents",
+    "description": "Allows uploading documents to the system"
+  },
+  {
+    "code": "can_view_documents",
+    "name": "Can View Documents",
+    "description": "Allows viewing documents stored in the system"
+  },
+  {
+    "code": "can_edit_documents",
+    "name": "Can Edit Documents",
+    "description": "Allows editing or replacing uploaded documents"
+  },
+  {
+    "code": "can_delete_documents",
+    "name": "Can Delete Documents",
+    "description": "Allows deleting documents from the system"
+  },
+  {
+    "code": "can_approve_documents",
+    "name": "Can Approve Documents",
+    "description": "Allows approving or reviewing documents submitted for approval"
+  },
+  {
+    "code": "can_archive_documents",
+    "name": "Can Archive Documents",
+    "description": "Allows archiving or marking documents as inactive"
+  }
+],
+
+
   "Leave Management": [
     {
       "code": "can_view_leave_applications",
@@ -659,6 +733,206 @@
       "code": "can_manage_department_heads",
       "name": "Can Manage Department Heads",
       "description": "Allows managing department heads and hierarchy"
+    }
+  ],
+
+  "Asset Management": [
+    {
+      "code": "can_create_asset_categories",
+      "name": "Can Create Asset Categories",
+      "description": "Allows creating new asset categories"
+    },
+    {
+      "code": "can_view_asset_categories",
+      "name": "Can View Asset Categories",
+      "description": "Allows viewing asset category listings and details"
+    },
+    {
+      "code": "can_edit_asset_categories",
+      "name": "Can Edit Asset Categories",
+      "description": "Allows editing asset category details"
+    },
+    {
+      "code": "can_delete_asset_categories",
+      "name": "Can Delete Asset Categories",
+      "description": "Allows deleting asset categories"
+    },
+    {
+      "code": "can_create_assets",
+      "name": "Can Create Assets",
+      "description": "Allows creating new asset records"
+    },
+    {
+      "code": "can_view_assets",
+      "name": "Can View Assets",
+      "description": "Allows viewing asset listings and details"
+    },
+    {
+      "code": "can_edit_assets",
+      "name": "Can Edit Assets",
+      "description": "Allows editing asset information"
+    },
+    {
+      "code": "can_delete_assets",
+      "name": "Can Delete Assets",
+      "description": "Allows deleting asset records"
+    },
+    {
+      "code": "can_request_assets",
+      "name": "Can Request Assets",
+      "description": "Allows users to request an asset"
+    },
+    {
+      "code": "can_view_asset_requests",
+      "name": "Can View Asset Requests",
+      "description": "Allows viewing asset request listings and details"
+    },
+    {
+      "code": "can_edit_asset_requests",
+      "name": "Can Edit Asset Requests",
+      "description": "Allows modifying asset request details"
+    },
+    {
+      "code": "can_delete_asset_requests",
+      "name": "Can Delete Asset Requests",
+      "description": "Allows deleting asset requests"
+    },
+    {
+      "code": "can_approve_asset_requests",
+      "name": "Can Approve Asset Requests",
+      "description": "Allows approving submitted asset requests"
+    },
+    {
+      "code": "can_cancel_asset_requests",
+      "name": "Can Cancel Asset Requests",
+      "description": "Allows cancelling or rejecting asset requests"
+    },
+    {
+      "code": "can_allocate_assets",
+      "name": "Can Allocate Assets",
+      "description": "Allows allocating assets to users"
+    },
+    {
+      "code": "can_view_asset_allocations",
+      "name": "Can View Asset Allocations",
+      "description": "Allows viewing asset allocation listings and details"
+    },
+    {
+      "code": "can_edit_asset_allocations",
+      "name": "Can Edit Asset Allocations",
+      "description": "Allows modifying asset allocations"
+    },
+    {
+      "code": "can_delete_asset_allocations",
+      "name": "Can Delete Asset Allocations",
+      "description": "Allows deleting asset allocations"
+    },
+    {
+      "code": "can_approve_asset_allocations",
+      "name": "Can Approve Asset Allocations",
+      "description": "Allows approving pending asset allocations"
+    },
+    {
+      "code": "can_cancel_asset_allocations",
+      "name": "Can Cancel Asset Allocations",
+      "description": "Allows cancelling or rejecting asset allocations"
+    },
+    {
+      "code": "can_return_assets",
+      "name": "Can Return Assets",
+      "description": "Allows submitting asset return records"
+    },
+    {
+      "code": "can_view_asset_returns",
+      "name": "Can View Asset Returns",
+      "description": "Allows viewing asset return listings and details"
+    },
+    {
+      "code": "can_edit_asset_returns",
+      "name": "Can Edit Asset Returns",
+      "description": "Allows editing asset return records"
+    },
+    {
+      "code": "can_delete_asset_returns",
+      "name": "Can Delete Asset Returns",
+      "description": "Allows deleting asset return records"
+    },
+    {
+      "code": "can_view_asset_history",
+      "name": "Can View Asset History",
+      "description": "Allows viewing historical logs of asset events"
+    },
+    {
+      "code": "can_view_asset_statuses",
+      "name": "Can View Asset Statuses",
+      "description": "Allows accessing asset status like available, maintenance, allocated"
+    },
+    {
+      "code": "can_view_asset_workflows",
+      "name": "Can View Asset Workflows",
+      "description": "Allows access to workflow steps and approval history for asset actions"
+    }
+  ],
+  "Projects Mgt": [
+    {
+      "code": "can_create_projects",
+      "name": "Can Create Projects",
+      "description": "Allows creating new projects under an institution"
+    },
+    {
+      "code": "can_view_projects",
+      "name": "Can View Projects",
+      "description": "Allows viewing project listings and details"
+    },
+    {
+      "code": "can_edit_projects",
+      "name": "Can Edit Projects",
+      "description": "Allows editing project details"
+    },
+    {
+      "code": "can_delete_projects",
+      "name": "Can Delete Projects",
+      "description": "Allows deleting project records"
+    },
+    {
+      "code": "can_create_tasks",
+      "name": "Can Create Tasks",
+      "description": "Allows creating tasks under projects"
+    },
+    {
+      "code": "can_view_tasks",
+      "name": "Can View Tasks",
+      "description": "Allows viewing task listings and details"
+    },
+    {
+      "code": "can_edit_tasks",
+      "name": "Can Edit Tasks",
+      "description": "Allows editing existing tasks"
+    },
+    {
+      "code": "can_delete_tasks",
+      "name": "Can Delete Tasks",
+      "description": "Allows deleting task records"
+    },
+    {
+      "code": "can_start_tasks",
+      "name": "Can Start Tasks",
+      "description": "Allows starting a task timesheet"
+    },
+    {
+      "code": "can_end_tasks",
+      "name": "Can End Tasks",
+      "description": "Allows ending a task timesheet"
+    },
+    {
+      "code": "can_update_task_timesheets",
+      "name": "Can Update Task Timesheets",
+      "description": "Allows updating time spent on tasks (leaders only)"
+    },
+    {
+      "code": "can_view_task_timesheets",
+      "name": "Can View Task Timesheets",
+      "description": "Allows viewing task timesheet entries"
     }
   ]
 }

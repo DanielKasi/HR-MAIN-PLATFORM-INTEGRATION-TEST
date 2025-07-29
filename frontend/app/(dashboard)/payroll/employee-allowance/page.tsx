@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Edit, Trash2, DollarSign, Percent } from "lucide-react"
+import { Plus, Edit, Trash2, Coins, Percent } from "lucide-react"
 import {
   Search,
   Download,
   Users,
-  DollarSignIcon as DollarSign2,
+  Coins as Coins2,
   CalendarPlus2Icon as CalendarIcon2,
   Loader2,
   MoreHorizontal,
@@ -130,7 +130,7 @@ interface Employee {
     fullname: string
     email: string
   }
-  department?: string 
+  department?: string
 }
 
 
@@ -179,11 +179,11 @@ export default function EmployeeAllowanceComponent() {
   const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all")
   const [validationErrors, setValidationErrors] = useState<ValidationResult>({})
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
-  
+
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
-  
+
 
   const [formData, setFormData] = useState({
     employee: "",
@@ -201,10 +201,10 @@ export default function EmployeeAllowanceComponent() {
       if (!selectedInstitution?.id) {
         return
       }
-      
+
       try {
         const types = await getAllowanceTypes(selectedInstitution.id)
-        
+
         if (types && Array.isArray(types)) {
           const activeTypes = types
             .filter(type => type.is_active !== false)
@@ -212,9 +212,9 @@ export default function EmployeeAllowanceComponent() {
               id: type.id,
               name: type.name
             }))
-          
+
           setAllowanceTypes(activeTypes)
-          
+
           if (activeTypes.length === 0) {
             toast.error("No active allowance types found for this institution")
           }
@@ -237,11 +237,11 @@ export default function EmployeeAllowanceComponent() {
       if (!selectedInstitution?.id) {
         return
       }
-      
+
       setIsLoadingEmployees(true)
       try {
         const fetchedEmployees = await getAllEmployees({ institutionId: selectedInstitution.id })
-        
+
         if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
           const formattedEmployees: Employee[] = fetchedEmployees.map((emp: any) => {
             return {
@@ -253,10 +253,10 @@ export default function EmployeeAllowanceComponent() {
               user: emp.user || null,
               department: emp.department?.name || emp.department || ''
             }
-          }).filter(emp => emp.id && emp.id !== "0") 
-          
+          }).filter(emp => emp.id && emp.id !== "0")
+
           setEmployees(formattedEmployees)
-          
+
           if (formattedEmployees.length === 0) {
             toast.error("No employees found for this institution")
           }
@@ -280,10 +280,10 @@ export default function EmployeeAllowanceComponent() {
       if (!selectedInstitution) {
         return
       }
-      
+
       try {
         const allowancesData = await getEmployeeAllowances(selectedInstitution.id)
-        
+
         if (allowancesData && Array.isArray(allowancesData)) {
           const displayAllowances = allowancesData.map(convertToDisplayAllowance)
           setAllowances(displayAllowances)
@@ -295,7 +295,7 @@ export default function EmployeeAllowanceComponent() {
         toast.error("Failed to load allowances")
       }
     }
-    
+
     fetchAllowances()
   }, [selectedInstitution?.id, employees])
 
@@ -330,32 +330,32 @@ export default function EmployeeAllowanceComponent() {
 
 
   const convertToDisplayAllowance = (apiAllowance: any): DisplayEmployeeAllowance => {
-  return {
-    id: apiAllowance.id,
-    employee: {
-      id: apiAllowance.employee.id.toString(),
-      name: apiAllowance.employee.user.fullname,
-      email: apiAllowance.employee.user.email,
-      employee_id: apiAllowance.employee.id.toString(),
-      salary: 0,
-      user: {
-        fullname: apiAllowance.employee.user.fullname,
-        email: apiAllowance.employee.user.email
-      }
-    },
-    allowance_type: {
-      id: apiAllowance.allowance_type.id,
-      name: apiAllowance.allowance_type.name
-    },
-    calculation_method: apiAllowance.calculation_method,
-    amount: apiAllowance.amount,
-    percentage: apiAllowance.percentage,
-    is_active: apiAllowance.is_active,
-    effective_from: apiAllowance.effective_from,
-    effective_to: apiAllowance.effective_to,
-    created_at: apiAllowance.created_at
+    return {
+      id: apiAllowance.id,
+      employee: {
+        id: apiAllowance.employee.id.toString(),
+        name: apiAllowance.employee.user.fullname,
+        email: apiAllowance.employee.user.email,
+        employee_id: apiAllowance.employee.id.toString(),
+        salary: 0,
+        user: {
+          fullname: apiAllowance.employee.user.fullname,
+          email: apiAllowance.employee.user.email
+        }
+      },
+      allowance_type: {
+        id: apiAllowance.allowance_type.id,
+        name: apiAllowance.allowance_type.name
+      },
+      calculation_method: apiAllowance.calculation_method,
+      amount: apiAllowance.amount,
+      percentage: apiAllowance.percentage,
+      is_active: apiAllowance.is_active,
+      effective_from: apiAllowance.effective_from,
+      effective_to: apiAllowance.effective_to,
+      created_at: apiAllowance.created_at
+    }
   }
-}
   const getCalculatedAmount = (allowance: DisplayEmployeeAllowance): number => {
     if (allowance.calculation_method === "percentage" && allowance.employee.salary) {
       return (allowance.employee.salary * parseFloat(allowance.percentage)) / 100
@@ -378,7 +378,7 @@ export default function EmployeeAllowanceComponent() {
     if (formData.calculation_method === 'fixed' && !formData.amount) {
       return true
     }
-    
+
     if (formData.calculation_method === 'percentage' && !formData.percentage) {
       return true
     }
@@ -576,12 +576,12 @@ export default function EmployeeAllowanceComponent() {
 
       const headers = Object.keys(excelData[0] || {})
       let htmlTable = '<table border="1"><thead><tr>'
-    
+
       headers.forEach(header => {
         htmlTable += `<th>${header}</th>`
       })
       htmlTable += '</tr></thead><tbody>'
-      
+
       excelData.forEach(row => {
         htmlTable += '<tr>'
         headers.forEach(header => {
@@ -628,7 +628,7 @@ export default function EmployeeAllowanceComponent() {
       a.click()
       document.body.removeChild(a)
       window.URL.revokeObjectURL(url)
-      
+
       toast.success("Excel file downloaded successfully")
     } catch (error) {
       toast.error("Failed to export Excel file")
@@ -690,8 +690,8 @@ export default function EmployeeAllowanceComponent() {
 
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button 
-                    onClick={openNewAllowanceDialog} 
+                  <Button
+                    onClick={openNewAllowanceDialog}
                     className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2.5"
                     disabled={!selectedInstitution.id}
                   >
@@ -730,19 +730,18 @@ export default function EmployeeAllowanceComponent() {
                         </p>
                       )}
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="allowance_type" className="text-sm font-medium">
                         Allowance Type *
                       </Label>
-                      <Select 
+                      <Select
                         value={formData.allowance_type}
                         onValueChange={(value) => setFormData({ ...formData, allowance_type: value })}
                         disabled={saving}
                       >
-                        <SelectTrigger className={`focus:ring-orange-500 focus:border-orange-500 ${
-                          validationErrors.allowance_type ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                        }`}>
+                        <SelectTrigger className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.allowance_type ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}>
                           <SelectValue placeholder="Please select an allowance type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -775,7 +774,7 @@ export default function EmployeeAllowanceComponent() {
                       <Label htmlFor="calculation_method" className="text-sm font-medium">
                         Calculation Method *
                       </Label>
-                      <Select 
+                      <Select
                         value={formData.calculation_method}
                         onValueChange={(value: "fixed" | "percentage") => setFormData({ ...formData, calculation_method: value })}
                         disabled={saving}
@@ -804,9 +803,8 @@ export default function EmployeeAllowanceComponent() {
                           value={formData.amount}
                           onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                           disabled={saving}
-                          className={`focus:ring-orange-500 focus:border-orange-500 ${
-                            validationErrors.amount ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                          }`}
+                          className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.amount ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                            }`}
                         />
                         {validationErrors.amount ? (
                           <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -834,9 +832,8 @@ export default function EmployeeAllowanceComponent() {
                           value={formData.percentage}
                           onChange={(e) => setFormData({ ...formData, percentage: e.target.value })}
                           disabled={saving}
-                          className={`focus:ring-orange-500 focus:border-orange-500 ${
-                            validationErrors.percentage ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                          }`}
+                          className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.percentage ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                            }`}
                         />
                         {validationErrors.percentage ? (
                           <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -860,9 +857,8 @@ export default function EmployeeAllowanceComponent() {
                         type="date"
                         value={formData.effective_from}
                         onChange={(e) => setFormData({ ...formData, effective_from: e.target.value })}
-                        className={`focus:ring-orange-500 focus:border-orange-500 ${
-                          validationErrors.effective_from ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                        }`}
+                        className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.effective_from ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
                         disabled={saving}
                         placeholder="Please select an effective from date"
                       />
@@ -883,9 +879,8 @@ export default function EmployeeAllowanceComponent() {
                         type="date"
                         value={formData.effective_to}
                         onChange={(e) => setFormData({ ...formData, effective_to: e.target.value })}
-                        className={`focus:ring-orange-500 focus:border-orange-500 ${
-                          validationErrors.effective_to ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                        }`}
+                        className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.effective_to ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
                         disabled={saving}
                         min={formData.effective_from}
                       />
@@ -924,17 +919,17 @@ export default function EmployeeAllowanceComponent() {
                       </div>
                     )}
                   </div>
-                  
+
                   <DialogFooter>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={() => setIsDialogOpen(false)}
                       disabled={saving}
                     >
                       Cancel
                     </Button>
-                    <Button 
+                    <Button
                       onClick={handleSubmit}
                       className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
                       disabled={saving || !employees.length || !allowanceTypes.length || hasValidationErrors()}
@@ -964,7 +959,7 @@ export default function EmployeeAllowanceComponent() {
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <div className="flex items-center">
                 <div className="p-2 bg-green-100 rounded-lg">
-                  <DollarSign2 className="h-5 w-5 text-green-600" />
+                  <Coins2 className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-600">Active Allowances</p>
@@ -1074,14 +1069,14 @@ export default function EmployeeAllowanceComponent() {
             </h3>
             <p className="text-sm text-gray-600 mt-1">Overview of all employee allowances and their calculated amounts</p>
           </div>
-          
+
           {filteredAllowances.length === 0 ? (
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No allowances found</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {allowances.length === 0 
-                  ? "No allowances have been created yet." 
+                {allowances.length === 0
+                  ? "No allowances have been created yet."
                   : "No allowances match your current filters."}
               </p>
               {allowances.length > 0 && (
@@ -1110,11 +1105,11 @@ export default function EmployeeAllowanceComponent() {
                       <div>
                         <div className="font-medium text-gray-900">{allowance.employee.name}</div>
                         <div className="text-sm text-gray-500">{allowance.employee.email}</div>
-                        
+
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge 
+                      <Badge
                         className={`${getCategoryColor()} border font-medium`}
                       >
                         {allowance.allowance_type.name}

@@ -1,13 +1,19 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useMemo, useEffect } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {useState, useMemo, useEffect} from "react";
+import {Badge} from "@/components/ui/badge";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,34 +24,37 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Icon } from "@iconify/react"
-import { Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Plus } from "lucide-react"
-import { getAllEmployees } from "@/lib/utils"
-import { useSelector } from "react-redux";
-import { selectAttachedInstitutions } from "@/store/auth/selectors";
-import {
-  selectSelectedInstitution,
-} from "@/store/auth/selectors";
-import { IUserInstitution } from "@/app/types"
-import { EmployeeFormData, EmployeeFromAPI, PERMISSION_CODES } from "@/app/types/types.utils"
-import Link from "next/link"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Skeleton } from "@/components/ui/skeleton"
-import ProtectedComponent from "@/components/ProtectedComponent"
+} from "@/components/ui/alert-dialog";
+import {Icon} from "@iconify/react";
+import {Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Plus} from "lucide-react";
+import {getAllEmployees} from "@/lib/utils";
+import {useSelector} from "react-redux";
+import {selectAttachedInstitutions} from "@/store/auth/selectors";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {IUserInstitution} from "@/app/types";
+import {EmployeeFormData, IEmployee, PERMISSION_CODES} from "@/app/types/types.utils";
+import Link from "next/link";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Skeleton} from "@/components/ui/skeleton";
+import ProtectedComponent from "@/components/ProtectedComponent";
 
 // Union type to handle both data structures
-type EmployeeData = EmployeeFromAPI | EmployeeFormData
+type EmployeeData = IEmployee | EmployeeFormData;
 
-// Helper function to check if data is EmployeeFromAPI type
-const isEmployeeFromAPI = (data: EmployeeData): data is EmployeeFromAPI => {
-  return 'created_at' in data && typeof data.position === 'object' && data.position !== null && 'name' in data.position;
+// Helper function to check if data is IEmployee type
+const isEmployeeFromAPI = (data: EmployeeData): data is IEmployee => {
+  return (
+    "created_at" in data &&
+    typeof data.position === "object" &&
+    data.position !== null &&
+    "name" in data.position
+  );
 };
 
 // Helper function to get full name
 const getFullName = (employee: EmployeeData) => {
-  return employee.user?.fullname || employee.email || 'Unknown Employee'
-}
+  return employee.user?.fullname || employee.email || "Unknown Employee";
+};
 
 // Updated helper function to get department name from API data
 const getDepartmentName = (employee: EmployeeData) => {
@@ -54,10 +63,10 @@ const getDepartmentName = (employee: EmployeeData) => {
   }
   // For EmployeeFormData, department is just an ID
   if (!isEmployeeFromAPI(employee)) {
-    return `Department ${employee.department || 'Unknown'}`
+    return `Department ${employee.department || "Unknown"}`;
   }
-  return `Department ${isEmployeeFromAPI(employee) ? employee.department?.id : 'Unknown'}`
-}
+  return `Department ${isEmployeeFromAPI(employee) ? employee.department?.id : "Unknown"}`;
+};
 
 // Helper function to get position name from API data
 const getPositionName = (employee: EmployeeData) => {
@@ -66,76 +75,77 @@ const getPositionName = (employee: EmployeeData) => {
   }
   // For EmployeeFormData, position is just an ID
   if (!isEmployeeFromAPI(employee)) {
-    return `Position ${employee.position || 'Unknown'}`
+    return `Position ${employee.position || "Unknown"}`;
   }
-  return `Position ${isEmployeeFromAPI(employee) ? employee.position?.id : 'Unknown'}`
-}
+  return `Position ${isEmployeeFromAPI(employee) ? employee.position?.id : "Unknown"}`;
+};
 
 // Helper function to get role names
 const getRoleNames = (employee: EmployeeData) => {
   if (isEmployeeFromAPI(employee) && employee.roles && employee.roles.length > 0) {
-    return employee.roles.map(role => role.name).join(', ');
+    return employee.roles.map((role) => role.name).join(", ");
   }
-  return 'No roles assigned'
-}
+  return "No roles assigned";
+};
 
 interface EmployeeTableProps {
-  employees: EmployeeData[]
-  onDelete: (id: number) => void
+  employees: EmployeeData[];
+  onDelete: (id: number) => void;
 }
 
-function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [departmentFilter, setDepartmentFilter] = useState<string>("all")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+function EmployeeTable({employees, onDelete}: EmployeeTableProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Reset pagination when filters change
   useEffect(() => {
-    setCurrentPage(1)
-  }, [searchTerm, departmentFilter, statusFilter])
+    setCurrentPage(1);
+  }, [searchTerm, departmentFilter, statusFilter]);
 
   // Get unique departments for filter
   const uniqueDepartments = useMemo(() => {
-    const departments = employees.map((employee) => getDepartmentName(employee))
-    return Array.from(new Set(departments))
-  }, [employees])
+    const departments = employees.map((employee) => getDepartmentName(employee));
+    return Array.from(new Set(departments));
+  }, [employees]);
 
   // Filter employees
   const filteredEmployees = useMemo(() => {
     return employees.filter((employee) => {
-      const fullName = getFullName(employee)
-      const departmentName = getDepartmentName(employee)
-      const positionName = getPositionName(employee)
+      const fullName = getFullName(employee);
+      const departmentName = getDepartmentName(employee);
+      const positionName = getPositionName(employee);
 
       const matchesSearch =
         fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         positionName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        departmentName.toLowerCase().includes(searchTerm.toLowerCase())
+        departmentName.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesDepartment = departmentFilter === "all" || departmentName === departmentFilter
-      const matchesStatus = statusFilter === "all" ||
+      const matchesDepartment = departmentFilter === "all" || departmentName === departmentFilter;
+      const matchesStatus =
+        statusFilter === "all" ||
         (statusFilter === "active" && employee.is_active) ||
-        (statusFilter === "inactive" && !employee.is_active)
+        (statusFilter === "inactive" && !employee.is_active);
 
-      return matchesSearch && matchesDepartment && matchesStatus
-    })
-  }, [employees, searchTerm, departmentFilter, statusFilter])
+      return matchesSearch && matchesDepartment && matchesStatus;
+    });
+  }, [employees, searchTerm, departmentFilter, statusFilter]);
 
   // Pagination
-  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const paginatedEmployees = filteredEmployees.slice(startIndex, startIndex + itemsPerPage)
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedEmployees = filteredEmployees.slice(startIndex, startIndex + itemsPerPage);
 
   const getStatusBadge = (isActive: boolean) => {
     return isActive ? (
       <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Active</Badge>
     ) : (
       <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Inactive</Badge>
-    )
-  }
+    );
+  };
 
   const getDepartmentColor = (department: string) => {
     const colors: Record<string, string> = {
@@ -148,17 +158,17 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
       Design: "bg-indigo-100 text-indigo-800",
       Product: "bg-red-100 text-red-800",
       "IT department": "bg-blue-100 text-blue-800",
-      "Accounting": "bg-yellow-100 text-yellow-800",
-    }
-    return colors[department] || "bg-gray-100 text-gray-800"
-  }
+      Accounting: "bg-yellow-100 text-yellow-800",
+    };
+    return colors[department] || "bg-gray-100 text-gray-800";
+  };
 
   const clearFilters = () => {
-    setSearchTerm("")
-    setDepartmentFilter("all")
-    setStatusFilter("all")
-    setCurrentPage(1)
-  }
+    setSearchTerm("");
+    setDepartmentFilter("all");
+    setStatusFilter("all");
+    setCurrentPage(1);
+  };
 
   return (
     <Card>
@@ -223,8 +233,11 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
         {filteredEmployees.length > 0 && (
           <div className="flex justify-between items-center text-sm text-muted-foreground mb-4">
             <div>
-              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredEmployees.length)} of {filteredEmployees.length} employees
-              {(searchTerm || departmentFilter !== "all" || statusFilter !== "all") && ` (filtered from ${employees.length} total)`}
+              Showing {startIndex + 1} to{" "}
+              {Math.min(startIndex + itemsPerPage, filteredEmployees.length)} of{" "}
+              {filteredEmployees.length} employees
+              {(searchTerm || departmentFilter !== "all" || statusFilter !== "all") &&
+                ` (filtered from ${employees.length} total)`}
             </div>
           </div>
         )}
@@ -238,7 +251,7 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
                 ? "No employees match your current filters."
                 : "No employees have been added yet."}
             </p>
-            {(searchTerm || departmentFilter !== "all" || statusFilter !== "all") ? (
+            {searchTerm || departmentFilter !== "all" || statusFilter !== "all" ? (
               <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
                 Clear Filters
               </Button>
@@ -270,15 +283,18 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
                     <TableRow
                       key={employee.id || Math.random()}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => window.location.href = `/employees/profile/${employee.id || 'unknown'}`}
+                      onClick={() =>
+                        (window.location.href = `/employees/profile/${employee.id || "unknown"}`)
+                      }
                     >
                       <TableCell>
-                        <div className="font-medium">
-                          {getFullName(employee)}
-                        </div>
+                        <div className="font-medium">{getFullName(employee)}</div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={getDepartmentColor(getDepartmentName(employee))}>
+                        <Badge
+                          variant="outline"
+                          className={getDepartmentColor(getDepartmentName(employee))}
+                        >
                           {getDepartmentName(employee)}
                         </Badge>
                       </TableCell>
@@ -287,24 +303,33 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
                       <TableCell>{getStatusBadge(employee.is_active)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Link href={`/employees/profile/${employee.id || 'unknown'}`}>
-                            <Button variant="ghost" size="sm" title="View Details" onClick={(e) => e.stopPropagation()}>
+                          <Link href={`/employees/profile/${employee.id || "unknown"}`}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="View Details"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
                           </Link>
                           <Link
-                            href={`/employees/update-employee/${employee.id || 'unknown'}`}
+                            href={`/employees/update-employee/${employee.id || "unknown"}`}
                             onClick={(e) => {
                               e.stopPropagation();
-                              localStorage.setItem(`employee_${employee.id || 'unknown'}`, JSON.stringify(employee));
+                              localStorage.setItem(
+                                `employee_${employee.id || "unknown"}`,
+                                JSON.stringify(employee),
+                              );
                             }}
                           >
-                            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEES}>
+                            <ProtectedComponent
+                              permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEES}
+                            >
                               <Button variant="ghost" size="sm" title="Update Employee">
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </ProtectedComponent>
-                            
                           </Link>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -322,7 +347,8 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Delete Employee</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete {getFullName(employee)}? This action cannot be undone.
+                                  Are you sure you want to delete {getFullName(employee)}? This
+                                  action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -348,7 +374,9 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
             {totalPages > 1 && (
               <div className="flex items-center justify-between mt-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredEmployees.length)} of {filteredEmployees.length} employees
+                  Showing {startIndex + 1} to{" "}
+                  {Math.min(startIndex + itemsPerPage, filteredEmployees.length)} of{" "}
+                  {filteredEmployees.length} employees
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -362,7 +390,7 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
                   </Button>
 
                   <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    {Array.from({length: Math.min(5, totalPages)}, (_, i) => {
                       let pageNumber;
                       if (totalPages <= 5) {
                         pageNumber = i + 1;
@@ -404,13 +432,13 @@ function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 export default function Component() {
-  const [employees, setEmployees] = useState<EmployeeData[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [employees, setEmployees] = useState<EmployeeData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const [InstitutionId, setInstitutionId] = useState<string | null>(null);
   const InstitutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
@@ -441,7 +469,7 @@ export default function Component() {
       try {
         setLoading(true);
         const institutionIdNumber = parseInt(InstitutionId);
-        const result = await getAllEmployees({ institutionId: institutionIdNumber });
+        const result = await getAllEmployees({institutionId: institutionIdNumber});
 
         if (result && Array.isArray(result)) {
           setEmployees(result);
@@ -464,11 +492,11 @@ export default function Component() {
 
   const handleDelete = async (id: number) => {
     try {
-      setEmployees(employees.filter((emp) => emp.id !== id))
+      setEmployees(employees.filter((emp) => emp.id !== id));
     } catch (err) {
-      console.error("Error deleting employee:", err)
+      console.error("Error deleting employee:", err);
     }
-  }
+  };
 
   if (error) {
     return (
@@ -480,7 +508,7 @@ export default function Component() {
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -492,11 +520,8 @@ export default function Component() {
           </div>
         </div>
 
-        <EmployeeTable
-          employees={employees}
-          onDelete={handleDelete}
-        />
+        <EmployeeTable employees={employees} onDelete={handleDelete} />
       </div>
     </div>
-  )
+  );
 }

@@ -1,8 +1,19 @@
-from .models import Employee, EmployeeAttendance, EmployeeType, WorkType, Contract
+from .models import Employee, EmployeeAttendance, EmployeeType, WorkType, EmployeeContract
 from rest_framework import serializers
 from users.serializers import CustomUserSerializer
 from datetime import date
 from dateutil.relativedelta import relativedelta
+from django.db import transaction
+from institution.models import Branch, UserBranch
+from employee.models import EmployeeContract
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+import os
+from django.conf import settings
+
+from django.template.loader import render_to_string
+from weasyprint import HTML
+from django.utils.text import slugify
 
 
 class EmployeeTypeSerializer(serializers.ModelSerializer):
@@ -23,6 +34,10 @@ class EmployeeSerializer(serializers.ModelSerializer):
     position_details = serializers.SerializerMethodField()
     roles = serializers.SerializerMethodField()
 
+    selected_branches = serializers.ListField(
+        child=serializers.IntegerField(), write_only=True, required=False
+    )
+
     class Meta:
         model = Employee
         fields = "__all__"
@@ -40,8 +55,11 @@ class EmployeeSerializer(serializers.ModelSerializer):
                 )
         return value
 
+    @transaction.atomic
     def create(self, validated_data):
         user_data = validated_data.pop("user", None)
+
+        selected_branches = validated_data.pop("selected_branches", None)
 
         if user_data:
             user_serializer = CustomUserSerializer(data=user_data)
@@ -49,8 +67,99 @@ class EmployeeSerializer(serializers.ModelSerializer):
             user = user_serializer.save()
             validated_data["user"] = user
 
-        return Employee.objects.create(**validated_data)
+        employee = Employee.objects.create(**validated_data)
 
+        for i, branch_id in enumerate(selected_branches or []):
+            try:
+                branch = Branch.objects.get(id=branch_id)
+                UserBranch.objects.get_or_create(
+                    user=employee.user,
+                    branch=branch,
+                    defaults={
+                        "is_default": i == 0,
+                    },
+                )
+            except Branch.DoesNotExist:
+                raise serializers.ValidationError(
+                    f"Branch with ID {branch_id} does not exist."
+                )
+
+        # === Create Contract and Send Email ===
+        job_position = employee.position
+
+        template = job_position.contract_template if job_position else None
+
+        if template and template.content:
+            content = template.content
+            placeholders = template.placeholders or []
+
+            placeholder_mapping = {
+                "employee_name": employee.user.fullname,
+                "governing_law_jurisdiction": employee.department.institution.location,
+                "company_name": employee.department.institution.institution_name,
+                "job_title": (
+                    employee.position.name if employee.position else "Unknown Position"
+                ),
+                "salary_amount": employee.salary,
+                "salary_period": "Monthly",
+                "start_date": employee.date_of_joining.strftime("%Y-%m-%d"),
+                "end_time": "5:00 PM",
+                "start_time": "9:00 AM",
+                "working_days": "Monday to Friday",
+                "work_hours": "40",
+                "notice_period": "30 days",
+            }
+
+            for placeholder in placeholders:
+                key = placeholder.strip("{{}}")
+                value = str(placeholder_mapping.get(key, ""))
+                content = content.replace(placeholder, value)
+
+            filename = f"{slugify(employee.user.fullname)}_contract_{employee.id}.pdf"
+            relative_path = os.path.join("contracts/original", filename)
+            full_path = os.path.join(settings.MEDIA_ROOT, relative_path)
+            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+
+            html_content = render_to_string(
+                "contracts/contract_template.html", {"content": content}
+            )
+
+            # Generate and write PDF
+            HTML(string=html_content).write_pdf(full_path)
+
+            EmployeeContract.objects.create(
+                employee=employee,
+                is_active=False,
+                original_contract=relative_path,
+            )
+
+            context_data = {
+                "position_title": (
+                    job_position.name if job_position else "Unknown Position"
+                ),
+                "employee_name": employee.user.fullname,
+                "institution_name": (
+                    employee.department.institution.institution_name
+                    if employee.department
+                    else "Unknown Institution"
+                ),
+            }
+
+            if employee.user and employee.user.email:
+                subject = f"Employment Contract for {context_data['position_title']}"
+                body = render_to_string("emails/contract_email.txt", context_data)
+                email = EmailMessage(
+                    subject=subject,
+                    body=body,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[employee.user.email],
+                )
+                email.attach_file(full_path)
+                email.send()
+
+        return employee
+
+    @transaction.atomic
     def update(self, instance, validated_data):
         user_data = validated_data.pop("user", None)
 
@@ -159,33 +268,25 @@ class EmployeeActivationSerializer(serializers.Serializer):
     department = serializers.CharField(max_length=100, required=False, allow_blank=True)
     date_of_joining = serializers.DateField(required=False, allow_null=True)
 
-
-class ContractSerializer(serializers.ModelSerializer):
-    employee = EmployeeSerializer(read_only=True)
-    employee_id = serializers.CharField(write_only=True)
-
+class EmployeeContractSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Contract
-        fields = [
-            'id', 'contract_id', 'employee', 'employee_id', 'contract_file',
-            'status', 'start_date', 'end_date', 'created_at', 'updated_at', 'notes'
-        ]
-        read_only_fields = ['id', 'contract_id', 'contract_file', 'created_at', 'updated_at']
-
-    def validate_employee_id(self, value):
-        try:
-            employee = Employee.objects.get(employee_id=value)
-        except Employee.DoesNotExist:
-            raise serializers.ValidationError("Employee with this ID does not exist.")
-        return employee
+        model = EmployeeContract
+        fields = ['id', 'applicant', 'employee', 'is_active', 'contract_reference', 'original_contract', 'signed_contract', 'created_at', 'updated_at']
+        read_only_fields = ['contract_reference', 'created_at', 'updated_at']
 
     def create(self, validated_data):
-        employee = validated_data.pop('employee_id')
-        contract = Contract.objects.create(employee=employee, **validated_data)
+        # Generate contract_reference
+        contract = EmployeeContract(**validated_data)
+        contract.contract_reference = contract.generate_contract_reference()
+        contract.save()
         return contract
 
-    def update(self, instance, validated_data):
-        employee = validated_data.pop('employee_id', None)
-        if employee:
-            instance.employee = employee
-        return super().update(instance, validated_data)
+    def validate(self, data):
+        # Ensure either applicant or employee is provided, not both
+        applicant = data.get('applicant')
+        employee = data.get('employee')
+        if applicant and employee:
+            raise serializers.ValidationError("Cannot set both applicant and employee.")
+        if not applicant and not employee:
+            raise serializers.ValidationError("Either applicant or employee must be provided.")
+        return data    

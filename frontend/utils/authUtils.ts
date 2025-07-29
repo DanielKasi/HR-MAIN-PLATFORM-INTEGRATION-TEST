@@ -35,7 +35,7 @@ export const fetchUserById = async (userId: number): Promise<IUser | null> => {
 
 export const fetchUserAttachedInstitutions = async (): Promise<IUserInstitution[] | null> => {
   try {
-    const response = await apiRequest.get("user/Institutions/");
+    const response = await apiRequest.get("user/institutions/");
 
     return response.data as IUserInstitution[];
   } catch {

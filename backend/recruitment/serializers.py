@@ -9,6 +9,11 @@ from recruitment.models import (
 )
 from employee.serializers import EmployeeSerializer
 from django.db.models import Q, Count
+import PyPDF2
+from docx import Document
+from workflows.models import WorkflowAction, InstitutionApprovalStep, ApprovalTask
+from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
 
 
 class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
@@ -40,6 +45,11 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
             "country",
             "source",
             "positions",
+            "created_at",
+            "updated_at",
+            "created_by",
+            "reviewed_by",
+            "shortlisted_by",
         ]
 
     def get_job_position_advert_job_details(self, obj):
@@ -108,7 +118,7 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
             "id",
             "job_position",
             "job_position_details",
-            "status",
+            "job_position_advert_status",
             "published_date",
             "expiry_date",
             "number_of_employees_expected",
@@ -134,6 +144,43 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
             "description": obj.job_position.description,
         }
 
+    @transaction.atomic
+    def create(self, validated_data):
+
+        advert = JobPositionAdvert.objects.create(**validated_data)
+
+        institution = advert.job_position.department.institution
+
+        print(
+            f"Creating advert for institution: {institution.institution_name}\n\n\n\n"
+        )
+        content_type = ContentType.objects.get_for_model(JobPositionAdvert)
+
+        try:
+            action = WorkflowAction.objects.get(code="job_position_advertisement")
+        except WorkflowAction.DoesNotExist:
+            action = None
+
+        if action:
+            steps = InstitutionApprovalStep.objects.filter(
+                institution=institution, action=action
+            ).order_by("level")
+
+            if not steps.exists():
+                advert.finish_workflow()
+            else:
+                for i, step in enumerate(steps):
+                    ApprovalTask.objects.create(
+                        step=step,
+                        content_type=content_type,
+                        object_id=advert.id,
+                        status="pending" if i == 0 else "not_started",
+                    )
+        else:
+            advert.finish_workflow()
+
+        return advert
+
 
 class JobPositionSerializer(serializers.ModelSerializer):
     department_details = DepartmentSerializer(source="department", read_only=True)
@@ -157,12 +204,12 @@ class JobPositionSerializer(serializers.ModelSerializer):
             "department_details",
             "reports_to",
             "reports_to_details",
-            "contract_template",
             "offer_letter_template",
             "salary",
             "job_adverts",
             "employees",
             "apply_salary_to_employees",
+            "job_position_status",
         ]
 
     def get_reports_to_details(self, obj):
@@ -195,6 +242,37 @@ class JobPositionSerializer(serializers.ModelSerializer):
                     }
                 )
         return attrs
+
+    def create(self, validated_data):
+        job_position = JobPosition.objects.create(**validated_data)
+
+        institution = job_position.department.institution
+        content_type = ContentType.objects.get_for_model(JobPosition)
+
+        try:
+            action = WorkflowAction.objects.get(code="job_position_creation")
+        except WorkflowAction.DoesNotExist:
+            action = None
+
+        if action:
+            steps = InstitutionApprovalStep.objects.filter(
+                institution=institution, action=action
+            ).order_by("level")
+
+            if not steps.exists():
+                job_position.finish_workflow()
+            else:
+                for i, step in enumerate(steps):
+                    ApprovalTask.objects.create(
+                        step=step,
+                        content_type=content_type,
+                        object_id=job_position.id,
+                        status="pending" if i == 0 else "not_started",
+                    )
+        else:
+            job_position.finish_workflow()
+
+        return job_position
 
     def update(self, instance, validated_data):
         from employee.models import Employee
@@ -237,6 +315,9 @@ class JobInterviewSerializer(serializers.ModelSerializer):
             "location",
             "interview_time",
             "additional_notes",
+            "created_at",
+            "updated_at",
+            "created_by",
         ]
 
     def validate(self, attrs):

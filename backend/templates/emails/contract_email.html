@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Employment Contract</title>
+  </head>
+  <body
+    style="
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    "
+  >
+    <div
+      style="
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      "
+    >
+      <div style="text-align: center; padding-bottom: 20px">
+        <h2 style="color: #003087; margin: 0; font-size: 24px">
+          Your Employment Contract
+        </h2>
+      </div>
+      <p style="font-size: 16px">Dear {{ employees_name }},</p>
+      <p style="font-size: 16px">
+        Congratulations on your new role as
+        <strong>{{ position_title }}</strong> at
+        <strong>{{ institution_name }}</strong>! We are excited to welcome you
+        to our team.
+      </p>
+      <p style="font-size: 16px">
+        Attached to this email, you will find your employment contract in PDF
+        format. Please review the terms carefully. To accept, kindly sign and
+        return a copy to
+        <a
+          href="mailto:{{ hr_email }}"
+          style="color: #003087; text-decoration: none"
+          >{{ hr_email }}</a
+        >
+        by {{ due_date }}.
+      </p>
+      <p style="font-size: 16px">
+        If you have any questions, feel free to contact our Human Resources team
+        at
+        <a
+          href="mailto:{{ hr_email }}"
+          style="color: #003087; text-decoration: none"
+          >{{ hr_email }}</a
+        >.
+      </p>
+      <div style="text-align: center; margin-top: 20px">
+        <a
+          href="mailto:{{ hr_email }}?subject=Contract%20Query"
+          style="
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #003087;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 16px;
+          "
+          >Contact HR</a
+        >
+      </div>
+      <p style="font-size: 16px; margin-top: 20px">Best regards,</p>
+      <p style="font-size: 16px; margin: 0">
+        {{ institution_name }}<br />Human Resources Team
+      </p>
+    </div>
+  </body>
+</html>

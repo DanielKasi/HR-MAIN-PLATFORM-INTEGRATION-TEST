@@ -24,6 +24,6 @@ urlpatterns = [
 
     path('<int:institution_id>/payslips/', PayslipAPIView.as_view(), name='payslip-list-create'),
     path('payslips/<int:pk>/', PayslipDetailAPIView.as_view()),
-
+    path('payslips/by-payroll/<int:payroll_id>/', PayslipsByPayrollAPIView.as_view(), name='payslips-by-payroll'),
     path('payslips/<int:payslip_id>/items/', PayslipItemAPIView.as_view(), name='payslipitem-list'),
 ]

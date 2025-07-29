@@ -257,6 +257,48 @@ class AssetAllocation(BaseModel):
             self.asset.current_holder = self.allocated_to
             self.asset.save(update_fields=["status", "current_holder"])
 
+    @transaction.atomic
+    def approve(self):
+        if self.allocation_status != "pending":
+            raise ValueError("Only pending allocations can be approved.")
+
+        self.allocation_status = "allocated"
+        self.save()
+
+        self.asset.status = "allocated"
+        self.asset.current_holder = self.allocated_to
+        self.asset.save(update_fields=["status", "current_holder"])
+
+    def finish_workflow(self):
+        from workflows.models import ApprovalTask
+        from django.contrib.contenttypes.models import ContentType
+
+        content_type = ContentType.objects.get_for_model(self.__class__)
+
+        tasks = ApprovalTask.objects.filter(
+            content_type=content_type, object_id=self.pk
+        )
+
+        if tasks.exists() and tasks.filter(status="rejected").exists():
+            self.allocation_status = "cancelled"
+            self.save()
+            return
+        if (
+            tasks.exists()
+            and not tasks.filter(
+                status__in=["not_started", "pending", "rejected"]
+            ).exists()
+        ):
+            self.approve()
+            return
+        elif not tasks.exists():
+            self.approve()
+            return
+        else:
+            raise Exception(
+                "Cannot finish workflow: Some tasks are not completed or rejected."
+            )
+
 
 class AssetReturn(BaseModel):
     ASSET_CONDITION_CHOICES = [
@@ -296,7 +338,6 @@ class AssetReturn(BaseModel):
                 notes=f"Asset {self.asset.asset_name} returned by {self.allocation.allocated_to.fullname} in {self.condition}.",
             )
 
-            # based on condition, we need to update the asset status
             if self.condition == "good":
                 self.asset.status = "available"
             elif self.condition == "damaged":

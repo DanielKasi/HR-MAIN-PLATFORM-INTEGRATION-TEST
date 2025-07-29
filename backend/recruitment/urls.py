@@ -22,4 +22,6 @@ urlpatterns = [
 
     path("institution/<int:institution_id>/job-interview/", JobInterviewListAPI.as_view()),
     path("job-interview/<int:interview_id>/", JobInterviewDetailAPI.as_view()),
+
+
 ]
