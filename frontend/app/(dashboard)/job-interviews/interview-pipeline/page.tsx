@@ -1791,7 +1791,7 @@ useEffect(() => {
                                 </TableHead>
                                 <TableHead>Candidate</TableHead>
                                 <TableHead>Contact</TableHead>
-                                <TableHead>Feedback</TableHead>
+                                <TableHead>Comment</TableHead>
                                 <TableHead>Rating</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Actions</TableHead>
