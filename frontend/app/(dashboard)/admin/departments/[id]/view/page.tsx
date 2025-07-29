@@ -54,28 +54,28 @@ import {
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getDepartments, getAllEmployees, getOnBoardings, getJobPositions } from "@/lib/utils"
-import type { IDepartment, IOnBoarding, EmployeeFromAPI, IJobPosition } from "@/app/types/types.utils"
+import type { IDepartment, IOnBoarding, IJobPosition, IEmployee } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
 
 
-const getFullName = (employee: EmployeeFromAPI) => {
+const getFullName = (employee: IEmployee) => {
   return employee.user?.fullname || employee.email || 'Unknown Employee'
 }
 
-const getDepartmentName = (employee: EmployeeFromAPI) => {
+const getDepartmentName = (employee: IEmployee) => {
   return employee.department?.name || 'Unknown Department'
 }
 
-const getPositionName = (employee: EmployeeFromAPI) => {
+const getPositionName = (employee: IEmployee) => {
   return employee.position?.name || 'Unknown Position'
 }
 
-const getDepartmentId = (employee: EmployeeFromAPI) => {
+const getDepartmentId = (employee: IEmployee) => {
   return employee.department?.id || 0
 }
 
-const getPositionId = (employee: EmployeeFromAPI) => {
+const getPositionId = (employee: IEmployee) => {
   return employee.position?.id || 0
 }
 
@@ -111,7 +111,7 @@ const getApplicationData = (onboarding: IOnBoarding) => {
   }
 }
 
-const matchEmployeeWithRecruitment = (employee: EmployeeFromAPI, onboardings: IOnBoarding[]) => {
+const matchEmployeeWithRecruitment = (employee: IEmployee, onboardings: IOnBoarding[]) => {
   const matchingOnboarding = onboardings.find(onboarding => {
     const { applicantEmail } = getApplicationData(onboarding)
     return applicantEmail === employee.email && onboarding.status === 'accepted_offer'
@@ -129,8 +129,8 @@ export default function DepartmentDetailView() {
   const departmentId = params?.id ? parseInt(params.id as string) : null
 
   const [department, setDepartment] = useState<IDepartment | null>(null)
-  const [allEmployees, setAllEmployees] = useState<EmployeeFromAPI[]>([])
-  const [departmentEmployees, setDepartmentEmployees] = useState<EmployeeFromAPI[]>([])
+  const [allEmployees, setAllEmployees] = useState<IEmployee[]>([])
+  const [departmentEmployees, setDepartmentEmployees] = useState<IEmployee[]>([])
   const [allOnboardings, setAllOnboardings] = useState<IOnBoarding[]>([])
   const [recruitmentHistory, setRecruitmentHistory] = useState<IOnBoarding[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -184,7 +184,7 @@ export default function DepartmentDetailView() {
       const employees = allEmployees ?? []
       setAllEmployees(employees)
 
-      const filteredEmployees = employees.filter((emp: EmployeeFromAPI) => {
+      const filteredEmployees = employees.filter((emp: IEmployee) => {
         const empDepartmentId = getDepartmentId(emp)
         const empDepartmentName = getDepartmentName(emp)
         return empDepartmentId === currentDepartment.id
@@ -805,7 +805,7 @@ export default function DepartmentDetailView() {
                             </TableCell>
                             <TableCell>
                               <p className="text-sm text-muted-foreground">
-                                {position.reportsToDetails?.name || "No supervisor"}
+                                {position.reports_to_details?.name || "No supervisor"}
                               </p>
                             </TableCell>
                             <TableCell>

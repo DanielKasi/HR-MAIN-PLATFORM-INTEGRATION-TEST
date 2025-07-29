@@ -36,9 +36,9 @@ export default function CreateJobPositionPage() {
     name: "",
     description: "",
     department: null,
-    reportsTo: null,
-    contractTemplate: null,
-    offerLetterTemplate: null,
+    reports_to: null,
+    contract_template: null,
+    offer_letter_template: null,
     salary: "",
   })
   const [departments, setDepartments] = useState<IDepartment[]>([])
@@ -99,11 +99,11 @@ export default function CreateJobPositionPage() {
     }
   }
 
-  const handleFileChange = (field: "contractTemplate" | "offerLetterTemplate", file: File | null) => {
+  const handleFileChange = (field: "contract_template" | "offer_letter_template", file: File | null) => {
     updateFormData(field, file)
   }
 
-  const removeFile = (field: "contractTemplate" | "offerLetterTemplate") => {
+  const removeFile = (field: "contract_template" | "offer_letter_template") => {
     updateFormData(field, null)
   }
 
@@ -162,16 +162,16 @@ export default function CreateJobPositionPage() {
         affected_employees: []
       }
 
-      if (formData.reportsTo) {
-        createData.reports_to = formData.reportsTo
+      if (formData.reports_to) {
+        createData.reports_to = formData.reports_to
       }
 
-      if (formData.contractTemplate) {
-        createData.contract_template = formData.contractTemplate
+      if (formData.contract_template) {
+        createData.contract_template = formData.contract_template
       }
 
-      if (formData.offerLetterTemplate) {
-        createData.offer_letter_template = formData.offerLetterTemplate
+      if (formData.offer_letter_template) {
+        createData.offer_letter_template = formData.offer_letter_template
       }
 
       const newJobPosition = await createJobPosition({
@@ -305,8 +305,8 @@ export default function CreateJobPositionPage() {
                     Reports To (Optional)
                   </Label>
                   <Select
-                    value={formData.reportsTo?.toString() || "0"}
-                    onValueChange={(value) => updateFormData("reportsTo", value ? Number(value) : null)}
+                    value={formData.reports_to?.toString() || "0"}
+                    onValueChange={(value) => updateFormData("reports_to", value ? Number(value) : null)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a position (optional)" />
@@ -344,34 +344,34 @@ export default function CreateJobPositionPage() {
                 {/* Contract Template */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Contract Template (Optional)</Label>
-                  {formData.contractTemplate ? (
+                  {formData.contract_template ? (
                     <div className="border rounded-lg p-4 bg-muted/50">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">{formData.contractTemplate.name}</span>
+                          <span className="text-sm font-medium">{formData.contract_template.name}</span>
                         </div>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => removeFile("contractTemplate")}>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeFile("contract_template")}>
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {(formData.contractTemplate.size / 1024 / 1024).toFixed(2)} MB
+                        {(formData.contract_template.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
                   ) : (
                     <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
                       <div className="text-center">
                         <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                        <Label htmlFor="contractTemplate" className="cursor-pointer">
+                        <Label htmlFor="contract_template" className="cursor-pointer">
                           <span className="text-sm font-medium text-primary hover:text-primary/80">
                             Click to upload contract template
                           </span>
                           <Input
-                            id="contractTemplate"
+                            id="contract_template"
                             type="file"
                             accept=".pdf,.doc,.docx"
-                            onChange={(e) => handleFileChange("contractTemplate", e.target.files?.[0] || null)}
+                            onChange={(e) => handleFileChange("contract_template", e.target.files?.[0] || null)}
                             className="hidden"
                           />
                         </Label>
@@ -384,39 +384,39 @@ export default function CreateJobPositionPage() {
                 {/* Offer Letter Template */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Offer Letter Template (Optional)</Label>
-                  {formData.offerLetterTemplate ? (
+                  {formData.offer_letter_template ? (
                     <div className="border rounded-lg p-4 bg-muted/50">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">{formData.offerLetterTemplate.name}</span>
+                          <span className="text-sm font-medium">{formData.offer_letter_template.name}</span>
                         </div>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeFile("offerLetterTemplate")}
+                          onClick={() => removeFile("offer_letter_template")}
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {(formData.offerLetterTemplate.size / 1024 / 1024).toFixed(2)} MB
+                        {(formData.offer_letter_template.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
                   ) : (
                     <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
                       <div className="text-center">
                         <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                        <Label htmlFor="offerLetterTemplate" className="cursor-pointer">
+                        <Label htmlFor="offer_letter_template" className="cursor-pointer">
                           <span className="text-sm font-medium text-primary hover:text-primary/80">
                             Click to upload offer letter template
                           </span>
                           <Input
-                            id="offerLetterTemplate"
+                            id="offer_letter_template"
                             type="file"
                             accept=".pdf,.doc,.docx"
-                            onChange={(e) => handleFileChange("offerLetterTemplate", e.target.files?.[0] || null)}
+                            onChange={(e) => handleFileChange("offer_letter_template", e.target.files?.[0] || null)}
                             className="hidden"
                           />
                         </Label>

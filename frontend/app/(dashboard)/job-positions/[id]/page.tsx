@@ -170,14 +170,10 @@ export default function JobPositionDetailsPage() {
   }
 
   return (
-    <div className="w-full h-full p-6">
+    <div className="w-full h-full p-4">
       <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Job Positions
-          </Button>
           <Button onClick={handleEdit} className="flex items-center gap-2">
             <Edit className="h-4 w-4" />
             Edit Position
@@ -269,19 +265,19 @@ export default function JobPositionDetailsPage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {jobPosition.reportsToDetails ? (
+                      {jobPosition.reports_to_details ? (
                         <>
                           <div>
                             <p className="text-sm font-medium">Reports To</p>
-                            <p className="text-sm text-muted-foreground">{jobPosition.reportsToDetails.name}</p>
+                            <p className="text-sm text-muted-foreground">{jobPosition.reports_to_details.name}</p>
                           </div>
                           <div>
                             <p className="text-sm font-medium">Manager Email</p>
-                            <p className="text-sm text-muted-foreground">{jobPosition.reportsToDetails.email}</p>
+                            <p className="text-sm text-muted-foreground">{jobPosition.reports_to_details.email}</p>
                           </div>
                           <div>
                             <p className="text-sm font-medium">Manager Department</p>
-                            <p className="text-sm text-muted-foreground">{jobPosition.reportsToDetails.department}</p>
+                            <p className="text-sm text-muted-foreground">{jobPosition.reports_to_details.department}</p>
                           </div>
                         </>
                       ) : (
