@@ -6,7 +6,7 @@ from .views import (
 
 urlpatterns = [
     path(
-        'institution/<int:institution_id>/system-configurations/',
+        'system-configurations/',
         SystemConfigurationListCreateAPIView.as_view(),
         name='system-configuration-list-create'
     ),

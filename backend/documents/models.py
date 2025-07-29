@@ -50,3 +50,21 @@ class DocumentTemplate(models.Model):
 
     def __str__(self):
         return self.name
+
+class Document(models.Model):
+    document_template = models.ForeignKey(DocumentTemplate, on_delete=models.PROTECT)
+    placeholder_values = models.JSONField(
+        default=dict,
+        help_text="Values for the placeholders defined in the template, e.g. {'employee_name': 'John Doe', 'date': '2023-10-01'}"
+    )        
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('penging', 'Pending'),
+            ('in_review', 'In Review'),
+            ('reviewed', 'Reviewed'),
+        ]
+    )
+
+    def __str__(self):
+        return f"Document for {self.document_template.name} - Status: {self.status}"

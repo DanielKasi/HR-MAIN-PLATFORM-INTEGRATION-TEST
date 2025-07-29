@@ -12,6 +12,7 @@ class OnBoarding(models.Model):
     STATUS_CHOICES = [
         ("initial", "Initial"),
         ("training", "Training"),
+        ("contract_review", "Contract Review"),
         ("issued_contract", "Issued Contract"),
         ("declined_offer", "Declined Offer"),
         ("accepted_offer", "Accepted Offer"),

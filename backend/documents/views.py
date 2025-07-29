@@ -3,13 +3,18 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from .models import DocumentType, DocumentTemplate
-from .serializers import DocumentTypeSerializer, DocumentTemplateSerializer
+from .models import DocumentType, DocumentTemplate, Document
+from .serializers import DocumentTypeSerializer, DocumentTemplateSerializer, GenerateDocumentResponseSerializer, GenerateDocumentRequestSerializer
 from utilities.pagination import CustomPageNumberPagination
 from rest_framework.parsers import MultiPartParser, FormParser
 from institution.models import Institution
 from audit.models import AuditLog
 from django.contrib.contenttypes.models import ContentType
+from onboarding.models import OnBoarding
+from settings.models import SystemConfiguration
+from django.shortcuts import get_object_or_404
+from datetime import datetime
+
 
 
 class DocumentTypeListCreateAPIView(APIView):
@@ -266,3 +271,156 @@ class AuditLogListAPIView(APIView):
             for log in audit_logs
         ]
         return Response(response_data, status=status.HTTP_200_OK)
+
+class GenerateDocumentView(APIView):
+    @extend_schema(
+        tags=['Document Generation'],
+        parameters=[
+            OpenApiParameter(
+                name='context',
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                enum=['onboarding', 'employee', 'leave'],
+                description='The context for document generation (e.g., onboarding, employee, leave)'
+            ),
+            OpenApiParameter(
+                name='context_id',
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description='The ID of the context record (e.g., OnBoarding ID, Employee ID)'
+            ),
+        ],
+        responses={
+            200: GenerateDocumentResponseSerializer,
+            404: {'description': 'Template or context record not found'}
+        },
+        description='Fetches placeholders for a document template with pre-filled values based on context'
+    )
+    def get(self, request, template_id):
+        # Fetch the document template
+        template = get_object_or_404(DocumentTemplate, pk=template_id)
+        template_placeholders = template.placeholders or []
+
+        # Get system configuration for required fields
+        system_config = SystemConfiguration.objects.filter(code='doc_required_fields').first()
+        required_placeholders = system_config.content if system_config else []
+
+        # Combine placeholders (remove duplicates, preserve template formatting for non-required placeholders)
+        # Convert template placeholders to clean format (strip {{}})
+        clean_template_placeholders = [p.strip('{}') for p in template_placeholders]
+        # Ensure all required placeholders are included, even if not in template
+        all_placeholders = list(set(clean_template_placeholders + required_placeholders))
+
+        # Get context and context_id from query params
+        context = request.query_params.get('context')
+        context_id = request.query_params.get('context_id')
+
+        if not context or not context_id:
+            return Response(
+                {'error': 'context and context_id are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Dynamic value mapping based on context
+        known_values = {}
+        if context == 'onboarding':
+            onboarding = get_object_or_404(OnBoarding, pk=context_id)
+            known_values = {
+                'FULLNAME': onboarding.application.applicant_name if onboarding.application else '',
+                'SALARY': str(onboarding.application.job_position_advert.job_position.salary) if onboarding.application.job_position_advert.job_position.salary else '',
+                'DATE': str(datetime.now().date()),
+            }
+        elif context == 'employee':
+            employee = get_object_or_404(Employee, pk=context_id)
+            known_values = {
+                'FULLNAME': employee.fullname if hasattr(employee, 'fullname') else '',
+                'SALARY': str(employee.salary) if hasattr(employee, 'salary') else '',
+                'DATE': str(datetime.now().date()),
+            }
+        elif context == 'leave':
+            leave = get_object_or_404(Leave, pk=context_id)
+            known_values = {
+                'FULLNAME': leave.employee.fullname if hasattr(leave.employee, 'fullname') else '',
+                'DATE': str(datetime.now().date()),
+            }
+        else:
+            return Response(
+                {'error': 'Invalid context'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Construct placeholder data
+        placeholder_data = {}
+        for placeholder in all_placeholders:
+            value = known_values.get(placeholder, '')
+            placeholder_data[placeholder] = {
+                'value': value
+            }
+
+        serializer = GenerateDocumentResponseSerializer({
+            'placeholders': placeholder_data,
+            'template_id': template_id
+        })
+        return Response(serializer.data)
+
+
+    @extend_schema(
+        tags=['Document Generation'],
+        request=GenerateDocumentRequestSerializer,
+        responses={
+            201: {'description': 'Document created successfully', 'properties': {'status': {'type': 'string'}, 'document_id': {'type': 'integer'}}},
+            400: {'description': 'Invalid input or missing required placeholders'},
+            404: {'description': 'Template or context record not found'}
+        },
+        description='Creates a new document with the provided placeholder values and updates OnBoarding status to contract_review if context is onboarding'
+    )
+    def post(self, request, template_id):
+        # Fetch the document template
+        template = get_object_or_404(DocumentTemplate, pk=template_id)
+
+        # Get system configuration for required fields
+        system_config = SystemConfiguration.objects.filter(code='doc_required_fields').first()
+        required_placeholders = system_config.content if system_config else []
+
+        # Validate input
+        serializer = GenerateDocumentRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        placeholder_values = serializer.validated_data['placeholders']
+        context = serializer.validated_data.get('context')
+        context_id = serializer.validated_data.get('context_id')
+
+        # Validate required placeholders
+        for placeholder in required_placeholders:
+            if placeholder not in placeholder_values or not placeholder_values[placeholder]:
+                return Response(
+                    {'error': f'Missing required placeholder: {placeholder}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # Create Document instance
+        document = Document.objects.create(
+            document_template=template,
+            placeholder_values=placeholder_values,
+            status='pending'
+        )
+
+        # Update OnBoarding status if context is onboarding
+        if context == 'onboarding' and context_id:
+            try:
+                onboarding = OnBoarding.objects.get(pk=context_id)
+                onboarding.status = 'contract_review'
+                onboarding.save()
+            except OnBoarding.DoesNotExist:
+                return Response(
+                    {'error': 'OnBoarding record not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        return Response(
+            {'status': 'success', 'document_id': document.pk},
+            status=status.HTTP_201_CREATED
+        )
