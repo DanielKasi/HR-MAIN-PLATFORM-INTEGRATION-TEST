@@ -37,27 +37,35 @@ export default function PhoneNumberInput({
     const [selectedCountry, setSelectedCountry] = useState<ICountry | null>(country || defaultCountry);
     const [phoneNumber, setPhoneNumber] = useState<string>(value || "");
     const [phoneError, setPhoneError] = useState<string | null>(error || null);
+    const [isLoadingCountries, setIsLoadingCountries] = useState(true);
 
     useEffect(() => {
+        setIsLoadingCountries(true);
         countryAPI.getAll()
             .then((data) => {
-                setCountries(data);
-                // Default to Uganda if not set
-                if (!selectedCountry) {
-                    const ug = data.find((c: any) => c.cca2 === "UG" || c.name.common === "Uganda");
-                    if (ug) setSelectedCountry(ug);
+                if (Array.isArray(data) && data.length > 0) {
+                    setCountries(data);
+                    // Default to Uganda if not set
+                    if (!selectedCountry) {
+                        const ug = data.find((c) => c.cca2 === "UG" || c.name.common === "Uganda");
+                        if (ug) setSelectedCountry(ug);
+                    }
+                } else {
+                    console.error('No countries data received:', data);
+                    toast.error("Failed to load countries data");
                 }
             })
-            .catch(() => toast.error("Failed to load countries"));
+            .catch((error) => {
+                console.error('Error loading countries:', error);
+                toast.error("Failed to load countries");
+            })
+            .finally(() => setIsLoadingCountries(false));
     }, []);
 
     useEffect(() => {
         setSelectedCountry(country || defaultCountry || null);
     }, [country, defaultCountry]);
 
-    useEffect(() => {
-        setPhoneNumber(value || "");
-    }, [value]);
 
     const getCountryCode = () => {
         if (!selectedCountry?.idd?.root) return "";
@@ -81,26 +89,37 @@ export default function PhoneNumberInput({
     };
 
     const handlePhoneChange = (value: string) => {
-        // Remove leading zero if present
-        const sanitizedValue = value.replace(/^0+/, "");
+        // Remove all non-digit characters and any country code if present
+        let sanitizedValue = value.replace(/\D/g, "");
+        const countryCode = getCountryCode().replace(/\D/g, "");
+        
+        // If the input starts with the country code, remove it
+        if (sanitizedValue.startsWith(countryCode)) {
+            sanitizedValue = sanitizedValue.slice(countryCode.length);
+        }
+        
         setPhoneNumber(sanitizedValue);
+        
         if (selectedCountry && sanitizedValue) {
             const code = selectedCountry.cca2 as CountryCode;
-            if (!isValidPhoneNumber(sanitizedValue, code)) {
-                setPhoneError("Invalid phone number for selected country");
+            const fullNumber = `${getCountryCode()}${sanitizedValue}`;
+            
+            try {
+                const isValid = isValidPhoneNumber(fullNumber, code);
+                setPhoneError(isValid ? null : "Invalid phone number for selected country");
                 onChange({
                     country: selectedCountry,
                     countryCode: getCountryCode(),
                     phoneNumber: sanitizedValue,
-                    isValid: false,
+                    isValid: isValid
                 });
-            } else {
-                setPhoneError(null);
+            } catch (error) {
+                setPhoneError("Invalid phone number format");
                 onChange({
                     country: selectedCountry,
                     countryCode: getCountryCode(),
                     phoneNumber: sanitizedValue,
-                    isValid: true,
+                    isValid: false
                 });
             }
         } else {
@@ -109,7 +128,7 @@ export default function PhoneNumberInput({
                 country: selectedCountry,
                 countryCode: getCountryCode(),
                 phoneNumber: sanitizedValue,
-                isValid: false,
+                isValid: false
             });
         }
     };
@@ -136,7 +155,7 @@ export default function PhoneNumberInput({
                     style={{ width: "80px" }}
                     className="hidden" // Hide this, as code is now in CountrySelect
                 />
-                <Input
+                {/* <Input
                     id="phone-number-input"
                     value={phoneNumber}
                     onChange={e => handlePhoneChange(e.target.value)}
@@ -144,7 +163,19 @@ export default function PhoneNumberInput({
                     required={required}
                     type="tel"
                     disabled={disabled}
-                />
+                /> */}
+                                <div className="flex-1 flex items-center gap-0">
+
+                    <Input
+                        id="phone-number-input"
+                        value={phoneNumber}
+                        onChange={e => handlePhoneChange(e.target.value)}
+                        placeholder="Enter phone number"
+                        required={required}
+                        type="tel"
+                        disabled={disabled}
+                    />
+                </div>
             </div>
             {phoneError && <span className="text-red-500 text-xs">{phoneError}</span>}
         </div>

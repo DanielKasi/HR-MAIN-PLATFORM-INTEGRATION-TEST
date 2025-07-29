@@ -394,6 +394,7 @@ export default function ViewOnboardingDetails() {
             open={showDocumentDialog}
             onOpenChange={setShowDocumentDialog}
             contextId={onboardingId}
+            context="onboarding"
           />
 
           {/* Timeline */}

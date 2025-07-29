@@ -38,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           <Providers>
             <WebSocketProvider>{children}</WebSocketProvider>
-            <Toaster />
+            <Toaster position={"top-right"} />
           </Providers>
         </ThemeProvider>
       </body>

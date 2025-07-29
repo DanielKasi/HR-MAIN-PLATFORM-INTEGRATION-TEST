@@ -6,6 +6,8 @@ import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
+import PhoneNumberInput from "@/components/phone-number-input";
+import CountrySelect from "@/components/common/country-select";
 import {
   Select,
   SelectContent,
@@ -155,6 +157,10 @@ export default function AddEmployeeForm() {
     phoneNumber: string;
     isValid: boolean;
   }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
+
+  useEffect(()=>{
+    console.log("\n\n Phone input changed as :", phoneInput);
+  }, [phoneInput])
 
   useEffect(() => {
     if (selectedInstitution) {
@@ -634,12 +640,11 @@ export default function AddEmployeeForm() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Phone Number</Label>
-                  <Input
-                    id="phoneNumber"
+                  <PhoneNumberInput
+                    label="Phone Number"
                     value={formData.phone_number}
-                    onChange={(e) => handleInputChange("phone_number", e.target.value)}
-                    placeholder="Enter phone number"
+                    country={phoneInput.country}
+                    onChange={setPhoneInput}
                   />
                 </div>
                 <div className="space-y-2">
@@ -702,11 +707,14 @@ export default function AddEmployeeForm() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="country">Country</Label>
-                  <Input
-                    id="country"
-                    value={formData.country}
-                    onChange={(e) => handleInputChange("country", e.target.value)}
-                    placeholder="Enter country"
+                  <CountrySelect
+                    selectedCountry={selectedCountry}
+                    onCountryChange={(country) => {
+                      setSelectedCountry(country);
+                      if (country) {
+                        handleInputChange("country", country.name.common);
+                      }
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -737,12 +745,11 @@ export default function AddEmployeeForm() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="emergencyContactPhone">Contact Phone</Label>
-                  <Input
-                    id="emergencyContactPhone"
+                  <PhoneNumberInput
+                    label="Contact Phone"
                     value={formData.emergency_contact_phone}
-                    onChange={(e) => handleInputChange("emergency_contact_phone", e.target.value)}
-                    placeholder="Emergency contact phone"
+                    country={emergencyPhoneInput.country}
+                    onChange={setEmergencyPhoneInput}
                   />
                 </div>
                 <div className="space-y-2">
