@@ -415,6 +415,8 @@ export interface JobPositionAdvertFormData {
 
 
 export interface IEmployee {
+  first_name: any;
+  last_name: any;
   id: number;
   user: IUser | null;
   email: string;
@@ -1463,4 +1465,25 @@ export interface IDocumentType {
 export interface IDocumentTypeFormData {
   name: string;
   description: string;
+}
+
+export interface IDocumentTemplate {
+  id: number;
+  name: string;
+  document_type: IDocumentType;
+  template_type: 'pdf' | 'word' | 'text';
+  file: string | null;
+  content: string | null; 
+  placeholders: string[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IDocumentTemplateFormData {
+  document_type: number;
+  name: string;
+  template_type: 'pdf' | 'word' | 'text';
+  file?: File | null;
+  content?: string | null;
+  placeholders?: string[] | null;
 }

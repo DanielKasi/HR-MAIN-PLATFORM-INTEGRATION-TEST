@@ -219,7 +219,7 @@ export default function JobAdvertsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Job Adverts</h1>
+          <h1 className="text-2xl font-bold">Job Openings</h1>
           <p className="text-muted-foreground">
             Manage job advertisements for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
           </p>
@@ -237,7 +237,7 @@ export default function JobAdvertsPage() {
           </Button>
           <Button onClick={handleCreateJobAdvert} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Create Job Advert
+            Create Job Opening
           </Button>
         </div>
       </div>
@@ -292,7 +292,7 @@ export default function JobAdvertsPage() {
       {/* Error Message */}
       {error && (
         <div className="text-sm font-medium text-destructive bg-destructive/10 p-4 rounded-md border border-destructive/20">
-          <div className="font-semibold mb-2">Error Loading Job Adverts</div>
+          <div className="font-semibold mb-2">Error Loading Job Openings</div>
           <div className="text-sm">{error}</div>
           <Button
             variant="outline"
@@ -335,7 +335,7 @@ export default function JobAdvertsPage() {
           {!searchTerm && (
             <Button onClick={handleCreateJobAdvert} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              Create First Job Advert
+              Create First Job Openings
             </Button>
           )}
         </Card>
@@ -350,7 +350,7 @@ export default function JobAdvertsPage() {
                       <Megaphone className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg">Job Advert</CardTitle>
+                      <CardTitle className="text-lg">Job Opening</CardTitle>
                       <Badge className={`text-xs ${getStatusColor(advert.job_position_advert_status)}`}>
                         {advert.job_position_advert_status.toUpperCase()}
                       </Badge>
