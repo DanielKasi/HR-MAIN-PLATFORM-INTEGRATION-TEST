@@ -55,7 +55,6 @@ export default function AddRolePage() {
           const response = await apiGet(nextUrl);
           const data = response.data as PaginatedResponse;
           
-          console.log(`Fetched page with ${data.results.length} permissions`);
           allPermissions = [...allPermissions, ...data.results];
           
           // Extract the path from the next URL if it exists
@@ -67,7 +66,6 @@ export default function AddRolePage() {
           }
         }
 
-        console.log(`\n\nTotal permissions fetched: ${allPermissions.length}`);
         setPermissions(allPermissions);
 
         // Organize permissions by category
@@ -86,7 +84,6 @@ export default function AddRolePage() {
         });
         
         setPermissionsByCategory(byCategory);
-        console.log(`Organized into ${Object.keys(byCategory).length} categories`);
         
       } catch (error: any) {
         setError(error.message || "Failed to fetch permissions");

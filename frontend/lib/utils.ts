@@ -179,7 +179,6 @@ export const getDepartments = async ({ institutionId }: { institutionId: number 
   try {
     const response = await apiRequest.get(`institution/${institutionId}/department/`)
     const data = response.data as PaginatedResponse<IDepartment>
-    console.log("data:", data)
     // Return the results array instead of the entire response
     return data.results
   } catch (error) {
