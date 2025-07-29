@@ -1,23 +1,34 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import { Briefcase, ArrowLeft, Check, Upload, X, FileText } from "lucide-react";
+import {useState, useEffect} from "react";
+import {useRouter} from "next/navigation";
+import {useSelector} from "react-redux";
+import {Briefcase, ArrowLeft, Check, Upload, X, FileText} from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Textarea} from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
-import { getDepartments, getJobPositions, createJobPosition } from "@/lib/utils";
+import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
+import {getDepartments, getJobPositions, createJobPosition} from "@/lib/utils";
 
-import type { JobPositionFormData, IDepartment, IJobPosition, CreateJobPositionData } from "@/app/types/types.utils";
-import { toast } from "sonner";
+import type {
+  JobPositionFormData,
+  IDepartment,
+  IJobPosition,
+  CreateJobPositionData,
+} from "@/app/types/types.utils";
+import {toast} from "sonner";
 
 function formatWithCommas(value: string) {
   const num = value.replace(/,/g, "");
@@ -35,7 +46,7 @@ export default function CreateJobPositionPage() {
     description: "",
     department: null,
     reports_to: null,
-    job_position_status: "inactive", // Default to lowercase "inactive" to match Django model
+    job_position_status: "inactive",
     offer_letter_template: null,
     salary: "",
   });
@@ -45,7 +56,7 @@ export default function CreateJobPositionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof JobPositionFormData, string>>>({});
   const [salaryDisplay, setSalaryDisplay] = useState(
-    formData.salary ? formatWithCommas(String(formData.salary)) : ""
+    formData.salary ? formatWithCommas(String(formData.salary)) : "",
   );
 
   const router = useRouter();
@@ -71,8 +82,8 @@ export default function CreateJobPositionPage() {
     try {
       setIsLoading(true);
       const [fetchedDepartments, fetchedJobPositions] = await Promise.all([
-        getDepartments({ institutionId: selectedInstitution.id }),
-        getJobPositions({ institutionId: selectedInstitution.id }),
+        getDepartments({institutionId: selectedInstitution.id}),
+        getJobPositions({institutionId: selectedInstitution.id}),
       ]);
 
       if (fetchedDepartments) {
@@ -89,9 +100,9 @@ export default function CreateJobPositionPage() {
   };
 
   const updateFormData = (field: keyof JobPositionFormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({...prev, [field]: value}));
     if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
+      setErrors((prev) => ({...prev, [field]: undefined}));
     }
   };
 
@@ -211,7 +222,12 @@ export default function CreateJobPositionPage() {
       <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBack}
+            className="flex items-center gap-2"
+          >
             <ArrowLeft className="h-4 w-4" />
             Back to Job Positions
           </Button>
@@ -226,7 +242,8 @@ export default function CreateJobPositionPage() {
               <div>
                 <CardTitle className="text-xl">Create New Job Position</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Add a new job position to {selectedBranch.branch_name} - {selectedInstitution.institution_name}
+                  Add a new job position to {selectedBranch.branch_name} -{" "}
+                  {selectedInstitution.institution_name}
                 </p>
               </div>
             </div>
@@ -297,7 +314,9 @@ export default function CreateJobPositionPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {errors.department && <p className="text-sm text-destructive">{errors.department}</p>}
+                  {errors.department && (
+                    <p className="text-sm text-destructive">{errors.department}</p>
+                  )}
                 </div>
 
                 {/* Reports To */}
@@ -307,7 +326,9 @@ export default function CreateJobPositionPage() {
                   </Label>
                   <Select
                     value={formData.reports_to?.toString() || "0"}
-                    onValueChange={(value) => updateFormData("reports_to", value ? Number(value) : null)}
+                    onValueChange={(value) =>
+                      updateFormData("reports_to", value ? Number(value) : null)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a position (optional)" />
@@ -323,31 +344,6 @@ export default function CreateJobPositionPage() {
                   </Select>
                 </div>
 
-                {/* Job Position Status */}
-                <div className="space-y-2">
-                  <Label htmlFor="job_position_status" className="text-sm font-medium">
-                    Status *
-                  </Label>
-                  <Select
-                    value={formData.job_position_status || "inactive"}
-                    onValueChange={(value) => updateFormData("job_position_status", value as "active" | "inactive")}
-                  >
-                    <SelectTrigger className={errors.job_position_status ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.job_position_status && (
-                    <p className="text-sm text-destructive">{errors.job_position_status}</p>
-                  )}
-                </div>
-
-                {/* Empty div to balance the grid */}
-                <div></div>
-
                 {/* Job Description */}
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-sm font-medium">
@@ -361,7 +357,9 @@ export default function CreateJobPositionPage() {
                     rows={4}
                     className={errors.description ? "border-destructive" : ""}
                   />
-                  {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
+                  {errors.description && (
+                    <p className="text-sm text-destructive">{errors.description}</p>
+                  )}
                 </div>
 
                 {/* Offer Letter Template */}
@@ -372,7 +370,9 @@ export default function CreateJobPositionPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">{formData.offer_letter_template.name}</span>
+                          <span className="text-sm font-medium">
+                            {formData.offer_letter_template.name}
+                          </span>
                         </div>
                         <Button
                           type="button"
@@ -399,11 +399,15 @@ export default function CreateJobPositionPage() {
                             id="offer_letter_template"
                             type="file"
                             accept=".pdf,.doc,.docx"
-                            onChange={(e) => handleFileChange("offer_letter_template", e.target.files?.[0] || null)}
+                            onChange={(e) =>
+                              handleFileChange("offer_letter_template", e.target.files?.[0] || null)
+                            }
                             className="hidden"
                           />
                         </Label>
-                        <p className="text-xs text-muted-foreground mt-1">PDF, DOC, DOCX up to 10MB</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          PDF, DOC, DOCX up to 10MB
+                        </p>
                       </div>
                     </div>
                   )}
