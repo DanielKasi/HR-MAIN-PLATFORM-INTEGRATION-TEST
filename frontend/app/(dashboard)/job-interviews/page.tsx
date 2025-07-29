@@ -70,15 +70,30 @@ export default function InterviewsPage() {
   const [error, setError] = useState("");
   const [selectedInterviews, setSelectedInterviews] = useState<number[]>([]);
   const [isOnboarding, setIsOnboarding] = useState(false);
-
   // Filter and pagination states
   const [statusFilter, setStatusFilter] = useState("all");
+  const [interviewerFilter, setInterviewerFilter] = useState("all");
+  const [dateRange, setDateRange] = useState<{ from: string | null; to: string | null }>({ from: null, to: null });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const router = useRouter();
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const selectedBranch = useSelector(selectSelectedBranch);
+
+  // Get unique interviewers for filter
+  const interviewers = useMemo(() => {
+    const uniqueInterviewers = new Set<string>();
+    interviews.forEach((interview) => {
+      interview.interview_stage_details?.interviewers_details?.forEach((employee) => {
+        uniqueInterviewers.add(`${employee.first_name} ${employee.last_name}`);
+      });
+    });
+    return [
+      { value: "all", label: "All Interviewers" },
+      ...Array.from(uniqueInterviewers).map((name) => ({ value: name, label: name })),
+    ];
+  }, [interviews]);
 
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
@@ -92,7 +107,7 @@ export default function InterviewsPage() {
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, interviewerFilter, dateRange]);
 
   const fetchInterviews = async (showRefreshLoader = false) => {
     if (!selectedInstitution) return;
@@ -132,21 +147,20 @@ export default function InterviewsPage() {
 
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter((interview) =>
-        interview.job_position_application_details?.applicant_name
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        interview.job_position_application_details?.applicant_email
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        interview.interview_stage_details?.name
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        interview.interview_stage_details?.interviewers_details?.some(
-          (employee) =>
-            employee.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            employee.last_name.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+      filtered = filtered.filter(
+        (interview) =>
+          interview.job_position_application_details?.applicant_name
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          interview.job_position_application_details?.applicant_email
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          interview.interview_stage_details?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          interview.interview_stage_details?.interviewers_details?.some(
+            (employee) =>
+              employee.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              employee.last_name.toLowerCase().includes(searchTerm.toLowerCase())
+          )
       );
     }
 
@@ -155,8 +169,27 @@ export default function InterviewsPage() {
       filtered = filtered.filter((interview) => interview.status === statusFilter);
     }
 
+    // Apply interviewer filter
+    if (interviewerFilter && interviewerFilter !== "all") {
+      filtered = filtered.filter((interview) =>
+        interview.interview_stage_details?.interviewers_details?.some(
+          (employee) => `${employee.first_name} ${employee.last_name}` === interviewerFilter
+        )
+      );
+    }
+
+    // Apply date range filter
+    if (dateRange.from || dateRange.to) {
+      filtered = filtered.filter((interview) => {
+        const interviewDate = new Date(interview.interview_date).getTime();
+        const fromDate = dateRange.from ? new Date(dateRange.from).getTime() : -Infinity;
+        const toDate = dateRange.to ? new Date(dateRange.to).getTime() : Infinity;
+        return interviewDate >= fromDate && interviewDate <= toDate;
+      });
+    }
+
     return filtered;
-  }, [interviews, searchTerm, statusFilter]);
+  }, [interviews, searchTerm, statusFilter, interviewerFilter, dateRange]);
 
   // Pagination logic
   const paginatedInterviews = useMemo(() => {
@@ -299,6 +332,8 @@ export default function InterviewsPage() {
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("all");
+    setInterviewerFilter("all");
+    setDateRange({ from: null, to: null });
     setCurrentPage(1);
   };
 
@@ -316,7 +351,6 @@ export default function InterviewsPage() {
             Manage interviews for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
           </p>
         </div>
-        
         <div className="flex items-center gap-2">
           {selectedInterviews.length > 0 && (
             <Button
@@ -343,7 +377,7 @@ export default function InterviewsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push('job-interviews/interview-pipeline')}
+            onClick={() => router.push("job-interviews/interview-pipeline")}
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white border-green-600"
           >
             <Briefcase className="h-4 w-4" />
@@ -355,38 +389,6 @@ export default function InterviewsPage() {
               Schedule Interview
             </Button>
           </ProtectedComponent>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search interviews by applicant, job position, interviewer, or stage..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {(searchTerm || statusFilter !== "all") && (
-            <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
-              Clear Filters
-            </Button>
-          )}
         </div>
       </div>
 
@@ -424,13 +426,74 @@ export default function InterviewsPage() {
         </div>
       )}
 
+      {/* Search and Filters */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Search interviews by applicant, job position, interviewer, or stage..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={interviewerFilter} onValueChange={setInterviewerFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by interviewer" />
+            </SelectTrigger>
+            <SelectContent>
+              {interviewers.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-2">
+            <Input
+              type="date"
+              placeholder="From date"
+              value={dateRange.from || ""}
+              onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
+              className="w-[140px]"
+            />
+            <Input
+              type="date"
+              placeholder="To date"
+              value={dateRange.to || ""}
+              onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
+              className="w-[140px]"
+            />
+          </div>
+          {(searchTerm || statusFilter !== "all" || interviewerFilter !== "all" || dateRange.from || dateRange.to) && (
+            <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
+              Clear Filters
+            </Button>
+          )}
+        </div>
+      </div>
+
       {/* Results Summary */}
       {!isLoading && (
         <div className="flex justify-between items-center text-sm text-muted-foreground">
           <div>
             Showing {filteredInterviews.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to{" "}
             {Math.min(currentPage * pageSize, filteredInterviews.length)} of {filteredInterviews.length} interviews
-            {(searchTerm || statusFilter !== "all") && ` (filtered from ${interviews.length} total)`}
+            {(searchTerm || statusFilter !== "all" || interviewerFilter !== "all" || dateRange.from || dateRange.to) &&
+              ` (filtered from ${interviews.length} total)`}
           </div>
           <div className="flex items-center gap-2">
             <span>Rows per page:</span>
@@ -481,11 +544,11 @@ export default function InterviewsPage() {
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">No interviews found</h3>
             <p className="text-muted-foreground mb-4">
-              {searchTerm || statusFilter !== "all"
+              {searchTerm || statusFilter !== "all" || interviewerFilter !== "all" || dateRange.from || dateRange.to
                 ? "No interviews match your search criteria."
                 : "Get started by scheduling your first interview."}
             </p>
-            {searchTerm || statusFilter !== "all" ? (
+            {searchTerm || statusFilter !== "all" || interviewerFilter !== "all" || dateRange.from || dateRange.to ? (
               <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
                 Clear Filters
               </Button>
@@ -538,7 +601,7 @@ export default function InterviewsPage() {
                           aria-label={`Select interview for ${interview.job_position_application_details?.applicant_name}`}
                         />
                       ) : (
-                        <div className="w-4 h-4" /> // Empty space to maintain table alignment
+                        <div className="w-4 h-4" />
                       )}
                     </TableCell>
                     <TableCell>
@@ -657,40 +720,36 @@ export default function InterviewsPage() {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => handlePageChange(1)}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                    First
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4" />
                     Previous
                   </Button>
-
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNumber;
-                      if (totalPages <= 5) {
-                        pageNumber = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNumber = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNumber = totalPages - 4 + i;
-                      } else {
-                        pageNumber = currentPage - 2 + i;
-                      }
-
-                      return (
-                        <Button
-                          key={pageNumber}
-                          variant={currentPage === pageNumber ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handlePageChange(pageNumber)}
-                          className="w-8 h-8 p-0"
-                        >
-                          {pageNumber}
-                        </Button>
-                      );
-                    })}
-                  </div>
-
+                  <Select
+                    value={currentPage.toString()}
+                    onValueChange={(value) => handlePageChange(parseInt(value))}
+                  >
+                    <SelectTrigger className="w-[70px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <SelectItem key={page} value={page.toString()}>
+                          {page}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button
                     variant="outline"
                     size="sm"
@@ -699,6 +758,15 @@ export default function InterviewsPage() {
                   >
                     Next
                     <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(totalPages)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Last
+                    <ChevronsRight className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
