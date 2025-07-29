@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from drf_spectacular.utils import extend_schema
-from .models import Employee, EmployeeAttendance, EmployeeType, WorkType, Contract
+from .models import Employee, EmployeeAttendance, EmployeeType, WorkType
 from .serializers import (
     EmployeeAttendanceSerializer,
     EmployeeSerializer,

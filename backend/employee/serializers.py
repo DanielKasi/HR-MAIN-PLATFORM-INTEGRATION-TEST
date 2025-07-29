@@ -1,4 +1,4 @@
-from .models import Employee, EmployeeAttendance, EmployeeType, WorkType, Contract
+from .models import Employee, EmployeeAttendance, EmployeeType, WorkType
 from rest_framework import serializers
 from users.serializers import CustomUserSerializer
 from datetime import date

@@ -219,8 +219,8 @@ const WelcomeCard = () => {
         {userData?.gender === USER_GENDER.MALE
           ? "Mr"
           : userData?.gender === USER_GENDER.FEMALE
-            ? "Mrs"
-            : ""}{" "}
+          ? "Mrs"
+          : ""}.{" "}
         {fullName}
       </h2>
       <p className="opacity-90">Here's your HR dashboard overview for today</p>
