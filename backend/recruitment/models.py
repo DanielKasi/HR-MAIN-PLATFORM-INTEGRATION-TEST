@@ -49,8 +49,8 @@ class JobPosition(models.Model):
         return f"{self.name}"
 
     def activate_job_position(self):
-        if self.job_position_status != "inactive":
-            raise ValidationError("Only inactive job positions can be activated.")
+        # if self.job_position_status != "inactive":
+        #     raise ValidationError("Only inactive job positions can be activated.")
 
         self.job_position_status == "active"
         self.save()
