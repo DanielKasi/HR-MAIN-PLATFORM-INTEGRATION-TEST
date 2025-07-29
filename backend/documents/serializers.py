@@ -163,3 +163,26 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
         validated_data["placeholders"] = self._extract_placeholders(validated_data.get("content", instance.content))
 
         return super().update(instance, validated_data)
+
+class PlaceholderDataSerializer(serializers.Serializer):
+    value = serializers.CharField(allow_blank=True)
+    is_editable = serializers.BooleanField()
+    is_required = serializers.BooleanField()
+
+class GenerateDocumentResponseSerializer(serializers.Serializer):
+    placeholders = serializers.DictField(child=PlaceholderDataSerializer())
+    template_id = serializers.IntegerField()
+
+class GenerateDocumentRequestSerializer(serializers.Serializer):
+    context = serializers.CharField(
+        required=True,
+        help_text="The context for document generation (e.g., onboarding, employee, leave)"
+    )
+    context_id = serializers.IntegerField(
+        required=True,
+        help_text="The ID of the context record (e.g., OnBoarding ID, Employee ID)"
+    )
+    placeholders = serializers.DictField(
+        child=serializers.CharField(),
+        help_text="Dictionary of placeholder names and their values, e.g., {'FULLNAME': 'John Doe', 'SALARY': '50000'}"
+    )       

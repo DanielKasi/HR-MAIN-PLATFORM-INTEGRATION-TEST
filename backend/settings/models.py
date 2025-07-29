@@ -3,7 +3,6 @@ from institution.models import Institution
 from slugify import slugify
 
 class SystemConfiguration(models.Model):
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='configurations')
     name = models.CharField(max_length=50)
     code = models.CharField(max_length=50)
     content = models.JSONField(default=list, null=True, blank=True)

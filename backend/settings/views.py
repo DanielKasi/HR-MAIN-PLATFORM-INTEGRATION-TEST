@@ -9,29 +9,25 @@ from slugify import slugify
 
 class SystemConfigurationListCreateAPIView(APIView):
     @extend_schema(
-        description="Retrieve a paginated list of system configurations for a given institution.",
+        description="Retrieve a paginated list of system configurations.",
         responses={200: SystemConfigurationSerializer(many=True)},
         tags=['System Configurations']
     )
-    def get(self, request, institution_id):
-        queryset = SystemConfiguration.objects.filter(institution_id=institution_id).order_by('-id')
+    def get(self, request):
+        queryset = SystemConfiguration.objects.all().order_by('-id')
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = SystemConfigurationSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
-        description="Create a new system configuration for the given institution. The code is auto-generated from the name.",
+        description="Create a new system configuration. The code is auto-generated from the name.",
         request=SystemConfigurationSerializer,
         responses={201: SystemConfigurationSerializer, 400: None},
         tags=['System Configurations']
     )
-    def post(self, request, institution_id):
-        
-        data = request.data.copy()
-        data['institution'] = institution_id
-        
-        serializer = SystemConfigurationSerializer(data=data)
+    def post(self, request):
+        serializer = SystemConfigurationSerializer()
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
