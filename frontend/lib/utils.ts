@@ -655,8 +655,10 @@ export const getInterviewStages = async ({
     const response = await apiRequest.get(
       `recruitment/institution/${institutionId}/interview-stage/`
     );
-    console.log(response.data)
-    return response.data as IInterviewStage[];
+    const data = response.data as PaginatedResponse<IInterviewStage>
+
+    // Return the results array instead of the entire response
+    return data.results
   } catch (error) {
     console.error("Failed to fetch interview stages:", error);
     return null;

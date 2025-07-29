@@ -379,6 +379,7 @@ export interface JobApplication {
   address: string
   country: string
   source: "website" | "referral" | "job_board" | "social_media" | "other"
+  created_by: number
 }
 
 export interface JobApplicationFormData {
@@ -395,7 +396,7 @@ export interface JobApplicationFormData {
   address: string
   country: string
   source?: "website" | "referral" | "job_board" | "social_media" | "other"
-  created_by: number,
+  created_by?: number,
   reviewed_by?: number;
   shortlisted_by?: number;
   recommended_by?: number;
