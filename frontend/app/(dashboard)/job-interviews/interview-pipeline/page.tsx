@@ -759,6 +759,7 @@ export default function JobSpecificInterviewPipeline() {
       setLoading(false)
     }
   }
+  
 
   // Process interviews into stages when job position changes
   useEffect(() => {

@@ -328,7 +328,7 @@ export interface IJobPosition {
   contract_template?: string | null; 
   offer_letter_template?: string | null; 
   salary: number;
-  employees: IEmployee[]
+  employees: IEmployee[],
 }
 
 
@@ -339,7 +339,7 @@ export interface JobPositionFormData {
   description: string
   department: number | null
   reports_to: number | null
-  contract_template: File | null
+  job_position_status: "active"| "inactive",
   offer_letter_template: File | null
   salary: string
 }
@@ -350,7 +350,7 @@ export interface CreateJobPositionData {
   description?: string;
   department: number;
   reports_to?: number;
-  contract_template?: File;
+  job_position_status: "active"| "inactive",
   offer_letter_template?: File;
   salary: number;
 }
