@@ -35,7 +35,7 @@ import {useSelector} from "react-redux";
 import {capitalizeEachWord} from "@/lib/helpers";
 
 export default function ShopApprovalStepsPage() {
-  const institutionId = useSelector(selectSelectedInstitution)?.id;
+  const currentInstitution = useSelector(selectSelectedInstitution);
   const [searchQuery, setSearchQuery] = useState("");
   const [approvalSteps, setApprovalSteps] = useState<ApprovalStep[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,11 +51,11 @@ export default function ShopApprovalStepsPage() {
 
   const fetchApprovalSteps = async () => {
     try {
-      if (!institutionId) {
+      if (!currentInstitution?.id) {
         throw new Error("No institution context found");
       }
 
-      const response = await apiRequest.get(`workflow/institution-approval-step/${institutionId}/`);
+      const response = await apiRequest.get(`workflow/institution-approval-step/${currentInstitution.id}/`);
       const responseData: ApprovalStep[] = response.data.results;
 
       setApprovalSteps(responseData.sort((a, b) => a.level - b.level));
@@ -68,10 +68,10 @@ export default function ShopApprovalStepsPage() {
   };
 
   useEffect(() => {
-    if (institutionId) {
+    if (currentInstitution?.id) {
       fetchApprovalSteps();
     }
-  }, [institutionId]);
+  }, [currentInstitution]);
 
   const filteredSteps = approvalSteps.filter(
     (step) =>
@@ -228,9 +228,9 @@ export default function ShopApprovalStepsPage() {
   const saveReorderedSteps = async (actionId: number) => {
     try {
       setSavingOrder((prev) => ({...prev, [actionId]: true}));
-      const institutionId = useSelector(selectSelectedInstitution);
+      
 
-      if (!institutionId) {
+      if (!currentInstitution?.id) {
         throw new Error("No institution context found");
       }
 
@@ -243,7 +243,7 @@ export default function ShopApprovalStepsPage() {
         }));
 
       // Send the update request
-      await apiRequest.patch(`workflow/institution-approval-step/${institutionId}/reorder/`, {
+      await apiRequest.patch(`workflow/institution-approval-step/${currentInstitution.id}/reorder/`, {
         steps: stepsToUpdate,
       });
 

@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Branch, IUser, Permission, Role } from ".";
+import { Branch, ICustomerProfile, IUser, Permission, Role, UserProfile } from ".";
 
 export enum CUSTOM_CODES {
   BLOCKED_BY_ADMIN = "BLOCKED_BY_ADMIN",
@@ -329,6 +329,8 @@ export interface IJobPosition {
   offer_letter_template?: string | null; 
   salary: number;
   employees: IEmployee[],
+  tasks:ITask[],
+  job_position_status: "active" | "inactive";
 }
 
 
@@ -1517,3 +1519,45 @@ export interface ICountry {
   cca2: string
   idd?: { root?: string; suffixes?: string[] }
 }
+
+export type ApprovalStepApprover = {
+  id: string;
+  approver_user: UserProfile;
+};
+
+// ("not_started", "Not Started"),
+//         ("pending", "Pending"),
+//         ("completed", "Completed"),
+//         ("rejected", "Rejected"),
+//         ("terminated", "Terminated"),
+export interface ITask {
+  id: string;
+  step: ApprovalStep;
+  status: string;
+  comment: string;
+  approved_by: UserProfile | null;
+}
+
+export type ApprovalStep = {
+  id: string;
+  step_name: string;
+  roles: string[];
+  roles_details: {
+    name: string;
+    id: string;
+  }[];
+  approvers?: string[];
+  approvers_details?: ApprovalStepApprover[];
+  shop: string;
+  action: string;
+  action_details: {
+    id: string;
+    code: string;
+    label: string;
+    category: {
+      code: string;
+      label: string;
+    };
+  };
+  level: number;
+};

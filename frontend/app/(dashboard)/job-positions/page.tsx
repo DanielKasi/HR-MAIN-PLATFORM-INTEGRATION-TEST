@@ -71,7 +71,6 @@ export default function JobPositionsPage() {
       setError("")
 
       const fetchedJobPositions = await getJobPositions({ institutionId: selectedInstitution.id })
-
       if (fetchedJobPositions) {
         setJobPositions(fetchedJobPositions)
       } else {
@@ -296,11 +295,38 @@ export default function JobPositionsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredJobPositions.map((position) => (
             <Card key={position.id} className="hover:shadow-md transition-shadow cursor-pointer">
+              <div className="absolute right-3 top-3 z-10">
+                {position.job_position_status === "active" ? (
+                  <Badge 
+                    variant="success" 
+                    className="flex items-center gap-1 px-2 py-0.5 text-xs capitalize bg-green-50 text-green-700 border-green-200"
+                  >
+                    <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                    Active
+                  </Badge>
+                ) : (
+                  <Badge 
+                    variant="destructive" 
+                    className="flex items-center gap-1 px-2 py-0.5 text-xs capitalize bg-red-50 text-red-700 border-red-200"
+                  >
+                    <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                    Inactive
+                  </Badge>
+                )}
+              </div>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Briefcase className="h-5 w-5 text-primary" />
+                    <div className={`h-10 w-10 rounded-full ${
+                      position.job_position_status === "active" 
+                        ? "bg-green-50" 
+                        : "bg-red-50"
+                    } flex items-center justify-center`}>
+                      <Briefcase className={`h-5 w-5 ${
+                        position.job_position_status === "active"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`} />
                     </div>
                     <div>
                       <CardTitle className="text-lg">{position.name}</CardTitle>

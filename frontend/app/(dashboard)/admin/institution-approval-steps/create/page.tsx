@@ -17,9 +17,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import apiRequest from "@/lib/apiRequest";
-import {fetchInstitutionRoles} from "@/lib/helpers";
+import {fetchInstitutionRoles, getDefaultInstitutionId} from "@/lib/helpers";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
+import next from "next";
 
 export default function CreateApprovalStep() {
   const institutionId = useSelector(selectSelectedInstitution)?.id;
@@ -38,12 +39,12 @@ export default function CreateApprovalStep() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [rolesResponse, actionsResponse] = await Promise.all([
-          fetchInstitutionRoles(),
+        const [fetchedRolesResponse, actionsResponse] = await Promise.all([
+          fetchAllRoles(),
           apiRequest.get("workflow/workflow-action/"),
         ]);
 
-        setRoles(rolesResponse.data.results);
+        setRoles(fetchedRolesResponse);
         setActions(actionsResponse.data);
       } catch (err: any) {
         setError("Failed to load required data for approval step");
@@ -56,10 +57,32 @@ export default function CreateApprovalStep() {
     fetchUserProfiles();
   }, []);
 
+
+  const fetchAllRoles = async () => {
+    try {
+      let allRoles:Role[] = [];
+      let nextUrl:string|null = `user/role/?Institution_id=${getDefaultInstitutionId()}`;
+      while (nextUrl) {
+        const response = await apiRequest.get(nextUrl);
+        allRoles = allRoles.concat(response.data.results);
+
+        if (response.data.next) {
+          const receivedNextUrl = new URL(response.data.next);
+          nextUrl = `user/role/?Institution_id=${getDefaultInstitutionId()}&${receivedNextUrl.search}`;
+        }else{
+          nextUrl = null;
+        }
+      }
+      return allRoles;
+    } catch (error: any) {
+      toast.error("Failed to fetch roles");
+      throw error
+    }
+  };
+
   const fetchUserProfiles = async () => {
     try {
       const response = await apiRequest.get("institution/profile/" + institutionId);
-
       setUserProfiles(response.data.results);
     } catch (error: any) {
       setError("Failed to fetch institution users");
@@ -260,7 +283,7 @@ export default function CreateApprovalStep() {
                     <SelectContent>
                       {actions.map((action) => (
                         <SelectItem key={action.id} value={action.id.toString()}>
-                          {action.label} ({action.code})
+                          {action.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
