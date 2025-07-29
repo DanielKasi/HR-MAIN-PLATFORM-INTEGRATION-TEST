@@ -698,30 +698,31 @@ class DocumentStatusUpdateView(APIView):
             f"Generating PDF with content: {content[:100]}... and placeholders: {placeholder_values}"
         )
         rendered_content = self._replace_placeholders(content, placeholder_values)
-        html_content = f"""        
-        <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8" />
-                <title>Employment Contract</title>
-                <style>
-                body {
-                    font-family: sans-serif;
-                }
-                h1 {
-                    text-align: center;
-                }
-                p {
-                    margin-bottom: 10px;
-                }
-                </style>
-            </head>
-            <body>
-                { rendered_content|safe }
-            </body>
-        </html>
 
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8" />
+            <title>Employment Contract</title>
+            <style>
+            body {{
+                font-family: sans-serif;
+            }}
+            h1 {{
+                text-align: center;
+            }}
+            p {{
+                margin-bottom: 10px;
+            }}
+            </style>
+        </head>
+        <body>
+            {rendered_content}
+        </body>
+        </html>
         """
+
         try:
             pdf_file = HTML(string=html_content).write_pdf()
             logger.info("PDF generated successfully")
