@@ -492,6 +492,9 @@ class EmployeeAttendance(models.Model):
 
 
 class EmployeeContract(models.Model):
+    applicant = models.ForeignKey(
+        "recruitment.JobAdvertApplication", on_delete=models.CASCADE, related_name="applicant_contract", null=True, blank=True
+    )
     employee = models.ForeignKey(
         Employee, on_delete=models.CASCADE, related_name="contracts", null=True, blank=True
     )
@@ -509,12 +512,12 @@ class EmployeeContract(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Contract {self.contract_reference} - {self.employee.user.fullname}"
+        return f"Contract {self.contract_reference} - {self.employee.user.fullname} "
 
     def generate_contract_reference(self):
         prefix = "CON"
         last_contract = (
-            Contract.objects.filter(contract_reference__startswith=prefix)
+            EmployeeContract.objects.filter(contract_reference__startswith=prefix)
             .order_by("-contract_reference")
             .first()
         )
