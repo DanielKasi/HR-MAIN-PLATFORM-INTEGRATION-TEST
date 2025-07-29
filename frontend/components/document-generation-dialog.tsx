@@ -36,9 +36,10 @@ interface DocumentGenerationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contextId: number;
+  context: 'onboarding' | 'employee' | 'leave';
 }
 
-export function DocumentGenerationDialog({ open, onOpenChange, contextId }: DocumentGenerationDialogProps) {
+export function DocumentGenerationDialog({ open, onOpenChange, contextId, context }: DocumentGenerationDialogProps) {
   const [templates, setTemplates] = useState<IDocumentTemplate[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<string>("")
   const [loading, setLoading] = useState(false)
@@ -76,7 +77,7 @@ export function DocumentGenerationDialog({ open, onOpenChange, contextId }: Docu
     try {
       const response = await getGeneratedDocumentTemplate(
         parseInt(templateId),
-        'onboarding',
+        context,
         contextId
       )
       
@@ -126,14 +127,14 @@ export function DocumentGenerationDialog({ open, onOpenChange, contextId }: Docu
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="max-w-[500px] md:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Generate Document</DialogTitle>
           <DialogDescription>
             Select a template and fill in the required information.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="space-y-4  p-8 overflow-y-auto max-h-[70svh]">
           <div className="space-y-2">
             <Label>Template</Label>
             <Select onValueChange={handleTemplateSelect} value={selectedTemplate}>
