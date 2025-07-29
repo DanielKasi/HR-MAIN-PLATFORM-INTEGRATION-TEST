@@ -92,7 +92,7 @@ export default function EditProjectPage() {
 
     try {
       console.log("Updating project:", formData);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       router.push(`/projects/${params.id}`);
     } catch (error) {
       console.error("Error updating project:", error);

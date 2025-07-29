@@ -534,6 +534,7 @@ export interface EmployeeFormData {
   marital_status: string;
   children_count: number;
   employee_profile_picture: File | null;
+  selected_branches: number[];
 }
 
 export interface EmployeeFormState {
