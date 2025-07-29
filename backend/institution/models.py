@@ -5,7 +5,10 @@ from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 from django.core.exceptions import ValidationError
 import logging
 from utilities.default_document_types import DEFAULT_DOCUMENT_TYPES
+from utilities.default_data import default_data
 from django.db import transaction
+from django.utils import timezone
+from recruitment.models import JobPosition
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -145,6 +148,28 @@ class Institution(models.Model):
                 PayrollProcessor.setup_default_payroll_types_for_institution(self)
                 self._create_calendar_for_institution()
                 self._create_default_document_types()
+
+                
+                for dept_data in default_data:
+                    # Create department
+                    department = Department.objects.create(
+                        name=dept_data['name'],
+                        description=dept_data['description'],
+                        institution=self,
+                        created_by=self.institution_owner,
+                        created_at=timezone.now(),
+                        updated_at=timezone.now()
+                    )
+
+                    # Create job positions
+                    for job_data in dept_data['job_positions']:
+                        JobPosition.objects.create(
+                            name=job_data['name'],
+                            description=job_data['description'],
+                            department=department,
+                            job_position_status='active',
+                            created_at=timezone.now()
+                        )
 
     def _create_calendar_for_institution(self):
         from calendar2.models import Calendar
