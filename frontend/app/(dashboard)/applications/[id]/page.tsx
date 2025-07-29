@@ -246,50 +246,50 @@ const [stageErrors, setStageErrors] = useState<any>({})
     }
   }
 
-  const fetchInterviewData = async () => {
-    if (!selectedInstitution || !application) return
+const fetchInterviewData = async (app?: JobApplication) => {
+  const applicationToUse = app || application
+  if (!selectedInstitution || !applicationToUse) return
 
-    try {
-      const [stagesResponse, employeesResponse] = await Promise.all([
-        getInterviewStages({ institutionId: selectedInstitution.id }),
-        fetchEmployees({ institutionId: selectedInstitution.id })
-      ])
+  try {
+    const [stagesResponse, employeesResponse] = await Promise.all([
+      getInterviewStages({ institutionId: selectedInstitution.id }),
+      fetchEmployees({ institutionId: selectedInstitution.id })
+    ])
 
-      let stagesArray: IInterviewStage[] = []
-      if (stagesResponse && "results" in stagesResponse && Array.isArray(stagesResponse.results)) {
-        stagesArray = stagesResponse.results
-      } else if (Array.isArray(stagesResponse)) {
-        stagesArray = stagesResponse
-      }
-
-      // Filter stages for this job position
-      const filteredStages = stagesArray.filter(
-        stage => stage.job_position_advert === application.job_position_advert
-      )
-      setInterviewStages(filteredStages)
-
-      let employeesArray: IEmployee[] = []
-      if (employeesResponse && "results" in employeesResponse && Array.isArray(employeesResponse.results)) {
-        employeesArray = employeesResponse.results
-      } else if (Array.isArray(employeesResponse)) {
-        employeesArray = employeesResponse
-      }
-      setEmployees(employeesArray)
-
-      // Set default interview date to tomorrow at 10 AM
-      const tomorrow = new Date()
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      tomorrow.setHours(10, 0, 0, 0)
-      setInterviewFormData(prev => ({
-        ...prev,
-        interview_date: tomorrow.toISOString().slice(0, 16)
-      }))
-    } catch (error) {
-      console.error("Error fetching interview data:", error)
-      toast.error("Failed to load interview data")
+    let stagesArray: IInterviewStage[] = []
+    if (stagesResponse && "results" in stagesResponse && Array.isArray(stagesResponse.results)) {
+      stagesArray = stagesResponse.results
+    } else if (Array.isArray(stagesResponse)) {
+      stagesArray = stagesResponse
     }
-  }
 
+    // Filter stages for this job position
+    const filteredStages = stagesArray.filter(
+      stage => stage.job_position_advert === applicationToUse.job_position_advert
+    )
+    setInterviewStages(filteredStages)
+
+    let employeesArray: IEmployee[] = []
+    if (employeesResponse && "results" in employeesResponse && Array.isArray(employeesResponse.results)) {
+      employeesArray = employeesResponse.results
+    } else if (Array.isArray(employeesResponse)) {
+      employeesArray = employeesResponse
+    }
+    setEmployees(employeesArray)
+
+    // Set default interview date to tomorrow at 10 AM
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(10, 0, 0, 0)
+    setInterviewFormData(prev => ({
+      ...prev,
+      interview_date: tomorrow.toISOString().slice(0, 16)
+    }))
+  } catch (error) {
+    console.error("Error fetching interview data:", error)
+    toast.error("Failed to load interview data")
+  }
+}
   const handleScheduleInterview = async () => {
     if (!application || !selectedInstitution) return
 
@@ -382,6 +382,13 @@ const [stageErrors, setStageErrors] = useState<any>({})
     setInterviewErrors((prev: any) => ({ ...prev, [field]: undefined }))
   }
 
+useEffect(() => {
+  if (selectedInstitution?.id) {
+    console.log("Interview stages:", getInterviewStages({ institutionId: selectedInstitution.id }));
+  }
+}, [selectedInstitution?.id]);
+
+
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
       router.push("/dashboard")
@@ -405,6 +412,7 @@ const [stageErrors, setStageErrors] = useState<any>({})
 
       if (fetchedApplication) {
         setApplication(fetchedApplication)
+        await fetchInterviewData(fetchedApplication)
       } else {
         setError("Application not found")
         toast.error("Application not found")
@@ -674,6 +682,50 @@ const [stageErrors, setStageErrors] = useState<any>({})
                   </div>
                 </CardContent>
               </Card>
+              {/* Interviewers - MOVED TO CORRECT LOCATION */}
+  <Card>
+    <CardHeader>
+      <CardTitle className="text-lg">Interviewers</CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-3">
+      {interviewStages.length > 0 ? (
+        <div className="space-y-3">
+          {interviewStages
+            .sort((a, b) => a.level - b.level)
+            .filter(stage => stage.interviewers_details && stage.interviewers_details.length > 0)
+            .map((stage) => (
+              <div key={stage.id} className="p-3 border rounded-lg bg-muted/30">
+                <div className="mb-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      Level {stage.level}
+                    </Badge>
+                    <span className="font-medium text-sm">{stage.name}</span>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap gap-1">
+                  {stage.interviewers_details?.map((interviewer) => (
+                    <Badge 
+                      key={interviewer.id} 
+                      variant="secondary" 
+                      className="text-xs"
+                    >
+                      {interviewer.user?.fullname || interviewer.user?.email || `Employee ${interviewer.id}`}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ))}
+        </div>
+      ) : (
+        <div className="text-center py-4">
+          <User className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">No interviewers assigned</p>
+        </div>
+      )}
+    </CardContent>
+  </Card>
             </TabsContent>
 
             <TabsContent value="job-details" className="space-y-6">
@@ -783,188 +835,191 @@ const [stageErrors, setStageErrors] = useState<any>({})
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Quick Actions */}
          {/* Quick Actions */}
-<Card>
-  <CardHeader>
-    <CardTitle className="text-lg">Quick Actions</CardTitle>
-  </CardHeader>
-  <CardContent className="space-y-3">
-    <Button className="w-full justify-start" variant="outline" onClick={handleEdit}>
-      <Edit className="h-4 w-4 mr-2" />
-      Edit Application
-    </Button>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button className="w-full justify-start" variant="outline" onClick={handleEdit}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Application
+              </Button>
 
-    {/* Review Button - only show for new applications */}
-    {application?.status === "new" && (
-      <Button
-        className="w-full justify-start text-yellow-600 border-yellow-200 hover:bg-yellow-50"
-        variant="outline"
-        onClick={() => handleIndividualAction(application.id, "reviewed")}
-      >
-        <Eye className="h-4 w-4 mr-2" />
-        Mark as Reviewed
-      </Button>
-    )}
+              {/* Review Button - only show for new applications */}
+              {application?.status === "new" && (
+                <Button
+                  className="w-full justify-start text-yellow-600 border-yellow-200 hover:bg-yellow-50"
+                  variant="outline"
+                  onClick={() => handleIndividualAction(application.id, "reviewed")}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Mark as Reviewed
+                </Button>
+              )}
 
-    {/* Shortlist Button - only show for reviewed applications */}
-    {application?.status === "reviewed" && (
-      <Button
-        className="w-full justify-start text-green-600 border-green-200 hover:bg-green-50"
-        variant="outline"
-        onClick={() => setShowShortlistConfirm(true)}
-      >
-        <UserCheck className="h-4 w-4 mr-2" />
-        Shortlist
-      </Button>
-    )}
+              {/* Shortlist Button - only show for reviewed applications */}
+              {application?.status === "reviewed" && (
+                <Button
+                  className="w-full justify-start text-green-600 border-green-200 hover:bg-green-50"
+                  variant="outline"
+                  onClick={() => setShowShortlistConfirm(true)}
+                >
+                  <UserCheck className="h-4 w-4 mr-2" />
+                  Shortlist
+                </Button>
+              )}
 
-    {/* Schedule Interview Button - only show for shortlisted applications */}
-    {application?.status === "shortlisted" && (
-      <Button
-        className="w-full justify-start text-blue-600 border-blue-200 hover:bg-blue-50"
-        variant="outline"
-        onClick={() => {
-          fetchInterviewData()
-          setShowScheduleDialog(true)
-        }}
-      >
-        <Calendar className="h-4 w-4 mr-2" />
-        Schedule Interview
-      </Button>
-    )}
+              {/* Schedule Interview Button - only show for shortlisted applications */}
+              {application?.status === "shortlisted" && (
+                <Button
+                  className="w-full justify-start text-blue-600 border-blue-200 hover:bg-blue-50"
+                  variant="outline"
+                  onClick={() => {
+                    fetchInterviewData()
+                    setShowScheduleDialog(true)
+                  }}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Schedule Interview
+                </Button>
+              )}
 
-    {/* Schedule Call - show for reviewed and shortlisted */}
-    {(application?.status === "reviewed" || application?.status === "shortlisted") && (
-      <Button className="w-full justify-start" variant="outline">
-        <Phone className="h-4 w-4 mr-2" />
-        Schedule Call
-      </Button>
-    )}
+              {/* Schedule Call - show for reviewed and shortlisted */}
+              {(application?.status === "reviewed" || application?.status === "shortlisted") && (
+                <Button className="w-full justify-start" variant="outline">
+                  <Phone className="h-4 w-4 mr-2" />
+                  Schedule Call
+                </Button>
+              )}
 
-    <Separator />
+              <Separator />
 
-    {/* Reject Button - show for new and reviewed (not shortlisted) */}
-    {(application?.status === "new" || application?.status === "reviewed") && (
-      <Button
-        className="w-full justify-start text-destructive h-4 w-4 mr-2"
-        variant="outline"
-        onClick={() => handleIndividualAction(application.id, "rejected")}
-      >
-        Reject Application
-      </Button>
-    )}
+              {/* Reject Button - show for new and reviewed (not shortlisted) */}
+              {(application?.status === "new" || application?.status === "reviewed") && (
+                <Button
+                  className="w-full justify-start text-destructive h-4 w-4 mr-2"
+                  variant="outline"
+                  onClick={() => handleIndividualAction(application.id, "rejected")}
+                >
+                  Reject Application
+                </Button>
+              )}
 
-    <Button className="w-full justify-start text-destructive" variant="outline" onClick={handleDelete}>
-      <Trash2 className="h-4 w-4 mr-2" />
-      Delete Application
-    </Button>
-  </CardContent>
-</Card>
+              <Button className="w-full justify-start text-destructive" variant="outline" onClick={handleDelete}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Application
+              </Button>
+            </CardContent>
+          </Card>
            {/* Application Summary */}
-<Card>
-  <CardHeader>
-    <CardTitle className="text-lg">Summary</CardTitle>
-  </CardHeader>
-  <CardContent className="space-y-4">
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-muted-foreground">Status</span>
-      <div className="flex items-center gap-2">
-        <Badge variant={getStatusBadgeVariant(application.status)}>
-          {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-        </Badge>
-        {/* Show next step indicator */}
-        {application.status === "new" && (
-          <span className="text-xs text-muted-foreground">→ Needs Review</span>
-        )}
-        {application.status === "reviewed" && (
-          <span className="text-xs text-muted-foreground">→ Can Shortlist</span>
-        )}
-        {application.status === "shortlisted" && (
-          <span className="text-xs text-muted-foreground">→ Ready for Interview</span>
-        )}
-      </div>
-    </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Status</span>
+                <div className="flex items-center gap-2">
+                  <Badge variant={getStatusBadgeVariant(application.status)}>
+                    {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                  </Badge>
+                  {/* Show next step indicator */}
+                  {application.status === "new" && (
+                    <span className="text-xs text-muted-foreground">→ Needs Review</span>
+                  )}
+                  {application.status === "reviewed" && (
+                    <span className="text-xs text-muted-foreground">→ Can Shortlist</span>
+                  )}
+                  {application.status === "shortlisted" && (
+                    <span className="text-xs text-muted-foreground">→ Ready for Interview</span>
+                  )}
+                </div>
+              </div>
 
-    {/* Show who performed each action */}
-    {application.reviewed_by && (
-  <div className="flex items-center justify-between">
-    <span className="text-sm text-muted-foreground">Reviewed by</span>
-    <span className="text-sm font-medium">
-      {application.reviewed_by.fullname || application.reviewed_by.email}
-      {application.reviewed_by.id === currentUser?.id}
-    </span>
-  </div>
-)}
+              {/* Show who performed each action */}
+              {application.reviewed_by && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Reviewed by</span>
+              <span className="text-sm font-medium">
+                {application.reviewed_by.fullname || application.reviewed_by.email}
+                {application.reviewed_by.id === currentUser?.id}
+              </span>
+            </div>
+          )}
 
-{application.shortlisted_by && (
-  <div className="flex items-center justify-between">
-    <span className="text-sm text-muted-foreground">Shortlisted by</span>
-    <span className="text-sm font-medium">
-      {application.shortlisted_by.fullname || application.shortlisted_by.email}
-      {application.shortlisted_by.id === currentUser?.id}
-    </span>
-  </div>
-)}
+          {application.shortlisted_by && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Shortlisted by</span>
+              <span className="text-sm font-medium">
+                {application.shortlisted_by.fullname || application.shortlisted_by.email}
+                {application.shortlisted_by.id === currentUser?.id}
+              </span>
+            </div>
+          )}
 
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-muted-foreground">Source</span>
-      <Badge variant="outline">{sourceLabels[application.source]}</Badge>
-    </div>
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-muted-foreground">Documents</span>
-      <span className="text-sm font-medium">
-        {[application.resume, application.cover_letter].filter(Boolean).length}
-      </span>
-    </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Source</span>
+                <Badge variant="outline">{sourceLabels[application.source]}</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Documents</span>
+                <span className="text-sm font-medium">
+                  {[application.resume, application.cover_letter].filter(Boolean).length}
+                </span>
+              </div>
 
-    {/* Application workflow progress */}
-    <div className="pt-2 border-t">
-      <span className="text-sm font-medium text-muted-foreground">Application Flow</span>
-      <div className="mt-2 flex items-center space-x-2">
-        <div className={`w-3 h-3 rounded-full ${application.status !== "new" ? "bg-green-500" : "bg-gray-300"}`} />
-        <span className="text-xs">New</span>
-        <div className="w-4 h-px bg-gray-300" />
-        <div className={`w-3 h-3 rounded-full ${["reviewed", "shortlisted"].includes(application.status) ? "bg-green-500" : "bg-gray-300"}`} />
-        <span className="text-xs">Reviewed</span>
-        <div className="w-4 h-px bg-gray-300" />
-        <div className={`w-3 h-3 rounded-full ${application.status === "shortlisted" ? "bg-green-500" : "bg-gray-300"}`} />
-        <span className="text-xs">Shortlisted</span>
-      </div>
-    </div>
-  </CardContent>
-</Card>
-        </div>
-      </div>
-      <Dialog open={showShortlistConfirm} onOpenChange={setShowShortlistConfirm}>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Shortlist Application</DialogTitle>
-      <DialogDescription>
-        Are you sure you want to shortlist the application from{" "}
-        <strong>{application?.applicant_name}</strong>?
-      </DialogDescription>
-    </DialogHeader>
-    <div className="flex justify-end space-x-2 pt-4">
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => setShowShortlistConfirm(false)}
-      >
-        Cancel
-      </Button>
-      <Button
-        onClick={async () => {
-          await handleShortlist();
-          setShowShortlistConfirm(false);
-        }}
-      >
-        <UserCheck className="h-4 w-4 mr-2" />
-        Shortlist
-      </Button>
-    </div>
-  </DialogContent>
-</Dialog>
+              {/* Application workflow progress */}
+              <div className="pt-2 border-t">
+                <span className="text-sm font-medium text-muted-foreground">Application Flow</span>
+                <div className="mt-2 flex items-center space-x-2">
+                  <div className={`w-3 h-3 rounded-full ${application.status !== "new" ? "bg-green-500" : "bg-gray-300"}`} />
+                  <span className="text-xs">New</span>
+                  <div className="w-4 h-px bg-gray-300" />
+                  <div className={`w-3 h-3 rounded-full ${["reviewed", "shortlisted"].includes(application.status) ? "bg-green-500" : "bg-gray-300"}`} />
+                  <span className="text-xs">Reviewed</span>
+                  <div className="w-4 h-px bg-gray-300" />
+                  <div className={`w-3 h-3 rounded-full ${application.status === "shortlisted" ? "bg-green-500" : "bg-gray-300"}`} />
+                  <span className="text-xs">Shortlisted</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+            </div>
+          </div>
+          <Dialog open={showShortlistConfirm} onOpenChange={setShowShortlistConfirm}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Shortlist Application</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to shortlist the application from{" "}
+                <strong>{application?.applicant_name}</strong>?
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowShortlistConfirm(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  await handleShortlist();
+                  setShowShortlistConfirm(false);
+                }}
+              >
+                <UserCheck className="h-4 w-4 mr-2" />
+                Shortlist
+              </Button>
+            </div>
+          </DialogContent>
+
+    </Dialog>
+
+  
+
 
 {/* Create Interview Stage Dialog */}
 <Dialog open={showCreateStageDialog} onOpenChange={setShowCreateStageDialog}>
@@ -1245,6 +1300,7 @@ const [stageErrors, setStageErrors] = useState<any>({})
     </div>
   </DialogContent>
 </Dialog>
+
     </div>
   )
 }
