@@ -780,7 +780,7 @@ export default function DepartmentDetailView() {
                               </p>
                             </TableCell>
                             <TableCell>
-                              <p className="font-medium">{formatCurrency(position.salary)}</p>
+                              <p className="font-medium">{formatCurrency(position.salary || 0)}</p>
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">

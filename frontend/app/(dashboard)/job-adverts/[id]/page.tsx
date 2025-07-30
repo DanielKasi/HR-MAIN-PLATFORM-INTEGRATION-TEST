@@ -316,7 +316,7 @@ export default function JobAdvertDetailsPage() {
                       <h4 className="text-xl font-semibold">{jobPosition.name}</h4>
                       <div className="flex items-center gap-1 text-lg font-bold text-green-600">
                         UGX {" "}
-                        {formatCurrency(jobPosition.salary)}
+                        {formatCurrency(jobPosition.salary||0)}
                       </div>
                     </div>
                     {jobPosition.description && (
