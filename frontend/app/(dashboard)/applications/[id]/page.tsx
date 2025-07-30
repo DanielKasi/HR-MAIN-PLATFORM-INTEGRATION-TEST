@@ -23,6 +23,7 @@ import {
   Globe,
   UserCheck,
   Eye,
+  Users,
 } from "lucide-react";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
@@ -556,14 +557,12 @@ export default function ApplicationViewPage() {
   return (
     <div className="w-full min-h-full p-6 space-y-6">
       {/* Header */}
-
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" onClick={handleGoBack}>
+      <Button variant="outline" size="sm" onClick={handleGoBack}>
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
-
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-4">
             <div className="flex items-center justify-start gap-8">
               <h1 className="text-2xl font-bold">Application from {application.applicant_name}</h1>
               <Badge className="mt-1 bg-green-500 text-white hover:!bg-green-500">
@@ -674,50 +673,87 @@ export default function ApplicationViewPage() {
                 </CardContent>
               </Card>
               {/* Interviewers - MOVED TO CORRECT LOCATION */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Interviewers</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {interviewStages.length > 0 ? (
-                    <div className="space-y-3">
-                      {interviewStages
-                        .sort((a, b) => a.level - b.level)
-                        .filter(
-                          (stage) =>
-                            stage.interviewers_details && stage.interviewers_details.length > 0,
-                        )
-                        .map((stage) => (
-                          <div key={stage.id} className="p-3 border rounded-lg bg-muted/30">
-                            <div className="mb-2">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-xs">
+          <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Interviewers
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {interviewStages.length > 0 ? (
+                  <div className="space-y-4">
+                    {interviewStages
+                      .sort((a, b) => a.level - b.level)
+                      .filter(
+                        (stage) =>
+                          stage.interviewers_details && stage.interviewers_details.length > 0,
+                      )
+                      .map((stage) => (
+                        <div key={stage.id} className="border rounded-lg overflow-hidden">
+                          {/* Stage Header */}
+                          <div className="bg-muted/50 px-4 py-3 border-b">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <Badge variant="outline" className="text-xs font-medium">
                                   Level {stage.level}
                                 </Badge>
-                                <span className="font-medium text-sm">{stage.name}</span>
+                                <h3 className="font-semibold text-sm">{stage.name}</h3>
                               </div>
+                              <span className="text-xs text-muted-foreground">
+                                {stage.interviewers_details?.length} interviewer{stage.interviewers_details?.length !== 1 ? 's' : ''}
+                              </span>
                             </div>
+                          </div>
 
-                            <div className="flex flex-wrap gap-1">
+                          {/* Interviewers List */}
+                          <div className="p-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {stage.interviewers_details?.map((interviewer) => (
-                                <Badge key={interviewer.id} variant="secondary" className="text-xs">
-                                  {interviewer.user?.fullname ||
-                                    interviewer.user?.email ||
-                                    `Employee ${interviewer.id}`}
-                                </Badge>
+                                <div
+                                  key={interviewer.id}
+                                  className="flex items-center gap-2 p-2 rounded-md bg-background border"
+                                >
+                                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                    <User className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-medium truncate">
+                                      {interviewer.user?.fullname || 'Unnamed User'}
+                                    </p>
+                                    {interviewer.user?.email && (
+                                      <p className="text-xs text-muted-foreground truncate">
+                                        {interviewer.user.email}
+                                      </p>
+                                    )}
+                                    {!interviewer.user?.fullname && !interviewer.user?.email && (
+                                      <p className="text-xs text-muted-foreground">
+                                        Employee #{interviewer.id}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
                               ))}
                             </div>
                           </div>
-                        ))}
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="mx-auto h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                      <Users className="h-6 w-6 text-muted-foreground" />
                     </div>
-                  ) : (
-                    <div className="text-center py-4">
-                      <User className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">No interviewers assigned</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                    <h3 className="text-sm font-medium text-foreground mb-1">
+                      No interviewers assigned
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Interview stages will appear here once interviewers are assigned
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
             </TabsContent>
 
             <TabsContent value="job-details" className="space-y-6">
