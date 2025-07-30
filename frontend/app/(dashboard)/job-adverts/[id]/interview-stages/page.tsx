@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 import {
   Select,
   SelectContent,
@@ -1979,7 +1980,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
         </Card>
       ) : (
         /* Main interface with tabs for current view and history view */
-        <Tabs value={viewMode} onValueChange={(value) => {
+     <Tabs value={viewMode} onValueChange={(value) => {
           setViewMode(value as 'current' | 'history')
           setSelectedCandidates([])
           setSearchTerm('')

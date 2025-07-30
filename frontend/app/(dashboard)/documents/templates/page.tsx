@@ -224,7 +224,7 @@ export default function DocumentTemplatesPage() {
             {searchTerm ? "No templates match your search." : "Get started by creating your first template."}
           </p>
           {!searchTerm && (
-            <Link href="/templates/create">
+            <Link href="documents/templates/create">
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Template
