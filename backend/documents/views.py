@@ -27,7 +27,7 @@ from datetime import datetime, timedelta
 import re
 from django.core.files.base import ContentFile
 from weasyprint import HTML
-from employee.models import EmployeeContract
+from employee.models import EmployeeContract, Employee
 import logging
 
 # Set up logging

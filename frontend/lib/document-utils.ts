@@ -63,7 +63,7 @@ export const generateDocument = async (
     });
 
     const response = await apiRequest.post(`documents/generate-document/${templateId}/`,
-{ context, context_id: contextId, placeholders });
+      { context, context_id: contextId, placeholders });
 
     return response.data as DocumentGenerationResponse;
   } catch (error) {
