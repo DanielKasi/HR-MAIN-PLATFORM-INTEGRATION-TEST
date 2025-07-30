@@ -275,6 +275,7 @@ export default function CreateJobAdvertPage() {
                     <SelectContent>
                       <SelectItem value="external">External</SelectItem>
                       <SelectItem value="internal">Internal</SelectItem>
+                      <SelectItem value="both">Both Internal and External</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.advert_type && (

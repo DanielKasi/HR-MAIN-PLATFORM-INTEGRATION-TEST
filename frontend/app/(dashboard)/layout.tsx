@@ -599,10 +599,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         </div>
 
         {/* Content */}
-        <div className="flex-1 w-full overflow-y-auto p-4 relative">
+        <div className="w-full overflow-y-auto p-4">
           {selectedInstitution ? (
             <>
-        <div className={`flex items-center gap-4 my-2 ${isSideBarOpen ? "pl-0" : "pl-4"}`}>
+        {/* <div className={`flex items-center gap-4 my-2 ${isSideBarOpen ? "pl-0" : "pl-4"}`}>
                 <Button
                   variant={"outline"}
                   size="sm"
@@ -611,7 +611,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                 >
                   <Icon icon="hugeicons:arrow-left-02" className="!w-8 !h-8" />
                 </Button>
-              </div>
+              </div> */}
               {children}
             </>
           ) : (
