@@ -106,6 +106,7 @@ class JobPositionAdvert(models.Model):
         choices=[
             ("internal", "Internal"),
             ("external", "External"),
+            ("both", "Internal and External"),
         ],
         default="external",
     )

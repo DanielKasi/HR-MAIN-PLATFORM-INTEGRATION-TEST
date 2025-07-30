@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "documents",
     "audit",
     "settings",
+    'markdownx',
 ]
 
 MIDDLEWARE = [

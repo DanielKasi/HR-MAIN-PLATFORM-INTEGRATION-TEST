@@ -184,7 +184,7 @@ export default function CreateJobAdvertPage() {
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Job Adverts
+            Back to Job Positions
           </Button>
         </div>
 
@@ -195,7 +195,7 @@ export default function CreateJobAdvertPage() {
                 <Megaphone className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-xl">Create New Job Advert</CardTitle>
+                <CardTitle className="text-xl">Create New Job Positions</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   Create a job advertisement for {selectedBranch.branch_name} -{" "}
                   {selectedInstitution.institution_name}
@@ -345,7 +345,7 @@ export default function CreateJobAdvertPage() {
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      Create Job Advert
+                      Create Job Positions
                     </>
                   )}
                 </Button>
