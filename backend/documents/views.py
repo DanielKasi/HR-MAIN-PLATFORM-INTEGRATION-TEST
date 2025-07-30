@@ -470,16 +470,7 @@ class GenerateDocumentView(APIView):
         context = serializer.validated_data.get("context")
         context_id = serializer.validated_data.get("context_id")
 
-        # Validate required placeholders
-        for placeholder in required_placeholders:
-            if (
-                placeholder not in placeholder_values
-                or not placeholder_values[placeholder]
-            ):
-                return Response(
-                    {"error": f"Missing required placeholder: {placeholder}"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        
 
         # Create Document instance
         document = Document.objects.create(
