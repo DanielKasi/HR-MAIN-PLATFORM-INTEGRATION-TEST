@@ -25,7 +25,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {Icon} from "@iconify/react";
 import {Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Plus} from "lucide-react";
 import {getAllEmployees} from "@/lib/utils";
 import {useSelector} from "react-redux";
@@ -35,8 +34,9 @@ import {IUserInstitution} from "@/app/types";
 import {EmployeeFormData, IEmployee, PERMISSION_CODES} from "@/app/types/types.utils";
 import Link from "next/link";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Skeleton} from "@/components/ui/skeleton";
+
 import ProtectedComponent from "@/components/ProtectedComponent";
+import {useRouter} from "next/navigation";
 
 // Union type to handle both data structures
 type EmployeeData = IEmployee | EmployeeFormData;
@@ -99,6 +99,7 @@ function EmployeeTable({employees, onDelete}: EmployeeTableProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const router = useRouter();
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -273,7 +274,7 @@ function EmployeeTable({employees, onDelete}: EmployeeTableProps) {
                     <TableHead>Name</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Job Position</TableHead>
+                    <TableHead>Job Position/ Title </TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="w-[150px]">Actions</TableHead>
                   </TableRow>
@@ -283,9 +284,9 @@ function EmployeeTable({employees, onDelete}: EmployeeTableProps) {
                     <TableRow
                       key={employee.id || Math.random()}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() =>
-                        (window.location.href = `/employees/profile/${employee.id || "unknown"}`)
-                      }
+                      onClick={() => {
+                        router.push(`/employees/profile/${employee.id}`);
+                      }}
                     >
                       <TableCell>
                         <div className="font-medium">{getFullName(employee)}</div>

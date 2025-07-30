@@ -29,7 +29,7 @@ export default function EditJobAdvertPage() {
   const [jobPosition, setJobPosition] = useState<IJobPosition | null>(null)
   const [formData, setFormData] = useState<JobPositionAdvertFormData>({
     job_position: 0,
-    status: "active" as JobAdvertStatus,
+    job_position_advert_status: "active" as JobAdvertStatus,
     expiry_date: "",
     number_of_employees_expected: 1,
     extra_information: "",
@@ -68,40 +68,28 @@ export default function EditJobAdvertPage() {
       setIsLoading(true)
 
       // Fetch job advert details
-      console.log("Fetching job advert with ID:", jobAdvertId)
       const fetchedJobAdvert = await getJobPositionAdvertById({ advertId: jobAdvertId })
-      console.log("Fetched job advert:", fetchedJobAdvert)
 
       if (!fetchedJobAdvert) {
-        toast.error("Job advert not found")
+        toast.error("Job position not found")
         router.push("/job-adverts")
         return
       }
 
       setJobAdvert(fetchedJobAdvert)
 
-      // Fetch job positions and job position details in parallel
-      console.log("Fetching job positions and job position details...")
-      console.log("Institution ID:", selectedInstitution.id)
-      console.log("Job position ID from advert:", fetchedJobAdvert.job_position)
-
       const [fetchedJobPositionsResponse, fetchedJobPosition] = await Promise.all([
         getJobPositions({ institutionId: selectedInstitution.id }),
         getJobPosition({ jobPositionId: fetchedJobAdvert.job_position }),
       ])
 
-      console.log("Job positions response:", fetchedJobPositionsResponse)
-      console.log("Job position details:", fetchedJobPosition)
-
-      // Handle paginated job positions response
+      // Handle paginated job positions/titles response
       if (fetchedJobPositionsResponse && 'results' in fetchedJobPositionsResponse && Array.isArray(fetchedJobPositionsResponse.results)) {
-        console.log("Setting job positions from results:", fetchedJobPositionsResponse.results)
+
         setJobPositions(fetchedJobPositionsResponse.results)
       } else if (Array.isArray(fetchedJobPositionsResponse)) {
-        console.log("Setting job positions directly (not paginated):", fetchedJobPositionsResponse)
         setJobPositions(fetchedJobPositionsResponse)
       } else {
-        console.log("No valid job positions found, setting empty array")
         setJobPositions([])
       }
 
@@ -116,17 +104,14 @@ export default function EditJobAdvertPage() {
 
       const formDataToSet = {
         job_position: fetchedJobAdvert.job_position || 0,
-        status: fetchedJobAdvert.status || "active",
+        status: fetchedJobAdvert.job_position_advert_status || "active",
         expiry_date: expiryDate,
         number_of_employees_expected: fetchedJobAdvert.number_of_employees_expected || 1,
         extra_information: fetchedJobAdvert.extra_information || "",
       }
-
-      console.log("Setting form data to:", formDataToSet)
       setFormData(formDataToSet)
 
     } catch (error) {
-      console.error("Error fetching initial data:", error)
       toast.error("Failed to load job advert data")
       router.push("/job-adverts")
     } finally {
@@ -148,8 +133,8 @@ export default function EditJobAdvertPage() {
       newErrors.job_position = "Please select a job position"
     }
     
-    if (!formData.status) {
-      newErrors.status = "Status is required"
+    if (!formData.job_position_advert_status) {
+      newErrors.job_position_advert_status = "Status is required"
     }
     
     if (!formData.expiry_date) {
@@ -171,7 +156,7 @@ export default function EditJobAdvertPage() {
     }
     
     if (formData.job_position && !jobPositions.some((pos) => pos.id === formData.job_position)) {
-      newErrors.job_position = "Selected job position does not exist"
+      newErrors.job_position = "Selected job position/title does not exist"
     }
     
     if (formData.number_of_employees_expected !== undefined && formData.number_of_employees_expected !== null) {
@@ -216,7 +201,7 @@ export default function EditJobAdvertPage() {
     try {
       const updateData: Partial<JobPositionAdvertFormData> = {
         job_position: formData.job_position,
-        status: formData.status,
+        job_position_advert_status: formData.job_position_advert_status,
         expiry_date: formData.expiry_date,
         number_of_employees_expected: formData.number_of_employees_expected || undefined,
         extra_information: formData.extra_information || undefined,
@@ -228,13 +213,12 @@ export default function EditJobAdvertPage() {
       })
 
       if (updatedJobAdvert) {
-        toast.success("Job advert updated successfully!")
+        toast.success("Job position updated successfully!")
         router.push(`/job-adverts`)
       } else {
-        toast.error("Failed to update job advert. Please try again.")
+        toast.error("Failed to update job postion. Please try again.")
       }
     } catch (error) {
-      console.error("Error updating job advert:", error)
       toast.error("Failed to update job advert. Please try again.")
     } finally {
       setIsSubmitting(false)
@@ -296,7 +280,7 @@ export default function EditJobAdvertPage() {
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
-            Back to Job Advert
+            Back to Job Position
           </Button>
         </div>
 
@@ -307,7 +291,7 @@ export default function EditJobAdvertPage() {
                 <Megaphone className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-xl">Edit Job Advert</CardTitle>
+                <CardTitle className="text-xl">Edit Job Opening</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   Update job advertisement for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
                 </p>
@@ -319,15 +303,14 @@ export default function EditJobAdvertPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Form Fields - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Job Position */}
+                {/* Job Position/ Title  */}
                 <div className="space-y-2">
                   <Label htmlFor="job_position" className="text-sm font-medium">
-                    Job Position *
+                    Job Position/ Title  *
                   </Label>
                   <Select
                     value={formData.job_position > 0 ? formData.job_position.toString() : ""}
                     onValueChange={(value) => {
-                      console.log("Job position selected:", value)
                       updateFormData("job_position", Number(value))
                     }}
                   >
@@ -351,8 +334,8 @@ export default function EditJobAdvertPage() {
                     Status *
                   </Label>
                   <Select
-                    value={formData.status}
-                    onValueChange={(value) => updateFormData("status", value as JobAdvertStatus)}
+                    value={formData.job_position_advert_status||""}
+                    onValueChange={(value) => updateFormData("job_position_advert_status", value as JobAdvertStatus)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
@@ -451,7 +434,7 @@ export default function EditJobAdvertPage() {
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      Update Job Advert
+                      Update Job Position
                     </>
                   )}
                 </Button>

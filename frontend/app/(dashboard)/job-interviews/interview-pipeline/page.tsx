@@ -59,7 +59,31 @@ import type { IInterviewStage, IInterviewStageFormData, IEmployee, IInterview } 
 import { createInterviewStage, fetchEmployees, getInterviews, getInterviewStages, updateInterview, createInterview, bulkCreateOnBoarding } from "@/lib/utils"
 import { selectUser, selectSelectedInstitution } from "@/store/auth/selectors"
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+
+interface InterviewHistoryEntry {
+  stage_id: number
+  stage_name: string
+  stage_level: number
+  interviewer: string
+  interview_date?: string
+  interview_time?: string
+  location?: string
+  feedback?: string
+  rating?: number
+  status: string
+  created_at?: string
+  updated_at?: string
+}
+
+interface InterviewCandidateWithHistory extends InterviewCandidate {
+  interview_history: InterviewHistoryEntry[]
+  current_stage_level: number
+  current_stage_name: string
+  overall_rating: number
+  completion_rate: number
+}
 interface JobPosition {
   id: number
   name: string
@@ -105,6 +129,13 @@ interface InterviewScheduleData {
   interview_type: "online" | "in_person"
 }
 
+type OnboardResult = {
+  success: boolean;
+  alreadyOnboarded?: boolean;
+  message?: string;
+};
+
+
 // Utility functions
 const getStageIcon = (stageName: string, index: number) => {
   const iconMap: { [key: string]: React.ReactNode } = {
@@ -146,6 +177,75 @@ const getStageColors = (index: number) => {
   return colors[index % colors.length]
 }
 
+const buildCandidateHistory = (
+  candidates: InterviewCandidate[],
+  interviews: IInterview[],
+  stages: ProcessedStage[]
+): InterviewCandidateWithHistory[] => {
+  return candidates.map(candidate => {
+    const candidateInterviews = interviews
+      .filter(interview => interview.job_position_application === candidate.id)
+      .sort((a, b) => {
+        const stageA = stages.find(s => s.id === a.interview_stage.toString());
+        const stageB = stages.find(s => s.id === b.interview_stage.toString());
+        return (stageA?.level || 0) - (stageB?.level || 0);
+      });
+
+    // Build interview history entries
+    const interview_history = candidateInterviews.map(interview => {
+      const stage = stages.find(s => s.id === interview.interview_stage.toString());
+      return {
+        stage_id: interview.interview_stage,
+        stage_name: stage?.name || 'Unknown Stage',
+        stage_level: stage?.level || 0,
+        interviewer: stage?.interviewer || 'Unknown',
+        interview_date: interview.interview_date,
+        interview_time: interview.interview_time,
+        location: interview.location,
+        feedback: interview.feedback,
+        rating: interview.rating ?? undefined,
+        status: interview.status || 'completed',
+        created_at: interview.created_at,
+        updated_at: interview.updated_at,
+      };
+    });
+
+    // Determine current stage (last one)
+    const currentStageEntry = interview_history.length > 0
+      ? interview_history[interview_history.length - 1]
+      : null;
+
+    const current_stage_level = currentStageEntry?.stage_level || 0;
+    const current_stage_name = currentStageEntry?.stage_name || 'Not Started';
+
+    // Calculate overall rating
+    const ratings = interview_history.filter(h => h.rating && h.rating > 0);
+    const overall_rating = ratings.length > 0
+      ? Math.round(
+          (ratings.reduce((sum, h) => sum + (h.rating || 0), 0) / ratings.length) * 10
+        ) / 10
+      : 0;
+
+    // Completion rate
+    const feedbacks = interview_history.filter(h => h.feedback && h.feedback.trim().length > 0);
+    const completion_rate = interview_history.length > 0
+      ? Math.round((feedbacks.length / interview_history.length) * 100)
+      : 0;
+
+    return {
+      ...candidate,
+      interview_history,
+      current_stage_level,
+      current_stage_name,
+      overall_rating,
+      completion_rate,
+    } as InterviewCandidateWithHistory;
+  });
+};
+
+
+
+
 
 // Helper function to process interviews into candidates for a specific job
 const processInterviewsForJob = (interviews: IInterview[], jobPositionId: number): InterviewCandidate[] => {
@@ -173,6 +273,8 @@ const processInterviewsForJob = (interviews: IInterview[], jobPositionId: number
       status: interview.status
     }))
 }
+
+
 
 // Group interviews by stage for a specific job
 const buildStagesForJob = (
@@ -623,6 +725,9 @@ const InterviewSchedulingDialog = ({
   )
 }
 
+
+
+
 // Main Component
 export default function JobSpecificInterviewPipeline() {
   const router = useRouter()
@@ -653,6 +758,12 @@ export default function JobSpecificInterviewPipeline() {
   const [isSchedulingDialogOpen, setIsSchedulingDialogOpen] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState<InterviewCandidate | null>(null)
   const [candidatesToSchedule, setCandidatesToSchedule] = useState<InterviewCandidate[]>([])
+
+
+  const [viewMode, setViewMode] = useState<'current' | 'history'>('current')
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false)
+  const [selectedCandidateWithHistory, setSelectedCandidateWithHistory] = useState<InterviewCandidateWithHistory | null>(null)
+
 
   // Form states
   const [isCreatingStage, setIsCreatingStage] = useState(false)
@@ -689,6 +800,51 @@ export default function JobSpecificInterviewPipeline() {
     return candidates
   }, [activeStage, searchTerm])
 
+  // Smart filtered candidates for selection (only those that need action)
+const selectableCandidates = useMemo(() => {
+  return filteredCandidates.filter(candidate => {
+    // Only select candidates who DON'T have feedback yet (need action)
+    return !(candidate.feedback && candidate.rating)
+  })
+}, [filteredCandidates])
+
+// Helper functions for candidate validation
+const canCandidateBeSelected = (candidate: InterviewCandidate): boolean => {
+  // Only select candidates who DON'T have feedback yet (need action)
+  return !(candidate.feedback && candidate.rating)
+}
+
+const canCandidateBeMoved = (candidate: InterviewCandidate): boolean => {
+  return !!(candidate.feedback && candidate.rating && candidate.rating > 0)
+}
+
+const canCandidateBeOnboarded = (candidate: InterviewCandidate | InterviewCandidateWithHistory): boolean => {
+  // Can only be onboarded if they have feedback, rating > 0, and status is completed
+  return !!(candidate.feedback && candidate.rating && candidate.rating > 0 && candidate.status === 'completed')
+}
+
+const isCandidateAlreadyOnboarded = (candidate: InterviewCandidate | InterviewCandidateWithHistory): boolean => {
+  // This would typically come from your API data - you might have an 'onboarded' status field
+  // For now, we'll assume candidates with status 'onboarded' or similar are already onboarded
+  return candidate.status === 'onboarded' || candidate.status === 'hired'
+}
+
+// Filter candidates for bulk actions
+const candidatesEligibleForOnboarding = useMemo(() => {
+  return filteredCandidates.filter(candidate =>
+    selectedCandidates.includes(candidate.id) &&
+    canCandidateBeOnboarded(candidate) &&
+    !isCandidateAlreadyOnboarded(candidate)
+  )
+}, [filteredCandidates, selectedCandidates])
+
+const candidatesEligibleForMoving = useMemo(() => {
+  return filteredCandidates.filter(candidate =>
+    selectedCandidates.includes(candidate.id) &&
+    canCandidateBeMoved(candidate)
+  )
+}, [filteredCandidates, selectedCandidates])
+
   // Data fetching
   const fetchData = async () => {
     try {
@@ -716,7 +872,7 @@ export default function JobSpecificInterviewPipeline() {
       }
       setEmployees(employeesArray)
 
-      // Extract unique job positions from interviews
+      // Extract unique job position/titles /titles from interviews
       const jobPositionsMap = new Map<number, JobPosition>()
       
       fetchedInterviews?.forEach(interview => {
@@ -742,7 +898,7 @@ export default function JobSpecificInterviewPipeline() {
       const positions = Array.from(jobPositionsMap.values()).sort((a, b) => a.name.localeCompare(b.name))
       setAvailableJobPositions(positions)
 
-      // Auto-select the first job position if none selected
+      // Auto-select the first job position/title if none selected
       if (!selectedJobPosition && positions.length > 0) {
         setSelectedJobPosition(positions[0])
       }
@@ -753,15 +909,54 @@ export default function JobSpecificInterviewPipeline() {
       setLoading(false)
     }
   }
+  const openHistoryDialog = (candidate: InterviewCandidateWithHistory) => {
+  setSelectedCandidateWithHistory(candidate)
+  setIsHistoryDialogOpen(true)
+}
   
+const allCandidatesWithHistory = React.useMemo(() => {
+  if (!selectedJobPosition) return []
 
+  // Get all candidates for the selected job position from interviews
+  const allCandidates = interviews
+    .filter(interview => 
+      interview.job_position_application_details?.job_position_advert === selectedJobPosition.id
+    )
+    .map(interview => ({
+      id: interview.job_position_application,
+      applicant_name: interview.job_position_application_details?.applicant_name || 'Unknown',
+      applicant_email: interview.job_position_application_details?.applicant_email || '',
+      applicant_phone: interview.job_position_application_details?.applicant_phone || '',
+      gender: interview.job_position_application_details?.gender || '',
+      state: interview.job_position_application_details?.state || '',
+      address: interview.job_position_application_details?.address || '',
+      country: interview.job_position_application_details?.country || '',
+      source: interview.job_position_application_details?.source || '',
+      status: interview.status
+    }))
+    // Remove duplicates based on candidate ID
+    .filter((candidate, index, array) => 
+      array.findIndex(c => c.id === candidate.id) === index
+    )
+
+  return buildCandidateHistory(allCandidates, interviews, processedStages)
+}, [selectedJobPosition, interviews, processedStages])
+
+  const filteredHistoryCandidates = allCandidatesWithHistory.filter(candidate =>
+  candidate.applicant_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  candidate.applicant_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  candidate.applicant_phone?.toLowerCase().includes(searchTerm.toLowerCase())
+)
 
 
 
 useEffect(() => {
   if (selectedInstitution?.id) {
+    console.log("Interview Stages from state:", interviewStages);
   }
-}, [interviewStages]); 
+}, [interviewStages]); // Watch the state, not call the API
+  // Process interviews into stages when job position changes
+ // Update the useEffect that processes interviews into stages
 useEffect(() => {
   if (interviewStages.length > 0 && selectedJobPosition) {
     const stages = buildStagesForJob(interviewStages, interviews, selectedJobPosition.id)
@@ -800,7 +995,7 @@ useEffect(() => {
     }
 
     if (!selectedJobPosition) {
-      toast.error("Please select a job position first")
+      toast.error("Please select a job position/title first")
       return
     }
 
@@ -973,7 +1168,7 @@ useEffect(() => {
     scheduleData: InterviewScheduleData
   ) => {
     if (!selectedInstitution || !nextStageForActive || !selectedJobPosition) {
-      throw new Error('Missing institution, next stage, or job position data');
+      throw new Error('Missing institution, next stage, or job position/title data');
     }
 
     try {
@@ -1019,6 +1214,7 @@ useEffect(() => {
           });
           return result
         } catch (apiError) {
+          console.error('Failed to create interview:', apiError)
           return null
         }
       });
@@ -1152,6 +1348,41 @@ useEffect(() => {
     }
   }
 
+  const handleIndividualOnboard = async (candidate: InterviewCandidate | InterviewCandidateWithHistory): Promise<OnboardResult> => {
+    if (!canCandidateBeOnboarded(candidate)) {
+    return { 
+      success: false, 
+      message: 'Candidate must have feedback, rating, and completed status to be onboarded' 
+    }
+  }
+  
+    try {
+    const result = await bulkCreateOnBoarding({ applicationIds: [candidate.id] })
+
+    if (result) {
+      const createdCount = result.summary?.created_count || result.created?.length || 0
+      const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0
+
+      if (createdCount > 0) {
+        await fetchData()
+        return { success: true }
+      } else if (skippedCount > 0) {
+        return { success: true, alreadyOnboarded: true, message: 'Candidate is already onboarded' }
+      } else {
+        return { success: false, message: 'No candidates were processed successfully' }
+      }
+    } else {
+      return { success: false, message: 'API returned no response' }
+    }
+  } catch (error) {
+    return { 
+      success: false, 
+      message: error instanceof Error ? error.message : 'Unknown error occurred' 
+    }
+  }
+}
+
+  
   // UI Event Handlers
   const handleBack = () => {
     router.push('/job-interviews')
@@ -1272,6 +1503,278 @@ useEffect(() => {
     )
   }
 
+  const CandidateHistoryDialog = ({
+  candidate,
+  isOpen,
+  onClose,
+  stages
+}: {
+  candidate: InterviewCandidateWithHistory | null
+  isOpen: boolean
+  onClose: () => void
+  stages: ProcessedStage[]
+}) => {
+  if (!candidate) return null
+
+  const getStageStatusIcon = (entry: InterviewHistoryEntry) => {
+    if (entry.feedback && entry.rating) {
+      return <CheckCircle className="h-4 w-4 text-green-600" />
+    } else if (entry.feedback) {
+      return <Clock className="h-4 w-4 text-yellow-600" />
+    } else {
+      return <XCircle className="h-4 w-4 text-gray-400" />
+    }
+  }
+
+  const getRatingColor = (rating: number) => {
+    if (rating >= 8) return "text-green-600 bg-green-100"
+    if (rating >= 6) return "text-yellow-600 bg-yellow-100"
+    if (rating >= 4) return "text-orange-600 bg-orange-100"
+    return "text-red-600 bg-red-100"
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <History className="h-5 w-5" />
+            Interview History - {candidate.applicant_name}
+          </DialogTitle>
+          <DialogDescription>
+            Complete interview journey and performance across all stages
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Candidate Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{candidate.current_stage_level}</div>
+                  <div className="text-sm text-gray-600">Current Stage Level</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{candidate.overall_rating}</div>
+                  <div className="text-sm text-gray-600">Overall Rating</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">{candidate.completion_rate}%</div>
+                  <div className="text-sm text-gray-600">Completion Rate</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Contact Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Contact Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-gray-500" />
+                  <span>{candidate.applicant_email}</span>
+                </div>
+                {candidate.applicant_phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-gray-500" />
+                    <span>{candidate.applicant_phone}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-gray-500" />
+                  <span className="capitalize">{candidate.gender}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-gray-500" />
+                  <span>{candidate.state}, {candidate.country}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Interview History Timeline */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Interview Journey</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {candidate.interview_history.length === 0 ? (
+                <div className="text-center py-8">
+                  <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">No interview history available</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {candidate.interview_history.map((entry, index) => (
+                    <div key={index} className="relative">
+                      {/* Timeline line */}
+                      {index < candidate.interview_history.length - 1 && (
+                        <div className="absolute left-6 top-12 bottom-0 w-0.5 bg-gray-200" />
+                      )}
+
+                      <div className="flex gap-4">
+                        {/* Timeline dot */}
+                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center">
+                          {getStageStatusIcon(entry)}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <Card className="mb-2">
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between mb-3">
+                                <div>
+                                  <h4 className="font-semibold text-lg">{entry.stage_name}</h4>
+                                  <p className="text-sm text-gray-600">Level {entry.stage_level} • {entry.interviewer}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {entry.rating && (
+                                    <Badge className={`${getRatingColor(entry.rating)} border-0`}>
+                                      <Star className="h-3 w-3 mr-1" />
+                                      {entry.rating}/10
+                                    </Badge>
+                                  )}
+                                  <Badge variant="outline" className="capitalize">
+                                    {entry.status}
+                                  </Badge>
+                                </div>
+                              </div>
+
+                              {/* Interview Details */}
+                              {(entry.interview_date || entry.location) && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3 text-sm">
+                                  {entry.interview_date && (
+                                    <div className="flex items-center gap-2">
+                                      <Calendar className="h-4 w-4 text-gray-500" />
+                                      <span>
+                                        {new Date(entry.interview_date).toLocaleDateString()}
+                                        {entry.interview_time && ` at ${entry.interview_time}`}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {entry.location && (
+                                    <div className="flex items-center gap-2">
+                                      <MapPin className="h-4 w-4 text-gray-500" />
+                                      <span>{entry.location}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Feedback */}
+                              {entry.feedback && (
+                                <div className="bg-gray-50 rounded-lg p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <MessageSquare className="h-4 w-4 text-gray-500" />
+                                    <span className="font-medium text-sm">Feedback</span>
+                                  </div>
+                                  <p className="text-sm text-gray-700">{entry.feedback}</p>
+                                </div>
+                              )}
+
+                              {!entry.feedback && !entry.rating && (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                  <p className="text-sm text-yellow-700">
+                                    <Clock className="h-4 w-4 inline mr-1" />
+                                    No feedback provided yet
+                                  </p>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Performance Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Performance Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Ratings Chart */}
+                <div>
+                  <h4 className="font-medium mb-3">Stage Ratings</h4>
+                  <div className="space-y-2">
+                    {candidate.interview_history
+                      .filter(entry => entry.rating)
+                      .map((entry, index) => (
+                        <div key={index} className="flex items-center gap-3">
+                          <span className="text-sm min-w-0 flex-1 truncate">{entry.stage_name}</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${
+                                  entry.rating! >= 8 ? 'bg-green-500' :
+                                  entry.rating! >= 6 ? 'bg-yellow-500' :
+                                  entry.rating! >= 4 ? 'bg-orange-500' : 'bg-red-500'
+                                }`}
+                                style={{ width: `${(entry.rating! / 10) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-medium w-8">{entry.rating}/10</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+
+                {/* Progress Statistics */}
+                <div>
+                  <h4 className="font-medium mb-3">Progress Statistics</h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm">Stages Completed</span>
+                      <span className="font-medium">{candidate.interview_history.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Stages with Feedback</span>
+                      <span className="font-medium">
+                        {candidate.interview_history.filter(h => h.feedback).length}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Average Rating</span>
+                      <span className="font-medium">{candidate.overall_rating || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Completion Rate</span>
+                      <span className="font-medium">{candidate.completion_rate}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex justify-end">
+          <Button onClick={onClose}>Close</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+
   // Calculate stats for selected job position
   const jobInterviews = selectedJobPosition 
     ? interviews.filter(i => i.job_position_application_details?.job_position_advert === selectedJobPosition.id)
@@ -1280,6 +1783,7 @@ useEffect(() => {
   const completedInterviews = jobInterviews.filter(i => i.status === 'completed').length
   const scheduledInterviews = jobInterviews.filter(i => i.status === 'scheduled').length
   const pendingFeedback = jobInterviews.filter(i => i.status === 'completed' && (!i.feedback || !i.rating)).length
+
 
   return (
     <div className="p-6 space-y-6">
@@ -1293,30 +1797,30 @@ useEffect(() => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Job-Specific Interview Pipeline</h1>
             <p className="text-gray-600">
-              Manage interview stages and candidates for specific job positions
+              Manage interview stages and candidates for specific job position/titles 
             </p>
           </div>
         </div>
       </div>
 
-      {/* Job Position Selector */}
+      {/* Job Position/ Title  Selector */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            Select Job Position
+            Select Job Position/ Title 
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
             <div className="flex-1">
-              <Label htmlFor="job-position">Job Position</Label>
+              <Label htmlFor="job-position">Job Position/ Title </Label>
               <Select
                 value={selectedJobPosition?.id.toString() || ""}
                 onValueChange={handleJobPositionChange}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a job position to manage" />
+                  <SelectValue placeholder="Select a job position/title to manage" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableJobPositions.map((position) => (
@@ -1470,13 +1974,13 @@ useEffect(() => {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Select a Job Position</h3>
+              <h3 className="text-lg font-semibold mb-2">Select a Job Position/ Title </h3>
               <p className="text-muted-foreground mb-4">
-                Choose a job position above to manage its interview pipeline
+                Choose a job position/title above to manage its interview pipeline
               </p>
               {availableJobPositions.length === 0 && (
                 <p className="text-sm text-gray-500">
-                  No job positions with interviews found. Schedule some interviews first.
+                  No job position/titles /titles with interviews found. Schedule some interviews first.
                 </p>
               )}
             </div>
@@ -1562,433 +2066,651 @@ useEffect(() => {
             </Card>
           ) : (
             /* Main Pipeline Interface */
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[400px]">
-              {/* Left Panel - Stages List */}
-              <div className="lg:col-span-1">
-                <Card className="h-full">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Briefcase className="h-5 w-5" />
-                      Interview Stages ({processedStages.length})
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedJobPosition.name} - {selectedJobPosition.department}
-                    </p>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="space-y-1 max-h-[400px] overflow-y-auto">
-                      {processedStages.map((stage) => (
-                        <div
-                          key={stage.id}
-                          className={`p-4 cursor-pointer transition-all duration-200 border-l-4 hover:bg-gray-50 ${
-                            activeStageId === stage.id
-                              ? 'bg-blue-50 border-l-blue-500 shadow-sm'
-                              : 'border-l-transparent hover:border-l-gray-300'
-                          }`}
-                          onClick={() => {
-                            setActiveStageId(stage.id)
-                            setSelectedCandidates([])
-                            setSearchTerm('')
-                          }}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-3">
-                              <div className={`p-2 rounded-lg ${stage.bgColor}`}>
-                                <div className={stage.color}>{stage.icon}</div>
+              <Tabs value={viewMode} onValueChange={(value) => {
+                        setViewMode(value as 'current' | 'history')
+                        setSelectedCandidates([])
+                        setSearchTerm('')
+                      }}>
+                        <div className="flex items-center justify-between mb-4">
+                          <TabsList className="grid w-fit grid-cols-2">
+                            <TabsTrigger value="current" className="flex items-center gap-2">
+                              <Briefcase className="h-4 w-4" />
+                              Current Stage View
+                            </TabsTrigger>
+                            <TabsTrigger value="history" className="flex items-center gap-2">
+                              <History className="h-4 w-4" />
+                              History View
+                            </TabsTrigger>
+                          </TabsList>
+                        </div>
+              
+                        <TabsContent value="current">
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[400px]">
+                            {/* Left Panel - Stages List */}
+                            <div className="lg:col-span-1">
+                              <Card className="h-full">
+                                <CardHeader>
+                                  <CardTitle className="flex items-center gap-2">
+                                    <Briefcase className="h-5 w-5" />
+                                    Interview Stages ({processedStages.length})
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                  <div className="space-y-1 max-h-[500px] overflow-y-auto">
+                                    {processedStages.map((stage) => (
+                                      <div
+                                        key={stage.id}
+                                        className={`p-4 cursor-pointer transition-all duration-200 border-l-4 hover:bg-gray-50 ${
+                                          activeStageId === stage.id
+                                            ? 'bg-blue-50 border-l-blue-500 shadow-sm'
+                                            : 'border-l-transparent hover:border-l-gray-300'
+                                        }`}
+                                        onClick={() => {
+                                          setActiveStageId(stage.id)
+                                          setSelectedCandidates([])
+                                          setSearchTerm('')
+                                        }}
+                                      >
+                                        <div className="flex items-center justify-between mb-2">
+                                          <div className="flex items-center space-x-3">
+                                            <div className={`p-2 rounded-lg ${stage.bgColor}`}>
+                                              <div className={stage.color}>{stage.icon}</div>
+                                            </div>
+                                            <div>
+                                              <h4 className="font-semibold text-sm">{stage.name}</h4>
+                                              <p className="text-xs text-gray-500">Level {stage.level}</p>
+                                            </div>
+                                          </div>
+                                          <Badge
+                                            variant="secondary"
+                                            className={`font-bold ${
+                                              stage.count > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                                            }`}
+                                          >
+                                            {stage.count}
+                                          </Badge>
+                                        </div>
+                                        <div className="text-xs text-gray-500 ml-11">
+                                          Interviewer: {stage.interviewer}
+                                        </div>
+                                        {activeStageId === stage.id && (
+                                          <div className="text-xs text-blue-600 ml-11 mt-1 flex items-center gap-1">
+                                            <Eye className="h-3 w-3" />
+                                            <span>Currently viewing</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+              
+                            {/* Right Panel - Candidates for Selected Stage */}
+                            <div className="lg:col-span-2">
+                              {activeStage ? (
+                                <Card className="h-full">
+                                  <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <CardTitle className="flex items-center gap-2">
+                                          {activeStage.icon}
+                                          {activeStage.name} - Candidates
+                                        </CardTitle>
+                                        <p className="text-sm text-muted-foreground">
+                                          Level {activeStage.level} • Interviewer: {activeStage.interviewer} • {filteredCandidates.length} candidates
+                                        </p>
+                                      </div>
+                                      {nextStageForActive && (
+                                        <div className="text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                                          Next: {nextStageForActive.name}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </CardHeader>
+                                  <CardContent className="space-y-4">
+                                    {/* Search and Actions */}
+                                    <div className="flex flex-col sm:flex-row gap-4">
+                                      <div className="relative flex-1">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                                        <Input
+                                          placeholder="Search candidates..."
+                                          value={searchTerm}
+                                          onChange={(e) => setSearchTerm(e.target.value)}
+                                          className="pl-10"
+                                        />
+                                      </div>
+                                    </div>
+              
+                                    {/* Bulk Actions */}
+                                    {selectedCandidates.length > 0 && (
+                                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-2">
+                                            <Users className="h-4 w-4 text-blue-600" />
+                                            <span className="text-sm font-medium text-blue-800">
+                                              {selectedCandidates.length} candidate(s) selected
+                                            </span>
+                                            {candidatesEligibleForOnboarding.length !== selectedCandidates.length && (
+                                              <span className="text-xs text-orange-600">
+                                                ({candidatesEligibleForOnboarding.length} eligible for onboarding, {candidatesEligibleForMoving.length} eligible for moving)
+                                              </span>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              onClick={() => setSelectedCandidates([])}
+                                            >
+                                              Clear
+                                            </Button>
+                                            {candidatesEligibleForOnboarding.length > 0 && (
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => {
+                                                  const eligibleIds = candidatesEligibleForOnboarding.map(c => c.id)
+                                                  setSelectedCandidates(eligibleIds)
+                                                  handleBulkOnboard()
+                                                }}
+                                                className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                                                title={`Onboard ${candidatesEligibleForOnboarding.length} eligible candidates`}
+                                              >
+                                                <Users className="h-4 w-4 mr-2" />
+                                                Onboard ({candidatesEligibleForOnboarding.length})
+                                              </Button>
+                                            )}
+                                            {nextStageForActive && candidatesEligibleForMoving.length > 0 && (
+                                              <Button
+                                                size="sm"
+                                                onClick={() => {
+                                                  const eligibleIds = candidatesEligibleForMoving.map(c => c.id)
+                                                  setSelectedCandidates(eligibleIds)
+                                                  handleBulkScheduleAndMove()
+                                                }}
+                                                className="bg-green-600 hover:bg-green-700"
+                                                title={`Move ${candidatesEligibleForMoving.length} candidates with feedback to ${nextStageForActive.name}`}
+                                              >
+                                                <Calendar className="h-4 w-4 mr-2" />
+                                                Move to {nextStageForActive.name} ({candidatesEligibleForMoving.length})
+                                              </Button>
+                                            )}
+                                            {selectedCandidates.length > candidatesEligibleForOnboarding.length && candidatesEligibleForOnboarding.length === 0 && (
+                                              <div className="text-xs text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
+                                                Selected candidates need feedback & rating first
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+              
+                                    {/* Candidates Table */}
+                                    <div className="border rounded-lg max-h-[400px] overflow-auto">
+                                      {filteredCandidates.length === 0 ? (
+                                        <div className="text-center py-8">
+                                          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                          <h3 className="text-lg font-semibold mb-2">No candidates found</h3>
+                                          <p className="text-muted-foreground">
+                                            {searchTerm
+                                              ? "No candidates match your search."
+                                              : "No candidates have been assigned to this stage yet."}
+                                          </p>
+                                        </div>
+                                      ) : (
+                                        <Table>
+                                          <TableHeader>
+                                            <TableRow>
+                                              <TableHead className="w-12">
+                                                <Checkbox
+                                                  checked={
+                                                    selectableCandidates.length > 0 &&
+                                                    selectedCandidates.length === selectableCandidates.length &&
+                                                    selectableCandidates.every(c => selectedCandidates.includes(c.id))
+                                                  }
+                                                  onCheckedChange={handleSelectAll}
+                                                  title={`Select ${selectableCandidates.length} candidates who need feedback`}
+                                                />
+                                              </TableHead>
+                                              <TableHead>Candidate</TableHead>
+                                              <TableHead>Contact</TableHead>
+                                              <TableHead>Feedback</TableHead>
+                                              <TableHead>Rating</TableHead>
+                                              <TableHead>Status</TableHead>
+                                              <TableHead>Actions</TableHead>
+                                            </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                            {filteredCandidates.map((candidate) => (
+                                              <TableRow key={candidate.id}>
+                                                <TableCell>
+                                                  <Checkbox
+                                                    checked={selectedCandidates.includes(candidate.id)}
+                                                    onCheckedChange={(checked) => handleSelectCandidate(candidate.id.toString(), checked as boolean)}
+
+                                                    disabled={!canCandidateBeSelected(candidate)}
+                                                    title={
+                                                      !canCandidateBeSelected(candidate)
+                                                        ? candidate.feedback && candidate.rating
+                                                          ? "Already has feedback and rating"
+                                                          : "Already onboarded"
+                                                        : "Select for bulk actions"
+                                                    }
+                                                  />
+                                                </TableCell>
+                                                <TableCell>
+                                                  <div className="space-y-1">
+                                                    <div className="font-medium">{candidate.applicant_name}</div>
+                                                    <div className="text-xs text-muted-foreground capitalize">{candidate.gender}</div>
+                                                  </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                  <div className="space-y-1">
+                                                    <div className="flex items-center text-sm">
+                                                      <Mail className="mr-1 h-3 w-3" />
+                                                      {candidate.applicant_email}
+                                                    </div>
+                                                    {candidate.applicant_phone && (
+                                                      <div className="flex items-center text-sm text-muted-foreground">
+                                                        <Phone className="mr-1 h-3 w-3" />
+                                                        {candidate.applicant_phone}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                  <div className="max-w-xs">
+                                                    {candidate.feedback ? (
+                                                      <p className="text-sm text-gray-600 truncate" title={candidate.feedback}>
+                                                        {candidate.feedback}
+                                                      </p>
+                                                    ) : (
+                                                      <p className="text-sm text-gray-400 italic">No feedback yet</p>
+                                                    )}
+                                                  </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                  <div className="text-center">
+                                                    {candidate.rating ? (
+                                                      <div className="flex items-center gap-1">
+                                                        <Star className="h-4 w-4 text-yellow-500" />
+                                                        <span className="font-semibold">{candidate.rating}/10</span>
+                                                      </div>
+                                                    ) : (
+                                                      <span className="text-sm text-gray-400">-</span>
+                                                    )}
+                                                  </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                  <div className="flex items-center">
+                                                    {candidate.feedback && candidate.rating ? (
+                                                      <Badge variant="secondary" className="bg-green-100 text-green-700">
+                                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                                        Reviewed
+                                                      </Badge>
+                                                    ) : (
+                                                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
+                                                        <Clock className="h-3 w-3 mr-1" />
+                                                        Pending
+                                                      </Badge>
+                                                    )}
+                                                  </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                  <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                        <MoreVertical className="h-4 w-4" />
+                                                      </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                      <DropdownMenuItem onClick={() => openFeedbackDialog(candidate)}>
+                                                        <Edit className="h-4 w-4 mr-2" />
+                                                        Provide Feedback
+                                                      </DropdownMenuItem>
+              
+                                                      <DropdownMenuSeparator />
+              
+                                                      {/* Only show onboard option if candidate has feedback and rating and isn't already onboarded */}
+                                                        {canCandidateBeOnboarded(candidate) && !isCandidateAlreadyOnboarded(candidate) && (
+                                                              <DropdownMenuItem
+                                                                onClick={async () => {
+                                                                  try {
+                                                                    const result = await handleIndividualOnboard(candidate);
+
+                                                                    if (result.success) {
+                                                                      if (result.alreadyOnboarded) {
+                                                                        toast.warning(`${candidate.applicant_name} is already onboarded`);
+                                                                      } else {
+                                                                        toast.success(`${candidate.applicant_name} onboarded successfully`);
+                                                                      }
+                                                                    } else {
+                                                                      toast.error(`Failed to onboard ${candidate.applicant_name}: ${result.message}`);
+                                                                    }
+                                                                  } catch (error) {
+                                                                    toast.error(`Unexpected error occurred while onboarding ${candidate.applicant_name}`);
+                                                                  }
+                                                                }}
+                                                                className="text-purple-600"
+                                                              >
+                                                                <Users className="h-4 w-4 mr-2" />
+                                                                Onboard Candidate
+                                                              </DropdownMenuItem>
+                                                            )}
+              
+                                                      {/* Show message if candidate is already onboarded */}
+                                                      {isCandidateAlreadyOnboarded(candidate) && (
+                                                        <DropdownMenuItem disabled className="text-gray-400">
+                                                          <UserCheck className="h-4 w-4 mr-2" />
+                                                          Already Onboarded
+                                                        </DropdownMenuItem>
+                                                      )}
+              
+                                                      {/* Show message if candidate needs feedback first */}
+                                                      {!canCandidateBeOnboarded(candidate) && !isCandidateAlreadyOnboarded(candidate) && (
+                                                        <DropdownMenuItem disabled className="text-gray-400">
+                                                          <Clock className="h-4 w-4 mr-2" />
+                                                          Needs Feedback & Rating First
+                                                        </DropdownMenuItem>
+                                                      )}
+              
+                                                      {/* Only show move options if candidate has feedback and rating */}
+                                                      {nextStageForActive && canCandidateBeMoved(candidate) && (
+                                                        <>
+                                                          <DropdownMenuItem
+                                                            onClick={async () => {
+                                                              setCandidatesToSchedule([candidate])
+                                                              setIsSchedulingDialogOpen(true)
+                                                            }}
+                                                            className="text-green-600"
+                                                          >
+                                                            <Calendar className="h-4 w-4 mr-2" />
+                                                            Schedule & Move to {nextStageForActive.name}
+                                                          </DropdownMenuItem>
+                                                        </>
+                                                      )}
+              
+                                                      {/* Show message if candidate can't be moved yet */}
+                                                      {nextStageForActive && !canCandidateBeMoved(candidate) && (
+                                                        <DropdownMenuItem disabled className="text-gray-400">
+                                                          <Clock className="h-4 w-4 mr-2" />
+                                                          Provide Feedback & Rating to Move
+                                                        </DropdownMenuItem>
+                                                      )}
+              
+                                                      <DropdownMenuSeparator />
+              
+                                                      <DropdownMenuItem
+                                                        onClick={async () => {
+                                                          try {
+                                                            await rejectCandidate(candidate.id);
+                                                            toast.success(`${candidate.applicant_name} rejected`);
+                                                            await fetchData();
+                                                          } catch (error) {
+                                                            toast.error(`Failed to reject ${candidate.applicant_name}`);
+                                                          }
+                                                        }}
+                                                        className="text-red-600"
+                                                      >
+                                                        <XCircle className="h-4 w-4 mr-2" />
+                                                        Reject Candidate
+                                                      </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                  </DropdownMenu>
+                                                </TableCell>
+                                              </TableRow>
+                                            ))}
+                                          </TableBody>
+                                        </Table>
+                                      )}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ) : (
+                                /* No stage selected state */
+                                <Card className="h-full">
+                                  <CardContent className="flex items-center justify-center h-full">
+                                    <div className="text-center">
+                                      <Eye className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                      <h3 className="text-lg font-semibold mb-2">Select an Interview Stage</h3>
+                                      <p className="text-muted-foreground">
+                                        Choose a stage from the left panel to view and manage candidates
+                                      </p>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              )}
+                            </div>
+                          </div>
+                        </TabsContent>
+              
+                        <TabsContent value="history">
+                          <Card>
+                            <CardHeader>
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <CardTitle className="flex items-center gap-2">
+                                    <History className="h-5 w-5" />
+                                    Complete Interview History
+                                  </CardTitle>
+                                  <p className="text-sm text-muted-foreground">
+                                    View all candidates and their complete interview journey across all stages
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <h4 className="font-semibold text-sm">{stage.name}</h4>
-                                <p className="text-xs text-gray-500">Level {stage.level}</p>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              {/* Search */}
+                              <div className="flex flex-col sm:flex-row gap-4">
+                                <div className="relative flex-1">
+                                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                                  <Input
+                                    placeholder="Search all candidates..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-10"
+                                  />
+                                </div>
                               </div>
-                            </div>
-                            <Badge
-                              variant="secondary"
-                              className={`font-bold ${
-                                stage.count > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                              }`}
-                            >
-                              {stage.count}
-                            </Badge>
-                          </div>
-                          <div className="text-xs text-gray-500 ml-11">
-                            Interviewer: {stage.interviewer}
-                          </div>
-                          {activeStageId === stage.id && (
-                            <div className="text-xs text-blue-600 ml-11 mt-1 flex items-center gap-1">
-                              <Eye className="h-3 w-3" />
-                              <span>Currently viewing</span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Right Panel - Candidates for Selected Stage */}
-              <div className="lg:col-span-2">
-                {activeStage ? (
-                  <Card className="h-full">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="flex items-center gap-2">
-                            {activeStage.icon}
-                            {activeStage.name} - Candidates
-                          </CardTitle>
-                          <p className="text-sm text-muted-foreground">
-                            Level {activeStage.level} • Interviewer: {activeStage.interviewer} • {filteredCandidates.length} candidates
-                          </p>
-                        </div>
-                        {nextStageForActive && (
-                          <div className="text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
-                            Next: {nextStageForActive.name}
-                          </div>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Search */}
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="relative flex-1">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                          <Input
-                            placeholder="Search candidates..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Bulk Actions */}
-                        {selectedCandidates.length > 0 && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Users className="h-4 w-4 text-blue-600" />
-                                <span className="text-sm font-medium text-blue-800">
-                                {selectedCandidates.length} candidate(s) selected
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setSelectedCandidates([])}
-                                >
-                                Clear
-                                </Button>
-                                
-                                {/* Show feedback message for onboard instead of disabled button */}
-                                {(() => {
-                                const eligibleForOnboard = filteredCandidates.filter(candidate =>
-                                    selectedCandidates.includes(candidate.id) &&
-                                    candidate.feedback && 
-                                    candidate.rating && 
-                                    candidate.rating > 0 &&
-                                    candidate.status === 'completed'
-                                ).length;
-
-                                const selectedWithoutFeedback = filteredCandidates.filter(candidate =>
-                                    selectedCandidates.includes(candidate.id) &&
-                                    (!candidate.feedback || !candidate.rating || candidate.status !== 'completed')
-                                ).length;
-
-                                if (eligibleForOnboard > 0) {
-                                    return (
-                                    <Button
+              
+                              {/* Bulk Actions for History View */}
+                              {selectedCandidates.length > 0 && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <Users className="h-4 w-4 text-blue-600" />
+                                      <span className="text-sm font-medium text-blue-800">
+                                        {selectedCandidates.length} candidate(s) selected
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setSelectedCandidates([])}
+                                      >
+                                        Clear
+                                      </Button>
+                                      <Button
                                         size="sm"
                                         variant="outline"
                                         onClick={handleBulkOnboard}
                                         className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                                    >
+                                      >
                                         <Users className="h-4 w-4 mr-2" />
-                                        Onboard Selected ({eligibleForOnboard})
-                                    </Button>
-                                    );
-                                } else if (selectedWithoutFeedback > 0) {
-                                    return (
-                                    <div className="text-sm text-orange-600 bg-orange-50 px-3 py-1 rounded border border-orange-200">
-                                        <Clock className="h-4 w-4 inline mr-1" />
-                                        Please provide feedback & rating first
+                                        Onboard Selected
+                                      </Button>
                                     </div>
-                                    );
-                                }
-                                return null;
-                                })()}
-                                
-                                {/* Show feedback message for scheduling instead of disabled button */}
-                                {nextStageForActive && (() => {
-                                const eligibleForSchedule = filteredCandidates.filter(candidate =>
-                                    selectedCandidates.includes(candidate.id) &&
-                                    candidate.feedback && 
-                                    candidate.rating && 
-                                    candidate.rating > 0 &&
-                                    candidate.status === 'completed'
-                                ).length;
-
-                                const selectedWithoutFeedback = filteredCandidates.filter(candidate =>
-                                    selectedCandidates.includes(candidate.id) &&
-                                    (!candidate.feedback || !candidate.rating || candidate.status !== 'completed')
-                                ).length;
-
-                                if (eligibleForSchedule > 0) {
-                                    return (
-                                    <Button
-                                        size="sm"
-                                        onClick={handleBulkScheduleAndMove}
-                                        className="bg-green-600 hover:bg-green-700"
-                                    >
-                                        <Calendar className="h-4 w-4 mr-2" />
-                                        Move to {nextStageForActive.name} ({eligibleForSchedule})
-                                    </Button>
-                                    );
-                                } else if (selectedWithoutFeedback > 0) {
-                                    return (
-                                    <div className="text-sm text-orange-600 bg-orange-50 px-3 py-1 rounded border border-orange-200">
-                                        <Clock className="h-4 w-4 inline mr-1" />
-                                        Complete interviews & provide feedback first
-                                    </div>
-                                    );
-                                }
-                                return null;
-                                })()}
-                            </div>
-                            </div>
-                        </div>
-                        )}
-
-                      {/* Candidates Table */}
-                      <div className="border rounded-lg max-h-[400px] overflow-auto">
-                        {filteredCandidates.length === 0 ? (
-                          <div className="text-center py-8">
-                            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                            <h3 className="text-lg font-semibold mb-2">No candidates found</h3>
-                            <p className="text-muted-foreground">
-                              {searchTerm
-                                ? "No candidates match your search criteria."
-                                : "No candidates have been assigned to this stage yet."}
-                            </p>
-                          </div>
-                        ) : (
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="w-12">
-                                  <Checkbox
-                                    checked={
-                                      filteredCandidates.length > 0 &&
-                                      [...new Set(filteredCandidates.map(c => c.id))].every(id => selectedCandidates.includes(id))
-                                    }
-                                    onCheckedChange={handleSelectAll}
-                                  />
-                                </TableHead>
-                                <TableHead>Candidate</TableHead>
-                                <TableHead>Contact</TableHead>
-                                <TableHead>Comment</TableHead>
-                                <TableHead>Rating</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {filteredCandidates.map((candidate) => (
-                                <TableRow key={`${candidate.id}-${candidate.interview_id}`}>
-                                  <TableCell>
-                                    <Checkbox
-                                      checked={selectedCandidates.includes(candidate.id)}
-                                      onCheckedChange={(checked) => handleSelectCandidate(`${candidate.id}-${candidate.interview_id}`, checked as boolean)}
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="space-y-1">
-                                      <div className="font-medium">{candidate.applicant_name}</div>
-                                      <div className="text-xs text-muted-foreground capitalize">{candidate.gender}</div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="space-y-1">
-                                      <div className="flex items-center text-sm">
-                                        <Mail className="mr-1 h-3 w-3" />
-                                        {candidate.applicant_email}
-                                      </div>
-                                      {candidate.applicant_phone && (
-                                        <div className="flex items-center text-sm text-muted-foreground">
-                                          <Phone className="mr-1 h-3 w-3" />
-                                          {candidate.applicant_phone}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="max-w-xs">
-                                      {candidate.feedback ? (
-                                        <p className="text-sm text-gray-600 truncate" title={candidate.feedback}>
-                                          {candidate.feedback}
-                                        </p>
-                                      ) : (
-                                        <p className="text-sm text-gray-400 italic">No feedback yet</p>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="text-center">
-                                      {candidate.rating ? (
-                                        <div className="flex items-center gap-1">
-                                          <Star className="h-4 w-4 text-yellow-500" />
-                                          <span className="font-semibold">{candidate.rating}/10</span>
-                                        </div>
-                                      ) : (
-                                        <span className="text-sm text-gray-400">-</span>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center">
-                                      {candidate.feedback && candidate.rating ? (
-                                        <Badge variant="secondary" className="bg-green-100 text-green-700">
-                                          <CheckCircle className="h-3 w-3 mr-1" />
-                                          Reviewed
-                                        </Badge>
-                                      ) : candidate.status === 'completed' ? (
-                                        <Badge variant="secondary" className="bg-orange-100 text-orange-700">
-                                          <Clock className="h-3 w-3 mr-1" />
-                                          Needs Feedback
-                                        </Badge>
-                                      ) : (
-                                        <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                                          <Clock className="h-3 w-3 mr-1" />
-                                          {candidate.status || 'Scheduled'}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                          <MoreVertical className="h-4 w-4" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => openFeedbackDialog(candidate)}>
-                                            <Edit className="h-4 w-4 mr-2" />
-                                            Provide Feedback
-                                        </DropdownMenuItem>
-
-                                        <DropdownMenuSeparator />
-
-                                    {/* Show active move option or feedback message */}
-                                    {nextStageForActive && candidate.feedback && candidate.rating && candidate.status === 'completed' && (
-                                        <DropdownMenuItem
-                                        onClick={() => {
-                                            setCandidatesToSchedule([candidate])
-                                            setIsSchedulingDialogOpen(true)
-                                        }}
-                                        className="text-green-600"
-                                        >
-                                        <Calendar className="h-4 w-4 mr-2" />
-                                        Schedule & Move to {nextStageForActive.name}
-                                        </DropdownMenuItem>
-                                    )}
-
-                                    {/* Show feedback message instead of disabled item */}
-                                    {nextStageForActive && (!candidate.feedback || !candidate.rating || candidate.status !== 'completed') && (
-                                        <div className="px-2 py-1.5 text-sm text-orange-600 bg-orange-50 mx-1 rounded">
-                                        <Clock className="h-4 w-4 inline mr-2" />
-                                        Complete interview & provide feedback first
-                                        </div>
-                                    )}
-
-                                    {/* Show active onboard option or feedback message */}
-                                    {!nextStageForActive && candidate.feedback && candidate.rating && candidate.status === 'completed' && (
-                                        <DropdownMenuItem
-                                        onClick={async () => {
-                                            try {
-                                            const result = await bulkCreateOnBoarding({ applicationIds: [candidate.id] })
-                                            if (result) {
-                                                toast.success(`${candidate.applicant_name} onboarded successfully`)
-                                                await fetchData()
-                                            } else {
-                                                toast.error(`Failed to onboard ${candidate.applicant_name}`)
+                                  </div>
+                                </div>
+                              )}
+              
+                              {/* History Table */}
+                              <div className="border rounded-lg max-h-[600px] overflow-auto">
+                                {filteredHistoryCandidates.length === 0 ? (
+                                  <div className="text-center py-8">
+                                    <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                    <h3 className="text-lg font-semibold mb-2">No candidates found</h3>
+                                    <p className="text-muted-foreground">
+                                      {searchTerm
+                                        ? "No candidates match your search."
+                                        : "No candidates have applied for this position yet."}
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead className="w-12">
+                                          <Checkbox
+                                            checked={
+                                              filteredHistoryCandidates.length > 0 &&
+                                              selectedCandidates.length === filteredHistoryCandidates.length
                                             }
-                                            } catch (error) {
-                                            toast.error(`Failed to onboard ${candidate.applicant_name}`)
-                                            }
-                                        }}
-                                        className="text-purple-600"
-                                        >
-                                        <Users className="h-4 w-4 mr-2" />
-                                        Onboard Candidate
-                                        </DropdownMenuItem>
-                                    )}
+                                            onCheckedChange={handleSelectAll}
+                                          />
+                                        </TableHead>
+                                        <TableHead>Candidate</TableHead>
+                                        <TableHead>Contact</TableHead>
+                                        <TableHead>Current Stage</TableHead>
+                                        <TableHead>Overall Rating</TableHead>
+                                        <TableHead>Progress</TableHead>
+                                        <TableHead>Actions</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {filteredHistoryCandidates.map((candidate) => (
+                                        <TableRow key={candidate.id}>
+                                          <TableCell>
+                                            <Checkbox
+                                              checked={selectedCandidates.includes(candidate.id)}
+                                              onCheckedChange={(checked) => handleSelectCandidate(String(candidate.id), checked as boolean)}
 
-                                    {/* Show feedback message for onboarding instead of disabled item */}
-                                    {!nextStageForActive && (!candidate.feedback || !candidate.rating || candidate.status !== 'completed') && (
-                                        <div className="px-2 py-1.5 text-sm text-orange-600 bg-orange-50 mx-1 rounded">
-                                        <Clock className="h-4 w-4 inline mr-2" />
-                                        Complete interview & provide feedback first
-                                        </div>
-                                    )}
+                                            />
+                                          </TableCell>
+                                          <TableCell>
+                                            <div className="space-y-1">
+                                              <div className="font-medium">{candidate.applicant_name}</div>
+                                              <div className="text-xs text-muted-foreground capitalize">{candidate.gender}</div>
+                                            </div>
+                                          </TableCell>
+                                          <TableCell>
+                                            <div className="space-y-1">
+                                              <div className="flex items-center text-sm">
+                                                <Mail className="mr-1 h-3 w-3" />
+                                                {candidate.applicant_email}
+                                              </div>
+                                              {candidate.applicant_phone && (
+                                                <div className="flex items-center text-sm text-muted-foreground">
+                                                  <Phone className="mr-1 h-3 w-3" />
+                                                  {candidate.applicant_phone}
+                                                </div>
+                                              )}
+                                            </div>
+                                          </TableCell>
+                                          <TableCell>
+                                            <div className="text-center">
+                                              {candidate.current_stage_level > 0 ? (
+                                                <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                                                  {candidate.current_stage_name}
+                                                </Badge>
+                                              ) : (
+                                                <Badge variant="secondary" className="bg-gray-100 text-gray-500">
+                                                  Not Started
+                                                </Badge>
+                                              )}
+                                            </div>
+                                          </TableCell>
+                                          <TableCell>
+                                            <div className="text-center">
+                                              {candidate.overall_rating > 0 ? (
+                                                <div className="flex items-center gap-1 justify-center">
+                                                  <Star className="h-4 w-4 text-yellow-500" />
+                                                  <span className="font-semibold">{candidate.overall_rating}/10</span>
+                                                </div>
+                                              ) : (
+                                                <span className="text-sm text-gray-400">-</span>
+                                              )}
+                                            </div>
+                                          </TableCell>
+                                          <TableCell>
+                                            <div className="flex items-center gap-2">
+                                              <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                  <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div
+                                                      className="h-full bg-blue-500 rounded-full transition-all"
+                                                      style={{ width: `${candidate.completion_rate}%` }}
+                                                    />
+                                                  </div>
+                                                  <span className="text-sm font-medium">{candidate.completion_rate}%</span>
+                                                </div>
+                                                <div className="text-xs text-gray-500 mt-1">
+                                                  {candidate.interview_history.length} stages completed
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </TableCell>
+                                          <TableCell>
+                                            <div className="flex items-center gap-2">
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => openHistoryDialog(candidate)}
+                                                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                              >
+                                                <History className="h-4 w-4 mr-1" />
+                                                View History
+                                              </Button>
+                                              <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                    <MoreVertical className="h-4 w-4" />
+                                                  </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                 <DropdownMenuItem
+                                                    onClick={async () => {
+                                                      try {
+                                                        const result = await handleIndividualOnboard(candidate);
 
-                                    {/* Show message for candidates still in pipeline */}
-                                    {nextStageForActive && candidate.feedback && candidate.rating && candidate.status === 'completed' && (
-                                        <div className="px-2 py-1.5 text-sm text-blue-600 bg-blue-50 mx-1 rounded">
-                                        <Users className="h-4 w-4 inline mr-2" />
-                                        Complete all stages before onboarding
-                                        </div>
-                                    )}
-
-                                    <DropdownMenuSeparator />
-
-                                    <DropdownMenuItem
-                                        onClick={async () => {
-                                        try {
-                                            await rejectCandidate(candidate.id);
-                                            toast.success(`${candidate.applicant_name} rejected`);
-                                            await fetchData();
-                                        } catch (error) {
-                                            toast.error(`Failed to reject ${candidate.applicant_name}`);
-                                        }
-                                        }}
-                                        className="text-red-600"
-                                    >
-                                        <XCircle className="h-4 w-4 mr-2" />
-                                        Reject Candidate
-                                    </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  /* No stage selected state */
-                  <Card className="h-full">
-                    <CardContent className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <Eye className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">Select an Interview Stage</h3>
-                        <p className="text-muted-foreground">
-                          Choose a stage from the left panel to view and manage candidates
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </div>
+                                                        if (result.success) {
+                                                          if (result.alreadyOnboarded) {
+                                                            toast.warning(`${candidate.applicant_name} is already onboarded`);
+                                                          } else {
+                                                            toast.success(`${candidate.applicant_name} onboarded successfully`);
+                                                          }
+                                                        } else {
+                                                          toast.error(`Failed to onboard ${candidate.applicant_name}: ${result.message}`);
+                                                        }
+                                                      } catch (error) {
+                                                        toast.error(`Unexpected error occurred while onboarding ${candidate.applicant_name}`);
+                                                      }
+                                                    }}
+                                                    className="text-purple-600"
+                                                  >
+                                                    <Users className="h-4 w-4 mr-2" />
+                                                    Onboard Candidate
+                                                  </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                              </DropdownMenu>
+                                            </div>
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </TabsContent>
+                      </Tabs>
           )}
 
           {/* Progress Indicator */}
-          {processedStages.length > 0 && (
+          {processedStages.length > 0 && viewMode === 'current' && (
             <div className="mt-6">
               <Card>
                 <CardContent className="p-6">
@@ -2077,6 +2799,16 @@ useEffect(() => {
         targetStage={nextStageForActive ?? null}
         isScheduling={isProcessingProgression}
       />
+
+      <CandidateHistoryDialog
+      candidate={selectedCandidateWithHistory}
+      isOpen={isHistoryDialogOpen}
+      onClose={() => {
+        setIsHistoryDialogOpen(false)
+        setSelectedCandidateWithHistory(null)
+      }}
+      stages={processedStages}
+    />
     </div>
   )
 }

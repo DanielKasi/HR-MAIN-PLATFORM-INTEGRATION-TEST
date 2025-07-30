@@ -357,7 +357,7 @@ interface IInterviewStageFormData {
       return
     }
     if (!selectedJobPosition) {
-      toast.error("Please select a job position first")
+      toast.error("Please select a job position/title first")
       return
     }
 
@@ -531,10 +531,10 @@ interface IInterviewStageFormData {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Job Position Selection */}
+              {/* Job Position/ Title  Selection */}
               <div className="space-y-2">
                 <Label htmlFor="job_position" className="text-sm font-medium">
-                  Job Position *
+                  Job Position/ Title  *
                 </Label>
                 <Select value={selectedJobPosition} onValueChange={handleJobPositionSelect}>
                   <SelectTrigger className={errors.job_position ? "border-destructive" : ""}>
@@ -554,7 +554,7 @@ interface IInterviewStageFormData {
                     )}
                     {Object.keys(filteredGroupedApplications).length === 0 && (
                       <SelectItem value="no-positions" disabled>
-                        No job positions with available applicants
+                        No job positions/titles with available applicants
                       </SelectItem>
                     )}
                   </SelectContent>
@@ -647,7 +647,7 @@ interface IInterviewStageFormData {
                         <SelectValue
                           placeholder={
                             !selectedJobPosition
-                              ? "Select a job position first"
+                              ? "Select a job position/title first"
                               : filteredInterviewStages.length === 0
                                 ? "No stages available for this position"
                                 : "Select interview stage"
@@ -683,7 +683,7 @@ interface IInterviewStageFormData {
                           disabled={!selectedJobPosition}
                           title={
                             !selectedJobPosition
-                              ? "Select a job position first"
+                              ? "Select a job position/title first"
                               : "Create new interview stage"
                           }
                         >
@@ -872,7 +872,7 @@ interface IInterviewStageFormData {
                   )}
                   <p className="text-xs text-muted-foreground">
                     {!selectedJobPosition
-                      ? "Select a job position to see available interview stages"
+                      ? "Select a job position/title to see available interview stages"
                       : !hasStagesForPosition
                         ? "No stages found for this position. Click + to create one."
                         : "Can't find the right stage? Click the + button to create a new one."}

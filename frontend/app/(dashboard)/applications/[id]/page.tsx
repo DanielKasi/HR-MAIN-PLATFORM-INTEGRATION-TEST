@@ -729,12 +729,12 @@ useEffect(() => {
             </TabsContent>
 
             <TabsContent value="job-details" className="space-y-6">
-              {/* Job Position Details */}
+              {/* Job Position/ Title  Details */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Building className="h-5 w-5" />
-                    Job Position Details
+                    Job Position/ Title  Details
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -898,7 +898,7 @@ useEffect(() => {
               {/* Reject Button - show for new and reviewed (not shortlisted) */}
               {(application?.status === "new" || application?.status === "reviewed") && (
                 <Button
-                  className="w-full justify-start text-destructive h-4 w-4 mr-2"
+                  className="justify-start text-destructive h-4 w-4 mr-2"
                   variant="outline"
                   onClick={() => handleIndividualAction(application.id, "rejected")}
                 >

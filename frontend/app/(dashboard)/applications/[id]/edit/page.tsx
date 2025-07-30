@@ -147,31 +147,21 @@ export default function EditApplicationPage() {
     if (!selectedInstitution) return
 
     try {
-      console.log("Loading job position adverts for institution:", selectedInstitution.id)
       const response = await getJobPositionAdverts({ institutionId: selectedInstitution.id })
-      console.log("Job adverts response:", response)
+
 
       // Handle paginated response
       let advertsArray: JobPositionAdvert[] = []
 
       if (response && 'results' in response && Array.isArray(response.results)) {
-        console.log("Setting job adverts from paginated response:", response.results)
         advertsArray = response.results
       } else if (Array.isArray(response)) {
-        console.log("Setting job adverts from direct array:", response)
         advertsArray = response
-      } else if (response === null) {
-        console.log("Response is null - API call failed")
-        advertsArray = []
       } else {
-        console.log("Unexpected response structure:", response)
         advertsArray = []
       }
-
-      console.log("Final job adverts array:", advertsArray)
       setJobPositionAdverts(advertsArray)
     } catch (err) {
-      console.error("Failed to load job position adverts:", err)
       setJobPositionAdverts([]) // Ensure it's always an array
     }
   }
@@ -240,7 +230,6 @@ export default function EditApplicationPage() {
         setError("Failed to update application")
       }
     } catch (err: any) {
-      console.error("Update error:", err)
       let errorMessage = "An error occurred while updating the application"
       if (err?.response?.data?.message) {
         errorMessage = err.response.data.message
@@ -414,7 +403,7 @@ export default function EditApplicationPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="job_position_advert">Job Position *</Label>
+                  <Label htmlFor="job_position_advert">Job Position/ Title  *</Label>
                   <Select
                     value={formData.job_position_advert.toString()}
                     onValueChange={(value) => handleInputChange("job_position_advert", Number.parseInt(value))}

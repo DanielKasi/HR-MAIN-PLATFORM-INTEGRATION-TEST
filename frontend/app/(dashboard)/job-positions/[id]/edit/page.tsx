@@ -448,7 +448,7 @@ export default function EditJobPositionPage() {
     }
 
     if (isNaN(jobPositionId)) {
-      toast.error("Invalid job position ID")
+      toast.error("Invalid job position/title ID")
       router.push("/job-positions")
       return
     }
@@ -494,7 +494,7 @@ export default function EditJobPositionPage() {
       }
     } catch (error) {
       console.error("Error fetching initial data:", error)
-      toast.error("Failed to load job position data")
+      toast.error("Failed to load job position/title data")
       router.push("/job-positions")
     } finally {
       setIsLoading(false)
@@ -525,11 +525,11 @@ export default function EditJobPositionPage() {
           if (response.ok) {
             allEmployees = await response.json()
           } else {
-            // Fallback to job position employees if API fails
+            // Fallback to job position/title employees if API fails
             allEmployees = jobPosition.employees || []
           }
         } catch (apiError) {
-          console.warn("API call failed, using job position employees:", apiError)
+          console.warn("API call failed, using job position/title employees:", apiError)
           allEmployees = jobPosition.employees || []
         }
       }
@@ -738,7 +738,7 @@ export default function EditJobPositionPage() {
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
-            Back to Job Position
+            Back to Job Position/ Title 
           </Button>
         </div>
 
@@ -749,9 +749,9 @@ export default function EditJobPositionPage() {
                 <Briefcase className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-xl">Edit Job Position</CardTitle>
+                <CardTitle className="text-xl">Edit Job Position/ Title </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Update job position details for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
+                  Update job position/title details for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
                 </p>
               </div>
             </div>
@@ -771,10 +771,10 @@ export default function EditJobPositionPage() {
 
               {/* Form Fields */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Job Position Name */}
+                {/* Job Position/ Title  Name */}
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sm font-medium">
-                    Job Position Name *
+                    Job Position/ Title  Name *
                   </Label>
                   <Input
                     id="name"
@@ -1019,7 +1019,7 @@ export default function EditJobPositionPage() {
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      Update Job Position
+                      Update Job Position/ Title 
                       {isSalaryChanged && selectedEmployees.length > 0 && (
                         <Badge variant="secondary" className="ml-2 text-xs">
                           +{selectedEmployees.length} salary updates

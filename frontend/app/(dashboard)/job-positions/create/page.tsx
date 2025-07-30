@@ -4,7 +4,7 @@ import type React from "react";
 import {useState, useEffect} from "react";
 import {useRouter} from "next/navigation";
 import {useSelector} from "react-redux";
-import {Briefcase, ArrowLeft, Check, Upload, X, FileText} from "lucide-react";
+import {Briefcase, ArrowLeft, Check, Upload, X, FileText, Plus} from "lucide-react";
 
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CreateDepartmentDialog } from "@/components/dialogs/create-department-dialog";
 
 import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
 import {getDepartments, getJobPositions, createJobPosition} from "@/lib/utils";
@@ -93,7 +94,7 @@ export default function CreateJobPositionPage() {
         setJobPositions(fetchedJobPositions);
       }
     } catch (error) {
-      toast.error("Failed to load departments and job positions");
+      toast.error("Failed to load departments and job position/titles ");
     } finally {
       setIsLoading(false);
     }
@@ -214,7 +215,7 @@ export default function CreateJobPositionPage() {
   }
 
   if (isLoading) {
-    return <div>Loading departments and job positions...</div>;
+    return <div>Loading departments and job position/titles ...</div>;
   }
 
   return (
@@ -229,7 +230,7 @@ export default function CreateJobPositionPage() {
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Job Positions
+            Back to Job Positions/Titles
           </Button>
         </div>
 
@@ -240,9 +241,9 @@ export default function CreateJobPositionPage() {
                 <Briefcase className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-xl">Create New Job Position</CardTitle>
+                <CardTitle className="text-xl">Create New Job Position/ Title </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Add a new job position to {selectedBranch.branch_name} -{" "}
+                  Add a new job position/title to {selectedBranch.branch_name} -{" "}
                   {selectedInstitution.institution_name}
                 </p>
               </div>
@@ -253,10 +254,10 @@ export default function CreateJobPositionPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Form Fields - Two-Column Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Job Position Name */}
+                {/* Job Position/ Title  Name */}
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sm font-medium">
-                    Job Position Name *
+                    Job Position/ Title  Name *
                   </Label>
                   <Input
                     id="name"
@@ -296,9 +297,27 @@ export default function CreateJobPositionPage() {
 
                 {/* Department */}
                 <div className="space-y-2">
-                  <Label htmlFor="department" className="text-sm font-medium">
-                    Department *
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="department" className="text-sm font-medium">
+                      Department *
+                    </Label>
+                    <CreateDepartmentDialog 
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      }
+                      onDepartmentCreated={(newDepartment) => {
+                        setDepartments((prev) => [...prev, newDepartment]);
+                        updateFormData("department", newDepartment.id);
+                      }}
+                    />
+                  </div>
                   <Select
                     value={formData.department?.toString() || "0"}
                     onValueChange={(value) => updateFormData("department", Number(value))}
@@ -363,7 +382,7 @@ export default function CreateJobPositionPage() {
                 </div>
 
                 {/* Offer Letter Template */}
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label className="text-sm font-medium">Offer Letter Template (Optional)</Label>
                   {formData.offer_letter_template ? (
                     <div className="border rounded-lg p-4 bg-muted/50">
@@ -411,7 +430,7 @@ export default function CreateJobPositionPage() {
                       </div>
                     </div>
                   )}
-                </div>
+                </div> */}
               </div>
 
               {/* Form Actions */}
@@ -438,7 +457,7 @@ export default function CreateJobPositionPage() {
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      Create Job Position
+                      Create Job Position/ Title 
                     </>
                   )}
                 </Button>

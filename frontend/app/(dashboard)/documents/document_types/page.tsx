@@ -283,7 +283,6 @@ export default function DocumentTypesPage() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Name</TableHead>
-                                        <TableHead>Code</TableHead>
                                         <TableHead>Description</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
@@ -292,9 +291,6 @@ export default function DocumentTypesPage() {
                                     {documentTypes.map((documentType) => (
                                         <TableRow key={documentType.id}>
                                             <TableCell className="font-medium">{documentType.name}</TableCell>
-                                            <TableCell>
-                                                <Badge variant="secondary">{documentType.code}</Badge>
-                                            </TableCell>
                                             <TableCell className="max-w-md">
                                                 <p className="truncate">{documentType.description}</p>
                                             </TableCell>

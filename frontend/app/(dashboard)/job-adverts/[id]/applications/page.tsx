@@ -434,6 +434,7 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
       cover_letter?: File;
       address_latitude?: string;
       address_longitude?: string;
+      recommended_by?: number;
     }
   >({
     job_position_advert: 0,
@@ -449,6 +450,7 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
     address_longitude: "",
     country: "",
     source: "website",
+    recommended_by: undefined, 
     application_date: new Date().toISOString().split("T")[0],
     created_by: userData?.id || 0,
   });
@@ -465,6 +467,31 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
     loadApplications();
     loadJobPositionAdverts();
   }, [selectedInstitution, selectedBranch, router]);
+
+useEffect(() => {
+  if (isCreateDialogOpen && selectedInstitution) {
+    // Load employees when dialog opens
+    const loadEmployeesForForm = async () => {
+      try {
+        const employeesResponse = await fetchEmployees({ institutionId: selectedInstitution.id });
+        
+        let employeesArray: IEmployee[] = [];
+        if (employeesResponse && "results" in employeesResponse && Array.isArray(employeesResponse.results)) {
+          employeesArray = employeesResponse.results;
+        } else if (Array.isArray(employeesResponse)) {
+          employeesArray = employeesResponse;
+        }
+        setEmployees(employeesArray);
+      } catch (error) {
+        console.error("Failed to load employees:", error);
+        toast.error("Failed to load employees");
+      }
+    };
+
+    loadEmployeesForForm();
+  }
+}, [isCreateDialogOpen, selectedInstitution]);
+  
 
   useEffect(() => {
     let filtered = applications;
@@ -651,122 +678,123 @@ const handleOpenScheduleInterview = async (application: JobApplication) => {
     setSortDirection("desc");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError(null);
 
-    // Simple validation checks
-    if (!formData.applicant_name.trim()) {
-      setError("Please enter the applicant's name");
-      return;
-    }
+  // Simple validation checks
+  if (!formData.applicant_name.trim()) {
+    setError("Please enter the applicant's name");
+    return;
+  }
 
-    if (!formData.applicant_email.trim()) {
-      setError("Please enter the applicant's email");
-      return;
-    }
+  if (!formData.applicant_email.trim()) {
+    setError("Please enter the applicant's email");
+    return;
+  }
 
-    if (!formData.address.trim()) {
-      setError("Please enter the applicant's address");
-      return;
-    }
+  if (!formData.address.trim()) {
+    setError("Please enter the applicant's address");
+    return;
+  }
 
-    if (!formData.country.trim()) {
-      setError("Please enter the country");
-      return;
-    }
+  if (!formData.country.trim()) {
+    setError("Please enter the country");
+    return;
+  }
 
-    if (formData.job_position_advert === 0) {
-      setError("Please select a job position");
-      return;
-    }
+  if (formData.job_position_advert === 0) {
+    setError("Please select a job position");
+    return;
+  }
 
-    if (!formData.resume) {
-      setError("Please upload a resume");
-      return;
-    }
+  if (formData.source === "head_hunt" && !formData.recommended_by) {
+  setError("Please select which employee head hunted this candidate");
+  return;
+}
 
-    if (!selectedInstitution || !selectedBranch) {
-      setError("Missing organization or branch information");
-      return;
-    }
+  if (!formData.resume) {
+    setError("Please upload a resume");
+    return;
+  }
 
-    if (!userData?.id) {
-      setError("User information not available. Please refresh and try again.");
-      return;
-    }
+  if (!selectedInstitution || !selectedBranch) {
+    setError("Missing organization or branch information");
+    return;
+  }
 
-    setIsSubmitting(true);
+  if (!userData?.id) {
+    setError("User information not available. Please refresh and try again.");
+    return;
+  }
 
-    try {
-      const applicationData: JobApplicationFormData = {
-        ...formData,
-        resume: formData.resume,
-        cover_letter: formData.cover_letter || undefined,
-        applicant_phone: formData.applicant_phone || undefined,
-        state: formData.state || undefined,
-        application_date: formData.application_date,
-        address: formData.address,
-        country: formData.country,
-        created_by: userData.id,
-        reviewed_by: userData.id,
-        shortlisted_by: userData.id,
-        recommended_by: userData.id,
-      };
+  setIsSubmitting(true);
 
-      const newApplication = await createJobApplication({
-        institutionId: selectedInstitution.id,
-        applicationData,
+  try {
+    const applicationData: JobApplicationFormData = {
+  ...formData,
+  resume: formData.resume,
+  cover_letter: formData.cover_letter || undefined,
+  applicant_phone: formData.applicant_phone || undefined,
+  state: formData.state || undefined,
+  application_date: formData.application_date,
+  address: formData.address,
+  country: formData.country,
+  created_by: userData.id,
+  recommended_by: formData.source === "head_hunt" ? formData.recommended_by : undefined, // Add this line
+};
+
+    const newApplication = await createJobApplication({
+      institutionId: selectedInstitution.id,
+      applicationData,
+    });
+
+    if (newApplication) {
+      // Maintain sorted order when adding new application
+      setApplications((prev) => {
+        const updated = [newApplication, ...prev];
+        return updated.sort((a, b) =>
+          new Date(b.application_date).getTime() - new Date(a.application_date).getTime()
+        );
       });
 
-      if (newApplication) {
-        // Maintain sorted order when adding new application
-        setApplications((prev) => {
-          const updated = [newApplication, ...prev];
-          return updated.sort((a, b) =>
-            new Date(b.application_date).getTime() - new Date(a.application_date).getTime()
-          );
-        });
-
-        setIsCreateDialogOpen(false);
-        resetFiltersAndShowNewApplication();
-        setFormData({
-          job_position_advert: 0,
-          applicant_name: "",
-          applicant_email: "",
-          applicant_phone: "",
-          resume: null,
-          cover_letter: undefined,
-          status: "new",
-          gender: "male",
-          state: "",
-          address: "",
-          address_latitude: "",
-          address_longitude: "",
-          country: "",
-          source: "website",
-          application_date: new Date().toISOString().split("T")[0],
-          created_by: userData.id,
-          reviewed_by: userData.id,
-          shortlisted_by: userData.id,
-          recommended_by: userData.id,
-        });
-        toast.success("Application created successfully!");
-      } else {
-        setError("Failed to create application");
-      }
-    } catch (err: any) {
-      if (err?.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err?.message) {
-        setError(err.message);
-      } else {
-        setError("Failed to create application. Please check all fields and try again.");
-      }
-    } finally {
-      setIsSubmitting(false);
+      setIsCreateDialogOpen(false);
+      resetFiltersAndShowNewApplication();
+      setFormData({
+        job_position_advert: 0,
+        applicant_name: "",
+        applicant_email: "",
+        applicant_phone: "",
+        resume: null,
+        cover_letter: undefined,
+        status: "new",
+        gender: "male",
+        state: "",
+        address: "",
+        address_latitude: "",
+        address_longitude: "",
+        country: "",
+        source: "website",
+        application_date: new Date().toISOString().split("T")[0],
+        created_by: userData.id,
+        recommended_by: undefined,
+      });
+      toast.success("Application created successfully!");
+    } else {
+      setError("Failed to create application");
     }
-  };
+  } catch (err: any) {
+    if (err?.response?.data?.message) {
+      setError(err.response.data.message);
+    } else if (err?.message) {
+      setError(err.message);
+    } else {
+      setError("Failed to create application. Please check all fields and try again.");
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleSelectApplication = (applicationId: number, checked: boolean) => {
     if (checked) {
@@ -1420,7 +1448,7 @@ const handleSelectAll = (checked: boolean) => {
   </div>
 </TableHead>
                     <TableHead>Applicant</TableHead>
-                    <TableHead>Job Position</TableHead>
+                    <TableHead>Job Position/ Title </TableHead>
                     <TableHead
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleSort("posted_date")}
@@ -1713,7 +1741,7 @@ const handleSelectAll = (checked: boolean) => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
   <div className="space-y-2">
-    <Label htmlFor="job_position_advert">Job Position *</Label>
+    <Label htmlFor="job_position_advert">Job Position/ Title  *</Label>
     <Select
       value={formData.job_position_advert.toString()}
       onValueChange={(value) =>
@@ -1813,42 +1841,85 @@ const handleSelectAll = (checked: boolean) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="source">Source</Label>
-                <Select
-                  value={formData.source}
-                  onValueChange={(value) => handleInputChange("source", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="website">Website</SelectItem>
-                    <SelectItem value="referral">Referral</SelectItem>
-                    <SelectItem value="job_board">Job Board</SelectItem>
-                    <SelectItem value="social_media">Social Media</SelectItem>
-                    <SelectItem value="head_hunt">Head Hunt</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address">Address *</Label>
-                <LocationAutocomplete
-                  value={formData.address}
-                  onChange={(value) => handleInputChange("address", value)}
-                  onCoordinatesChange={handleAddressCoordinatesChange}
-                  placeholder="Search for applicant's address..."
-                  showCurrentLocationButton={true}
-                />
-                {formData.address_latitude && formData.address_longitude && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Coordinates: {formData.address_latitude}, {formData.address_longitude}
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Source and Address Grid - CLEAN VERSION */}
+<div className="grid grid-cols-2 gap-4">
+  <div className="space-y-2">
+    <Label htmlFor="source">Source</Label>
+    <Select
+      value={formData.source}
+      onValueChange={(value) => {
+        handleInputChange("source", value);
+        // Clear recommended_by when source changes away from head_hunt
+        if (value !== "head_hunt") {
+          handleInputChange("recommended_by", null);
+        }
+      }}
+    >
+      <SelectTrigger>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="website">Website</SelectItem>
+        <SelectItem value="referral">Referral</SelectItem>
+        <SelectItem value="job_board">Job Board</SelectItem>
+        <SelectItem value="social_media">Social Media</SelectItem>
+        <SelectItem value="head_hunt">Head Hunt</SelectItem>
+        <SelectItem value="other">Other</SelectItem>
+      </SelectContent>
+    </Select>
+  </div>
+  
+  <div className="space-y-2">
+    <Label htmlFor="address">Address *</Label>
+    <LocationAutocomplete
+      value={formData.address}
+      onChange={(value) => handleInputChange("address", value)}
+      onCoordinatesChange={handleAddressCoordinatesChange}
+      placeholder="Search for applicant's address..."
+      showCurrentLocationButton={true}
+    />
+    {formData.address_latitude && formData.address_longitude && (
+      <div className="text-xs text-muted-foreground mt-1">
+        Coordinates: {formData.address_latitude}, {formData.address_longitude}
+      </div>
+    )}
+  </div>
+</div>
+
+{/* HEAD HUNT FIELD - PUT IT RIGHT HERE, OUTSIDE THE GRID */}
+{formData.source === "head_hunt" && (
+  <div className="space-y-2">
+    <Label htmlFor="recommended_by">Head Hunted By *</Label>
+    <div className="w-full">
+      <EmployeeSearchableSelect
+        employees={employees.map(emp => ({
+          ...emp,
+          department: emp.department?.name || "No Department",
+          position: emp.position?.name || "No Position",
+          user: emp.user ? { 
+            fullname: emp.user.fullname, 
+            email: emp.user.email 
+          } : undefined,
+        }))}
+        value={formData.recommended_by ? [formData.recommended_by.toString()] : []}
+        onValueChange={(values) => {
+          const selectedValue = Array.isArray(values) ? values[0] : values;
+          handleInputChange("recommended_by", selectedValue ? Number(selectedValue) : null);
+
+        }}
+        placeholder="Select the employee who head hunted this candidate"
+        showEmployeeId={false}
+        showDepartment={true}
+        multiple={false}
+      />
+    </div>
+    {!formData.recommended_by && (
+      <p className="text-sm text-muted-foreground">
+        Please select which employee was responsible for head hunting this candidate.
+      </p>
+    )}
+  </div>
+)}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

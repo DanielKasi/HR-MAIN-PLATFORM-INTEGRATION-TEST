@@ -60,7 +60,7 @@ export default function JobPositionDetailsPage() {
     }
 
     if (isNaN(jobPositionId)) {
-      toast.error("Invalid job position ID")
+      toast.error("Invalid job position/title ID")
       router.push("/job-positions")
       return
     }
@@ -81,8 +81,8 @@ export default function JobPositionDetailsPage() {
         toast.error("Job position not found")
       }
     } catch (err) {
-      setError("Failed to fetch job position details")
-      toast.error("Failed to load job position details")
+      setError("Failed to fetch job position/title details")
+      toast.error("Failed to load job position/title details")
     } finally {
       setIsLoading(false)
     }
@@ -169,15 +169,10 @@ export default function JobPositionDetailsPage() {
     return (
       <div className="w-full h-full p-6">
         <div className="w-full max-w-6xl mx-auto space-y-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Job Positions
-            </Button>
-          </div>
+
           <Card className="p-12 text-center">
             <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Job Position Not Found</h3>
+            <h3 className="text-lg font-semibold mb-2">Job Position/ Title  Not Found</h3>
             <p className="text-muted-foreground mb-4">{error}</p>
             <Button onClick={handleBack}>Go Back</Button>
           </Card>

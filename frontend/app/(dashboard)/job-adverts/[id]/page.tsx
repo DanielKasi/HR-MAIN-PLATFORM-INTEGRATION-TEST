@@ -208,12 +208,12 @@ export default function JobAdvertDetailsPage() {
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Back to Job Adverts
+              Back to Job Openings
             </Button>
           </div>
           <Card className="p-12 text-center">
             <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Job Advert Not Found</h3>
+            <h3 className="text-lg font-semibold mb-2">Job Opening Not Found</h3>
             <p className="text-muted-foreground mb-4">{error}</p>
             <Button onClick={handleBack}>Go Back</Button>
           </Card>
@@ -231,7 +231,7 @@ export default function JobAdvertDetailsPage() {
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
-            Back to Job Adverts
+            Back to Job Openings
           </Button>
           <div className="flex items-center gap-2">
             {jobAdvert.job_position_advert_status !== "closed" && (
@@ -249,14 +249,14 @@ export default function JobAdvertDetailsPage() {
                 ) : (
                   <>
                     <X className="h-4 w-4" />
-                    Close Advert
+                    Close Job Opening
                   </>
                 )}
               </Button>
             )}
             <Button onClick={handleEdit} className="flex items-center gap-2">
               <Edit className="h-4 w-4" />
-              Edit Advert
+              Edit Job Opening
             </Button>
           </div>
         </div>
@@ -303,13 +303,13 @@ export default function JobAdvertDetailsPage() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Job Position Information */}
+            {/* Job Position/ Title  Information */}
             {jobPosition && (
               <>
                 <div>
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     <Briefcase className="h-5 w-5" />
-                    Job Position Details
+                    Job Opening Details
                   </h3>
                   <div className="bg-muted/50 p-4 rounded-lg space-y-3">
                     <div className="flex items-center justify-between">
