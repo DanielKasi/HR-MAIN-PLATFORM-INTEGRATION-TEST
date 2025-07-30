@@ -131,8 +131,8 @@ export default function JobAdvertsPage() {
         setPaginationInfo(pagination);
       } catch (err) {
         setJobAdverts([]);
-        setError(`Failed to fetch job adverts: ${err instanceof Error ? err.message : "Unknown error"}`);
-        toast.error("Failed to load job adverts");
+        setError(`Failed to fetch job openings: ${err instanceof Error ? err.message : "Unknown error"}`);
+        toast.error("Failed to load job openings");
       } finally {
         setIsLoading(false);
         setIsRefreshing(false);
@@ -226,10 +226,10 @@ export default function JobAdvertsPage() {
           toast.success("Job advert closed successfully!");
           fetchJobAdverts(true, currentPage, pageSize);
         } else {
-          toast.error("Failed to close job advert");
+          toast.error("Failed to close job openings");
         }
       } catch (error) {
-        toast.error("Failed to close job advert");
+        toast.error("Failed to close job openings");
       } finally {
         setIsClosing(false);
       }

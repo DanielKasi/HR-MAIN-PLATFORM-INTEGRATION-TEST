@@ -397,7 +397,7 @@ export interface JobApplicationFormData {
   state?: string
   address: string
   country: string
-  source?: "website" | "referral" | "job_board" | "social_media" | "other"
+  source?: "website" | "referral" | "job_board" | "social_media" | "head_hunt" | "other"
   created_by?: number,
   reviewed_by?: number;
   shortlisted_by?: number;

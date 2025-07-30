@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 import {
   Select,
   SelectContent,
@@ -1784,7 +1785,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
-            Back to Job Adverts
+            Back to Job Openings
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Interview Pipeline</h1>
@@ -1979,7 +1980,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
         </Card>
       ) : (
         /* Main interface with tabs for current view and history view */
-        <Tabs value={viewMode} onValueChange={(value) => {
+     <Tabs value={viewMode} onValueChange={(value) => {
           setViewMode(value as 'current' | 'history')
           setSelectedCandidates([])
           setSearchTerm('')

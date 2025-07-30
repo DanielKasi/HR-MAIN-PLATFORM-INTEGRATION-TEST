@@ -98,7 +98,7 @@ export default function CreateJobAdvertPage() {
     }
 
     if (!formData.advert_type) {
-      newErrors.advert_type = "Please select an advert type";
+      newErrors.advert_type = "Please select an opening type";
     }
 
     setErrors(newErrors);
@@ -136,13 +136,13 @@ export default function CreateJobAdvertPage() {
       });
 
       if (newJobAdvert) {
-        toast.success("Job advert created successfully!");
+        toast.success("Job opening created successfully!");
         router.push("/job-adverts");
       } else {
-        toast.error("Failed to create job advert. Please try again.");
+        toast.error("Failed to create job opening. Please try again.");
       }
     } catch (error) {
-      toast.error("Failed to create job advert. Please try again.");
+      toast.error("Failed to create job opening. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -169,7 +169,7 @@ export default function CreateJobAdvertPage() {
   }
 
   if (isLoading) {
-    return <div>Loading job positions...</div>;
+    return <div>Loading job openings...</div>;
   }
 
   return (
@@ -184,7 +184,7 @@ export default function CreateJobAdvertPage() {
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Job Adverts
+            Back to Job Openings
           </Button>
         </div>
 
@@ -195,7 +195,7 @@ export default function CreateJobAdvertPage() {
                 <Megaphone className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-xl">Create New Job Advert</CardTitle>
+                <CardTitle className="text-xl">Create New Job Openings</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   Create a job advertisement for {selectedBranch.branch_name} -{" "}
                   {selectedInstitution.institution_name}
@@ -236,7 +236,7 @@ export default function CreateJobAdvertPage() {
                 {/* Advert Type */}
                 <div className="space-y-2">
                   <Label htmlFor="advert_type" className="text-sm font-medium">
-                    Advert Type *
+                    Opening Type *
                   </Label>
                   <Select
                     value={formData.advert_type}
@@ -345,7 +345,7 @@ export default function CreateJobAdvertPage() {
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      Create Job Advert
+                      Create Job Openings
                     </>
                   )}
                 </Button>
