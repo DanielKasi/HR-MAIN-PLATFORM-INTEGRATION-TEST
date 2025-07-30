@@ -226,6 +226,8 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       icon: <Icon icon="hugeicons:user-multiple-02" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
         {title: "Employees", href: "/employees/employee-list"},
+        {title: "Employee Types", href: "/employees/employee-types"},
+        {title: "Work Types", href: "/employees/work-types"},
         {title: "Contracts", href: "/employees/contracts"},
         {title: "Attendance", href: "/employees/attendance"},
         {title: "Discipline", href: "/employees/discipline"},

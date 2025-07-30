@@ -89,6 +89,7 @@ const sourceLabels = {
   other: "Other",
 };
 
+
 export default function ApplicationViewPage() {
   const [showShortlistConfirm, setShowShortlistConfirm] = useState(false);
   // ...

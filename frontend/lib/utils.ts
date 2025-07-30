@@ -988,6 +988,60 @@ export const createWorkType = async ({
   }
 };
 
+
+export const getWorkTypes = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<IWorkType[]> => {
+  try {
+    const response = await apiRequest.get(
+      `employee/work-types/`
+    );
+    const data = response.data as PaginatedResponse<IWorkType>
+    return data.results
+  } catch (error) {
+    console.error("Failed to fetch work types:", error);
+    return [];
+  }
+};
+
+export const updateWorkType = async ({
+  employeeTypeId,
+  employeeTypeData,
+}: {
+  institutionId: number;
+  employeeTypeId: number;
+  employeeTypeData: Partial<Omit<IWorkType, 'id' | 'created_at' | 'updated_at'>>;
+}): Promise<IWorkType> => {
+  try {
+    const response = await apiRequest.patch(
+      `employee/work-types/${employeeTypeId}/`,
+      employeeTypeData
+    );
+    return response.data as IWorkType;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteWorkType = async ({
+  employeeTypeId,
+}: {
+  institutionId: number;
+  employeeTypeId: number;
+}): Promise<void> => {
+  try {
+    await apiRequest.delete(
+      `employee/work-types/${employeeTypeId}/`
+    );
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
 export const createEmployeeType = async ({
   institutionId,
   employeeTypeData,
@@ -1013,22 +1067,7 @@ export const createEmployeeType = async ({
   }
 };
 
-export const getWorkTypes = async ({
-  institutionId,
-}: {
-  institutionId: number;
-}): Promise<IWorkType[]> => {
-  try {
-    const response = await apiRequest.get(
-      `employee/work-types/`
-    );
-    const data = response.data as PaginatedResponse<IWorkType>
-    return data.results
-  } catch (error) {
-    console.error("Failed to fetch work types:", error);
-    return [];
-  }
-};
+
 
 export const getEmployeeTypes = async ({
   institutionId,
@@ -1043,6 +1082,40 @@ export const getEmployeeTypes = async ({
     return data.results
   } catch (error) {
     throw error
+  }
+};
+
+export const updateEmployeeType = async ({
+  employeeTypeId,
+  employeeTypeData,
+}: {
+  institutionId: number;
+  employeeTypeId: number;
+  employeeTypeData: Partial<Omit<IEmployeeType, 'id' | 'created_at' | 'updated_at'>>;
+}): Promise<IEmployeeType> => {
+  try {
+    const response = await apiRequest.patch(
+      `employee/employee-types/${employeeTypeId}/`,
+      employeeTypeData
+    );
+    return response.data as IEmployeeType;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteEmployeeType = async ({
+  employeeTypeId,
+}: {
+  institutionId: number;
+  employeeTypeId: number;
+}): Promise<void> => {
+  try {
+    await apiRequest.delete(
+      `employee/employee-types/${employeeTypeId}/`
+    );
+  } catch (error) {
+    throw error;
   }
 };
 
