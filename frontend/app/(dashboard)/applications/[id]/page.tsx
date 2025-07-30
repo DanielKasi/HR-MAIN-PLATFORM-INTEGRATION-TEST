@@ -577,10 +577,10 @@ export default function ApplicationViewPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-8 border bg-gray-50 rounded-lg mb-12">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-8 bg-gray-50 rounded-lg mb-12">
         {/* Main Content */}
         <div className="lg:col-span-2">
-          <Tabs defaultValue="overview" className="space-y-6">
+          <Tabs defaultValue="overview" >
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="job-details">Job Details</TabsTrigger>
@@ -878,7 +878,7 @@ export default function ApplicationViewPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Quick Actions */}
-          <Card>
+          <Card className="mt-12">
             <CardHeader>
               <CardTitle className="text-lg">Quick Actions</CardTitle>
             </CardHeader>

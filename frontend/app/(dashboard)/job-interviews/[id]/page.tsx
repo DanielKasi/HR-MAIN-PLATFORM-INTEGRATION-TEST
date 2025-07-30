@@ -205,14 +205,15 @@ export default function InterviewViewPage() {
   }
 
   return (
-    <div className="w-full h-full p-6 space-y-6">
+    <div className="w-full h-full p-6 space-y-6 rounded-lg bg-white shadow-sm">
       {/* Header */}
-      <Button variant="outline" size="sm" onClick={handleGoBack}>
+
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col items-start lg:flex-row lg:items-center gap-4">
+          <Button variant="outline" size="sm" onClick={handleGoBack}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
-      </Button>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
+          </Button>
           <div>
             <h1 className="text-2xl font-bold">
               Interview with {interview.job_position_application_details?.applicant_name}
@@ -221,53 +222,22 @@ export default function InterviewViewPage() {
               {interview.interview_stage_details?.name} • {formatDate(interview.interview_date)}
             </p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={fetchInterview}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleEdit}>
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleDelete} className="text-destructive">
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete
-          </Button>
+          <div className="flex items-center gap-2">
+            <Badge variant={getStatusBadgeVariant(interview.status)} className="mt-1">
+              {interview.status.charAt(0).toUpperCase() + interview.status.slice(1)}
+            </Badge>
+            <div className="flex items-center gap-2">
+              <div className="flex">{getRatingStars(interview.rating || 0)}</div>
+              <span className="text-lg font-bold">{interview.rating}/10</span>
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Status Banner */}
-      <Card className="border-l-4 border-l-primary">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {getStatusIcon(interview.status)}
-              <div>
-                <p className="font-medium">Interview Status</p>
-                <Badge variant={getStatusBadgeVariant(interview.status)} className="mt-1">
-                  {interview.status.charAt(0).toUpperCase() + interview.status.slice(1)}
-                </Badge>
-              </div>
-            </div>
-            {interview.rating && (
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Rating</p>
-                <div className="flex items-center gap-2">
-                  <div className="flex">{getRatingStars(interview.rating)}</div>
-                  <span className="text-lg font-bold">{interview.rating}/10</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2">
-          <Tabs defaultValue="overview" className="space-y-6">
+          <Tabs defaultValue="overview">
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="applicant">Applicant Details</TabsTrigger>
@@ -329,18 +299,19 @@ export default function InterviewViewPage() {
                   <div className="flex items-start gap-4">
                     <Avatar className="h-12 w-12">
                       <AvatarImage
-                            src={
-                              interview.interview_stage_details?.interviewers_details?.[0]
-                                ?.employee_profile_picture ?? undefined
-                            }
-                          />
+                        src={
+                          interview.interview_stage_details?.interviewers_details?.[0]
+                            ?.employee_profile_picture ?? undefined
+                        }
+                      />
 
                       <AvatarFallback>
                         {getInitials(
-                          interview.interview_stage_details?.interviewers_details?.[0]?.first_name || "",
-                          interview.interview_stage_details?.interviewers_details?.[0]?.last_name || ""
+                          interview.interview_stage_details?.interviewers_details?.[0]
+                            ?.first_name || "",
+                          interview.interview_stage_details?.interviewers_details?.[0]?.last_name ||
+                            "",
                         )}
-
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
@@ -356,11 +327,14 @@ export default function InterviewViewPage() {
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         <Badge variant="outline">
-                          {interview.interview_stage_details?.interviewers_details?.[0]?.experience} years
-                          exp
+                          {interview.interview_stage_details?.interviewers_details?.[0]?.experience}{" "}
+                          years exp
                         </Badge>
                         <Badge variant="outline">
-                          {interview.interview_stage_details?.interviewers_details?.[0]?.qualifications}
+                          {
+                            interview.interview_stage_details?.interviewers_details?.[0]
+                              ?.qualifications
+                          }
                         </Badge>
                       </div>
                     </div>
@@ -547,7 +521,7 @@ export default function InterviewViewPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Quick Actions */}
-          <Card>
+          <Card className="mt-12">
             <CardHeader>
               <CardTitle className="text-lg">Quick Actions</CardTitle>
             </CardHeader>
@@ -555,6 +529,15 @@ export default function InterviewViewPage() {
               <Button className="w-full justify-start" variant="outline" onClick={handleEdit}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Interview
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                size="sm"
+                onClick={fetchInterview}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
               </Button>
               <Button className="w-full justify-start" variant="outline">
                 <Mail className="h-4 w-4 mr-2" />

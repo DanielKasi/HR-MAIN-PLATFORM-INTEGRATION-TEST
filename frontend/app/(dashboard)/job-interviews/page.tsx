@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
+import {useState, useEffect, useMemo} from "react";
+import {useRouter} from "next/navigation";
+import {useSelector} from "react-redux";
 import {
   Users,
   Plus,
@@ -22,32 +22,39 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   ChevronsLeft,
   ChevronsRight,
   Briefcase,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Badge} from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {Skeleton} from "@/components/ui/skeleton";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Avatar, AvatarFallback} from "@/components/ui/avatar";
+import {Checkbox} from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
-import { getInterviews, bulkCreateOnBoarding } from "@/lib/utils";
-import type { IInterview } from "@/app/types/types.utils";
-import { PERMISSION_CODES } from "@/app/types/types.utils";
-import { toast } from "sonner";
+import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
+import {getInterviews, bulkCreateOnBoarding} from "@/lib/utils";
+import type {IInterview} from "@/app/types/types.utils";
+import {PERMISSION_CODES} from "@/app/types/types.utils";
+import {toast} from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 
 // Pagination constants
@@ -56,10 +63,10 @@ const DEFAULT_PAGE_SIZE = 10;
 
 // Status options for filtering
 const STATUS_OPTIONS = [
-  { value: "all", label: "All Statuses" },
-  { value: "scheduled", label: "Scheduled" },
-  { value: "completed", label: "Completed" },
-  { value: "cancelled", label: "Cancelled" },
+  {value: "all", label: "All Statuses"},
+  {value: "scheduled", label: "Scheduled"},
+  {value: "completed", label: "Completed"},
+  {value: "cancelled", label: "Cancelled"},
 ];
 
 export default function InterviewsPage() {
@@ -70,10 +77,14 @@ export default function InterviewsPage() {
   const [error, setError] = useState("");
   const [selectedInterviews, setSelectedInterviews] = useState<number[]>([]);
   const [isOnboarding, setIsOnboarding] = useState(false);
+  const [expandedApplicants, setExpandedApplicants] = useState<string[]>([]);
   // Filter and pagination states
   const [statusFilter, setStatusFilter] = useState("all");
   const [interviewerFilter, setInterviewerFilter] = useState("all");
-  const [dateRange, setDateRange] = useState<{ from: string | null; to: string | null }>({ from: null, to: null });
+  const [dateRange, setDateRange] = useState<{from: string | null; to: string | null}>({
+    from: null,
+    to: null,
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
@@ -90,8 +101,8 @@ export default function InterviewsPage() {
       });
     });
     return [
-      { value: "all", label: "All Interviewers" },
-      ...Array.from(uniqueInterviewers).map((name) => ({ value: name, label: name })),
+      {value: "all", label: "All Interviewers"},
+      ...Array.from(uniqueInterviewers).map((name) => ({value: name, label: name})),
     ];
   }, [interviews]);
 
@@ -120,7 +131,7 @@ export default function InterviewsPage() {
       }
       setError("");
 
-      const fetchedInterviews = await getInterviews({ institutionId: selectedInstitution.id });
+      const fetchedInterviews = await getInterviews({institutionId: selectedInstitution.id});
 
       if (fetchedInterviews) {
         setInterviews(fetchedInterviews);
@@ -155,12 +166,14 @@ export default function InterviewsPage() {
           interview.job_position_application_details?.applicant_email
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
-          interview.interview_stage_details?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          interview.interview_stage_details?.name
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
           interview.interview_stage_details?.interviewers_details?.some(
             (employee) =>
               employee.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              employee.last_name.toLowerCase().includes(searchTerm.toLowerCase())
-          )
+              employee.last_name.toLowerCase().includes(searchTerm.toLowerCase()),
+          ),
       );
     }
 
@@ -173,8 +186,8 @@ export default function InterviewsPage() {
     if (interviewerFilter && interviewerFilter !== "all") {
       filtered = filtered.filter((interview) =>
         interview.interview_stage_details?.interviewers_details?.some(
-          (employee) => `${employee.first_name} ${employee.last_name}` === interviewerFilter
-        )
+          (employee) => `${employee.first_name} ${employee.last_name}` === interviewerFilter,
+        ),
       );
     }
 
@@ -254,8 +267,11 @@ export default function InterviewsPage() {
   };
 
   const getRatingStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star key={i} className={`h-3 w-3 ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
+    return Array.from({length: 5}, (_, i) => (
+      <Star
+        key={i}
+        className={`h-3 w-3 ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+      />
     ));
   };
 
@@ -291,7 +307,9 @@ export default function InterviewsPage() {
   };
 
   const handleBulkOnboard = async () => {
-    const selectedInterviewsData = interviews.filter((interview) => selectedInterviews.includes(interview.id));
+    const selectedInterviewsData = interviews.filter((interview) =>
+      selectedInterviews.includes(interview.id),
+    );
 
     const applicationIds = selectedInterviewsData
       .map((interview) => interview.job_position_application_details?.id)
@@ -304,7 +322,7 @@ export default function InterviewsPage() {
 
     setIsOnboarding(true);
     try {
-      const result = await bulkCreateOnBoarding({ applicationIds });
+      const result = await bulkCreateOnBoarding({applicationIds});
       if (result) {
         toast.success(`Successfully onboarded ${applicationIds.length} candidates`);
         setSelectedInterviews([]);
@@ -333,7 +351,7 @@ export default function InterviewsPage() {
     setSearchTerm("");
     setStatusFilter("all");
     setInterviewerFilter("all");
-    setDateRange({ from: null, to: null });
+    setDateRange({from: null, to: null});
     setCurrentPage(1);
   };
 
@@ -348,7 +366,8 @@ export default function InterviewsPage() {
         <div>
           <h1 className="text-2xl font-bold">Interviews</h1>
           <p className="text-muted-foreground">
-            Manage interviews for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
+            Manage interviews for {selectedBranch.branch_name} -{" "}
+            {selectedInstitution.institution_name}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -403,13 +422,17 @@ export default function InterviewsPage() {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">{interviews.filter((i) => i.status === "completed").length}</div>
+              <div className="text-2xl font-bold">
+                {interviews.filter((i) => i.status === "completed").length}
+              </div>
               <p className="text-xs text-muted-foreground">Completed</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">{interviews.filter((i) => i.status === "scheduled").length}</div>
+              <div className="text-2xl font-bold">
+                {interviews.filter((i) => i.status === "scheduled").length}
+              </div>
               <p className="text-xs text-muted-foreground">Scheduled</p>
             </CardContent>
           </Card>
@@ -469,18 +492,22 @@ export default function InterviewsPage() {
               type="date"
               placeholder="From date"
               value={dateRange.from || ""}
-              onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
+              onChange={(e) => setDateRange((prev) => ({...prev, from: e.target.value}))}
               className="w-[140px]"
             />
             <Input
               type="date"
               placeholder="To date"
               value={dateRange.to || ""}
-              onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
+              onChange={(e) => setDateRange((prev) => ({...prev, to: e.target.value}))}
               className="w-[140px]"
             />
           </div>
-          {(searchTerm || statusFilter !== "all" || interviewerFilter !== "all" || dateRange.from || dateRange.to) && (
+          {(searchTerm ||
+            statusFilter !== "all" ||
+            interviewerFilter !== "all" ||
+            dateRange.from ||
+            dateRange.to) && (
             <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
               Clear Filters
             </Button>
@@ -493,8 +520,13 @@ export default function InterviewsPage() {
         <div className="flex justify-between items-center text-sm text-muted-foreground">
           <div>
             Showing {filteredInterviews.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to{" "}
-            {Math.min(currentPage * pageSize, filteredInterviews.length)} of {filteredInterviews.length} interviews
-            {(searchTerm || statusFilter !== "all" || interviewerFilter !== "all" || dateRange.from || dateRange.to) &&
+            {Math.min(currentPage * pageSize, filteredInterviews.length)} of{" "}
+            {filteredInterviews.length} interviews
+            {(searchTerm ||
+              statusFilter !== "all" ||
+              interviewerFilter !== "all" ||
+              dateRange.from ||
+              dateRange.to) &&
               ` (filtered from ${interviews.length} total)`}
           </div>
           <div className="flex items-center gap-2">
@@ -546,11 +578,19 @@ export default function InterviewsPage() {
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">No interviews found</h3>
             <p className="text-muted-foreground mb-4">
-              {searchTerm || statusFilter !== "all" || interviewerFilter !== "all" || dateRange.from || dateRange.to
+              {searchTerm ||
+              statusFilter !== "all" ||
+              interviewerFilter !== "all" ||
+              dateRange.from ||
+              dateRange.to
                 ? "No interviews match your search criteria."
                 : "Get started by scheduling your first interview."}
             </p>
-            {searchTerm || statusFilter !== "all" || interviewerFilter !== "all" || dateRange.from || dateRange.to ? (
+            {searchTerm ||
+            statusFilter !== "all" ||
+            interviewerFilter !== "all" ||
+            dateRange.from ||
+            dateRange.to ? (
               <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
                 Clear Filters
               </Button>
@@ -566,148 +606,163 @@ export default function InterviewsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50px]">
-                    <Checkbox
-                      checked={
-                        paginatedInterviews.filter((i) => i.status === "completed").length > 0 &&
-                        paginatedInterviews
-                          .filter((i) => i.status === "completed")
-                          .every((i) => selectedInterviews.includes(i.id))
-                      }
-                      onCheckedChange={handleSelectAll}
-                      aria-label="Select all completed interviews on this page"
-                    />
-                  </TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                   <TableHead>Applicant</TableHead>
-                  <TableHead>Job Position/ Title </TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Stage</TableHead>
-                  <TableHead>Interview Date</TableHead>
-                  <TableHead>Rating</TableHead>
                   <TableHead>Contact</TableHead>
-                  <TableHead className="w-[50px]">Actions</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedInterviews.map((interview) => (
-                  <TableRow
-                    key={interview.id}
-                    className={`cursor-pointer hover:bg-muted/50 ${selectedInterviews.includes(interview.id) ? "bg-muted/30" : ""}`}
-                    onClick={() => handleViewInterview(interview.id)}
-                  >
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      {interview.status === "completed" ? (
-                        <Checkbox
-                          checked={selectedInterviews.includes(interview.id)}
-                          onCheckedChange={(checked) => handleSelectInterview(interview.id, checked as boolean)}
-                          aria-label={`Select interview for ${interview.job_position_application_details?.applicant_name}`}
-                        />
-                      ) : (
-                        <div className="w-4 h-4" />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs">
-                            {getInitials(interview.job_position_application_details?.applicant_name || "NA")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">{interview.job_position_application_details?.applicant_name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {interview.job_position_application_details?.applicant_email}
-                          </div>
+                {Object.entries(
+                  paginatedInterviews.reduce(
+                    (groups, interview) => {
+                      const applicantName =
+                        interview.job_position_application_details?.applicant_name || "Unknown";
+                      if (!groups[applicantName]) {
+                        groups[applicantName] = {
+                          interviews: [],
+                          contact: {
+                            email: interview.job_position_application_details?.applicant_email,
+                            phone: interview.job_position_application_details?.applicant_phone,
+                            address: interview.job_position_application_details?.address,
+                            state: interview.job_position_application_details?.state,
+                          },
+                        };
+                      }
+                      groups[applicantName].interviews.push(interview);
+                      return groups;
+                    },
+                    {} as Record<string, {interviews: IInterview[]; contact: any}>,
+                  ),
+                ).map(([applicantName, data]) => (
+                  <React.Fragment key={applicantName}>
+                    <TableRow className="hover:bg-muted/50">
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => {
+                            setExpandedApplicants((prev) =>
+                              prev.includes(applicantName)
+                                ? prev.filter((a) => a !== applicantName)
+                                : [...prev, applicantName],
+                            );
+                          }}
+                        >
+                          {expandedApplicants.includes(applicantName) ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="text-xs">
+                              {getInitials(applicantName)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="font-medium">{applicantName}</div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Briefcase className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <div className="font-medium text-sm">
-                            {interview.job_position_application_details?.job_position_advert_job_details?.name || "N/A"}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {interview.job_position_application_details?.job_position_advert_job_details?.department || ""}
-                          </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-muted-foreground">
+                          <div>{data.contact.email}</div>
+                          <div>{data.contact.phone}</div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(interview.status)}
-                        <Badge variant={getStatusBadgeVariant(interview.status)}>{interview.status}</Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{interview.interview_stage_details?.name}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm">
-                        <Calendar className="h-3 w-3 text-muted-foreground" />
-                        {formatDate(interview.interview_date)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {interview.rating ? (
-                        <div className="flex items-center gap-1">
-                          <div className="flex">{getRatingStars(Math.round(interview.rating / 2))}</div>
-                          <span className="text-xs ml-1">{interview.rating}/10</span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{data.interviews.length} interviews</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(data.interviews[data.interviews.length - 1].status)}
+                          <Badge variant={getStatusBadgeVariant(data.interviews[data.interviews.length - 1].status)}>
+                            {data.interviews[data.interviews.length - 1].status}
+                          </Badge>
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-xs text-muted-foreground">
-                        <div>{interview.job_position_application_details?.applicant_phone}</div>
-                        <div className="truncate max-w-[120px]">
-                          {interview.job_position_application_details?.address},{" "}
-                          {interview.job_position_application_details?.state}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleViewInterview(interview.id);
-                            }}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditInterview(interview.id);
-                            }}
-                          >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteInterview(interview.id);
-                            }}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs"
+                          onClick={() => handleViewInterview(data.interviews[data.interviews.length - 1].id)}
+                        >
+                          View Latest
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    {expandedApplicants.includes(applicantName) &&
+                      data.interviews.map((interview) => (
+                        <TableRow key={interview.id} className="bg-muted/30">
+                          <TableCell />
+                          <TableCell className="pl-11">
+                            <div className="font-medium">
+                              {interview.job_position_application_details?.job_position_advert_job_details?.name}
+                            </div>
+                            <Badge variant="outline" className="mt-1">
+                              {interview.interview_stage_details?.name}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1 text-sm">
+                              <Calendar className="h-3 w-3 text-muted-foreground" />
+                              {formatDate(interview.interview_date)}
+                            </div>
+                          </TableCell>
+                          <TableCell>-</TableCell>
+                          <TableCell>
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                {getStatusIcon(interview.status)}
+                                <Badge variant={getStatusBadgeVariant(interview.status)}>
+                                  {interview.status}
+                                </Badge>
+                              </div>
+                              {interview.rating && (
+                                <div className="flex items-center gap-1">
+                                  <div className="flex">
+                                    {getRatingStars(Math.round(interview.rating / 2))}
+                                  </div>
+                                  <span className="text-xs ml-1">{interview.rating}/10</span>
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleViewInterview(interview.id)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEditInterview(interview.id)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteInterview(interview.id)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </React.Fragment>
                 ))}
               </TableBody>
             </Table>
@@ -716,7 +771,9 @@ export default function InterviewsPage() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-6 py-4 border-t">
                 <div className="text-sm text-muted-foreground">
-                  Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filteredInterviews.length)} of {filteredInterviews.length} interviews
+                  Showing {(currentPage - 1) * pageSize + 1} to{" "}
+                  {Math.min(currentPage * pageSize, filteredInterviews.length)} of{" "}
+                  {filteredInterviews.length} interviews
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -745,7 +802,7 @@ export default function InterviewsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
                         <SelectItem key={page} value={page.toString()}>
                           {page}
                         </SelectItem>

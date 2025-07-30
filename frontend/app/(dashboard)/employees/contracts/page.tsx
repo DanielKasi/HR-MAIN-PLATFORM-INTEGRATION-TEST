@@ -1,14 +1,14 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Download, Upload, FileText, Calendar, User, Building } from "lucide-react"
+import { Download, Upload, FileText, Calendar, User, Building, CheckCircle2, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { useToast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
-import { IContract, IContractFormData } from "@/app/types/types.utils"
+import { toast } from "sonner"
+import { cn } from "@/lib/utils"
+import { IContract } from "@/app/types/types.utils"
 import { getContracts, updateContract, approveContract } from "@/lib/utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
@@ -19,7 +19,6 @@ export default function ContractsPage() {
   const [loading, setLoading] = useState(true)
   const [uploadingId, setUploadingId] = useState<number | null>(null)
   const [approvingId, setApprovingId] = useState<number | null>(null)
-  const { toast } = useToast()
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
   const institutionId = selectedInstitution?.id;
@@ -39,22 +38,26 @@ export default function ContractsPage() {
 
   const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
-      const link = document.createElement("a")
-      link.href = fileUrl 
-      link.download = fileName
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error('Network response was not ok');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
 
-      toast({
-        title: "Download started",
+      toast.success("Download started", {
         description: `${fileName} is being downloaded.`,
       })
     } catch (error) {
-      toast({
-        title: "Download failed",
+      toast.error("Download failed", {
         description: "Failed to download the file. Please try again.",
-        variant: "destructive",
       })
     }
   }
@@ -75,18 +78,15 @@ export default function ContractsPage() {
           ),
         )
 
-        toast({
-          title: "Upload successful",
+        toast.success("Upload successful", {
           description: "Signed contract has been uploaded successfully.",
         })
       } else {
         throw new Error("Upload failed")
       }
     } catch (error) {
-      toast({
-        title: "Upload failed",
+      toast.error("Upload failed", {
         description: "Failed to upload the signed contract. Please try again.",
-        variant: "destructive",
       })
     } finally {
       setUploadingId(null)
@@ -104,18 +104,15 @@ export default function ContractsPage() {
           prev.map((contract) => (contract.id === contractId ? { ...contract, is_active: true } : contract)),
         )
 
-        toast({
-          title: "Contract approved",
+        toast.success("Contract approved", {
           description: "Contract has been approved and marked as active.",
         })
       } else {
         throw new Error("Approval failed")
       }
     } catch (error) {
-      toast({
-        title: "Approval failed",
+      toast.error("Approval failed", {
         description: "Failed to approve the contract. Please try again.",
-        variant: "destructive",
       })
     } finally {
       setApprovingId(null)
@@ -132,8 +129,16 @@ export default function ContractsPage() {
     })
   }
 
+  const getFileUrl = (filePath: string) => {
+    if (filePath.startsWith("http")) {
+      return filePath;
+    }
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://127.0.0.1:8000";
+    return `${baseUrl}${filePath}`;
+  }
+
   const getFileName = (filePath: string) => {
-    return filePath.split("/").pop() || "document.pdf"
+    return filePath.split("/").pop() || "document.pdf";
   }
 
   const getContractName = (contract: IContract) => {
@@ -174,22 +179,22 @@ export default function ContractsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="rounded-md border">
+        <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Contract Reference</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Name</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Created</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground tracking-wider whitespace-nowrap">Contract Reference</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground tracking-wider whitespace-nowrap">Name</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground tracking-wider whitespace-nowrap">Status</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground tracking-wider whitespace-nowrap">Created</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground tracking-wider whitespace-nowrap">
                     Original Contract
                   </th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground tracking-wider whitespace-nowrap">
                     Signed Contract
                   </th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Actions</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground tracking-wider whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -207,9 +212,19 @@ export default function ContractsPage() {
                       </div>
                     </td>
                     <td className="p-4 align-middle">
-                      <Badge variant={contract.is_active ? "default" : "secondary"}>
-                        {contract.is_active ? "Active" : "Inactive"}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        {contract.is_active ? (
+                          <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Active
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Pending
+                          </Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="p-4 align-middle">
                       <div className="flex items-center gap-2">
@@ -222,11 +237,14 @@ export default function ContractsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDownload(contract.original_contract as string, getFileName(contract.original_contract as string))}
+                          onClick={() => handleDownload(
+                            getFileUrl(contract.original_contract as string),
+                            getFileName(contract.original_contract as string)
+                          )}
                           className="h-8"
                         >
                           <Download className="h-3 w-3 mr-1" />
-                          Download
+                          <span>Download {getFileName(contract.original_contract as string)}</span>
                         </Button>
                       ) : (
                         <span className="text-sm text-muted-foreground">Not available</span>
@@ -234,20 +252,29 @@ export default function ContractsPage() {
                     </td>
                     <td className="p-4 align-middle">
                       {contract.signed_contract ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDownload(contract.signed_contract as string, getFileName(contract.signed_contract as string))}
-                          className="h-8"
-                        >
-                          <Download className="h-3 w-3 mr-1" />
-                          Download
-                        </Button>
+                        <div className="flex flex-col gap-2">
+                          <div className="text-sm text-muted-foreground">
+                            {getFileName(contract.signed_contract as string)}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownload(
+                              getFileUrl(contract.signed_contract as string),
+                              getFileName(contract.signed_contract as string)
+                            )}
+                            className="h-8"
+                          >
+                            <Download className="h-3 w-3 mr-1" />
+                            Download
+                          </Button>
+                        </div>
                       ) : (
                         <div className="flex flex-col gap-2 min-w-[140px]">
                           <Input
                             type="file"
                             accept=".pdf,.doc,.docx"
+                            className="hidden"
                             onChange={(e) => {
                               const file = e.target.files?.[0]
                               if (file) {
@@ -255,22 +282,33 @@ export default function ContractsPage() {
                               }
                             }}
                             disabled={uploadingId === contract.id}
-                            className="h-8 text-xs"
                             id={`file-upload-${contract.id}`}
                           />
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            disabled={uploadingId === contract.id}
-                            className="h-8 text-xs"
-                            onClick={() => {
-                              const input = document.getElementById(`file-upload-${contract.id}`) as HTMLInputElement
-                              input?.click()
-                            }}
-                          >
-                            <Upload className="h-3 w-3 mr-1" />
-                            {uploadingId === contract.id ? "Uploading..." : "Upload"}
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              disabled={uploadingId === contract.id}
+                              className="h-8"
+                              onClick={() => {
+                                const input = document.getElementById(`file-upload-${contract.id}`) as HTMLInputElement
+                                input?.click()
+                              }}
+                            >
+                              <Upload className="h-3 w-3 mr-1" />
+                              {uploadingId === contract.id ? (
+                                <>
+                                  <span className="animate-spin mr-1">⌛</span>
+                                  Uploading...
+                                </>
+                              ) : (
+                                "Choose & Upload"
+                              )}
+                            </Button>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Accepts PDF, DOC, or DOCX
+                          </div>
                         </div>
                       )}
                     </td>
@@ -296,10 +334,8 @@ export default function ContractsPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
-
-      <Toaster />
     </div>
   )
 }
