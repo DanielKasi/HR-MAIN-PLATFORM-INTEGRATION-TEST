@@ -14,6 +14,8 @@ from docx import Document
 from workflows.models import WorkflowAction, InstitutionApprovalStep, ApprovalTask
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
+from users.models import CustomUser
+from users.serializers import CustomUserSerializer
 
 
 class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
@@ -25,6 +27,15 @@ class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
 class JobAdvertApplicationSerializer(serializers.ModelSerializer):
     job_position_advert_job_details = serializers.SerializerMethodField()
     positions = serializers.SerializerMethodField()
+    created_by = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all()
+    )
+    reviewed_by = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all(), required=False, allow_null=True
+    )
+    shortlisted_by = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all(), required=False, allow_null=True
+    )
 
     class Meta:
         model = JobAdvertApplication
@@ -63,6 +74,23 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
 
     def get_positions(self, obj):
         return obj.job_position_advert.number_of_employees_expected
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["created_by"] = CustomUserSerializer(
+            instance.created_by, context=self.context
+        ).data
+        representation["reviewed_by"] = (
+            CustomUserSerializer(instance.reviewed_by, context=self.context).data
+            if instance.reviewed_by
+            else None
+        )
+        representation["shortlisted_by"] = (
+            CustomUserSerializer(instance.shortlisted_by, context=self.context).data
+            if instance.shortlisted_by
+            else None
+        )
+        return representation    
 
 
 class InterviewStageSerializer(serializers.ModelSerializer):
