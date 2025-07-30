@@ -529,3 +529,8 @@ class EmployeeContract(models.Model):
             new_number = 1
 
         return f"{prefix}{new_number:05d}"
+
+    def save(self, *args, **kwargs):
+        if not self.contract_reference:  # Only generate if not already set
+            self.contract_reference = self.generate_contract_reference()
+        super().save(*args, **kwargs)    

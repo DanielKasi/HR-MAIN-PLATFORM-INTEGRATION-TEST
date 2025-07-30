@@ -257,14 +257,14 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
         contract.save()
         return contract
 
-    def validate(self, data):
-        # Ensure either applicant or employee is provided, not both
-        applicant = data.get("applicant")
-        employee = data.get("employee")
-        if applicant and employee:
-            raise serializers.ValidationError("Cannot set both applicant and employee.")
-        if not applicant and not employee:
-            raise serializers.ValidationError(
-                "Either applicant or employee must be provided."
-            )
-        return data
+    # def validate(self, data):
+    #     # Ensure either applicant or employee is provided, not both
+    #     applicant = data.get("applicant")
+    #     employee = data.get("employee")
+    #     if applicant and employee:
+    #         raise serializers.ValidationError("Cannot set both applicant and employee.")
+    #     if not applicant and not employee:
+    #         raise serializers.ValidationError(
+    #             "Either applicant or employee must be provided."
+    #         )
+    #     return data
