@@ -359,7 +359,7 @@ export default function JobPositionsPage() {
                       UGX {" "}
                       Salary:
                     </span>
-                    <span className="font-medium">{formatCurrency(position.salary.toLocaleString())}</span>
+                    <span className="font-medium">{formatCurrency(position?.salary?.toLocaleString()||0)}</span>
                   </div>
 
                   {position?.reports_to_details && (
