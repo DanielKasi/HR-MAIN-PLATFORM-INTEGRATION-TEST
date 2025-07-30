@@ -34,6 +34,10 @@ from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.renderers import JSONRenderer
 from utilities.pagination import CustomPageNumberPagination
 from django.http import FileResponse
+from django.core.exceptions import ValidationError
+from users.models import CustomUser
+from django.utils import timezone
+
 
 
 class EmployeeListAPIView(APIView):
@@ -1309,3 +1313,83 @@ class EmployeeContractDetailAPIView(APIView):
         contract = self.get_object(pk)
         contract.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class EmployeeContractApprovalAPIView(APIView):
+
+    @extend_schema(
+        responses=EmployeeContractSerializer,
+        description="Approve an employee contract by setting it to active and then converting applicant to employee if applicable",
+        tags=["Employee Contract"],
+    )
+    def post(self, request, pk):
+        contract = get_object_or_404(EmployeeContract, pk=pk)
+        
+        # Check if contract is already active
+        if contract.is_active:
+            return Response(
+                {"error": "Contract is already active"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Set contract to active first
+        contract.is_active = True
+        contract.save()
+
+        # If contract has an applicant and no employee, create Employee instance
+        if contract.applicant and not contract.employee:
+            try:
+                # Check if employee already created for this application
+                if hasattr(contract.applicant, "created_employee"):
+                    return Response(
+                        {"error": "Employee already created for this application"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # Create CustomUser if it doesn't exist
+                user, created = CustomUser.objects.get_or_create(
+                    email=contract.applicant.applicant_email,
+                    defaults={
+                        'fullname': contract.applicant.applicant_name,
+                        'is_active': True,
+                    }
+                )
+
+                # Create Employee instance
+                employee_data = {
+                    'user': user,
+                    'email': contract.applicant.applicant_email,
+                    'phone_number': contract.applicant.applicant_phone,
+                    'position': contract.applicant.job_position_advert.job_position,
+                    'address': contract.applicant.address,
+                    'date_of_joining': timezone.now().date(),
+                    'is_active': True,
+                    'department': contract.applicant.job_position_advert.job_position.department,
+                    'salary': contract.applicant.job_position_advert.job_position.salary,
+                }
+
+                employee = Employee(**employee_data)
+                employee.employee_id = employee.generate_employee_id()
+                
+                # Validate and save employee
+                employee.full_clean()  # Run model validation
+                employee.save()
+                
+                # Update contract to reference employee instead of applicant
+                contract.employee = employee
+                contract.applicant = None
+                contract.save()
+
+            except ValidationError as e:
+                return Response(
+                    {"error": f"Failed to create employee: {str(e)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            except Exception as e:
+                return Response(
+                    {"error": f"Unexpected error creating employee: {str(e)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        serializer = EmployeeContractSerializer(contract)
+        return Response(serializer.data, status=status.HTTP_200_OK)

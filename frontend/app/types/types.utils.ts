@@ -1463,15 +1463,14 @@ export type ContractStatus = 'draft' | 'active' | 'expired' | 'terminated';
 export interface IContract {
   id: number;
   contract_id: string;
-  // employee: number;
+  applicant: JobApplication | null;
   employee?: IEmployee;
-  contract_file: string | null;
-  status: ContractStatus;
-  start_date: string;
-  end_date: string | null;
+  is_active: boolean;
+  contract_reference: string;
+  original_contract: string | null;
+  signed_contract: string | null;
   created_at: string;
   updated_at: string;
-  notes: string | null;
 }
 
 export interface IContractFormData {
