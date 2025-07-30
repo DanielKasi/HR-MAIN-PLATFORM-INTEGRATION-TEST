@@ -36,6 +36,9 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
     shortlisted_by = serializers.PrimaryKeyRelatedField(
         queryset=CustomUser.objects.all(), required=False, allow_null=True
     )
+    recommended_by = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all(), required=False, allow_null=True
+    )
 
     class Meta:
         model = JobAdvertApplication
@@ -61,6 +64,7 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
             "created_by",
             "reviewed_by",
             "shortlisted_by",
+            "recommended_by",
         ]
 
     def get_job_position_advert_job_details(self, obj):
@@ -89,6 +93,11 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
             CustomUserSerializer(instance.shortlisted_by, context=self.context).data
             if instance.shortlisted_by
             else None
+        )
+        representation["recommended_by"] = (
+            CustomUserSerializer(instance.recommended_by, context=self.context).data
+            if instance.recommended_by
+            else None   
         )
         return representation    
 
