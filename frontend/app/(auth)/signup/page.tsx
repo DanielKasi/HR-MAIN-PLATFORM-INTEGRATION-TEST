@@ -140,7 +140,7 @@ export default function SignupPage() {
         <CardHeader className="space-y-1 border-none">
           <CardTitle className="text-2xl text-center font-bold">Create an Account</CardTitle>
           <CardDescription className="text-center text-base">
-            Enter your details to sign up for PERRAC
+            Enter your details to sign up for PERACOSOFT
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSignup}>

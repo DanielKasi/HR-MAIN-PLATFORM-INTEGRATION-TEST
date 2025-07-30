@@ -790,7 +790,7 @@ export default function EditJobPositionPage() {
                 {/* Salary with IEmployee Selection */}
                 <div className="space-y-2">
                   <Label htmlFor="salary" className="text-sm font-medium">
-                    Salary * {isSalaryChanged && <span className="text-xs text-amber-600">(Changed - Select employees)</span>}
+                    Salary scale * {isSalaryChanged && <span className="text-xs text-amber-600">(Changed - Select employees)</span>}
                   </Label>
                   <div className="relative">
                     <Input
