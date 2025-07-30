@@ -359,6 +359,7 @@ export interface CreateJobPositionData {
 
 
 export interface JobApplication {
+  application: any;
   shortlisted_by: any;
   reviewed_by: any;
   reviewed_by_details: any;
@@ -380,7 +381,7 @@ export interface JobApplication {
   state: string
   address: string
   country: string
-  source: "website" | "referral" | "job_board" | "social_media" | "other"
+  source: "website" | "referral" | "job_board" | "social_media" | "head_hunt" | "other"
   created_by: number
 }
 

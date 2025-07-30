@@ -443,7 +443,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         <Button
           key={item.title}
           variant="ghost"
-          className={`w-full !rounded-3xl flex items-center justify-start px-4 py-2 text-sm font-medium text-gray-600 ${isActive ? "bg-orange-500 bg-opacity-40" : "hover:bg-orange-500/60 hover:bg-opacity-60"}`}
+          className={`w-full !rounded-3xl flex items-center justify-start px-4 py-8 !h-12 text-sm font-medium text-gray-600 ${isActive ? "bg-orange-500 bg-opacity-40" : "hover:bg-orange-500/60 hover:bg-opacity-60"}`}
           onClick={() => router.push(item.href)}
         >
           <div className="flex items-center space-x-2">
@@ -458,7 +458,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       <div key={item.title} className="w-full py-1">
         <Button
           variant="ghost"
-          className={`w-full !rounded-3xl flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-600 ${isActive ? "bg-orange-500/60 bg-opacity-20" : "hover:bg-orange-500 hover:bg-opacity-30"}`}
+          className={`w-full !rounded-xl flex items-center justify-between px-4 !py-6 text-sm font-medium text-gray-600 ${isActive ? "bg-orange-500/60 bg-opacity-20" : "hover:bg-orange-500 hover:bg-opacity-30"}`}
           onClick={() => (item.submenu ? toggleExpand(item.title) : router.push(item.href))}
         >
           <div className="flex items-center space-x-2">
@@ -474,12 +474,12 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             ))}
         </Button>
         {item.submenu && isExpanded && (
-          <div className="ml-6 flex flex-col gap-1 mt-2 border-l-2 border-primary/20 bg-gray-200/20 rounded-lg">
+          <div className="ml-6 flex flex-col gap-2 mt-2 border-l-2 border-primary/20 bg-gray-200/20">
             {item.submenu.map((sub) => (
               <Button
                 key={sub.href}
                 variant="ghost"
-                className={`w-full !rounded-xl !text-left flex items-start p-2 text-sm text-gray-600 ${pathname === sub.href ? "bg-orange-500 bg-opacity-20" : "hover:bg-orange-500/30 hover:bg-opacity-30"}`}
+                className={`w-full !rounded-none !text-left flex items-start px-2 !py-3 text-sm text-gray-600 ${pathname === sub.href ? "bg-orange-500/20" : "hover:bg-orange-500/30"}`}
                 onClick={() => router.push(sub.href)}
               >
                 <span className="!w-full !text-left !bg-transparent">
@@ -642,3 +642,6 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     </div>
   );
 }
+
+
+// const styledSubNavItem = styled

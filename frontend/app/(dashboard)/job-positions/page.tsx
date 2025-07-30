@@ -23,6 +23,14 @@ import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -266,18 +274,9 @@ export default function JobPositionsPage() {
 
       {/* Job Positions/Titles Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-full" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-1/2 mb-2" />
-                <Skeleton className="h-4 w-2/3" />
-              </CardContent>
-            </Card>
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="w-full h-12 bg-muted/10 rounded-md animate-pulse" />
           ))}
         </div>
       ) : filteredJobPositions.length === 0 ? (
@@ -289,108 +288,106 @@ export default function JobPositionsPage() {
               ? "No job positions/titles match your search criteria."
               : "Get started by creating your first job position."}
           </p>
-
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredJobPositions.map((position) => (
-            <Card key={position.id} className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`h-10 w-10 rounded-full ${
-                      position.job_position_status === "active" 
-                        ? "bg-green-50" 
-                        : "bg-red-50"
-                    } flex items-center justify-center`}>
-                      <Briefcase className={`h-5 w-5 ${
-                        position.job_position_status === "active"
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`} />
+        <Card className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Salary</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Reports To</TableHead>
+                <TableHead>Templates</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredJobPositions.map((position) => (
+                <TableRow key={position.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-8 w-8 rounded-full ${
+                        position.job_position_status === "active" 
+                          ? "bg-green-50" 
+                          : "bg-red-50"
+                      } flex items-center justify-center`}>
+                        <Briefcase className={`h-4 w-4 ${
+                          position.job_position_status === "active"
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`} />
+                      </div>
+                      <span>{position.name}</span>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">{position.name}</CardTitle>
-                    </div>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS}>
-                        <DropdownMenuItem onClick={() => handleViewJobPosition(position.id)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                      </ProtectedComponent>
-                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_JOB_POSITIONS}>
-                        <DropdownMenuItem onClick={() => handleEditJobPosition(position.id)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                      </ProtectedComponent>
-                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_JOB_POSITIONS}>
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteJobPosition(position.id)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </ProtectedComponent>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3 cursor-pointer" onClick={() => handleViewJobPosition(position.id)}>
-                <p className="text-sm text-muted-foreground line-clamp-2">{position.description}</p>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Department:</span>
+                  </TableCell>
+                  <TableCell>
                     <Badge variant="outline">{position.department_details?.name}</Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      UGX {" "}
-                      Salary:
-                    </span>
-                    <span className="font-medium">{formatCurrency(position?.salary?.toLocaleString()||0)}</span>
-                  </div>
-
-                  {position?.reports_to_details && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        Reports to:
-                      </span>
-                      <span className="font-medium text-xs">{position.reports_to_details?.name}</span>
+                  </TableCell>
+                  <TableCell>
+                    UGX {formatCurrency(position?.salary?.toLocaleString()||0)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={position.job_position_status === "active" ? "success" : "destructive"}>
+                      {position.job_position_status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {position.reports_to_details?.name || "-"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      {position.contract_template && (
+                        <Badge variant="outline" className="text-xs">
+                          Contract
+                        </Badge>
+                      )}
+                      {position.offer_letter_template && (
+                        <Badge variant="outline" className="text-xs">
+                          Offer Letter
+                        </Badge>
+                      )}
+                      {!position.contract_template && !position.offer_letter_template && "-"}
                     </div>
-                  )}
-                </div>
-
-                <div className="pt-2 border-t">
-                  <div className="flex gap-2">
-                    {position.contract_template && (
-                      <Badge variant="outline" className="text-xs">
-                        Contract
-                      </Badge>
-                    )}
-                    {position.offer_letter_template && (
-                      <Badge variant="outline" className="text-xs">
-                        Offer Letter
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS}>
+                          <DropdownMenuItem onClick={() => handleViewJobPosition(position.id)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_JOB_POSITIONS}>
+                          <DropdownMenuItem onClick={() => handleEditJobPosition(position.id)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_JOB_POSITIONS}>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteJobPosition(position.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   )

@@ -138,7 +138,7 @@ export default function DocumentTemplatesPage() {
           <h1 className="text-3xl font-bold">Document Templates</h1>
           <p className="text-muted-foreground mt-2">Manage your document templates for generating documents</p>
         </div>
-        <Link href="templates/create">
+        <Link href="/documents/templates/create">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
             Create Template
@@ -224,7 +224,7 @@ export default function DocumentTemplatesPage() {
             {searchTerm ? "No templates match your search." : "Get started by creating your first template."}
           </p>
           {!searchTerm && (
-            <Link href="documents/templates/create">
+            <Link href="/documents/templates/create">
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Template

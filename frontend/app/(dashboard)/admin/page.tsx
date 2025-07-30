@@ -25,6 +25,7 @@ import {
   BookOpen,
   LucideHouse,
   BriefcaseBusinessIcon,
+  Cog,
 } from "lucide-react";
 import {Separator} from "@/components/ui/separator";
 import ProtectedComponent from "@/components/ProtectedComponent";
@@ -105,13 +106,6 @@ export default function AdminPage() {
                   href="#"
                   className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
                 >
-                  <Store className="w-5 h-5 text-gray-500" />
-                  <span>Organisation Settings</span>
-                </Link>
-                <Link
-                  href="#"
-                  className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
-                >
                   <Code className="w-5 h-5 text-gray-500" />
                   <span>API Settings</span>
                 </Link>
@@ -168,9 +162,18 @@ export default function AdminPage() {
           <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Branch Management Section */}
             <div>
-              <h2 className="text-lg font-semibold mb-6">Branch Management</h2>
+              <h2 className="text-lg font-semibold mb-6">Organization Management</h2>
               <Separator className="my-6" />
               <div className="flex flex-col items-start justify-center gap-6">
+                <div className="space-y-4">
+                  <Link
+                    href="#"
+                    className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+                  >
+                    <Cog className="w-5 h-5 text-gray-500" />
+                    <span>Organization Settings</span>
+                  </Link>
+                </div>
                 <div className="">
                   <Link
                     href="/branches"
@@ -180,6 +183,15 @@ export default function AdminPage() {
                     <span>Branches</span>
                   </Link>
                   {/* We'll keep the branch listing functionality but hide it since it's not in the image */}
+                </div>
+                <div className="space-y-4">
+                  <Link
+                    href="/admin/institution-approval-steps/"
+                    className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+                  >
+                    <Store className="w-5 h-5 text-gray-500" />
+                    <span>Organization Approval Steps</span>
+                  </Link>
                 </div>
 
                 <div className="">
@@ -206,21 +218,6 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Institution Management Section */}
-            <div>
-              <h2 className="text-lg font-semibold mb-6">Institution Management</h2>
-              <Separator className="my-6" />
-
-              <div className="space-y-4">
-                <Link
-                  href="/admin/institution-approval-steps/"
-                  className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
-                >
-                  <Store className="w-5 h-5 text-gray-500" />
-                  <span>Institution Approval Steps</span>
-                </Link>
-              </div>
-            </div>
             <div>
               <h2 className="text-lg font-semibold mb-6">Documents Management</h2>
               <Separator className="my-6" />

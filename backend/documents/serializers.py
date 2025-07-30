@@ -1,46 +1,73 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from .models import DocumentType, DocumentTemplate
-from institution.models import Institution  
+from institution.models import Institution
 from institution.serializers import InstitutionSerializer
 import re
 from docx import Document
 import PyPDF2
+
 
 class DocumentTypeSerializer(serializers.ModelSerializer):
     institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
 
     class Meta:
         model = DocumentType
-        fields = ['id', 'institution', 'name', 'code', 'description']
-        read_only_fields = ['code']
+        fields = ["id", "institution", "name", "code", "description"]
+        read_only_fields = ["code"]
 
     def to_representation(self, instance):
         """Override to include institution name in the representation"""
         data = super().to_representation(instance)
-        data['institution'] = InstitutionSerializer(instance.institution).data
-        return data    
+        data["institution"] = InstitutionSerializer(instance.institution).data
+        return data
 
 
 class DocumentTemplateSerializer(serializers.ModelSerializer):
-    document_type = serializers.PrimaryKeyRelatedField(queryset=DocumentType.objects.all())
+    document_type = serializers.PrimaryKeyRelatedField(
+        queryset=DocumentType.objects.all()
+    )
 
     class Meta:
         model = DocumentTemplate
-        fields = '__all__'
-        read_only_fields = ['created_at', 'updated_at']
+        fields = "__all__"
+        read_only_fields = ["created_at", "updated_at"]
 
     def _extract_file_content(self, file, template_type):
         """Extract text content from uploaded PDF or Word file."""
         try:
             if template_type == "pdf":
                 reader = PyPDF2.PdfReader(file)
-                return "\n".join(
-                    page.extract_text() or "" for page in reader.pages
-                )
+                return "\n".join(page.extract_text() or "" for page in reader.pages)
             elif template_type == "word":
                 doc = Document(file)
-                return "\n".join(p.text for p in doc.paragraphs)
+
+                # It CAN BE DELETED FRO HERE TO REVERT
+
+                html_content = "<html><body>\n"
+
+                for para in doc.paragraphs:
+                    html_line = ""
+                    for run in para.runs:
+                        text = (
+                            run.text.replace("&", "&amp;")
+                            .replace("<", "&lt;")
+                            .replace(">", "&gt;")
+                        )
+                        if run.bold:
+                            text = f"<b>{text}</b>"
+                        if run.italic:
+                            text = f"<i>{text}</i>"
+                        html_line += text
+                    html_content += f"<p>{html_line}</p>\n"
+
+                html_content += "</body></html>"
+
+                return html_content
+
+            # It CAN BE DELETED TO REVERT
+
+            # return "\n".join(p.text for p in doc.paragraphs)
         except Exception as e:
             raise serializers.ValidationError(f"Error reading file: {str(e)}")
         return ""
@@ -55,15 +82,15 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
 
         # Define placeholder patterns, supporting apostrophes
         placeholder_patterns = [
-            r'\{\{[\w\s\'-]+\}\}',  # {{variable_name}} or {{Employee's Name}}
-            r'<<[\w\s\'-]+>>',      # <<variable_name>> or <<Employee's Name>>
-            r'\[\[[\w\s\'-]+\]\]',  # [[variable_name]] or [[Employee's Name]]
-            r'\[[\w\s\'-]+\]',      # [variable_name] or [Employee's Name]
-            r'_{10,}',              # ___________________
+            r"\{\{[\w\s\'-]+\}\}",  # {{variable_name}} or {{Employee's Name}}
+            r"<<[\w\s\'-]+>>",  # <<variable_name>> or <<Employee's Name>>
+            r"\[\[[\w\s\'-]+\]\]",  # [[variable_name]] or [[Employee's Name]]
+            r"\[[\w\s\'-]+\]",  # [variable_name] or [Employee's Name]
+            r"_{10,}",  # ___________________
         ]
 
         # Combine patterns into a single regex
-        combined_pattern = '|'.join(f'({pattern})' for pattern in placeholder_patterns)
+        combined_pattern = "|".join(f"({pattern})" for pattern in placeholder_patterns)
         all_matches = re.findall(combined_pattern, content)
 
         # Flatten matches (since re.findall with groups returns tuples)
@@ -73,11 +100,13 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
         for line in lines:
             line_lower = line.strip()
             # Find phrases before underscores, allowing apostrophes
-            match = re.search(r'([\w\s\'-]+?)\s*:?\s*_{10,}', line_lower)
+            match = re.search(r"([\w\s\'-]+?)\s*:?\s*_{10,}", line_lower)
             if match:
                 phrase = match.group(1).strip()
                 # Normalize to snake_case, removing apostrophes
-                placeholder_name = '{{' + re.sub(r'\s+', '_', phrase.replace("'", "")) + '}}'
+                placeholder_name = (
+                    "{{" + re.sub(r"\s+", "_", phrase.replace("'", "")) + "}}"
+                )
                 if placeholder_name not in placeholders:
                     placeholders.append(placeholder_name)
             # Handle special cases
@@ -92,11 +121,13 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
 
         # Handle other placeholder formats
         for match in matches:
-            if not re.match(r'_{10,}', match):  # Skip underscores
+            if not re.match(r"_{10,}", match):  # Skip underscores
                 # Extract variable name by removing delimiters
-                cleaned_name = re.sub(r'[\{\}<>\[\]]+', '', match).strip()
+                cleaned_name = re.sub(r"[\{\}<>\[\]]+", "", match).strip()
                 # Normalize to snake_case, removing apostrophes
-                normalized_name = '{{' + re.sub(r'\s+', '_', cleaned_name.replace("'", "")) + '}}'
+                normalized_name = (
+                    "{{" + re.sub(r"\s+", "_", cleaned_name.replace("'", "")) + "}}"
+                )
                 if normalized_name not in placeholders:
                     placeholders.append(normalized_name)
 
@@ -139,7 +170,9 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
             validated_data["content"] = content or ""
 
         # Extract placeholders
-        validated_data["placeholders"] = self._extract_placeholders(validated_data["content"])
+        validated_data["placeholders"] = self._extract_placeholders(
+            validated_data["content"]
+        )
 
         return super().create(validated_data)
 
@@ -155,12 +188,16 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
             validated_data["content"] = content or instance.content
 
         # Extract placeholders
-        validated_data["placeholders"] = self._extract_placeholders(validated_data.get("content", instance.content))
+        validated_data["placeholders"] = self._extract_placeholders(
+            validated_data.get("content", instance.content)
+        )
 
         return super().update(instance, validated_data)
 
+
 class PlaceholderDataSerializer(serializers.Serializer):
     value = serializers.CharField(allow_blank=True)
+
 
 class GenerateDocumentResponseSerializer(serializers.Serializer):
     placeholders = serializers.DictField(child=PlaceholderDataSerializer())
@@ -170,42 +207,44 @@ class GenerateDocumentResponseSerializer(serializers.Serializer):
 class GenerateDocumentRequestSerializer(serializers.Serializer):
     context = serializers.CharField(
         required=True,
-        help_text="The context for document generation (e.g., onboarding, employee, leave)"
+        help_text="The context for document generation (e.g., onboarding, employee, leave)",
     )
     context_id = serializers.IntegerField(
         required=True,
-        help_text="The ID of the context record (e.g., OnBoarding ID, Employee ID)"
+        help_text="The ID of the context record (e.g., OnBoarding ID, Employee ID)",
     )
     placeholders = serializers.DictField(
         child=serializers.CharField(),
-        help_text="Dictionary of placeholder names and their values, e.g., {'full_name': 'John Doe', 'salary': '50000'}"
+        help_text="Dictionary of placeholder names and their values, e.g., {'full_name': 'John Doe', 'salary': '50000'}",
     )
+
 
 class GenerateDocumentPostResponseSerializer(serializers.Serializer):
     status = serializers.CharField()
     document_id = serializers.IntegerField()
     preview = serializers.CharField(
         help_text="Preview of the generated document with placeholders replaced by provided values",
-        allow_blank=True
+        allow_blank=True,
     )
+
 
 class DocumentContentPreviewSerializer(serializers.Serializer):
     preview = serializers.CharField(
         help_text="Preview of the document content with placeholders replaced by stored values",
-        allow_blank=True
+        allow_blank=True,
     )
+
 
 class DocumentStatusUpdateSerializer(serializers.Serializer):
     status = serializers.ChoiceField(
-        choices=['pending', 'in_review', 'reviewed'],
+        choices=["pending", "in_review", "reviewed"],
         required=True,
-        help_text="New status for the document"
+        help_text="New status for the document",
     )
     context = serializers.CharField(
         required=True,
-        help_text="Context of the document (e.g., onboarding, employee, leave)"
+        help_text="Context of the document (e.g., onboarding, employee, leave)",
     )
     context_id = serializers.IntegerField(
-        required=True,
-        help_text="ID of the context record (e.g., OnBoarding ID)"
-    )    
+        required=True, help_text="ID of the context record (e.g., OnBoarding ID)"
+    )
