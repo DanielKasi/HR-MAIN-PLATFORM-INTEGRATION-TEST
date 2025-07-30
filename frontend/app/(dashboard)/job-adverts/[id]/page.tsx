@@ -303,7 +303,7 @@ export default function JobAdvertDetailsPage() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Job Position Information */}
+            {/* Job Position/ Title  Information */}
             {jobPosition && (
               <>
                 <div>

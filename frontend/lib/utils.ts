@@ -190,10 +190,8 @@ export const getJobPositions = async ({ institutionId }: { institutionId: number
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`)
     const data = response.data as PaginatedResponse<IJobPosition>
-    //console.log("Job Position Data:", data)
     return data.results
   } catch (error) {
-    console.error("Error fetching job positions:", error)
     return null
   }
 }
@@ -202,10 +200,9 @@ export const getJobPosition = async ({ jobPositionId }: { jobPositionId: number 
   try {
     const response = await apiRequest.get(`recruitment/job-position/${jobPositionId}/`)
     const data = response.data as IJobPosition
-    console.log("Job Position:", data)
     return data
   } catch (error) {
-    console.error("Error fetching job position:", error)
+    console.error("Error fetching job position/title:", error)
     return null
   }
 }
@@ -241,7 +238,7 @@ export const createJobPosition = async ({
     const response = await apiRequest.post(`recruitment/institution/${institutionId}/job-position/`, formData)
     return response.data as IJobPosition
   } catch (error) {
-    console.error("Error creating job position:", error)
+    console.error("Error creating job position/title:", error)
     return null
   }
 }
@@ -285,11 +282,11 @@ export const updateJobPosition = async ({
     const response = await apiRequest.patch(`recruitment/job-position/${jobPositionId}/`, formData)
     return response.data as IJobPosition
   } catch (error) {
-    console.error("Error updating job position:", error)
+    console.error("Error updating job position/title:", error)
     if ((error as any).response?.data?.apply_salary_to_employees) {
-      toast.error((error as any)?.response?.data?.apply_salary_to_employees.join(", ") || "Failed to update job position ")
+      toast.error((error as any)?.response?.data?.apply_salary_to_employees.join(", ") || "Failed to update job position/title ")
     } else {
-      toast.error("Failed to update job position. Please try again.")
+      toast.error("Failed to update job position/title. Please try again.")
     }
     return null
   }
@@ -309,7 +306,6 @@ export const createJobApplication = async ({
   // Log what we're appending to FormData
   Object.entries(applicationData).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
-      console.log(`Appending ${key}:`, value instanceof File ? `File: ${value.name}` : value)
       formData.append(key, value as any);
     }
   });
@@ -347,7 +343,6 @@ export const getJobApplicationById = async ({
 }): Promise<JobApplication | null> => {
   try {
     const response = await apiRequest.get(`recruitment/job-application/${applicationId}/`);
-    console.log("Job Application Response:", response.data);
     return response.data as JobApplication;
   } catch (error) {
     console.error("Failed to fetch job application", error);
@@ -797,8 +792,6 @@ export const updateEmployee = async ({
     });
 
     const response = await apiRequest.patch(`/employee/${employeeId}/update/`, formData);
-    console.log("..... *20")
-    console.log(response)
     return response.data;
 
   } catch (error: any) {
@@ -1016,8 +1009,7 @@ export const createEmployeeType = async ({
     );
     return response.data as IEmployeeType;
   } catch (error) {
-    console.error("Failed to create employee type:", error);
-    return null;
+    throw error
   }
 };
 
@@ -1050,8 +1042,7 @@ export const getEmployeeTypes = async ({
     const data = response.data as PaginatedResponse<IEmployeeType>
     return data.results
   } catch (error) {
-    console.error("Failed to fetch employee types:", error);
-    return [];
+    throw error
   }
 };
 
@@ -3003,14 +2994,11 @@ export const downloadContract = async ({
   contractId: number;
 }): Promise<Blob | null> => {
   try {
-    console.log('Downloading contract with ID:', contractId);
     const response = await apiGet(`employee/contracts/${contractId}/download/`, null, {}, {
       responseType: 'blob',
     });
 
-    console.log('Response headers:', response.headers);
-    console.log('Response data type:', response.data instanceof Blob ? 'Blob' : typeof response.data);
-
+    
     if (!(response.data instanceof Blob)) {
       console.error('Invalid response type, expected Blob but received:', typeof response.data);
       return null;

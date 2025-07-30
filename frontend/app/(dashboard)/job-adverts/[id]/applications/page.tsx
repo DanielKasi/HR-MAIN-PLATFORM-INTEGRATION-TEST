@@ -1448,7 +1448,7 @@ const handleSelectAll = (checked: boolean) => {
   </div>
 </TableHead>
                     <TableHead>Applicant</TableHead>
-                    <TableHead>Job Position</TableHead>
+                    <TableHead>Job Position/ Title </TableHead>
                     <TableHead
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleSort("posted_date")}
@@ -1741,7 +1741,7 @@ const handleSelectAll = (checked: boolean) => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
   <div className="space-y-2">
-    <Label htmlFor="job_position_advert">Job Position *</Label>
+    <Label htmlFor="job_position_advert">Job Position/ Title  *</Label>
     <Select
       value={formData.job_position_advert.toString()}
       onValueChange={(value) =>

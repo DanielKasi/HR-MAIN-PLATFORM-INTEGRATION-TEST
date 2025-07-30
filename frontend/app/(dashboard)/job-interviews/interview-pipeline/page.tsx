@@ -872,7 +872,7 @@ const candidatesEligibleForMoving = useMemo(() => {
       }
       setEmployees(employeesArray)
 
-      // Extract unique job positions from interviews
+      // Extract unique job position/titles /titles from interviews
       const jobPositionsMap = new Map<number, JobPosition>()
       
       fetchedInterviews?.forEach(interview => {
@@ -898,7 +898,7 @@ const candidatesEligibleForMoving = useMemo(() => {
       const positions = Array.from(jobPositionsMap.values()).sort((a, b) => a.name.localeCompare(b.name))
       setAvailableJobPositions(positions)
 
-      // Auto-select the first job position if none selected
+      // Auto-select the first job position/title if none selected
       if (!selectedJobPosition && positions.length > 0) {
         setSelectedJobPosition(positions[0])
       }
@@ -995,7 +995,7 @@ useEffect(() => {
     }
 
     if (!selectedJobPosition) {
-      toast.error("Please select a job position first")
+      toast.error("Please select a job position/title first")
       return
     }
 
@@ -1168,7 +1168,7 @@ useEffect(() => {
     scheduleData: InterviewScheduleData
   ) => {
     if (!selectedInstitution || !nextStageForActive || !selectedJobPosition) {
-      throw new Error('Missing institution, next stage, or job position data');
+      throw new Error('Missing institution, next stage, or job position/title data');
     }
 
     try {
@@ -1797,30 +1797,30 @@ useEffect(() => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Job-Specific Interview Pipeline</h1>
             <p className="text-gray-600">
-              Manage interview stages and candidates for specific job positions
+              Manage interview stages and candidates for specific job position/titles 
             </p>
           </div>
         </div>
       </div>
 
-      {/* Job Position Selector */}
+      {/* Job Position/ Title  Selector */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            Select Job Position
+            Select Job Position/ Title 
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
             <div className="flex-1">
-              <Label htmlFor="job-position">Job Position</Label>
+              <Label htmlFor="job-position">Job Position/ Title </Label>
               <Select
                 value={selectedJobPosition?.id.toString() || ""}
                 onValueChange={handleJobPositionChange}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a job position to manage" />
+                  <SelectValue placeholder="Select a job position/title to manage" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableJobPositions.map((position) => (
@@ -1974,13 +1974,13 @@ useEffect(() => {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Select a Job Position</h3>
+              <h3 className="text-lg font-semibold mb-2">Select a Job Position/ Title </h3>
               <p className="text-muted-foreground mb-4">
-                Choose a job position above to manage its interview pipeline
+                Choose a job position/title above to manage its interview pipeline
               </p>
               {availableJobPositions.length === 0 && (
                 <p className="text-sm text-gray-500">
-                  No job positions with interviews found. Schedule some interviews first.
+                  No job position/titles /titles with interviews found. Schedule some interviews first.
                 </p>
               )}
             </div>
