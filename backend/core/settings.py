@@ -52,7 +52,7 @@ INSTALLED_APPS = [
     "documents",
     "audit",
     "settings",
-    'markdownx',
+    "markdownx",
 ]
 
 MIDDLEWARE = [
@@ -71,9 +71,18 @@ ROOT_URLCONF = "core.urls"
 CKEDITOR_UPLOAD_PATH = "uploads/"
 
 DJANGO_CKEDITOR_5_CONFIGS = {
-    'default': {
-        'toolbar': ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote'],
-        'language': 'en',
+    "default": {
+        "toolbar": [
+            "heading",
+            "|",
+            "bold",
+            "italic",
+            "link",
+            "bulletedList",
+            "numberedList",
+            "blockQuote",
+        ],
+        "language": "en",
     },
 }
 

@@ -20,6 +20,8 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from weasyprint import HTML
 from django.utils.text import slugify
+from docx import Document
+from weasyprint import HTML
 
 
 class EmployeeTypeSerializer(serializers.ModelSerializer):
@@ -95,9 +97,35 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
         template = job_position.contract_template if job_position else None
 
-        if template and template.content:
-            content = template.content
-            placeholders = template.placeholders or []
+        if template and template.file:
+
+            file = template.file
+            if not file:
+                raise serializers.ValidationError("Contract template file is missing.")
+
+            # convert file to html
+            doc = Document(file)
+
+            html_content = "<html><body>\n"
+
+            for para in doc.paragraphs:
+                html_line = ""
+                for run in para.runs:
+                    text = (
+                        run.text.replace("&", "&amp;")
+                        .replace("<", "&lt;")
+                        .replace(">", "&gt;")
+                    )
+                    if run.bold:
+                        text = f"<b>{text}</b>"
+                    if run.italic:
+                        text = f"<i>{text}</i>"
+                    html_line += text
+                html_content += f"<p>{html_line}</p>\n"
+
+            html_content += "</body></html>"
+
+            # replace placeholders in the HTML content
 
             placeholder_mapping = {
                 "employee_name": employee.user.fullname,
@@ -116,10 +144,12 @@ class EmployeeSerializer(serializers.ModelSerializer):
                 "notice_period": "30 days",
             }
 
+            placeholders = template.placeholders or []
+
             for placeholder in placeholders:
                 key = placeholder.strip("{{}}")
                 value = str(placeholder_mapping.get(key, ""))
-                content = content.replace(placeholder, value)
+                html_content = html_content.replace(placeholder, value)
 
             filename = f"{slugify(employee.user.fullname)}_contract_{employee.id}.pdf"
             relative_path = os.path.join("contracts/original", filename)
@@ -127,7 +157,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
 
             html_content = render_to_string(
-                "contracts/contract_template.html", {"content": content}
+                "contracts/contract_template.html", {"content": html_content}
             )
 
             # Generate and write PDF
