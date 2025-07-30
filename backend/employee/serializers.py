@@ -1,4 +1,10 @@
-from .models import Employee, EmployeeAttendance, EmployeeType, WorkType, EmployeeContract
+from .models import (
+    Employee,
+    EmployeeAttendance,
+    EmployeeType,
+    WorkType,
+    EmployeeContract,
+)
 from rest_framework import serializers
 from users.serializers import CustomUserSerializer
 from datetime import date
@@ -268,11 +274,22 @@ class EmployeeActivationSerializer(serializers.Serializer):
     department = serializers.CharField(max_length=100, required=False, allow_blank=True)
     date_of_joining = serializers.DateField(required=False, allow_null=True)
 
+
 class EmployeeContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeContract
-        fields = ['id', 'applicant', 'employee', 'is_active', 'contract_reference', 'original_contract', 'signed_contract', 'created_at', 'updated_at']
-        read_only_fields = ['contract_reference', 'created_at', 'updated_at']
+        fields = [
+            "id",
+            "applicant",
+            "employee",
+            "is_active",
+            "contract_reference",
+            "original_contract",
+            "signed_contract",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["contract_reference", "created_at", "updated_at"]
 
     def create(self, validated_data):
         # Generate contract_reference
@@ -283,10 +300,12 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         # Ensure either applicant or employee is provided, not both
-        applicant = data.get('applicant')
-        employee = data.get('employee')
+        applicant = data.get("applicant")
+        employee = data.get("employee")
         if applicant and employee:
             raise serializers.ValidationError("Cannot set both applicant and employee.")
         if not applicant and not employee:
-            raise serializers.ValidationError("Either applicant or employee must be provided.")
-        return data    
+            raise serializers.ValidationError(
+                "Either applicant or employee must be provided."
+            )
+        return data
