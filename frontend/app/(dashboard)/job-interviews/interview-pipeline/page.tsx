@@ -811,13 +811,17 @@ const selectableCandidates = useMemo(() => {
 // Helper functions for candidate validation
 const canCandidateBeSelected = (candidate: InterviewCandidate): boolean => {
   // Only select candidates who DON'T have feedback yet (need action)
-  return !(candidate.feedback && candidate.rating)
+  // This ensures we only select candidates who need feedback/rating
+  return !(candidate.feedback && candidate.rating && candidate.rating > 0)
 }
 
+// REPLACE YOUR canCandidateBeMoved FUNCTION WITH THIS:
 const canCandidateBeMoved = (candidate: InterviewCandidate): boolean => {
-  return !!(candidate.feedback && candidate.rating && candidate.rating > 0)
+  // Can only be moved if they have feedback, rating > 0, and status is completed
+  return !!(candidate.feedback && candidate.rating && candidate.rating > 0 && candidate.status === 'completed')
 }
 
+// REPLACE YOUR canCandidateBeOnboarded FUNCTION WITH THIS:
 const canCandidateBeOnboarded = (candidate: InterviewCandidate | InterviewCandidateWithHistory): boolean => {
   // Can only be onboarded if they have feedback, rating > 0, and status is completed
   return !!(candidate.feedback && candidate.rating && candidate.rating > 0 && candidate.status === 'completed')
@@ -1059,27 +1063,64 @@ useEffect(() => {
   }, [isCreateStageDialogOpen, processedStages])
 
   // Candidate management functions
-  const handleSelectCandidate = (candidateKey: string, checked: boolean) => {
-    // Extract candidate ID from the key (format: "candidateId-interviewId")
-    const candidateId = parseInt(candidateKey.split('-')[0])
+const handleSelectCandidate = (candidateKey: string, checked: boolean) => {
+  // Extract candidate ID from the key (format: "candidateId" or "candidateId-interviewId")
+  const candidateId = parseInt(candidateKey.split('-')[0])
+  
+  // Find the candidate to validate
+  const candidate = filteredCandidates.find(c => c.id === candidateId)
+  
+  if (checked) {
+    if (!candidate) {
+      toast.error("Candidate not found")
+      return
+    }
     
-    if (checked) {
-      setSelectedCandidates((prev) => [...prev, candidateId])
-    } else {
-      setSelectedCandidates((prev) => prev.filter((id) => id !== candidateId))
+    // Check if candidate already has feedback and rating
+    if (candidate.feedback && candidate.rating && candidate.rating > 0) {
+      toast.error("This candidate already has feedback and rating. Use individual actions to onboard or move them.")
+      return
     }
-  }
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      // Get unique candidate IDs from filtered candidates
-      const uniqueCandidateIds = [...new Set(filteredCandidates.map(candidate => candidate.id))]
-      setSelectedCandidates(uniqueCandidateIds)
-    } else {
-      setSelectedCandidates([])
+    
+    // Only allow selection if candidate needs feedback
+    if (!canCandidateBeSelected(candidate)) {
+      toast.error("This candidate cannot be selected for bulk actions")
+      return
     }
+    
+    setSelectedCandidates((prev) => [...prev, candidateId])
+  } else {
+    setSelectedCandidates((prev) => prev.filter((id) => id !== candidateId))
   }
+}
 
+
+const handleSelectAll = (checked: boolean) => {
+  if (checked) {
+    // Only select candidates who need feedback (don't have feedback and rating yet)
+    const candidatesNeedingFeedback = filteredCandidates.filter(candidate => 
+      canCandidateBeSelected(candidate)
+    )
+    
+    if (candidatesNeedingFeedback.length === 0) {
+      toast.info("No candidates need feedback. All candidates have already been reviewed.")
+      return
+    }
+    
+    // Select only candidates who need feedback
+    const candidateIds = candidatesNeedingFeedback.map(candidate => candidate.id)
+    setSelectedCandidates(candidateIds)
+    
+    const alreadyReviewed = filteredCandidates.length - candidatesNeedingFeedback.length
+    if (alreadyReviewed > 0) {
+      toast.info(`Selected ${candidatesNeedingFeedback.length} candidates needing feedback. ${alreadyReviewed} candidates already reviewed.`)
+    } else {
+      toast.success(`Selected ${candidatesNeedingFeedback.length} candidates for feedback.`)
+    }
+  } else {
+    setSelectedCandidates([])
+  }
+}
   const handleUpdateFeedback = async (feedback: string, rating: number) => {
     if (!selectedCandidate) return
 
@@ -2183,69 +2224,77 @@ useEffect(() => {
                                     </div>
               
                                     {/* Bulk Actions */}
-                                    {selectedCandidates.length > 0 && (
-                                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                        <div className="flex items-center justify-between">
-                                          <div className="flex items-center gap-2">
-                                            <Users className="h-4 w-4 text-blue-600" />
-                                            <span className="text-sm font-medium text-blue-800">
-                                              {selectedCandidates.length} candidate(s) selected
-                                            </span>
-                                            {candidatesEligibleForOnboarding.length !== selectedCandidates.length && (
-                                              <span className="text-xs text-orange-600">
-                                                ({candidatesEligibleForOnboarding.length} eligible for onboarding, {candidatesEligibleForMoving.length} eligible for moving)
+                                      {selectedCandidates.length > 0 && (
+                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              <Users className="h-4 w-4 text-blue-600" />
+                                              <span className="text-sm font-medium text-blue-800">
+                                                {selectedCandidates.length} candidate(s) selected
                                               </span>
-                                            )}
-                                          </div>
-                                          <div className="flex items-center gap-2">
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              onClick={() => setSelectedCandidates([])}
-                                            >
-                                              Clear
-                                            </Button>
-                                            {candidatesEligibleForOnboarding.length > 0 && (
+                                              {/* Show warning if selected candidates need feedback first */}
+                                              {selectedCandidates.some(id => {
+                                                const candidate = filteredCandidates.find(c => c.id === id)
+                                                return candidate && !(candidate.feedback && candidate.rating && candidate.rating > 0)
+                                              }) && (
+                                                <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
+                                                  Selected candidates need feedback & rating first
+                                                </span>
+                                              )}
+                                            </div>
+                                            <div className="flex items-center gap-2">
                                               <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() => {
-                                                  const eligibleIds = candidatesEligibleForOnboarding.map(c => c.id)
-                                                  setSelectedCandidates(eligibleIds)
-                                                  handleBulkOnboard()
-                                                }}
-                                                className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                                                title={`Onboard ${candidatesEligibleForOnboarding.length} eligible candidates`}
+                                                onClick={() => setSelectedCandidates([])}
                                               >
-                                                <Users className="h-4 w-4 mr-2" />
-                                                Onboard ({candidatesEligibleForOnboarding.length})
+                                                Clear
                                               </Button>
-                                            )}
-                                            {nextStageForActive && candidatesEligibleForMoving.length > 0 && (
-                                              <Button
-                                                size="sm"
-                                                onClick={() => {
-                                                  const eligibleIds = candidatesEligibleForMoving.map(c => c.id)
-                                                  setSelectedCandidates(eligibleIds)
-                                                  handleBulkScheduleAndMove()
-                                                }}
-                                                className="bg-green-600 hover:bg-green-700"
-                                                title={`Move ${candidatesEligibleForMoving.length} candidates with feedback to ${nextStageForActive.name}`}
-                                              >
-                                                <Calendar className="h-4 w-4 mr-2" />
-                                                Move to {nextStageForActive.name} ({candidatesEligibleForMoving.length})
-                                              </Button>
-                                            )}
-                                            {selectedCandidates.length > candidatesEligibleForOnboarding.length && candidatesEligibleForOnboarding.length === 0 && (
-                                              <div className="text-xs text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
-                                                Selected candidates need feedback & rating first
-                                              </div>
-                                            )}
+                                              
+                                              {/* Only show action buttons if candidates have the required feedback */}
+                                              {candidatesEligibleForOnboarding.length > 0 && (
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={() => {
+                                                    const eligibleIds = candidatesEligibleForOnboarding.map(c => c.id)
+                                                    setSelectedCandidates(eligibleIds)
+                                                    handleBulkOnboard()
+                                                  }}
+                                                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                                                  title={`Onboard ${candidatesEligibleForOnboarding.length} eligible candidates`}
+                                                >
+                                                  <Users className="h-4 w-4 mr-2" />
+                                                  Onboard ({candidatesEligibleForOnboarding.length})
+                                                </Button>
+                                              )}
+                                              
+                                              {nextStageForActive && candidatesEligibleForMoving.length > 0 && (
+                                                <Button
+                                                  size="sm"
+                                                  onClick={() => {
+                                                    const eligibleIds = candidatesEligibleForMoving.map(c => c.id)
+                                                    setSelectedCandidates(eligibleIds)
+                                                    handleBulkScheduleAndMove()
+                                                  }}
+                                                  className="bg-green-600 hover:bg-green-700"
+                                                  title={`Move ${candidatesEligibleForMoving.length} candidates with feedback to ${nextStageForActive.name}`}
+                                                >
+                                                  <Calendar className="h-4 w-4 mr-2" />
+                                                  Move to {nextStageForActive.name} ({candidatesEligibleForMoving.length})
+                                                </Button>
+                                              )}
+                                              
+                                              {/* Show message when no candidates are eligible for actions */}
+                                              {candidatesEligibleForOnboarding.length === 0 && candidatesEligibleForMoving.length === 0 && (
+                                                <div className="text-xs text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">
+                                                  Please first provide feedback & rating, then schedule interviews before onboarding
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
-                                    )}
-              
+                                      )}
                                     {/* Candidates Table */}
                                     <div className="border rounded-lg max-h-[400px] overflow-auto">
                                       {filteredCandidates.length === 0 ? (
@@ -2264,16 +2313,19 @@ useEffect(() => {
                                             <TableRow>
                                               <TableHead className="w-12">
                                                 <Checkbox
-                                                  checked={
-                                                    selectableCandidates.length > 0 &&
-                                                    selectedCandidates.length === selectableCandidates.length &&
-                                                    selectableCandidates.every(c => selectedCandidates.includes(c.id))
-                                                  }
+                                                  checked={(() => {
+                                                    const candidatesNeedingFeedback = filteredCandidates.filter(candidate => 
+                                                      canCandidateBeSelected(candidate)
+                                                    )
+                                                    return candidatesNeedingFeedback.length > 0 && 
+                                                      candidatesNeedingFeedback.every(c => selectedCandidates.includes(c.id))
+                                                  })()}
                                                   onCheckedChange={handleSelectAll}
-                                                  title={`Select ${selectableCandidates.length} candidates who need feedback`}
+                                                  title="Select candidates who need feedback"
                                                 />
                                               </TableHead>
-                                              <TableHead>Candidate</TableHead>
+
+                                             <TableHead>Candidate</TableHead>
                                               <TableHead>Contact</TableHead>
                                               <TableHead>Feedback</TableHead>
                                               <TableHead>Rating</TableHead>
@@ -2285,20 +2337,20 @@ useEffect(() => {
                                             {filteredCandidates.map((candidate) => (
                                               <TableRow key={candidate.id}>
                                                 <TableCell>
-                                                  <Checkbox
-                                                    checked={selectedCandidates.includes(candidate.id)}
-                                                    onCheckedChange={(checked) => handleSelectCandidate(candidate.id.toString(), checked as boolean)}
-
-                                                    disabled={!canCandidateBeSelected(candidate)}
-                                                    title={
-                                                      !canCandidateBeSelected(candidate)
-                                                        ? candidate.feedback && candidate.rating
-                                                          ? "Already has feedback and rating"
-                                                          : "Already onboarded"
-                                                        : "Select for bulk actions"
-                                                    }
-                                                  />
-                                                </TableCell>
+                                              <Checkbox
+                                                checked={selectedCandidates.includes(candidate.id)}
+                                                onCheckedChange={(checked) => handleSelectCandidate(candidate.id.toString(), checked as boolean)}
+                                                disabled={!canCandidateBeSelected(candidate)}
+                                                title={
+                                                  canCandidateBeSelected(candidate)
+                                                    ? "Select for feedback"
+                                                    : candidate.feedback && candidate.rating 
+                                                      ? "Already has feedback and rating - use individual actions"
+                                                      : "Cannot be selected"
+                                                }
+                                                className={!canCandidateBeSelected(candidate) ? "opacity-50" : ""}
+                                              />
+                                            </TableCell>
                                                 <TableCell>
                                                   <div className="space-y-1">
                                                     <div className="font-medium">{candidate.applicant_name}</div>

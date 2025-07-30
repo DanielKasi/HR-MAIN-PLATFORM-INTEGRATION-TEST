@@ -1173,11 +1173,10 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
     return candidate.status === 'onboarded' || candidate.status === 'hired'
   }
 
-  const canCandidateBeSelected = (candidate: Candidate): boolean => {
-    // Only select candidates who DON'T have feedback yet (need action) and aren't already onboarded
-    return !(candidate.feedback && candidate.rating) && !isCandidateAlreadyOnboarded(candidate)
-  }
-
+ const canCandidateBeSelected = (candidate: Candidate | CandidateWithHistory): boolean => {
+  // Only select candidates who DON'T have feedback yet (need action) and aren't already onboarded
+  return !(candidate.feedback && candidate.rating && candidate.rating > 0) && !isCandidateAlreadyOnboarded(candidate)
+}
   // Smart filtered candidates for selection (only those that need action)
   const selectableCandidates = filteredCandidates.filter(canCandidateBeSelected)
 
@@ -1379,39 +1378,66 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
   }, [isCreateStageDialogOpen, processedStages])
 
   // Candidate management functions
-  const handleSelectCandidate = (candidateId: number, checked: boolean) => {
-    const candidate = (viewMode === 'current' ? filteredCandidates : filteredHistoryCandidates).find(c => c.id === candidateId)
+ const handleSelectCandidate = (candidateId: number, checked: boolean) => {
+  const candidate = (viewMode === 'current' ? filteredCandidates : filteredHistoryCandidates).find(c => c.id === candidateId)
 
-    if (checked) {
-      // Only allow selection if candidate can be selected (needs action)
-      if (candidate && canCandidateBeSelected(candidate)) {
-        setSelectedCandidates((prev) => [...prev, candidateId])
-      } else if (candidate) {
-        // Show message about why they can't be selected
-        if (candidate.feedback && candidate.rating) {
-          toast.info(`${candidate.applicant_name} already has feedback and rating provided.`)
-        } else if (isCandidateAlreadyOnboarded(candidate)) {
-          toast.info(`${candidate.applicant_name} is already onboarded.`)
-        }
-      }
-    } else {
-      setSelectedCandidates((prev) => prev.filter((id) => id !== candidateId))
+  if (checked) {
+    if (!candidate) {
+      toast.error("Candidate not found")
+      return
     }
-  }
-
-  const handleSelectAll = (checked: boolean) => {
-    const candidatesToSelect = viewMode === 'current' ? selectableCandidates : filteredHistoryCandidates.filter(canCandidateBeSelected)
-    if (checked) {
-      // Only select candidates who need action (no feedback yet and not onboarded)
-      setSelectedCandidates(candidatesToSelect.map((candidate) => candidate.id))
-      if (candidatesToSelect.length < filteredCandidates.length && viewMode === 'current') {
-        toast.info(`Selected ${candidatesToSelect.length} candidates who need feedback. Candidates with feedback already provided are excluded.`)
-      }
-    } else {
-      setSelectedCandidates([])
+    
+    // Check if candidate already has feedback and rating
+    if (candidate.feedback && candidate.rating && candidate.rating > 0) {
+      toast.error("This candidate already has feedback and rating. Use individual actions to onboard or move them.")
+      return
     }
+    
+    // Check if candidate is already onboarded
+    if (isCandidateAlreadyOnboarded(candidate)) {
+      toast.error("This candidate is already onboarded.")
+      return
+    }
+    
+    // Only allow selection if candidate can be selected (needs action)
+    if (canCandidateBeSelected(candidate)) {
+      setSelectedCandidates((prev) => [...prev, candidateId])
+    } else {
+      toast.error("This candidate cannot be selected for bulk actions")
+    }
+  } else {
+    setSelectedCandidates((prev) => prev.filter((id) => id !== candidateId))
   }
+}
 
+
+const handleSelectAll = (checked: boolean) => {
+  const candidatesToSelect = viewMode === 'current' ? selectableCandidates : filteredHistoryCandidates.filter(canCandidateBeSelected)
+  
+  if (checked) {
+    if (candidatesToSelect.length === 0) {
+      if (viewMode === 'current') {
+        toast.info("No candidates need feedback. All candidates have already been reviewed or onboarded.")
+      } else {
+        toast.info("No candidates can be selected. All candidates have feedback/rating or are already onboarded.")
+      }
+      return
+    }
+    
+    // Only select candidates who need action
+    setSelectedCandidates(candidatesToSelect.map((candidate) => candidate.id))
+    
+    const totalCandidates = viewMode === 'current' ? filteredCandidates.length : filteredHistoryCandidates.length
+    if (candidatesToSelect.length < totalCandidates) {
+      const skippedCount = totalCandidates - candidatesToSelect.length
+      toast.info(`Selected ${candidatesToSelect.length} candidates needing feedback. ${skippedCount} candidates skipped (already reviewed or onboarded).`)
+    } else {
+      toast.success(`Selected ${candidatesToSelect.length} candidates for feedback.`)
+    }
+  } else {
+    setSelectedCandidates([])
+  }
+}
   const moveToNextStage = async (candidateId: number, targetStageId: number) => {
     try {
       const candidate = filteredCandidates.find(c => c.id === candidateId);
@@ -2097,68 +2123,78 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
                       </div>
 
                       {/* Bulk Actions */}
-                      {selectedCandidates.length > 0 && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4 text-blue-600" />
-                              <span className="text-sm font-medium text-blue-800">
-                                {selectedCandidates.length} candidate(s) selected
-                              </span>
-                              {candidatesEligibleForOnboarding.length !== selectedCandidates.length && (
-                                <span className="text-xs text-orange-600">
-                                  ({candidatesEligibleForOnboarding.length} eligible for onboarding, {candidatesEligibleForMoving.length} eligible for moving)
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setSelectedCandidates([])}
-                              >
-                                Clear
-                              </Button>
-                              {candidatesEligibleForOnboarding.length > 0 && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    const eligibleIds = candidatesEligibleForOnboarding.map(c => c.id)
-                                    setSelectedCandidates(eligibleIds)
-                                    handleBulkOnboard()
-                                  }}
-                                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                                  title={`Onboard ${candidatesEligibleForOnboarding.length} eligible candidates`}
-                                >
-                                  <Users className="h-4 w-4 mr-2" />
-                                  Onboard ({candidatesEligibleForOnboarding.length})
-                                </Button>
-                              )}
-                              {nextStageForActive && candidatesEligibleForMoving.length > 0 && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => {
-                                    const eligibleIds = candidatesEligibleForMoving.map(c => c.id)
-                                    setSelectedCandidates(eligibleIds)
-                                    handleBulkScheduleAndMove()
-                                  }}
-                                  className="bg-green-600 hover:bg-green-700"
-                                  title={`Move ${candidatesEligibleForMoving.length} candidates with feedback to ${nextStageForActive.name}`}
-                                >
-                                  <Calendar className="h-4 w-4 mr-2" />
-                                  Move to {nextStageForActive.name} ({candidatesEligibleForMoving.length})
-                                </Button>
-                              )}
-                              {selectedCandidates.length > candidatesEligibleForOnboarding.length && candidatesEligibleForOnboarding.length === 0 && (
-                                <div className="text-xs text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
-                                  Selected candidates need feedback & rating first
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                        {selectedCandidates.length > 0 && (
+  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <Users className="h-4 w-4 text-blue-600" />
+        <span className="text-sm font-medium text-blue-800">
+          {selectedCandidates.length} candidate(s) selected
+        </span>
+        {/* Show warning if any selected candidates need feedback first */}
+        {selectedCandidates.some(id => {
+          const candidate = (viewMode === 'current' ? filteredCandidates : filteredHistoryCandidates).find(c => c.id === id)
+          return candidate && !(candidate.feedback && candidate.rating && candidate.rating > 0)
+        }) && (
+          <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
+            Some candidates need feedback & rating first
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setSelectedCandidates([])}
+        >
+          Clear
+        </Button>
+        
+        {/* Only show onboard button if there are eligible candidates */}
+        {candidatesEligibleForOnboarding.length > 0 && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const eligibleIds = candidatesEligibleForOnboarding.map(c => c.id)
+              setSelectedCandidates(eligibleIds)
+              handleBulkOnboard()
+            }}
+            className="text-purple-600 border-purple-200 hover:bg-purple-50"
+            title={`Onboard ${candidatesEligibleForOnboarding.length} eligible candidates`}
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Onboard ({candidatesEligibleForOnboarding.length})
+          </Button>
+        )}
+        
+        {/* Only show move button in current view if there are eligible candidates */}
+        {viewMode === 'current' && nextStageForActive && candidatesEligibleForMoving.length > 0 && (
+          <Button
+            size="sm"
+            onClick={() => {
+              const eligibleIds = candidatesEligibleForMoving.map(c => c.id)
+              setSelectedCandidates(eligibleIds)
+              handleBulkScheduleAndMove()
+            }}
+            className="bg-green-600 hover:bg-green-700"
+            title={`Move ${candidatesEligibleForMoving.length} candidates with feedback to ${nextStageForActive.name}`}
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            Move to {nextStageForActive.name} ({candidatesEligibleForMoving.length})
+          </Button>
+        )}
+        
+        {/* Show message when no candidates are eligible for any actions */}
+        {candidatesEligibleForOnboarding.length === 0 && candidatesEligibleForMoving.length === 0 && selectedCandidates.length > 0 && (
+          <div className="text-xs text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">
+            Please first provide feedback & rating, then schedule interviews before onboarding
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
                       {/* Candidates Table */}
                       <div className="border rounded-lg max-h-[400px] overflow-auto">
@@ -2177,16 +2213,16 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
                             <TableHeader>
                               <TableRow>
                                 <TableHead className="w-12">
-                                  <Checkbox
-                                    checked={
-                                      selectableCandidates.length > 0 &&
-                                      selectedCandidates.length === selectableCandidates.length &&
-                                      selectableCandidates.every(c => selectedCandidates.includes(c.id))
-                                    }
-                                    onCheckedChange={handleSelectAll}
-                                    title={`Select ${selectableCandidates.length} candidates who need feedback`}
-                                  />
-                                </TableHead>
+                                <Checkbox
+                                  checked={
+                                    selectableCandidates.length > 0 &&
+                                    selectedCandidates.length === selectableCandidates.length &&
+                                    selectableCandidates.every(c => selectedCandidates.includes(c.id))
+                                  }
+                                  onCheckedChange={handleSelectAll}
+                                  title={`Select ${selectableCandidates.length} candidates who need feedback`}
+                                />
+                              </TableHead>
                                 <TableHead>Candidate</TableHead>
                                 <TableHead>Contact</TableHead>
                                 <TableHead>Feedback</TableHead>
@@ -2198,20 +2234,23 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
                             <TableBody>
                               {filteredCandidates.map((candidate) => (
                                 <TableRow key={candidate.id}>
-                                  <TableCell>
-                                    <Checkbox
-                                      checked={selectedCandidates.includes(candidate.id)}
-                                      onCheckedChange={(checked) => handleSelectCandidate(candidate.id, checked as boolean)}
-                                      disabled={!canCandidateBeSelected(candidate)}
-                                      title={
-                                        !canCandidateBeSelected(candidate)
-                                          ? candidate.feedback && candidate.rating
-                                            ? "Already has feedback and rating"
-                                            : "Already onboarded"
-                                          : "Select for bulk actions"
-                                      }
-                                    />
-                                  </TableCell>
+                                 <TableCell>
+                                          <Checkbox
+                                            checked={selectedCandidates.includes(candidate.id)}
+                                            onCheckedChange={(checked) => handleSelectCandidate(candidate.id, checked as boolean)}
+                                            disabled={!canCandidateBeSelected(candidate)}
+                                            title={
+                                              canCandidateBeSelected(candidate)
+                                                ? viewMode === 'current' ? "Select for feedback" : "Select for onboarding"
+                                                : candidate.feedback && candidate.rating 
+                                                  ? "Already has feedback and rating - use individual actions"
+                                                  : isCandidateAlreadyOnboarded(candidate)
+                                                    ? "Already onboarded"
+                                                    : "Cannot be selected"
+                                            }
+                                            className={!canCandidateBeSelected(candidate) ? "opacity-50" : ""}
+                                          />
+                                        </TableCell>
                                   <TableCell>
                                     <div className="space-y-1">
                                       <div className="font-medium">{candidate.applicant_name}</div>
@@ -2474,15 +2513,16 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-12">
-                            <Checkbox
-                              checked={
-                                filteredHistoryCandidates.length > 0 &&
-                                selectedCandidates.length === filteredHistoryCandidates.length
-                              }
-                              onCheckedChange={handleSelectAll}
-                            />
-                          </TableHead>
-                          <TableHead>Candidate</TableHead>
+                          <Checkbox
+                            checked={
+                              filteredHistoryCandidates.filter(canCandidateBeSelected).length > 0 &&
+                              selectedCandidates.length === filteredHistoryCandidates.filter(canCandidateBeSelected).length
+                            }
+                            onCheckedChange={handleSelectAll}
+                            title="Select candidates who can be onboarded"
+                          />
+                        </TableHead>
+                           <TableHead>Candidate</TableHead>
                           <TableHead>Contact</TableHead>
                           <TableHead>Current Stage</TableHead>
                           <TableHead>Overall Rating</TableHead>
