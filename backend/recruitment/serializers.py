@@ -14,6 +14,8 @@ from docx import Document
 from workflows.models import WorkflowAction, InstitutionApprovalStep, ApprovalTask
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
+from users.models import CustomUser
+from users.serializers import CustomUserSerializer
 
 
 class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
