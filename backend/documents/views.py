@@ -470,8 +470,6 @@ class GenerateDocumentView(APIView):
         context = serializer.validated_data.get("context")
         context_id = serializer.validated_data.get("context_id")
 
-        
-
         # Create Document instance
         document = Document.objects.create(
             document_template=template,
@@ -625,11 +623,23 @@ class DocumentStatusUpdateView(APIView):
         unreplaced_placeholders = []
         for match in matches:
             cleaned_name = re.sub(r"[\{\}<>\[\]]+", "", match).strip()
-            normalized_key = re.sub(r"\s+", "_", cleaned_name.replace("'", "").replace("’", "").replace(",", "")).lower()
+            normalized_key = re.sub(
+                r"\s+",
+                "_",
+                cleaned_name.replace("'", "").replace("’", "").replace(",", ""),
+            ).lower()
             value = placeholder_values.get(normalized_key)
             if not value:
-                alt_key = cleaned_name.lower().replace("'", "").replace("’", "").replace(" ", "_").replace(",", "")
-                value = placeholder_values.get(alt_key, match)  # Keep original if no value
+                alt_key = (
+                    cleaned_name.lower()
+                    .replace("'", "")
+                    .replace("’", "")
+                    .replace(" ", "_")
+                    .replace(",", "")
+                )
+                value = placeholder_values.get(
+                    alt_key, match
+                )  # Keep original if no value
                 if value == match:
                     unreplaced_placeholders.append(match)
             logger.debug(f"Replacing {match} with {value}")
@@ -646,10 +656,16 @@ class DocumentStatusUpdateView(APIView):
             match = re.search(r"([\w\s\'’,-]+?)\s*:?\s*_{10,}", line_lower)
             if match:
                 phrase = match.group(1).strip()
-                normalized_key = re.sub(r"\s+", "_", phrase.replace("'", "").replace("’", "").replace(",", "")).lower()
+                normalized_key = re.sub(
+                    r"\s+",
+                    "_",
+                    phrase.replace("'", "").replace("’", "").replace(",", ""),
+                ).lower()
                 value = placeholder_values.get(normalized_key, None)
                 replacement = (
-                    f"{phrase}: {value}" if value is not None else f"{phrase}: __________"
+                    f"{phrase}: {value}"
+                    if value is not None
+                    else f"{phrase}: __________"
                 )
                 logger.debug(f"Replacing underscore in '{line}' with '{replacement}'")
                 preview = re.sub(
@@ -663,7 +679,11 @@ class DocumentStatusUpdateView(APIView):
                 for key in ["caregivers_name", "clients_name", "date"]:
                     value = placeholder_values.get(key, None)
                     if key == "date":
-                        replacement = f"Date: {value}" if value is not None else "Date: __________"
+                        replacement = (
+                            f"Date: {value}"
+                            if value is not None
+                            else "Date: __________"
+                        )
                         preview = re.sub(
                             r"Date\s*:\s*_{10,}",
                             replacement,
@@ -693,17 +713,21 @@ class DocumentStatusUpdateView(APIView):
         rendered_content = self._replace_placeholders(content, placeholder_values)
 
         # Remove the "CARE GIVER CONTRACT" title from content if present
-        if rendered_content.startswith("CARE GIVER CONTRACT\n"):
-            rendered_content = rendered_content[len("CARE GIVER CONTRACT\n"):]
-        
+        # if rendered_content.startswith("CARE GIVER CONTRACT\n"):
+        #     rendered_content = rendered_content[len("CARE GIVER CONTRACT\n") :]
+
         # Process content to convert newlines to HTML paragraphs
-        paragraphs = rendered_content.split("\n\n")  # Split by double newlines for paragraphs
+        paragraphs = rendered_content.split(
+            "\n"
+        )  # Split by double newlines for paragraphs
         html_paragraphs = []
         for paragraph in paragraphs:
             lines = paragraph.split("\n")
             # Detect section headers (all caps, single line)
             if len(lines) == 1 and lines[0].strip().isupper():
-                html_paragraphs.append(f'<p class="section-header">{lines[0].strip()}</p>')
+                html_paragraphs.append(
+                    f'<p class="section-header">{lines[0].strip()}</p>'
+                )
             else:
                 # Handle signature section specially
                 if "This Contract is signed" in paragraph:
@@ -716,7 +740,9 @@ class DocumentStatusUpdateView(APIView):
                     formatted_paragraph = "<br>".join(formatted_lines)
                     html_paragraphs.append(f"<p>{formatted_paragraph}</p>")
                 else:
-                    formatted_lines = "<br>".join(line.strip() for line in lines if line.strip())
+                    formatted_lines = "<br>".join(
+                        line.strip() for line in lines if line.strip()
+                    )
                     html_paragraphs.append(f"<p>{formatted_lines}</p>")
 
         html_content = f"""
@@ -737,18 +763,17 @@ class DocumentStatusUpdateView(APIView):
                 margin-bottom: 30px;
             }}
             p {{
-                margin: 0 0 15px 0;
-                line-height: 1.5;
+                margin: 0 0 8px 0;
+                line-height: 1.2;
             }}
             .section-header {{
                 font-weight: bold;
                 font-size: 14pt;
-                margin: 20px 0 10px 0;
+                margin: 10px 0 6px 0;
             }}
             </style>
         </head>
         <body>
-            <h1>CARE GIVER CONTRACT</h1>
             {''.join(html_paragraphs)}
         </body>
         </html>
@@ -927,6 +952,7 @@ class DocumentStatusUpdateView(APIView):
         # Determine template content based on context
         template = document.document_template
         template_content = template.content or ""
+
         if (
             context == "onboarding"
             and hasattr(context_obj, "application")
@@ -939,6 +965,14 @@ class DocumentStatusUpdateView(APIView):
                 else template.content
             )
         # Add more context-specific template logic here if needed for employee or leave
+
+        elif context == "employee" and hasattr(context_obj, "position"):
+
+            template_content = (
+                context_obj.position.contract_template.content
+                if context_obj.position and context_obj.position.contract_template
+                else template.content
+            )
 
         if new_status == "reviewed":
             try:
@@ -965,7 +999,9 @@ class DocumentStatusUpdateView(APIView):
                         is_active=False,
                         original_contract=document_file,
                     )
-                    pass
+                    context_obj.status = "issued_contract"
+                    context_obj.save()
+
                 elif context == "leave":
                     # Example: Save document to leave record or perform leave-specific action
                     pass

@@ -278,7 +278,7 @@ class JobAdvertApplication(models.Model):
                 "applicant_name": self.applicant_name,
                 "job_title": self.job_position_advert.job_position.name,
                 "company_name": self.job_position_advert.job_position.department.institution.institution_name,
-                "application_date": self.application_date,
+                "application_date": self.application_date.strftime("%Y-%m-%d"),
                 "application": self,
             }
 
