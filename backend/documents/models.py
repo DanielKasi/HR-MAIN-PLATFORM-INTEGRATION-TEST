@@ -33,19 +33,17 @@ class DocumentType(models.Model):
 class DocumentTemplate(models.Model):
     document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
-    template_type = models.CharField(
-        max_length=50,
-        choices=[
-            ("pdf", "PDF"),
-            ("word", "Word Document"),
-            ("text", "Text"),
-        ],
-    )
-    file = models.FileField(upload_to="document_templates/", null=True, blank=True)
-    content = models.TextField(
+    template_type = models.CharField(max_length=50, choices=[
+        ('pdf', 'PDF'),
+        ('word', 'Word Document'),
+        ('text', 'Text'),      
+    ])
+    file = models.FileField(upload_to='document_templates/', null=True, blank=True)
+    content = models.JSONField(
         blank=True,
         null=True,
-        help_text="Extracted or user-provided content for the template.",
+        default=dict,
+        help_text="Structured content for the template (e.g., sections, formatting, placeholders)."
     )
     placeholders = models.JSONField(
         default=list,
