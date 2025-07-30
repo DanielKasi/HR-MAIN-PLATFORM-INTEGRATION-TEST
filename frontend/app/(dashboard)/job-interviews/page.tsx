@@ -415,13 +415,15 @@ export default function InterviewsPage() {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">
-                {interviews.filter((i) => i.rating).reduce((sum, i) => sum + (i.rating || 0), 0) /
-                  interviews.filter((i) => i.rating).length || 0}
-                /10
-              </div>
-              <p className="text-xs text-muted-foreground">Avg Rating</p>
-            </CardContent>
+            <div className="text-2xl font-bold">
+              {(
+                interviews.filter((i) => i.rating).reduce((sum, i) => sum + (i.rating || 0), 0) /
+                  interviews.filter((i) => i.rating).length || 0
+              ).toFixed(2)}
+            </div>
+            <p className="text-xs text-muted-foreground">Avg Rating</p>
+          </CardContent>
+
           </Card>
         </div>
       )}

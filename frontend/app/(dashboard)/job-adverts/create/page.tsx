@@ -4,25 +4,18 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
-import { Megaphone, ArrowLeft, Check, Plus } from "lucide-react"
+import { Megaphone, ArrowLeft, Check, Calendar } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { CreateJobPositionDialog } from "@/components/dialogs/create-job-position-dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getJobPositions, createJobPositionAdvert } from "@/lib/utils"
-import type { JobPositionAdvertFormData, IJobPosition, JobAdvertTypes } from "@/app/types/types.utils"
+import type { JobPositionAdvertFormData, IJobPosition, JobAdvertStatus, JobAdvertTypes } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
 export default function CreateJobAdvertPage() {
@@ -62,10 +55,10 @@ export default function CreateJobAdvertPage() {
       if (fetchedJobPositions) {
         setJobPositions(fetchedJobPositions);
       } else {
-        toast.error("Failed to load job position/titles ");
+        toast.error("Failed to load job positions");
       }
     } catch (error) {
-      toast.error("Failed to load job position/titles ");
+      toast.error("Failed to load job positions");
     } finally {
       setIsLoading(false);
     }
@@ -204,7 +197,7 @@ export default function CreateJobAdvertPage() {
               <div>
                 <CardTitle className="text-xl">Create New Job Openings</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Create a job advertisement for {selectedBranch.branch_name} -{" "}
+                  Create a job opening for {selectedBranch.branch_name} -{" "}
                   {selectedInstitution.institution_name}
                 </p>
               </div>
@@ -215,29 +208,11 @@ export default function CreateJobAdvertPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Form Fields - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Job Position/ Title  */}
+                {/* Job Position */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="job_position" className="text-sm font-medium">
-                      Job Position/ Title  *
-                    </Label>
-                    <CreateJobPositionDialog
-                      trigger={
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      }
-                      onJobPositionCreated={(newPosition) => {
-                        setJobPositions((prev) => [...prev, newPosition])
-                        updateFormData("job_position", newPosition.id)
-                      }}
-                    />
-                  </div>
+                  <Label htmlFor="job_position" className="text-sm font-medium">
+                    Job Position *
+                  </Label>
                   <Select
                     value={formData.job_position.toString()}
                     onValueChange={(value) => updateFormData("job_position", Number(value))}
@@ -336,7 +311,7 @@ export default function CreateJobAdvertPage() {
                 </Label>
                 <Textarea
                   id="extra_information"
-                  placeholder="Add any additional information about this job advertisement..."
+                  placeholder="Add any additional information about this job opening..."
                   value={formData.extra_information || ""}
                   onChange={(e) => updateFormData("extra_information", e.target.value)}
                   rows={4}

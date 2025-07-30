@@ -272,7 +272,7 @@ export default function JobAdvertsPage() {
         <div>
           <h1 className="text-2xl font-bold">Job Openings</h1>
           <p className="text-muted-foreground">
-            Manage job advertisements for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
+            Manage job openingss for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -412,7 +412,7 @@ export default function JobAdvertsPage() {
           <p className="text-muted-foreground mb-4">
             {jobTitleFilter || dateRange.from || dateRange.to
               ? "No job adverts match your filter criteria."
-              : "Get started by creating your first job advertisement."}
+              : "Get started by creating your first job opening."}
           </p>
           {jobTitleFilter || dateRange.from || dateRange.to ? (
             <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">

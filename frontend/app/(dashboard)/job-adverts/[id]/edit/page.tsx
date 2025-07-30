@@ -293,7 +293,7 @@ export default function EditJobAdvertPage() {
               <div>
                 <CardTitle className="text-xl">Edit Job Opening</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Update job advertisement for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
+                  Update job opening for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
                 </p>
               </div>
             </div>
@@ -400,7 +400,7 @@ export default function EditJobAdvertPage() {
                 </Label>
                 <Textarea
                   id="extra_information"
-                  placeholder="Add any additional information about this job advertisement..."
+                  placeholder="Add any additional information about this job opening..."
                   value={formData.extra_information || ""}
                   onChange={(e) => updateFormData("extra_information", e.target.value)}
                   rows={4}
