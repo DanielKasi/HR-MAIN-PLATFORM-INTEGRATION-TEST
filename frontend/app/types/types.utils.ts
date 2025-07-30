@@ -327,7 +327,7 @@ export interface IJobPosition {
   reports_to_details?: IReportsToDetails | null; 
   contract_template?: string | null; 
   offer_letter_template?: string | null; 
-  salary: number;
+  salary: number|null;
   employees: IEmployee[],
   tasks:ITask[],
   job_position_status: "active" | "inactive";

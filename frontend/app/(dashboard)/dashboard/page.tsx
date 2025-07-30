@@ -56,6 +56,7 @@ import {IUserInstitution, USER_GENDER} from "@/app/types";
 import EmployeeAttendance from "./EmployeeAttendance";
 import {se} from "date-fns/locale";
 import {SimpleCalendarWidget} from "@/components/calendar-widget";
+import { TasksCards } from "@/components/dashboard_components/tasks-cards";
 
 // Interface for employee data from API
 interface EmployeeFromAPI {
@@ -1185,6 +1186,8 @@ export default function HRDashboard() {
                   </select>
                 </div>
               </div>
+
+              <TasksCards branchId={null} />{" "}
 
               {/* Enhanced Stats Cards with fixed filtering and compact layout */}
               <StatsCards
