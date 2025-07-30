@@ -921,16 +921,6 @@ class DocumentStatusUpdateView(APIView):
         ).first()
         required_placeholders = system_config.content if system_config else []
 
-        # Validate required placeholders
-        for placeholder in required_placeholders:
-            if (
-                placeholder not in placeholder_values
-                or not placeholder_values[placeholder]
-            ):
-                return Response(
-                    {"error": f"Missing required placeholder: {placeholder}"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
 
         # Update document status
         document.status = new_status

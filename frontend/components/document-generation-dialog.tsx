@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { FileText } from "lucide-react"
-import { PDFDownloadLink } from "@react-pdf/renderer"
-import DocumentPreviewPDF from "./document-preview-pdf"
-import { Button } from "@/components/ui/button"
+import {useState, useEffect} from "react";
+import {FileText} from "lucide-react";
+import {PDFDownloadLink} from "@react-pdf/renderer";
+import DocumentPreviewPDF from "./document-preview-pdf";
+import {Button} from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,117 +13,149 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Skeleton } from "@/components/ui/skeleton"
-import { toast } from "sonner"
-import { getDocumentTemplates, generateDocument, getGeneratedDocumentTemplate, getDocumentPreview } from "@/lib/document-utils"
-import { IDocumentTemplate, IGeneratedDocumentTemplate } from "@/app/types/types.utils"
+} from "@/components/ui/select";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Skeleton} from "@/components/ui/skeleton";
+import {toast} from "sonner";
+import {
+  getDocumentTemplates,
+  generateDocument,
+  getGeneratedDocumentTemplate,
+  getDocumentPreview,
+  sendDocuments,
+} from "@/lib/document-utils";
+import {IDocumentTemplate, IGeneratedDocumentTemplate} from "@/app/types/types.utils";
 
-
-import { useSelector } from "react-redux"
-import { selectSelectedInstitution } from "@/store/auth/selectors"
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {number} from "framer-motion";
 
 interface DocumentGenerationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contextId: number;
-  context: 'onboarding' | 'employee' | 'leave';
+  context: "onboarding" | "employee" | "leave";
 }
 
-export function DocumentGenerationDialog({ open, onOpenChange, contextId, context }: DocumentGenerationDialogProps) {
-  const [templates, setTemplates] = useState<IDocumentTemplate[]>([])
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("")
-  const [loading, setLoading] = useState(false)
-  const [placeholders, setPlaceholders] = useState<Record<string, string>>({})
-  const [generatedTemplate, setGeneratedTemplate] = useState<IGeneratedDocumentTemplate | null>(null)
-  const [generatedDocumentId, setGeneratedDocumentId] = useState<number | null>(null)
-  const [previewContent, setPreviewContent] = useState<string | null>(null)
-  const currentInstitution  = useSelector(selectSelectedInstitution)
+export function DocumentGenerationDialog({
+  open,
+  onOpenChange,
+  contextId,
+  context,
+}: DocumentGenerationDialogProps) {
+  const [templates, setTemplates] = useState<IDocumentTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [placeholders, setPlaceholders] = useState<Record<string, string>>({});
+  const [generatedTemplate, setGeneratedTemplate] = useState<IGeneratedDocumentTemplate | null>(
+    null,
+  );
+  const [generatedDocumentId, setGeneratedDocumentId] = useState<number | null>(null);
+  const [previewContent, setPreviewContent] = useState<string | null>(null);
+  const currentInstitution = useSelector(selectSelectedInstitution);
+  const [canSendDocument, setCanSendDocument] = useState(false);
 
   useEffect(() => {
     if (open) {
-      loadTemplates()
+      loadTemplates();
     }
-  }, [open])
+  }, [open]);
 
   const loadTemplates = async () => {
-    console.log("\n\n Loading document templates...")
-    if(!currentInstitution) {return}
-    setLoading(true)
+    console.log("\n\n Loading document templates...");
+    if (!currentInstitution) {
+      return;
+    }
+    setLoading(true);
     try {
-      const data = await getDocumentTemplates({ institutionId: currentInstitution.id })
+      const data = await getDocumentTemplates({institutionId: currentInstitution.id});
       if (data) {
-        setTemplates(data)
+        setTemplates(data);
       }
     } catch (error) {
-      toast.error("Failed to load document templates")
-    }finally {
-      setLoading(false)
+      toast.error("Failed to load document templates");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   const handleTemplateSelect = async (templateId: string) => {
-    setSelectedTemplate(templateId)
-    setLoading(true)
+    setSelectedTemplate(templateId);
+    setLoading(true);
     try {
-      const response = await getGeneratedDocumentTemplate(
-        parseInt(templateId),
-        context,
-        contextId
-      )
-      
+      const response = await getGeneratedDocumentTemplate(parseInt(templateId), context, contextId);
+
       if (response?.placeholders) {
-        setGeneratedTemplate(response)
-        const initialPlaceholders: { [key: string]: string } = {}
-        Object.keys(response.placeholders).forEach(key => {
+        setGeneratedTemplate(response);
+        const initialPlaceholders: {[key: string]: string} = {};
+        Object.keys(response.placeholders).forEach((key) => {
           if (response.placeholders && response.placeholders[key]) {
-            initialPlaceholders[key] = response.placeholders[key].value || ''
+            initialPlaceholders[key] = response.placeholders[key].value || "";
           }
-        })
-        setPlaceholders(initialPlaceholders)
+        });
+        setPlaceholders(initialPlaceholders);
       }
     } catch (error) {
-      toast.error("Failed to load template placeholders")
+      toast.error("Failed to load template placeholders");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleGenerateDocument = async () => {
-    setLoading(true)
+    setLoading(true);
+    setCanSendDocument(false);
     try {
       const response = await generateDocument(
         parseInt(selectedTemplate),
         context,
         contextId,
-        placeholders
-      )
-      
-      if (response?.status === 'success' && response.document_id) {
-        setGeneratedDocumentId(response.document_id)
-        const preview = await getDocumentPreview(response.document_id)
+        placeholders,
+      );
+      setCanSendDocument(true);
+
+      if (response?.status === "success" && response.document_id) {
+        setGeneratedDocumentId(response.document_id);
+        
+        const preview = await getDocumentPreview(response.document_id);
         if (preview) {
-          setPreviewContent(preview)
-          toast.success("Document generated successfully")
+          setPreviewContent(preview);
+          toast.success("Document generated successfully");
         }
       } else {
-        toast.error("Failed to generate document")
+        toast.error("Failed to generate document");
       }
     } catch (error) {
-      toast.error("Failed to generate document")
+      toast.error("Failed to generate document");
     } finally {
-      setLoading(false)
+      setLoading(false);
+      setCanSendDocument(false);
     }
-  }
+  };
+
+  const handleSendDocument = async () => {
+    if (!generatedDocumentId) {
+      toast.error("No document generated to send");
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendDocuments({documentId: generatedDocumentId, context, contextId});
+      toast.success("Document sent successfully");
+    } catch (error) {
+      toast.error("Failed to send document");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -151,10 +183,12 @@ export function DocumentGenerationDialog({ open, onOpenChange, contextId, contex
             </Select>
           </div>
 
-          {loading && <div className="space-y-3">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-          </div>}
+          {loading && (
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+            </div>
+          )}
 
           {!loading && selectedTemplate && generatedTemplate?.placeholders && (
             <div className="space-y-4">
@@ -162,11 +196,13 @@ export function DocumentGenerationDialog({ open, onOpenChange, contextId, contex
                 <div key={key} className="space-y-2">
                   <Label>{key}</Label>
                   <Input
-                    value={placeholders[key] || ''}
-                    onChange={(e) => setPlaceholders({
-                      ...placeholders,
-                      [key]: e.target.value
-                    })}
+                    value={placeholders[key] || ""}
+                    onChange={(e) =>
+                      setPlaceholders({
+                        ...placeholders,
+                        [key]: e.target.value,
+                      })
+                    }
                   />
                 </div>
               ))}
@@ -183,20 +219,19 @@ export function DocumentGenerationDialog({ open, onOpenChange, contextId, contex
               </div>
               <PDFDownloadLink
                 document={
-                  <DocumentPreviewPDF 
-                    content={previewContent} 
-                    templateName={templates.find(t => t.id.toString() === selectedTemplate)?.name || 'Document'} 
+                  <DocumentPreviewPDF
+                    content={previewContent}
+                    templateName={
+                      templates.find((t) => t.id.toString() === selectedTemplate)?.name ||
+                      "Document"
+                    }
                   />
                 }
-                fileName={`${templates.find(t => t.id.toString() === selectedTemplate)?.name || 'document'}.pdf`}
+                fileName={`${templates.find((t) => t.id.toString() === selectedTemplate)?.name || "document"}.pdf`}
                 className="w-full"
               >
-                {({ loading: pdfLoading }) => (
-                  <Button
-                    variant="secondary"
-                    className="w-full"
-                    disabled={pdfLoading}
-                  >
+                {({loading: pdfLoading}) => (
+                  <Button variant="secondary" className="w-full" disabled={pdfLoading}>
                     <FileText className="h-4 w-4 mr-2" />
                     {pdfLoading ? "Preparing PDF..." : "Preview PDF"}
                   </Button>
@@ -206,11 +241,18 @@ export function DocumentGenerationDialog({ open, onOpenChange, contextId, contex
           )}
         </div>
         <DialogFooter>
-          <Button onClick={handleGenerateDocument} disabled={loading || !selectedTemplate}>
-            {loading ? "Generating..." : "Generate Document"}
-          </Button>
+          <div className="flex items-center justify-end gap-8">
+            <Button onClick={handleGenerateDocument} disabled={loading || !selectedTemplate}>
+              {loading ? "Generating..." : "Generate Document"}
+            </Button>
+            <Button
+              onClick={handleSendDocument}
+            >
+              Send Document
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
