@@ -246,7 +246,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     {
       title: "Payroll",
       href: "#1",
-      icon: <Icon icon="hugeicons:money-04" className="!w-6 !h-6" width="28" height="28" />,
+      icon: <Icon icon="hugeicons:payment-01" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
         {title: "Allowance Types", href: "/payroll/allowance-types"},
         {title: "Deduction Types", href: "/payroll/deduction-types"},
@@ -476,6 +476,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {item.submenu && isExpanded && (
           <div className="ml-6 flex flex-col gap-2 mt-2 border-l-2 border-primary/20 bg-gray-200/20">
             {item.submenu.map((sub) => (
+              isSideBarOpen &&
               <Button
                 key={sub.href}
                 variant="ghost"
@@ -483,7 +484,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                 onClick={() => router.push(sub.href)}
               >
                 <span className="!w-full !text-left !bg-transparent">
-                  {isSideBarOpen && sub.title}
+                  {sub.title}
                 </span>
               </Button>
             ))}
@@ -643,5 +644,3 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   );
 }
 
-
-// const styledSubNavItem = styled
