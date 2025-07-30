@@ -431,7 +431,7 @@ export default function EditJobPositionPage() {
   const [employees, setEmployees] = useState<IEmployee[]>([])
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(false)
   const [employeesSelected, setEmployeesSelected] = useState(false)
-  const [originalSalary, setOriginalSalary] = useState("")
+  const [originalSalary, setOriginalSalary] = useState("");
   const [isSalaryChanged, setIsSalaryChanged] = useState(false)
 
   const router = useRouter()
@@ -469,8 +469,8 @@ export default function EditJobPositionPage() {
 
       if (fetchedJobPosition) {
         setJobPosition(fetchedJobPosition)
-        const salaryValue = fetchedJobPosition.salary.toString()
-        setOriginalSalary(salaryValue)
+        const salaryValue = fetchedJobPosition.salary?.toString()|| "0";
+        setOriginalSalary(salaryValue);
         setFormData({
           name: fetchedJobPosition.name,
           description: fetchedJobPosition.description || "",

@@ -244,7 +244,7 @@ export default function JobPositionDetailsPage() {
               <div className="text-right">
                 <div className="flex items-center gap-1 text-2xl font-bold text-green-600">
                   UGX
-                  {formatCurrency(jobPosition.salary.toLocaleString())}
+                  {formatCurrency(jobPosition.salary?.toLocaleString() || 0)}
                 </div>
                 <p className="text-sm text-muted-foreground">Salary</p>
               </div>
