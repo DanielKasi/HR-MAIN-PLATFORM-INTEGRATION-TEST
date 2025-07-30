@@ -409,7 +409,9 @@ export interface JobApplicationFormData {
 
 }
 
-export type JobAdvertStatus = "expired" | "active" | "archived" | "closed";
+
+
+export type JobAdvertStatus = "expired" | "active" | "archived" | "closed"|"inactive"|"pending_approval";
 
 export type JobAdvertTypes = "internal" | "external";
 

@@ -103,7 +103,7 @@ export function DocumentGenerationDialog({ open, onOpenChange, contextId, contex
     try {
       const response = await generateDocument(
         parseInt(selectedTemplate),
-        'onboarding',
+        context,
         contextId,
         placeholders
       )

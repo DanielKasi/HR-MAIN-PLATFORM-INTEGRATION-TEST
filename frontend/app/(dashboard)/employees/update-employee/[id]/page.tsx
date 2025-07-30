@@ -20,7 +20,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
 import { Upload, User, X, Loader2, ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
@@ -47,6 +46,7 @@ import type {
   ICountry,
 } from "@/app/types/types.utils";
 import type { IUserInstitution } from "@/app/types";
+import { toast } from "sonner";
 
 interface Employee {
   id: number;
@@ -162,7 +162,6 @@ export default function UpdateEmployeePage() {
   const router = useRouter();
   const params = useParams();
   const employeeId = params?.id as string;
-  const { toast } = useToast();
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
 
@@ -245,6 +244,14 @@ export default function UpdateEmployeePage() {
     phoneNumber: string;
     isValid: boolean;
   }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
+
+    const showErrorToast = (message:string) => {      
+    toast.error(message)
+  }
+
+    const showSuccessToast = (message:string) => {      
+    toast.success(message)
+  }
 
   useEffect(() => {
     if (selectedInstitution) {
@@ -405,11 +412,7 @@ export default function UpdateEmployeePage() {
 
   const handleAddWorkType = async () => {
     if (!workTypeFormData.name.trim()) {
-      toast({
-        title: "Error",
-        description: "Work type name is required",
-        variant: "destructive",
-      });
+      showErrorToast("Work type name is required");
       return;
     }
 
@@ -426,22 +429,14 @@ export default function UpdateEmployeePage() {
         setFormData((prev) => ({ ...prev, work_type: newWorkType.id }));
         setWorkTypeFormData({ name: "", description: "", code: "" });
         setIsWorkTypeModalOpen(false);
-        toast({
-          title: "Success",
-          description: "Work type added successfully",
-          variant: "default",
-        });
+        showSuccessToast("Work type added successfully");
       } else {
         throw new Error("Failed to create work type");
       }
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : "An unknown error occurred while adding work type.";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      showErrorToast(errorMessage);
     } finally {
       setIsAddingWorkType(false);
     }
@@ -449,11 +444,7 @@ export default function UpdateEmployeePage() {
 
   const handleAddEmployeeType = async () => {
     if (!employeeTypeFormData.name.trim()) {
-      toast({
-        title: "Error",
-        description: "Employee type name is required",
-        variant: "destructive",
-      });
+      showErrorToast("Employee type name is required");
       return;
     }
 
@@ -470,22 +461,14 @@ export default function UpdateEmployeePage() {
         setFormData((prev) => ({ ...prev, employee_type: newEmployeeType.id }));
         setEmployeeTypeFormData({ name: "", description: "", code: "" });
         setIsEmployeeTypeModalOpen(false);
-        toast({
-          title: "Success",
-          description: "Employee type added successfully",
-          variant: "default",
-        });
+        showSuccessToast("Employee type name added successfully");
       } else {
-        throw new Error("Failed to create employee type");
+        throw new Error("Failed to create employee type name");
       }
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error ? error.message : "An unknown error occurred while adding employee type.";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+        error instanceof Error ? error.message : "An unknown error occurred while adding employee type name.";
+      showErrorToast(errorMessage);
     } finally {
       setIsAddingEmployeeType(false);
     }
@@ -663,12 +646,7 @@ export default function UpdateEmployeePage() {
       });
 
       if (result) {
-        toast({
-          title: "Success!",
-          description: "Employee has been updated successfully.",
-          variant: "default",
-          duration: 3000,
-        });
+        showSuccessToast("Employee has been updated successfully.");
 
         localStorage.removeItem(`employee_${employeeId}`);
         
@@ -677,12 +655,7 @@ export default function UpdateEmployeePage() {
         setSubmitError("Failed to update employee. Please try again.");
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update employee. Please try again.",
-        variant: "destructive",
-        duration: 5000,
-      });
+      showErrorToast("Failed to update employee. Please try again.");
 
       setSubmitError(error.message || "An unexpected error occurred");
     } finally {
@@ -1033,14 +1006,14 @@ export default function UpdateEmployeePage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="employeeType">Employee Type</Label>
+                <Label htmlFor="employeeType">Employee Type Name</Label>
                 <div className="flex gap-2">
                   <Select
                     value={formData.employee_type > 0 ? formData.employee_type.toString() : ""}
                     onValueChange={(value) => handleInputChange("employee_type", parseInt(value))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select employee type" />
+                      <SelectValue placeholder="Select employee type Name" />
                     </SelectTrigger>
                     <SelectContent>
                       {employeeTypes.length > 0 ? (
@@ -1051,7 +1024,7 @@ export default function UpdateEmployeePage() {
                         ))
                       ) : (
                         <div className="px-2 py-1.5 text-sm text-gray-500">
-                          No employee types available
+                          No employee type names available
                         </div>
                       )}
                     </SelectContent>
@@ -1063,16 +1036,16 @@ export default function UpdateEmployeePage() {
                         variant="outline"
                         size="icon"
                         className="shrink-0 bg-transparent"
-                        title="Add new employee type"
+                        title="Add new employee type name"
                       >
                         <Plus className="w-4 h-4" />
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
-                        <DialogTitle>Add New Employee Type</DialogTitle>
+                        <DialogTitle>Add New Employee Type Name</DialogTitle>
                         <DialogDescription>
-                          Create a new employee type to add to your institution.
+                          Create a new employee type name to add to your institution.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
@@ -1138,7 +1111,7 @@ export default function UpdateEmployeePage() {
                               Adding...
                             </>
                           ) : (
-                            "Add Employee Type"
+                            "Add Employee Type Name"
                           )}
                         </Button>
                       </DialogFooter>

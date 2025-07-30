@@ -4,18 +4,25 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
-import { Megaphone, ArrowLeft, Check, Calendar } from "lucide-react"
+import { Megaphone, ArrowLeft, Check, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { CreateJobPositionDialog } from "@/components/dialogs/create-job-position-dialog"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getJobPositions, createJobPositionAdvert } from "@/lib/utils"
-import type { JobPositionAdvertFormData, IJobPosition, JobAdvertStatus, JobAdvertTypes } from "@/app/types/types.utils"
+import type { JobPositionAdvertFormData, IJobPosition, JobAdvertTypes } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
 export default function CreateJobAdvertPage() {
@@ -55,10 +62,10 @@ export default function CreateJobAdvertPage() {
       if (fetchedJobPositions) {
         setJobPositions(fetchedJobPositions);
       } else {
-        toast.error("Failed to load job positions");
+        toast.error("Failed to load job position/titles ");
       }
     } catch (error) {
-      toast.error("Failed to load job positions");
+      toast.error("Failed to load job position/titles ");
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +105,7 @@ export default function CreateJobAdvertPage() {
     }
 
     if (!formData.advert_type) {
-      newErrors.advert_type = "Please select an advert type";
+      newErrors.advert_type = "Please select an opening type";
     }
 
     setErrors(newErrors);
@@ -136,13 +143,13 @@ export default function CreateJobAdvertPage() {
       });
 
       if (newJobAdvert) {
-        toast.success("Job advert created successfully!");
+        toast.success("Job opening created successfully!");
         router.push("/job-adverts");
       } else {
-        toast.error("Failed to create job advert. Please try again.");
+        toast.error("Failed to create job opening. Please try again.");
       }
     } catch (error) {
-      toast.error("Failed to create job advert. Please try again.");
+      toast.error("Failed to create job opening. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -169,7 +176,7 @@ export default function CreateJobAdvertPage() {
   }
 
   if (isLoading) {
-    return <div>Loading job positions...</div>;
+    return <div>Loading job openings...</div>;
   }
 
   return (
@@ -184,7 +191,7 @@ export default function CreateJobAdvertPage() {
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Job Positions
+            Back to Job Openings
           </Button>
         </div>
 
@@ -195,7 +202,7 @@ export default function CreateJobAdvertPage() {
                 <Megaphone className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-xl">Create New Job Positions</CardTitle>
+                <CardTitle className="text-xl">Create New Job Openings</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   Create a job advertisement for {selectedBranch.branch_name} -{" "}
                   {selectedInstitution.institution_name}
@@ -208,11 +215,29 @@ export default function CreateJobAdvertPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Form Fields - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Job Position */}
+                {/* Job Position/ Title  */}
                 <div className="space-y-2">
-                  <Label htmlFor="job_position" className="text-sm font-medium">
-                    Job Position *
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="job_position" className="text-sm font-medium">
+                      Job Position/ Title  *
+                    </Label>
+                    <CreateJobPositionDialog
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      }
+                      onJobPositionCreated={(newPosition) => {
+                        setJobPositions((prev) => [...prev, newPosition])
+                        updateFormData("job_position", newPosition.id)
+                      }}
+                    />
+                  </div>
                   <Select
                     value={formData.job_position.toString()}
                     onValueChange={(value) => updateFormData("job_position", Number(value))}
@@ -236,7 +261,7 @@ export default function CreateJobAdvertPage() {
                 {/* Advert Type */}
                 <div className="space-y-2">
                   <Label htmlFor="advert_type" className="text-sm font-medium">
-                    Advert Type *
+                    Opening Type *
                   </Label>
                   <Select
                     value={formData.advert_type}
@@ -345,7 +370,7 @@ export default function CreateJobAdvertPage() {
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      Create Job Positions
+                      Create Job Openings
                     </>
                   )}
                 </Button>

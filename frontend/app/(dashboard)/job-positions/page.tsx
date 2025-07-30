@@ -74,12 +74,12 @@ export default function JobPositionsPage() {
       if (fetchedJobPositions) {
         setJobPositions(fetchedJobPositions)
       } else {
-        setError("Failed to fetch job positions. Please try again.")
-        toast.error("Failed to load job positions")
+        setError("Failed to fetch job position/titles. Please try again.")
+        toast.error("Failed to load job position/titles ")
       }
     } catch (err) {
-      setError("Failed to fetch job positions. Please try again.")
-      toast.error("Failed to load job positions")
+      setError("Failed to fetch job position/titles . Please try again.")
+      toast.error("Failed to load job position/titles ")
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
@@ -164,9 +164,9 @@ export default function JobPositionsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Job Positions</h1>
+          <h1 className="text-2xl font-bold">Job Positions/Titles</h1>
           <p className="text-muted-foreground">
-            Manage job positions for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
+            Manage job positions/titles for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -182,7 +182,7 @@ export default function JobPositionsPage() {
           </Button>
           <Button onClick={handleCreateJobPosition} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Create Job Position
+            Create Job Position/ Title 
           </Button>
         </div>
       </div>
@@ -192,7 +192,7 @@ export default function JobPositionsPage() {
         <div className="relative flex-1 ">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search job positions..."
+            placeholder="Search job position/titles ..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -227,7 +227,7 @@ export default function JobPositionsPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">{jobPositions.length}</div>
-              <p className="text-xs text-muted-foreground">Total Job Positions</p>
+              <p className="text-xs text-muted-foreground">Total Job Positions/Titles</p>
             </CardContent>
           </Card>
           <Card>
@@ -264,7 +264,7 @@ export default function JobPositionsPage() {
         </div>
       )}
 
-      {/* Job Positions Grid */}
+      {/* Job Positions/Titles Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {[...Array(8)].map((_, i) => (
@@ -283,10 +283,10 @@ export default function JobPositionsPage() {
       ) : filteredJobPositions.length === 0 ? (
         <Card className="p-12 text-center">
           <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No job positions found</h3>
+          <h3 className="text-lg font-semibold mb-2">No job positions/titles found</h3>
           <p className="text-muted-foreground mb-4">
             {searchTerm
-              ? "No job positions match your search criteria."
+              ? "No job positions/titles match your search criteria."
               : "Get started by creating your first job position."}
           </p>
 
@@ -295,25 +295,6 @@ export default function JobPositionsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredJobPositions.map((position) => (
             <Card key={position.id} className="hover:shadow-md transition-shadow cursor-pointer">
-              <div className="absolute right-3 top-3 z-10">
-                {position.job_position_status === "active" ? (
-                  <Badge 
-                    variant="success" 
-                    className="flex items-center gap-1 px-2 py-0.5 text-xs capitalize bg-green-50 text-green-700 border-green-200"
-                  >
-                    <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                    Active
-                  </Badge>
-                ) : (
-                  <Badge 
-                    variant="destructive" 
-                    className="flex items-center gap-1 px-2 py-0.5 text-xs capitalize bg-red-50 text-red-700 border-red-200"
-                  >
-                    <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                    Inactive
-                  </Badge>
-                )}
-              </div>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">

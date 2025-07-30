@@ -202,12 +202,12 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     {
       title: "Dashboard",
       href: "/dashboard",
-      icon: <Icon icon="hugeicons:dashboard-browsing" width="20" height="20" />,
+      icon: <Icon icon="hugeicons:dashboard-browsing" className="!w-6 !h-6" width="28" height="28" />,
     },
     {
       title: "Recruitment",
       href: "#1",
-      icon: <Icon icon="hugeicons:user-add-02" width="20" height="20" />,
+      icon: <Icon icon="hugeicons:user-add-02" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
         {title: "Job Openings", href: "/job-adverts"},
         {title: "Applications", href: "/applications"},
@@ -218,12 +218,12 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     {
       title: "Onboarding",
       href: "/on-boarding",
-      icon: <Icon height="20" icon="hugeicons:inbox-download" width="20" />,
+      icon: <Icon height="20" icon="hugeicons:inbox-download" className="!w-6 !h-6" width="20" />,
     },
     {
       title: "Employees",
       href: "#1",
-      icon: <Icon icon="hugeicons:user-multiple-02" width="20" height="20" />,
+      icon: <Icon icon="hugeicons:user-multiple-02" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
         {title: "Employees", href: "/employees/employee-list"},
         {title: "Contracts", href: "/employees/contracts"},
@@ -235,7 +235,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     {
       title: "Leave",
       href: "#1",
-      icon: <Icon icon="hugeicons:calendar-03" className="!w-5 !h-5" width="20" height="20" />,
+      icon: <Icon icon="hugeicons:calendar-03" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
         {title: "Leave Types", href: "/leave/leave-types"},
         {title: "Leave Policy", href: "/leave/leave-policy"},
@@ -246,7 +246,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     {
       title: "Payroll",
       href: "#1",
-      icon: <Icon icon="hugeicons:dollar-01" width="20" height="20" />,
+      icon: <Icon icon="hugeicons:money-04" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
         {title: "Allowance Types", href: "/payroll/allowance-types"},
         {title: "Deduction Types", href: "/payroll/deduction-types"},
@@ -260,17 +260,17 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     // {
     //   title: "Assets",
     //   href: "/assets",
-    //   icon: <Icon icon="hugeicons:package" width="20" height="20" />,
+    //   icon: <Icon icon="hugeicons:package" className="!w-6 !h-6" width="28" height="28" />,
     // },
     // {
     //   title: "Projects",
     //   href: "/projects",
-    //   icon: <Icon icon="hugeicons:folder-01" width="20" height="20" />,
+    //   icon: <Icon icon="hugeicons:folder-01" className="!w-6 !h-6" width="28" height="28" />,
     // },
     // {
     //   title: "Help Desk",
     //   href: "#1",
-    //   icon: <Icon icon="hugeicons:help-circle" width="20" height="20" />,
+    //   icon: <Icon icon="hugeicons:help-circle" className="!w-6 !h-6" width="28" height="28" />,
     //   submenu: [
     //     {title: "Support Tickets", href: "/help-desk/tickets"},
     //     {title: "Knowledge Base", href: "/help-desk/knowledge-base"},
@@ -283,7 +283,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     // {
     //   title: "Reports",
     //   href: "#1",
-    //   icon: <Icon icon="hugeicons:analytics-01" width="20" height="20" />,
+    //   icon: <Icon icon="hugeicons:analytics-01" className="!w-6 !h-6" width="28" height="28" />,
     //   submenu: [
     //     {title: "Employee Reports", href: "/reports/employees"},
     //     {title: "Attendance Reports", href: "/reports/attendance"},
@@ -296,7 +296,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     // {
     //   title: "Performance",
     //   href: "#1",
-    //   icon: <Icon icon="hugeicons:chart-line-data-01" width="25" height="25" />,
+    //   icon: <Icon icon="hugeicons:chart-line-data-01" className="!w-6 !h-6" width="25" height="25" />,
     //   submenu: [
     //     {title: "Performance Reviews", href: "/performance/reviews"},
     //     {title: "Goal Setting", href: "/performance/goals"},
@@ -309,7 +309,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     // {
     //   title: "Events & Holidays",
     //   href: "/events-holidays",
-    //   icon: <Icon icon="hugeicons:calendar-03" className="w-5 h-5" />,
+    //   icon: <Icon icon="hugeicons:calendar-03" className="!w-6 !h-6" className="w-5 h-5" />,
     // },
   ];
 
@@ -429,7 +429,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   };
 
   const toggleExpand = (title: string) => {
-    setExpandedItems((prev) => ({...prev, [title]: !prev[title]}));
+    setExpandedItems((prev) => ({[title]: !prev[title]}));
   };
 
   const renderNavigationItem = (item: NavItem) => {

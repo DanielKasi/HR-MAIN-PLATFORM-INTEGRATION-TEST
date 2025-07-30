@@ -577,7 +577,7 @@ export default function InterviewsPage() {
                     />
                   </TableHead>
                   <TableHead>Applicant</TableHead>
-                  <TableHead>Job Position</TableHead>
+                  <TableHead>Job Position/ Title </TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Stage</TableHead>
                   <TableHead>Interview Date</TableHead>
