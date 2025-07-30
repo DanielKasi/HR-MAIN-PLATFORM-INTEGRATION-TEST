@@ -261,7 +261,7 @@ export default function DepartmentDetailView() {
     })
   }, [recruitmentHistory, department, departmentEmployees, searchTerm])
 
-  // Filter job positions for current department
+  // Filter job positions/titles for current department
   const filteredJobPositions = useMemo(() => {
     return allJobPositions.filter((position) => {
       const positionBelongsToDepartment = position.department === departmentId
@@ -463,7 +463,7 @@ export default function DepartmentDetailView() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Job Positions</p>
+                <p className="text-sm font-medium text-muted-foreground">Job Positions/Titles</p>
                 <p className="text-2xl font-bold">{filteredJobPositions.length}</p>
               </div>
               <Briefcase className="h-8 w-8 text-blue-500" />
@@ -493,7 +493,7 @@ export default function DepartmentDetailView() {
         <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="employees">Employees</TabsTrigger>
-          <TabsTrigger value="positions">Job Positions</TabsTrigger>
+          <TabsTrigger value="positions">Job Positions/Titles</TabsTrigger>
           <TabsTrigger value="recruitment">Recruitment</TabsTrigger>
         </TabsList>
 
@@ -543,7 +543,7 @@ export default function DepartmentDetailView() {
                     <span className="font-semibold">{departmentEmployees.filter(e => e.is_active).length}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span>Job Positions</span>
+                    <span>Job Positions/Titles</span>
                     <span className="font-semibold">{filteredJobPositions.length}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
@@ -710,13 +710,13 @@ export default function DepartmentDetailView() {
           </Card>
         </TabsContent>
 
-        {/* Job Positions Tab */}
+        {/* Job Positions/Titles Tab */}
         <TabsContent value="positions" className="space-y-6">
           <Card>
             <CardHeader>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                  <CardTitle>Job Positions</CardTitle>
+                  <CardTitle>Job Positions/Titles</CardTitle>
                   <p className="text-sm text-muted-foreground">Manage positions available in this department</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -740,8 +740,8 @@ export default function DepartmentDetailView() {
               {paginatedJobPositions.length === 0 ? (
                 <div className="p-12 text-center">
                   <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No job positions found</h3>
-                  <p className="text-muted-foreground">Create job positions for this department to get started.</p>
+                  <h3 className="text-lg font-semibold mb-2">No job positions/titles found</h3>
+                  <p className="text-muted-foreground">Create job positions/titles for this department to get started.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -849,7 +849,7 @@ export default function DepartmentDetailView() {
                 </div>
               )}
 
-              {/* Pagination for Job Positions */}
+              {/* Pagination for Job Positions/Titles */}
               {filteredJobPositions.length > itemsPerPage && (
                 <div className="flex items-center justify-between px-6 py-4">
                   <p className="text-sm text-muted-foreground">
@@ -1112,7 +1112,7 @@ export default function DepartmentDetailView() {
         </div>
       )}
 
-      {/* Pagination for Job Positions Tab */}
+      {/* Pagination for Job Positions/Titles Tab */}
       {activeTab === "positions" && filteredJobPositions.length > itemsPerPage && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">

@@ -305,7 +305,7 @@ export default function ViewOnboardingDetails() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Job Position</Label>
+                <Label className="text-sm font-medium text-muted-foreground">Job Position/ Title </Label>
                 <div className="flex items-center gap-2 mt-1">
                   <Briefcase className="h-4 w-4 text-muted-foreground" />
                   <p className="text-sm font-medium">{applicationData.jobDesc}</p>

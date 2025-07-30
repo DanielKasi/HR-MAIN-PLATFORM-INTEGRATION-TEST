@@ -28,7 +28,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {Textarea} from "@/components/ui/textarea";
-import {useToast} from "@/hooks/use-toast";
 import {Upload, User, X, Loader2, Plus} from "lucide-react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
@@ -57,6 +56,7 @@ import type {
   ICountry,
 } from "@/app/types/types.utils";
 import type {IUserInstitution} from "@/app/types";
+import { toast } from "sonner";
 
 const maritalStatusOptions = [
   {value: "single", label: "Single"},
@@ -74,7 +74,6 @@ const steps = [
 export default function AddEmployeeForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const router = useRouter();
-  const {toast} = useToast();
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
 
@@ -158,9 +157,13 @@ export default function AddEmployeeForm() {
     isValid: boolean;
   }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
 
-  useEffect(()=>{
-    console.log("\n\n Phone input changed as :", phoneInput);
-  }, [phoneInput])
+  const showErrorToast = (message:string) => {      
+    toast.error(message)
+  }
+
+    const showSuccessToast = (message:string) => {      
+    toast.success(message)
+  }
 
   useEffect(() => {
     if (selectedInstitution) {
@@ -276,11 +279,7 @@ export default function AddEmployeeForm() {
 
   const handleAddWorkType = async () => {
     if (!workTypeFormData.name.trim()) {
-      toast({
-        title: "Error",
-        description: "Work type name is required",
-        variant: "destructive",
-      });
+      showErrorToast("Work type name is required");
       return;
     }
 
@@ -297,11 +296,7 @@ export default function AddEmployeeForm() {
         setFormData((prev) => ({...prev, work_type: newWorkType.id}));
         setWorkTypeFormData({name: "", description: "", code: ""});
         setIsWorkTypeModalOpen(false);
-        toast({
-          title: "Success",
-          description: "Work type added successfully",
-          variant: "default",
-        });
+        showSuccessToast("Work type added successfully");
       } else {
         throw new Error("Failed to create work type");
       }
@@ -310,11 +305,7 @@ export default function AddEmployeeForm() {
         error instanceof Error
           ? error.message
           : "An unknown error occurred while adding work type.";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      showErrorToast(errorMessage);
     } finally {
       setIsAddingWorkType(false);
     }
@@ -322,11 +313,7 @@ export default function AddEmployeeForm() {
 
   const handleAddEmployeeType = async () => {
     if (!employeeTypeFormData.name.trim()) {
-      toast({
-        title: "Error",
-        description: "Employee type name is required",
-        variant: "destructive",
-      });
+      showErrorToast("Employee type name is required");
       return;
     }
 
@@ -343,24 +330,16 @@ export default function AddEmployeeForm() {
         setFormData((prev) => ({...prev, employee_type: newEmployeeType.id}));
         setEmployeeTypeFormData({name: "", description: "", code: ""});
         setIsEmployeeTypeModalOpen(false);
-        toast({
-          title: "Success",
-          description: "Employee type added successfully",
-          variant: "default",
-        });
+        showSuccessToast("Employee type name added successfully");
       } else {
-        throw new Error("Failed to create employee type");
+        throw new Error("Failed to create employee type name");
       }
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "An unknown error occurred while adding employee type.";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+          : "An unknown error occurred while adding employee type name.";
+      showErrorToast(errorMessage);
     } finally {
       setIsAddingEmployeeType(false);
     }
@@ -554,23 +533,13 @@ export default function AddEmployeeForm() {
               ),
             );
           } catch (branchError) {
-            console.error("Error attaching branches:", branchError);
             // Still show success for employee creation, but log the branch attachment error
-            toast({
-              title: "Warning",
-              description:
-                "Employee created successfully, but some branches could not be attached.",
-              variant: "default",
-            });
+            toast.warning("Employee created successfully, but some branches could not be attached.");
           }
         }
 
         router.push("/employees/employee-list");
-        toast({
-          title: "Success",
-          description: "Employee created successfully",
-          variant: "default",
-        });
+        showSuccessToast("Employee created successfully");
       } else {
         setSubmitError("Failed to create employee. Please try again.");
       }
@@ -579,12 +548,7 @@ export default function AddEmployeeForm() {
         error instanceof Error
           ? error.message
           : "An unknown error occurred while creating the employee.";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-        duration: 5000,
-      });
+      showErrorToast(errorMessage);
       setSubmitError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -937,7 +901,7 @@ export default function AddEmployeeForm() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="employeeType">Employee Type</Label>
+                <Label htmlFor="employeeType">Employee Type Name</Label>
                 <div className="flex gap-2">
                   <Select
                     value={formData.employee_type > 0 ? formData.employee_type.toString() : ""}
@@ -946,7 +910,7 @@ export default function AddEmployeeForm() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select employee type" />
+                      <SelectValue placeholder="Select employee type name" />
                     </SelectTrigger>
                     <SelectContent>
                       {employeeTypes.length > 0 ? (
@@ -957,7 +921,7 @@ export default function AddEmployeeForm() {
                         ))
                       ) : (
                         <div className="px-2 py-1.5 text-sm text-gray-500">
-                          No employee types available
+                          No employee type names available
                         </div>
                       )}
                     </SelectContent>
@@ -969,16 +933,16 @@ export default function AddEmployeeForm() {
                         variant="outline"
                         size="icon"
                         className="shrink-0 bg-transparent"
-                        title="Add new employee type"
+                        title="Add new employee type name"
                       >
                         <Plus className="w-4 h-4" />
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
-                        <DialogTitle>Add New Employee Type</DialogTitle>
+                        <DialogTitle>Add New Employee Type Name</DialogTitle>
                         <DialogDescription>
-                          Create a new employee type to add to your institution.
+                          Create a new employee type name to add to your institution.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">

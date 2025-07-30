@@ -83,18 +83,13 @@ export default function EditJobAdvertPage() {
         getJobPosition({ jobPositionId: fetchedJobAdvert.job_position }),
       ])
 
-      console.log("Job positions response:", fetchedJobPositionsResponse)
-      console.log("Job position details:", fetchedJobPosition)
-
-      // Handle paginated job positions response
+      // Handle paginated job positions/titles response
       if (fetchedJobPositionsResponse && 'results' in fetchedJobPositionsResponse && Array.isArray(fetchedJobPositionsResponse.results)) {
-        console.log("Setting job positions from results:", fetchedJobPositionsResponse.results)
+
         setJobPositions(fetchedJobPositionsResponse.results)
       } else if (Array.isArray(fetchedJobPositionsResponse)) {
-        console.log("Setting job positions directly (not paginated):", fetchedJobPositionsResponse)
         setJobPositions(fetchedJobPositionsResponse)
       } else {
-        console.log("No valid job positions found, setting empty array")
         setJobPositions([])
       }
 
@@ -114,7 +109,6 @@ export default function EditJobAdvertPage() {
         number_of_employees_expected: fetchedJobAdvert.number_of_employees_expected || 1,
         extra_information: fetchedJobAdvert.extra_information || "",
       }
-
       setFormData(formDataToSet)
 
     } catch (error) {
@@ -162,7 +156,7 @@ export default function EditJobAdvertPage() {
     }
     
     if (formData.job_position && !jobPositions.some((pos) => pos.id === formData.job_position)) {
-      newErrors.job_position = "Selected job position does not exist"
+      newErrors.job_position = "Selected job position/title does not exist"
     }
     
     if (formData.number_of_employees_expected !== undefined && formData.number_of_employees_expected !== null) {
@@ -225,8 +219,7 @@ export default function EditJobAdvertPage() {
         toast.error("Failed to update job postion. Please try again.")
       }
     } catch (error) {
-      console.error("Error updating job position:", error)
-      toast.error("Failed to update job position. Please try again.")
+      toast.error("Failed to update job advert. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -310,15 +303,14 @@ export default function EditJobAdvertPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Form Fields - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Job Position */}
+                {/* Job Position/ Title  */}
                 <div className="space-y-2">
                   <Label htmlFor="job_position" className="text-sm font-medium">
-                    Job Position *
+                    Job Position/ Title  *
                   </Label>
                   <Select
                     value={formData.job_position > 0 ? formData.job_position.toString() : ""}
                     onValueChange={(value) => {
-                      console.log("Job position selected:", value)
                       updateFormData("job_position", Number(value))
                     }}
                   >
@@ -342,7 +334,7 @@ export default function EditJobAdvertPage() {
                     Status *
                   </Label>
                   <Select
-                    value={formData.job_position_advert_status}
+                    value={formData.job_position_advert_status||""}
                     onValueChange={(value) => updateFormData("job_position_advert_status", value as JobAdvertStatus)}
                   >
                     <SelectTrigger>
