@@ -1362,6 +1362,7 @@ class EmployeeContractApprovalAPIView(APIView):
                     'phone_number': contract.applicant.applicant_phone,
                     'position': contract.applicant.job_position_advert.job_position,
                     'address': contract.applicant.address,
+                    'gender': contract.applicant.gender,
                     'date_of_joining': timezone.now().date(),
                     'is_active': True,
                     'department': contract.applicant.job_position_advert.job_position.department,

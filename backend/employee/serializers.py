@@ -16,13 +16,14 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 import os
 from django.conf import settings
-
+from recruitment.models import JobAdvertApplication
 from django.template.loader import render_to_string
 from weasyprint import HTML
 from django.utils.text import slugify
 from docx import Document
 from weasyprint import HTML
 from utilities.helpers import get_or_create_default_role_with_permissions
+
 
 
 class EmployeeTypeSerializer(serializers.ModelSerializer):
@@ -235,6 +236,13 @@ class EmployeeActivationSerializer(serializers.Serializer):
 
 
 class EmployeeContractSerializer(serializers.ModelSerializer):
+   
+    applicant = serializers.PrimaryKeyRelatedField(
+        queryset=JobAdvertApplication.objects.all(), required=False, allow_null=True
+    )
+    employee = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(), required=False, allow_null=True
+    )
     class Meta:
         model = EmployeeContract
         fields = [
@@ -256,6 +264,13 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
         contract.contract_reference = contract.generate_contract_reference()
         contract.save()
         return contract
+
+    def to_representation(self, instance):
+        from recruitment.serializers import JobAdvertApplicationSerializer
+        rep = super().to_representation(instance)
+        rep['applicant'] = JobAdvertApplicationSerializer(instance.applicant).data if instance.applicant else None
+        rep['employee'] = EmployeeSerializer(instance.employee).data if instance.employee else None
+        return rep    
 
     # def validate(self, data):
     #     # Ensure either applicant or employee is provided, not both
