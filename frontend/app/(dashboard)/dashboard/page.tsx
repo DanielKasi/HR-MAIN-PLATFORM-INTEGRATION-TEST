@@ -53,10 +53,9 @@ import {
   getDepartments,
 } from "@/lib/utils";
 import {IUserInstitution, USER_GENDER} from "@/app/types";
-import EmployeeAttendance from "./EmployeeAttendance";
-import {se} from "date-fns/locale";
 import {SimpleCalendarWidget} from "@/components/calendar-widget";
 import { TasksCards } from "@/components/dashboard_components/tasks-cards";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Interface for employee data from API
 interface EmployeeFromAPI {
@@ -1173,17 +1172,18 @@ export default function HRDashboard() {
                 <h1 className="text-3xl font-bold tracking-tight text-gray-900">HR Dashboard</h1>
 
                 <div className="flex items-center gap-4">
-                  <select
-                    value={selectedDepartment}
-                    onChange={(e) => handleDepartmentChange(e.target.value)}
-                    className="border-2 border-gray-200 rounded-lg px-4 py-2 hover:border-blue-500 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {departmentOptions.map((dept) => (
-                      <option key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </select>
+                  <Select onValueChange={handleDepartmentChange} value={selectedDepartment}>
+                    <SelectTrigger className="min-w-48 lg:min-w-64 w-full max-w-80">
+                      <SelectValue placeholder="All Departments" />
+                    </SelectTrigger>
+                    <SelectContent className="min-w-48 lg:min-w-64 w-full max-w-80">
+                      {departmentOptions.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

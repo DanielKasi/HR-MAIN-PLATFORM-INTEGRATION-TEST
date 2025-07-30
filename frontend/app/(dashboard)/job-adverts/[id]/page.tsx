@@ -211,7 +211,7 @@ export default function JobAdvertDetailsPage() {
               Back to Job Openings
             </Button>
           </div>
-          <Card className="p-12 text-center">
+          <Card className="p-12 text-center w-full">
             <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Job Opening Not Found</h3>
             <p className="text-muted-foreground mb-4">{error}</p>
@@ -267,7 +267,7 @@ export default function JobAdvertDetailsPage() {
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-3">
-                  <CardTitle className="text-2xl">{jobPosition?.name || "Job Advertisement"}</CardTitle>
+                  <CardTitle className="text-2xl">{jobPosition?.name || "Job Opening "}</CardTitle>
                   <Button
                     variant="outline"
                     size="sm"
@@ -313,7 +313,7 @@ export default function JobAdvertDetailsPage() {
                   </h3>
                   <div className="bg-muted/50 p-4 rounded-lg space-y-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xl font-semibold">{jobPosition.name}</h4>
+                      {/* <h4 className="text-xl font-semibold">{jobPosition.name}</h4> */}
                       <div className="flex items-center gap-1 text-lg font-bold text-green-600">
                         UGX {" "}
                         {formatCurrency(jobPosition.salary||0)}
@@ -336,7 +336,7 @@ export default function JobAdvertDetailsPage() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Megaphone className="h-5 w-5" />
-                    Advertisement Details
+                    Opening  Details
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">

@@ -4,6 +4,7 @@ import Link from "next/link";
 import {fetchAndSetData, fetchInstitutionBranchesFromAPI} from "@/lib/helpers";
 import {useEffect, useState} from "react";
 import type {Branch} from "@/app/types";
+import {Icon} from "@iconify/react"
 
 import {
   Users,
@@ -26,6 +27,8 @@ import {
   LucideHouse,
   BriefcaseBusinessIcon,
   Cog,
+  Book,
+  BookAIcon,
 } from "lucide-react";
 import {Separator} from "@/components/ui/separator";
 import ProtectedComponent from "@/components/ProtectedComponent";
@@ -227,14 +230,15 @@ export default function AdminPage() {
                   href="/documents/document_types"
                   className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
                 >
-                  <ShieldAlert className="w-5 h-5 text-gray-500" />
+                  <Book className="w-5 h-5 text-gray-500" />
+                  {/* <Icon icon={"hugeicons:notebook"}  className="w-5 h-5 text-gray-500" /> */}
                   <span>Document Types</span>
                 </Link>
                 <Link
                   href="/documents/templates"
                   className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
                 >
-                  <ShieldAlert className="w-5 h-5 text-gray-500" />
+                  <BookAIcon className="w-5 h-5 text-gray-500" />
                   <span>Document Templates</span>
                 </Link>
               </div>

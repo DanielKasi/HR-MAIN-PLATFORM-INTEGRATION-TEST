@@ -735,7 +735,7 @@ const updateFormData = (field: keyof JobPositionFormData, value: any) => {
   }
 
   return (
-    <div className="w-full h-full p-6">
+    <div className="w-full max-h-full p-6">
       <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
