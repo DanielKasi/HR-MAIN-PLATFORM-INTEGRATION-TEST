@@ -366,10 +366,10 @@ export default function EditJobAdvertPage() {
                   <p className="text-xs text-muted-foreground">Must be a future date (max 2 years ahead)</p>
                 </div>
 
-                {/* Number of Employees Expected */}
+                {/* Number of Employees Required */}
                 <div className="space-y-2">
                   <Label htmlFor="number_of_employees_expected" className="text-sm font-medium">
-                    Number of Employees Expected
+                    Number of Employees Required
                   </Label>
                   <Input
                     id="number_of_employees_expected"

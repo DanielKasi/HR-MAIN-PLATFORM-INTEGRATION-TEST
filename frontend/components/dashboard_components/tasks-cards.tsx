@@ -31,7 +31,7 @@ export function TasksCards({branchId}: {branchId: string | null}) {
   };
 
   return (
-    <div className="grid grid-cols-4 gap-4 my-6 py-4 cursor-pointer" onClick={viewAllTasks}>
+    <div className="grid grid-cols-4 lg:grid-cols-5 gap-4 my-6 py-4 cursor-pointer" onClick={viewAllTasks}>
       <div className="bg-primary/10 rounded-2xl py-3 px-4 flex justify-between items-center">
         <div className="flex items-center">
           <span className="text-xl font-bold text-primary mr-2">1</span>
