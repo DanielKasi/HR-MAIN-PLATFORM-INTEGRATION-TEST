@@ -38,6 +38,15 @@ class Institution(models.Model):
         "users.System", on_delete=models.PROTECT, blank=True, null=True
     )
     theme_color = models.CharField(max_length=400, blank=True, null=True)
+
+    default_employee_role = models.ForeignKey(
+        "users.Role",
+        related_name="default_role",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
+
     setup = models.BooleanField(default=False)
 
     # Location fields
@@ -149,26 +158,25 @@ class Institution(models.Model):
                 self._create_calendar_for_institution()
                 self._create_default_document_types()
 
-                
                 for dept_data in default_data:
                     # Create department
                     department = Department.objects.create(
-                        name=dept_data['name'],
-                        description=dept_data['description'],
+                        name=dept_data["name"],
+                        description=dept_data["description"],
                         institution=self,
                         created_by=self.institution_owner,
                         created_at=timezone.now(),
-                        updated_at=timezone.now()
+                        updated_at=timezone.now(),
                     )
 
                     # Create job positions
-                    for job_data in dept_data['job_positions']:
+                    for job_data in dept_data["job_positions"]:
                         JobPosition.objects.create(
-                            name=job_data['name'],
-                            description=job_data['description'],
+                            name=job_data["name"],
+                            description=job_data["description"],
                             department=department,
-                            job_position_status='active',
-                            created_at=timezone.now()
+                            job_position_status="active",
+                            created_at=timezone.now(),
                         )
 
     def _create_calendar_for_institution(self):

@@ -280,13 +280,13 @@ function EmployeeTable({employees, onDelete}: EmployeeTableProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedEmployees.map((employee) => (
+                  {paginatedEmployees.map((employee, idx) => (
                     <TableRow
-                      key={employee.id || Math.random()}
+                      key={idx}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => {
-                        router.push(`/employees/profile/${employee.id}`);
-                      }}
+                      // onClick={() => {
+                      //   router.push(`/employees/profile/${employee.id}`);
+                      // }}
                     >
                       <TableCell>
                         <div className="font-medium">{getFullName(employee)}</div>
@@ -304,18 +304,17 @@ function EmployeeTable({employees, onDelete}: EmployeeTableProps) {
                       <TableCell>{getStatusBadge(employee.is_active)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Link href={`/employees/profile/${employee.id || "unknown"}`}>
+                          <Link href={`/employees/profile/${employee.id}`}>
                             <Button
                               variant="ghost"
                               size="sm"
                               title="View Details"
-                              onClick={(e) => e.stopPropagation()}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
                           </Link>
                           <Link
-                            href={`/employees/update-employee/${employee.id || "unknown"}`}
+                            href={`/employees/update-employee/${employee.id}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               localStorage.setItem(

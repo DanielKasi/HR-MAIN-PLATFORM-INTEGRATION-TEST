@@ -6,8 +6,6 @@ import {useEffect, useState} from "react";
 import {ArrowRight} from "lucide-react";
 import {useRouter} from "next/navigation";
 
-import {fetchUserTasks} from "@/lib/helpers";
-
 // Tasks Cards Component
 export function TasksCards({branchId}: {branchId: string | null}) {
   const [tasks, setTasks] = useState<ApiTask[]>([]);
@@ -22,7 +20,6 @@ export function TasksCards({branchId}: {branchId: string | null}) {
       // const response = await fetchUserTasks();
       // const responseData: ApiTask[] = response.data;
       // const pendingTasks = responseData.filter((task) => task.status === "pending");
-
       // setTasks(pendingTasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -34,8 +31,22 @@ export function TasksCards({branchId}: {branchId: string | null}) {
   };
 
   return (
-    <div className="grid grid-cols-4 gap-4 mb-6 cursor-pointer" onClick={viewAllTasks}>
-      <div className="bg-red-100 rounded-[30px] py-3 px-4 flex justify-between items-center">
+    <div className="grid grid-cols-4 lg:grid-cols-5 gap-4 my-6 py-4 cursor-pointer" onClick={viewAllTasks}>
+      <div className="bg-primary/10 rounded-2xl py-3 px-4 flex justify-between items-center">
+        <div className="flex items-center">
+          <span className="text-xl font-bold text-primary mr-2">1</span>
+          <span className="text-primary-hover text-sm">Incoming tasks</span>
+        </div>
+        <ArrowRight className="text-primary-hover h-4 w-4" />
+      </div>
+      <div className="bg-purple-100 rounded-2xl py-3 px-4 flex justify-between items-center">
+        <div className="flex items-center">
+          <span className="text-xl font-bold text-purple-500 mr-2">1</span>
+          <span className="text-purple-500 text-sm">Open tasks</span>
+        </div>
+        <ArrowRight className="text-purple-500 h-4 w-4" />
+      </div>
+      <div className="bg-red-100 rounded-2xl py-3 px-4 flex justify-between items-center">
         <div className="flex items-center">
           <span className="text-xl font-bold text-red-500 mr-2">{tasks.length}</span>
           <span className="text-red-500 text-sm">Critical Tasks</span>
@@ -43,7 +54,7 @@ export function TasksCards({branchId}: {branchId: string | null}) {
         <ArrowRight className="text-red-500 h-4 w-4" />
       </div>
 
-      <div className="bg-blue-100 rounded-[30px] py-3 px-4 flex justify-between items-center">
+      <div className="bg-blue-100 rounded-2xl py-3 px-4 flex justify-between items-center">
         <div className="flex items-center">
           <span className="text-xl font-bold text-blue-500 mr-2">0</span>
           <span className="text-blue-500 text-sm">Expired Tasks</span>
@@ -51,18 +62,10 @@ export function TasksCards({branchId}: {branchId: string | null}) {
         <ArrowRight className="text-blue-500 h-4 w-4" />
       </div>
 
-      <div className="bg-purple-100 rounded-[30px] py-3 px-4 flex justify-between items-center">
-        <div className="flex items-center">
-          <span className="text-xl font-bold text-purple-500 mr-2">1</span>
-          <span className="text-purple-500 text-sm">Open tasks</span>
-        </div>
-        <ArrowRight className="text-purple-500 h-4 w-4" />
-      </div>
-
-      <div className="bg-green-100 rounded-[30px] py-3 px-4 flex justify-between items-center">
+      <div className="bg-green-100 rounded-2xl py-3 px-4 flex justify-between items-center">
         <div className="flex items-center">
           <span className="text-xl font-bold text-green-500 mr-2">0</span>
-          <span className="text-green-500 text-sm">Waiting Tasks</span>
+          <span className="text-green-500 text-sm">Outgoing Tasks</span>
         </div>
         <ArrowRight className="text-green-500 h-4 w-4" />
       </div>

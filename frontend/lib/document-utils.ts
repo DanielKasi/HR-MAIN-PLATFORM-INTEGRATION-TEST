@@ -1,4 +1,4 @@
-import type { IDocumentTemplate, IGeneratedDocumentTemplate } from "@/app/types/types.utils";
+import type {IDocumentTemplate, IGeneratedDocumentTemplate} from "@/app/types/types.utils";
 import apiRequest from "./apiRequest";
 
 export interface DocumentGenerationResponse {
@@ -10,7 +10,7 @@ export interface DocumentPreviewResponse {
   preview: string;
 }
 
-import { IPaginatedResponse } from "@/app/types";
+import {IPaginatedResponse} from "@/app/types";
 
 export const getDocumentTemplates = async ({
   institutionId,
@@ -18,9 +18,7 @@ export const getDocumentTemplates = async ({
   institutionId: number;
 }): Promise<IDocumentTemplate[]> => {
   try {
-    const response = await apiRequest.get(
-      `documents/institution/${institutionId}/templates/`
-    );
+    const response = await apiRequest.get(`documents/institution/${institutionId}/templates/`);
     const data = response.data as IPaginatedResponse<IDocumentTemplate>;
     return data.results;
   } catch (error) {
@@ -39,35 +37,38 @@ export const getGeneratedDocumentTemplate = async (
     const queryParams = new URLSearchParams({
       context,
       context_id: contextId.toString(),
-    });  
-    const response = await apiRequest.get(`${url}?${queryParams}`); 
+    });
+    const response = await apiRequest.get(`${url}?${queryParams}`);
     return response.data as IGeneratedDocumentTemplate;
   } catch (error) {
-    console.error('Error fetching generated document template:', error);
-    return null;  
-} 
-}  
+    console.error("Error fetching generated document template:", error);
+    return null;
+  }
+};
 
 export const generateDocument = async (
   templateId: number,
   context: string,
   contextId: number,
-  placeholders?: Record<string, string>
+  placeholders?: Record<string, string>,
 ): Promise<DocumentGenerationResponse | null> => {
   try {
-    const method = placeholders ? 'POST' : 'GET';
+    const method = placeholders ? "POST" : "GET";
     const url = `documents/generate-document/${templateId}/`;
     const queryParams = new URLSearchParams({
       context,
-      context_id: contextId.toString()
+      context_id: contextId.toString(),
     });
 
-    const response = await apiRequest.post(`documents/generate-document/${templateId}/`,
-      { context, context_id: contextId, placeholders });
+    const response = await apiRequest.post(`documents/generate-document/${templateId}/`, {
+      context,
+      context_id: contextId,
+      placeholders,
+    });
 
     return response.data as DocumentGenerationResponse;
   } catch (error) {
-    console.error('Error generating document:', error);
+    console.error("Error generating document:", error);
     return null;
   }
 };
@@ -77,7 +78,32 @@ export const getDocumentPreview = async (documentId: number): Promise<string | n
     const response = await apiRequest.get(`documents/preview-document-content/${documentId}/`);
     return (response.data as DocumentPreviewResponse).preview;
   } catch (error) {
-    console.error('Error fetching document preview:', error);
+    console.error("Error fetching document preview:", error);
+    return null;
+  }
+};
+
+export const sendDocuments = async ({
+  context,
+  contextId,
+  documentId,
+}: {
+  context: "employee" | "onboarding" | "leave";
+  contextId: number|string;
+  documentId: number ;
+}): Promise<string | null> => {
+  try {
+    const queryParams = new URLSearchParams({
+      context,
+      context_id: contextId.toString(),
+    });
+    const response = await apiRequest.patch(
+      `documents/${documentId}/status/?${queryParams}`,
+      {status: "reviewed", context, context_id: contextId},
+    );
+    return (response.data as DocumentPreviewResponse).preview;
+  } catch (error) {
+    console.error("Error fetching document preview:", error);
     return null;
   }
 };

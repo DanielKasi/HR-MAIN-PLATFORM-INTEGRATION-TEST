@@ -18,7 +18,7 @@ const font = Outfit({ subsets: ["latin"] });
 
 
 export const metadata: Metadata = {
-  title: "PERRAC",
+  title: "PERACOSOFT",
   description: "A comprehensive SaaS solution for organisation management",
   generator: "v0.dev",
 };

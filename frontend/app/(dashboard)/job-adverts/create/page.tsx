@@ -275,6 +275,7 @@ export default function CreateJobAdvertPage() {
                     <SelectContent>
                       <SelectItem value="external">External</SelectItem>
                       <SelectItem value="internal">Internal</SelectItem>
+                      <SelectItem value="both">Both Internal and External</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.advert_type && (
@@ -300,10 +301,10 @@ export default function CreateJobAdvertPage() {
                   )}
                 </div>
 
-                {/* Number of Employees Expected */}
+                {/* Number of Employees Required */}
                 <div className="space-y-2">
                   <Label htmlFor="number_of_employees_expected" className="text-sm font-medium">
-                    Number of Employees Expected
+                    Number of Employees Required
                   </Label>
                   <Input
                     id="number_of_employees_expected"

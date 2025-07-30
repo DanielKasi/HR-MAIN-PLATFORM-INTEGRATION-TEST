@@ -431,7 +431,7 @@ export default function EditJobPositionPage() {
   const [employees, setEmployees] = useState<IEmployee[]>([])
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(false)
   const [employeesSelected, setEmployeesSelected] = useState(false)
-  const [originalSalary, setOriginalSalary] = useState("")
+  const [originalSalary, setOriginalSalary] = useState("");
   const [isSalaryChanged, setIsSalaryChanged] = useState(false)
 
   const router = useRouter()
@@ -469,8 +469,8 @@ export default function EditJobPositionPage() {
 
       if (fetchedJobPosition) {
         setJobPosition(fetchedJobPosition)
-        const salaryValue = fetchedJobPosition.salary.toString()
-        setOriginalSalary(salaryValue)
+        const salaryValue = fetchedJobPosition.salary?.toString()|| "0";
+        setOriginalSalary(salaryValue);
         setFormData({
           name: fetchedJobPosition.name,
           description: fetchedJobPosition.description || "",
@@ -790,7 +790,7 @@ export default function EditJobPositionPage() {
                 {/* Salary with IEmployee Selection */}
                 <div className="space-y-2">
                   <Label htmlFor="salary" className="text-sm font-medium">
-                    Salary * {isSalaryChanged && <span className="text-xs text-amber-600">(Changed - Select employees)</span>}
+                    Salary scale * {isSalaryChanged && <span className="text-xs text-amber-600">(Changed - Select employees)</span>}
                   </Label>
                   <div className="relative">
                     <Input

@@ -176,8 +176,8 @@ export function getCurrentBranchId() {
   return null;
 }
 
-export function formatCurrency(amount: any) {
-  const numAmount = Number.parseFloat(amount);
+export function formatCurrency(amount: number | string): string {
+  const numAmount = Number.parseFloat(Number(amount).toString());
 
   return numAmount % 1 === 0
     ? numAmount.toLocaleString("en-US")
