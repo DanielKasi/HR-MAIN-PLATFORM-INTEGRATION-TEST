@@ -15,7 +15,13 @@ from .serializers import (
     WorkTypeSerializer,
     EmployeeContractSerializer,
 )
-from .models import Employee, EmployeeAttendance, EmployeeType, WorkType, EmployeeContract
+from .models import (
+    Employee,
+    EmployeeAttendance,
+    EmployeeType,
+    WorkType,
+    EmployeeContract,
+)
 from rest_framework.parsers import MultiPartParser, FormParser
 from institution.utils import generate_compliant_password
 from employee.service import EmployeeBranchService
@@ -159,7 +165,7 @@ class EmployeeCreateAPIView(APIView):
                     final_data[field] = 0
 
         # Create employee
-        serializer = EmployeeSerializer(data=final_data)
+        serializer = EmployeeSerializer(data=final_data, context={"request": request})
         if not serializer.is_valid():
             return Response(
                 {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
@@ -1232,6 +1238,7 @@ class WorkTypeDetailAPIView(APIView):
         obj.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
 class EmployeeContractListAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -1260,6 +1267,7 @@ class EmployeeContractListAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class EmployeeContractDetailAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -1284,14 +1292,20 @@ class EmployeeContractDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         contract = self.get_object(pk)
-        serializer = EmployeeContractSerializer(contract, data=request.data, partial=True)
+        serializer = EmployeeContractSerializer(
+            contract, data=request.data, partial=True
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @extend_schema(description="Delete an employee contract", responses={204: None}, tags=["Employee Contract"])
+    @extend_schema(
+        description="Delete an employee contract",
+        responses={204: None},
+        tags=["Employee Contract"],
+    )
     def delete(self, request, pk):
         contract = self.get_object(pk)
         contract.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)        
+        return Response(status=status.HTTP_204_NO_CONTENT)

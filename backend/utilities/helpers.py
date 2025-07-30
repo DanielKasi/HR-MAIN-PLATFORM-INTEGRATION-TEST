@@ -29,6 +29,33 @@ import datetime
 
 logger = logging.getLogger(__name__)
 
+from users.models import Role, RolePermission, Permission, UserRole
+
+
+def get_or_create_default_role_with_permissions(institution):
+    role, created = Role.objects.get_or_create(
+        name="normal employee role",
+        institution=institution,
+        defaults={
+            "description": "Default role for new employees",
+        },
+    )
+
+    if created:
+        default_permission_codes = [
+            "can_view_employee_personal_data",
+        ]
+
+        default_permissions = Permission.objects.filter(
+            permission_code__in=default_permission_codes
+        )
+
+        RolePermission.objects.bulk_create(
+            [RolePermission(role=role, permission=perm) for perm in default_permissions]
+        )
+
+    return role
+
 
 def send_activation_confirmation_email(
     owner_fullname, owner_email, institution_name, branches, departments, employees
@@ -36,7 +63,6 @@ def send_activation_confirmation_email(
     """
     Sends an email to the owner confirming the activation of the institution.
     """
-
 
     try:
         subject = "Perrac Module Activation Confirmation"
@@ -253,7 +279,7 @@ def send_password_link_to_user(user, link):
         )
         return True
     except Exception as e:
-        
+
         return False
 
 
@@ -277,7 +303,7 @@ def send_password_reset_link_to_user(user, link):
         )
         return True
     except Exception as e:
-        
+
         return False
 
 
