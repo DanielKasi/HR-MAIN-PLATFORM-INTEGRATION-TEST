@@ -607,118 +607,158 @@ class DocumentContentPreviewView(APIView):
 
 class DocumentStatusUpdateView(APIView):
     def _replace_placeholders(self, content, placeholder_values):
-        """Replace all placeholder formats, removing underscores when values are provided."""
+        """Replace all placeholder formats, preserving content structure and handling signatures."""
         if not content:
-            logger.warning("Template content is empty")
+            logger.error("Template content is empty")
             return ""
 
         preview = content
-        lines = content.split("\n")
         placeholder_values = {
             k.lower(): v for k, v in placeholder_values.items() if v is not None
         }
         logger.debug(f"Placeholder values: {placeholder_values}")
 
+        # Define placeholder patterns
         placeholder_patterns = [
-            r"\{\{[\w\s\'-]+\}\}",  # {{variable_name}} or {{Employee's Name}}
-            r"<<[\w\s\'-]+>>",  # <<variable_name>> or <<Employee's Name>>
-            r"\[\[[\w\s\'-]+\]\]",  # [[variable_name]] or [[Employee's Name]]
-            r"\[[\w\s\'-]+\]",  # [variable_name] or [Employee's Name]
-            r"_{10,}",  # ___________________
+            r"\{\{[\w\s\'’,-]+\}\}",  # {{variable_name}} or {{Employee's Name}}
+            r"<<[\w\s\'’,-]+>>",  # <<variable_name>> or <<Employee's Name>>
+            r"\[\[[\w\s\'’,-]+\]\]",  # [[variable_name]] or [[Employee's Name]]
+            r"\[[\w\s\'’,-]+\]",  # [variable_name] or [list specific tasks...]
         ]
         combined_pattern = "|".join(f"({pattern})" for pattern in placeholder_patterns)
         all_matches = re.findall(combined_pattern, content)
         matches = [match for group in all_matches for match in group if match]
         logger.debug(f"Found placeholders: {matches}")
 
+        # Replace standard placeholders
+        unreplaced_placeholders = []
         for match in matches:
-            if not re.match(r"_{10,}", match):
-                cleaned_name = re.sub(r"[\{\}<>\[\]]+", "", match).strip()
-                normalized_key = re.sub(
-                    r"\s+", "_", cleaned_name.replace("'", "")
-                ).lower()
-                value = placeholder_values.get(normalized_key, match)
-                logger.debug(f"Replacing {match} with {value}")
-                preview = preview.replace(match, str(value))
+            cleaned_name = re.sub(r"[\{\}<>\[\]]+", "", match).strip()
+            normalized_key = re.sub(r"\s+", "_", cleaned_name.replace("'", "").replace("’", "").replace(",", "")).lower()
+            value = placeholder_values.get(normalized_key)
+            if not value:
+                alt_key = cleaned_name.lower().replace("'", "").replace("’", "").replace(" ", "_").replace(",", "")
+                value = placeholder_values.get(alt_key, match)  # Keep original if no value
+                if value == match:
+                    unreplaced_placeholders.append(match)
+            logger.debug(f"Replacing {match} with {value}")
+            preview = preview.replace(match, str(value))
 
-        for line in lines:
+        if unreplaced_placeholders:
+            logger.warning(f"Unreplaced placeholders: {unreplaced_placeholders}")
+
+        # Handle underscores and signature section
+        lines = preview.split("\n")
+        for i, line in enumerate(lines):
             line_lower = line.lower().strip()
-            match = re.search(r"([\w\s\'-]+?)\s*:?\s*_{10,}", line_lower)
+            # Handle underscores with preceding phrases
+            match = re.search(r"([\w\s\'’,-]+?)\s*:?\s*_{10,}", line_lower)
             if match:
                 phrase = match.group(1).strip()
-                normalized_key = re.sub(r"\s+", "_", phrase.replace("'", "")).lower()
+                normalized_key = re.sub(r"\s+", "_", phrase.replace("'", "").replace("’", "").replace(",", "")).lower()
                 value = placeholder_values.get(normalized_key, None)
                 replacement = (
-                    f"{phrase}: {value}"
-                    if value is not None
-                    else f"{phrase}: __________"
+                    f"{phrase}: {value}" if value is not None else f"{phrase}: __________"
                 )
                 logger.debug(f"Replacing underscore in '{line}' with '{replacement}'")
                 preview = re.sub(
-                    r"([\w\s\'-]+?)\s*:?\s*_{10,}", replacement, preview, count=1
-                )
-            if "initials" in line_lower and "initials" in placeholder_values:
-                value = placeholder_values.get("initials", None)
-                replacement = str(value) if value is not None else "__________"
-                preview = re.sub(
-                    r"initials\s*:?\s*_{10,}",
-                    f"initials: {replacement}",
+                    rf"{re.escape(phrase)}\s*:?\s*_{{10,}}",
+                    replacement,
                     preview,
                     count=1,
                 )
-            if "signature" in line_lower and "signature" in placeholder_values:
-                value = placeholder_values.get("signature", None)
-                replacement = str(value) if value is not None else "__________"
-                preview = re.sub(
-                    r"signature\s*:?\s*_{10,}",
-                    f"signature: {replacement}",
-                    preview,
-                    count=1,
-                )
-            if "days" in line_lower and "days" in placeholder_values:
-                value = placeholder_values.get("days", None)
-                replacement = str(value) if value is not None else "__________"
-                preview = re.sub(
-                    r"days\s*:?\s*_{10,}", f"days: {replacement}", preview, count=1
-                )
-            if "state" in line_lower and "state" in placeholder_values:
-                value = placeholder_values.get("state", None)
-                replacement = str(value) if value is not None else "__________"
-                preview = re.sub(
-                    r"state\s*:?\s*_{10,}", f"state: {replacement}", preview, count=1
-                )
-            if re.search(r"_{10,}", line_lower) and not match:
+            elif "signature" in line_lower:
+                # Handle signature section explicitly
+                for key in ["caregivers_name", "clients_name", "date"]:
+                    value = placeholder_values.get(key, None)
+                    if key == "date":
+                        replacement = f"Date: {value}" if value is not None else "Date: __________"
+                        preview = re.sub(
+                            r"Date\s*:\s*_{10,}",
+                            replacement,
+                            preview,
+                            count=1,
+                        )
+                    else:
+                        title_key = key.replace("_", " ").title()
+                        replacement = f"{value}" if value is not None else "__________"
+                        preview = re.sub(
+                            rf"\[{re.escape(title_key)}\]\s*_{{10,}}",
+                            replacement,
+                            preview,
+                            count=1,
+                        )
+            elif re.search(r"_{10,}", line_lower):
+                # Handle standalone underscores
                 preview = re.sub(r"_{10,}", "__________", preview, count=1)
 
         return preview
 
     def _generate_pdf(self, content, placeholder_values):
-        """Generate a PDF from content using weasyprint."""
+        """Generate a PDF from content using weasyprint, preserving paragraph structure."""
         logger.debug(
             f"Generating PDF with content: {content[:100]}... and placeholders: {placeholder_values}"
         )
         rendered_content = self._replace_placeholders(content, placeholder_values)
+
+        # Remove the "CARE GIVER CONTRACT" title from content if present
+        if rendered_content.startswith("CARE GIVER CONTRACT\n"):
+            rendered_content = rendered_content[len("CARE GIVER CONTRACT\n"):]
+        
+        # Process content to convert newlines to HTML paragraphs
+        paragraphs = rendered_content.split("\n\n")  # Split by double newlines for paragraphs
+        html_paragraphs = []
+        for paragraph in paragraphs:
+            lines = paragraph.split("\n")
+            # Detect section headers (all caps, single line)
+            if len(lines) == 1 and lines[0].strip().isupper():
+                html_paragraphs.append(f'<p class="section-header">{lines[0].strip()}</p>')
+            else:
+                # Handle signature section specially
+                if "This Contract is signed" in paragraph:
+                    formatted_lines = []
+                    for line in lines:
+                        if line.strip():
+                            # Clean up signature lines
+                            line = re.sub(r"_{10,}", "", line).strip()
+                            formatted_lines.append(line)
+                    formatted_paragraph = "<br>".join(formatted_lines)
+                    html_paragraphs.append(f"<p>{formatted_paragraph}</p>")
+                else:
+                    formatted_lines = "<br>".join(line.strip() for line in lines if line.strip())
+                    html_paragraphs.append(f"<p>{formatted_lines}</p>")
 
         html_content = f"""
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="utf-8" />
-            <title>Employment Contract</title>
+            <title>Caregiver Contract</title>
             <style>
             body {{
-                font-family: sans-serif;
+                font-family: Arial, sans-serif;
+                font-size: 12pt;
+                margin: 40px;
             }}
             h1 {{
                 text-align: center;
+                font-size: 16pt;
+                margin-bottom: 30px;
             }}
             p {{
-                margin-bottom: 10px;
+                margin: 0 0 15px 0;
+                line-height: 1.5;
+            }}
+            .section-header {{
+                font-weight: bold;
+                font-size: 14pt;
+                margin: 20px 0 10px 0;
             }}
             </style>
         </head>
         <body>
-            {rendered_content}
+            <h1>CARE GIVER CONTRACT</h1>
+            {''.join(html_paragraphs)}
         </body>
         </html>
         """
