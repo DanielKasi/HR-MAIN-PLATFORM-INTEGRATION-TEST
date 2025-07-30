@@ -118,7 +118,6 @@ export default function EditJobAdvertPage() {
       setFormData(formDataToSet)
 
     } catch (error) {
-      console.error("Error fetching initial data:", error)
       toast.error("Failed to load job advert data")
       router.push("/job-adverts")
     } finally {
@@ -299,7 +298,7 @@ export default function EditJobAdvertPage() {
                 <Megaphone className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-xl">Edit Job Position</CardTitle>
+                <CardTitle className="text-xl">Edit Job Opening</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   Update job advertisement for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
                 </p>
