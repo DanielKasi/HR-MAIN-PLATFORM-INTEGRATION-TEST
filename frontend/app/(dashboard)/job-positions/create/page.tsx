@@ -363,7 +363,7 @@ export default function CreateJobPositionPage() {
                 </div>
 
                 {/* Offer Letter Template */}
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label className="text-sm font-medium">Offer Letter Template (Optional)</Label>
                   {formData.offer_letter_template ? (
                     <div className="border rounded-lg p-4 bg-muted/50">
@@ -411,7 +411,7 @@ export default function CreateJobPositionPage() {
                       </div>
                     </div>
                   )}
-                </div>
+                </div> */}
               </div>
 
               {/* Form Actions */}
