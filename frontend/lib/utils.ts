@@ -22,8 +22,8 @@ import {
   IDocumentTemplate,
   IOffboardingStageFormData,
   IOffboardingStage,
-  ISeparationPolicyType,
-  ISeparationPolicyTypeFormData
+  ISeparationType,
+  ISeparationTypeFormData
 } from "@/app/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -3297,10 +3297,10 @@ export const SeparationPolicyTypesAPI = {
   }: { 
     institutionId: number;
     searchParams?: URLSearchParams
-  }): Promise<PaginatedResponse<ISeparationPolicyType>> => {
+  }): Promise<PaginatedResponse<ISeparationType>> => {
     try {
       const response = await apiRequest.get(`on-boarding/separation-types/?${searchParams}`);
-      return response.data as PaginatedResponse<ISeparationPolicyType>;
+      return response.data as PaginatedResponse<ISeparationType>;
     } catch (error) {
       console.error('Failed to fetch separation policy types:', error);
       return {
@@ -3312,10 +3312,10 @@ export const SeparationPolicyTypesAPI = {
     }
   },
 
-  getById: async (policyTypeId: number): Promise<ISeparationPolicyType | null> => {
+  getById: async (policyTypeId: number): Promise<ISeparationType | null> => {
     try {
       const response = await apiRequest.get(`on-boarding/separation-types/${policyTypeId}/`);
-      return response.data as ISeparationPolicyType;
+      return response.data as ISeparationType;
     } catch (error) {
       console.error('Failed to fetch separation policy type:', error);
       return null;
@@ -3325,11 +3325,11 @@ export const SeparationPolicyTypesAPI = {
   create: async ({
     policyTypeData,
   }: {
-    policyTypeData: Partial<ISeparationPolicyTypeFormData>;
-  }): Promise<ISeparationPolicyType | null> => {
+    policyTypeData: Partial<ISeparationTypeFormData>;
+  }): Promise<ISeparationType | null> => {
     try {
       const response = await apiRequest.post('on-boarding/separation-types/', policyTypeData);
-      return response.data as ISeparationPolicyType;
+      return response.data as ISeparationType;
     } catch (error) {
       console.error('Failed to create separation policy type:', error);
       throw error;
@@ -3341,11 +3341,11 @@ export const SeparationPolicyTypesAPI = {
     policyTypeData,
   }: {
     policyTypeId: number,
-    policyTypeData: Partial<ISeparationPolicyTypeFormData>;
-  }): Promise<ISeparationPolicyType | null> => {
+    policyTypeData: Partial<ISeparationTypeFormData>;
+  }): Promise<ISeparationType | null> => {
     try {
       const response = await apiRequest.patch(`on-boarding/separation-types/${policyTypeId}/`, policyTypeData);
-      return response.data as ISeparationPolicyType;
+      return response.data as ISeparationType;
     } catch (error) {
       console.error('Failed to update separation policy type:', error);
       throw error;

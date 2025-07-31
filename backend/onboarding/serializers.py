@@ -135,11 +135,16 @@ class InstitutionEmployeeSeparationTypesSerializer(serializers.ModelSerializer):
 
 
 class InstitutionSeparationPolicySerializer(serializers.ModelSerializer):
+    separation_type = serializers.PrimaryKeyRelatedField(
+        queryset=InstitutionEmployeeSeparationTypes.objects.all()
+    )
+
     class Meta:
         model = InstitutionSeparationPolicy
         fields = [
             "id",
             "separation_type",
+            "policy_name",
             "policy_document",
             "description",
             "min_notice_days",
@@ -152,6 +157,15 @@ class InstitutionSeparationPolicySerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["separation_type"] = (
+            InstitutionEmployeeSeparationTypesSerializer(
+                instance.separation_type, context=self.context
+            ).data
+        )
+        return representation
 
 
 class EmployeeSeparationSerializer(serializers.ModelSerializer):

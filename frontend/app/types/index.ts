@@ -359,7 +359,20 @@ export interface ITill {
 }
 
 
-
+export interface SeparationPolicy {
+  id: number;
+  separation_type: number;
+  policy_document: string;
+  description: string;
+  min_notice_days: number;
+  max_notice_days: number;
+  require_separation_letter: boolean;
+  require_all_stages: boolean;
+  is_active: boolean;
+  enforce_policy: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 
 // replace the fields below with whatever your CustomUserSerializer emits
