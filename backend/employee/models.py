@@ -493,10 +493,18 @@ class EmployeeAttendance(models.Model):
 
 class EmployeeContract(models.Model):
     applicant = models.ForeignKey(
-        "recruitment.JobAdvertApplication", on_delete=models.CASCADE, related_name="applicant_contract", null=True, blank=True
+        "recruitment.JobAdvertApplication",
+        on_delete=models.CASCADE,
+        related_name="applicant_contract",
+        null=True,
+        blank=True,
     )
     employee = models.ForeignKey(
-        Employee, on_delete=models.CASCADE, related_name="contracts", null=True, blank=True
+        Employee,
+        on_delete=models.CASCADE,
+        related_name="contracts",
+        null=True,
+        blank=True,
     )
     is_active = models.BooleanField(default=True)
     contract_reference = models.CharField(
@@ -533,6 +541,4 @@ class EmployeeContract(models.Model):
     def save(self, *args, **kwargs):
         if not self.contract_reference:  # Only generate if not already set
             self.contract_reference = self.generate_contract_reference()
-        super().save(*args, **kwargs)    
-
-
+        super().save(*args, **kwargs)
