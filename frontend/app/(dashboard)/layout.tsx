@@ -229,7 +229,8 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       submenu: [
         {title: "Offboarding Stages", href: "/off-boarding/stages"},
         {title: "Separation Policy", href: "/off-boarding/separation-policy"},
-        {title: "Separation Policy types", href: "/off-boarding/separation-policy-types"},
+        {title: "Separation Types", href: "/off-boarding/separation-types"},
+        {title: "Terminations", href: "/off-boarding/terminations"},
       ],
       requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
     },
