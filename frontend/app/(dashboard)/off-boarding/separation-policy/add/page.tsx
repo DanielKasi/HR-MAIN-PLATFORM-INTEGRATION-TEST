@@ -133,7 +133,7 @@ export default function AddSeparationPolicyPage() {
     try {
       const payload = {
         separation_type: Number.parseInt(formData.separation_type),
-        policy_document: null, // Sending null for now
+        policy_document: null,
         description: formData.description,
         min_notice_days: Number.parseInt(formData.min_notice_days),
         max_notice_days: Number.parseInt(formData.max_notice_days),
@@ -141,6 +141,7 @@ export default function AddSeparationPolicyPage() {
         require_all_stages: formData.require_all_stages,
         is_active: formData.is_active,
         enforce_policy: formData.enforce_policy,
+        policy_name: formData.policy_name,
       };
 
       const response = await apiRequest.post("/on-boarding/separation-policies/", payload);
@@ -148,7 +149,7 @@ export default function AddSeparationPolicyPage() {
       if (response.status === 201 || response.status === 200) {
         setSuccess(true);
         setTimeout(() => {
-          router.push("/off-boarding/separation-policies");
+          router.push("/off-boarding/separation-policy");
         }, 1500);
       } else {
         throw new Error("Failed to create policy");
@@ -220,7 +221,7 @@ export default function AddSeparationPolicyPage() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/off-boarding/separation-policies">
+        <Link href="/off-boarding/separation-policy">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
           </Button>
@@ -438,7 +439,7 @@ export default function AddSeparationPolicyPage() {
 
         {/* Form Actions */}
         <div className="flex items-center justify-end gap-4 pt-6">
-          <Link href="/off-boarding/separation-policies">
+          <Link href="/off-boarding/separation-policy">
             <Button variant="outline" disabled={submitting}>
               Cancel
             </Button>

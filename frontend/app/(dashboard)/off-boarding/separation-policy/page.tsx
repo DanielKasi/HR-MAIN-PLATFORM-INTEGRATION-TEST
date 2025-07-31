@@ -4,17 +4,9 @@ import {useState, useEffect} from "react";
 import Link from "next/link";
 import {Plus, Search, Eye, Edit, Trash2} from "lucide-react";
 import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -99,6 +91,7 @@ export default function SeparationPoliciesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Policy Name</TableHead>
                   <TableHead>Separation Type</TableHead>
                   <TableHead>Notice Period</TableHead>
                   <TableHead>Status</TableHead>
@@ -109,6 +102,7 @@ export default function SeparationPoliciesPage() {
               <TableBody>
                 {separationPolicies.map((policy) => (
                   <TableRow key={policy.id}>
+                    <TableCell>{policy.policy_name || "N/A"}</TableCell>
                     <TableCell>{policy.separation_type?.separation_type || "N/A"}</TableCell>
                     <TableCell>
                       {policy.min_notice_days} - {policy.max_notice_days} days
@@ -125,12 +119,12 @@ export default function SeparationPoliciesPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Link href={`/separation-policies/${policy.id}`}>
+                        <Link href={`/off-boarding/separation-policy/${policy.id}`}>
                           <Button variant="ghost" size="sm">
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>
-                        <Link href={`/separation-policies/${policy.id}/edit`}>
+                        <Link href={`/off-boarding/separation-policy/edit/${policy.id}/`}>
                           <Button variant="ghost" size="sm">
                             <Edit className="h-4 w-4" />
                           </Button>
