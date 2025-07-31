@@ -28,6 +28,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getDepartments, deleteDepartment } from "@/lib/utils"
 import { type IDepartment, PERMISSION_CODES } from "@/app/types/types.utils"
@@ -215,22 +223,32 @@ export default function DepartmentsPage() {
         </div>
       )}
 
-      {/* Departments Grid */}
+      {/* Departments Table */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-full" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-1/2 mb-2" />
-                <Skeleton className="h-4 w-2/3" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {[...Array(5)].map((_, i) => (
+              <TableRow key={i}>
+                <TableCell>
+                  <Skeleton className="h-6 w-3/4" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-6 w-full" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-6 w-1/2" />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       ) : filteredDepartments.length === 0 ? (
         <Card className="p-12 text-center">
           <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -248,56 +266,64 @@ export default function DepartmentsPage() {
           )}
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredDepartments.map((department) => (
-            <Card key={department.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Building2 className="h-5 w-5 text-primary" />
+        <div className="border rounded-md">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50px]"></TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead className="w-[100px] text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredDepartments.map((department) => (
+                <TableRow key={department.id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Building2 className="h-4 w-4 text-primary" />
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">{department.name}</CardTitle>
-                    </div>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DEPARTMENTS}>
-                        <DropdownMenuItem onClick={() => handleViewDepartment(department.id)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                      </ProtectedComponent>
-                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_DEPARTMENTS}>
-                        <DropdownMenuItem onClick={() => handleEditDepartment(department.id)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                      </ProtectedComponent>
-                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_DEPARTMENTS}>
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteDepartment(department)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </ProtectedComponent>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground line-clamp-3">{department.description}</p>
-              </CardContent>
-            </Card>
-          ))}
+                  </TableCell>
+                  <TableCell className="font-medium">{department.name}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {department.description || "No description"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DEPARTMENTS}>
+                          <DropdownMenuItem onClick={() => handleViewDepartment(department.id)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_DEPARTMENTS}>
+                          <DropdownMenuItem onClick={() => handleEditDepartment(department.id)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_DEPARTMENTS}>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteDepartment(department)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 
