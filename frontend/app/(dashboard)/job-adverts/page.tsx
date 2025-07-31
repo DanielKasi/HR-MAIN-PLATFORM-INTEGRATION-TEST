@@ -481,7 +481,7 @@ export default function JobAdvertsPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Published Date</TableHead>
                 <TableHead>Expiry Date</TableHead>
-                <TableHead>Expected Employees</TableHead>
+                <TableHead>Employees Required</TableHead>
                 <TableHead>Interview Stages</TableHead>
                 <TableHead>Additional Info</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
