@@ -1635,6 +1635,7 @@ export interface ISeparationPolicy {
   id: number;
   separation_type: ISeparationType;
   policy_document: string;
+  policy_name: string;
   description: string;
   min_notice_days: number;
   max_notice_days: number;
