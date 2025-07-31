@@ -37,9 +37,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { getJobPositions } from "@/lib/utils"
+import { deleteJobPosition, getJobPositions } from "@/lib/utils"
 import type { IJobPosition } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import { formatCurrency } from "@/lib/helpers"
@@ -53,6 +61,8 @@ export default function JobPositionsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [error, setError] = useState("")
   const [selectedSalaryRange, setSelectedSalaryRange] = useState<string>("all")
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [positionToDelete, setPositionToDelete] = useState<number | null>(null)
 
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
@@ -155,8 +165,24 @@ export default function JobPositionsPage() {
   }
 
   const handleDeleteJobPosition = (positionId: number) => {
-    // TODO: Implement delete functionality
-    toast.success("Job position deletion would be implemented here")
+    setPositionToDelete(positionId)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!positionToDelete) return
+
+    try {
+      await deleteJobPosition({ jobPositionId: positionToDelete })
+      toast.success("Job position deleted successfully")
+      fetchJobPositions()
+    } catch (error) {
+      console.error("Error deleting job position:", error)
+      toast.error("Failed to delete job position")
+    } finally {
+      setIsDeleteDialogOpen(false)
+      setPositionToDelete(null)
+    }
   }
 
   const handleViewJobPosition = (positionId: number) => {
@@ -271,6 +297,35 @@ export default function JobPositionsPage() {
           {error}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this job position? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDeleteDialogOpen(false)
+                setPositionToDelete(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Job Positions/Titles Grid */}
       {isLoading ? (
