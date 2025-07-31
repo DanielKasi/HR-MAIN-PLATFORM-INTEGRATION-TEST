@@ -48,12 +48,14 @@ INSTALLED_APPS = [
     "projects",
     "calendar2",
     "assets",
-    "django_ckeditor_5",
     "documents",
     "audit",
     "settings",
     "markdownx",
     'jsignature',
+    'ckeditor',
+    'ckeditor_uploader',
+
 ]
 
 MIDDLEWARE = [
@@ -69,8 +71,22 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "core.urls"
-CKEDITOR_UPLOAD_PATH = "uploads/"
-
+# CKEditor settings
+CKEDITOR_UPLOAD_PATH = "uploads/"  # Path for file uploads
+CKEDITOR_IMAGE_BACKEND = "pillow"  # Required for image uploads
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'full',
+        'height': 400,
+        'width': '100%',
+        'extraPlugins': ','.join([
+            'uploadimage',  # Enable image uploads
+            'codesnippet',  # Optional: for code snippets
+        ]),
+        'filebrowserUploadUrl': '/ckeditor/upload/',
+        'filebrowserBrowseUrl': '/ckeditor/browse/',
+    },
+}
 DJANGO_CKEDITOR_5_CONFIGS = {
     "default": {
         "toolbar": [

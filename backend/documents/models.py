@@ -3,6 +3,7 @@ from django.utils.text import slugify
 from institution.models import Institution
 from django_ckeditor_5.fields import CKEditor5Field
 from markdownx.models import MarkdownxField
+from ckeditor_uploader.fields import RichTextUploadingField
 
 
 class DocumentType(models.Model):
@@ -40,10 +41,11 @@ class DocumentTemplate(models.Model):
         ('text', 'Text'),      
     ])
     file = models.FileField(upload_to='document_templates/', null=True, blank=True)
-    content = MarkdownxField(
+    content = RichTextUploadingField(
         blank=True,
         null=True,
-        help_text="Markdown content for the template with formatting and placeholders (e.g., {{caregiver_name}}, {{date}})."
+        help_text="Rich text content for the template with formatting and placeholders (e.g., {{caregiver_name}}, {{date}}).",
+        config_name='default'  # Reference the CKEditor config
     )
     placeholders = models.JSONField(
         default=list,

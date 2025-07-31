@@ -26,6 +26,8 @@ urlpatterns = [
     path("api/assets/", include("assets.urls")),
     path("api/documents/", include("documents.urls")),
     path("api/settings/", include("settings.urls")),
+    path("markdownx/", include("markdownx.urls")),
+    path('ckeditor/', include('ckeditor_uploader.urls')),
 ]
 
 if settings.DEBUG:
