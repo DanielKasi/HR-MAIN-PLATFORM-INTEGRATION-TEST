@@ -701,7 +701,7 @@ const FeedbackDialog = ({
   const [feedback, setFeedback] = useState('')
   const [rating, setRating] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
-  const [action, setAction] = useState<'save' | 'advance' | 'cancel' | 'schedule' | null>(null)
+  const [action, setAction] = useState<'save' | 'advance' | 'reject' | 'schedule' | null>(null)
 
   useEffect(() => {
     if (candidate) {
@@ -760,7 +760,7 @@ const FeedbackDialog = ({
     }
 
     setIsSaving(true)
-    setAction('cancel')
+    setAction('reject')
     try {
       await onSave(feedback, rating || 1)
       if (onReject) {
@@ -836,7 +836,7 @@ const FeedbackDialog = ({
                   onClick={handleReject}
                   disabled={isSaving}
                 >
-                  {isSaving && action === 'cancel' ? (
+                  {isSaving && action === 'reject' ? (
                     <>
                       <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                       Rejecting...
@@ -1471,7 +1471,7 @@ const handleSelectAll = (checked: boolean) => {
       }
 
       const interviewData = {
-        status: 'cancelled'
+        status: 'rejected'
       };
 
       const result = await updateInterview({
@@ -1802,12 +1802,12 @@ const handleSelectAll = (checked: boolean) => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Job Openings
-      </Button>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Job Openings
+          </Button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Interview Pipeline</h1>
             <p className="text-gray-600">
@@ -2390,7 +2390,7 @@ const handleSelectAll = (checked: boolean) => {
                                           onClick={async () => {
                                             try {
                                               await rejectCandidate(candidate.id);
-                                              toast.success(`${candidate.applicant_name} cancelled`);
+                                              toast.success(`${candidate.applicant_name} rejected`);
                                               await fetchData();
                                             } catch (error) {
                                               toast.error(`Failed to reject ${candidate.applicant_name}`);
@@ -2719,7 +2719,7 @@ const handleSelectAll = (checked: boolean) => {
           if (selectedCandidate) {
             try {
               await rejectCandidate(selectedCandidate.id);
-              toast.success(`${selectedCandidate.applicant_name} cancelled`);
+              toast.success(`${selectedCandidate.applicant_name} rejected`);
               await fetchData();
             } catch (error) {
               toast.error(`Failed to reject ${selectedCandidate.applicant_name}`);
