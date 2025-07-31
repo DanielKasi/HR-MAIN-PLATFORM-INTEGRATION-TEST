@@ -109,6 +109,7 @@ export default function CreateOrganisationWizard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [userId, setUserId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState(""); // Moved useState to top level
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -170,19 +171,18 @@ export default function CreateOrganisationWizard() {
     const fetchDefaultDepartments = async () => {
       try {
         const departments = await getDefaultData();
-        if (departments && formData.departments.length === 0) { // Only set if departments is empty
-          // Map the default departments to IDepartment type
+        if (departments && formData.departments.length === 0) {
           const mappedDepartments: IDepartment[] = departments.map((dept) => ({
-            id: 0, // Temporary ID, will be assigned by backend
+            id: 0,
             name: dept.name,
             description: dept.description ?? "",
-            institution: 0, // Temporary, will be set by backend
+            institution: 0,
             institution_details: null,
             job_positions: (dept.job_positions ?? []).map((job) => ({
-              id: 0, // Temporary ID
+              id: 0,
               name: job.name,
               description: job.description ?? "",
-              department_id: 0, // Temporary, will be set by backend
+              department_id: 0,
             })),
           }));
           setFormData((prev) => ({ ...prev, departments: mappedDepartments }));
@@ -191,7 +191,7 @@ export default function CreateOrganisationWizard() {
         toast.error("Failed to fetch default departments.");
       }
     };
-    if (currentStep === 4) { // Updated to step 4 due to reordered STEPS
+    if (currentStep === 4) {
       fetchDefaultDepartments();
     }
   }, [currentStep, formData.departments.length]);
@@ -347,7 +347,6 @@ export default function CreateOrganisationWizard() {
       formdata.append("location", formData.location);
       formdata.append("latitude", formData.latitude.toString());
       formdata.append("longitude", formData.longitude.toString());
-      // Map departments to backend-compatible format
       const backendDepartments = formData.departments.map((dept) => ({
         name: dept.name,
         description: dept.description || "",
@@ -684,6 +683,19 @@ export default function CreateOrganisationWizard() {
         );
 
       case 4:
+        const filteredDepartments = formData.departments.filter((dept) => {
+          const query = searchQuery.toLowerCase();
+          const matchesDepartment =
+            dept.name.toLowerCase().includes(query) ||
+            (dept.description?.toLowerCase().includes(query) ?? false);
+          const matchesJobPosition = dept.job_positions?.some(
+            (job) =>
+              job.name.toLowerCase().includes(query) ||
+              (job.description?.toLowerCase().includes(query) ?? false)
+          );
+          return matchesDepartment || matchesJobPosition;
+        });
+
         return (
           <div className="w-full space-y-4">
             <div className="flex items-center justify-between">
@@ -695,17 +707,53 @@ export default function CreateOrganisationWizard() {
               </div>
             </div>
 
-            {formData.departments.length === 0 ? (
+            <div className="grid gap-2">
+              <Label htmlFor="searchDepartments" className="text-sm font-medium">
+                Search Departments and Positions
+              </Label>
+              <div className="relative">
+                <Input
+                  id="searchDepartments"
+                  type="text"
+                  placeholder="Search by department or job position..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M21 21l-4.35-4.35M16.65 10.65a6 6 0 11-12 0 6 6 0 0112 0z"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {filteredDepartments.length === 0 ? (
               <div className="w-full border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
                 <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                <h3 className="text-base font-medium mb-2">No departments selected</h3>
+                <h3 className="text-base font-medium mb-2">
+                  {searchQuery ? "No departments match your search" : "No departments selected"}
+                </h3>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Please select at least one department to proceed.
+                  {searchQuery
+                    ? "Try adjusting your search query."
+                    : "Please select at least one department to proceed."}
                 </p>
               </div>
             ) : (
               <div className="w-full space-y-3">
-                {formData.departments.map((dept, deptIndex) => (
+                {filteredDepartments.map((dept, deptIndex) => (
                   <div key={dept.name} className="w-full border rounded-lg p-4 space-y-3 bg-card">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
