@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { CheckCircle, AlertCircle, Search, Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, ChevronLeft, ChevronRight } from "lucide-react"
+import { CheckCircle, AlertCircle, Search, Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, ChevronLeft, ChevronRight, MoreVertical } from "lucide-react"
 import { toast } from "sonner"
 
 // Import your API functions and types
@@ -562,7 +562,7 @@ export default function EmployeeTypeManagement() {
                                 {deleting === type.id ? (
                                   <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
                                 ) : (
-                                  <MoreHorizontal className="h-4 w-4 text-gray-600" />
+                                  <MoreVertical className="h-4 w-4 text-gray-600" />
                                 )}
                               </Button>
                             </DropdownMenuTrigger>

@@ -200,7 +200,9 @@ export enum PERMISSION_CODES {
   CAN_EDIT_DOCUMENTS = "can_edit_documents",
   CAN_DELETE_DOCUMENTS = "can_delete_documents",
   CAN_APPROVE_DOCUMENTS = "can_approve_documents",
-  CAN_ARCHIVE_DOCUMENTS = "can_archive_documents"
+  CAN_ARCHIVE_DOCUMENTS = "can_archive_documents",
+  CAN_MANAGE_PAYROLL_PERIODS = "CAN_MANAGE_PAYROLL_PERIODS",
+  CAN_MANAGE_PAYROLL_PERIODS = "CAN_MANAGE_PAYROLL_PERIODS"
 
 }
 

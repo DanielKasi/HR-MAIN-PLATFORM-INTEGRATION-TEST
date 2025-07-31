@@ -648,7 +648,7 @@ export default function EmployeeAllowanceComponent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50/30">
+    <div>
       <div className="w-full px-2 py-8">
         {/* Header Section */}
         <div className="mb-8 px-2">

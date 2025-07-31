@@ -37,6 +37,7 @@ import {
   Upload,
   ChevronDown,
   MoreHorizontal,
+  MoreVertical,
 } from "lucide-react";
 import {getAllEmployees} from "@/lib/utils";
 import {useSelector} from "react-redux";
@@ -362,7 +363,7 @@ function EmployeeTable({
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start">
