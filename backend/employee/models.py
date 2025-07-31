@@ -534,3 +534,5 @@ class EmployeeContract(models.Model):
         if not self.contract_reference:  # Only generate if not already set
             self.contract_reference = self.generate_contract_reference()
         super().save(*args, **kwargs)    
+
+
