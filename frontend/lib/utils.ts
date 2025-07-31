@@ -280,6 +280,14 @@ export const getJobPosition = async ({jobPositionId}: {jobPositionId: number}) =
   }
 };
 
+export const deleteJobPosition = async ({jobPositionId}: {jobPositionId: number}) => {
+  try {
+    await apiRequest.delete(`recruitment/job-position/${jobPositionId}/`);
+  } catch (error) {
+    console.error("Error deleting job position/title:", error);
+  }
+};
+
 export const createJobPosition = async ({
   institutionId,
   jobPositionData,

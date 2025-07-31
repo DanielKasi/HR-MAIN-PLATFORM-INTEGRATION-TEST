@@ -101,6 +101,22 @@ class JobPositionDetailAPI(APIView):
                 {"detail": "Job position not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
+    @extend_schema(
+        responses={204: None},
+        description="Delete a job position by ID",
+        summary="Delete Job Position",
+        tags=["Recruitment"],
+    )
+    def delete(self, request, job_position_id):
+        try:
+            job_position = JobPosition.objects.get(id=job_position_id)
+            job_position.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except JobPosition.DoesNotExist:
+            return Response(
+                {"detail": "Job position not found."}, status=status.HTTP_404_NOT_FOUND
+            )        
+
 
 
 
