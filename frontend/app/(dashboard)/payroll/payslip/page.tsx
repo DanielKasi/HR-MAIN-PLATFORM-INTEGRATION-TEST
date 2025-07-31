@@ -20,7 +20,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Plus, Edit, Trash2, Coins, User, Calendar, CheckCircle, Clock, Users, Loader2, ChevronLeft, ChevronRight, FileText } from "lucide-react"
+import { Plus, Edit, Trash2, Coins, User, Calendar, CheckCircle, Clock, Users, Loader2, ChevronLeft, ChevronRight, FileText, MoreVertical } from "lucide-react"
 import { toast } from "sonner"
 import { useSelector } from "react-redux"
 
@@ -39,6 +39,7 @@ import {
 } from "@/app/types/types.utils"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
 import { IUserInstitution } from "@/app/types"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu"
 
 interface ApiEmployee {
   id: number
@@ -1046,44 +1047,57 @@ export default function Payslips() {
                           <div className="text-xs text-gray-500 mt-1">{formatDate(payslip.paid_date)}</div>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex justify-center space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigateToPayslipItems(payslip.id)}
-                            className="h-8 w-8 p-0 hover:bg-blue-100 rounded-full"
-                            title="View payslip items"
-                          >
-                            <FileText className="w-4 h-4 text-blue-600" />
-                          </Button>
-                          {!payslip.is_paid && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleMarkAsPaid(payslip)}
-                              className="h-8 w-8 p-0 hover:bg-green-100 rounded-full"
-                              title="Process payment"
-                              disabled={saving}
+                        <TableCell>
+                        <div className="flex justify-center">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
+                                title="Actions"
+                              >
+                                <MoreVertical className="w-5 h-5 text-gray-600" />
+                              </Button>
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent
+                              align="end"
+                              className="bg-white rounded-lg shadow-lg p-3 w-56 space-y-1" // Added space-y-1 for spacing between items
                             >
-                              <CheckCircle className="w-4 h-4 text-green-600" />
-                            </Button>
-                          )}
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+
+                              <DropdownMenuItem onClick={() => navigateToPayslipItems(payslip.id)} className="flex items-center">
+                                <FileText className="w-4 h-4 mr-2 text-blue-600" />
+                                View Payslip Items
+                              </DropdownMenuItem>
+
+                              {!payslip.is_paid && (
+                                <DropdownMenuItem
+                                  onClick={() => handleMarkAsPaid(payslip)}
+                                  className="flex items-center"
+                                >
+                                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                                  Mark as Paid
+                                </DropdownMenuItem>
+                              )}
+
+                              <DropdownMenuSeparator />
+
+                              <DropdownMenuItem
+                                onClick={() => setDeleteConfirmId(payslip.id)}
+                                className="flex items-center text-red-600 focus:text-red-700"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+
                           <Dialog
                             open={deleteConfirmId === payslip.id}
                             onOpenChange={(open) => !open && setDeleteConfirmId(null)}
                           >
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setDeleteConfirmId(payslip.id)}
-                                className="h-8 w-8 p-0 hover:bg-red-100 rounded-full"
-                                title="Delete payslip"
-                              >
-                                <Trash2 className="w-4 h-4 text-gray-600" />
-                              </Button>
-                            </DialogTrigger>
                             <DialogContent>
                               <DialogHeader>
                                 <DialogTitle>Confirm Deletion</DialogTitle>
@@ -1104,6 +1118,7 @@ export default function Payslips() {
                           </Dialog>
                         </div>
                       </TableCell>
+
                     </TableRow>
                   ))}
                 </TableBody>
