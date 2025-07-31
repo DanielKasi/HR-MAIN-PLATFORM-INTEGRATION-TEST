@@ -81,7 +81,7 @@ urlpatterns = [
         name="termination-initiations-list-create",
     ),
     path(
-        "termination-initiations/<int:termination_id>/",
+        "termination-initiations/<int:termination_initiation_id>/",
         TerminationInitiationDetailView.as_view(),
         name="termination-initiations-detail",
     ),
