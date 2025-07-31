@@ -59,7 +59,7 @@ class Asset(BaseModel):
     )
 
     current_holder = models.ForeignKey(
-        "employee.Employee",
+        "users.Profile",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -79,9 +79,10 @@ class Asset(BaseModel):
 
     def save(self, *args, **kwargs):
         is_new = self._state.adding
+        super().save(*args, **kwargs)
 
-        if is_new:
-            batch_code = f"BA.N-{self.category.category_name[:3].upper()}-{self.id:05d}"
+        if is_new and not self.batch_number:
+            batch_code = f"BA.N-{self.category.category_name[:3].upper()}-{self.serial_number[:5].upper()}"
             self.batch_number = batch_code
             super().save(update_fields=["batch_number"])
 
@@ -92,9 +93,6 @@ class Asset(BaseModel):
                 affected_user=None,
                 notes=f"Asset {self.asset_name} created with batch number {self.batch_number}.",
             )
-
-        else:
-            super().save(*args, **kwargs)
 
 
 class AssetRequest(BaseModel):
@@ -112,7 +110,7 @@ class AssetRequest(BaseModel):
         related_name="requests",
     )
     requester = models.ForeignKey(
-        "employee.Employee",
+        "users.Profile",
         on_delete=models.CASCADE,
         related_name="asset_requests",
     )
@@ -128,7 +126,7 @@ class AssetRequest(BaseModel):
     notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"Request for {self.asset.asset_name} by {self.requester.username}"
+        return f"Request for {self.asset.asset_name} by {self.requester.user.fullname}"
 
     def save(self, *args, **kwargs):
         is_new = self._state.adding
@@ -202,7 +200,7 @@ class AssetAllocation(BaseModel):
         related_name="allocations",
     )
     allocated_to = models.ForeignKey(
-        "employee.Employee",
+        "users.Profile",
         on_delete=models.CASCADE,
         related_name="asset_allocations",
     )
@@ -232,7 +230,7 @@ class AssetAllocation(BaseModel):
     alloc_code = models.CharField(max_length=100, unique=True, blank=True)
 
     def __str__(self):
-        return f"Allocation of {self.asset.asset_name} to {self.allocated_to.username}"
+        return f"Allocation of {self.asset.asset_name} to {self.allocated_to.user.fullname}"
 
     def save(self, *args, **kwargs):
         is_new = self._state.adding
@@ -249,7 +247,7 @@ class AssetAllocation(BaseModel):
                 event_type="allocated",
                 performed_by=self.allocated_by,
                 affected_user=self.allocated_to,
-                notes=f"Asset {self.asset.asset_name} allocated to {self.allocated_to.fullname}.",
+                notes=f"Asset {self.asset.asset_name} allocated to {self.allocated_to.user.fullname}.",
             )
 
             self.asset.status = "allocated"
@@ -323,7 +321,7 @@ class AssetReturn(BaseModel):
     notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"Return of {self.asset.asset_name} by {self.allocation.allocated_to.fullname}"
+        return f"Return of {self.asset.asset_name} by {self.allocation.allocated_to.user.fullname}"
 
     def save(self, *args, **kwargs):
         is_new = self._state.adding
@@ -335,7 +333,7 @@ class AssetReturn(BaseModel):
                 event_type="returned",
                 performed_by=self.allocation.allocated_by,
                 affected_user=self.allocation.allocated_to,
-                notes=f"Asset {self.asset.asset_name} returned by {self.allocation.allocated_to.fullname} in {self.condition}.",
+                notes=f"Asset {self.asset.asset_name} returned by {self.allocation.allocated_to.user.fullname} in {self.condition}.",
             )
 
             if self.condition == "good":
@@ -373,7 +371,7 @@ class AssetHistory(BaseModel):
     )
 
     affected_user = models.ForeignKey(
-        "employee.Employee",
+        "users.Profile",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

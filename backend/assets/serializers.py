@@ -10,12 +10,34 @@ from .models import (
 from workflows.models import ApprovalTask, InstitutionApprovalStep, WorkflowAction
 from django.db import transaction
 from employee.models import Employee
+from django.contrib.contenttypes.models import ContentType
+from employee.serializers import EmployeeSerializer
+from django.db import transaction
 
 
 class AssetCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = AssetCategory
         fields = "__all__"
+
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "institution",
+        ]
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+
+        user = request.user.profile if request and hasattr(request, "user") else None
+
+        if user:
+            institution = user.institution
+            validated_data["institution"] = institution
+        else:
+            raise serializers.ValidationError("User institution is required.")
+        return super().create(validated_data)
 
 
 class AssetHistorySerializer(serializers.ModelSerializer):
@@ -26,7 +48,7 @@ class AssetHistorySerializer(serializers.ModelSerializer):
 
 class AssetSerializer(serializers.ModelSerializer):
     asset_histories = AssetHistorySerializer(many=True, read_only=True)
-    current_holder = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
+    current_holder = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Asset
@@ -50,8 +72,25 @@ class AssetSerializer(serializers.ModelSerializer):
             "id",
             "created_at",
             "updated_at",
-            "created_by",
+            "batch_number",
+            "institution",
         ]
+
+    @transaction.atomic
+    def create(self, validated_data):
+        request = self.context.get("request")
+
+        user = request.user.profile if request and hasattr(request, "user") else None
+
+        if user:
+            institution = user.institution
+            validated_data["institution"] = institution
+        else:
+            raise serializers.ValidationError("User institution is required.")
+
+        asset = super().create(validated_data)
+
+        return asset
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
@@ -74,8 +113,33 @@ class AssetRequestSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "request_reference_code",
+            "asset_request_status",
+            "requester",
+        ]
+
     @transaction.atomic
     def create(self, validated_data):
+
+        request = self.context.get("request")
+
+        user = request.user.profile if request and hasattr(request, "user") else None
+
+        if not user:
+            raise serializers.ValidationError("User institution is required.")
+
+        institution = user.institution
+
+        validated_data["requester"] = user
+
+        if institution != validated_data["asset"].institution:
+            raise serializers.ValidationError(
+                "Asset does not belong to the user's institution."
+            )
 
         asset_request = AssetRequest.objects.create(**validated_data)
 

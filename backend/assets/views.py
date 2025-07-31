@@ -48,7 +48,9 @@ class AssetCategoryListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def post(self, request):
-        serializer = AssetCategorySerializer(data=request.data)
+        serializer = AssetCategorySerializer(
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -64,7 +66,18 @@ class AssetCategoryListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def get(self, request):
-        categories = AssetCategory.objects.all()
+
+        user = request.user.profile
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        categories = AssetCategory.objects.filter(institution=institution)
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(categories, request)
@@ -151,7 +164,7 @@ class AssetListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def post(self, request):
-        serializer = AssetSerializer(data=request.data)
+        serializer = AssetSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -167,7 +180,22 @@ class AssetListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def get(self, request):
-        assets = Asset.objects.all()
+
+        user = request.user.profile if request and hasattr(request, "user") else None
+
+        if not user:
+            return Response(
+                {"detail": "User profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        assets = Asset.objects.filter(institution=institution)
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(assets, request)
@@ -254,7 +282,9 @@ class AssetRequestListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def post(self, request):
-        serializer = AssetRequestSerializer(data=request.data)
+        serializer = AssetRequestSerializer(
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -274,7 +304,16 @@ class AssetRequestListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def get(self, request):
-        asset_requests = AssetRequest.objects.all()
+        user = request.user.profile if request and hasattr(request, "user") else None
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        asset_requests = AssetRequest.objects.filter(asset__institution=institution)
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_requests, request)
         serializer = AssetRequestWorkflowSerializer(paginated_qs, many=True)
