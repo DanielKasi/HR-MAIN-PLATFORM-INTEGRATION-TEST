@@ -34,7 +34,7 @@ import {
 import type { JobApplication, IInterviewStage, IInterview, IInterviewFormData, IEmployee } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
-
+import {LocationAutocomplete} from "@/components/location-autocomplete";
 
 interface MultiInterviewFormData extends Omit<IInterviewFormData, 'job_position_application'> {
   userData: any
@@ -641,13 +641,13 @@ const interviewTypeItems: SearchableSelectItem[] = [
               {/* Form Fields - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Interview Stage */}
-                {/* Interview Stage */}
+                  {/* Interview Stage */}
                 <div className="space-y-2">
                   <Label htmlFor="interview_stage" className="text-sm font-normal">
                     Interview Stage *
                   </Label>
                   <div className="flex gap-2">
-                    <div className="flex-1"> {/* Add this wrapper div with flex-1 */}
+                    <div className="flex-1">
                       <SearchableSelect
                         items={interviewStageItems}
                         selectedItems={formData.interview_stage ? [formData.interview_stage] : []}
@@ -670,30 +670,32 @@ const interviewTypeItems: SearchableSelectItem[] = [
                         triggerClassName={errors.interview_stage ? "border-destructive" : ""}
                         popoverClassName="w-[500px]"
                       />
-                    </div> {/* Close the wrapper div */}
-                    <Dialog
-                      open={isCreateStageDialogOpen}
-                      onOpenChange={setIsCreateStageDialogOpen}
+                    </div>
+                    
+                    {/* Fixed Dialog Trigger Button */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      disabled={!selectedJobPosition}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (selectedJobPosition) {
+                          setIsCreateStageDialogOpen(true);
+                        }
+                      }}
+                      title={
+                        !selectedJobPosition
+                          ? "Select a job position/title first"
+                          : "Create new interview stage"
+                      }
+                      className="flex-shrink-0"
                     >
-                      <DialogTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          disabled={!selectedJobPosition}
-                          title={
-                            !selectedJobPosition
-                              ? "Select a job position/title first"
-                              : "Create new interview stage"
-                          }
-                          className="flex-shrink-0" /* Add this class to prevent button from shrinking */
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      {/* Rest of the Dialog content remains the same */}
-                    </Dialog>
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
+                  
                   {errors.interview_stage && (
                     <p className="text-sm text-destructive">{errors.interview_stage}</p>
                   )}
@@ -705,6 +707,170 @@ const interviewTypeItems: SearchableSelectItem[] = [
                         : "Can't find the right stage? Click the + button to create a new one."}
                   </p>
                 </div>
+
+                {/* Move Dialog outside the form field to prevent nesting issues */}
+                <Dialog
+                  open={isCreateStageDialogOpen}
+                  onOpenChange={(open) => {
+                    console.log('Dialog state changing to:', open); // Debug log
+                    setIsCreateStageDialogOpen(open);
+                  }}
+                >
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Create Interview Stage</DialogTitle>
+                      <DialogDescription>
+                        Create a new interview stage for{" "}
+                        {filteredGroupedApplications[Number(selectedJobPosition)]?.jobName ||
+                          "the selected position"}
+                        .
+                      </DialogDescription>
+                    </DialogHeader>
+
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <form onSubmit={handleCreateStage} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="stage_name">Stage Name *</Label>
+                          <Input
+                            id="stage_name"
+                            value={stageFormData.name}
+                            onChange={(e) => updateStageFormData("name", e.target.value)}
+                            placeholder="e.g., Technical Interview, HR Round"
+                            className={stageErrors.name ? "border-destructive" : ""}
+                          />
+                          {stageErrors.name && (
+                            <p className="text-sm text-destructive">{stageErrors.name}</p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="stage_interviewer">Interviewers *</Label>
+                          <div className="w-full max-w-full overflow-hidden">
+                            <EmployeeSearchableSelect
+                                employees={employees as any}
+                                value={stageFormData.interviewers.map((id) => id.toString())}
+                                onValueChange={(values) => {
+                                  const numberValues = Array.isArray(values)
+                                    ? values.map((v) => Number(v))
+                                    : [Number(values)];
+                                  const uniqueValues = [...new Set(numberValues)];
+                                  if (uniqueValues.length !== numberValues.length) {
+                                    toast.info("Duplicate interviewers removed");
+                                  }
+                                  updateStageFormData("interviewers", uniqueValues);
+                                }}
+                                disabled={isCreatingStage}
+                                placeholder="Search and select interviewers"
+                                showEmployeeId={false}
+                                showDepartment={false}
+                                multiple={true}
+                              />
+                          </div>
+                          {stageErrors.interviewers && (
+                            <p className="text-sm text-destructive">{stageErrors.interviewers}</p>
+                          )}
+
+                          {stageFormData.interviewers.length > 0 && (
+                            <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-medium text-gray-700">
+                                  Selected Interviewers ({stageFormData.interviewers.length})
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => updateStageFormData("interviewers", [])}
+                                  className="text-xs text-red-600 hover:text-red-800"
+                                >
+                                  Clear all
+                                </button>
+                              </div>
+                              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                                {stageFormData.interviewers.map((interviewerId) => {
+                                  const employee = employees.find(
+                                    (emp) => emp.id === interviewerId
+                                  )
+                                  const fullName =
+                                    employee?.user?.fullname || `Employee ${interviewerId}`
+                                  const displayName =
+                                    fullName.length > 30
+                                      ? `${fullName.substring(0, 30)}...`
+                                      : fullName
+
+                                  return (
+                                    <div
+                                      key={interviewerId}
+                                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm max-w-xs"
+                                      title={fullName}
+                                    >
+                                      <span className="truncate flex-1 min-w-0">
+                                        {displayName}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newInterviewers = stageFormData.interviewers.filter(
+                                            (id) => id !== interviewerId
+                                          )
+                                          updateStageFormData("interviewers", newInterviewers)
+                                        }}
+                                        className="flex-shrink-0 w-4 h-4 rounded-full bg-blue-200 text-blue-600 hover:bg-blue-300 flex items-center justify-center text-xs font-bold"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          <p className="text-xs text-muted-foreground">
+                            Search and select multiple interviewers for this stage
+                          </p>
+                        </div>
+
+                        <input
+                          type="hidden"
+                          value={selectedJobPosition || 0}
+                          onChange={(e) =>
+                            updateStageFormData("job_position_advert", Number(e.target.value))
+                          }
+                        />
+
+                        <div className="flex justify-end gap-2 pt-4">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsCreateStageDialogOpen(false);
+                            }}
+                            disabled={isCreatingStage}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="submit"
+                            disabled={isCreatingStage}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {isCreatingStage ? (
+                              <>
+                                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                                Creating...
+                              </>
+                            ) : (
+                              <>
+                                <Check className="h-4 w-4 mr-2" />
+                                Create Stage
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
+                  </DialogContent>
+                </Dialog>
 
                 {/* Interview Date */}
                 <div className="space-y-2">
@@ -744,21 +910,22 @@ const interviewTypeItems: SearchableSelectItem[] = [
                   </Select>
                 </div>
 
-                {/* Interview Location */}
+                  {/* Interview Location */}
                 <div className="space-y-2">
                   <Label htmlFor="location" className="text-sm font-medium">
                     Interview Location *
                   </Label>
-                  <Input
-                    id="location"
-                    type="text"
+                  <LocationAutocomplete
                     value={formData.location}
-                    onChange={(e) => updateFormData("location", e.target.value)}
-                    className={errors.location ? "border-destructive" : ""}
+                    onChange={(value) => updateFormData("location", value)}
+                    onCoordinatesChange={(lat, lon) => {
+                    }}
+                    placeholder="Search for interview location..."
+                    showCurrentLocationButton={true}
                   />
                   {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
                   <p className="text-xs text-muted-foreground">
-                    Specify if interview is in-person or virtual
+                    Search for the interview location or specify if virtual (e.g., "Zoom Meeting")
                   </p>
                 </div>
               
