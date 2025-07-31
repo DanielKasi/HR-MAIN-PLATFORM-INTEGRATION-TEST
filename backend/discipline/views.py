@@ -11,6 +11,7 @@ from drf_spectacular.types import OpenApiTypes
 from .models import DisciplineType, DisciplinaryAction
 from .serializers import DisciplinaryActionSerializer, DisciplineTypeSerializer
 from utilities.pagination import CustomPageNumberPagination
+from institution.models import Institution
 
 
 class DisciplinaryActionAPIView(APIView):
@@ -20,7 +21,21 @@ class DisciplinaryActionAPIView(APIView):
         summary="List all disciplinary actions",
     )
     def get(self, request):
-        actions = DisciplinaryAction.objects.all()
+
+        user = request.user.profile
+
+        if user and user.institution:
+            try:
+                institution = Institution.objects.get(id=user.institution.id)
+            except Institution.DoesNotExist:
+                return Response(
+                    {"detail": "Institution not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        actions = DisciplinaryAction.objects.filter(
+            employee__department__institution=institution
+        )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(actions, request)
