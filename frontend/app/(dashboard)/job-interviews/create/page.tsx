@@ -33,6 +33,7 @@ import {
 } from "@/lib/utils"
 import type { JobApplication, IInterviewStage, IInterview, IInterviewFormData, IEmployee } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 
 
 interface MultiInterviewFormData extends Omit<IInterviewFormData, 'job_position_application'> {
@@ -497,6 +498,26 @@ interface IInterviewStageFormData {
   if (!selectedInstitution || !selectedBranch) {
     return <div>Loading...</div>
   }
+  
+
+const jobPositionItems: SearchableSelectItem[] = Object.entries(filteredGroupedApplications).map(
+  ([jobId, { jobName, applications }]) => ({
+    id: jobId,
+    label: `${jobName} (${applications.length} available applicant${applications.length !== 1 ? "s" : ""})`,
+    value: `${jobName}`.toLowerCase(),
+  })
+);
+
+const interviewStageItems: SearchableSelectItem[] = filteredInterviewStages.map((stage) => ({
+  id: stage.id,
+  label: `${stage.name} (Level ${stage.level})`,
+  value: `${stage.name} level ${stage.level}`.toLowerCase(),
+}));
+
+const interviewTypeItems: SearchableSelectItem[] = [
+  { id: "online", label: "Online", value: "online" },
+  { id: "in_person", label: "In Person", value: "in person" },
+];
 
   return (
     <div className="w-full h-full p-6">
@@ -537,29 +558,17 @@ interface IInterviewStageFormData {
                 <Label htmlFor="job_position" className="text-sm font-medium">
                   Job Position/ Title  *
                 </Label>
-                <Select value={selectedJobPosition} onValueChange={handleJobPositionSelect}>
-                  <SelectTrigger className={errors.job_position ? "border-destructive" : ""}>
-                    <SelectValue placeholder="Select a job position" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(filteredGroupedApplications).map(
-                      ([jobId, { jobName, applications }]) => (
-                        <SelectItem key={jobId} value={jobId}>
-                          <div className="flex items-center gap-2">
-                            <Building className="h-4 w-4" />
-                            {jobName} ({applications.length} available applicant
-                            {applications.length !== 1 ? "s" : ""})
-                          </div>
-                        </SelectItem>
-                      )
-                    )}
-                    {Object.keys(filteredGroupedApplications).length === 0 && (
-                      <SelectItem value="no-positions" disabled>
-                        No job positions/titles with available applicants
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                  <SearchableSelect
+                    items={jobPositionItems}
+                    selectedItems={selectedJobPosition ? [selectedJobPosition] : []}
+                    placeholder="Select a job position"
+                    searchPlaceholder="Search job positions..."
+                    emptyMessage="No job positions with available applicants found."
+                    onSelect={(itemId) => handleJobPositionSelect(itemId.toString())}
+                    multiple={false}
+                    triggerClassName={errors.job_position ? "border-destructive" : ""}
+                    popoverClassName="w-[400px]"
+                  />
                 {errors.job_position && (
                   <p className="text-sm text-destructive">{errors.job_position}</p>
                 )}
@@ -633,45 +642,32 @@ interface IInterviewStageFormData {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Interview Stage */}
                 <div className="space-y-2">
-                  <Label htmlFor="interview_stage" className="text-sm font-medium">
+                  <Label htmlFor="interview_stage" className="text-sm font-normal">
                     Interview Stage *
                   </Label>
                   <div className="flex gap-2">
-                    <Select
-                      value={formData.interview_stage.toString()}
-                      onValueChange={(value) => updateFormData("interview_stage", Number(value))}
+                    <SearchableSelect
+                      items={interviewStageItems}
+                      selectedItems={formData.interview_stage ? [formData.interview_stage] : []}
+                      placeholder={
+                        !selectedJobPosition
+                          ? "Select a job position/title first"
+                          : filteredInterviewStages.length === 0
+                            ? "No stages available for this position"
+                            : "Select interview stage"
+                      }
+                      searchPlaceholder="Search interview stages..."
+                      emptyMessage={
+                        !selectedJobPosition
+                          ? "Select a job position first"
+                          : "No interview stages found for this position"
+                      }
+                      onSelect={(itemId) => updateFormData("interview_stage", Number(itemId))}
+                      multiple={false}
                       disabled={!selectedJobPosition}
-                    >
-                      <SelectTrigger
-                        className={errors.interview_stage ? "border-destructive" : ""}
-                      >
-                        <SelectValue
-                          placeholder={
-                            !selectedJobPosition
-                              ? "Select a job position/title first"
-                              : filteredInterviewStages.length === 0
-                                ? "No stages available for this position"
-                                : "Select interview stage"
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {filteredInterviewStages.map((stage) => (
-                          <SelectItem key={stage.id} value={stage.id.toString()}>
-                            <div className="flex items-center gap-2">
-                              <Building className="h-4 w-4" />
-                              {stage.name} (Level {stage.level})
-                            </div>
-                          </SelectItem>
-                        ))}
-                        {selectedJobPosition && filteredInterviewStages.length === 0 && (
-                          <SelectItem value="no-stages" disabled>
-                            No interview stages for this position
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-
+                      triggerClassName={errors.interview_stage ? "border-destructive" : ""}
+                      popoverClassName="w-[500px]"
+                    />
                     <Dialog
                       open={isCreateStageDialogOpen}
                       onOpenChange={setIsCreateStageDialogOpen}

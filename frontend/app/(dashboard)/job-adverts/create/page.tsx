@@ -11,13 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CreateJobPositionDialog } from "@/components/dialogs/create-job-position-dialog"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getJobPositions, createJobPositionAdvert, createJobPosition, } from "@/lib/utils"
 import type { JobPositionAdvertFormData, IJobPosition, JobAdvertStatus, JobAdvertTypes } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 
 export default function CreateJobAdvertPage() {
   const [formData, setFormData] = useState<JobPositionAdvertFormData>({
@@ -170,6 +170,20 @@ export default function CreateJobAdvertPage() {
     }
   }, [formData.expiry_date]);
 
+  // Prepare job positions for searchable select
+  const jobPositionItems: SearchableSelectItem[] = jobPositions.map((position) => ({
+    id: position.id,
+    label: `${position.name} - ${position.department_details?.name}`,
+    value: `${position.name} ${position.department_details?.name}`.toLowerCase(),
+  }));
+
+  // Prepare advert types for searchable select
+  const advertTypeItems: SearchableSelectItem[] = [
+    { id: "external", label: "External", value: "external" },
+    { id: "internal", label: "Internal", value: "internal" },
+    { id: "both", label: "Both Internal and External", value: "both internal external" },
+  ];
+
   if (!selectedInstitution || !selectedBranch) {
     return <div>Loading...</div>;
   }
@@ -234,21 +248,17 @@ export default function CreateJobAdvertPage() {
                       onJobPositionCreated={handleJobPositionCreated}
                     />
                   </div>
-                  <Select
-                    value={formData.job_position.toString()}
-                    onValueChange={(value) => updateFormData("job_position", Number(value))}
-                  >
-                    <SelectTrigger className={errors.job_position ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select a job position" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {jobPositions.map((position) => (
-                        <SelectItem key={position.id} value={position.id.toString()}>
-                          {position.name} - {position.department_details?.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    items={jobPositionItems}
+                    selectedItems={formData.job_position ? [formData.job_position] : []}
+                    placeholder="Select a job position"
+                    searchPlaceholder="Search job positions..."
+                    emptyMessage="No job positions found."
+                    onSelect={(itemId) => updateFormData("job_position", Number(itemId))}
+                    multiple={false}
+                    triggerClassName={errors.job_position ? "border-destructive" : ""}
+                    popoverClassName="w-[400px]"
+                  />
                   {errors.job_position && (
                     <p className="text-sm text-destructive">{errors.job_position}</p>
                   )}
@@ -259,21 +269,17 @@ export default function CreateJobAdvertPage() {
                   <Label htmlFor="advert_type" className="text-sm font-medium">
                     Opening Type *
                   </Label>
-                  <Select
-                    value={formData.advert_type}
-                    onValueChange={(value) =>
-                      updateFormData("advert_type", value as JobAdvertTypes)
-                    }
-                  >
-                    <SelectTrigger className={errors.advert_type ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select advert type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="external">External</SelectItem>
-                      <SelectItem value="internal">Internal</SelectItem>
-                      <SelectItem value="both">Both Internal and External</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    items={advertTypeItems}
+                    selectedItems={formData.advert_type ? [formData.advert_type] : []}
+                    placeholder="Select opening type"
+                    searchPlaceholder="Search opening types..."
+                    emptyMessage="No opening types found."
+                    onSelect={(itemId) => updateFormData("advert_type", itemId as JobAdvertTypes)}
+                    multiple={false}
+                    triggerClassName={errors.advert_type ? "border-destructive" : ""}
+                    popoverClassName="w-[300px]"
+                  />
                   {errors.advert_type && (
                     <p className="text-sm text-destructive">{errors.advert_type}</p>
                   )}
