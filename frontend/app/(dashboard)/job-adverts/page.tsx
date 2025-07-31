@@ -58,6 +58,7 @@ import type { JobPositionAdvert, JobAdvertStatus, PaginatedResponse } from "@/ap
 import { toast } from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -129,6 +130,8 @@ export default function JobAdvertsPage() {
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const selectedBranch = useSelector(selectSelectedBranch);
 
+  useDocumentTitle("JOB OPENINGS")
+
   const fetchJobAdverts = useCallback(
     async (showRefreshLoader = false, page = 1, size = DEFAULT_PAGE_SIZE) => {
       if (!selectedInstitution) return;
@@ -199,18 +202,18 @@ export default function JobAdvertsPage() {
       const matchesSearch = !searchTerm.trim()
         ? true
         : advert.job_position_details?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          advert.extra_information?.toLowerCase().includes(searchTerm.toLowerCase());
+        advert.extra_information?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus = statusFilter === "all" || advert.job_position_advert_status === statusFilter;
 
       const matchesDateRange = !dateRange.from && !dateRange.to
         ? true
         : (() => {
-            const publishedDate = new Date(advert.published_date).getTime();
-            const fromDate = dateRange.from ? new Date(dateRange.from).getTime() : -Infinity;
-            const toDate = dateRange.to ? new Date(dateRange.to).getTime() : Infinity;
-            return publishedDate >= fromDate && publishedDate <= toDate;
-          })();
+          const publishedDate = new Date(advert.published_date).getTime();
+          const fromDate = dateRange.from ? new Date(dateRange.from).getTime() : -Infinity;
+          const toDate = dateRange.to ? new Date(dateRange.to).getTime() : Infinity;
+          return publishedDate >= fromDate && publishedDate <= toDate;
+        })();
 
       return matchesSearch && matchesStatus && matchesDateRange;
     });
@@ -493,22 +496,20 @@ export default function JobAdvertsPage() {
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`h-8 w-8 rounded-full ${
-                          advert.job_position_advert_status === "active"
+                        className={`h-8 w-8 rounded-full ${advert.job_position_advert_status === "active"
                             ? "bg-green-50"
                             : advert.job_position_advert_status === "expired"
-                            ? "bg-red-50"
-                            : "bg-gray-50"
-                        } flex items-center justify-center`}
+                              ? "bg-red-50"
+                              : "bg-gray-50"
+                          } flex items-center justify-center`}
                       >
                         <Megaphone
-                          className={`h-4 w-4 ${
-                            advert.job_position_advert_status === "active"
+                          className={`h-4 w-4 ${advert.job_position_advert_status === "active"
                               ? "text-green-600"
                               : advert.job_position_advert_status === "expired"
-                              ? "text-red-600"
-                              : "text-gray-600"
-                          }`}
+                                ? "text-red-600"
+                                : "text-gray-600"
+                            }`}
                         />
                       </div>
                       <span>{advert.job_position_details?.name || "N/A"}</span>

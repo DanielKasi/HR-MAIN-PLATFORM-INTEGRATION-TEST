@@ -29,8 +29,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 
 import { selectSelectedInstitution, selectSelectedBranch, selectUser } from "@/store/auth/selectors"
 import { getJobApplicationById, updateJobApplication, getJobPositionAdverts } from "@/lib/utils"
-import type { JobApplication, JobApplicationFormData, JobPositionAdvert} from "@/app/types/types.utils"
+import type { JobApplication, JobApplicationFormData, JobPositionAdvert } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import { useDocumentTitle } from "@/hooks/use-document-title"
 
 const statusOptions = [
   { value: "new", label: "New" },
@@ -89,6 +90,8 @@ export default function EditApplicationPage() {
     application_date: "",
     created_by: userData?.id || 0,
   })
+
+  useDocumentTitle("EDIT A JOB APPLICATION")
 
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
@@ -459,7 +462,7 @@ export default function EditApplicationPage() {
                       </SelectItem>
                     ))}
                   </SelectContent>
-                  </Select>
+                </Select>
               </div>
             </CardContent>
           </Card>

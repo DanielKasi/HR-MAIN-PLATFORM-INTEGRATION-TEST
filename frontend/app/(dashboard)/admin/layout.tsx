@@ -1,8 +1,14 @@
+"use client";
 import { PERMISSION_CODES } from "@/app/types/types.utils";
 import ProtectedPage from "@/components/ProtectedPage";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
-export default function AdminLayout({children}: {children: React.ReactNode}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const title = useDocumentTitle("ADMIN")
   return (
-    <ProtectedPage permissionCode={PERMISSION_CODES.CAN_VIEW_DEPARTMENTS}>{children}</ProtectedPage>
+    <>
+      {title}
+      <ProtectedPage permissionCode={PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD}>{children}</ProtectedPage>
+    </>
   );
 }

@@ -41,6 +41,7 @@ import { getDepartments, deleteDepartment } from "@/lib/utils"
 import { type IDepartment, PERMISSION_CODES } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import ProtectedComponent from "@/components/ProtectedComponent"
+import { useDocumentTitle } from "@/hooks/use-document-title"
 
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<IDepartment[]>([])
@@ -51,6 +52,8 @@ export default function DepartmentsPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [departmentToDelete, setDepartmentToDelete] = useState<IDepartment | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  useDocumentTitle("DEPARTMENTS")
 
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
@@ -97,10 +100,10 @@ export default function DepartmentsPage() {
 
   const filteredDepartments = Array.isArray(departments)
     ? departments.filter(
-        (dept) =>
-          dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          dept?.description?.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
+      (dept) =>
+        dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        dept?.description?.toLowerCase().includes(searchTerm.toLowerCase()),
+    )
     : []
 
   const handleCreateDepartment = () => {

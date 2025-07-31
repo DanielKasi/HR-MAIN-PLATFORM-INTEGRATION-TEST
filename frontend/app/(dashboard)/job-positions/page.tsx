@@ -53,6 +53,7 @@ import { toast } from "sonner"
 import { formatCurrency } from "@/lib/helpers"
 import ProtectedComponent from "@/components/ProtectedComponent"
 import { PERMISSION_CODES } from "@/app/types/types.utils"
+import { useDocumentTitle } from "@/hooks/use-document-title"
 
 export default function JobPositionsPage() {
   const [jobPositions, setJobPositions] = useState<IJobPosition[]>([])
@@ -67,6 +68,8 @@ export default function JobPositionsPage() {
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const selectedBranch = useSelector(selectSelectedBranch)
+
+  useDocumentTitle("JOB POSITIONS / TITLES")
 
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
@@ -115,13 +118,13 @@ export default function JobPositionsPage() {
     const salaries = positions.map(pos => Number(pos.salary));
     const minSalary = Math.min(...salaries);
     const maxSalary = Math.max(...salaries);
-    
+
     // Calculate range size to create 4 ranges
     const rangeSize = Math.ceil((maxSalary - minSalary) / 4);
-    
+
     const ranges = [];
     let start = minSalary;
-    
+
     while (start < maxSalary) {
       const end = Math.min(start + rangeSize, maxSalary);
       ranges.push({
@@ -216,7 +219,7 @@ export default function JobPositionsPage() {
           </Button>
           <Button onClick={handleCreateJobPosition} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Create Job Position / Title 
+            Create Job Position / Title
           </Button>
         </div>
       </div>
@@ -363,16 +366,14 @@ export default function JobPositionsPage() {
                 <TableRow key={position.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
-                      <div className={`h-8 w-8 rounded-full ${
-                        position.job_position_status === "active" 
-                          ? "bg-green-50" 
+                      <div className={`h-8 w-8 rounded-full ${position.job_position_status === "active"
+                          ? "bg-green-50"
                           : "bg-red-50"
-                      } flex items-center justify-center`}>
-                        <Briefcase className={`h-4 w-4 ${
-                          position.job_position_status === "active"
+                        } flex items-center justify-center`}>
+                        <Briefcase className={`h-4 w-4 ${position.job_position_status === "active"
                             ? "text-green-600"
                             : "text-red-600"
-                        }`} />
+                          }`} />
                       </div>
                       <span>{position.name}</span>
                     </div>
@@ -381,7 +382,7 @@ export default function JobPositionsPage() {
                     <Badge variant="outline">{position.department_details?.name}</Badge>
                   </TableCell>
                   <TableCell>
-                    UGX {formatCurrency(position?.salary?.toLocaleString()||0)}
+                    UGX {formatCurrency(position?.salary?.toLocaleString() || 0)}
                   </TableCell>
                   <TableCell>
                     <Badge variant={position.job_position_status === "active" ? "success" : "destructive"}>
