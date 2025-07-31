@@ -56,6 +56,7 @@ import type {IInterview} from "@/app/types/types.utils";
 import {PERMISSION_CODES} from "@/app/types/types.utils";
 import {toast} from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
+import {formatCurrency} from "@/lib/helpers"
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -436,18 +437,27 @@ export default function InterviewsPage() {
               <p className="text-xs text-muted-foreground">Scheduled</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4">
-            <div className="text-2xl font-bold">
-              {(
-                interviews.filter((i) => i.rating).reduce((sum, i) => sum + (i.rating || 0), 0) /
-                  interviews.filter((i) => i.rating).length || 0
-              ).toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">Avg Rating</p>
-          </CardContent>
+        <Card>
+  <CardContent className="p-4">
+    {(() => {
+      const ratedInterviews = interviews.filter((i) => i.rating);
+      const averageRating =
+        ratedInterviews.reduce((sum, i) => sum + (i.rating || 0), 0) /
+          ratedInterviews.length || 0;
+      const roundedAverage = Math.round(averageRating);
+      return (
+        <>
+          <div className="text-2xl font-bold">
+            {formatCurrency(roundedAverage)}
+          </div>
+          <p className="text-xs text-muted-foreground">Avg Rating</p>
+        </>
+      );
+    })()}
+  </CardContent>
+</Card>
 
-          </Card>
+
         </div>
       )}
 
