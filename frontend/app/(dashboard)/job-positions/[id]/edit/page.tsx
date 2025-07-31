@@ -25,8 +25,6 @@ import type { JobPositionFormData, IDepartment, IJobPosition, CreateJobPositionD
 import { toast } from "sonner"
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 
-
-
 const VirtualizedEmployeeList: React.FC<{
   employees: IEmployee[]
   selectedEmployees: Set<number>
@@ -40,7 +38,6 @@ const VirtualizedEmployeeList: React.FC<{
   const ITEM_HEIGHT = 60 
   const BUFFER_SIZE = 5 
 
- 
   const filteredEmployees = useMemo(() => {
     if (!searchTerm.trim()) return employees
 
@@ -65,8 +62,6 @@ const VirtualizedEmployeeList: React.FC<{
   const totalHeight = filteredEmployees.length * ITEM_HEIGHT
   const offsetY = Math.max(0, startIndex - BUFFER_SIZE) * ITEM_HEIGHT
 
-  
-
   return (
     <div
       ref={scrollElementRef}
@@ -83,8 +78,7 @@ const VirtualizedEmployeeList: React.FC<{
             return (
               <div
                 key={employee.id}
-                className={`flex items-center space-x-3 p-3 border-b hover:bg-muted/50 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5 border-primary/20' : 'border-border'
-                  }`}
+                className={`flex items-center space-x-3 p-3 border-b hover:bg-muted/50 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5 border-primary/20' : 'border-border'}`}
                 style={{ height: ITEM_HEIGHT }}
                 onClick={() => onEmployeeToggle(employee, !isSelected)}
               >
@@ -116,7 +110,7 @@ const VirtualizedEmployeeList: React.FC<{
   )
 }
 
-// IEmployee Selection Modal Component
+// Employee Selection Modal Component
 const EmployeeSelectionModal: React.FC<{
   isOpen: boolean
   onClose: () => void
@@ -296,7 +290,7 @@ const EmployeeSelectionModal: React.FC<{
             </div>
           </div>
 
-          {/* IEmployee List */}
+          {/* Employee List */}
           <div className="flex-1 overflow-hidden border rounded-lg">
             {isLoading ? (
               <div className="flex items-center justify-center h-64">
@@ -427,13 +421,13 @@ export default function EditJobPositionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Partial<Record<keyof JobPositionFormData, string>>>({})
 
-  // IEmployee selection state
+  // Employee selection state
   const [showEmployeeModal, setShowEmployeeModal] = useState(false)
   const [selectedEmployees, setSelectedEmployees] = useState<{ id: number; name: string }[]>([])
   const [employees, setEmployees] = useState<IEmployee[]>([])
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(false)
   const [employeesSelected, setEmployeesSelected] = useState(false)
-  const [originalSalary, setOriginalSalary] = useState("");
+  const [originalSalary, setOriginalSalary] = useState("")
   const [isSalaryChanged, setIsSalaryChanged] = useState(false)
 
   const router = useRouter()
@@ -471,8 +465,8 @@ export default function EditJobPositionPage() {
 
       if (fetchedJobPosition) {
         setJobPosition(fetchedJobPosition)
-        const salaryValue = fetchedJobPosition.salary?.toString()|| "0";
-        setOriginalSalary(salaryValue);
+        const salaryValue = fetchedJobPosition.salary?.toString() || "0"
+        setOriginalSalary(salaryValue)
         setFormData({
           name: fetchedJobPosition.name,
           description: fetchedJobPosition.description || "",
@@ -480,7 +474,7 @@ export default function EditJobPositionPage() {
           reports_to: fetchedJobPosition.reports_to || null,
           offer_letter_template: null,
           salary: salaryValue,
-          job_position_status:"inactive"
+          job_position_status: "inactive"
         })
       } else {
         toast.error("Job position not found")
@@ -511,11 +505,8 @@ export default function EditJobPositionPage() {
       let allEmployees: IEmployee[] = []
 
       if (jobPosition.employees && jobPosition.employees.length > 0) {
-        // Use existing employees from job position
         allEmployees = jobPosition.employees
       } else {
-        // Mock API call for fetching all employees in the institution
-        // In reality, you'd want to implement server-side filtering and pagination
         try {
           const response = await fetch(`/api/institutions/${selectedInstitution.id}/employees`, {
             method: 'GET',
@@ -527,7 +518,6 @@ export default function EditJobPositionPage() {
           if (response.ok) {
             allEmployees = await response.json()
           } else {
-            // Fallback to job position/title employees if API fails
             allEmployees = jobPosition.employees || []
           }
         } catch (apiError) {
@@ -565,28 +555,35 @@ export default function EditJobPositionPage() {
     }
   }
 
-  // Replace your existing updateFormData function with this:
-const updateFormData = (field: keyof JobPositionFormData, value: any) => {
-  setFormData((prev) => ({ ...prev, [field]: value }))
+  const updateFormData = (field: keyof JobPositionFormData, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
 
-  // Track salary changes
-  if (field === "salary") {
-    // Compare with original salary - if they're the same OR if the field is empty, reset the changed state
-    const salaryChanged = value !== originalSalary && value.trim() !== ""
-    setIsSalaryChanged(salaryChanged)
+    // Track salary changes
+    if (field === "salary") {
+      const salaryChanged = value !== originalSalary && value.trim() !== ""
+      setIsSalaryChanged(salaryChanged)
 
-    // Reset employee selection state when salary changes back to original OR is empty
-    if (!salaryChanged) {
-      setEmployeesSelected(false)
-      setSelectedEmployees([])
+      // Reset employee selection state when salary changes back to original OR is empty
+      if (!salaryChanged) {
+        setEmployeesSelected(false)
+        setSelectedEmployees([])
+        setShowEmployeeModal(false)
+      }
+    }
+
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }))
     }
   }
-  
 
-  if (errors[field]) {
-    setErrors((prev) => ({ ...prev, [field]: undefined }))
+  const revertSalaryToOriginal = () => {
+    updateFormData("salary", originalSalary)
+    setIsSalaryChanged(false)
+    setEmployeesSelected(false)
+    setSelectedEmployees([])
+    setShowEmployeeModal(false)
+    toast.info("Salary reverted to original value")
   }
-}
 
   const removeFile = (field: "offer_letter_template") => {
     updateFormData(field, null)
@@ -617,9 +614,8 @@ const updateFormData = (field: keyof JobPositionFormData, value: any) => {
       newErrors.salary = "Please enter a valid salary amount"
     }
 
-    // Only require employee selection if salary has changed and no employees selected
     if (isSalaryChanged && selectedEmployees.length === 0) {
-      newErrors.salary = "Please select employees who will be affected by this salary change"
+      newErrors.salary = "Please select employees who will be affected by this salary change or revert to the original salary"
     }
 
     setErrors(newErrors)
@@ -651,7 +647,6 @@ const updateFormData = (field: keyof JobPositionFormData, value: any) => {
         job_position_status: "active"
       }
 
-      // Only include affected employees if salary has changed
       if (isSalaryChanged && selectedEmployees.length > 0) {
         updateData.affected_employees = selectedEmployees.map(emp => emp.id)
       }
@@ -763,12 +758,12 @@ const updateFormData = (field: keyof JobPositionFormData, value: any) => {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* IEmployee Selection Alert */}
+              {/* Employee Selection Alert */}
               {isSalaryChanged && !employeesSelected && (
                 <Alert className="border-amber-200 bg-amber-50 text-amber-800">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    <strong>Salary Change Detected:</strong> You have modified the salary amount. Please select which employees will be affected by this change.
+                    <strong>Salary Change Detected:</strong> You have modified the salary amount. Please select which employees will be affected by this change or revert to the original salary.
                   </AlertDescription>
                 </Alert>
               )}
@@ -791,39 +786,38 @@ const updateFormData = (field: keyof JobPositionFormData, value: any) => {
                   {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
                 </div>
 
-                {/* Salary with IEmployee Selection */}
+                {/* Salary with Employee Selection */}
                 <div className="space-y-2">
                   <Label htmlFor="salary" className="text-sm font-medium">
                     Salary scale * {isSalaryChanged && <span className="text-xs text-amber-600">(Changed - Select employees)</span>}
                   </Label>
                   <div className="relative">
                     <Input
-                          id="salary"
-                          type="text" 
-                          inputMode="numeric" 
-                          placeholder="50,000"
-                          value={
-                            formData.salary !== undefined && formData.salary !== null
-                              ? Number(formData.salary).toLocaleString("en-US")
-                              : ""
-                          }
-                          onChange={(e) => {
-                            const rawValue = e.target.value.replace(/,/g, ""); 
-                            if (/^\d*$/.test(rawValue)) {
-                              updateFormData("salary", rawValue); 
-                            }
-                          }}
-                          className={`pr-10 ${errors.salary ? "border-destructive" : ""} ${
-                            isSalaryChanged ? "border-amber-300 bg-amber-50" : ""
-                          }`}
-                        />
-
+                      id="salary"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="50,000"
+                      value={
+                        formData.salary !== undefined && formData.salary !== null
+                          ? Number(formData.salary).toLocaleString("en-US")
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/,/g, "")
+                        if (/^\d*$/.test(rawValue)) {
+                          updateFormData("salary", rawValue)
+                        }
+                      }}
+                      className={`pr-10 ${errors.salary ? "border-destructive" : ""} ${
+                        isSalaryChanged ? "border-amber-300 bg-amber-50" : ""
+                      }`}
+                    />
                     <Coins className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   </div>
 
-                  {/* Show employee selection UI only when salary is changed */}
+                  {/* Show employee selection UI or revert button when salary is changed */}
                   {isSalaryChanged && (
-                    <>
+                    <div className="space-y-2">
                       {employeesSelected && selectedEmployees.length > 0 ? (
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -841,25 +835,43 @@ const updateFormData = (field: keyof JobPositionFormData, value: any) => {
                               Change Selection
                             </Button>
                           </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={revertSalaryToOriginal}
+                            className="text-xs text-amber-600 hover:text-amber-700"
+                          >
+                            Revert to Original
+                          </Button>
                         </div>
                       ) : (
-                        <div className="space-y-2">
+                        <div className="flex items-center justify-between">
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             onClick={handleSalaryFieldClick}
-                            className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
+                            className="border-amber-300 text-amber-700 hover:bg-amber-50"
                           >
                             <Users className="h-4 w-4 mr-2" />
                             Select Employees for Salary Update
                           </Button>
-                          <p className="text-xs text-amber-600">
-                            You must select employees before updating the salary
-                          </p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={revertSalaryToOriginal}
+                            className="text-xs text-amber-600 hover:text-amber-700"
+                          >
+                            Revert to Original
+                          </Button>
                         </div>
                       )}
-                    </>
+                      <p className="text-xs text-amber-600">
+                        You must select employees to update the salary, or revert to the original value.
+                      </p>
+                    </div>
                   )}
 
                   {/* Show original salary info when not changed */}
@@ -872,7 +884,7 @@ const updateFormData = (field: keyof JobPositionFormData, value: any) => {
                   {errors.salary && <p className="text-sm text-destructive">{errors.salary}</p>}
                 </div>
 
-                  {/* Department */}
+                {/* Department */}
                 <div className="space-y-2">
                   <Label htmlFor="department" className="text-sm font-medium">
                     Department *
@@ -965,8 +977,6 @@ const updateFormData = (field: keyof JobPositionFormData, value: any) => {
                 </div>
               )}
 
-            
-
               {/* Form Actions */}
               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
                 <Button
@@ -1005,7 +1015,7 @@ const updateFormData = (field: keyof JobPositionFormData, value: any) => {
           </CardContent>
         </Card>
 
-        {/* IEmployee Selection Modal */}
+        {/* Employee Selection Modal */}
         <EmployeeSelectionModal
           isOpen={showEmployeeModal}
           onClose={() => setShowEmployeeModal(false)}
