@@ -241,7 +241,7 @@ export default function CreateJobPositionPage() {
                 <Briefcase className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-xl">Create New Job Position/ Title </CardTitle>
+                <CardTitle className="text-xl">Create New Job Position / Title </CardTitle>
                 <p className="text-sm text-muted-foreground">
                   Add a new job position/title to {selectedBranch.branch_name} -{" "}
                   {selectedInstitution.institution_name}
@@ -257,7 +257,7 @@ export default function CreateJobPositionPage() {
                 {/* Job Position/ Title  Name */}
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sm font-medium">
-                    Job Position/ Title  Name *
+                    Job Position / Title  Name *
                   </Label>
                   <Input
                     id="name"
@@ -457,7 +457,7 @@ export default function CreateJobPositionPage() {
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      Create Job Position/ Title 
+                      Create Job Position / Title 
                     </>
                   )}
                 </Button>

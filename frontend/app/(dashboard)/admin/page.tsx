@@ -214,7 +214,7 @@ export default function AdminPage() {
                     className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
                   >
                     <BriefcaseBusinessIcon className="w-5 h-5 text-gray-500" />
-                    <span>Job Positions/Titles</span>
+                    <span>Job Positions / Titles</span>
                   </Link>
                   {/* We'll keep the branch listing functionality but hide it since it's not in the image */}
                 </div>

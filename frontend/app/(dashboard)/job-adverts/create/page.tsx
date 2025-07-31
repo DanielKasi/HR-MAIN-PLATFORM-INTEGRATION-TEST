@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
-import { Megaphone, ArrowLeft, Check, Calendar } from "lucide-react"
+import { Megaphone, ArrowLeft, Check, Calendar, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,9 +12,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CreateJobPositionDialog } from "@/components/dialogs/create-job-position-dialog"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { getJobPositions, createJobPositionAdvert } from "@/lib/utils"
+import { getJobPositions, createJobPositionAdvert, createJobPosition, } from "@/lib/utils"
 import type { JobPositionAdvertFormData, IJobPosition, JobAdvertStatus, JobAdvertTypes } from "@/app/types/types.utils"
 import { toast } from "sonner"
 
@@ -152,6 +153,11 @@ export default function CreateJobAdvertPage() {
     router.back();
   };
 
+  const handleJobPositionCreated = (newJobPosition: IJobPosition) => {
+    setJobPositions((prev) => [...prev, newJobPosition]);
+    updateFormData("job_position", newJobPosition.id);
+  };
+
   // Set default expiry date to 30 days from now
   useEffect(() => {
     if (!formData.expiry_date) {
@@ -210,9 +216,24 @@ export default function CreateJobAdvertPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Job Position */}
                 <div className="space-y-2">
-                  <Label htmlFor="job_position" className="text-sm font-medium">
-                    Job Position *
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="job_position" className="text-sm font-medium">
+                      Job Position *
+                    </Label>
+                    <CreateJobPositionDialog
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      }
+                      onJobPositionCreated={handleJobPositionCreated}
+                    />
+                  </div>
                   <Select
                     value={formData.job_position.toString()}
                     onValueChange={(value) => updateFormData("job_position", Number(value))}

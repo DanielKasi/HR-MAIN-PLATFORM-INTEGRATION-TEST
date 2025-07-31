@@ -370,7 +370,7 @@ const FeedbackDialog = ({
   const [feedback, setFeedback] = useState('')
   const [rating, setRating] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
-  const [action, setAction] = useState<'save' | 'reject' | 'schedule' | null>(null)
+  const [action, setAction] = useState<'save' | 'cancel' | 'schedule' | null>(null)
 
   useEffect(() => {
     if (candidate) {
@@ -429,7 +429,7 @@ const FeedbackDialog = ({
     }
 
     setIsSaving(true)
-    setAction('reject')
+    setAction('cancel')
     try {
       await onSave(feedback, rating || 1)
       if (onReject) {
@@ -505,7 +505,7 @@ const FeedbackDialog = ({
                   onClick={handleReject}
                   disabled={isSaving}
                 >
-                  {isSaving && action === 'reject' ? (
+                  {isSaving && action === 'cancel' ? (
                     <>
                       <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                       Rejecting...
@@ -1187,7 +1187,7 @@ const handleSelectAll = (checked: boolean) => {
       }
 
       const interviewData = {
-        status: 'rejected'
+        status: 'cancelled'
       };
 
       const result = await updateInterview({
