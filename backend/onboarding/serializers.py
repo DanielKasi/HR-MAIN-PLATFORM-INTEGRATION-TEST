@@ -15,6 +15,7 @@ from workflows.models import WorkflowAction, InstitutionApprovalStep, ApprovalTa
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model
 from users.serializers import ProfileSerializer
+from employee.serializers import EmployeeSerializer
 
 
 class OnBoardingSerializer(serializers.ModelSerializer):
@@ -178,6 +179,11 @@ class EmployeeSeparationSerializer(serializers.ModelSerializer):
         representation["initiated_by"] = (
             ProfileSerializer(instance.initiated_by, context=self.context).data
             if instance.initiated_by
+            else None
+        )
+        representation["employee"] = (
+            EmployeeSerializer(instance.employee, context=self.context).data
+            if instance.employee
             else None
         )
         return representation
@@ -513,6 +519,7 @@ class TerminationInitiationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Employee does not exist.")
 
         if getattr(user, "institution", None) != employee.department.institution:
+            print("\n\n\n Employee belongs to institution : ", employee.department.institution, "\n\n Your institution is ", getattr(user, "institution"))
             raise serializers.ValidationError(
                 "You are not authorized to terminate this employee."
             )

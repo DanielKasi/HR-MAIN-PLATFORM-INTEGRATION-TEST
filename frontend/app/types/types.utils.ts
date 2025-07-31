@@ -1588,6 +1588,38 @@ export type ApprovalStep = {
   level: number;
 };
 
+// Termination Types
+export type TerminationInitiationStatus = "submitted" | "under_review" | "approved" | "rejected";
+export type SeparationStatus = "planned" | "completed" | "cancelled";
+
+export interface IEmployeeSeparation {
+  id: number;
+  effective_date: string;
+  additional_notes: string | null;
+  separation_status: SeparationStatus;
+  employee_separation_type: number;
+  employee: IEmployee;
+  initiated_by: UserProfile;
+}
+
+export interface ITermination {
+  id: number;
+  separation: IEmployeeSeparation;
+  termination_letter: string | null;
+  comments: string;
+  last_working_day: string;
+  initiation_status: TerminationInitiationStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ITerminationFormData {
+  employee_id: number;
+  termination_letter?: File | null;
+  comments: string;
+  last_working_day: string;
+}
+
 // Separation Policy Types
 export type SeparationCategory = "resignation" | "termination" | "retirement" | "contract_end" | "other";
 
