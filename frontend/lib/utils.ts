@@ -1,38 +1,91 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import {type ClassValue, clsx} from "clsx";
+import {twMerge} from "tailwind-merge";
 import {
-  IDepartment, CreateDepartmentData, DepartmentFormData, IJobPosition,
-  CreateJobPositionData, JobApplication, JobApplicationFormData, JobPositionAdvert, JobPositionAdvertFormData,
-  IInterview, EmployeeFormData, User, IInterviewFormData, IInterviewStage, IInterviewStageFormData,
-  IBulkOnBoardingResponse, IBulkOnBoardingRequest, IOnBoarding, IOnBoardingFormData, IEmployeeTypeFormData, IWorkType,
-  IWorkTypeFormData, IEmployeeType, EmployeeBranchSummary, AttachBranchesPayload, SetDefaultBranchPayload,
-  DisciplinaryActionForm, DisciplinaryActionRequest, DisciplinaryActionResponse, convertFormToApiRequest,
-  DisciplineTypeForm, DisciplineTypeResponse, convertDisciplineTypeFormToApiRequest, DisciplinaryActionAPIResponse,
-  ILeaveRequest, ILeaveRequestFormData, LeaveRequestStatus, LeaveType, ILeaveTypeFormData, ILeaveType, ILeavePolicy,
-  ILeavePolicyFormData, ILeavePolicyResponse, IAllowanceType, IAllowanceTypeFormData, IDeductionType, IDeductionTypeFormData,
-  IEmployeeAllowance, IEmployeeAllowanceFormData, IEmployeeDeduction, IEmployeeDeductionFormData, IPayrollPeriod, IPayrollPeriodFormData,
-  IPayslipFormData, IPayslip, IPayslipItem, PaginatedEmployeeResponse,
-  PaginatedIOnboardingResponse, ILeaveBalance,
+  IDepartment,
+  CreateDepartmentData,
+  DepartmentFormData,
+  IJobPosition,
+  CreateJobPositionData,
+  JobApplication,
+  JobApplicationFormData,
+  JobPositionAdvert,
+  JobPositionAdvertFormData,
+  IInterview,
+  EmployeeFormData,
+  User,
+  IInterviewFormData,
+  IInterviewStage,
+  IInterviewStageFormData,
+  IBulkOnBoardingResponse,
+  IBulkOnBoardingRequest,
+  IOnBoarding,
+  IOnBoardingFormData,
+  IEmployeeTypeFormData,
+  IWorkType,
+  IWorkTypeFormData,
+  IEmployeeType,
+  EmployeeBranchSummary,
+  AttachBranchesPayload,
+  SetDefaultBranchPayload,
+  DisciplinaryActionForm,
+  DisciplinaryActionRequest,
+  DisciplinaryActionResponse,
+  convertFormToApiRequest,
+  DisciplineTypeForm,
+  DisciplineTypeResponse,
+  convertDisciplineTypeFormToApiRequest,
+  DisciplinaryActionAPIResponse,
+  ILeaveRequest,
+  ILeaveRequestFormData,
+  LeaveRequestStatus,
+  LeaveType,
+  ILeaveTypeFormData,
+  ILeaveType,
+  ILeavePolicy,
+  ILeavePolicyFormData,
+  ILeavePolicyResponse,
+  IAllowanceType,
+  IAllowanceTypeFormData,
+  IDeductionType,
+  IDeductionTypeFormData,
+  IEmployeeAllowance,
+  IEmployeeAllowanceFormData,
+  IEmployeeDeduction,
+  IEmployeeDeductionFormData,
+  IPayrollPeriod,
+  IPayrollPeriodFormData,
+  IPayslipFormData,
+  IPayslip,
+  IPayslipItem,
+  PaginatedEmployeeResponse,
+  PaginatedIOnboardingResponse,
+  ILeaveBalance,
   PaginatedResponse,
   IContract,
   IContractFormData,
   IDocumentTypeFormData,
   IDocumentType,
   IDocumentTemplateFormData,
-  IDocumentTemplate
+  IDocumentTemplate,
+  IOffboardingStageFormData,
+  IOffboardingStage,
+  ISeparationType,
+  ISeparationTypeFormData,
+  ITermination,
+  ITerminationFormData,
 } from "@/app/types/types.utils";
 
-import apiRequest, { apiGet } from "./apiRequest";
-import { IEmployee } from "@/app/types/types.utils";
-import { IPaginatedResponse } from "@/app/types";
-import { AxiosError, AxiosRequestConfig } from "axios";
-import { toast } from "sonner";
+import apiRequest, {apiGet} from "./apiRequest";
+import {IEmployee} from "@/app/types/types.utils";
+import {IPaginatedResponse} from "@/app/types";
+import {AxiosError, AxiosRequestConfig} from "axios";
+import {toast} from "sonner";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function validatePasswordStrength(password: string): { valid: boolean; errors: string[] } {
+export function validatePasswordStrength(password: string): {valid: boolean; errors: string[]} {
   const errors: string[] = [];
 
   if (password.length < 8) {
@@ -110,7 +163,7 @@ export async function forgotPassword(email: string, frontendUrl?: string): Promi
   const payload: ForgotPasswordRequest = {
     email,
     // Only include frontend_url if provided
-    ...(frontendUrl && { frontend_url: frontendUrl }),
+    ...(frontendUrl && {frontend_url: frontendUrl}),
   };
 
   await apiRequest.post("/user/forgot-password", payload);
@@ -121,7 +174,7 @@ export async function forgotPassword(email: string, frontendUrl?: string): Promi
  * @param token Reset token
  */
 export async function verifyResetToken(token: string): Promise<TokenVerificationResponse> {
-  const response = await apiRequest.post("/user/verify-token", { token });
+  const response = await apiRequest.post("/user/verify-token", {token});
 
   return response.data;
 }
@@ -143,164 +196,184 @@ export async function resetPassword(
   return response.data;
 }
 
-
-
-
-
-
-export const createDepartment = async ({ departmentData }: { departmentData: DepartmentFormData }) => {
+export const createDepartment = async ({departmentData}: {departmentData: DepartmentFormData}) => {
   try {
-    const response = await apiRequest.post(`institution/${departmentData.institution}/department/`, departmentData)
-    return response.data as IDepartment
+    const response = await apiRequest.post(
+      `institution/${departmentData.institution}/department/`,
+      departmentData,
+    );
+    return response.data as IDepartment;
   } catch (error) {
-    return null
+    return null;
   }
-}
+};
 
-export const getDepartment = async ({ departmentId }: { departmentId: number }) => {
+export const getDepartment = async ({departmentId}: {departmentId: number}) => {
   try {
-    const response = await apiRequest.get(`institution/department/${departmentId}/`)
-    return response.data as IDepartment
+    const response = await apiRequest.get(`institution/department/${departmentId}/`);
+    return response.data as IDepartment;
   } catch (error) {
-    return null
+    return null;
   }
-}
+};
 
-export const updateDepartment = async ({ departmentData }: { departmentData: IDepartment }) => {
+export const updateDepartment = async ({departmentData}: {departmentData: IDepartment}) => {
   try {
-    const response = await apiRequest.patch(`institution/department/${departmentData.id}/`, { name: departmentData.name, description: departmentData.description, institution: departmentData.institution })
-    return response.data as IDepartment
+    const response = await apiRequest.patch(`institution/department/${departmentData.id}/`, {
+      name: departmentData.name,
+      description: departmentData.description,
+      institution: departmentData.institution,
+    });
+    return response.data as IDepartment;
   } catch (error) {
-    return null
+    return null;
   }
-}
+};
 
-export const getDepartments = async ({ institutionId }: { institutionId: number }) => {
+export const deleteDepartment = async ({departmentId}: {departmentId: number}) => {
   try {
-    const response = await apiRequest.get(`institution/${institutionId}/department/`)
-    const data = response.data as PaginatedResponse<IDepartment>
+    await apiRequest.delete(`institution/department/${departmentId}/`);
+  } catch (error) {
+    console.error("Error deleting department:", error);
+  }
+};
+
+export const getDepartments = async ({institutionId}: {institutionId: number}) => {
+  try {
+    const response = await apiRequest.get(`institution/${institutionId}/department/`);
+    const data = response.data as PaginatedResponse<IDepartment>;
     // Return the results array instead of the entire response
-    return data.results
+    return data.results;
   } catch (error) {
-    return null
+    return null;
   }
 }
 
-export const getJobPositions = async ({ institutionId }: { institutionId: number }) => {
+export const getDefaultData = async (): Promise<IDepartment[] | null> => {
   try {
-    const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`)
-    const data = response.data as PaginatedResponse<IJobPosition>
-    return data.results
+    const response = await apiRequest.get("institution/default-data/");
+    return response.data as IDepartment[];
   } catch (error) {
-    return null
+    console.error("Failed to fetch default departments", error);
+    return null;
   }
-}
+};
 
-export const getJobPosition = async ({ jobPositionId }: { jobPositionId: number }) => {
+export const getJobPositions = async ({institutionId}: {institutionId: number}) => {
   try {
-    const response = await apiRequest.get(`recruitment/job-position/${jobPositionId}/`)
-    const data = response.data as IJobPosition
-    return data
+    const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`);
+    const data = response.data as PaginatedResponse<IJobPosition>;
+    return data.results;
   } catch (error) {
-    console.error("Error fetching job position/title:", error)
-    return null
+    return null;
   }
-}
+};
 
-
+export const getJobPosition = async ({jobPositionId}: {jobPositionId: number}) => {
+  try {
+    const response = await apiRequest.get(`recruitment/job-position/${jobPositionId}/`);
+    const data = response.data as IJobPosition;
+    return data;
+  } catch (error) {
+    console.error("Error fetching job position/title:", error);
+    return null;
+  }
+};
 
 export const createJobPosition = async ({
   institutionId,
   jobPositionData,
 }: {
-  institutionId: number
-  jobPositionData: CreateJobPositionData
+  institutionId: number;
+  jobPositionData: CreateJobPositionData;
 }) => {
   try {
-    const formData = new FormData()
+    const formData = new FormData();
 
     // Add text fields
-    formData.append("name", jobPositionData.name)
+    formData.append("name", jobPositionData.name);
     if (jobPositionData.description) {
-      formData.append("description", jobPositionData.description)
+      formData.append("description", jobPositionData.description);
     }
-    formData.append("department", jobPositionData.department.toString())
+    formData.append("department", jobPositionData.department.toString());
     if (jobPositionData.reports_to) {
-      formData.append("reports_to", jobPositionData.reports_to.toString())
+      formData.append("reports_to", jobPositionData.reports_to.toString());
     }
-    formData.append("salary", jobPositionData.salary.toString())
-    formData.append("job_position_status", jobPositionData.job_position_status.toString())
+    formData.append("salary", jobPositionData.salary.toString());
+    formData.append("job_position_status", jobPositionData.job_position_status.toString());
 
     if (jobPositionData.offer_letter_template) {
-      formData.append("offer_letter_template", jobPositionData.offer_letter_template)
+      formData.append("offer_letter_template", jobPositionData.offer_letter_template);
     }
 
-    const response = await apiRequest.post(`recruitment/institution/${institutionId}/job-position/`, formData)
-    return response.data as IJobPosition
+    const response = await apiRequest.post(
+      `recruitment/institution/${institutionId}/job-position/`,
+      formData,
+    );
+    return response.data as IJobPosition;
   } catch (error) {
-    console.error("Error creating job position/title:", error)
-    return null
+    console.error("Error creating job position/title:", error);
+    return null;
   }
-}
-
+};
 
 export const updateJobPosition = async ({
   jobPositionId,
   jobPositionData,
 }: {
-  jobPositionId: number
-  jobPositionData: CreateJobPositionData
+  jobPositionId: number;
+  jobPositionData: CreateJobPositionData;
 }) => {
   try {
-    const formData = new FormData()
+    const formData = new FormData();
 
     // Add text fields
-    formData.append("name", jobPositionData.name)
+    formData.append("name", jobPositionData.name);
     if (jobPositionData.description) {
-      formData.append("description", jobPositionData.description)
+      formData.append("description", jobPositionData.description);
     }
-    formData.append("department", jobPositionData.department.toString())
+    formData.append("department", jobPositionData.department.toString());
     if (jobPositionData.reports_to) {
-      formData.append("reports_to", jobPositionData.reports_to.toString())
+      formData.append("reports_to", jobPositionData.reports_to.toString());
     }
-    formData.append("salary", jobPositionData.salary.toString())
+    formData.append("salary", jobPositionData.salary.toString());
 
+    formData.append("job_position_status", jobPositionData.job_position_status.toString());
 
-    formData.append("job_position_status", jobPositionData.job_position_status.toString())
- 
     if (jobPositionData.offer_letter_template) {
-      formData.append("offer_letter_template", jobPositionData.offer_letter_template)
+      formData.append("offer_letter_template", jobPositionData.offer_letter_template);
     }
 
     // Add affected_employees as individual entries
     if (jobPositionData.affected_employees && jobPositionData.affected_employees.length > 0) {
       jobPositionData.affected_employees.forEach((employeeId) => {
-        formData.append("apply_salary_to_employees", employeeId.toString())
-      })
+        formData.append("apply_salary_to_employees", employeeId.toString());
+      });
     }
 
-    const response = await apiRequest.patch(`recruitment/job-position/${jobPositionId}/`, formData)
-    return response.data as IJobPosition
+    const response = await apiRequest.patch(`recruitment/job-position/${jobPositionId}/`, formData);
+    return response.data as IJobPosition;
   } catch (error) {
-    console.error("Error updating job position/title:", error)
+    console.error("Error updating job position/title:", error);
     if ((error as any).response?.data?.apply_salary_to_employees) {
-      toast.error((error as any)?.response?.data?.apply_salary_to_employees.join(", ") || "Failed to update job position/title ")
+      toast.error(
+        (error as any)?.response?.data?.apply_salary_to_employees.join(", ") ||
+          "Failed to update job position/title ",
+      );
     } else {
-      toast.error("Failed to update job position/title. Please try again.")
+      toast.error("Failed to update job position/title. Please try again.");
     }
-    return null
+    return null;
   }
-}
+};
 
 export const createJobApplication = async ({
   institutionId,
   applicationData,
 }: {
-  institutionId: number
+  institutionId: number;
   applicationData: JobApplicationFormData;
 }): Promise<JobApplication | null> => {
-
-
   const formData = new FormData();
 
   // Log what we're appending to FormData
@@ -311,9 +384,8 @@ export const createJobApplication = async ({
   });
   const response = await apiRequest.post(
     `recruitment/institution/${institutionId}/job-application/`,
-    formData
+    formData,
   );
-
 
   return response.data as JobApplication;
 };
@@ -326,9 +398,9 @@ export const getJobApplications = async ({
 }): Promise<PaginatedResponse<JobApplication> | null> => {
   try {
     const response = await apiRequest.get(
-      `recruitment/institution/${institutionId}/job-application/`
+      `recruitment/institution/${institutionId}/job-application/`,
     );
-    return response.data as PaginatedResponse<JobApplication>
+    return response.data as PaginatedResponse<JobApplication>;
   } catch (error) {
     console.error("Failed to fetch job applications", error);
     return null;
@@ -368,7 +440,7 @@ export const updateJobApplication = async ({
 
     const response = await apiRequest.patch(
       `recruitment/job-application/${applicationId}/`,
-      formData
+      formData,
     );
 
     return response.data as JobApplication;
@@ -378,13 +450,12 @@ export const updateJobApplication = async ({
   }
 };
 
-
 export const updateJobApplicationStatus = async ({
   applicationId,
   status,
   shortlisted_by,
   reviewed_by,
-  rejected_by
+  rejected_by,
 }: {
   applicationId: number;
   status: string;
@@ -409,7 +480,7 @@ export const updateJobApplicationStatus = async ({
 
     const response = await apiRequest.patch(
       `recruitment/job-application/${applicationId}/`,
-      formData
+      formData,
     );
 
     return response.data as JobApplication;
@@ -419,15 +490,14 @@ export const updateJobApplicationStatus = async ({
   }
 };
 
-export const fetchEmployees = async ({ institutionId }: { institutionId: number }) => {
+export const fetchEmployees = async ({institutionId}: {institutionId: number}) => {
   try {
-    const response = await apiRequest.get(`employee/${institutionId}/employee/`)
-    return response.data as IEmployee[]
+    const response = await apiRequest.get(`employee/${institutionId}/employee/`);
+    return response.data as IEmployee[];
   } catch (error) {
-    return null
+    return null;
   }
-}
-
+};
 
 export const createJobPositionAdvert = async ({
   institutionId,
@@ -446,7 +516,7 @@ export const createJobPositionAdvert = async ({
 
     const response = await apiRequest.post(
       `recruitment/institution/${institutionId}/job-advert/`,
-      formData
+      formData,
     );
 
     return response.data as JobPositionAdvert;
@@ -458,16 +528,13 @@ export const createJobPositionAdvert = async ({
   }
 };
 
-
 export const getJobPositionAdverts = async ({
   institutionId,
 }: {
   institutionId: number;
 }): Promise<PaginatedResponse<JobPositionAdvert> | null> => {
   try {
-    const response = await apiRequest.get(
-      `recruitment/institution/${institutionId}/job-advert/`
-    );
+    const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-advert/`);
     return response.data;
   } catch (error) {
     return null;
@@ -483,14 +550,11 @@ export const getJobPositionAdvertById = async ({
   try {
     const response = await apiRequest.get(`recruitment/job-advert/${advertId}/`);
     return response.data as JobPositionAdvert;
-
   } catch (error) {
     console.error("Failed to fetch job position advert", error);
     return null;
   }
 };
-
-
 
 // Update an existing job position advert
 export const updateJobPositionAdvert = async ({
@@ -508,10 +572,7 @@ export const updateJobPositionAdvert = async ({
       }
     });
 
-    const response = await apiRequest.patch(
-      `recruitment/job-advert/${advertId}/`,
-      formData
-    );
+    const response = await apiRequest.patch(`recruitment/job-advert/${advertId}/`, formData);
 
     return response.data as JobPositionAdvert;
   } catch (error) {
@@ -520,16 +581,17 @@ export const updateJobPositionAdvert = async ({
   }
 };
 
-
-export const getInterviews = async ({ institutionId }: { institutionId: number }) => {
+export const getInterviews = async ({institutionId}: {institutionId: number}) => {
   try {
-    const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-interview/`)
-    return response.data as IInterview[]
+    const response = await apiRequest.get(
+      `recruitment/institution/${institutionId}/job-interview/`,
+    );
+    return response.data as IInterview[];
   } catch (error) {
-    console.error("Error fetching job interviews:", error)
-    return null
+    console.error("Error fetching job interviews:", error);
+    return null;
   }
-}
+};
 
 export const getInterviewById = async ({
   interviewId,
@@ -544,7 +606,6 @@ export const getInterviewById = async ({
     return null;
   }
 };
-
 
 // Create a new interview for a given institution
 export const createInterview = async ({
@@ -565,7 +626,7 @@ export const createInterview = async ({
 
     const response = await apiRequest.post(
       `recruitment/institution/${institutionId}/job-interview/`,
-      formData
+      formData,
     );
     return response.data as IInterview;
   } catch (error) {
@@ -590,17 +651,13 @@ export const updateInterview = async ({
       }
     });
 
-    const response = await apiRequest.patch(
-      `recruitment/job-interview/${interviewId}/`,
-      formData
-    );
+    const response = await apiRequest.patch(`recruitment/job-interview/${interviewId}/`, formData);
     return response.data as IInterview;
   } catch (error) {
     console.error("Failed to update job interview:", error);
     return null;
   }
 };
-
 
 export const updateCandidateStageeFeedback = async ({
   candidateId,
@@ -616,23 +673,20 @@ export const updateCandidateStageeFeedback = async ({
   try {
     // First find the interview for this candidate in this stage
     const interviewsResponse = await apiRequest.get(
-      `recruitment/interviews/?job_position_application=${candidateId}&interview_stage=${stageId}`
+      `recruitment/interviews/?job_position_application=${candidateId}&interview_stage=${stageId}`,
     );
 
     if (!interviewsResponse.data.results || interviewsResponse.data.results.length === 0) {
-      throw new Error('No interview found for this candidate in this stage');
+      throw new Error("No interview found for this candidate in this stage");
     }
 
     const interviewId = interviewsResponse.data.results[0].id;
 
     const formData = new FormData();
-    formData.append('feedback', feedback);
-    formData.append('rating', rating.toString());
+    formData.append("feedback", feedback);
+    formData.append("rating", rating.toString());
 
-    const response = await apiRequest.patch(
-      `recruitment/job-interview/${interviewId}/`,
-      formData
-    );
+    const response = await apiRequest.patch(`recruitment/job-interview/${interviewId}/`, formData);
     return response.data;
   } catch (error) {
     console.error("Failed to update candidate feedback:", error);
@@ -647,12 +701,12 @@ export const getInterviewStages = async ({
 }): Promise<IInterviewStage[] | null> => {
   try {
     const response = await apiRequest.get(
-      `recruitment/institution/${institutionId}/interview-stage/`
+      `recruitment/institution/${institutionId}/interview-stage/`,
     );
-    const data = response.data as PaginatedResponse<IInterviewStage>
+    const data = response.data as PaginatedResponse<IInterviewStage>;
 
     // Return the results array instead of the entire response
-    return data.results
+    return data.results;
   } catch (error) {
     console.error("Failed to fetch interview stages:", error);
     return null;
@@ -668,17 +722,17 @@ export const createInterviewStage = async ({
 }): Promise<IInterviewStage | null> => {
   try {
     const formData = new FormData();
-    formData.append('name', stageData.name);
-    formData.append('level', stageData.level.toString());
-    formData.append('job_position_advert', stageData.job_position_advert.toString());
+    formData.append("name", stageData.name);
+    formData.append("level", stageData.level.toString());
+    formData.append("job_position_advert", stageData.job_position_advert.toString());
 
     stageData.interviewers.forEach((interviewerId) => {
-      formData.append('interviewers', interviewerId.toString());
+      formData.append("interviewers", interviewerId.toString());
     });
 
     const response = await apiRequest.post(
       `recruitment/institution/${institutionId}/interview-stage/`,
-      formData
+      formData,
     );
     return response.data as IInterviewStage;
   } catch (error) {
@@ -700,9 +754,9 @@ export const createInterviewStageJSON = async ({
       stageData,
       {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-      }
+      },
     );
     return response.data as IInterviewStage;
   } catch (error) {
@@ -711,19 +765,18 @@ export const createInterviewStageJSON = async ({
   }
 };
 
-export const getAllEmployees = async ({ institutionId }: { institutionId: number }) => {
+export const getAllEmployees = async ({institutionId}: {institutionId: number}) => {
   try {
     const endpoint = `employee/${institutionId}/employee/`;
-    const response = await apiRequest.get(endpoint)
-    const data = response.data as PaginatedResponse<IEmployee>
+    const response = await apiRequest.get(endpoint);
+    const data = response.data as PaginatedResponse<IEmployee>;
 
     // Return the results array instead of the entire response
-    return data.results
+    return data.results;
   } catch (error) {
     throw error;
   }
 };
-
 
 export const createEmployee = async ({
   institutionId,
@@ -760,9 +813,9 @@ export const createEmployee = async ({
   } catch (error: any) {
     throw new Error(
       error.response?.data?.detail ||
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to create employee"
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to create employee",
     );
   }
 };
@@ -793,56 +846,54 @@ export const updateEmployee = async ({
 
     const response = await apiRequest.patch(`/employee/${employeeId}/update/`, formData);
     return response.data;
-
   } catch (error: any) {
     throw new Error("Failed to update employee. Please try again.");
   }
 };
 
-export const getEmployeeById = async ({
-  employeeId,
-}: {
-  employeeId: number;
-}): Promise<any | null> => {
+export const getEmployeeById = async ({employeeId}: {employeeId: number}): Promise<any | null> => {
   try {
     const response = await apiRequest.get(`/employee/${employeeId}/`);
     return response.data;
   } catch (error: any) {
     throw new Error(
       error.response?.data?.detail ||
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to fetch employee"
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to fetch employee",
     );
   }
 };
 
 // Helper function to get roles for an institution
-export const getRoles = async ({ institutionId }: { institutionId: number }) => {
+export const getRoles = async ({institutionId}: {institutionId: number}) => {
   try {
-    const response = await apiRequest.get(`user/role/?Institution_id=${institutionId}`)
+    const response = await apiRequest.get(`user/role/?Institution_id=${institutionId}`);
     if (response.data && response.data.results) {
-      return response.data.results || []
+      return response.data.results || [];
     }
-    return Array.isArray(response.data) ? response.data : []
+    return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
-    console.error("Error fetching roles:", error)
-    return []
+    console.error("Error fetching roles:", error);
+    return [];
   }
-}
+};
 
 // Helper function to get positions for an institution
-export const getPositions = async ({ institutionId }: { institutionId: number }): Promise<IJobPosition[]> => {
+export const getPositions = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<IJobPosition[]> => {
   try {
-    const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`)
-    const data = response.data as PaginatedResponse<IJobPosition>
-    return data.results
+    const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`);
+    const data = response.data as PaginatedResponse<IJobPosition>;
+    return data.results;
   } catch (error) {
-    console.error("Error fetching positions:", error)
-    return []
+    console.error("Error fetching positions:", error);
+    return [];
   }
-}
-
+};
 
 // Fetch a single employee by ID
 export const getEmployeeDetailId = async ({
@@ -851,28 +902,28 @@ export const getEmployeeDetailId = async ({
 }: {
   applicationId: number;
   employeeId: number;
-}): Promise<EmployeeFormData | null> => {  // Changed return type from EmployeeFormData to Employee
+}): Promise<EmployeeFormData | null> => {
+  // Changed return type from EmployeeFormData to Employee
   try {
     const response = await apiRequest.get(`/employee/${employeeId}/${applicationId}/`);
-    return response.data as EmployeeFormData;  // Changed casting
+    return response.data as EmployeeFormData; // Changed casting
   } catch (error) {
     return null;
   }
 };
 
-
-export const getOnBoardings = async ({ institutionId }: { institutionId: number }) => {
+export const getOnBoardings = async ({institutionId}: {institutionId: number}) => {
   try {
-    const response = await apiRequest.get(`on-boarding/list/${institutionId}/`)
-    const data = response.data as PaginatedIOnboardingResponse
+    const response = await apiRequest.get(`on-boarding/list/${institutionId}/`);
+    const data = response.data as PaginatedIOnboardingResponse;
 
     // Return the results array instead of the entire response
-    return data.results as IOnBoarding[]
+    return data.results as IOnBoarding[];
   } catch (error) {
-    console.error("Error fetching onboarding records:", error)
-    return null
+    console.error("Error fetching onboarding records:", error);
+    return null;
   }
-}
+};
 
 // Get onboarding record by ID
 export const getOnBoardingById = async ({
@@ -906,18 +957,13 @@ export const createOnBoarding = async ({
       }
     });
 
-    const response = await apiRequest.post(
-      `on-boarding/${institutionId}/`,
-      formData
-    );
+    const response = await apiRequest.post(`on-boarding/${institutionId}/`, formData);
     return response.data as IOnBoarding;
   } catch (error) {
     console.error("Failed to create onboarding record:", error);
     return null;
   }
 };
-
-
 
 export const updateOnBoarding = async ({
   onboardingId,
@@ -927,10 +973,7 @@ export const updateOnBoarding = async ({
   onboardingData: Partial<IOnBoardingFormData>;
 }): Promise<IOnBoarding | null> => {
   try {
-    const response = await apiRequest.patch(
-      `on-boarding/record/${onboardingId}/`,
-      onboardingData
-    );
+    const response = await apiRequest.patch(`on-boarding/record/${onboardingId}/`, onboardingData);
     return response.data as IOnBoarding;
   } catch (error) {
     console.error("Failed to update onboarding record:", error);
@@ -946,21 +989,16 @@ export const bulkCreateOnBoarding = async ({
 }): Promise<IBulkOnBoardingResponse | null> => {
   try {
     const requestData: IBulkOnBoardingRequest = {
-      application_ids: applicationIds
+      application_ids: applicationIds,
     };
 
-    const response = await apiRequest.post(
-      `on-boarding/bulk-create/`,
-      requestData,
-
-    );
+    const response = await apiRequest.post(`on-boarding/bulk-create/`, requestData);
     return response.data as IBulkOnBoardingResponse;
   } catch (error) {
     console.error("Failed to bulk create onboarding records:", error);
     return null;
   }
 };
-
 
 export const createWorkType = async ({
   institutionId,
@@ -977,14 +1015,58 @@ export const createWorkType = async ({
       }
     });
 
-    const response = await apiRequest.post(
-      `employee/work-types/`,
-      formData
-    );
+    const response = await apiRequest.post(`employee/work-types/`, formData);
     return response.data as IWorkType;
   } catch (error) {
     console.error("Failed to create work type:", error);
     return null;
+  }
+};
+
+export const getWorkTypes = async ({
+  institutionId,
+}: {
+  institutionId: number;
+}): Promise<IWorkType[]> => {
+  try {
+    const response = await apiRequest.get(`employee/work-types/`);
+    const data = response.data as PaginatedResponse<IWorkType>;
+    return data.results;
+  } catch (error) {
+    console.error("Failed to fetch work types:", error);
+    return [];
+  }
+};
+
+export const updateWorkType = async ({
+  employeeTypeId,
+  employeeTypeData,
+}: {
+  institutionId: number;
+  employeeTypeId: number;
+  employeeTypeData: Partial<Omit<IWorkType, "id" | "created_at" | "updated_at">>;
+}): Promise<IWorkType> => {
+  try {
+    const response = await apiRequest.patch(
+      `employee/work-types/${employeeTypeId}/`,
+      employeeTypeData,
+    );
+    return response.data as IWorkType;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteWorkType = async ({
+  employeeTypeId,
+}: {
+  institutionId: number;
+  employeeTypeId: number;
+}): Promise<void> => {
+  try {
+    await apiRequest.delete(`employee/work-types/${employeeTypeId}/`);
+  } catch (error) {
+    throw error;
   }
 };
 
@@ -1003,30 +1085,10 @@ export const createEmployeeType = async ({
       }
     });
 
-    const response = await apiRequest.post(
-      `employee/employee-types/`,
-      formData
-    );
+    const response = await apiRequest.post(`employee/employee-types/`, formData);
     return response.data as IEmployeeType;
   } catch (error) {
-    throw error
-  }
-};
-
-export const getWorkTypes = async ({
-  institutionId,
-}: {
-  institutionId: number;
-}): Promise<IWorkType[]> => {
-  try {
-    const response = await apiRequest.get(
-      `employee/work-types/`
-    );
-    const data = response.data as PaginatedResponse<IWorkType>
-    return data.results
-  } catch (error) {
-    console.error("Failed to fetch work types:", error);
-    return [];
+    throw error;
   }
 };
 
@@ -1036,18 +1098,48 @@ export const getEmployeeTypes = async ({
   institutionId: number;
 }): Promise<IEmployeeType[]> => {
   try {
-    const response = await apiRequest.get(
-      `employee/employee-types/`
-    );
-    const data = response.data as PaginatedResponse<IEmployeeType>
-    return data.results
+    const response = await apiRequest.get(`employee/employee-types/`);
+    const data = response.data as PaginatedResponse<IEmployeeType>;
+    return data.results;
   } catch (error) {
-    throw error
+    throw error;
+  }
+};
+
+export const updateEmployeeType = async ({
+  employeeTypeId,
+  employeeTypeData,
+}: {
+  institutionId: number;
+  employeeTypeId: number;
+  employeeTypeData: Partial<Omit<IEmployeeType, "id" | "created_at" | "updated_at">>;
+}): Promise<IEmployeeType> => {
+  try {
+    const response = await apiRequest.patch(
+      `employee/employee-types/${employeeTypeId}/`,
+      employeeTypeData,
+    );
+    return response.data as IEmployeeType;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteEmployeeType = async ({
+  employeeTypeId,
+}: {
+  institutionId: number;
+  employeeTypeId: number;
+}): Promise<void> => {
+  try {
+    await apiRequest.delete(`employee/employee-types/${employeeTypeId}/`);
+  } catch (error) {
+    throw error;
   }
 };
 
 export const attachEmployeeToBranches = async (
-  payload: AttachBranchesPayload
+  payload: AttachBranchesPayload,
 ): Promise<EmployeeBranchSummary | null> => {
   try {
     const response = await apiRequest.post("branches/attach/", payload);
@@ -1058,9 +1150,8 @@ export const attachEmployeeToBranches = async (
   }
 };
 
-
 export const getEmployeeBranches = async (
-  employeeId: number
+  employeeId: number,
 ): Promise<EmployeeBranchSummary | null> => {
   try {
     const response = await apiRequest.get(`${employeeId}/branches/`);
@@ -1073,7 +1164,7 @@ export const getEmployeeBranches = async (
 
 export const setDefaultBranch = async (
   employeeId: number,
-  data: SetDefaultBranchPayload
+  data: SetDefaultBranchPayload,
 ): Promise<EmployeeBranchSummary | null> => {
   try {
     const response = await apiRequest.patch(`${employeeId}/branches/`, data);
@@ -1084,8 +1175,6 @@ export const setDefaultBranch = async (
   }
 };
 
-
-
 export const createDisciplinaryAction = async ({
   disciplinaryActionData,
 }: {
@@ -1093,25 +1182,24 @@ export const createDisciplinaryAction = async ({
 }): Promise<DisciplinaryActionResponse | null> => {
   try {
     const apiData = convertFormToApiRequest(disciplinaryActionData);
-    const response = await apiRequest.post(
-      `discipline/disciplinary-actions/`,
-      apiData
-    );
+    const response = await apiRequest.post(`discipline/disciplinary-actions/`, apiData);
     return response.data as DisciplinaryActionResponse;
   } catch (error: any) {
     if (error.response?.status === 400) {
       const errorData = error.response.data;
-      if (typeof errorData === 'object' && errorData !== null) {
+      if (typeof errorData === "object" && errorData !== null) {
         const errorMessages = Object.entries(errorData)
-          .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
-          .join('; ');
+          .map(
+            ([field, messages]) =>
+              `${field}: ${Array.isArray(messages) ? messages.join(", ") : messages}`,
+          )
+          .join("; ");
         throw new Error(`Validation errors: ${errorMessages}`);
       }
     }
     return null;
   }
 };
-
 
 export const createDisciplineType = async ({
   disciplineTypeData,
@@ -1132,7 +1220,7 @@ export const createDisciplineType = async ({
 
     const response = await apiRequest.post(
       `discipline/discipline-types/`, // Adjust endpoint as needed
-      formData
+      formData,
     );
 
     return response.data as DisciplineTypeResponse;
@@ -1141,8 +1229,8 @@ export const createDisciplineType = async ({
 
     if (error.response?.status === 400) {
       const errorData = error.response.data;
-      if (errorData?.name && errorData.name.includes('already exists')) {
-        throw new Error('A discipline type with this name already exists');
+      if (errorData?.name && errorData.name.includes("already exists")) {
+        throw new Error("A discipline type with this name already exists");
       }
     }
 
@@ -1152,9 +1240,7 @@ export const createDisciplineType = async ({
 
 export const deleteDisciplinaryAction = async (id: number | string): Promise<boolean> => {
   try {
-    const response = await apiRequest.delete(
-      `discipline/disciplinary-actions/${id}/`
-    );
+    const response = await apiRequest.delete(`discipline/disciplinary-actions/${id}/`);
 
     return response.status === 200 || response.status === 204;
   } catch (error) {
@@ -1163,9 +1249,6 @@ export const deleteDisciplinaryAction = async (id: number | string): Promise<boo
   }
 };
 
-
-
-
 export const getDisciplineTypes = async ({
   institutionId,
 }: {
@@ -1173,13 +1256,13 @@ export const getDisciplineTypes = async ({
 }): Promise<DisciplineTypeResponse[] | null> => {
   try {
     const response = await apiRequest.get(
-      `discipline/discipline-types/?institution=${institutionId}`
+      `discipline/discipline-types/?institution=${institutionId}`,
     );
 
-    const data = response.data as PaginatedResponse<DisciplineTypeResponse>
+    const data = response.data as PaginatedResponse<DisciplineTypeResponse>;
 
     // Return the results array instead of the entire response
-    return data.results
+    return data.results;
   } catch (error) {
     console.error("Failed to fetch discipline types:", error);
     return null;
@@ -1188,12 +1271,10 @@ export const getDisciplineTypes = async ({
 
 export const getDisciplinaryActions = async (): Promise<DisciplinaryActionAPIResponse[] | null> => {
   try {
-    const response = await apiRequest.get(
-      `discipline/disciplinary-actions/`
-    );
+    const response = await apiRequest.get(`discipline/disciplinary-actions/`);
 
-    const data = response.data as PaginatedResponse<DisciplinaryActionAPIResponse>
-    return data.results
+    const data = response.data as PaginatedResponse<DisciplinaryActionAPIResponse>;
+    return data.results;
   } catch (error) {
     return null;
   }
@@ -1207,13 +1288,15 @@ export const updateDisciplinaryAction = async ({
   disciplinaryActionData: Partial<DisciplinaryActionRequest> | DisciplinaryActionForm;
 }): Promise<DisciplinaryActionAPIResponse | null> => {
   try {
-    const dataToSend = 'discipline_type' in disciplinaryActionData && typeof disciplinaryActionData.discipline_type === 'string'
-      ? convertFormToApiRequest(disciplinaryActionData as DisciplinaryActionForm)
-      : disciplinaryActionData;
+    const dataToSend =
+      "discipline_type" in disciplinaryActionData &&
+      typeof disciplinaryActionData.discipline_type === "string"
+        ? convertFormToApiRequest(disciplinaryActionData as DisciplinaryActionForm)
+        : disciplinaryActionData;
 
     const response = await apiRequest.patch(
       `discipline/disciplinary-actions/${disciplinaryActionId}/`,
-      dataToSend
+      dataToSend,
     );
 
     return response.data as DisciplinaryActionAPIResponse;
@@ -1224,11 +1307,11 @@ export const updateDisciplinaryAction = async ({
 };
 
 export const getDisciplinaryActionById = async (
-  disciplinaryActionId: number | string
+  disciplinaryActionId: number | string,
 ): Promise<DisciplinaryActionAPIResponse | null> => {
   try {
     const response = await apiRequest.get(
-      `discipline/disciplinary-actions/${disciplinaryActionId}/`
+      `discipline/disciplinary-actions/${disciplinaryActionId}/`,
     );
 
     return response.data as DisciplinaryActionAPIResponse;
@@ -1237,8 +1320,6 @@ export const getDisciplinaryActionById = async (
     return null;
   }
 };
-
-
 
 export const getLeaveTypes = async ({
   institutionId,
@@ -1265,7 +1346,7 @@ export const createLeaveType = async ({
     const formData = new FormData();
 
     // Add institution to the form data
-    formData.append('institution', institutionId.toString());
+    formData.append("institution", institutionId.toString());
 
     Object.entries(leaveTypeData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
@@ -1273,17 +1354,13 @@ export const createLeaveType = async ({
       }
     });
 
-    const response = await apiRequest.post(
-      `leave-mgt/${institutionId}/leave-types/`,
-      formData
-    );
+    const response = await apiRequest.post(`leave-mgt/${institutionId}/leave-types/`, formData);
     return response.data as ILeaveType;
   } catch (error) {
     console.error("Failed to create leave type:", error);
     return null;
   }
 };
-
 
 export const updateLeaveType = async ({
   leaveTypeId,
@@ -1300,17 +1377,13 @@ export const updateLeaveType = async ({
       }
     });
 
-    const response = await apiRequest.patch(
-      `leave-mgt/leave-types/${leaveTypeId}/`,
-      formData
-    );
+    const response = await apiRequest.patch(`leave-mgt/leave-types/${leaveTypeId}/`, formData);
     return response.data as ILeaveType;
   } catch (error) {
     console.error("Failed to update leave type:", error);
     return null;
   }
 };
-
 
 export const deleteLeaveType = async ({
   leaveTypeId,
@@ -1331,7 +1404,6 @@ export const deleteLeaveType = async ({
   }
 };
 
-
 export const createLeavePolicy = async ({
   institutionId,
   leavePolicyData,
@@ -1343,7 +1415,7 @@ export const createLeavePolicy = async ({
     const formData = new FormData();
 
     // Add institution to the form data
-    formData.append('institution', institutionId.toString());
+    formData.append("institution", institutionId.toString());
 
     Object.entries(leavePolicyData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
@@ -1351,10 +1423,7 @@ export const createLeavePolicy = async ({
       }
     });
 
-    const response = await apiRequest.post(
-      `leave-mgt/${institutionId}/leave-policies/`,
-      formData
-    );
+    const response = await apiRequest.post(`leave-mgt/${institutionId}/leave-policies/`, formData);
     return response.data as ILeavePolicy;
   } catch (error) {
     console.error("Failed to create leave policy:", error);
@@ -1374,7 +1443,7 @@ export const getLeavePolicies = async ({
     console.error("Failed to fetch leave policies:", error);
     return [];
   }
-}
+};
 
 export const updateLeavePolicy = async ({
   leavePolicyId,
@@ -1391,17 +1460,13 @@ export const updateLeavePolicy = async ({
       }
     });
 
-    const response = await apiRequest.patch(
-      `leave-mgt/leave-policies/${leavePolicyId}/`,
-      formData
-    );
+    const response = await apiRequest.patch(`leave-mgt/leave-policies/${leavePolicyId}/`, formData);
     return response.data as ILeavePolicy;
   } catch (error) {
     console.error("Failed to update leave policy:", error);
     return null;
   }
 };
-
 
 export const deleteLeavePolicy = async ({
   leavePolicyId,
@@ -1430,7 +1495,7 @@ export const createLeaveApplication = async ({
     const formData = new FormData();
 
     // Change this line from 'Institution' to 'institution' (lowercase)
-    formData.append('institution', institutionId.toString());
+    formData.append("institution", institutionId.toString());
 
     Object.entries(leaveApplicationData).forEach(([key, value]) => {
       if (key === "supporting_document" && value instanceof File) {
@@ -1442,15 +1507,15 @@ export const createLeaveApplication = async ({
 
     const response = await apiRequest.post(
       `leave-mgt/${institutionId}/leave-applications/`,
-      formData
+      formData,
     );
     return response.data;
   } catch (error: any) {
     throw new Error(
       error.response?.data?.detail ||
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to create leave application"
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to create leave application",
     );
   }
 };
@@ -1469,7 +1534,6 @@ export const getLeaveApplications = async ({
   }
 };
 
-
 export const getLeaveApplication = async ({
   institutionId,
   leaveApplicationId,
@@ -1479,7 +1543,7 @@ export const getLeaveApplication = async ({
 }): Promise<ILeaveRequest | null> => {
   try {
     const response = await apiRequest.get(
-      `leave-mgt/${institutionId}/leave-applications/${leaveApplicationId}/`
+      `leave-mgt/${institutionId}/leave-applications/${leaveApplicationId}/`,
     );
     return response.data as ILeaveRequest;
   } catch (error) {
@@ -1505,18 +1569,20 @@ export const updateLeaveApplication = async ({
       }
     });
 
-    const response = await apiRequest.patch(`/leave-mgt/leave-applications/${leaveApplicationId}/`, formData);
+    const response = await apiRequest.patch(
+      `/leave-mgt/leave-applications/${leaveApplicationId}/`,
+      formData,
+    );
     return response.data;
   } catch (error: any) {
     throw new Error(
       error.response?.data?.detail ||
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to update leave application"
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update leave application",
     );
   }
 };
-
 
 export const deleteLeaveApplication = async ({
   leaveApplicationId,
@@ -1526,9 +1592,7 @@ export const deleteLeaveApplication = async ({
   institutionId: number;
 }): Promise<boolean> => {
   try {
-    await apiRequest.delete(
-      `leave-mgt/leave-applications/${leaveApplicationId}/`
-    );
+    await apiRequest.delete(`leave-mgt/leave-applications/${leaveApplicationId}/`);
     return true;
   } catch (error) {
     console.error("Failed to delete leave application:", error);
@@ -1545,27 +1609,26 @@ export const approveRejectLeaveApplication = async ({
 }: {
   leaveApplicationId: number | string;
   institutionId: number;
-  action: 'approve' | 'reject';
+  action: "approve" | "reject";
   rejectionReason?: string;
   approvedBy?: number;
 }): Promise<ILeaveRequest | null> => {
   try {
     const formData = new FormData();
 
-    formData.append('action', action);
+    formData.append("action", action);
 
-    if (action === 'reject' && rejectionReason) {
-      formData.append('rejection_reason', rejectionReason);
+    if (action === "reject" && rejectionReason) {
+      formData.append("rejection_reason", rejectionReason);
     }
 
     if (approvedBy) {
-      formData.append('approved_by', approvedBy.toString());
+      formData.append("approved_by", approvedBy.toString());
     }
-
 
     const response = await apiRequest.post(
       `leave-mgt/leave-applications/${leaveApplicationId}/approval/`,
-      formData
+      formData,
     );
 
     return response.data as ILeaveRequest;
@@ -1575,23 +1638,19 @@ export const approveRejectLeaveApplication = async ({
   }
 };
 
-
 export const getLeaveApplicationsByEmployee = async ({
   employeeId,
 }: {
   employeeId: number;
 }): Promise<ILeaveRequest[]> => {
   try {
-    const response = await apiRequest.get(
-      `leave-mgt/leave-applications/?employee=${employeeId}/`
-    );
+    const response = await apiRequest.get(`leave-mgt/leave-applications/?employee=${employeeId}/`);
     return Array.isArray(response.data) ? response.data : response.data.results || [];
   } catch (error) {
     console.error("Failed to fetch employee leave applications:", error);
     return [];
   }
 };
-
 
 export const getLeaveApplicationsByStatus = async ({
   status,
@@ -1600,9 +1659,7 @@ export const getLeaveApplicationsByStatus = async ({
   institutionId: number;
 }): Promise<ILeaveRequest[]> => {
   try {
-    const response = await apiRequest.get(
-      `leave-mgt/leave-applications/?status=${status}`
-    );
+    const response = await apiRequest.get(`leave-mgt/leave-applications/?status=${status}`);
     return Array.isArray(response.data) ? response.data : response.data.results || [];
   } catch (error) {
     console.error("Failed to fetch leave applications by status:", error);
@@ -1610,11 +1667,11 @@ export const getLeaveApplicationsByStatus = async ({
   }
 };
 
-
-export const getPendingLeaveApplications = async (institutionId: number): Promise<ILeaveRequest[]> => {
-  return getLeaveApplicationsByStatus({ status: 'pending', institutionId });
+export const getPendingLeaveApplications = async (
+  institutionId: number,
+): Promise<ILeaveRequest[]> => {
+  return getLeaveApplicationsByStatus({status: "pending", institutionId});
 };
-
 
 export const cancelLeaveApplication = async ({
   leaveApplicationId,
@@ -1625,10 +1682,9 @@ export const cancelLeaveApplication = async ({
 }): Promise<ILeaveRequest | null> => {
   return updateLeaveApplication({
     leaveApplicationId,
-    leaveApplicationData: { status: 'cancelled' },
+    leaveApplicationData: {status: "cancelled"},
   });
 };
-
 
 export const getLeaveApplicationsWithFilters = async ({
   institutionId,
@@ -1646,7 +1702,7 @@ export const getLeaveApplicationsWithFilters = async ({
   };
 }): Promise<ILeaveRequest[]> => {
   try {
-    let queryString = '';
+    let queryString = "";
 
     if (filters) {
       const queryParams: string[] = [];
@@ -1656,20 +1712,17 @@ export const getLeaveApplicationsWithFilters = async ({
         }
       });
       if (queryParams.length > 0) {
-        queryString = `?${queryParams.join('&')}`;
+        queryString = `?${queryParams.join("&")}`;
       }
     }
 
-    const response = await apiRequest.get(
-      `leave-mgt/leave-applications/${queryString}`
-    );
+    const response = await apiRequest.get(`leave-mgt/leave-applications/${queryString}`);
     return Array.isArray(response.data) ? response.data : response.data.results || [];
   } catch (error) {
     console.error("Failed to fetch filtered leave applications:", error);
     return [];
   }
 };
-
 
 export const bulkApproveRejectLeaveApplications = async ({
   leaveApplicationIds,
@@ -1680,31 +1733,28 @@ export const bulkApproveRejectLeaveApplications = async ({
 }: {
   leaveApplicationIds: (number | string)[];
   institutionId: number;
-  action: 'approve' | 'reject';
+  action: "approve" | "reject";
   rejectionReason?: string;
   approvedBy?: number;
 }): Promise<(ILeaveRequest | null)[]> => {
   try {
-    const promises = leaveApplicationIds.map(id =>
+    const promises = leaveApplicationIds.map((id) =>
       approveRejectLeaveApplication({
         leaveApplicationId: id,
         institutionId,
         action,
         rejectionReason,
         approvedBy,
-      })
+      }),
     );
 
     const results = await Promise.allSettled(promises);
-    return results.map(result =>
-      result.status === 'fulfilled' ? result.value : null
-    );
+    return results.map((result) => (result.status === "fulfilled" ? result.value : null));
   } catch (error) {
     console.error("Failed to bulk process leave applications:", error);
     return [];
   }
 };
-
 
 export const createAllowanceType = async ({
   institutionId,
@@ -1722,12 +1772,9 @@ export const createAllowanceType = async ({
       }
     });
 
-    formData.append('institution', institutionId.toString());
+    formData.append("institution", institutionId.toString());
 
-    const response = await apiRequest.post(
-      `payroll/${institutionId}/allowance-types/`,
-      formData
-    );
+    const response = await apiRequest.post(`payroll/${institutionId}/allowance-types/`, formData);
 
     return response.data as IAllowanceType;
   } catch (error) {
@@ -1737,14 +1784,14 @@ export const createAllowanceType = async ({
 };
 
 export const getAllowanceTypes = async (
-  institutionId: number
+  institutionId: number,
 ): Promise<IAllowanceType[] | null> => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/allowance-types/`);
-    const data = response.data as PaginatedResponse<IAllowanceType>
+    const data = response.data as PaginatedResponse<IAllowanceType>;
 
     // Return the results array instead of the entire response
-    return data.results
+    return data.results;
   } catch (error) {
     console.error("Failed to get allowance types:", error);
     return null;
@@ -1752,7 +1799,7 @@ export const getAllowanceTypes = async (
 };
 
 // Get all leave balances for an institution
-export const getAllLeaveBalances = async ({ institutionId }: { institutionId: number }) => {
+export const getAllLeaveBalances = async ({institutionId}: {institutionId: number}) => {
   try {
     const endpoint = `leave-mgt/${institutionId}/leave-balances/`;
     const response = await apiRequest.get(endpoint);
@@ -1768,7 +1815,7 @@ export const getAllLeaveBalances = async ({ institutionId }: { institutionId: nu
 // Create a new leave balance
 export const createLeaveBalance = async ({
   institutionId,
-  leaveBalanceData
+  leaveBalanceData,
 }: {
   institutionId: number;
   leaveBalanceData: Partial<ILeaveBalance>;
@@ -1783,7 +1830,7 @@ export const createLeaveBalance = async ({
 };
 
 // Get a specific leave balance by ID
-export const getLeaveBalanceById = async ({ id }: { id: number }) => {
+export const getLeaveBalanceById = async ({id}: {id: number}) => {
   try {
     const endpoint = `leave-mgt/leave-balances/${id}/`;
     const response = await apiRequest.get(endpoint);
@@ -1796,7 +1843,7 @@ export const getLeaveBalanceById = async ({ id }: { id: number }) => {
 // Update a leave balance by ID
 export const updateLeaveBalance = async ({
   id,
-  leaveBalanceData
+  leaveBalanceData,
 }: {
   id: number;
   leaveBalanceData: Partial<ILeaveBalance>;
@@ -1811,7 +1858,7 @@ export const updateLeaveBalance = async ({
 };
 
 // Delete a leave balance by ID
-export const deleteLeaveBalance = async ({ id }: { id: number }) => {
+export const deleteLeaveBalance = async ({id}: {id: number}) => {
   try {
     const endpoint = `leave-mgt/leave-balances/${id}/`;
     await apiRequest.delete(endpoint);
@@ -1820,10 +1867,7 @@ export const deleteLeaveBalance = async ({ id }: { id: number }) => {
   }
 };
 
-
-export const getAllowanceType = async (
-  id: number
-): Promise<IAllowanceType | null> => {
+export const getAllowanceType = async (id: number): Promise<IAllowanceType | null> => {
   try {
     const response = await apiRequest.get(`payroll/allowance-types/${id}/`);
     return response.data as IAllowanceType;
@@ -1832,7 +1876,6 @@ export const getAllowanceType = async (
     return null;
   }
 };
-
 
 export const updateAllowanceType = async ({
   id,
@@ -1849,10 +1892,7 @@ export const updateAllowanceType = async ({
       }
     });
 
-    const response = await apiRequest.patch(
-      `payroll/allowance-types/${id}/`,
-      formData
-    );
+    const response = await apiRequest.patch(`payroll/allowance-types/${id}/`, formData);
     return response.data as IAllowanceType;
   } catch (error) {
     console.error("Failed to update allowance type:", error);
@@ -1860,10 +1900,7 @@ export const updateAllowanceType = async ({
   }
 };
 
-
-export const deleteAllowanceType = async (
-  id: number
-): Promise<boolean> => {
+export const deleteAllowanceType = async (id: number): Promise<boolean> => {
   try {
     await apiRequest.delete(`payroll/allowance-types/${id}/`);
     return true;
@@ -1872,7 +1909,6 @@ export const deleteAllowanceType = async (
     return false;
   }
 };
-
 
 export const createDeductionType = async ({
   institutionId,
@@ -1890,12 +1926,9 @@ export const createDeductionType = async ({
       }
     });
 
-    formData.append('institution', institutionId.toString());
+    formData.append("institution", institutionId.toString());
 
-    const response = await apiRequest.post(
-      `payroll/${institutionId}/deduction-types/`,
-      formData
-    );
+    const response = await apiRequest.post(`payroll/${institutionId}/deduction-types/`, formData);
 
     return response.data as IDeductionType;
   } catch (error) {
@@ -1904,26 +1937,22 @@ export const createDeductionType = async ({
   }
 };
 
-
 export const getDeductionTypes = async (
-  institutionId: number
+  institutionId: number,
 ): Promise<IDeductionType[] | null> => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/deduction-types/`);
-    const data = response.data as PaginatedResponse<IDeductionType>
+    const data = response.data as PaginatedResponse<IDeductionType>;
 
     // Return the results array instead of the entire response
-    return data.results
+    return data.results;
   } catch (error) {
     console.error("Failed to get deduction types:", error);
     return null;
   }
 };
 
-
-export const getDeductionType = async (
-  id: number
-): Promise<IDeductionType | null> => {
+export const getDeductionType = async (id: number): Promise<IDeductionType | null> => {
   try {
     const response = await apiRequest.get(`payroll/deduction-types/${id}/`);
     return response.data as IDeductionType;
@@ -1932,7 +1961,6 @@ export const getDeductionType = async (
     return null;
   }
 };
-
 
 export const updateDeductionType = async ({
   id,
@@ -1949,10 +1977,7 @@ export const updateDeductionType = async ({
       }
     });
 
-    const response = await apiRequest.patch(
-      `payroll/deduction-types/${id}/`,
-      formData
-    );
+    const response = await apiRequest.patch(`payroll/deduction-types/${id}/`, formData);
     return response.data as IDeductionType;
   } catch (error) {
     console.error("Failed to update deduction type:", error);
@@ -1960,10 +1985,7 @@ export const updateDeductionType = async ({
   }
 };
 
-
-export const deleteDeductionType = async (
-  id: number
-): Promise<boolean> => {
+export const deleteDeductionType = async (id: number): Promise<boolean> => {
   try {
     await apiRequest.delete(`payroll/deduction-types/${id}/`);
     return true;
@@ -1972,7 +1994,6 @@ export const deleteDeductionType = async (
     return false;
   }
 };
-
 
 export const createEmployeeAllowance = async ({
   institutionId,
@@ -1992,7 +2013,7 @@ export const createEmployeeAllowance = async ({
 
     const response = await apiRequest.post(
       `payroll/${institutionId}/employee-allowances/`,
-      formData
+      formData,
     );
 
     return response.data as IEmployeeAllowance;
@@ -2002,9 +2023,8 @@ export const createEmployeeAllowance = async ({
   }
 };
 
-
 export const getEmployeeAllowances = async (
-  institutionId: number
+  institutionId: number,
 ): Promise<IEmployeeAllowance[] | null> => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/employee-allowances/`);
@@ -2015,10 +2035,7 @@ export const getEmployeeAllowances = async (
   }
 };
 
-
-export const getEmployeeAllowance = async (
-  id: number
-): Promise<IEmployeeAllowance | null> => {
+export const getEmployeeAllowance = async (id: number): Promise<IEmployeeAllowance | null> => {
   try {
     const response = await apiRequest.get(`payroll/employee-allowances/${id}/`);
     return response.data as IEmployeeAllowance;
@@ -2027,7 +2044,6 @@ export const getEmployeeAllowance = async (
     return null;
   }
 };
-
 
 export const updateEmployeeAllowance = async ({
   id,
@@ -2044,10 +2060,7 @@ export const updateEmployeeAllowance = async ({
       }
     });
 
-    const response = await apiRequest.patch(
-      `payroll/employee-allowances/${id}/`,
-      formData
-    );
+    const response = await apiRequest.patch(`payroll/employee-allowances/${id}/`, formData);
     return response.data as IEmployeeAllowance;
   } catch (error) {
     console.error("Failed to update employee allowance:", error);
@@ -2055,10 +2068,7 @@ export const updateEmployeeAllowance = async ({
   }
 };
 
-
-export const deleteEmployeeAllowance = async (
-  id: number
-): Promise<boolean> => {
+export const deleteEmployeeAllowance = async (id: number): Promise<boolean> => {
   try {
     await apiRequest.delete(`payroll/employee-allowances/${id}/`);
     return true;
@@ -2067,7 +2077,6 @@ export const deleteEmployeeAllowance = async (
     return false;
   }
 };
-
 
 export const getEmployeeAllowancesByEmployee = async ({
   institutionId,
@@ -2078,7 +2087,7 @@ export const getEmployeeAllowancesByEmployee = async ({
 }): Promise<IEmployeeAllowance[] | null> => {
   try {
     const response = await apiRequest.get(
-      `payroll/${institutionId}/employee-allowances/?employee=${employeeId}`
+      `payroll/${institutionId}/employee-allowances/?employee=${employeeId}`,
     );
     return response.data as IEmployeeAllowance[];
   } catch (error) {
@@ -2086,7 +2095,6 @@ export const getEmployeeAllowancesByEmployee = async ({
     return null;
   }
 };
-
 
 export const getEmployeeAllowancesByType = async ({
   institutionId,
@@ -2097,7 +2105,7 @@ export const getEmployeeAllowancesByType = async ({
 }): Promise<IEmployeeAllowance[] | null> => {
   try {
     const response = await apiRequest.get(
-      `payroll/${institutionId}/employee-allowances/?allowance_type=${allowanceTypeId}`
+      `payroll/${institutionId}/employee-allowances/?allowance_type=${allowanceTypeId}`,
     );
     return response.data as IEmployeeAllowance[];
   } catch (error) {
@@ -2106,13 +2114,12 @@ export const getEmployeeAllowancesByType = async ({
   }
 };
 
-
 export const getActiveEmployeeAllowances = async (
-  institutionId: number
+  institutionId: number,
 ): Promise<IEmployeeAllowance[] | null> => {
   try {
     const response = await apiRequest.get(
-      `payroll/${institutionId}/employee-allowances/?is_active=true`
+      `payroll/${institutionId}/employee-allowances/?is_active=true`,
     );
     return response.data as IEmployeeAllowance[];
   } catch (error) {
@@ -2126,8 +2133,6 @@ export async function fetchEmployeeDetail(employeeId: number) {
   const response = await apiRequest.get(`/employee/${employeeId}/`);
   return response.data;
 }
-
-
 
 export const createEmployeeDeduction = async ({
   institutionId,
@@ -2147,7 +2152,7 @@ export const createEmployeeDeduction = async ({
 
     const response = await apiRequest.post(
       `payroll/${institutionId}/employee-deductions/`,
-      formData
+      formData,
     );
 
     return response.data as IEmployeeDeduction;
@@ -2157,9 +2162,8 @@ export const createEmployeeDeduction = async ({
   }
 };
 
-
 export const getEmployeeDeductions = async (
-  institutionId: number
+  institutionId: number,
 ): Promise<IEmployeeDeduction[] | null> => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/employee-deductions/`);
@@ -2170,11 +2174,7 @@ export const getEmployeeDeductions = async (
   }
 };
 
-
-
-export const getEmployeeDeduction = async (
-  id: number
-): Promise<IEmployeeDeduction | null> => {
+export const getEmployeeDeduction = async (id: number): Promise<IEmployeeDeduction | null> => {
   try {
     const response = await apiRequest.get(`payroll/employee-deductions/${id}/`);
     return response.data as IEmployeeDeduction;
@@ -2183,7 +2183,6 @@ export const getEmployeeDeduction = async (
     return null;
   }
 };
-
 
 export const updateEmployeeDeduction = async ({
   id,
@@ -2200,10 +2199,7 @@ export const updateEmployeeDeduction = async ({
       }
     });
 
-    const response = await apiRequest.patch(
-      `payroll/employee-deductions/${id}/`,
-      formData
-    );
+    const response = await apiRequest.patch(`payroll/employee-deductions/${id}/`, formData);
     return response.data as IEmployeeDeduction;
   } catch (error) {
     console.error("Failed to update employee deduction:", error);
@@ -2211,10 +2207,7 @@ export const updateEmployeeDeduction = async ({
   }
 };
 
-
-export const deleteEmployeeDeduction = async (
-  id: number
-): Promise<boolean> => {
+export const deleteEmployeeDeduction = async (id: number): Promise<boolean> => {
   try {
     await apiRequest.delete(`payroll/employee-deductions/${id}/`);
     return true;
@@ -2223,7 +2216,6 @@ export const deleteEmployeeDeduction = async (
     return false;
   }
 };
-
 
 export const getEmployeeDeductionsByEmployee = async ({
   institutionId,
@@ -2234,7 +2226,7 @@ export const getEmployeeDeductionsByEmployee = async ({
 }): Promise<IEmployeeDeduction[] | null> => {
   try {
     const response = await apiRequest.get(
-      `payroll/${institutionId}/employee-deductions/?employee=${employeeId}`
+      `payroll/${institutionId}/employee-deductions/?employee=${employeeId}`,
     );
     return response.data as IEmployeeDeduction[];
   } catch (error) {
@@ -2242,7 +2234,6 @@ export const getEmployeeDeductionsByEmployee = async ({
     return null;
   }
 };
-
 
 export const getEmployeeDeductionsByType = async ({
   institutionId,
@@ -2253,7 +2244,7 @@ export const getEmployeeDeductionsByType = async ({
 }): Promise<IEmployeeDeduction[] | null> => {
   try {
     const response = await apiRequest.get(
-      `payroll/${institutionId}/employee-deductions/?deduction_type=${deductionTypeId}`
+      `payroll/${institutionId}/employee-deductions/?deduction_type=${deductionTypeId}`,
     );
     return response.data as IEmployeeDeduction[];
   } catch (error) {
@@ -2262,13 +2253,12 @@ export const getEmployeeDeductionsByType = async ({
   }
 };
 
-
 export const getActiveEmployeeDeductions = async (
-  institutionId: number
+  institutionId: number,
 ): Promise<IEmployeeDeduction[] | null> => {
   try {
     const response = await apiRequest.get(
-      `payroll/${institutionId}/employee-deductions/?is_active=true`
+      `payroll/${institutionId}/employee-deductions/?is_active=true`,
     );
     return response.data as IEmployeeDeduction[];
   } catch (error) {
@@ -2276,7 +2266,6 @@ export const getActiveEmployeeDeductions = async (
     return null;
   }
 };
-
 
 export const getEmployeeDeductionsByDateRange = async ({
   institutionId,
@@ -2289,7 +2278,7 @@ export const getEmployeeDeductionsByDateRange = async ({
 }): Promise<IEmployeeDeduction[] | null> => {
   try {
     const response = await apiRequest.get(
-      `payroll/${institutionId}/employee-deductions/?effective_from__gte=${startDate}&effective_from__lte=${endDate}`
+      `payroll/${institutionId}/employee-deductions/?effective_from__gte=${startDate}&effective_from__lte=${endDate}`,
     );
     return response.data as IEmployeeDeduction[];
   } catch (error) {
@@ -2297,8 +2286,6 @@ export const getEmployeeDeductionsByDateRange = async ({
     return null;
   }
 };
-
-
 
 export const bulkCreateEmployeeDeductions = async ({
   institutionId,
@@ -2308,10 +2295,9 @@ export const bulkCreateEmployeeDeductions = async ({
   deductionsData: IEmployeeDeductionFormData[];
 }): Promise<IEmployeeDeduction[] | null> => {
   try {
-    const response = await apiRequest.post(
-      `payroll/${institutionId}/employee-deductions/bulk/`,
-      { deductions: deductionsData }
-    );
+    const response = await apiRequest.post(`payroll/${institutionId}/employee-deductions/bulk/`, {
+      deductions: deductionsData,
+    });
     return response.data as IEmployeeDeduction[];
   } catch (error) {
     console.error("Failed to bulk create employee deductions:", error);
@@ -2319,10 +2305,9 @@ export const bulkCreateEmployeeDeductions = async ({
   }
 };
 
-
 export const calculateDeductionAmount = (
   deduction: IEmployeeDeduction,
-  employeeSalary?: number
+  employeeSalary?: number,
 ): number => {
   if (deduction.calculation_method === "percentage" && employeeSalary) {
     return (employeeSalary * parseFloat(deduction.percentage)) / 100;
@@ -2330,10 +2315,9 @@ export const calculateDeductionAmount = (
   return parseFloat(deduction.amount) || 0;
 };
 
-
 export const validateDeductionFormData = (
-  data: Partial<IEmployeeDeductionFormData>
-): { isValid: boolean; errors: string[] } => {
+  data: Partial<IEmployeeDeductionFormData>,
+): {isValid: boolean; errors: string[]} => {
   const errors: string[] = [];
 
   if (!data.employee) {
@@ -2368,10 +2352,9 @@ export const validateDeductionFormData = (
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 };
-
 
 export const createPayrollPeriod = async ({
   institutionId,
@@ -2384,7 +2367,7 @@ export const createPayrollPeriod = async ({
     const formData = new FormData();
 
     // Add the institution field
-    formData.append('institution', institutionId.toString());
+    formData.append("institution", institutionId.toString());
 
     Object.entries(payrollPeriodData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
@@ -2392,10 +2375,7 @@ export const createPayrollPeriod = async ({
       }
     });
 
-    const response = await apiRequest.post(
-      `payroll/${institutionId}/payroll-periods/`,
-      formData
-    );
+    const response = await apiRequest.post(`payroll/${institutionId}/payroll-periods/`, formData);
 
     return response.data as IPayrollPeriod;
   } catch (error) {
@@ -2405,24 +2385,21 @@ export const createPayrollPeriod = async ({
 };
 
 export const getPayrollPeriods = async (
-  institutionId: number
+  institutionId: number,
 ): Promise<IPayrollPeriod[] | null> => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/payroll-periods/`);
-    const data = response.data as PaginatedResponse<IPayrollPeriod>
+    const data = response.data as PaginatedResponse<IPayrollPeriod>;
 
     // Return the results array instead of the entire response
-    return data.results
+    return data.results;
   } catch (error) {
     console.error("Failed to get payroll periods:", error);
     return null;
   }
 };
 
-
-export const getPayrollPeriod = async (
-  id: number
-): Promise<IPayrollPeriod | null> => {
+export const getPayrollPeriod = async (id: number): Promise<IPayrollPeriod | null> => {
   try {
     const response = await apiRequest.get(`payroll/payroll-periods/${id}/`);
     return response.data as IPayrollPeriod;
@@ -2431,7 +2408,6 @@ export const getPayrollPeriod = async (
     return null;
   }
 };
-
 
 export const updatePayrollPeriod = async ({
   id,
@@ -2448,10 +2424,7 @@ export const updatePayrollPeriod = async ({
       }
     });
 
-    const response = await apiRequest.patch(
-      `payroll/payroll-periods/${id}/`,
-      formData
-    );
+    const response = await apiRequest.patch(`payroll/payroll-periods/${id}/`, formData);
     return response.data as IPayrollPeriod;
   } catch (error) {
     console.error("Failed to update payroll period:", error);
@@ -2459,10 +2432,7 @@ export const updatePayrollPeriod = async ({
   }
 };
 
-
-export const deletePayrollPeriod = async (
-  id: number
-): Promise<boolean> => {
+export const deletePayrollPeriod = async (id: number): Promise<boolean> => {
   try {
     await apiRequest.delete(`payroll/payroll-periods/${id}/`);
     return true;
@@ -2472,20 +2442,19 @@ export const deletePayrollPeriod = async (
   }
 };
 
-
 export const getCurrentPayrollPeriod = async (
-  institutionId: number
+  institutionId: number,
 ): Promise<IPayrollPeriod | null> => {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
     const response = await apiRequest.get(
-      `payroll/${institutionId}/payroll-periods/?current_date=${today}`
+      `payroll/${institutionId}/payroll-periods/?current_date=${today}`,
     );
 
     // Assuming the API returns the current period or we find it from the list
     const periods = response.data as IPayrollPeriod[];
-    const currentPeriod = periods.find(period =>
-      period.start_date <= today && period.end_date >= today
+    const currentPeriod = periods.find(
+      (period) => period.start_date <= today && period.end_date >= today,
     );
 
     return currentPeriod || null;
@@ -2494,7 +2463,6 @@ export const getCurrentPayrollPeriod = async (
     return null;
   }
 };
-
 
 export const getPayrollPeriodsByStatus = async ({
   institutionId,
@@ -2505,7 +2473,7 @@ export const getPayrollPeriodsByStatus = async ({
 }): Promise<IPayrollPeriod[] | null> => {
   try {
     const response = await apiRequest.get(
-      `payroll/${institutionId}/payroll-periods/?is_processed=${isProcessed}`
+      `payroll/${institutionId}/payroll-periods/?is_processed=${isProcessed}`,
     );
     return response.data as IPayrollPeriod[];
   } catch (error) {
@@ -2514,20 +2482,17 @@ export const getPayrollPeriodsByStatus = async ({
   }
 };
 
-
 export const getUnprocessedPayrollPeriods = async (
-  institutionId: number
+  institutionId: number,
 ): Promise<IPayrollPeriod[] | null> => {
-  return getPayrollPeriodsByStatus({ institutionId, isProcessed: false });
+  return getPayrollPeriodsByStatus({institutionId, isProcessed: false});
 };
-
 
 export const getProcessedPayrollPeriods = async (
-  institutionId: number
+  institutionId: number,
 ): Promise<IPayrollPeriod[] | null> => {
-  return getPayrollPeriodsByStatus({ institutionId, isProcessed: true });
+  return getPayrollPeriodsByStatus({institutionId, isProcessed: true});
 };
-
 
 export const getPayrollPeriodsByDateRange = async ({
   institutionId,
@@ -2540,7 +2505,7 @@ export const getPayrollPeriodsByDateRange = async ({
 }): Promise<IPayrollPeriod[] | null> => {
   try {
     const response = await apiRequest.get(
-      `payroll/${institutionId}/payroll-periods/?start_date__gte=${startDate}&end_date__lte=${endDate}`
+      `payroll/${institutionId}/payroll-periods/?start_date__gte=${startDate}&end_date__lte=${endDate}`,
     );
     return response.data as IPayrollPeriod[];
   } catch (error) {
@@ -2549,26 +2514,21 @@ export const getPayrollPeriodsByDateRange = async ({
   }
 };
 
-
-export const markPayrollPeriodAsProcessed = async (
-  id: number
-): Promise<IPayrollPeriod | null> => {
+export const markPayrollPeriodAsProcessed = async (id: number): Promise<IPayrollPeriod | null> => {
   return updatePayrollPeriod({
     id,
-    payrollPeriodData: { is_processed: true }
+    payrollPeriodData: {is_processed: true},
   });
 };
-
 
 export const markPayrollPeriodAsUnprocessed = async (
-  id: number
+  id: number,
 ): Promise<IPayrollPeriod | null> => {
   return updatePayrollPeriod({
     id,
-    payrollPeriodData: { is_processed: false }
+    payrollPeriodData: {is_processed: false},
   });
 };
-
 
 export const bulkCreatePayrollPeriods = async ({
   institutionId,
@@ -2578,10 +2538,9 @@ export const bulkCreatePayrollPeriods = async ({
   periodsData: IPayrollPeriodFormData[];
 }): Promise<IPayrollPeriod[] | null> => {
   try {
-    const response = await apiRequest.post(
-      `payroll/${institutionId}/payroll-periods/bulk/`,
-      { periods: periodsData }
-    );
+    const response = await apiRequest.post(`payroll/${institutionId}/payroll-periods/bulk/`, {
+      periods: periodsData,
+    });
     return response.data as IPayrollPeriod[];
   } catch (error) {
     console.error("Failed to bulk create payroll periods:", error);
@@ -2589,10 +2548,9 @@ export const bulkCreatePayrollPeriods = async ({
   }
 };
 
-
 export const validatePayrollPeriodFormData = (
-  data: Partial<IPayrollPeriodFormData>
-): { isValid: boolean; errors: string[] } => {
+  data: Partial<IPayrollPeriodFormData>,
+): {isValid: boolean; errors: string[]} => {
   const errors: string[] = [];
 
   if (!data.name || data.name.trim().length === 0) {
@@ -2635,18 +2593,27 @@ export const validatePayrollPeriodFormData = (
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 };
-
 
 export const generatePeriodName = (startDate: string, endDate: string): string => {
   const start = new Date(startDate);
   const end = new Date(endDate);
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   const startMonth = monthNames[start.getMonth()];
@@ -2662,7 +2629,6 @@ export const generatePeriodName = (startDate: string, endDate: string): string =
   }
 };
 
-
 export const checkPeriodOverlap = async ({
   institutionId,
   startDate,
@@ -2673,39 +2639,37 @@ export const checkPeriodOverlap = async ({
   startDate: string;
   endDate: string;
   excludeId?: number;
-}): Promise<{ hasOverlap: boolean; overlappingPeriods: IPayrollPeriod[] }> => {
+}): Promise<{hasOverlap: boolean; overlappingPeriods: IPayrollPeriod[]}> => {
   try {
     const allPeriods = await getPayrollPeriods(institutionId);
 
     if (!allPeriods) {
-      return { hasOverlap: false, overlappingPeriods: [] };
+      return {hasOverlap: false, overlappingPeriods: []};
     }
 
     const filteredPeriods = excludeId
-      ? allPeriods.filter(period => period.id !== excludeId)
+      ? allPeriods.filter((period) => period.id !== excludeId)
       : allPeriods;
 
-    const overlapping = filteredPeriods.filter(period => {
+    const overlapping = filteredPeriods.filter((period) => {
       const periodStart = new Date(period.start_date);
       const periodEnd = new Date(period.end_date);
       const newStart = new Date(startDate);
       const newEnd = new Date(endDate);
 
       // Check if periods overlap
-      return (newStart <= periodEnd && newEnd >= periodStart);
+      return newStart <= periodEnd && newEnd >= periodStart;
     });
 
     return {
       hasOverlap: overlapping.length > 0,
-      overlappingPeriods: overlapping
+      overlappingPeriods: overlapping,
     };
   } catch (error) {
     console.error("Failed to check period overlap:", error);
-    return { hasOverlap: false, overlappingPeriods: [] };
+    return {hasOverlap: false, overlappingPeriods: []};
   }
 };
-
-
 
 export const createPayslip = async ({
   institutionId,
@@ -2723,10 +2687,7 @@ export const createPayslip = async ({
       }
     });
 
-    const response = await apiRequest.post(
-      `payroll/${institutionId}/payslips/`,
-      formData
-    );
+    const response = await apiRequest.post(`payroll/${institutionId}/payslips/`, formData);
 
     return response.data as IPayslip;
   } catch (error) {
@@ -2738,7 +2699,7 @@ export const createPayslip = async ({
 export const createBulkPayslips = async ({
   institutionId,
   payrollPeriodId,
-  employeeIds
+  employeeIds,
 }: {
   institutionId: number;
   payrollPeriodId: number;
@@ -2747,13 +2708,10 @@ export const createBulkPayslips = async ({
   try {
     const requestData = {
       payroll_period: payrollPeriodId,
-      employee_ids: employeeIds || []
+      employee_ids: employeeIds || [],
     };
 
-    const response = await apiRequest.post(
-      `payroll/${institutionId}/payslips/`,
-      requestData
-    );
+    const response = await apiRequest.post(`payroll/${institutionId}/payslips/`, requestData);
 
     return response.data as IPayslip[];
   } catch (error) {
@@ -2770,7 +2728,7 @@ export const getPayslips = async (
     is_paid?: boolean;
     page?: number;
     page_size?: number;
-  }
+  },
 ): Promise<IPayslip[] | null> => {
   try {
     const queryParams = new URLSearchParams();
@@ -2783,22 +2741,20 @@ export const getPayslips = async (
       });
     }
 
-    const url = `payroll/${institutionId}/payslips/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const url = `payroll/${institutionId}/payslips/${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
     const response = await apiRequest.get(url);
 
-    const data = response.data as PaginatedResponse<IPayslip>
+    const data = response.data as PaginatedResponse<IPayslip>;
 
     // Return the results array instead of the entire response
-    return data.results
+    return data.results;
   } catch (error) {
     console.error("Failed to get payslips:", error);
     return null;
   }
 };
 
-export const getPayslip = async (
-  id: number
-): Promise<IPayslip | null> => {
+export const getPayslip = async (id: number): Promise<IPayslip | null> => {
   try {
     const response = await apiRequest.get(`payroll/payslips/${id}/`);
     return response.data as IPayslip;
@@ -2824,10 +2780,7 @@ export const updatePayslip = async ({
       }
     });
 
-    const response = await apiRequest.patch(
-      `payroll/payslips/${id}/`,
-      formData
-    );
+    const response = await apiRequest.patch(`payroll/payslips/${id}/`, formData);
 
     return response.data as IPayslip;
   } catch (error) {
@@ -2836,9 +2789,7 @@ export const updatePayslip = async ({
   }
 };
 
-export const deletePayslip = async (
-  id: number
-): Promise<boolean> => {
+export const deletePayslip = async (id: number): Promise<boolean> => {
   try {
     await apiRequest.delete(`payroll/payslips/${id}/`);
     return true;
@@ -2848,26 +2799,22 @@ export const deletePayslip = async (
   }
 };
 
-
 export const markPayslipAsPaid = async (
   id: number,
-  paidDate?: string
+  paidDate?: string,
 ): Promise<IPayslip | null> => {
   try {
     const formData = new FormData();
-    formData.append('is_paid', 'true');
+    formData.append("is_paid", "true");
 
     if (paidDate) {
-      formData.append('paid_date', paidDate);
+      formData.append("paid_date", paidDate);
     } else {
       // Use current date if no date provided
-      formData.append('paid_date', new Date().toISOString().split('T')[0]);
+      formData.append("paid_date", new Date().toISOString().split("T")[0]);
     }
 
-    const response = await apiRequest.patch(
-      `payroll/payslips/${id}/`,
-      formData
-    );
+    const response = await apiRequest.patch(`payroll/payslips/${id}/`, formData);
 
     return response.data as IPayslip;
   } catch (error) {
@@ -2878,42 +2825,35 @@ export const markPayslipAsPaid = async (
 
 export const getPayslipsByEmployee = async (
   institutionId: number,
-  employeeId: number
+  employeeId: number,
 ): Promise<IPayslip[] | null> => {
-  return getPayslips(institutionId, { employee: employeeId });
+  return getPayslips(institutionId, {employee: employeeId});
 };
 
 export const getPayslipsByPayrollPeriod = async (
   institutionId: number,
-  payrollPeriodId: number
+  payrollPeriodId: number,
 ): Promise<IPayslip[] | null> => {
-  return getPayslips(institutionId, { payroll_period: payrollPeriodId });
+  return getPayslips(institutionId, {payroll_period: payrollPeriodId});
 };
 
-export const getUnpaidPayslips = async (
-  institutionId: number
-): Promise<IPayslip[] | null> => {
-  return getPayslips(institutionId, { is_paid: false });
+export const getUnpaidPayslips = async (institutionId: number): Promise<IPayslip[] | null> => {
+  return getPayslips(institutionId, {is_paid: false});
 };
 
-export const getPaidPayslips = async (
-  institutionId: number
-): Promise<IPayslip[] | null> => {
-  return getPayslips(institutionId, { is_paid: true });
+export const getPaidPayslips = async (institutionId: number): Promise<IPayslip[] | null> => {
+  return getPayslips(institutionId, {is_paid: true});
 };
 
-
-export const getPayslipItems = async (
-  payslipId: number
-): Promise<IPayslipItem[] | null> => {
+export const getPayslipItems = async (payslipId: number): Promise<IPayslipItem[] | null> => {
   try {
     const response = await apiRequest.get(`payroll/payslips/${payslipId}/items/`);
-    const data = response.data as PaginatedResponse<IPayslipItem>
+    const data = response.data as PaginatedResponse<IPayslipItem>;
 
     // Return the results array instead of the entire response
-    return data.results
+    return data.results;
   } catch (error) {
-    console.error("Failed to get payslip items:", error)
+    console.error("Failed to get payslip items:", error);
     return null;
   }
 };
@@ -2924,7 +2864,7 @@ export const getContracts = async ({
   institutionId: number;
 }): Promise<IContract[] | null> => {
   try {
-    const response = await apiRequest.get(`employee/institutions/${institutionId}/contracts/`);
+    const response = await apiRequest.get(`employee/employee-contracts/`);
     const data = response.data as PaginatedResponse<IContract>;
     return data.results;
   } catch (error) {
@@ -2939,7 +2879,7 @@ export const getContractById = async ({
   contractId: number;
 }): Promise<IContract | null> => {
   try {
-    const response = await apiRequest.get(`employee/contracts/${contractId}/`);
+    const response = await apiRequest.get(`employee/employee-contracts/${contractId}/`);
     return response.data as IContract;
   } catch (error) {
     console.error("Failed to fetch contract:", error);
@@ -2958,7 +2898,7 @@ export const updateContract = async ({
     const formData = new FormData();
     Object.entries(contractData).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        if (key === 'contract_file' && value instanceof File) {
+        if (key === "contract_file" && value instanceof File) {
           formData.append(key, value);
         } else {
           formData.append(key, value.toString());
@@ -2966,7 +2906,7 @@ export const updateContract = async ({
       }
     });
 
-    const response = await apiRequest.patch(`cemployee/ontracts/${contractId}/`, formData);
+    const response = await apiRequest.patch(`employee/employee-contracts/${contractId}/`, formData);
     return response.data as IContract;
   } catch (error) {
     console.error("Failed to update contract:", error);
@@ -2974,13 +2914,9 @@ export const updateContract = async ({
   }
 };
 
-export const deleteContract = async ({
-  contractId,
-}: {
-  contractId: number;
-}): Promise<boolean> => {
+export const deleteContract = async ({contractId}: {contractId: number}): Promise<boolean> => {
   try {
-    await apiRequest.delete(`employee/contracts/${contractId}/`);
+    await apiRequest.delete(`employee/employee-contracts/${contractId}/`);
     return true;
   } catch (error) {
     console.error("Failed to delete contract:", error);
@@ -2988,35 +2924,16 @@ export const deleteContract = async ({
   }
 };
 
-export const downloadContract = async ({
+export const approveContract = async ({
   contractId,
 }: {
   contractId: number;
-}): Promise<Blob | null> => {
+}): Promise<IContract | null> => {
   try {
-    const response = await apiGet(`employee/contracts/${contractId}/download/`, null, {}, {
-      responseType: 'blob',
-    });
-
-    
-    if (!(response.data instanceof Blob)) {
-      console.error('Invalid response type, expected Blob but received:', typeof response.data);
-      return null;
-    }
-
-    return response.data as Blob;
-  } catch (error: unknown) {
-    console.error('Failed to download contract:', error);
-
-    if (error instanceof AxiosError && error.response && error.response.data instanceof Blob) {
-      try {
-        const text = await error.response.data.text();
-        console.error('Error response content:', text);
-      } catch (textError) {
-        console.error('Failed to read error response:', textError);
-      }
-    }
-
+    const response = await apiRequest.post(`employee/contracts/${contractId}/approve/`, {});
+    return response.data as IContract;
+  } catch (error) {
+    console.error("Failed to approve contract:", error);
     return null;
   }
 };
@@ -3038,7 +2955,7 @@ export const createDocumentType = async ({
 
     const response = await apiRequest.post(
       `documents/institution/${institutionId}/types/`,
-      formData
+      formData,
     );
     return response.data as IDocumentType;
   } catch (error) {
@@ -3053,9 +2970,7 @@ export const getDocumentTypes = async ({
   institutionId: number;
 }): Promise<IDocumentType[]> => {
   try {
-    const response = await apiRequest.get(
-      `documents/institution/${institutionId}/types/`
-    );
+    const response = await apiRequest.get(`documents/institution/${institutionId}/types/`);
     const data = response.data as PaginatedResponse<IDocumentType>;
     return data.results;
   } catch (error) {
@@ -3081,10 +2996,7 @@ export const updateDocumentType = async ({
       }
     });
 
-    const response = await apiRequest.patch(
-      `documents/types/${documentTypeId}/`,
-      formData
-    );
+    const response = await apiRequest.patch(`documents/types/${documentTypeId}/`, formData);
     return response.data as IDocumentType;
   } catch (error) {
     console.error("Failed to update document type:", error);
@@ -3100,16 +3012,12 @@ export const deleteDocumentType = async ({
   documentTypeId: number;
 }): Promise<boolean> => {
   try {
-    await apiRequest.delete(
-      `documents/types/${documentTypeId}/`
-    );
+    await apiRequest.delete(`documents/types/${documentTypeId}/`);
     return true;
   } catch (error) {
-    console.error("Failed to delete document type:", error);
     return false;
   }
 };
-
 
 // utils.ts
 export const createDocumentTemplate = async ({
@@ -3122,9 +3030,9 @@ export const createDocumentTemplate = async ({
   try {
     const formData = new FormData();
     Object.entries(documentTemplateData).forEach(([key, value]) => {
-      if (key === 'placeholders' && Array.isArray(value)) {
+      if (key === "placeholders" && Array.isArray(value)) {
         formData.append(key, JSON.stringify(value));
-      } else if (key === 'file' && value instanceof File) {
+      } else if (key === "file" && value instanceof File) {
         formData.append(key, value);
       } else if (value !== null && value !== undefined) {
         formData.append(key, value.toString());
@@ -3133,11 +3041,10 @@ export const createDocumentTemplate = async ({
 
     const response = await apiRequest.post(
       `documents/institution/${institutionId}/templates/`,
-      formData
+      formData,
     );
     return response.data as IDocumentTemplate;
   } catch (error) {
-    console.error("Failed to create document template:", error);
     return null;
   }
 };
@@ -3154,22 +3061,18 @@ export const updateDocumentTemplate = async ({
   try {
     const formData = new FormData();
     Object.entries(documentTemplateData).forEach(([key, value]) => {
-      if (key === 'placeholders' && Array.isArray(value)) {
+      if (key === "placeholders" && Array.isArray(value)) {
         formData.append(key, JSON.stringify(value));
-      } else if (key === 'file' && value instanceof File) {
+      } else if (key === "file" && value instanceof File) {
         formData.append(key, value);
       } else if (value !== null && value !== undefined) {
         formData.append(key, value.toString());
       }
     });
 
-    const response = await apiRequest.patch(
-      `documents/templates/${documentTemplateId}/`,
-      formData
-    );
+    const response = await apiRequest.patch(`documents/templates/${documentTemplateId}/`, formData);
     return response.data as IDocumentTemplate;
   } catch (error) {
-    console.error("Failed to update document template:", error);
     return null;
   }
 };
@@ -3180,17 +3083,13 @@ export const getDocumentTemplates = async ({
   institutionId: number;
 }): Promise<IDocumentTemplate[]> => {
   try {
-    const response = await apiRequest.get(
-      `documents/institution/${institutionId}/templates/`
-    );
+    const response = await apiRequest.get(`documents/institution/${institutionId}/templates/`);
     const data = response.data as PaginatedResponse<IDocumentTemplate>;
     return data.results;
   } catch (error) {
-    console.error("Failed to fetch document templates:", error);
     return [];
   }
 };
-
 
 export const deleteDocumentTemplate = async ({
   institutionId,
@@ -3200,12 +3099,238 @@ export const deleteDocumentTemplate = async ({
   documentTemplateId: number;
 }): Promise<boolean> => {
   try {
-    await apiRequest.delete(
-      `documents/templates/${documentTemplateId}/`
-    );
+    await apiRequest.delete(`documents/templates/${documentTemplateId}/`);
     return true;
   } catch (error) {
     console.error("Failed to delete document template:", error);
     return false;
   }
+};
+
+// Termination Initiations API Namespace
+export const TerminationInitiationsAPI = {
+  getAll: async ({
+    searchParams,
+  }: {
+    searchParams?: URLSearchParams;
+  }): Promise<PaginatedResponse<ITermination>> => {
+    try {
+      const queryString = searchParams ? `?${searchParams}` : "";
+      const response = await apiRequest.get(`on-boarding/termination-initiations/${queryString}`);
+      return response.data as PaginatedResponse<ITermination>;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+
+
+  update: async ({
+    terminationId,
+    terminationData,
+  }: {
+    terminationId: number;
+    terminationData: Partial<ITerminationFormData>;
+  }): Promise<ITermination> => {
+    try {
+      const formData = new FormData();
+      Object.entries(terminationData).forEach(([key, value]) => {
+        if (value !== null) {
+          if (value instanceof File) {
+            formData.append(key, value);
+          } else {
+            formData.append(key, value.toString());
+          }
+        }
+      });
+      const response = await apiRequest.patch(
+        `on-boarding/termination-initiations/${terminationId}/`,
+        formData,
+      );
+      return response.data as ITermination;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  delete: async ({terminationId}: {terminationId: number}): Promise<void> => {
+    try {
+      await apiRequest.delete(`on-boarding/termination-initiations/${terminationId}/`);
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getById: async (terminationId: number): Promise<ITermination | null> => {
+    try {
+      const response = await apiRequest.get(
+        `on-boarding/termination-initiations/${terminationId}/`,
+      );
+      return response.data as ITermination;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  create: async ({
+    terminationData,
+  }: {
+    terminationData: ITerminationFormData;
+  }): Promise<ITermination | null> => {
+    try {
+      const formData = new FormData();
+
+      // Append all fields to FormData
+      Object.entries(terminationData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (key === "termination_letter" && value instanceof File) {
+            formData.append(key, value);
+          } else {
+            formData.append(key, value.toString());
+          }
+        }
+      });
+
+      const response = await apiRequest.post("on-boarding/termination-initiations/", formData);
+      return response.data as ITermination;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
+
+// Separation Policy Types API Namespace
+export const SeparationPolicyTypesAPI = {
+  getAll: async ({
+    institutionId,
+    searchParams,
+  }: {
+    institutionId: number;
+    searchParams?: URLSearchParams;
+  }): Promise<PaginatedResponse<ISeparationType>> => {
+    try {
+      const response = await apiRequest.get(`on-boarding/separation-types/?${searchParams}`);
+      return response.data as PaginatedResponse<ISeparationType>;
+    } catch (error) {
+
+      throw error;
+    }
+  },
+
+  getById: async (policyTypeId: number): Promise<ISeparationType | null> => {
+    try {
+      const response = await apiRequest.get(`on-boarding/separation-types/${policyTypeId}/`);
+      return response.data as ISeparationType;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  create: async ({
+    policyTypeData,
+  }: {
+    policyTypeData: Partial<ISeparationTypeFormData>;
+  }): Promise<ISeparationType | null> => {
+    try {
+      const response = await apiRequest.post("on-boarding/separation-types/", policyTypeData);
+      return response.data as ISeparationType;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  update: async ({
+    policyTypeId,
+    policyTypeData,
+  }: {
+    policyTypeId: number;
+    policyTypeData: Partial<ISeparationTypeFormData>;
+  }): Promise<ISeparationType | null> => {
+    try {
+      const response = await apiRequest.patch(
+        `on-boarding/separation-types/${policyTypeId}/`,
+        policyTypeData,
+      );
+      return response.data as ISeparationType;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  delete: async (policyTypeId: number): Promise<boolean> => {
+    try {
+      await apiRequest.delete(`on-boarding/separation-types/${policyTypeId}/`);
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
+
+// Offboarding Stages API Namespace
+export const OffboardingStagesAPI = {
+  getAll: async ({
+    institutionId,
+    searchParams,
+  }: {
+    institutionId: number;
+    searchParams?: URLSearchParams;
+  }): Promise<IPaginatedResponse<IOffboardingStage>> => {
+    try {
+      const response = await apiRequest.get(`on-boarding/offboarding-stages/?${searchParams}`);
+      return response.data as IPaginatedResponse<IOffboardingStage>;
+    } catch (error) {
+
+      throw error;
+    }
+  },
+
+  getById: async (stageId: number): Promise<IOffboardingStage | null> => {
+    try {
+      const response = await apiRequest.get(`on-boarding/offboarding-stages/${stageId}/`);
+      return response.data as IOffboardingStage;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  create: async ({
+    stageData,
+  }: {
+    stageData: IOffboardingStageFormData;
+  }): Promise<IOffboardingStage | null> => {
+    try {
+      const response = await apiRequest.post("on-boarding/offboarding-stages/", stageData);
+      return response.data as IOffboardingStage;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  update: async ({
+    stageId,
+    stageData,
+  }: {
+    stageId: number;
+    stageData: Partial<IOffboardingStageFormData>;
+  }): Promise<IOffboardingStage | null> => {
+    try {
+      const response = await apiRequest.patch(
+        `on-boarding/offboarding-stages/${stageId}/`,
+        stageData,
+      );
+      return response.data as IOffboardingStage;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  delete: async (stageId: number): Promise<boolean> => {
+    try {
+      await apiRequest.delete(`on-boarding/offboarding-stages/${stageId}/`);
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  },
 };

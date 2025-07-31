@@ -2,6 +2,7 @@ from django.db import models
 from django.utils.text import slugify
 from institution.models import Institution
 from django_ckeditor_5.fields import CKEditor5Field
+from markdownx.models import MarkdownxField
 
 
 class DocumentType(models.Model):
@@ -33,20 +34,16 @@ class DocumentType(models.Model):
 class DocumentTemplate(models.Model):
     document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
-    template_type = models.CharField(
-        max_length=50,
-        choices=[
-            ("pdf", "PDF"),
-            ("word", "Word Document"),
-            ("text", "Text"),
-        ],
-    )
-    file = models.FileField(upload_to="document_templates/", null=True, blank=True)
-    content = models.JSONField(
+    template_type = models.CharField(max_length=50, choices=[
+        ('pdf', 'PDF'),
+        ('word', 'Word Document'),
+        ('text', 'Text'),      
+    ])
+    file = models.FileField(upload_to='document_templates/', null=True, blank=True)
+    content = MarkdownxField(
         blank=True,
         null=True,
-        default=dict,
-        help_text="Structured content for the template (e.g., sections, formatting, placeholders).",
+        help_text="Markdown content for the template with formatting and placeholders (e.g., {{caregiver_name}}, {{date}})."
     )
     placeholders = models.JSONField(
         default=list,

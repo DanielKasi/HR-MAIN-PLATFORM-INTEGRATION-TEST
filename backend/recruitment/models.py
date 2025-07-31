@@ -17,8 +17,9 @@ class JobPosition(models.Model):
     description = models.TextField()
     department = models.ForeignKey(
         "institution.Department",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         related_name="job_positions",
+        null=True,
     )
     offer_letter_template = models.FileField(
         upload_to="job_positions/offer_letters/", blank=True, null=True
@@ -49,10 +50,10 @@ class JobPosition(models.Model):
         return f"{self.name}"
 
     def activate_job_position(self):
-        # if self.job_position_status != "inactive":
-        #     raise ValidationError("Only inactive job positions can be activated.")
+        if self.job_position_status != "inactive":
+            raise ValidationError("Only inactive job positions can be activated.")
 
-        self.job_position_status == "active"
+        self.job_position_status = "active"
         self.save()
 
     def finish_workflow(self):

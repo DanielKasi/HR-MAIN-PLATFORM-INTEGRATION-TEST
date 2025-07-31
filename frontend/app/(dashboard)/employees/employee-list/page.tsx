@@ -101,6 +101,10 @@ function EmployeeTable({employees, onDelete}: EmployeeTableProps) {
   const itemsPerPage = 10;
   const router = useRouter();
 
+  const handleBack  = () =>{
+    router.back()
+  }
+
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
@@ -280,13 +284,13 @@ function EmployeeTable({employees, onDelete}: EmployeeTableProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedEmployees.map((employee) => (
+                  {paginatedEmployees.map((employee, idx) => (
                     <TableRow
-                      key={employee.id || Math.random()}
+                      key={idx}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => {
-                        router.push(`/employees/profile/${employee.id}`);
-                      }}
+                      // onClick={() => {
+                      //   router.push(`/employees/profile/${employee.id}`);
+                      // }}
                     >
                       <TableCell>
                         <div className="font-medium">{getFullName(employee)}</div>
@@ -304,18 +308,17 @@ function EmployeeTable({employees, onDelete}: EmployeeTableProps) {
                       <TableCell>{getStatusBadge(employee.is_active)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Link href={`/employees/profile/${employee.id || "unknown"}`}>
+                          <Link href={`/employees/profile/${employee.id}`}>
                             <Button
                               variant="ghost"
                               size="sm"
                               title="View Details"
-                              onClick={(e) => e.stopPropagation()}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
                           </Link>
                           <Link
-                            href={`/employees/update-employee/${employee.id || "unknown"}`}
+                            href={`/employees/update-employee/${employee.id}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               localStorage.setItem(
@@ -444,6 +447,7 @@ export default function Component() {
   const [InstitutionId, setInstitutionId] = useState<string | null>(null);
   const InstitutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
 
+
   useEffect(() => {
     if (selectedInstitution) {
       setInstitutionId(selectedInstitution.id.toString());
@@ -516,7 +520,7 @@ export default function Component() {
     <div className="w-full h-full p-2 space-y-6">
       <div className="w-full">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
+          <div className="flex items-center gap-2 py-8">
             <h1 className="text-2xl font-bold">Employees</h1>
           </div>
         </div>

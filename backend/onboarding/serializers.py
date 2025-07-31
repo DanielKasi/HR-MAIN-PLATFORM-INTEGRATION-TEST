@@ -8,7 +8,14 @@ from .models import (
     ResignationRequest,
     RetirementRequest,
     TerminationInitiation,
+    EmployeeSeparation,
 )
+from django.db import transaction
+from workflows.models import WorkflowAction, InstitutionApprovalStep, ApprovalTask
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import Model
+from users.serializers import ProfileSerializer
+from employee.serializers import EmployeeSerializer
 
 
 class OnBoardingSerializer(serializers.ModelSerializer):
@@ -50,8 +57,35 @@ class OffboardingStageSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Stage name cannot be empty.")
         return value
 
+    def create(self, validated_data):
+        from institution.models import Institution
+
+        request = self.context.get("request")
+
+        user = request.user.profile
+
+        institution = getattr(user, "institution", None)
+
+        try:
+            institution = Institution.objects.get(id=institution.id)
+        except Institution.DoesNotExist:
+            raise serializers.ValidationError("Institution does not exist.")
+
+        if not institution:
+            raise serializers.ValidationError("Institution is required.")
+
+        validated_data["institution"] = institution
+
+        return super().create(validated_data)
+
 
 class InstitutionEmployeeSeparationTypesSerializer(serializers.ModelSerializer):
+    supported_stages = serializers.PrimaryKeyRelatedField(
+        many=True,
+        required=False,
+        queryset=OffboardingStage.objects.all(),
+    )
+
     class Meta:
         model = InstitutionEmployeeSeparationTypes
         fields = [
@@ -72,13 +106,46 @@ class InstitutionEmployeeSeparationTypesSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Separation type cannot be empty.")
         return value
 
+    def create(self, validated_data):
+        from institution.models import Institution
+
+        request = self.context.get("request")
+
+        user = request.user.profile
+
+        institution = getattr(user, "institution", None)
+
+        try:
+            institution = Institution.objects.get(id=institution.id)
+        except Institution.DoesNotExist:
+            raise serializers.ValidationError("Institution does not exist.")
+
+        if not institution:
+            raise serializers.ValidationError("Institution is required.")
+
+        validated_data["institution"] = institution
+
+        return super().create(validated_data)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["supported_stages"] = OffboardingStageSerializer(
+            instance.supported_stages.all(), many=True, context=self.context
+        ).data
+        return representation
+
 
 class InstitutionSeparationPolicySerializer(serializers.ModelSerializer):
+    separation_type = serializers.PrimaryKeyRelatedField(
+        queryset=InstitutionEmployeeSeparationTypes.objects.all()
+    )
+
     class Meta:
         model = InstitutionSeparationPolicy
         fields = [
             "id",
             "separation_type",
+            "policy_name",
             "policy_document",
             "description",
             "min_notice_days",
@@ -91,6 +158,35 @@ class InstitutionSeparationPolicySerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["separation_type"] = (
+            InstitutionEmployeeSeparationTypesSerializer(
+                instance.separation_type, context=self.context
+            ).data
+        )
+        return representation
+
+
+class EmployeeSeparationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeSeparation
+        fields = "__all__"
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["initiated_by"] = (
+            ProfileSerializer(instance.initiated_by, context=self.context).data
+            if instance.initiated_by
+            else None
+        )
+        representation["employee"] = (
+            EmployeeSerializer(instance.employee, context=self.context).data
+            if instance.employee
+            else None
+        )
+        return representation
 
 
 class ResignationRequestSerializer(serializers.ModelSerializer):
@@ -366,6 +462,8 @@ class RetirementRequestSerializer(serializers.ModelSerializer):
 class TerminationInitiationSerializer(serializers.ModelSerializer):
     employee_id = serializers.IntegerField(write_only=True)
 
+    separation = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta:
         model = TerminationInitiation
         fields = [
@@ -379,13 +477,20 @@ class TerminationInitiationSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at", "separation"]
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["separation"] = EmployeeSeparationSerializer(
+            instance.separation, context=self.context
+        ).data
+        return representation
 
     def get_fields(self):
         fields = super().get_fields()
         instance = getattr(self, "instance", None)
 
-        if instance and instance.initiation_status in [
+        if isinstance(instance, Model) and instance.initiation_status in [
             "approved",
             "rejected",
             "under_review",
@@ -400,14 +505,21 @@ class TerminationInitiationSerializer(serializers.ModelSerializer):
         return fields
 
     def validate_employee_id(self, value):
+        from employee.models import Employee
+
         user = self.context["request"].user
+
+        user = user.profile
+
+        print(user)
 
         try:
             employee = Employee.objects.get(id=value)
         except Employee.DoesNotExist:
             raise serializers.ValidationError("Employee does not exist.")
 
-        if getattr(user, "institution", None) != employee.institution:
+        if getattr(user, "institution", None) != employee.department.institution:
+            print("\n\n\n Employee belongs to institution : ", employee.department.institution, "\n\n Your institution is ", getattr(user, "institution"))
             raise serializers.ValidationError(
                 "You are not authorized to terminate this employee."
             )
@@ -416,6 +528,7 @@ class TerminationInitiationSerializer(serializers.ModelSerializer):
 
         return value
 
+    @transaction.atomic
     def create(self, validated_data):
         validated_data.pop("employee_id", None)
 
@@ -424,7 +537,7 @@ class TerminationInitiationSerializer(serializers.ModelSerializer):
 
         try:
             termination_type = InstitutionEmployeeSeparationTypes.objects.get(
-                institution=employee.institution,
+                institution=employee.department.institution,
                 category="termination",
                 is_active=True,
             )
@@ -448,12 +561,12 @@ class TerminationInitiationSerializer(serializers.ModelSerializer):
         validated_data["separation"] = separation
 
         if not separation.initiated_by:
-            separation.initiated_by = getattr(user, "employee", None)
+            separation.initiated_by = user.profile
             separation.save()
 
         termination_initiation = TerminationInitiation.objects.create(**validated_data)
 
-        institution = employee.institution
+        institution = employee.department.institution
 
         content_type = ContentType.objects.get_for_model(TerminationInitiation)
         try:

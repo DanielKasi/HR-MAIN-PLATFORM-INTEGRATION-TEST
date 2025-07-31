@@ -54,10 +54,10 @@ export function TasksCards({branchId}: {branchId: string | null}) {
         <ArrowRight className="text-red-500 h-4 w-4" />
       </div>
 
-      <div className="bg-blue-100 rounded-2xl py-3 px-4 flex justify-between items-center">
+      <div className="bg-gray-200/60 rounded-2xl py-3 px-4 flex justify-between items-center">
         <div className="flex items-center">
-          <span className="text-xl font-bold text-blue-500 mr-2">0</span>
-          <span className="text-blue-500 text-sm">Expired Tasks</span>
+          <span className="text-xl font-bold text-gray-600 mr-2">0</span>
+          <span className="text-gray-600 text-sm">Expired Tasks</span>
         </div>
         <ArrowRight className="text-blue-500 h-4 w-4" />
       </div>

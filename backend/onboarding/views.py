@@ -31,6 +31,7 @@ from .serializers import (
     TerminationInitiationSerializer,
     RetirementRequestSerializer,
 )
+from institution.models import Institution
 
 
 class OnBoardingListAPI(APIView):
@@ -221,7 +222,9 @@ class OffboardingStageListCreateView(APIView):
         tags=["Offboarding"],
     )
     def post(self, request):
-        serializer = OffboardingStageSerializer(data=request.data)
+        serializer = OffboardingStageSerializer(
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=201)
@@ -233,7 +236,19 @@ class OffboardingStageListCreateView(APIView):
         tags=["Offboarding"],
     )
     def get(self, request):
-        stages = OffboardingStage.objects.all().order_by("-created_at")
+
+        user = request.user
+
+        institution = getattr(user.profile, "institution", None)
+
+        try:
+            institution = Institution.objects.get(id=institution.id)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=404)
+
+        stages = OffboardingStage.objects.filter(institution=institution).order_by(
+            "-created_at"
+        )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(stages, request)
         serializer = OffboardingStageSerializer(paginated_qs, many=True)
@@ -297,7 +312,9 @@ class InstitutionEmployeeSeparationTypesListCreateView(APIView):
         tags=["Offboarding"],
     )
     def post(self, request):
-        serializer = InstitutionEmployeeSeparationTypesSerializer(data=request.data)
+        serializer = InstitutionEmployeeSeparationTypesSerializer(
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=201)
@@ -309,9 +326,16 @@ class InstitutionEmployeeSeparationTypesListCreateView(APIView):
         tags=["Offboarding"],
     )
     def get(self, request):
-        separation_types = InstitutionEmployeeSeparationTypes.objects.all().order_by(
-            "-created_at"
-        )
+        user = request.user
+        institution = getattr(user.profile, "institution", None)
+
+        try:
+            institution = Institution.objects.get(id=institution.id)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=404)
+        separation_types = InstitutionEmployeeSeparationTypes.objects.filter(
+            institution=institution
+        ).order_by("-created_at")
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(separation_types, request)
         serializer = InstitutionEmployeeSeparationTypesSerializer(
@@ -383,7 +407,9 @@ class InstitutionSeparationPolicyListCreateView(APIView):
         tags=["Offboarding"],
     )
     def post(self, request):
-        serializer = InstitutionSeparationPolicySerializer(data=request.data)
+        serializer = InstitutionSeparationPolicySerializer(
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=201)
@@ -395,7 +421,18 @@ class InstitutionSeparationPolicyListCreateView(APIView):
         tags=["Offboarding"],
     )
     def get(self, request):
-        policies = InstitutionSeparationPolicy.objects.all().order_by("-created_at")
+        user = request.user
+
+        institution = getattr(user.profile, "institution", None)
+
+        try:
+            institution = Institution.objects.get(id=institution.id)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=404)
+
+        policies = InstitutionSeparationPolicy.objects.filter(
+            separation_type__institution=institution
+        ).order_by("-created_at")
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(policies, request)
         serializer = InstitutionSeparationPolicySerializer(paginated_qs, many=True)
@@ -573,7 +610,7 @@ class TerminationInitiationListCreateView(APIView):
     @extend_schema(
         request=TerminationInitiationSerializer,
         responses={201: TerminationInitiationSerializer},
-        summary="Create Termination Initiation",
+        summary="Initiate Employee Termination",
         tags=["Offboarding"],
     )
     def post(self, request):

@@ -99,7 +99,7 @@ export const sendDocuments = async ({
     });
     const response = await apiRequest.patch(
       `documents/${documentId}/status/?${queryParams}`,
-      {status: "pending", context, context_id: contextId},
+      {status: "reviewed", context, context_id: contextId},
     );
     return (response.data as DocumentPreviewResponse).preview;
   } catch (error) {

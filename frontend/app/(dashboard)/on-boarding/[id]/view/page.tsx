@@ -221,26 +221,22 @@ export default function ViewOnboardingDetails() {
   const applicationData = getApplicationData(onboarding)
 
   return (
-    <div className="w-full h-full p-6 space-y-6">
+    <div className="w-full h-full p-6 space-y-6 rounded-lg bg-white shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between ">
         <div>
           <div className="flex items-center gap-4 mb-2">
-            <Avatar className="h-12 w-12">
-              <AvatarFallback className="text-lg font-semibold">
-                {getInitials(applicationData.applicantName)}
-              </AvatarFallback>
-            </Avatar>
-            <div>
+            <div className=" flex items-center justify-center gap-8">
               <h1 className="text-2xl font-bold">{applicationData.applicantName}</h1>
               <p className="text-muted-foreground">{applicationData.jobDesc}</p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {onboarding.status && getStatusIcon(onboarding.status)}
+                      {/* {onboarding.status && getStatusIcon(onboarding.status)} */}
             <Badge variant={getStatusBadgeVariant(onboarding.status)} className="text-sm">
               {formatStatus(onboarding.status)}
             </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+
           </div>
         </div>
       </div>

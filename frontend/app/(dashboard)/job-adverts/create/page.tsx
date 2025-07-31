@@ -4,26 +4,20 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
-import { Megaphone, ArrowLeft, Check, Plus } from "lucide-react"
+import { Megaphone, ArrowLeft, Check, Calendar, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { CreateJobPositionDialog } from "@/components/dialogs/create-job-position-dialog"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { getJobPositions, createJobPositionAdvert } from "@/lib/utils"
-import type { JobPositionAdvertFormData, IJobPosition, JobAdvertTypes } from "@/app/types/types.utils"
+import { getJobPositions, createJobPositionAdvert, createJobPosition, } from "@/lib/utils"
+import type { JobPositionAdvertFormData, IJobPosition, JobAdvertStatus, JobAdvertTypes } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 
 export default function CreateJobAdvertPage() {
   const [formData, setFormData] = useState<JobPositionAdvertFormData>({
@@ -62,10 +56,10 @@ export default function CreateJobAdvertPage() {
       if (fetchedJobPositions) {
         setJobPositions(fetchedJobPositions);
       } else {
-        toast.error("Failed to load job position/titles ");
+        toast.error("Failed to load job positions");
       }
     } catch (error) {
-      toast.error("Failed to load job position/titles ");
+      toast.error("Failed to load job positions");
     } finally {
       setIsLoading(false);
     }
@@ -159,6 +153,11 @@ export default function CreateJobAdvertPage() {
     router.back();
   };
 
+  const handleJobPositionCreated = (newJobPosition: IJobPosition) => {
+    setJobPositions((prev) => [...prev, newJobPosition]);
+    updateFormData("job_position", newJobPosition.id);
+  };
+
   // Set default expiry date to 30 days from now
   useEffect(() => {
     if (!formData.expiry_date) {
@@ -170,6 +169,20 @@ export default function CreateJobAdvertPage() {
       }));
     }
   }, [formData.expiry_date]);
+
+  // Prepare job positions for searchable select
+  const jobPositionItems: SearchableSelectItem[] = jobPositions.map((position) => ({
+    id: position.id,
+    label: `${position.name} - ${position.department_details?.name}`,
+    value: `${position.name} ${position.department_details?.name}`.toLowerCase(),
+  }));
+
+  // Prepare advert types for searchable select
+  const advertTypeItems: SearchableSelectItem[] = [
+    { id: "external", label: "External", value: "external" },
+    { id: "internal", label: "Internal", value: "internal" },
+    { id: "both", label: "Both Internal and External", value: "both internal external" },
+  ];
 
   if (!selectedInstitution || !selectedBranch) {
     return <div>Loading...</div>;
@@ -204,7 +217,7 @@ export default function CreateJobAdvertPage() {
               <div>
                 <CardTitle className="text-xl">Create New Job Openings</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Create a job advertisement for {selectedBranch.branch_name} -{" "}
+                  Create a job opening for {selectedBranch.branch_name} -{" "}
                   {selectedInstitution.institution_name}
                 </p>
               </div>
@@ -215,11 +228,11 @@ export default function CreateJobAdvertPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Form Fields - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Job Position/ Title  */}
+                {/* Job Position */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="job_position" className="text-sm font-medium">
-                      Job Position/ Title  *
+                      Job Position *
                     </Label>
                     <CreateJobPositionDialog
                       trigger={
@@ -232,27 +245,20 @@ export default function CreateJobAdvertPage() {
                           <Plus className="h-4 w-4" />
                         </Button>
                       }
-                      onJobPositionCreated={(newPosition) => {
-                        setJobPositions((prev) => [...prev, newPosition])
-                        updateFormData("job_position", newPosition.id)
-                      }}
+                      onJobPositionCreated={handleJobPositionCreated}
                     />
                   </div>
-                  <Select
-                    value={formData.job_position.toString()}
-                    onValueChange={(value) => updateFormData("job_position", Number(value))}
-                  >
-                    <SelectTrigger className={errors.job_position ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select a job position" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {jobPositions.map((position) => (
-                        <SelectItem key={position.id} value={position.id.toString()}>
-                          {position.name} - {position.department_details?.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    items={jobPositionItems}
+                    selectedItems={formData.job_position ? [formData.job_position] : []}
+                    placeholder="Select a job position"
+                    searchPlaceholder="Search job positions..."
+                    emptyMessage="No job positions found."
+                    onSelect={(itemId) => updateFormData("job_position", Number(itemId))}
+                    multiple={false}
+                    triggerClassName={errors.job_position ? "border-destructive" : ""}
+                    popoverClassName="w-[400px]"
+                  />
                   {errors.job_position && (
                     <p className="text-sm text-destructive">{errors.job_position}</p>
                   )}
@@ -263,20 +269,17 @@ export default function CreateJobAdvertPage() {
                   <Label htmlFor="advert_type" className="text-sm font-medium">
                     Opening Type *
                   </Label>
-                  <Select
-                    value={formData.advert_type}
-                    onValueChange={(value) =>
-                      updateFormData("advert_type", value as JobAdvertTypes)
-                    }
-                  >
-                    <SelectTrigger className={errors.advert_type ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select advert type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="external">External</SelectItem>
-                      <SelectItem value="internal">Internal</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    items={advertTypeItems}
+                    selectedItems={formData.advert_type ? [formData.advert_type] : []}
+                    placeholder="Select opening type"
+                    searchPlaceholder="Search opening types..."
+                    emptyMessage="No opening types found."
+                    onSelect={(itemId) => updateFormData("advert_type", itemId as JobAdvertTypes)}
+                    multiple={false}
+                    triggerClassName={errors.advert_type ? "border-destructive" : ""}
+                    popoverClassName="w-[300px]"
+                  />
                   {errors.advert_type && (
                     <p className="text-sm text-destructive">{errors.advert_type}</p>
                   )}
@@ -335,7 +338,7 @@ export default function CreateJobAdvertPage() {
                 </Label>
                 <Textarea
                   id="extra_information"
-                  placeholder="Add any additional information about this job advertisement..."
+                  placeholder="Add any additional information about this job opening..."
                   value={formData.extra_information || ""}
                   onChange={(e) => updateFormData("extra_information", e.target.value)}
                   rows={4}

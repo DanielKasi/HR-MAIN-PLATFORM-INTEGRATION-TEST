@@ -8,6 +8,7 @@ from django.db import models, transaction
 from io import BytesIO
 from weasyprint import HTML
 
+
 class OnBoarding(models.Model):
     STATUS_CHOICES = [
         ("initial", "Initial"),
@@ -45,11 +46,9 @@ class OnBoarding(models.Model):
 
         super().save(*args, **kwargs)
 
-
         # Create employee if status changed to accepted_offer
         if self.status == "accepted_offer" and old_status != "accepted_offer":
             self.create_employee_record()
-
 
     def create_employee_record(self):
         """Create an employee record from the accepted application."""
@@ -171,6 +170,8 @@ class InstitutionSeparationPolicy(models.Model):
         related_name="separation_policy",
     )
 
+    policy_name = models.CharField(max_length=100, blank=True, null=True)
+
     policy_document = models.FileField(
         upload_to="separation_policies/", null=True, blank=True
     )
@@ -192,6 +193,9 @@ class InstitutionSeparationPolicy(models.Model):
             f"{self.separation_type.separation_type}"
         )
 
+    class Meta:
+        unique_together = (("separation_type", "is_active"),)
+
 
 class EmployeeSeparation(models.Model):
     employee_separation_type = models.ForeignKey(
@@ -207,7 +211,7 @@ class EmployeeSeparation(models.Model):
     )
 
     initiated_by = models.ForeignKey(
-        "employee.Employee",
+        "users.Profile",
         on_delete=models.CASCADE,
         related_name="separation_initiated_by",
         null=True,
@@ -232,6 +236,21 @@ class EmployeeSeparation(models.Model):
             + " - "
             + self.employee_separation_type.separation_type
         )
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+
+        if not is_new and self.separation_status == "completed":
+            # We Deactivate the employee when separation is completed
+            self.employee.is_active = False
+
+            self.employee.save()
+
+            # We deactivate the user account associated with the employee
+            if self.employee.user:
+                self.employee.user.is_active = False
+                self.employee.user.save()
 
 
 class ResignationRequest(models.Model):
@@ -354,7 +373,11 @@ class TerminationInitiation(models.Model):
             raise ValidationError("Only submitted requests can be approved.")
 
         self.initiation_status = "approved"
+
         self.save()
+
+        self.separation.separation_status = "completed"
+        self.separation.save()
 
     def finish_workflow(self):
         from workflows.models import ApprovalTask

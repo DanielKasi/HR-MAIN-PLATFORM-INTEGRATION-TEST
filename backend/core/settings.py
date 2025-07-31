@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "audit",
     "settings",
     "markdownx",
+    'jsignature',
 ]
 
 MIDDLEWARE = [

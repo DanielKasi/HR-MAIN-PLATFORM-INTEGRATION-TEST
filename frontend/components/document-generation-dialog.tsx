@@ -120,10 +120,10 @@ export function DocumentGenerationDialog({
         contextId,
         placeholders,
       );
-      setCanSendDocument(true);
-
+      
       if (response?.status === "success" && response.document_id) {
         setGeneratedDocumentId(response.document_id);
+        setCanSendDocument(true);
         
         const preview = await getDocumentPreview(response.document_id);
         if (preview) {
@@ -135,9 +135,9 @@ export function DocumentGenerationDialog({
       }
     } catch (error) {
       toast.error("Failed to generate document");
+      setCanSendDocument(false);
     } finally {
       setLoading(false);
-      setCanSendDocument(false);
     }
   };
 
@@ -159,7 +159,7 @@ export function DocumentGenerationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[500px] md:max-w-2xl">
+      <DialogContent className="w-full max-w-[500px] md:max-w-2xl lg:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Generate Document</DialogTitle>
           <DialogDescription>
@@ -247,6 +247,7 @@ export function DocumentGenerationDialog({
             </Button>
             <Button
               onClick={handleSendDocument}
+              disabled={loading || !generatedDocumentId || !canSendDocument}
             >
               Send Document
             </Button>

@@ -256,7 +256,7 @@ export interface IDepartment {
   description?: string | null;
   institution: number; // ForeignKey as ID
   institution_details?: IInstitution | null; // Embedded serializer
-  job_positions?: { id: number; name: string; department_id: number }[];
+  job_positions?: { id: number; name: string; description: string; department_id: number }[];
 }
 
 export interface PaginatedResponse<T> {
@@ -1463,15 +1463,14 @@ export type ContractStatus = 'draft' | 'active' | 'expired' | 'terminated';
 export interface IContract {
   id: number;
   contract_id: string;
-  // employee: number;
+  applicant: JobApplication | null;
   employee?: IEmployee;
-  contract_file: string | null;
-  status: ContractStatus;
-  start_date: string;
-  end_date: string | null;
+  is_active: boolean;
+  contract_reference: string;
+  original_contract: string | null;
+  signed_contract: string | null;
   created_at: string;
   updated_at: string;
-  notes: string | null;
 }
 
 export interface IContractFormData {
@@ -1588,3 +1587,94 @@ export type ApprovalStep = {
   };
   level: number;
 };
+
+// Termination Types
+export type TerminationInitiationStatus = "submitted" | "under_review" | "approved" | "rejected";
+export type SeparationStatus = "planned" | "completed" | "cancelled";
+
+export interface IEmployeeSeparation {
+  id: number;
+  effective_date: string;
+  additional_notes: string | null;
+  separation_status: SeparationStatus;
+  employee_separation_type: number;
+  employee: IEmployee;
+  initiated_by: UserProfile;
+}
+
+export interface ITermination {
+  id: number;
+  separation: IEmployeeSeparation;
+  termination_letter: string | null;
+  comments: string;
+  last_working_day: string;
+  initiation_status: TerminationInitiationStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ITerminationFormData {
+  employee_id: number;
+  termination_letter?: File | null;
+  comments: string;
+  last_working_day: string;
+}
+
+// Separation Policy Types
+export type SeparationCategory = "resignation" | "termination" | "retirement" | "contract_end" | "other";
+
+export interface ISeparationType {
+  id: number;
+  institution: number;
+  separation_type: string;
+  description: string;
+  supported_stages: number[] | IOffboardingStage[];
+  category: SeparationCategory;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+
+
+export interface ISeparationTypeFormData {
+  separation_type: string;
+  description: string;
+  supported_stages: number[];
+  category: SeparationCategory;
+  is_active: boolean;
+}
+
+// Offboarding Stage Interfaces
+export interface IOffboardingStage {
+  id: number;
+  institution: number;
+  stage_name: string;
+  stage_description: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IOffboardingStageFormData {
+  institution:number|string,
+  stage_name: string;
+  stage_description: string;
+  is_active?: boolean;
+}
+
+export interface ISeparationPolicy {
+  id: number;
+  separation_type: ISeparationType;
+  policy_document: string;
+  policy_name: string;
+  description: string;
+  min_notice_days: number;
+  max_notice_days: number;
+  require_separation_letter: boolean;
+  require_all_stages: boolean;
+  is_active: boolean;
+  enforce_policy: boolean;
+  created_at: string;
+  updated_at: string;
+}

@@ -1,7 +1,7 @@
 from django.shortcuts import render
 
 from institution.serializers import UserBranchSerializer
-from institution.models import Branch, UserBranch
+from institution.models import Branch, UserBranch, Department
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -15,7 +15,13 @@ from .serializers import (
     WorkTypeSerializer,
     EmployeeContractSerializer,
 )
-from .models import Employee, EmployeeAttendance, EmployeeType, WorkType, EmployeeContract
+from .models import (
+    Employee,
+    EmployeeAttendance,
+    EmployeeType,
+    WorkType,
+    EmployeeContract,
+)
 from rest_framework.parsers import MultiPartParser, FormParser
 from institution.utils import generate_compliant_password
 from employee.service import EmployeeBranchService
@@ -28,6 +34,17 @@ from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.renderers import JSONRenderer
 from utilities.pagination import CustomPageNumberPagination
 from django.http import FileResponse
+from django.core.exceptions import ValidationError
+from users.models import CustomUser
+from django.utils import timezone
+import re
+import pandas as pd
+import io
+from openpyxl import Workbook
+from recruitment.models import JobPosition
+from django.http import HttpResponse
+from openpyxl.styles import Font, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 
 
 class EmployeeListAPIView(APIView):
@@ -95,51 +112,37 @@ class EmployeeCreateAPIView(APIView):
         tags=["Employee Management"],
     )
     def post(self, request):
-        print(
-            "\n\n\nReceived data:",
-            request.data,
-        )
 
         """Create a new employee or multiple employees via file upload."""
-        # Check if a file is uploaded
         if "file" in request.FILES:
             return self.handle_bulk_upload(request)
 
-        # Handle single employee creation (existing logic)
         def extract_value(data, key):
             """Extract single value from QueryDict list format"""
             value = data.get(key)
             return value[0] if isinstance(value, list) and value else value
 
-        # Check required fields
         if not all(k in request.data for k in ["user.fullname", "user.email"]):
             return Response(
                 {"detail": "Missing required user fields"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Generate password for new user
         random_password = generate_compliant_password()
-
-        # Build user data
         user_data = {
             "fullname": extract_value(request.data, "user.fullname"),
             "email": extract_value(request.data, "user.email"),
             "password": random_password,
         }
 
-        # Process all other fields
         final_data = {}
         for key, value in request.data.items():
             if key not in ["user.fullname", "user.email"]:
                 final_data[key] = extract_value(request.data, key)
 
         final_data["selected_branches"] = request.data.getlist("selected_branches", [])
-
-        # Add user data
         final_data["user"] = user_data
 
-        # Convert data types
         if "is_active" in final_data:
             final_data["is_active"] = str(final_data["is_active"]).lower() == "true"
 
@@ -158,16 +161,13 @@ class EmployeeCreateAPIView(APIView):
                 except (ValueError, TypeError):
                     final_data[field] = 0
 
-        # Create employee
-        serializer = EmployeeSerializer(data=final_data)
+        serializer = EmployeeSerializer(data=final_data, context={"request": request})
         if not serializer.is_valid():
             return Response(
                 {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
         employee = serializer.save()
-
-        # Setup password for new employee
         employee.user.is_password_verified = False
         employee.user.save()
         employee.setup_employee_password(request)
@@ -190,13 +190,14 @@ class EmployeeCreateAPIView(APIView):
             )
 
         try:
-            # Read the file
             if file_extension == "csv":
                 df = pd.read_csv(file)
-            else:  # xlsx
+            else:
                 df = pd.read_excel(file)
 
-            # Validate required columns
+            logger.debug(f"Excel/CSV columns: {df.columns.tolist()}")
+            logger.debug(f"Excel/CSV data: {df.to_dict(orient='records')}")
+
             required_columns = ["user.fullname", "user.email"]
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
@@ -207,10 +208,52 @@ class EmployeeCreateAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Process each row
+            gender_map = {
+                'male': 'male',
+                'female': 'female',
+                'other': 'other',
+                'Male': 'male',
+                'Female': 'female',
+                'Other': 'other'
+            }
+            marital_status_map = {
+                'single': 'single',
+                'married': 'married',
+                'divorced': 'divorced',
+                'widowed': 'widowed',
+                'Single': 'single',
+                'Married': 'married',
+                'Divorced': 'divorced',
+                'Widowed': 'widowed'
+            }    
+
+            # Validate foreign key fields
+            field_mappings = {
+                'position': (JobPosition, 'position_map'),
+                'department': (Department, 'department_map'),
+                'work_type': (WorkType, 'work_type_map'),
+                'employee_type': (EmployeeType, 'employee_type_map')
+            }
+            for field, (model, map_name) in field_mappings.items():
+                if field in df.columns:
+                    names = df[field].dropna().str.strip().str.lower().unique()
+                    existing = model.objects.filter(
+                        name__iregex=r'^(' + '|'.join([re.escape(name) for name in names]) + ')$'
+                    ).values('name', 'id')
+                    mapping = {item['name'].lower(): item['id'] for item in existing}
+                    missing = [name for name in names if name.lower() not in mapping]
+                    if missing:
+                        return Response(
+                            {
+                                "detail": f"The following {field}s do not exist: {', '.join(missing)}"
+                            },
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                    setattr(self, map_name, mapping)
+
             employees = []
             errors = []
-            with transaction.atomic():  # Ensure all-or-nothing creation
+            with transaction.atomic():
                 for index, row in df.iterrows():
                     employee_data = {}
                     user_data = {
@@ -220,24 +263,45 @@ class EmployeeCreateAPIView(APIView):
                     }
                     employee_data["user"] = user_data
 
-                    # Map other fields
                     for column in df.columns:
                         if column not in ["user.fullname", "user.email"]:
                             value = row[column]
                             if pd.isna(value):
                                 employee_data[column] = None
                             else:
-                                employee_data[column] = str(value).strip()
+                                # Handle foreign key fields
+                                if column in field_mappings and value:
+                                    map_name = field_mappings[column][1]
+                                    mapping = getattr(self, map_name)
+                                    employee_data[column] = mapping.get(str(value).strip().lower())
 
-                    # Convert data types
+                                elif column == 'gender' and value:
+                                    employee_data[column] = gender_map.get(str(value).strip(), None)
+                                    if employee_data[column] is None:
+                                        errors.append({
+                                            "row": index + 2,
+                                            "errors": {"gender": [f"\"{value}\" is not a valid choice."]}
+                                        })
+                                        continue
+
+                                # Handle marital_status
+                                elif column == 'marital_status' and value:
+                                    employee_data[column] = marital_status_map.get(str(value).strip(), None)
+                                    if employee_data[column] is None:
+                                        errors.append({
+                                            "row": index + 2,
+                                            "errors": {"marital_status": [f"\"{value}\" is not a valid choice."]}
+                                        })
+                                        continue    
+                                else:
+                                    employee_data[column] = str(value).strip()
+
                     if "is_active" in employee_data:
                         employee_data["is_active"] = (
                             str(employee_data["is_active"]).lower() == "true"
                         )
 
                     for field in [
-                        "position",
-                        "department",
                         "experience",
                         "children_count",
                         "institutionId",
@@ -248,24 +312,39 @@ class EmployeeCreateAPIView(APIView):
                             except (ValueError, TypeError):
                                 employee_data[field] = 0
 
-                    # Validate and create employee
-                    serializer = EmployeeSerializer(data=employee_data)
+                    serializer = EmployeeSerializer(data=employee_data, context={"request": request})
                     if serializer.is_valid():
-                        employee = serializer.save()
-                        employee.user.is_password_verified = False
-                        employee.user.save()
-                        employee.setup_employee_password(request)
-                        employees.append(employee)
+                        try:
+                            employee = serializer.save()
+                            if employee is None:
+                                errors.append(
+                                    {
+                                        "row": index + 2,
+                                        "errors": {"non_field_errors": ["Failed to create employee: No instance returned"]}
+                                    }
+                                )
+                                continue
+                            employee.user.is_password_verified = False
+                            employee.user.save()
+                            employee.setup_employee_password(request)
+                            employees.append(employee)
+                        except Exception as e:
+                            errors.append(
+                                {
+                                    "row": index + 2,
+                                    "errors": {"non_field_errors": f"Error saving employee: {str(e)}"}
+                                }
+                            )
                     else:
                         errors.append(
                             {
-                                "row": index
-                                + 2,  # +2 to account for header row and 1-based indexing
+                                "row": index + 2,
                                 "errors": serializer.errors,
                             }
                         )
 
             if errors:
+                logger.error(f"Bulk upload errors: {errors}")
                 return Response(
                     {"detail": "Some employees could not be created", "errors": errors},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -277,6 +356,7 @@ class EmployeeCreateAPIView(APIView):
             )
 
         except Exception as e:
+            logger.error(f"Error processing file: {str(e)}")
             return Response(
                 {"detail": f"Error processing file: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -288,13 +368,12 @@ class EmployeeTemplateDownloadAPIView(APIView):
 
     @extend_schema(
         responses={200: None},
-        summary="Download Employee CSV Template",
-        description="Download a CSV template for bulk employee creation.",
+        summary="Download Employee Excel Template",
+        description="Download an Excel template for bulk employee creation.",
         tags=["Employee Management"],
     )
-    def get(self, request):
-        """Generate and return a CSV template for bulk employee upload."""
-        # Define template columns based on Employee model
+    def get(self, request, format_type='xlsx'):
+        """Generate and return an Excel template for bulk employee upload."""
         columns = [
             "user.fullname",
             "user.email",
@@ -302,7 +381,6 @@ class EmployeeTemplateDownloadAPIView(APIView):
             "position",
             "gender",
             "department",
-            "payroll_branch",
             "date_of_birth",
             "work_type",
             "employee_type",
@@ -312,7 +390,6 @@ class EmployeeTemplateDownloadAPIView(APIView):
             "nin",
             "bank",
             "bank_account_number",
-            "is_active",
             "experience",
             "qualifications",
             "skills",
@@ -320,26 +397,88 @@ class EmployeeTemplateDownloadAPIView(APIView):
             "emergency_contact_phone",
             "emergency_contact_relationship",
             "marital_status",
-            "children_count",
-            "salary",
+            "children_count"
         ]
-        df = pd.DataFrame(columns=columns)
 
-        # Create CSV in memory
-        output = io.StringIO()
-        df.to_csv(output, index=False)
-        output.seek(0)
+        # Sample data for the first row
+        sample_data = {
+            "user.fullname": "John Doe",
+            "user.email": "john.doe@example.com",
+            "phone_number": "+1234567890",
+            "position": "Software Engineer",
+            "gender": "Male",
+            "department": "IT",
+            "date_of_birth": "1990-01-01",
+            "work_type": "Full-Time",
+            "employee_type": "Permanent",
+            "date_of_joining": "2023-01-01",
+            "address": "123 Main St, City",
+            "country": "USA",
+            "nin": "123456789",
+            "bank": "National Bank",
+            "bank_account_number": "123456789012",
 
-        # Return CSV as downloadable file
-        response = HttpResponse(
-            content_type="text/csv",
-            headers={
-                "Content-Disposition": 'attachment; filename="employee_template.csv"'
-            },
-        )
-        response.write(output.getvalue())
+            "experience": "5 Years",
+            "qualifications": "BSc Computer Science",
+            "skills": "Python, Django",
+            "emergency_contact_name": "Jane Doe",
+            "emergency_contact_phone": "+1234567891",
+            "emergency_contact_relationship": "Spouse",
+            "marital_status": "Married",
+            "children_count": "2"
+        }
+
+        if format_type == 'csv':
+            df = pd.DataFrame([sample_data], columns=columns)
+            output = io.StringIO()
+            df.to_csv(output, index=False)
+            output.seek(0)
+            
+            response = HttpResponse(
+                content_type="text/csv",
+                headers={
+                    "Content-Disposition": 'attachment; filename="employee_template.csv"'
+                },
+            )
+            response.write(output.getvalue())
+        else:
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Employee Template"
+
+            # Add headers
+            for col_num, column_title in enumerate(columns, 1):
+                cell = ws.cell(row=1, column=col_num)
+                cell.value = column_title
+                cell.font = cell.font.copy(bold=True)
+
+            # Add sample data
+            for col_num, column_title in enumerate(columns, 1):
+                ws.cell(row=2, column=col_num).value = sample_data.get(column_title, "")
+
+            # Auto-adjust column widths
+            for col_num, column_title in enumerate(columns, 1):
+                column_letter = get_column_letter(col_num)
+                max_length = max(
+                    len(str(sample_data.get(column_title, ""))),
+                    len(column_title)
+                )
+                adjusted_width = max_length + 2
+                ws.column_dimensions[column_letter].width = adjusted_width
+
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            
+            response = HttpResponse(
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={
+                    "Content-Disposition": 'attachment; filename="employee_template.xlsx"'
+                },
+            )
+            response.write(output.getvalue())
+        
         return response
-
 
 class EmployeeUpdateAPIView(APIView):
     permission_classes = [AllowAny]
@@ -1232,6 +1371,7 @@ class WorkTypeDetailAPIView(APIView):
         obj.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
 class EmployeeContractListAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -1260,6 +1400,7 @@ class EmployeeContractListAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class EmployeeContractDetailAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -1284,14 +1425,101 @@ class EmployeeContractDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         contract = self.get_object(pk)
-        serializer = EmployeeContractSerializer(contract, data=request.data, partial=True)
+        serializer = EmployeeContractSerializer(
+            contract, data=request.data, partial=True
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @extend_schema(description="Delete an employee contract", responses={204: None}, tags=["Employee Contract"])
+    @extend_schema(
+        description="Delete an employee contract",
+        responses={204: None},
+        tags=["Employee Contract"],
+    )
     def delete(self, request, pk):
         contract = self.get_object(pk)
         contract.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)        
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class EmployeeContractApprovalAPIView(APIView):
+
+    @extend_schema(
+        responses=EmployeeContractSerializer,
+        description="Approve an employee contract by setting it to active and then converting applicant to employee if applicable",
+        tags=["Employee Contract"],
+    )
+    def post(self, request, pk):
+        contract = get_object_or_404(EmployeeContract, pk=pk)
+        
+        # Check if contract is already active
+        if contract.is_active:
+            return Response(
+                {"error": "Contract is already active"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Set contract to active first
+        contract.is_active = True
+        contract.save()
+
+        # If contract has an applicant and no employee, create Employee instance
+        if contract.applicant and not contract.employee:
+            try:
+                # Check if employee already created for this application
+                if hasattr(contract.applicant, "created_employee"):
+                    return Response(
+                        {"error": "Employee already created for this application"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # Create CustomUser if it doesn't exist
+                user, created = CustomUser.objects.get_or_create(
+                    email=contract.applicant.applicant_email,
+                    defaults={
+                        'fullname': contract.applicant.applicant_name,
+                        'is_active': True,
+                    }
+                )
+
+                # Create Employee instance
+                employee_data = {
+                    'user': user,
+                    'email': contract.applicant.applicant_email,
+                    'phone_number': contract.applicant.applicant_phone,
+                    'position': contract.applicant.job_position_advert.job_position,
+                    'address': contract.applicant.address,
+                    'gender': contract.applicant.gender,
+                    'date_of_joining': timezone.now().date(),
+                    'is_active': True,
+                    'department': contract.applicant.job_position_advert.job_position.department,
+                    'salary': contract.applicant.job_position_advert.job_position.salary,
+                }
+
+                employee = Employee(**employee_data)
+                employee.employee_id = employee.generate_employee_id()
+                
+                # Validate and save employee
+                employee.full_clean()  # Run model validation
+                employee.save()
+                
+                # Update contract to reference employee instead of applicant
+                contract.employee = employee
+                contract.applicant = None
+                contract.save()
+
+            except ValidationError as e:
+                return Response(
+                    {"error": f"Failed to create employee: {str(e)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            except Exception as e:
+                return Response(
+                    {"error": f"Unexpected error creating employee: {str(e)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        serializer = EmployeeContractSerializer(contract)
+        return Response(serializer.data, status=status.HTTP_200_OK)

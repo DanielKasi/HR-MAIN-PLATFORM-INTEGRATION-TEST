@@ -4,6 +4,12 @@ from users.models import CustomUser
 from users.serializers import CustomUserSerializer
 from .models import Department, Institution, Branch, UserBranch, InstitutionDocument
 import os
+from django.db import transaction
+from recruitment.models import JobPosition
+import logging
+from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 
 class InstitutionDocumentSerializer(serializers.ModelSerializer):
@@ -43,11 +49,9 @@ class InstitutionSerializer(serializers.ModelSerializer):
     )
     institution_logo = serializers.ImageField(required=False, allow_null=True)
     documents = InstitutionDocumentSerializer(many=True, read_only=True)
-
     approval_status_display = serializers.CharField(
         source="get_approval_status_display", read_only=True
     )
-
     document_files = serializers.ListField(
         child=serializers.FileField(), write_only=True, required=False, allow_empty=True
     )
@@ -57,7 +61,6 @@ class InstitutionSerializer(serializers.ModelSerializer):
         required=False,
         allow_empty=True,
     )
-
     branches = serializers.SerializerMethodField()
 
     class Meta:
@@ -71,12 +74,10 @@ class InstitutionSerializer(serializers.ModelSerializer):
             "institution_logo",
             "institution_owner_id",
             "theme_color",
-            "institution_logo",
             "location",
             "latitude",
             "longitude",
             "country_code",
-            # "location_geodjango",
             "approval_status",
             "approval_status_display",
             "approval_date",
@@ -93,18 +94,54 @@ class InstitutionSerializer(serializers.ModelSerializer):
                 "User must be authenticated to create an Institution."
             )
 
-        institution_name = validated_data.get("institution_name")
-        Institution_owner = validated_data.pop("institution_owner_id")
+        institution_owner = validated_data.pop("institution_owner_id")
+        document_files = validated_data.pop("document_files", [])
+        document_titles = validated_data.pop("document_titles", [])
+        departments_data = self.context.get("departments", [])
 
-        return Institution.objects.create(
-            institution_owner=Institution_owner,
-            created_by=request.user,
-            **validated_data,
-        )
+        # Log departments data for debugging
+        logger.info(f"Creating institution with departments_data: {departments_data}")
+
+        with transaction.atomic():
+            # Create the Institution
+            institution = Institution.objects.create(
+                institution_owner=institution_owner,
+                created_by=request.user,
+                **validated_data,
+            )
+
+            # Create Departments and JobPositions
+            for dept_data in departments_data:
+                department = Department.objects.create(
+                    name=dept_data["name"],
+                    description=dept_data.get("description", ""),
+                    institution=institution,
+                    created_by=request.user,
+                    created_at=timezone.now(),
+                    updated_at=timezone.now(),
+                )
+                for job_data in dept_data.get("job_positions", []):
+                    JobPosition.objects.create(
+                        name=job_data["name"],
+                        description=job_data.get("description", ""),
+                        department=department,
+                        job_position_status="active",
+                        created_at=timezone.now(),
+                    )
+
+            # Create InstitutionDocuments
+            for file, title in zip(document_files, document_titles):
+                InstitutionDocument.objects.create(
+                    institution=institution,
+                    file=file,
+                    title=title,
+                )
+
+        logger.info(f"Institution {institution.institution_name} created successfully with {len(departments_data)} departments")
+        return institution
 
     def get_branches(self, institution):
         user = self.context.get("user")
-
         if user and institution.institution_owner == user:
             branches = institution.branches.all()
         else:
@@ -112,8 +149,8 @@ class InstitutionSerializer(serializers.ModelSerializer):
                 "branch_id", flat=True
             )
             branches = institution.branches.filter(id__in=user_branches)
-
         return BranchSerializer(branches, many=True).data
+
 
 
 class BranchSerializer(serializers.ModelSerializer):

@@ -1,146 +1,121 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useSelector } from "react-redux"
-import { Download, FileText, Calendar, User, AlertCircle } from "lucide-react"
+import { Download, Upload, FileText, Calendar, User, Building, CheckCircle2, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "sonner"
+import { cn } from "@/lib/utils"
+import { IContract } from "@/app/types/types.utils"
+import { getContracts, updateContract, approveContract } from "@/lib/utils"
+import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
-import { getContracts, downloadContract } from "@/lib/utils"
-import type { IContract, ContractStatus } from "@/app/types/types.utils"
 
-const statusColors: Record<ContractStatus, string> = {
-  draft: "bg-gray-100 text-gray-800",
-  active: "bg-green-100 text-green-800",
-  expired: "bg-red-100 text-red-800",
-  terminated: "bg-orange-100 text-orange-800",
-}
 
 export default function ContractsPage() {
   const [contracts, setContracts] = useState<IContract[]>([])
-  const [filteredContracts, setFilteredContracts] = useState<IContract[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<ContractStatus | "all">("all")
-  const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set())
+  const [uploadingId, setUploadingId] = useState<number | null>(null)
+  const [approvingId, setApprovingId] = useState<number | null>(null)
+  const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  const selectedInstitution = useSelector(selectSelectedInstitution)
+  const institutionId = selectedInstitution?.id;
 
   useEffect(() => {
     fetchContracts()
-  }, [selectedInstitution])
-
-  useEffect(() => {
-    filterContracts()
-  }, [contracts, searchTerm, statusFilter])
+  }, [])
 
   const fetchContracts = async () => {
-    if (!selectedInstitution?.id) {
-      setError("No institution selected")
-      setLoading(false)
-      return
+    setLoading(true)
+    const data = await getContracts({ institutionId: Number(institutionId) }) // Replace with actual institution ID
+    if (data) {
+      setContracts(data)
     }
-
-    try {
-      setLoading(true)
-      setError(null)
-      const data = await getContracts({ institutionId: selectedInstitution.id })
-
-      if (data) {
-        setContracts(data)
-      } else {
-        setError("Failed to fetch contracts")
-      }
-    } catch (err) {
-      setError("An error occurred while fetching contracts")
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
+    setLoading(false)
   }
 
-  const filterContracts = () => {
-    let filtered = contracts
-
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (contract) =>
-          contract.contract_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          contract.employee?.user?.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          contract.notes?.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-    }
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((contract) => contract.status === statusFilter)
-    }
-
-    setFilteredContracts(filtered)
-  }
-
-  const handleDownload = async (contractId: number, contractIdString: string) => {
-    setDownloadingIds((prev) => new Set(prev).add(contractId))
-
+  const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
-      const blob = await downloadContract({ contractId })
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error('Network response was not ok');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
 
-      if (blob && blob instanceof Blob) {
-        // Check if the blob is actually a valid file
-        if (blob.size === 0) {
-          alert("Contract file is empty or not available")
-          return
-        }
-
-        // Create download URL
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement("a")
-        link.href = url
-
-        // Try to get the file extension from the blob type or default to pdf
-        const fileExtension = blob.type.includes("pdf")
-          ? "pdf"
-          : blob.type.includes("doc")
-            ? "doc"
-            : blob.type.includes("docx")
-              ? "docx"
-              : "pdf"
-
-        link.download = `contract-${contractIdString}.${fileExtension}`
-        link.style.display = "none"
-
-        document.body.appendChild(link)
-        link.click()
-
-        // Cleanup
-        setTimeout(() => {
-          document.body.removeChild(link)
-          window.URL.revokeObjectURL(url)
-        }, 100)
-      } else {
-        console.error("Invalid blob received:", blob)
-        alert("Failed to download contract - invalid file received")
-      }
-    } catch (err) {
-      console.error("Download error:", err)
-      // More specific error message
-      if (err instanceof Error) {
-        alert(`Download failed: ${err.message}`)
-      } else {
-        alert("An error occurred while downloading the contract")
-      }
-    } finally {
-      setDownloadingIds((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(contractId)
-        return newSet
+      toast.success("Download started", {
+        description: `${fileName} is being downloaded.`,
       })
+    } catch (error) {
+      toast.error("Download failed", {
+        description: "Failed to download the file. Please try again.",
+      })
+    }
+  }
+
+  const handleFileUpload = async (contractId: number, file: File) => {
+    setUploadingId(contractId)
+    try {
+      const result = await updateContract({
+        contractId,
+        contractData: { contract_file: file },
+      })
+
+      if (result) {
+        // Update the local state
+        setContracts((prev) =>
+          prev.map((contract) =>
+            contract.id === contractId ? { ...contract, signed_contract: result.signed_contract } : contract,
+          ),
+        )
+
+        toast.success("Upload successful", {
+          description: "Signed contract has been uploaded successfully.",
+        })
+      } else {
+        throw new Error("Upload failed")
+      }
+    } catch (error) {
+      toast.error("Upload failed", {
+        description: "Failed to upload the signed contract. Please try again.",
+      })
+    } finally {
+      setUploadingId(null)
+    }
+  }
+
+  const handleApproval = async (contractId: number) => {
+    setApprovingId(contractId)
+    try {
+      const result = await approveContract({ contractId })
+
+      if (result) {
+        // Update the local state
+        setContracts((prev) =>
+          prev.map((contract) => (contract.id === contractId ? { ...contract, is_active: true } : contract)),
+        )
+
+        toast.success("Contract approved", {
+          description: "Contract has been approved and marked as active.",
+        })
+      } else {
+        throw new Error("Approval failed")
+      }
+    } catch (error) {
+      toast.error("Approval failed", {
+        description: "Failed to approve the contract. Please try again.",
+      })
+    } finally {
+      setApprovingId(null)
     }
   }
 
@@ -149,229 +124,218 @@ export default function ContractsPage() {
       year: "numeric",
       month: "short",
       day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     })
   }
 
-  const getStatusBadge = (status: ContractStatus) => (
-    <Badge className={statusColors[status]} variant="secondary">
-      {status.charAt(0).toUpperCase() + status.slice(1)}
-    </Badge>
-  )
+  const getFileUrl = (filePath: string) => {
+    if (filePath.startsWith("http")) {
+      return filePath;
+    }
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://127.0.0.1:8000";
+    return `${baseUrl}${filePath}`;
+  }
+
+  const getFileName = (filePath: string) => {
+    return filePath.split("/").pop() || "document.pdf";
+  }
+
+  const getContractName = (contract: IContract) => {
+    if (contract.employee) {
+      return contract.employee.user?.fullname || "—"
+    }
+    if (contract.applicant) {
+      return contract.applicant.applicant_name || "—"
+    }
+    return "—"
+  }
 
   if (loading) {
     return (
-      <div className="container mx-auto py-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <Skeleton className="h-8 w-48 mb-2" />
-            <Skeleton className="h-4 w-64" />
-          </div>
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Loading contracts...</div>
         </div>
-
-        <div className="flex gap-4 mb-6">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-32" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-8 w-20" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto py-6">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-        <Button onClick={fetchContracts} className="mt-4">
-          Try Again
-        </Button>
       </div>
     )
   }
 
   return (
-    <div className="w-full py-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Contracts</h1>
-          <p className="text-muted-foreground">Manage and download employee contracts</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">
-            {filteredContracts.length} contract{filteredContracts.length !== 1 ? "s" : ""}
-          </span>
-        </div>
+    <div className="w-full p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight">Contract Management</h1>
+        <p className="text-muted-foreground mt-2">
+          Manage employee contracts, download documents, and upload signed contracts.
+        </p>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <Input
-            placeholder="Search contracts by ID, employee name, or notes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={(value: ContractStatus | "all") => setStatusFilter(value)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="expired">Expired</SelectItem>
-            <SelectItem value="terminated">Terminated</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Summary Cards - Move this section here */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {contracts.length === 0 ? (
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold">{contracts.length}</p>
-              </div>
-              <FileText className="h-8 w-8 text-muted-foreground" />
-            </div>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No contracts found</h3>
+            <p className="text-muted-foreground text-center">There are no contracts available at the moment.</p>
           </CardContent>
         </Card>
-
-        {(["active", "draft", "expired", "terminated"] as ContractStatus[]).map((status) => {
-          const count = contracts.filter((c) => c.status === status).length
-          return (
-            <Card key={status}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
-                    </p>
-                    <p className="text-2xl font-bold">{count}</p>
-                  </div>
-                  {getStatusBadge(status)}
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-
-      {/* Contracts Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Contracts</CardTitle>
-          <CardDescription>View and download employee contracts</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {filteredContracts.length === 0 ? (
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No contracts found</h3>
-              <p className="text-muted-foreground">
-                {searchTerm || statusFilter !== "all"
-                  ? "Try adjusting your search or filter criteria"
-                  : "No contracts have been created yet"}
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Contract ID</TableHead>
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Position</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Start Date</TableHead>
-                    <TableHead>End Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredContracts.map((contract) => (
-                    <TableRow key={contract.id}>
-                      <TableCell className="font-medium">{contract.contract_id}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span>
-                            {contract.employee
-                              ? `${contract.employee.user?.fullname}`
-                              : `Employee #${contract.employee}`}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {
-                          typeof contract.employee?.position === 'object'
-                            ? contract.employee.position.name
-                            : null
-                        }
-                      </TableCell>
-                      <TableCell>{getStatusBadge(contract.status)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          {formatDate(contract.start_date)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {contract.end_date ? (
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            {formatDate(contract.end_date)}
-                          </div>
+      ) : (
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground tracking-wider whitespace-nowrap">Contract Reference</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground tracking-wider whitespace-nowrap">Name</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground tracking-wider whitespace-nowrap">Status</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground tracking-wider whitespace-nowrap">Created</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground tracking-wider whitespace-nowrap">
+                    Original Contract
+                  </th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground tracking-wider whitespace-nowrap">
+                    Signed Contract
+                  </th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground tracking-wider whitespace-nowrap">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {contracts.map((contract) => (
+                  <tr key={contract.id} className="border-b transition-colors hover:bg-muted/50">
+                    <td className="p-4 align-middle">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">{contract.contract_reference}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 align-middle">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{getContractName(contract)}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 align-middle">
+                      <div className="flex items-center gap-2">
+                        {contract.is_active ? (
+                          <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Active
+                          </Badge>
                         ) : (
-                          <span className="text-muted-foreground">No end date</span>
+                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Pending
+                          </Badge>
                         )}
-                      </TableCell>
-                      <TableCell>
+                      </div>
+                    </td>
+                    <td className="p-4 align-middle">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{formatDate(contract.created_at)}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 align-middle">
+                      {contract.original_contract ? (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDownload(contract.id, contract.contract_id)}
-                          disabled={!contract.contract_file || downloadingIds.has(contract.id)}
-                          className="flex items-center gap-2"
+                          onClick={() => handleDownload(
+                            getFileUrl(contract.original_contract as string),
+                            getFileName(contract.original_contract as string)
+                          )}
+                          className="h-8"
                         >
-                          <Download className="h-4 w-4" />
-                          {downloadingIds.has(contract.id) ? "Downloading..." : "Download"}
+                          <Download className="h-3 w-3 mr-1" />
+                          <span>Download {getFileName(contract.original_contract as string)}</span>
                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Not available</span>
+                      )}
+                    </td>
+                    <td className="p-4 align-middle">
+                      {contract.signed_contract ? (
+                        <div className="flex flex-col gap-2">
+                          <div className="text-sm text-muted-foreground">
+                            {getFileName(contract.signed_contract as string)}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownload(
+                              getFileUrl(contract.signed_contract as string),
+                              getFileName(contract.signed_contract as string)
+                            )}
+                            className="h-8"
+                          >
+                            <Download className="h-3 w-3 mr-1" />
+                            Download
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2 min-w-[140px]">
+                          <Input
+                            type="file"
+                            accept=".pdf,.doc,.docx"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) {
+                                handleFileUpload(contract.id, file)
+                              }
+                            }}
+                            disabled={uploadingId === contract.id}
+                            id={`file-upload-${contract.id}`}
+                          />
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              disabled={uploadingId === contract.id}
+                              className="h-8"
+                              onClick={() => {
+                                const input = document.getElementById(`file-upload-${contract.id}`) as HTMLInputElement
+                                input?.click()
+                              }}
+                            >
+                              <Upload className="h-3 w-3 mr-1" />
+                              {uploadingId === contract.id ? (
+                                <>
+                                  <span className="animate-spin mr-1">⌛</span>
+                                  Uploading...
+                                </>
+                              ) : (
+                                "Choose & Upload"
+                              )}
+                            </Button>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Accepts PDF, DOC, or DOCX
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-4 align-middle">
+                      {!contract.is_active ? (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleApproval(contract.id)}
+                          disabled={approvingId === contract.id}
+                          className="h-8"
+                        >
+                          {approvingId === contract.id ? "Approving..." : "Approve"}
+                        </Button>
+                      ) : (
+                        <Badge variant="outline" className="text-green-600 border-green-600">
+                          Approved
+                        </Badge>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
     </div>
   )
 }

@@ -701,7 +701,7 @@ const FeedbackDialog = ({
   const [feedback, setFeedback] = useState('')
   const [rating, setRating] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
-  const [action, setAction] = useState<'save' | 'advance' | 'reject' | 'schedule' | null>(null)
+  const [action, setAction] = useState<'save' | 'advance' | 'cancel' | 'schedule' | null>(null)
 
   useEffect(() => {
     if (candidate) {
@@ -760,7 +760,7 @@ const FeedbackDialog = ({
     }
 
     setIsSaving(true)
-    setAction('reject')
+    setAction('cancel')
     try {
       await onSave(feedback, rating || 1)
       if (onReject) {
@@ -836,7 +836,7 @@ const FeedbackDialog = ({
                   onClick={handleReject}
                   disabled={isSaving}
                 >
-                  {isSaving && action === 'reject' ? (
+                  {isSaving && action === 'cancel' ? (
                     <>
                       <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                       Rejecting...
@@ -1163,21 +1163,17 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
   }
 
   const canCandidateBeOnboarded = (candidate: Candidate): boolean => {
-    // Can only be onboarded if they have feedback, rating, and have been scheduled/completed interviews
     return !!(candidate.feedback && candidate.rating && candidate.rating > 0)
   }
 
   const isCandidateAlreadyOnboarded = (candidate: Candidate): boolean => {
-    // This would typically come from your API data - you might have an 'onboarded' status field
-    // For now, we'll assume candidates with status 'onboarded' or similar are already onboarded
     return candidate.status === 'onboarded' || candidate.status === 'hired'
   }
 
  const canCandidateBeSelected = (candidate: Candidate | CandidateWithHistory): boolean => {
-  // Only select candidates who DON'T have feedback yet (need action) and aren't already onboarded
   return !(candidate.feedback && candidate.rating && candidate.rating > 0) && !isCandidateAlreadyOnboarded(candidate)
 }
-  // Smart filtered candidates for selection (only those that need action)
+
   const selectableCandidates = filteredCandidates.filter(canCandidateBeSelected)
 
   // Filter candidates for bulk actions
@@ -1192,7 +1188,6 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
     canCandidateBeMoved(candidate)
   )
 
-  // Build all candidates with history for history view (rebuild when data changes)
   const allCandidatesWithHistory = React.useMemo(() => {
     if (!jobPositionAdvert?.applications) return []
 
@@ -1476,7 +1471,7 @@ const handleSelectAll = (checked: boolean) => {
       }
 
       const interviewData = {
-        status: 'rejected'
+        status: 'cancelled'
       };
 
       const result = await updateInterview({
@@ -1807,12 +1802,12 @@ const handleSelectAll = (checked: boolean) => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
+      <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to Job Openings
-          </Button>
+      </Button>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Interview Pipeline</h1>
             <p className="text-gray-600">
@@ -2395,7 +2390,7 @@ const handleSelectAll = (checked: boolean) => {
                                           onClick={async () => {
                                             try {
                                               await rejectCandidate(candidate.id);
-                                              toast.success(`${candidate.applicant_name} rejected`);
+                                              toast.success(`${candidate.applicant_name} cancelled`);
                                               await fetchData();
                                             } catch (error) {
                                               toast.error(`Failed to reject ${candidate.applicant_name}`);
@@ -2724,7 +2719,7 @@ const handleSelectAll = (checked: boolean) => {
           if (selectedCandidate) {
             try {
               await rejectCandidate(selectedCandidate.id);
-              toast.success(`${selectedCandidate.applicant_name} rejected`);
+              toast.success(`${selectedCandidate.applicant_name} cancelled`);
               await fetchData();
             } catch (error) {
               toast.error(`Failed to reject ${selectedCandidate.applicant_name}`);

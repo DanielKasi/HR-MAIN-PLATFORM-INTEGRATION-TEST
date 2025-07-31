@@ -202,7 +202,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     {
       title: "Dashboard",
       href: "/dashboard",
-      icon: <Icon icon="hugeicons:dashboard-browsing" className="!w-6 !h-6" width="28" height="28" />,
+      icon: (
+        <Icon icon="hugeicons:dashboard-browsing" className="!w-6 !h-6" width="28" height="28" />
+      ),
     },
     {
       title: "Recruitment",
@@ -221,11 +223,25 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       icon: <Icon height="20" icon="hugeicons:inbox-download" className="!w-6 !h-6" width="20" />,
     },
     {
+      title: "Offboarding",
+      href: "/off-boarding",
+      icon: <Icon icon="hugeicons:inbox-upload" className="!w-6 !h-6" width="28" height="28" />,
+      submenu: [
+        {title: "Offboarding Stages", href: "/off-boarding/stages"},
+        {title: "Separation Policy", href: "/off-boarding/separation-policy"},
+        {title: "Separation Types", href: "/off-boarding/separation-types"},
+        {title: "Terminations", href: "/off-boarding/terminations"},
+      ],
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+    },
+    {
       title: "Employees",
       href: "#1",
       icon: <Icon icon="hugeicons:user-multiple-02" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
         {title: "Employees", href: "/employees/employee-list"},
+        {title: "Employee Types", href: "/employees/employee-types"},
+        {title: "Work Types", href: "/employees/work-types"},
         {title: "Contracts", href: "/employees/contracts"},
         {title: "Attendance", href: "/employees/attendance"},
         {title: "Discipline", href: "/employees/discipline"},
@@ -246,7 +262,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     {
       title: "Payroll",
       href: "#1",
-      icon: <Icon icon="hugeicons:money-04" className="!w-6 !h-6" width="28" height="28" />,
+      icon: <Icon icon="hugeicons:payment-01" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
         {title: "Allowance Types", href: "/payroll/allowance-types"},
         {title: "Deduction Types", href: "/payroll/deduction-types"},
@@ -255,7 +271,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Payroll Period", href: "/payroll/payroll-period"},
         {title: "Payslip", href: "/payroll/payslip"},
       ],
-    }
+    },
     // ,
     // {
     //   title: "Assets",
@@ -475,18 +491,19 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         </Button>
         {item.submenu && isExpanded && (
           <div className="ml-6 flex flex-col gap-2 mt-2 border-l-2 border-primary/20 bg-gray-200/20">
-            {item.submenu.map((sub) => (
-              <Button
-                key={sub.href}
-                variant="ghost"
-                className={`w-full !rounded-none !text-left flex items-start px-2 !py-3 text-sm text-gray-600 ${pathname === sub.href ? "bg-orange-500/20" : "hover:bg-orange-500/30"}`}
-                onClick={() => router.push(sub.href)}
-              >
-                <span className="!w-full !text-left !bg-transparent">
-                  {isSideBarOpen && sub.title}
-                </span>
-              </Button>
-            ))}
+            {item.submenu.map(
+              (sub) =>
+                isSideBarOpen && (
+                  <Button
+                    key={sub.href}
+                    variant="ghost"
+                    className={`w-full !rounded-none !text-left flex items-start px-2 !py-3 text-sm text-gray-600 ${pathname === sub.href ? "bg-orange-500/20" : "hover:bg-orange-500/30"}`}
+                    onClick={() => router.push(sub.href)}
+                  >
+                    <span className="!w-full !text-left !bg-transparent">{sub.title}</span>
+                  </Button>
+                ),
+            )}
           </div>
         )}
       </div>
@@ -598,10 +615,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         </div>
 
         {/* Content */}
-        <div className="flex-1 w-full overflow-y-auto p-4 relative">
+        <div className="w-full p-4 relative">
           {selectedInstitution ? (
             <>
-        <div className={`flex items-center gap-4 my-2 ${isSideBarOpen ? "pl-0" : "pl-4"}`}>
+              {/* <div className={`flex items-center gap-4 my-2 ${isSideBarOpen ? "pl-0" : "pl-4"}`}>
                 <Button
                   variant={"outline"}
                   size="sm"
@@ -610,8 +627,8 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                 >
                   <Icon icon="hugeicons:arrow-left-02" className="!w-8 !h-8" />
                 </Button>
-              </div>
-              {children}
+              </div> */}
+              <div className="overflow-y-auto max-h-[87svh] relative">{children}</div>
             </>
           ) : (
             <CreateOrganisationWizard />
@@ -642,6 +659,3 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     </div>
   );
 }
-
-
-// const styledSubNavItem = styled

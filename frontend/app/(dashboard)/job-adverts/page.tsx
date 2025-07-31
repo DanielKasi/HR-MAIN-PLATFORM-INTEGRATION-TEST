@@ -18,6 +18,8 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Search,
+  Filter,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +34,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { getJobPositionAdverts, updateJobPositionAdvert } from "@/lib/utils";
@@ -61,6 +71,21 @@ const getStatusColor = (status: JobAdvertStatus) => {
   }
 };
 
+const getStatusVariant = (status: JobAdvertStatus) => {
+  switch (status) {
+    case "active":
+      return "success";
+    case "archived":
+      return "secondary";
+    case "expired":
+      return "destructive";
+    case "closed":
+      return "outline";
+    default:
+      return "secondary";
+  }
+};
+
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString("en-US", {
     year: "numeric",
@@ -82,7 +107,8 @@ export default function JobAdvertsPage() {
   }>({ count: 0, next: null, previous: null });
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [jobTitleFilter, setJobTitleFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<{ from: string | null; to: string | null }>({ from: null, to: null });
   const [error, setError] = useState("");
   const [isClosing, setIsClosing] = useState(false);
@@ -160,9 +186,12 @@ export default function JobAdvertsPage() {
     }
 
     return jobAdverts.filter((advert) => {
-      const matchesJobTitle = !jobTitleFilter.trim()
+      const matchesSearch = !searchTerm.trim()
         ? true
-        : advert.job_position_details?.name?.toLowerCase().includes(jobTitleFilter.toLowerCase());
+        : advert.job_position_details?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          advert.extra_information?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus = statusFilter === "all" || advert.job_position_advert_status === statusFilter;
 
       const matchesDateRange = !dateRange.from && !dateRange.to
         ? true
@@ -173,9 +202,9 @@ export default function JobAdvertsPage() {
             return publishedDate >= fromDate && publishedDate <= toDate;
           })();
 
-      return matchesJobTitle && matchesDateRange;
+      return matchesSearch && matchesStatus && matchesDateRange;
     });
-  }, [jobAdverts, jobTitleFilter, dateRange]);
+  }, [jobAdverts, searchTerm, statusFilter, dateRange]);
 
   const publishedAdverts = useMemo(
     () => (Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.job_position_advert_status === "active") : []),
@@ -254,7 +283,8 @@ export default function JobAdvertsPage() {
   };
 
   const clearFilters = () => {
-    setJobTitleFilter("");
+    setSearchTerm("");
+    setStatusFilter("all");
     setDateRange({ from: null, to: null });
     setCurrentPage(1);
   };
@@ -272,7 +302,7 @@ export default function JobAdvertsPage() {
         <div>
           <h1 className="text-2xl font-bold">Job Openings</h1>
           <p className="text-muted-foreground">
-            Manage job advertisements for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
+            Manage job openings for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -293,13 +323,76 @@ export default function JobAdvertsPage() {
         </div>
       </div>
 
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Search job openings..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex gap-2 min-w-80">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full px-6">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <SelectValue placeholder="Filter by status" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
+              <SelectItem value="expired">Expired</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            type="date"
+            placeholder="From date"
+            value={dateRange.from || ""}
+            onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
+            className="w-[200px]"
+          />
+          <Input
+            type="date"
+            placeholder="To date"
+            value={dateRange.to || ""}
+            onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
+            className="w-[200px]"
+          />
+        </div>
+      </div>
+
+      {/* Rows per Page Selector */}
+      <div className="flex justify-end">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Rows per page:</span>
+          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+            <SelectTrigger className="w-[70px] h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZES.map((size) => (
+                <SelectItem key={size} value={size.toString()}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {/* Stats */}
       {!isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-blue-600">{paginationInfo.count}</div>
-              <p className="text-xs text-muted-foreground">Total Adverts</p>
+              <p className="text-xs text-muted-foreground">Total Openings</p>
             </CardContent>
           </Card>
           <Card>
@@ -323,54 +416,6 @@ export default function JobAdvertsPage() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="w-full flex flex-col lg:flex-row gap-4 items-center justify-between">
-        <div className="flex gap-2">
-          <Input
-            placeholder="Filter by job title..."
-            value={jobTitleFilter}
-            onChange={(e) => setJobTitleFilter(e.target.value)}
-            className="w-[800px]"
-          />
-          <Input
-            type="date"
-            placeholder="From date"
-            value={dateRange.from || ""}
-            onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
-            className="w-[250px]"
-          />
-          <Input
-            type="date"
-            placeholder="To date"
-            value={dateRange.to || ""}
-            onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
-            className="w-[250px]"
-          />
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Rows per page:</span>
-            <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-              <SelectTrigger className="w-[70px] h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PAGE_SIZES.map((size) => (
-                  <SelectItem key={size} value={size.toString()}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {(jobTitleFilter || dateRange.from || dateRange.to) && (
-            <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
-              Clear Filters
-            </Button>
-          )}
-        </div>
-      </div>
-
       {/* Error Message */}
       {error && (
         <div className="text-sm font-medium text-destructive bg-destructive/10 p-4 rounded-md border border-destructive/20">
@@ -389,20 +434,11 @@ export default function JobAdvertsPage() {
         </div>
       )}
 
-      {/* Job Adverts Grid */}
+      {/* Job Adverts Table */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-full" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-1/2 mb-2" />
-                <Skeleton className="h-4 w-2/3" />
-              </CardContent>
-            </Card>
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="w-full h-12 bg-muted/10 rounded-md animate-pulse" />
           ))}
         </div>
       ) : filteredJobAdverts.length === 0 ? (
@@ -410,11 +446,11 @@ export default function JobAdvertsPage() {
           <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No job adverts found</h3>
           <p className="text-muted-foreground mb-4">
-            {jobTitleFilter || dateRange.from || dateRange.to
+            {searchTerm || statusFilter !== "all" || dateRange.from || dateRange.to
               ? "No job adverts match your filter criteria."
-              : "Get started by creating your first job advertisement."}
+              : "Get started by creating your first job opening."}
           </p>
-          {jobTitleFilter || dateRange.from || dateRange.to ? (
+          {searchTerm || statusFilter !== "all" || dateRange.from || dateRange.to ? (
             <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
               Clear Filters
             </Button>
@@ -426,94 +462,119 @@ export default function JobAdvertsPage() {
           )}
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredJobAdverts.map((advert) => (
-            <Card key={advert.id} className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Megaphone className="h-5 w-5 text-primary" />
+        <Card className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Job Position</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Published Date</TableHead>
+                <TableHead>Expiry Date</TableHead>
+                <TableHead>Expected Employees</TableHead>
+                <TableHead>Interview Stages</TableHead>
+                <TableHead>Additional Info</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredJobAdverts.map((advert) => (
+                <TableRow key={advert.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-8 w-8 rounded-full ${
+                        advert.job_position_advert_status === "active" 
+                          ? "bg-green-50" 
+                          : advert.job_position_advert_status === "expired"
+                          ? "bg-red-50"
+                          : "bg-gray-50"
+                      } flex items-center justify-center`}>
+                        <Megaphone className={`h-4 w-4 ${
+                          advert.job_position_advert_status === "active"
+                            ? "text-green-600"
+                            : advert.job_position_advert_status === "expired"
+                            ? "text-red-600"
+                            : "text-gray-600"
+                        }`} />
+                      </div>
+                      <span>{advert.job_position_details?.name || "N/A"}</span>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">Job Opening</CardTitle>
-                      <Badge className={`text-xs ${getStatusColor(advert.job_position_advert_status)}`}>
-                        {advert.job_position_advert_status.toUpperCase()}
-                      </Badge>
-                    </div>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_JOB_ADVERTS}>
-                        <DropdownMenuItem onClick={() => handleViewJobAdvert(advert.id)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                      </ProtectedComponent>
-                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_JOB_ADVERTS}>
-                        <DropdownMenuItem onClick={() => handleEditJobAdvert(advert.id)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                      </ProtectedComponent>
-                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_JOB_ADVERTS}>
-                        <DropdownMenuItem
-                          onClick={() => handleCloseJobAdvert(advert.id)}
-                          className="text-destructive"
-                          disabled={isClosing}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Close
-                        </DropdownMenuItem>
-                      </ProtectedComponent>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3" onClick={() => handleViewJobAdvert(advert.id)}>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      <Briefcase className="h-3 w-3" />
-                      Position:
-                    </span>
-                    <span className="font-medium">{advert.job_position_details?.name || "N/A"}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      Expires:
-                    </span>
-                    <span className={`font-medium ${isExpired(advert.expiry_date) ? "text-red-600" : ""}`}>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getStatusVariant(advert.job_position_advert_status)}>
+                      {advert.job_position_advert_status.toUpperCase()}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {formatDate(advert.published_date)}
+                  </TableCell>
+                  <TableCell>
+                    <span className={`${isExpired(advert.expiry_date) ? "text-red-600 font-medium" : ""}`}>
                       {formatDate(advert.expiry_date)}
                     </span>
-                  </div>
-                  {advert.number_of_employees_expected && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        Expected:
-                      </span>
-                      <span className="font-medium">{advert.number_of_employees_expected} employees</span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-3 w-3 text-muted-foreground" />
+                      {advert.number_of_employees_expected || "-"}
                     </div>
-                  )}
-                </div>
-                {advert.extra_information && (
-                  <div className="pt-2 border-t">
-                    <p className="text-sm text-muted-foreground line-clamp-2">{advert.extra_information}</p>
-                  </div>
-                )}
-                <div className="pt-2 border-t">
-                  <div className="text-xs text-muted-foreground">Published: {formatDate(advert.published_date)}</div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-3 w-3 text-muted-foreground" />
+                      {advert.interview_stages?.length || 0} stages
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-xs truncate text-sm text-muted-foreground">
+                      {advert.extra_information || "-"}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_JOB_ADVERTS}>
+                          <DropdownMenuItem onClick={() => handleViewJobAdvert(advert.id)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_JOB_ADVERTS}>
+                          <DropdownMenuItem onClick={() => handleEditJobAdvert(advert.id)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_JOB_ADVERTS}>
+                          <DropdownMenuItem
+                            onClick={() => handleCloseJobAdvert(advert.id)}
+                            className="text-destructive"
+                            disabled={isClosing}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Close
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+
+      {/* Clear Filters Button */}
+      {(searchTerm || statusFilter !== "all" || dateRange.from || dateRange.to) && (
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
+            Clear Filters
+          </Button>
         </div>
       )}
 
@@ -522,7 +583,7 @@ export default function JobAdvertsPage() {
         <div className="text-sm text-muted-foreground">
           Showing {filteredJobAdverts.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to{" "}
           {Math.min(currentPage * pageSize, filteredJobAdverts.length)} of {filteredJobAdverts.length} job adverts
-          {(jobTitleFilter || dateRange.from || dateRange.to) && ` (filtered from ${paginationInfo.count} total)`}
+          {(searchTerm || statusFilter !== "all" || dateRange.from || dateRange.to) && ` (filtered from ${paginationInfo.count} total)`}
         </div>
       )}
 

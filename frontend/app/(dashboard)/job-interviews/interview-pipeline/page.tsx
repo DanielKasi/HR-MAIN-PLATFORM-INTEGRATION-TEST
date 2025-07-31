@@ -60,6 +60,7 @@ import { createInterviewStage, fetchEmployees, getInterviews, getInterviewStages
 import { selectUser, selectSelectedInstitution } from "@/store/auth/selectors"
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {LocationAutocomplete} from "@/components/location-autocomplete";
 
 
 interface InterviewHistoryEntry {
@@ -277,6 +278,7 @@ const processInterviewsForJob = (interviews: IInterview[], jobPositionId: number
 
 
 // Group interviews by stage for a specific job
+// Group interviews by stage for a specific job
 const buildStagesForJob = (
   interviewStages: IInterviewStage[],
   interviews: IInterview[],
@@ -287,9 +289,11 @@ const buildStagesForJob = (
     stage => stage.job_position_advert === jobPositionId
   )
 
-  // Filter interviews for the specific job position
+  // Filter interviews for the specific job position and exclude rejected ones
   const jobInterviews = interviews.filter(
     interview => interview.job_position_application_details?.job_position_advert === jobPositionId
+    // Note: We don't filter by status here because we want to show all interviews in their respective stages
+    // but we'll handle rejected ones in the UI
   )
 
   // Build processed stages
@@ -302,7 +306,16 @@ const buildStagesForJob = (
     )
 
     // Process candidates for this stage
-    const candidates = processInterviewsForJob(stageInterviews, jobPositionId)
+    const allCandidates = processInterviewsForJob(stageInterviews, jobPositionId)
+    
+    // Separate active and rejected candidates for counting
+    const activeCandidates = allCandidates.filter(candidate => 
+      candidate.status !== 'rejected' && candidate.status !== 'cancelled'
+    )
+    
+    // Use all candidates for the candidates array (UI will handle display)
+    // but use active candidates for count
+    const candidates = allCandidates
 
     // Get interviewer names
     const interviewerNames = Array.isArray(stage.interviewers_details)
@@ -314,7 +327,7 @@ const buildStagesForJob = (
     return {
       id: stage.id.toString(),
       name: stage.name,
-      count: stageInterviews.length,
+      count: activeCandidates.length, // Count only active candidates
       level: stage.level,
       interviewer: interviewerNames,
       icon: getStageIcon(stage.name, index),
@@ -370,7 +383,7 @@ const FeedbackDialog = ({
   const [feedback, setFeedback] = useState('')
   const [rating, setRating] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
-  const [action, setAction] = useState<'save' | 'reject' | 'schedule' | null>(null)
+  const [action, setAction] = useState<'save' | 'cancel' | 'schedule' | null>(null)
 
   useEffect(() => {
     if (candidate) {
@@ -429,7 +442,7 @@ const FeedbackDialog = ({
     }
 
     setIsSaving(true)
-    setAction('reject')
+    setAction('cancel')
     try {
       await onSave(feedback, rating || 1)
       if (onReject) {
@@ -505,7 +518,7 @@ const FeedbackDialog = ({
                   onClick={handleReject}
                   disabled={isSaving}
                 >
-                  {isSaving && action === 'reject' ? (
+                  {isSaving && action === 'cancel' ? (
                     <>
                       <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                       Rejecting...
@@ -664,23 +677,27 @@ const InterviewSchedulingDialog = ({
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="location" className="text-sm font-medium">
-                Interview Location *
-              </Label>
-              <Input
-                id="location"
-                type="text"
-                value={scheduleData.location}
-                onChange={(e) => updateScheduleData("location", e.target.value)}
-                className={errors.location ? "border-destructive" : ""}
-                placeholder="e.g., Zoom, Google Meet, Conference Room A"
-                required
-              />
-              {errors.location && (
-                <p className="text-sm text-destructive">{errors.location}</p>
-              )}
-            </div>
+              <div className="space-y-2">
+  <Label htmlFor="location" className="text-sm font-medium">
+    Interview Location *
+  </Label>
+  <LocationAutocomplete
+    value={scheduleData.location}
+    onChange={(value) => updateScheduleData("location", value)}
+    onCoordinatesChange={(lat, lon) => {
+      // You can handle lat/lon here if needed
+    }}
+    placeholder="Search for interview location..."
+    showCurrentLocationButton={true}
+  />
+  {errors.location && (
+    <p className="text-sm text-destructive">{errors.location}</p>
+  )}
+  <p className="text-xs text-muted-foreground">
+    Search for the interview location or specify if virtual (e.g., "Zoom Meeting")
+  </p>
+</div>
+
 
             <div className="space-y-2">
               <Label htmlFor="interview_type" className="text-sm font-medium">
@@ -808,32 +825,45 @@ const selectableCandidates = useMemo(() => {
   })
 }, [filteredCandidates])
 
+
 // Helper functions for candidate validation
 const canCandidateBeSelected = (candidate: InterviewCandidate): boolean => {
+  // Cannot select rejected or cancelled candidates
+  if (candidate.status === 'rejected' || candidate.status === 'cancelled') {
+    return false;
+  }
+  
   // Only select candidates who DON'T have feedback yet (need action)
   // This ensures we only select candidates who need feedback/rating
   return !(candidate.feedback && candidate.rating && candidate.rating > 0)
 }
 
-// REPLACE YOUR canCandidateBeMoved FUNCTION WITH THIS:
+
 const canCandidateBeMoved = (candidate: InterviewCandidate): boolean => {
-  // Can only be moved if they have feedback, rating > 0, and status is completed
-  return !!(candidate.feedback && candidate.rating && candidate.rating > 0 && candidate.status === 'completed')
+
+  if (candidate.status === 'rejected' || candidate.status === 'cancelled') {
+    return false;
+  }
+  
+  return !!(candidate.feedback && candidate.rating && candidate.rating > 0)
 }
 
-// REPLACE YOUR canCandidateBeOnboarded FUNCTION WITH THIS:
 const canCandidateBeOnboarded = (candidate: InterviewCandidate | InterviewCandidateWithHistory): boolean => {
-  // Can only be onboarded if they have feedback, rating > 0, and status is completed
-  return !!(candidate.feedback && candidate.rating && candidate.rating > 0 && candidate.status === 'completed')
+  if (candidate.status === 'rejected' || candidate.status === 'cancelled') {
+    return false;
+  }
+  
+  return !!(candidate.feedback && candidate.rating && candidate.rating > 0)
+}
+
+const isCandidateRejected = (candidate: InterviewCandidate | InterviewCandidateWithHistory): boolean => {
+  return candidate.status === 'rejected' || candidate.status === 'cancelled'
 }
 
 const isCandidateAlreadyOnboarded = (candidate: InterviewCandidate | InterviewCandidateWithHistory): boolean => {
-  // This would typically come from your API data - you might have an 'onboarded' status field
-  // For now, we'll assume candidates with status 'onboarded' or similar are already onboarded
   return candidate.status === 'onboarded' || candidate.status === 'hired'
 }
 
-// Filter candidates for bulk actions
 const candidatesEligibleForOnboarding = useMemo(() => {
   return filteredCandidates.filter(candidate =>
     selectedCandidates.includes(candidate.id) &&
@@ -841,6 +871,8 @@ const candidatesEligibleForOnboarding = useMemo(() => {
     !isCandidateAlreadyOnboarded(candidate)
   )
 }, [filteredCandidates, selectedCandidates])
+
+
 
 const candidatesEligibleForMoving = useMemo(() => {
   return filteredCandidates.filter(candidate =>
@@ -1076,6 +1108,12 @@ const handleSelectCandidate = (candidateKey: string, checked: boolean) => {
       return
     }
     
+    // Check if candidate is rejected
+    if (isCandidateRejected(candidate)) {
+      toast.error("Cannot select rejected or cancelled candidates")
+      return
+    }
+    
     // Check if candidate already has feedback and rating
     if (candidate.feedback && candidate.rating && candidate.rating > 0) {
       toast.error("This candidate already has feedback and rating. Use individual actions to onboard or move them.")
@@ -1121,62 +1159,65 @@ const handleSelectAll = (checked: boolean) => {
     setSelectedCandidates([])
   }
 }
-  const handleUpdateFeedback = async (feedback: string, rating: number) => {
-    if (!selectedCandidate) return
+ 
+const handleUpdateFeedback = async (feedback: string, rating: number) => {
+  if (!selectedCandidate) return
 
-    try {
-      const interviewId = selectedCandidate.interview_id;
+  try {
+    const interviewId = selectedCandidate.interview_id;
 
-      if (!interviewId) {
-        throw new Error('No interview found for this candidate');
-      }
-
-      const isFinalStage = !nextStageForActive;
-
-      const interviewData = {
-        feedback: feedback,
-        rating: rating,
-        status: isFinalStage ? 'completed' : selectedCandidate.interview?.status || 'scheduled'
-      }
-
-      const result = await updateInterview({
-        interviewId: interviewId,
-        interviewData: interviewData
-      });
-
-      if (!result) {
-        throw new Error('Failed to update interview feedback');
-      }
-
-      // Update local state
-      setInterviews(prev =>
-        prev.map(interview => {
-          if (interview.id === interviewId) {
-            return {
-              ...interview,
-              feedback: result.feedback,
-              rating: result.rating,
-              status: result.status
-            }
-          }
-          return interview
-        })
-      )
-
-      setSelectedCandidate(prev => {
-        if (!prev || prev.interview_id !== interviewId) return prev
-        return {
-          ...prev,
-          feedback: result.feedback || undefined,
-          rating: result.rating || undefined
-        }
-      })
-
-      await fetchData() // Refresh data
-    } catch (error) {
-      throw error
+    if (!interviewId) {
+      throw new Error('No interview found for this candidate');
     }
+
+    // Only update feedback and rating, keep status as is (should remain "scheduled")
+    const interviewData = {
+      feedback: feedback,
+      rating: rating,
+      // DO NOT change status - it should remain "scheduled" until onboarded
+    }
+
+    const result = await updateInterview({
+      interviewId: interviewId,
+      interviewData: interviewData
+    });
+
+    if (!result) {
+      throw new Error('Failed to update interview feedback');
+    }
+
+    // Update local state
+    setInterviews(prev =>
+      prev.map(interview => {
+        if (interview.id === interviewId) {
+          return {
+            ...interview,
+            feedback: result.feedback,
+            rating: result.rating,
+            // Keep the original status, don't change it
+            status: interview.status
+          }
+        }
+        return interview
+      })
+    )
+
+    setSelectedCandidate(prev => {
+      if (!prev || prev.interview_id !== interviewId) return prev
+      return {
+        ...prev,
+        feedback: result.feedback || undefined,
+        rating: result.rating || undefined,
+        // Keep the original status
+        status: prev.status
+      }
+    })
+
+    await fetchData() // Refresh data
+  } catch (error) {
+    throw error
   }
+}
 
   const rejectCandidate = async (candidateId: number) => {
     try {
@@ -1187,7 +1228,7 @@ const handleSelectAll = (checked: boolean) => {
       }
 
       const interviewData = {
-        status: 'rejected'
+        status: 'cancelled'
       };
 
       const result = await updateInterview({
@@ -1204,200 +1245,227 @@ const handleSelectAll = (checked: boolean) => {
     }
   }
 
-  const scheduleInterviewsForNextStage = async (
-    candidates: InterviewCandidate[],
-    scheduleData: InterviewScheduleData
-  ) => {
-    if (!selectedInstitution || !nextStageForActive || !selectedJobPosition) {
-      throw new Error('Missing institution, next stage, or job position/title data');
-    }
-
-    try {
-      const interviewPromises = candidates.map(async (candidate) => {
-        // Extract time from datetime-local input
-        let interviewTime = "10:00:00" // Default fallback
-        let interviewDate = scheduleData.interview_date
-
-        if (scheduleData.interview_date) {
-          try {
-            const dateTime = new Date(scheduleData.interview_date)
-            if (!isNaN(dateTime.getTime())) {
-              const hours = dateTime.getHours().toString().padStart(2, '0')
-              const minutes = dateTime.getMinutes().toString().padStart(2, '0')
-              interviewTime = `${hours}:${minutes}:00`
-              interviewDate = dateTime.toISOString()
-            }
-          } catch (error) {
-            console.error('Error parsing interview date:', error)
-          }
-        }
-
-        const location = (scheduleData.location || "").trim() || "To be determined"
-        const interview_type = scheduleData.interview_type || "online"
-        
-        const createData = {
-          job_position_application: candidate.id,
-          interview_stage: parseInt(nextStageForActive.id),
-          interview_date: interviewDate,
-          location: location,
-          interview_time: interviewTime,
-          interview_type: interview_type,
-          status: "scheduled",
-          feedback: null,
-          rating: null,
-          created_by: createdBy,
-        };
-
-        try {
-          const result = await createInterview({
-            institutionId: selectedInstitution.id,
-            interviewData: createData,
-          });
-          return result
-        } catch (apiError) {
-          console.error('Failed to create interview:', apiError)
-          return null
-        }
-      });
-
-      const results = await Promise.all(interviewPromises);
-      const successCount = results.filter(result => result !== null).length;
-
-      if (successCount === 0) {
-        throw new Error('Failed to schedule any interviews');
-      }
-
-      return { successCount, totalCount: candidates.length, failureCount: results.length - successCount };
-    } catch (error) {
-      throw error;
-    }
+ const scheduleInterviewsForNextStage = async (
+  candidates: InterviewCandidate[],
+  scheduleData: InterviewScheduleData
+) => {
+  if (!selectedInstitution || !nextStageForActive || !selectedJobPosition) {
+    throw new Error('Missing institution, next stage, or job position/title data');
   }
 
-  const moveToNextStage = async (candidateId: number) => {
-    try {
-      const candidate = filteredCandidates.find(c => c.id === candidateId);
+  try {
+    const interviewPromises = candidates.map(async (candidate) => {
+      // Extract time from datetime-local input
+      let interviewTime = "10:00:00" // Default fallback
+      let interviewDate = scheduleData.interview_date
 
-      if (!candidate || !candidate.interview_id) {
-        throw new Error(`No interview found for candidate ${candidateId}`);
+      if (scheduleData.interview_date) {
+        try {
+          const dateTime = new Date(scheduleData.interview_date)
+          if (!isNaN(dateTime.getTime())) {
+            const hours = dateTime.getHours().toString().padStart(2, '0')
+            const minutes = dateTime.getMinutes().toString().padStart(2, '0')
+            interviewTime = `${hours}:${minutes}:00`
+            interviewDate = dateTime.toISOString()
+          }
+        } catch (error) {
+          console.error('Error parsing interview date:', error)
+        }
       }
 
-      const currentInterviewData = {
-        status: 'completed'
+      const location = (scheduleData.location || "").trim() || "To be determined"
+      const interview_type = scheduleData.interview_type || "online"
+      
+      const createData = {
+        job_position_application: candidate.id,
+        interview_stage: parseInt(nextStageForActive.id),
+        interview_date: interviewDate,
+        location: location,
+        interview_time: interviewTime,
+        interview_type: interview_type,
+        status: "scheduled", // New interview starts as "scheduled"
+        feedback: null,
+        rating: null,
+        created_by: createdBy,
       };
 
-      const result = await updateInterview({
-        interviewId: candidate.interview_id,
-        interviewData: currentInterviewData
-      });
-
-      if (!result) {
-        throw new Error('Failed to update current interview status');
+      try {
+        const result = await createInterview({
+          institutionId: selectedInstitution.id,
+          interviewData: createData,
+        });
+        return result
+      } catch (apiError) {
+        console.error('Failed to create interview:', apiError)
+        return null
       }
+    });
 
-      return { success: true, data: result };
-    } catch (error) {
-      throw error;
+    const results = await Promise.all(interviewPromises);
+    const successCount = results.filter(result => result !== null).length;
+
+    if (successCount === 0) {
+      throw new Error('Failed to schedule any interviews');
     }
-  }
 
+    return { successCount, totalCount: candidates.length, failureCount: results.length - successCount };
+  } catch (error) {
+    throw error;
+  }
+}
+
+  // const moveToNextStage = async (candidateId: number) => {
+  //   try {
+  //     const candidate = filteredCandidates.find(c => c.id === candidateId);
+
+  //     if (!candidate || !candidate.interview_id) {
+  //       throw new Error(`No interview found for candidate ${candidateId}`);
+  //     }
+
+  //     const currentInterviewData = {
+  //       status: 'completed'
+  //     };
+
+  //     const result = await updateInterview({
+  //       interviewId: candidate.interview_id,
+  //       interviewData: currentInterviewData
+  //     });
+
+  //     if (!result) {
+  //       throw new Error('Failed to update current interview status');
+  //     }
+
+  //     return { success: true, data: result };
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
+
+  const moveToNextStage = async (candidateId: number) => {
+  try {
+    const candidate = filteredCandidates.find(c => c.id === candidateId);
+
+    if (!candidate || !candidate.interview_id) {
+      throw new Error(`No interview found for candidate ${candidateId}`);
+    }
+
+    return { success: true, data: { message: 'Ready to schedule next stage' } };
+  } catch (error) {
+    throw error;
+  }
+}
   const handleScheduleAndMove = async (scheduleData: InterviewScheduleData) => {
-    setIsProcessingProgression(true)
+  setIsProcessingProgression(true)
 
-    try {
-      // Step 1: Schedule interviews for next stage
-      const scheduleResult = await scheduleInterviewsForNextStage(candidatesToSchedule, scheduleData)
+  try {
+    // Step 1: Schedule interviews for next stage
+    const scheduleResult = await scheduleInterviewsForNextStage(candidatesToSchedule, scheduleData)
 
-      if (scheduleResult.successCount > 0) {
-        // Step 2: Mark current interviews as completed
-        const moveResults = []
-        const moveErrors = []
+    if (scheduleResult.successCount > 0) {
+      // We don't need to update the current interviews' status
+      // They should remain "scheduled" until the candidate is onboarded
+      // Only the onboarding process should change status to "completed"
 
-        for (const candidate of candidatesToSchedule) {
-          try {
-            const result = await moveToNextStage(candidate.id)
-            moveResults.push({ candidateId: candidate.id, success: true, data: result })
-          } catch (error) {
-            moveErrors.push({ candidateId: candidate.id, error })
-          }
-        }
+      toast.success(`Successfully scheduled interviews and moved ${candidatesToSchedule.length} candidates to ${nextStageForActive?.name}`)
+      
+      setSelectedCandidates([])
+      setIsSchedulingDialogOpen(false)
+      setCandidatesToSchedule([])
 
-        if (moveErrors.length === 0) {
-          toast.success(`Successfully scheduled interviews and moved ${candidatesToSchedule.length} candidates to ${nextStageForActive?.name}`)
-        } else if (moveResults.length > 0) {
-          toast.warning(`${moveResults.length} candidates moved successfully, ${moveErrors.length} failed to move`)
-        } else {
-          toast.error('Failed to move any candidates to the next stage')
-        }
-
-        setSelectedCandidates([])
-        setIsSchedulingDialogOpen(false)
-        setCandidatesToSchedule([])
-
-        await fetchData()
-      } else {
-        toast.error('Failed to schedule interviews')
-      }
-    } catch (error) {
-      toast.error('Failed to schedule interviews and move candidates')
-    } finally {
-      setIsProcessingProgression(false)
+      await fetchData()
+    } else {
+      toast.error('Failed to schedule interviews')
     }
+  } catch (error) {
+    toast.error('Failed to schedule interviews and move candidates')
+  } finally {
+    setIsProcessingProgression(false)
   }
-
-  const handleBulkOnboard = async () => {
-     const eligibleCandidates = filteredCandidates.filter(candidate =>
+}
+const handleBulkOnboard = async () => {
+  // Filter candidates who have feedback and rating (don't require completed status)
+  const eligibleCandidates = filteredCandidates.filter(candidate =>
     selectedCandidates.includes(candidate.id) &&
     candidate.feedback && 
     candidate.rating && 
     candidate.rating > 0 &&
-    candidate.status === 'completed'
+    candidate.status !== 'rejected' &&
+    candidate.status !== 'cancelled'
   )
 
-    if (eligibleCandidates.length === 0) {
-      toast.error('No candidates eligible for onboarding. Candidates need feedback and rating first.')
-      return
-    }
+  if (eligibleCandidates.length === 0) {
+    toast.error('No candidates eligible for onboarding. Candidates need feedback and rating first.')
+    return
+  }
 
-    try {
-      const eligibleIds = eligibleCandidates.map(c => c.id)
-      const result = await bulkCreateOnBoarding({ applicationIds: eligibleIds })
+  try {
+    const eligibleIds = eligibleCandidates.map(c => c.id)
+    const result = await bulkCreateOnBoarding({ applicationIds: eligibleIds })
 
-      if (result) {
-        const createdCount = result.summary?.created_count || result.created?.length || 0
-        const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0
+    if (result) {
+      const createdCount = result.summary?.created_count || result.created?.length || 0
+      const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0
 
-        if (createdCount > 0 && skippedCount === 0) {
-          toast.success(`Successfully onboarded ${createdCount} candidate(s)`)
-          setSelectedCandidates([])
-          await fetchData()
-        } else if (createdCount > 0 && skippedCount > 0) {
-          toast.warning(`${createdCount} candidates onboarded successfully, ${skippedCount} were already onboarded`)
-          setSelectedCandidates([])
-          await fetchData()
-        } else if (createdCount === 0 && skippedCount > 0) {
-          toast.warning(`All ${skippedCount} selected candidate(s) are already onboarded`)
-          setSelectedCandidates([])
-          await fetchData()
-        } else {
-          toast.error('No candidates were processed successfully')
-        }
-      } else {
-        toast.error('Failed to onboard candidates - API returned no response')
+      // Update interview statuses to completed for successfully onboarded candidates
+      if (createdCount > 0) {
+        const updatePromises = eligibleCandidates.map(async (candidate) => {
+          if (candidate.interview_id) {
+            try {
+              await updateInterview({
+                interviewId: candidate.interview_id,
+                interviewData: { status: 'completed' }
+              })
+            } catch (error) {
+              console.error(`Failed to update status for candidate ${candidate.id}:`, error)
+            }
+          }
+        })
+
+        // Execute all status updates
+        await Promise.allSettled(updatePromises)
       }
-    } catch (error) {
-      toast.error(`Failed to onboard candidates: ${error instanceof Error ? error.message : 'Unknown error'}`)
+
+      if (createdCount > 0 && skippedCount === 0) {
+        toast.success(`Successfully onboarded ${createdCount} candidate(s)`)
+        setSelectedCandidates([])
+        await fetchData()
+      } else if (createdCount > 0 && skippedCount > 0) {
+        toast.warning(`${createdCount} candidates onboarded successfully, ${skippedCount} were already onboarded`)
+        setSelectedCandidates([])
+        await fetchData()
+      } else if (createdCount === 0 && skippedCount > 0) {
+        toast.warning(`All ${skippedCount} selected candidate(s) are already onboarded`)
+        setSelectedCandidates([])
+        await fetchData()
+      } else {
+        toast.error('No candidates were processed successfully')
+      }
+    } else {
+      toast.error('Failed to onboard candidates - API returned no response')
+    }
+  } catch (error) {
+    toast.error(`Failed to onboard candidates: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  }
+}
+
+const handleIndividualOnboard = async (candidate: InterviewCandidate | InterviewCandidateWithHistory): Promise<OnboardResult> => {
+  // Check if candidate has feedback and rating but don't require completed status
+  if (!candidate.feedback || !candidate.rating || candidate.rating <= 0) {
+    return { 
+      success: false, 
+      message: 'Candidate must have feedback and rating to be onboarded' 
     }
   }
 
-  const handleIndividualOnboard = async (candidate: InterviewCandidate | InterviewCandidateWithHistory): Promise<OnboardResult> => {
-    if (!canCandidateBeOnboarded(candidate)) {
+  // Don't allow onboarding rejected candidates
+  if (candidate.status === 'rejected' || candidate.status === 'cancelled') {
     return { 
       success: false, 
-      message: 'Candidate must have feedback, rating, and completed status to be onboarded' 
+      message: 'Cannot onboard rejected or cancelled candidates' 
     }
   }
   
-    try {
+  try {
     const result = await bulkCreateOnBoarding({ applicationIds: [candidate.id] })
 
     if (result) {
@@ -1405,6 +1473,23 @@ const handleSelectAll = (checked: boolean) => {
       const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0
 
       if (createdCount > 0) {
+        // Update the interview status to completed after successful onboarding
+        try {
+          const candidateWithHistory = candidate as InterviewCandidateWithHistory
+          const interviewId = candidateWithHistory.interview_id || 
+            (candidate as InterviewCandidate).interview_id
+
+          if (interviewId) {
+            await updateInterview({
+              interviewId: interviewId,
+              interviewData: { status: 'completed' }
+            })
+          }
+        } catch (statusUpdateError) {
+          console.error('Failed to update interview status after onboarding:', statusUpdateError)
+          // Don't fail the onboarding if status update fails
+        }
+
         await fetchData()
         return { success: true }
       } else if (skippedCount > 0) {
@@ -1422,7 +1507,6 @@ const handleSelectAll = (checked: boolean) => {
     }
   }
 }
-
   
   // UI Event Handlers
   const handleBack = () => {
@@ -1849,13 +1933,16 @@ const handleSelectAll = (checked: boolean) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            Select Job Position/ Title 
+            Select Job Position / Title 
           </CardTitle>
+          <p className="text-muted-foreground mb-4">
+                Choose a job position / title above to manage its interview pipeline
+          </p>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
             <div className="flex-1">
-              <Label htmlFor="job-position">Job Position/ Title </Label>
+              <Label htmlFor="job-position">Job Position / Title </Label>
               <Select
                 value={selectedJobPosition?.id.toString() || ""}
                 onValueChange={handleJobPositionChange}
@@ -2015,7 +2102,7 @@ const handleSelectAll = (checked: boolean) => {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Select a Job Position/ Title </h3>
+              <h3 className="text-lg font-semibold mb-2">Select a Job Position / Title </h3>
               <p className="text-muted-foreground mb-4">
                 Choose a job position/title above to manage its interview pipeline
               </p>
@@ -2234,13 +2321,13 @@ const handleSelectAll = (checked: boolean) => {
                                               </span>
                                               {/* Show warning if selected candidates need feedback first */}
                                               {selectedCandidates.some(id => {
-                                                const candidate = filteredCandidates.find(c => c.id === id)
-                                                return candidate && !(candidate.feedback && candidate.rating && candidate.rating > 0)
-                                              }) && (
-                                                <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
-                                                  Selected candidates need feedback & rating first
-                                                </span>
-                                              )}
+  const candidate = filteredCandidates.find(c => c.id === id)
+  return candidate && !(candidate.feedback && candidate.rating && candidate.rating > 0)
+                                                  }) && (
+                                                    <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
+                                                      Selected candidates need feedback & rating first
+                                                    </span>
+                                                  )}
                                             </div>
                                             <div className="flex items-center gap-2">
                                               <Button
@@ -2288,7 +2375,7 @@ const handleSelectAll = (checked: boolean) => {
                                               {/* Show message when no candidates are eligible for actions */}
                                               {candidatesEligibleForOnboarding.length === 0 && candidatesEligibleForMoving.length === 0 && (
                                                 <div className="text-xs text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">
-                                                  Please first provide feedback & rating, then schedule interviews before onboarding
+                                                  Please provide feedback & rating first
                                                 </div>
                                               )}
                                             </div>
@@ -2333,124 +2420,194 @@ const handleSelectAll = (checked: boolean) => {
                                               <TableHead>Actions</TableHead>
                                             </TableRow>
                                           </TableHeader>
-                                          <TableBody>
-                                            {filteredCandidates.map((candidate) => (
-                                              <TableRow key={candidate.id}>
-                                                <TableCell>
+                                        
+                                      <TableBody>
+                                        {filteredCandidates.map((candidate) => (
+                                          <TableRow 
+                                            key={candidate.id}
+                                            className={
+                                              candidate.status === 'rejected' || candidate.status === 'cancelled' 
+                                                ? 'opacity-60 bg-red-50' 
+                                                : ''
+                                            }
+                                          >
+                                            <TableCell>
                                               <Checkbox
                                                 checked={selectedCandidates.includes(candidate.id)}
                                                 onCheckedChange={(checked) => handleSelectCandidate(candidate.id.toString(), checked as boolean)}
                                                 disabled={!canCandidateBeSelected(candidate)}
                                                 title={
-                                                  canCandidateBeSelected(candidate)
-                                                    ? "Select for feedback"
-                                                    : candidate.feedback && candidate.rating 
-                                                      ? "Already has feedback and rating - use individual actions"
-                                                      : "Cannot be selected"
+                                                  isCandidateRejected(candidate)
+                                                    ? "Candidate is rejected/cancelled"
+                                                    : canCandidateBeSelected(candidate)
+                                                      ? "Select for feedback"
+                                                      : candidate.feedback && candidate.rating 
+                                                        ? "Already has feedback and rating - use individual actions"
+                                                        : "Cannot be selected"
                                                 }
                                                 className={!canCandidateBeSelected(candidate) ? "opacity-50" : ""}
                                               />
                                             </TableCell>
-                                                <TableCell>
-                                                  <div className="space-y-1">
-                                                    <div className="font-medium">{candidate.applicant_name}</div>
-                                                    <div className="text-xs text-muted-foreground capitalize">{candidate.gender}</div>
+                                            
+                                            <TableCell>
+                                              <div className="space-y-1">
+                                                <div className="font-medium">{candidate.applicant_name}</div>
+                                                <div className="text-xs text-muted-foreground capitalize">{candidate.gender}</div>
+                                              </div>
+                                            </TableCell>
+                                            
+                                            <TableCell>
+                                              <div className="space-y-1">
+                                                <div className="flex items-center text-sm">
+                                                  <Mail className="mr-1 h-3 w-3" />
+                                                  {candidate.applicant_email}
+                                                </div>
+                                                {candidate.applicant_phone && (
+                                                  <div className="flex items-center text-sm text-muted-foreground">
+                                                    <Phone className="mr-1 h-3 w-3" />
+                                                    {candidate.applicant_phone}
                                                   </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                  <div className="space-y-1">
-                                                    <div className="flex items-center text-sm">
-                                                      <Mail className="mr-1 h-3 w-3" />
-                                                      {candidate.applicant_email}
-                                                    </div>
-                                                    {candidate.applicant_phone && (
-                                                      <div className="flex items-center text-sm text-muted-foreground">
-                                                        <Phone className="mr-1 h-3 w-3" />
-                                                        {candidate.applicant_phone}
-                                                      </div>
-                                                    )}
+                                                )}
+                                              </div>
+                                            </TableCell>
+                                            
+                                            <TableCell>
+                                              <div className="max-w-xs">
+                                                {candidate.feedback ? (
+                                                  <p className="text-sm text-gray-600 truncate" title={candidate.feedback}>
+                                                    {candidate.feedback}
+                                                  </p>
+                                                ) : (
+                                                  <p className="text-sm text-gray-400 italic">No feedback yet</p>
+                                                )}
+                                              </div>
+                                            </TableCell>
+                                            
+                                            <TableCell>
+                                              <div className="text-center">
+                                                {candidate.rating ? (
+                                                  <div className="flex items-center gap-1">
+                                                    <Star className="h-4 w-4 text-yellow-500" />
+                                                    <span className="font-semibold">{candidate.rating}/10</span>
                                                   </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                  <div className="max-w-xs">
-                                                    {candidate.feedback ? (
-                                                      <p className="text-sm text-gray-600 truncate" title={candidate.feedback}>
-                                                        {candidate.feedback}
-                                                      </p>
-                                                    ) : (
-                                                      <p className="text-sm text-gray-400 italic">No feedback yet</p>
-                                                    )}
-                                                  </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                  <div className="text-center">
-                                                    {candidate.rating ? (
-                                                      <div className="flex items-center gap-1">
-                                                        <Star className="h-4 w-4 text-yellow-500" />
-                                                        <span className="font-semibold">{candidate.rating}/10</span>
-                                                      </div>
-                                                    ) : (
-                                                      <span className="text-sm text-gray-400">-</span>
-                                                    )}
-                                                  </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                  <div className="flex items-center">
-                                                    {candidate.feedback && candidate.rating ? (
-                                                      <Badge variant="secondary" className="bg-green-100 text-green-700">
-                                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                                        Reviewed
-                                                      </Badge>
-                                                    ) : (
-                                                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
-                                                        <Clock className="h-3 w-3 mr-1" />
-                                                        Pending
-                                                      </Badge>
-                                                    )}
-                                                  </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                  <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                        <MoreVertical className="h-4 w-4" />
-                                                      </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
+                                                ) : (
+                                                  <span className="text-sm text-gray-400">-</span>
+                                                )}
+                                              </div>
+                                            </TableCell>
+                                            
+                                            <TableCell>
+                                              <div className="flex items-center">
+                                                {(() => {
+                                                  const status = candidate.status?.toLowerCase() || 'unknown';
+                                                  
+                                                  switch (status) {
+                                                    case 'scheduled':
+                                                      return (
+                                                        <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                                                          <Clock className="h-3 w-3 mr-1" />
+                                                          Scheduled
+                                                        </Badge>
+                                                      );
+                                                    case 'completed':
+                                                      return (
+                                                        <Badge variant="secondary" className="bg-green-100 text-green-700">
+                                                          <CheckCircle className="h-3 w-3 mr-1" />
+                                                          Onboarded
+                                                        </Badge>
+                                                      );
+                                                    case 'cancelled':
+                                                    case 'rejected':
+                                                      return (
+                                                        <Badge variant="secondary" className="bg-red-100 text-red-700">
+                                                          <XCircle className="h-3 w-3 mr-1" />
+                                                          {status === 'cancelled' ? 'Cancelled' : 'Rejected'}
+                                                        </Badge>
+                                                      );
+                                                    case 'rescheduled':
+                                                      return (
+                                                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
+                                                          <Calendar className="h-3 w-3 mr-1" />
+                                                          Rescheduled
+                                                        </Badge>
+                                                      );
+                                                    case 'no_show':
+                                                      return (
+                                                        <Badge variant="secondary" className="bg-gray-100 text-gray-700">
+                                                          <XCircle className="h-3 w-3 mr-1" />
+                                                          No Show
+                                                        </Badge>
+                                                      );
+                                                    default:
+                                                      return (
+                                                        <Badge variant="secondary" className="bg-gray-100 text-gray-500">
+                                                          <Clock className="h-3 w-3 mr-1" />
+                                                          {status.charAt(0).toUpperCase() + status.slice(1)}
+                                                        </Badge>
+                                                      );
+                                                  }
+                                                })()}
+                                              </div>
+                                            </TableCell>
+                                            
+                                            <TableCell>
+                                              <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                    <MoreVertical className="h-4 w-4" />
+                                                  </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                  {/* Show different options based on candidate status */}
+                                                  {isCandidateRejected(candidate) ? (
+                                                    // For rejected candidates, only show limited options
+                                                    <>
+                                                      <DropdownMenuItem disabled className="text-red-600">
+                                                        <XCircle className="h-4 w-4 mr-2" />
+                                                        Candidate Rejected
+                                                      </DropdownMenuItem>
+                                                      <DropdownMenuItem onClick={() => openFeedbackDialog(candidate)}>
+                                                        <Eye className="h-4 w-4 mr-2" />
+                                                        View Details
+                                                      </DropdownMenuItem>
+                                                    </>
+                                                  ) : (
+                                                    // For active candidates, show full menu
+                                                    <>
                                                       <DropdownMenuItem onClick={() => openFeedbackDialog(candidate)}>
                                                         <Edit className="h-4 w-4 mr-2" />
                                                         Provide Feedback
                                                       </DropdownMenuItem>
-              
-                                                      <DropdownMenuSeparator />
-              
-                                                      {/* Only show onboard option if candidate has feedback and rating and isn't already onboarded */}
-                                                        {canCandidateBeOnboarded(candidate) && !isCandidateAlreadyOnboarded(candidate) && (
-                                                              <DropdownMenuItem
-                                                                onClick={async () => {
-                                                                  try {
-                                                                    const result = await handleIndividualOnboard(candidate);
 
-                                                                    if (result.success) {
-                                                                      if (result.alreadyOnboarded) {
-                                                                        toast.warning(`${candidate.applicant_name} is already onboarded`);
-                                                                      } else {
-                                                                        toast.success(`${candidate.applicant_name} onboarded successfully`);
-                                                                      }
-                                                                    } else {
-                                                                      toast.error(`Failed to onboard ${candidate.applicant_name}: ${result.message}`);
-                                                                    }
-                                                                  } catch (error) {
-                                                                    toast.error(`Unexpected error occurred while onboarding ${candidate.applicant_name}`);
-                                                                  }
-                                                                }}
-                                                                className="text-purple-600"
-                                                              >
-                                                                <Users className="h-4 w-4 mr-2" />
-                                                                Onboard Candidate
-                                                              </DropdownMenuItem>
-                                                            )}
-              
+                                                      <DropdownMenuSeparator />
+
+                                                      {/* Only show onboard option if candidate has feedback and rating and isn't already onboarded */}
+                                                      {canCandidateBeOnboarded(candidate) && !isCandidateAlreadyOnboarded(candidate) && (
+                                                        <DropdownMenuItem
+                                                          onClick={async () => {
+                                                            try {
+                                                              const result = await handleIndividualOnboard(candidate);
+
+                                                              if (result.success) {
+                                                                if (result.alreadyOnboarded) {
+                                                                  toast.warning(`${candidate.applicant_name} is already onboarded`);
+                                                                } else {
+                                                                  toast.success(`${candidate.applicant_name} onboarded successfully`);
+                                                                }
+                                                              } else {
+                                                                toast.error(`Failed to onboard ${candidate.applicant_name}: ${result.message}`);
+                                                              }
+                                                            } catch (error) {
+                                                              toast.error(`Unexpected error occurred while onboarding ${candidate.applicant_name}`);
+                                                            }
+                                                          }}
+                                                          className="text-purple-600"
+                                                        >
+                                                          <Users className="h-4 w-4 mr-2" />
+                                                          Onboard Candidate
+                                                        </DropdownMenuItem>
+                                                      )}
+
                                                       {/* Show message if candidate is already onboarded */}
                                                       {isCandidateAlreadyOnboarded(candidate) && (
                                                         <DropdownMenuItem disabled className="text-gray-400">
@@ -2458,7 +2615,7 @@ const handleSelectAll = (checked: boolean) => {
                                                           Already Onboarded
                                                         </DropdownMenuItem>
                                                       )}
-              
+
                                                       {/* Show message if candidate needs feedback first */}
                                                       {!canCandidateBeOnboarded(candidate) && !isCandidateAlreadyOnboarded(candidate) && (
                                                         <DropdownMenuItem disabled className="text-gray-400">
@@ -2466,7 +2623,7 @@ const handleSelectAll = (checked: boolean) => {
                                                           Needs Feedback & Rating First
                                                         </DropdownMenuItem>
                                                       )}
-              
+
                                                       {/* Only show move options if candidate has feedback and rating */}
                                                       {nextStageForActive && canCandidateBeMoved(candidate) && (
                                                         <>
@@ -2482,7 +2639,7 @@ const handleSelectAll = (checked: boolean) => {
                                                           </DropdownMenuItem>
                                                         </>
                                                       )}
-              
+
                                                       {/* Show message if candidate can't be moved yet */}
                                                       {nextStageForActive && !canCandidateBeMoved(candidate) && (
                                                         <DropdownMenuItem disabled className="text-gray-400">
@@ -2490,9 +2647,10 @@ const handleSelectAll = (checked: boolean) => {
                                                           Provide Feedback & Rating to Move
                                                         </DropdownMenuItem>
                                                       )}
-              
+
                                                       <DropdownMenuSeparator />
-              
+
+                                                      {/* Only show reject option if candidate is not already rejected */}
                                                       <DropdownMenuItem
                                                         onClick={async () => {
                                                           try {
@@ -2508,12 +2666,14 @@ const handleSelectAll = (checked: boolean) => {
                                                         <XCircle className="h-4 w-4 mr-2" />
                                                         Reject Candidate
                                                       </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                  </DropdownMenu>
-                                                </TableCell>
-                                              </TableRow>
-                                            ))}
-                                          </TableBody>
+                                                    </>
+                                                  )}
+                                                </DropdownMenuContent>
+                                              </DropdownMenu>
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
                                         </Table>
                                       )}
                                     </div>
@@ -2633,12 +2793,27 @@ const handleSelectAll = (checked: boolean) => {
                                     </TableHeader>
                                     <TableBody>
                                       {filteredHistoryCandidates.map((candidate) => (
-                                        <TableRow key={candidate.id}>
+                                        <TableRow  key={candidate.id}
+                                          className={
+                                            candidate.status === 'rejected' || candidate.status === 'cancelled' 
+                                              ? 'opacity-60 bg-red-50' 
+                                              : ''
+                                          }>
                                           <TableCell>
-                                            <Checkbox
+                                             <Checkbox
                                               checked={selectedCandidates.includes(candidate.id)}
-                                              onCheckedChange={(checked) => handleSelectCandidate(String(candidate.id), checked as boolean)}
-
+                                              onCheckedChange={(checked) => handleSelectCandidate(candidate.id.toString(), checked as boolean)}
+                                              disabled={!canCandidateBeSelected(candidate)}
+                                              title={
+                                                isCandidateRejected(candidate)
+                                                  ? "Candidate is rejected/cancelled"
+                                                  : canCandidateBeSelected(candidate)
+                                                    ? "Select for feedback"
+                                                    : candidate.feedback && candidate.rating 
+                                                      ? "Already has feedback and rating - use individual actions"
+                                                      : "Cannot be selected"
+                                              }
+                                              className={!canCandidateBeSelected(candidate) ? "opacity-50" : ""}
                                             />
                                           </TableCell>
                                           <TableCell>

@@ -11,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
@@ -23,6 +22,7 @@ import type {
   JobPositionAdvert,
 } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 
 export default function EditJobAdvertPage() {
   const [jobAdvert, setJobAdvert] = useState<JobPositionAdvert | null>(null)
@@ -85,7 +85,6 @@ export default function EditJobAdvertPage() {
 
       // Handle paginated job positions/titles response
       if (fetchedJobPositionsResponse && 'results' in fetchedJobPositionsResponse && Array.isArray(fetchedJobPositionsResponse.results)) {
-
         setJobPositions(fetchedJobPositionsResponse.results)
       } else if (Array.isArray(fetchedJobPositionsResponse)) {
         setJobPositions(fetchedJobPositionsResponse)
@@ -97,14 +96,14 @@ export default function EditJobAdvertPage() {
         setJobPosition(fetchedJobPosition)
       }
 
-      // Populate form data with fetched job advert data
+      // Populate form data with fetched job advert data - FIXED STATUS ISSUE
       const expiryDate = fetchedJobAdvert.expiry_date 
         ? new Date(fetchedJobAdvert.expiry_date).toISOString().split('T')[0]
         : ""
 
       const formDataToSet = {
         job_position: fetchedJobAdvert.job_position || 0,
-        status: fetchedJobAdvert.job_position_advert_status || "active",
+        job_position_advert_status: fetchedJobAdvert.job_position_advert_status || "active", // FIXED: was "status"
         expiry_date: expiryDate,
         number_of_employees_expected: fetchedJobAdvert.number_of_employees_expected || 1,
         extra_information: fetchedJobAdvert.extra_information || "",
@@ -216,7 +215,7 @@ export default function EditJobAdvertPage() {
         toast.success("Job position updated successfully!")
         router.push(`/job-adverts`)
       } else {
-        toast.error("Failed to update job postion. Please try again.")
+        toast.error("Failed to update job position. Please try again.")
       }
     } catch (error) {
       toast.error("Failed to update job advert. Please try again.")
@@ -228,6 +227,21 @@ export default function EditJobAdvertPage() {
   const handleBack = () => {
     router.back()
   }
+
+  // Prepare job positions for searchable select
+  const jobPositionItems: SearchableSelectItem[] = jobPositions.map((position) => ({
+    id: position.id,
+    label: `${position.name} - ${position.department_details?.name}`,
+    value: `${position.name} ${position.department_details?.name}`.toLowerCase(),
+  }));
+
+  // Prepare status options for searchable select
+  const statusItems: SearchableSelectItem[] = [
+    { id: "active", label: "Active", value: "active" },
+    { id: "expired", label: "Expired", value: "expired" },
+    { id: "archived", label: "Archived", value: "archived" },
+    { id: "closed", label: "Closed", value: "closed" },
+  ];
 
   if (!selectedInstitution || !selectedBranch) {
     return <div>Loading...</div>
@@ -293,7 +307,7 @@ export default function EditJobAdvertPage() {
               <div>
                 <CardTitle className="text-xl">Edit Job Opening</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Update job advertisement for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
+                  Update job opening for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
                 </p>
               </div>
             </div>
@@ -303,28 +317,22 @@ export default function EditJobAdvertPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Form Fields - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Job Position/ Title  */}
+                {/* Job Position/Title */}
                 <div className="space-y-2">
                   <Label htmlFor="job_position" className="text-sm font-medium">
-                    Job Position/ Title  *
+                    Job Position / Title *
                   </Label>
-                  <Select
-                    value={formData.job_position > 0 ? formData.job_position.toString() : ""}
-                    onValueChange={(value) => {
-                      updateFormData("job_position", Number(value))
-                    }}
-                  >
-                    <SelectTrigger className={errors.job_position ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select a job position" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.isArray(jobPositions) && jobPositions.map((position) => (
-                        <SelectItem key={position.id} value={position.id.toString()}>
-                          {position.name} - {position.department_details?.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    items={jobPositionItems}
+                    selectedItems={formData.job_position ? [formData.job_position] : []}
+                    placeholder="Select a job position"
+                    searchPlaceholder="Search job positions..."
+                    emptyMessage="No job positions found."
+                    onSelect={(itemId) => updateFormData("job_position", Number(itemId))}
+                    multiple={false}
+                    triggerClassName={errors.job_position ? "border-destructive" : ""}
+                    popoverClassName="w-[400px]"
+                  />
                   {errors.job_position && <p className="text-sm text-destructive">{errors.job_position}</p>}
                 </div>
 
@@ -333,20 +341,20 @@ export default function EditJobAdvertPage() {
                   <Label htmlFor="status" className="text-sm font-medium">
                     Status *
                   </Label>
-                  <Select
-                    value={formData.job_position_advert_status||""}
-                    onValueChange={(value) => updateFormData("job_position_advert_status", value as JobAdvertStatus)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="expired">Expired</SelectItem>
-                      <SelectItem value="archived">Archived</SelectItem>
-                      <SelectItem value="closed">Closed</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    items={statusItems}
+                    selectedItems={formData.job_position_advert_status ? [formData.job_position_advert_status] : []}
+                    placeholder="Select status"
+                    searchPlaceholder="Search status..."
+                    emptyMessage="No status options found."
+                    onSelect={(itemId) => updateFormData("job_position_advert_status", itemId as JobAdvertStatus)}
+                    multiple={false}
+                    triggerClassName={errors.job_position_advert_status ? "border-destructive" : ""}
+                    popoverClassName="w-[200px]"
+                  />
+                  {errors.job_position_advert_status && (
+                    <p className="text-sm text-destructive">{errors.job_position_advert_status}</p>
+                  )}
                 </div>
 
                 {/* Expiry Date */}
@@ -400,7 +408,7 @@ export default function EditJobAdvertPage() {
                 </Label>
                 <Textarea
                   id="extra_information"
-                  placeholder="Add any additional information about this job advertisement..."
+                  placeholder="Add any additional information about this job opening..."
                   value={formData.extra_information || ""}
                   onChange={(e) => updateFormData("extra_information", e.target.value)}
                   rows={4}

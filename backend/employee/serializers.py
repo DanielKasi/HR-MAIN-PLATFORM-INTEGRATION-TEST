@@ -16,12 +16,14 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 import os
 from django.conf import settings
-
+from recruitment.models import JobAdvertApplication
 from django.template.loader import render_to_string
 from weasyprint import HTML
 from django.utils.text import slugify
 from docx import Document
 from weasyprint import HTML
+from utilities.helpers import get_or_create_default_role_with_permissions
+
 
 
 class EmployeeTypeSerializer(serializers.ModelSerializer):
@@ -65,6 +67,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+
+        request = self.context.get("request")
+
         user_data = validated_data.pop("user", None)
 
         selected_branches = validated_data.pop("selected_branches", None)
@@ -74,6 +79,32 @@ class EmployeeSerializer(serializers.ModelSerializer):
             user_serializer.is_valid(raise_exception=True)
             user = user_serializer.save()
             validated_data["user"] = user
+
+            institution = getattr(request.user.profile, "institution", None)
+
+            institution_id = getattr(institution, "id", None) if institution else None
+
+            if institution_id:
+                from institution.models import Institution
+
+                try:
+                    institution = Institution.objects.get(id=institution_id)
+
+                    role = get_or_create_default_role_with_permissions(institution)
+
+                    from users.models import UserRole, Profile
+
+                    UserRole.objects.get_or_create(user=user, role=role)
+                    Profile.objects.create(user=user, institution=institution, bio="")
+
+                    if not institution.default_employee_role:
+                        institution.default_employee_role = role
+                        institution.save()
+
+                except Institution.DoesNotExist:
+                    raise serializers.ValidationError(
+                        "Institution does not exist for the provided user."
+                    )
 
         employee = Employee.objects.create(**validated_data)
 
@@ -91,107 +122,6 @@ class EmployeeSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     f"Branch with ID {branch_id} does not exist."
                 )
-
-        # === Create Contract and Send Email ===
-        job_position = employee.position
-
-        template = job_position.contract_template if job_position else None
-
-        if template and template.file:
-
-            file = template.file
-            if not file:
-                raise serializers.ValidationError("Contract template file is missing.")
-
-            # convert file to html
-            doc = Document(file)
-
-            html_content = "<html><body>\n"
-
-            for para in doc.paragraphs:
-                html_line = ""
-                for run in para.runs:
-                    text = (
-                        run.text.replace("&", "&amp;")
-                        .replace("<", "&lt;")
-                        .replace(">", "&gt;")
-                    )
-                    if run.bold:
-                        text = f"<b>{text}</b>"
-                    if run.italic:
-                        text = f"<i>{text}</i>"
-                    html_line += text
-                html_content += f"<p>{html_line}</p>\n"
-
-            html_content += "</body></html>"
-
-            # replace placeholders in the HTML content
-
-            placeholder_mapping = {
-                "employee_name": employee.user.fullname,
-                "governing_law_jurisdiction": employee.department.institution.location,
-                "company_name": employee.department.institution.institution_name,
-                "job_title": (
-                    employee.position.name if employee.position else "Unknown Position"
-                ),
-                "salary_amount": employee.salary,
-                "salary_period": "Monthly",
-                "start_date": employee.date_of_joining.strftime("%Y-%m-%d"),
-                "end_time": "5:00 PM",
-                "start_time": "9:00 AM",
-                "working_days": "Monday to Friday",
-                "work_hours": "40",
-                "notice_period": "30 days",
-            }
-
-            placeholders = template.placeholders or []
-
-            for placeholder in placeholders:
-                key = placeholder.strip("{{}}")
-                value = str(placeholder_mapping.get(key, ""))
-                html_content = html_content.replace(placeholder, value)
-
-            filename = f"{slugify(employee.user.fullname)}_contract_{employee.id}.pdf"
-            relative_path = os.path.join("contracts/original", filename)
-            full_path = os.path.join(settings.MEDIA_ROOT, relative_path)
-            os.makedirs(os.path.dirname(full_path), exist_ok=True)
-
-            html_content = render_to_string(
-                "contracts/contract_template.html", {"content": html_content}
-            )
-
-            # Generate and write PDF
-            HTML(string=html_content).write_pdf(full_path)
-
-            EmployeeContract.objects.create(
-                employee=employee,
-                is_active=False,
-                original_contract=relative_path,
-            )
-
-            context_data = {
-                "position_title": (
-                    job_position.name if job_position else "Unknown Position"
-                ),
-                "employee_name": employee.user.fullname,
-                "institution_name": (
-                    employee.department.institution.institution_name
-                    if employee.department
-                    else "Unknown Institution"
-                ),
-            }
-
-            if employee.user and employee.user.email:
-                subject = f"Employment Contract for {context_data['position_title']}"
-                body = render_to_string("emails/contract_email.txt", context_data)
-                email = EmailMessage(
-                    subject=subject,
-                    body=body,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    to=[employee.user.email],
-                )
-                email.attach_file(full_path)
-                email.send()
 
         return employee
 
@@ -306,6 +236,13 @@ class EmployeeActivationSerializer(serializers.Serializer):
 
 
 class EmployeeContractSerializer(serializers.ModelSerializer):
+   
+    applicant = serializers.PrimaryKeyRelatedField(
+        queryset=JobAdvertApplication.objects.all(), required=False, allow_null=True
+    )
+    employee = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(), required=False, allow_null=True
+    )
     class Meta:
         model = EmployeeContract
         fields = [
@@ -328,14 +265,21 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
         contract.save()
         return contract
 
-    def validate(self, data):
-        # Ensure either applicant or employee is provided, not both
-        applicant = data.get("applicant")
-        employee = data.get("employee")
-        if applicant and employee:
-            raise serializers.ValidationError("Cannot set both applicant and employee.")
-        if not applicant and not employee:
-            raise serializers.ValidationError(
-                "Either applicant or employee must be provided."
-            )
-        return data
+    def to_representation(self, instance):
+        from recruitment.serializers import JobAdvertApplicationSerializer
+        rep = super().to_representation(instance)
+        rep['applicant'] = JobAdvertApplicationSerializer(instance.applicant).data if instance.applicant else None
+        rep['employee'] = EmployeeSerializer(instance.employee).data if instance.employee else None
+        return rep    
+
+    # def validate(self, data):
+    #     # Ensure either applicant or employee is provided, not both
+    #     applicant = data.get("applicant")
+    #     employee = data.get("employee")
+    #     if applicant and employee:
+    #         raise serializers.ValidationError("Cannot set both applicant and employee.")
+    #     if not applicant and not employee:
+    #         raise serializers.ValidationError(
+    #             "Either applicant or employee must be provided."
+    #         )
+    #     return data
