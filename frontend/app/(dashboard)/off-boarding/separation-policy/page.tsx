@@ -154,25 +154,7 @@ export default function SeparationPoliciesPage() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      {/* <div className="flex items-center gap-2">
-                        <Link href={`/off-boarding/separation-policy/${policy.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Link href={`/off-boarding/separation-policy/edit/${policy.id}/`}>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteDialog({open: true, policy})}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div> */}
+
                     </TableCell>
                   </TableRow>
                 ))}
