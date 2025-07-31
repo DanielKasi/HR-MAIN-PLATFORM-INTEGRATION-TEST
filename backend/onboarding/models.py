@@ -170,7 +170,7 @@ class InstitutionSeparationPolicy(models.Model):
         related_name="separation_policy",
     )
 
-    policy_name = models.CharField(max_length=100, blank=False, null=False)
+    policy_name = models.CharField(max_length=100, blank=True, null=True)
 
     policy_document = models.FileField(
         upload_to="separation_policies/", null=True, blank=True
