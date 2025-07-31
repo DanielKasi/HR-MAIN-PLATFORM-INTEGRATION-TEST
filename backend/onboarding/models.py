@@ -8,6 +8,7 @@ from django.db import models, transaction
 from io import BytesIO
 from weasyprint import HTML
 
+
 class OnBoarding(models.Model):
     STATUS_CHOICES = [
         ("initial", "Initial"),
@@ -45,11 +46,9 @@ class OnBoarding(models.Model):
 
         super().save(*args, **kwargs)
 
-
         # Create employee if status changed to accepted_offer
         if self.status == "accepted_offer" and old_status != "accepted_offer":
             self.create_employee_record()
-
 
     def create_employee_record(self):
         """Create an employee record from the accepted application."""
