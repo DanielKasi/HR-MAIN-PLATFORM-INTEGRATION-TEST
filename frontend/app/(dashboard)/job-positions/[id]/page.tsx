@@ -179,7 +179,7 @@ export default function JobPositionDetailsPage() {
         <div className="w-full max-w-6xl mx-auto space-y-6">
           <Card className="p-12 text-center">
             <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Job Position/ Title Not Found</h3>
+            <h3 className="text-lg font-semibold mb-2">Job Position / Title Not Found</h3>
             <p className="text-muted-foreground mb-4">{error}</p>
             <Button onClick={handleBack}>Go Back</Button>
           </Card>

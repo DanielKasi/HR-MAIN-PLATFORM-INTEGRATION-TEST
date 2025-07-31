@@ -23,6 +23,7 @@ import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/se
 import { getDepartments, getJobPositions, getJobPosition, updateJobPosition } from "@/lib/utils"
 import type { JobPositionFormData, IDepartment, IJobPosition, CreateJobPositionData, IEmployee } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 
 
 
@@ -741,7 +742,7 @@ const updateFormData = (field: keyof JobPositionFormData, value: any) => {
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
-            Back to Job Position/ Title 
+            Back to Job Position / Title 
           </Button>
         </div>
 
@@ -752,9 +753,9 @@ const updateFormData = (field: keyof JobPositionFormData, value: any) => {
                 <Briefcase className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-xl">Edit Job Position/ Title </CardTitle>
+                <CardTitle className="text-xl">Edit Job Position / Title </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Update job position/title details for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
+                  Update job position / title details for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
                 </p>
               </div>
             </div>
@@ -777,7 +778,7 @@ const updateFormData = (field: keyof JobPositionFormData, value: any) => {
                 {/* Job Position/ Title  Name */}
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sm font-medium">
-                    Job Position/ Title  Name *
+                    Job Position / Title  Name *
                   </Label>
                   <Input
                     id="name"
@@ -871,26 +872,26 @@ const updateFormData = (field: keyof JobPositionFormData, value: any) => {
                   {errors.salary && <p className="text-sm text-destructive">{errors.salary}</p>}
                 </div>
 
-                {/* Department */}
+                  {/* Department */}
                 <div className="space-y-2">
                   <Label htmlFor="department" className="text-sm font-medium">
                     Department *
                   </Label>
-                  <Select
-                    value={formData.department?.toString() || ""}
-                    onValueChange={(value) => updateFormData("department", Number(value))}
-                  >
-                    <SelectTrigger className={errors.department ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select a department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id.toString()}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    items={departments.map((dept) => ({
+                      id: dept.id,
+                      label: dept.name,
+                      value: dept.name.toLowerCase(),
+                    }))}
+                    selectedItems={formData.department ? [formData.department] : []}
+                    placeholder="Select a department"
+                    searchPlaceholder="Search departments..."
+                    emptyMessage="No departments found."
+                    onSelect={(itemId) => updateFormData("department", Number(itemId))}
+                    multiple={false}
+                    triggerClassName={errors.department ? "border-destructive" : ""}
+                    popoverClassName="w-[400px]"
+                  />
                   {errors.department && <p className="text-sm text-destructive">{errors.department}</p>}
                 </div>
 
@@ -899,22 +900,25 @@ const updateFormData = (field: keyof JobPositionFormData, value: any) => {
                   <Label htmlFor="reportsTo" className="text-sm font-medium">
                     Reports To (Optional)
                   </Label>
-                  <Select
-                    value={formData.reports_to?.toString() || "0"}
-                    onValueChange={(value) => updateFormData("reports_to", value === "0" ? null : Number(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a position (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">None</SelectItem>
-                      {jobPositions.map((position) => (
-                        <SelectItem key={position.id} value={position.id.toString()}>
-                          {position.name} - {position.department_details?.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    items={[
+                      { id: 0, label: "None", value: "none" },
+                      ...jobPositions.map((position) => ({
+                        id: position.id,
+                        label: `${position.name} - ${position.department_details?.name}`,
+                        value: `${position.name} ${position.department_details?.name}`.toLowerCase(),
+                      }))
+                    ]}
+                    selectedItems={formData.reports_to ? [formData.reports_to] : [0]}
+                    placeholder="Select a position (optional)"
+                    searchPlaceholder="Search positions..."
+                    emptyMessage="No positions found."
+                    onSelect={(itemId) => 
+                      updateFormData("reports_to", Number(itemId) === 0 ? null : Number(itemId))
+                    }
+                    multiple={false}
+                    popoverClassName="w-[500px]"
+                  />
                 </div>
               </div>
 
@@ -961,54 +965,7 @@ const updateFormData = (field: keyof JobPositionFormData, value: any) => {
                 </div>
               )}
 
-              {/* File Uploads */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                {/* Offer Letter Template */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Offer Letter Template (Optional)</Label>
-                  {formData.offer_letter_template ? (
-                    <div className="border rounded-lg p-4 bg-muted/50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">{formData.offer_letter_template.name}</span>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeFile("offer_letter_template")}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {(formData.offer_letter_template.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
-                      <div className="text-center">
-                        <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                        <Label htmlFor="offerLetterTemplate" className="cursor-pointer">
-                          <span className="text-sm font-medium text-primary hover:text-primary/80">
-                            Click to upload new offer letter template
-                          </span>
-                          <Input
-                            id="offerLetterTemplate"
-                            type="file"
-                            accept=".pdf,.doc,.docx"
-                            onChange={(e) => handleFileChange("offerLetterTemplate", e.target.files?.[0] || null)}
-                            className="hidden"
-                          />
-                        </Label>
-                        <p className="text-xs text-muted-foreground mt-1">PDF, DOC, DOCX up to 10MB</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+            
 
               {/* Form Actions */}
               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">

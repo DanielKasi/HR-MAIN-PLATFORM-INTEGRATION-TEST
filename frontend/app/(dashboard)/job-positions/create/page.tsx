@@ -22,6 +22,7 @@ import { CreateDepartmentDialog } from "@/components/dialogs/create-department-d
 
 import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
 import {getDepartments, getJobPositions, createJobPosition} from "@/lib/utils";
+import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 
 import type {
   JobPositionFormData,
@@ -230,7 +231,7 @@ export default function CreateJobPositionPage() {
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Job Positions/Titles
+            Back to Job Positions /Titles
           </Button>
         </div>
 
@@ -295,7 +296,7 @@ export default function CreateJobPositionPage() {
                   {errors.salary && <p className="text-sm text-destructive">{errors.salary}</p>}
                 </div>
 
-                {/* Department */}
+                  {/* Department */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="department" className="text-sm font-medium">
@@ -318,21 +319,21 @@ export default function CreateJobPositionPage() {
                       }}
                     />
                   </div>
-                  <Select
-                    value={formData.department?.toString() || "0"}
-                    onValueChange={(value) => updateFormData("department", Number(value))}
-                  >
-                    <SelectTrigger className={errors.department ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select a department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id.toString()}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    items={departments.map((dept) => ({
+                      id: dept.id,
+                      label: dept.name,
+                      value: dept.name.toLowerCase(),
+                    }))}
+                    selectedItems={formData.department ? [formData.department] : []}
+                    placeholder="Select a department"
+                    searchPlaceholder="Search departments..."
+                    emptyMessage="No departments found."
+                    onSelect={(itemId) => updateFormData("department", Number(itemId))}
+                    multiple={false}
+                    triggerClassName={errors.department ? "border-destructive" : ""}
+                    popoverClassName="w-[400px]"
+                  />
                   {errors.department && (
                     <p className="text-sm text-destructive">{errors.department}</p>
                   )}
@@ -343,25 +344,26 @@ export default function CreateJobPositionPage() {
                   <Label htmlFor="reportsTo" className="text-sm font-medium">
                     Reports To (Optional)
                   </Label>
-                  <Select
-                    value={formData.reports_to?.toString() || "0"}
-                    onValueChange={(value) =>
-                      updateFormData("reports_to", value ? Number(value) : null)
+                  <SearchableSelect
+                    items={[
+                      { id: 0, label: "None", value: "none" },
+                      ...jobPositions.map((position) => ({
+                        id: position.id,
+                        label: `${position.name} - ${position.department_details?.name}`,
+                        value: `${position.name} ${position.department_details?.name}`.toLowerCase(),
+                      }))
+                    ]}
+                    selectedItems={formData.reports_to ? [formData.reports_to] : [0]}
+                    placeholder="Select a position (optional)"
+                    searchPlaceholder="Search positions..."
+                    emptyMessage="No positions found."
+                    onSelect={(itemId) => 
+                      updateFormData("reports_to", Number(itemId) === 0 ? null : Number(itemId))
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a position (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">None</SelectItem>
-                      {jobPositions.map((position) => (
-                        <SelectItem key={position.id} value={position.id.toString()}>
-                          {position.name} - {position.department_details?.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    multiple={false}
+                    popoverClassName="w-[500px]"
+                  />
+                </div>  
 
                 {/* Job Description */}
                 <div className="space-y-2">
