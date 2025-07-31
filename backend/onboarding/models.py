@@ -191,6 +191,9 @@ class InstitutionSeparationPolicy(models.Model):
             f"{self.separation_type.separation_type}"
         )
 
+    class Meta:
+        unique_together = (("separation_type", "is_active"),)
+
 
 class EmployeeSeparation(models.Model):
     employee_separation_type = models.ForeignKey(
@@ -206,7 +209,7 @@ class EmployeeSeparation(models.Model):
     )
 
     initiated_by = models.ForeignKey(
-        "employee.Employee",
+        "users.Profile",
         on_delete=models.CASCADE,
         related_name="separation_initiated_by",
         null=True,
