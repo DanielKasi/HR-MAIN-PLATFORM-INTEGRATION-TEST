@@ -237,6 +237,21 @@ class EmployeeSeparation(models.Model):
             + self.employee_separation_type.separation_type
         )
 
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+
+        if not is_new and self.separation_status == "completed":
+            # We Deactivate the employee when separation is completed
+            self.employee.is_active = False
+
+            self.employee.save()
+
+            # We deactivate the user account associated with the employee
+            if self.employee.user:
+                self.employee.user.is_active = False
+                self.employee.user.save()
+
 
 class ResignationRequest(models.Model):
     REQUEST_STATUS_CHOICES = [
@@ -358,7 +373,11 @@ class TerminationInitiation(models.Model):
             raise ValidationError("Only submitted requests can be approved.")
 
         self.initiation_status = "approved"
+
         self.save()
+
+        self.separation.separation_status = "completed"
+        self.separation.save()
 
     def finish_workflow(self):
         from workflows.models import ApprovalTask
