@@ -124,6 +124,7 @@ interface Candidate {
   location?: string
   interview_id?: number
   interview?: any
+  interview_status?: string
 }
 
 interface InterviewScheduleData {
@@ -223,7 +224,7 @@ const buildCandidateHistory = (
         return (stageA?.level || 0) - (stageB?.level || 0);
       });
 
-    // 🧱 Build interview history entries once
+    // Build interview history entries
     const interview_history = candidateInterviews.map(interview => {
       const stage = stages.find(s => s.id === interview.interview_stage.toString());
       return {
@@ -236,13 +237,13 @@ const buildCandidateHistory = (
         location: interview.location,
         feedback: interview.feedback,
         rating: interview.rating ?? undefined,
-        status: interview.status || 'completed',
+        status: interview.status || 'scheduled', // Use interview status
         created_at: interview.created_at,
         updated_at: interview.updated_at,
       };
     });
 
-    // 🎯 Determine current stage (last one)
+    // Determine current stage (last one)
     const currentStageEntry = interview_history.length > 0
       ? interview_history[interview_history.length - 1]
       : null;
@@ -250,7 +251,7 @@ const buildCandidateHistory = (
     const current_stage_level = currentStageEntry?.stage_level || 0;
     const current_stage_name = currentStageEntry?.stage_name || 'Not Started';
 
-    // ⭐ Calculate overall rating
+    // Calculate overall rating
     const ratings = interview_history.filter(h => h.rating && h.rating > 0);
     const overall_rating = ratings.length > 0
       ? Math.round(
@@ -258,11 +259,15 @@ const buildCandidateHistory = (
         ) / 10
       : 0;
 
-    // 📊 Completion rate
+    // Completion rate
     const feedbacks = interview_history.filter(h => h.feedback && h.feedback.trim().length > 0);
     const completion_rate = interview_history.length > 0
       ? Math.round((feedbacks.length / interview_history.length) * 100)
       : 0;
+
+    // Get the latest interview status for this candidate
+    const latestInterview = candidateInterviews[candidateInterviews.length - 1];
+    const interview_status = latestInterview?.status || candidate.status;
 
     return {
       ...candidate,
@@ -271,9 +276,11 @@ const buildCandidateHistory = (
       current_stage_name,
       overall_rating,
       completion_rate,
+      interview_status, // ADD THIS LINE
     } as CandidateWithHistory;
   });
 };
+
 
 
 
@@ -354,6 +361,7 @@ const mergeInterviewData = (
         location: currentStageInterview.location,
         interview_id: currentStageInterview.id,
         interview: currentStageInterview,
+        interview_status: currentStageInterview.status, // ADD THIS LINE - get status from interview
       });
     } else {
       processedCandidates.set(candidate.id, candidate);
@@ -701,7 +709,7 @@ const FeedbackDialog = ({
   const [feedback, setFeedback] = useState('')
   const [rating, setRating] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
-  const [action, setAction] = useState<'save' | 'advance' | 'reject' | 'schedule' | null>(null)
+  const [action, setAction] = useState<'save' | 'advance' | 'cancel' | 'schedule' | null>(null)
 
   useEffect(() => {
     if (candidate) {
@@ -760,7 +768,7 @@ const FeedbackDialog = ({
     }
 
     setIsSaving(true)
-    setAction('reject')
+    setAction('cancel')
     try {
       await onSave(feedback, rating || 1)
       if (onReject) {
@@ -836,7 +844,7 @@ const FeedbackDialog = ({
                   onClick={handleReject}
                   disabled={isSaving}
                 >
-                  {isSaving && action === 'reject' ? (
+                  {isSaving && action === 'cancel' ? (
                     <>
                       <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                       Rejecting...
@@ -1158,22 +1166,44 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
     ) : []
 
   // Helper functions for candidate validation
-  const canCandidateBeMoved = (candidate: Candidate): boolean => {
-    return !!(candidate.feedback && candidate.rating && candidate.rating > 0)
-  }
-
-  const canCandidateBeOnboarded = (candidate: Candidate): boolean => {
-    return !!(candidate.feedback && candidate.rating && candidate.rating > 0)
-  }
-
-  const isCandidateAlreadyOnboarded = (candidate: Candidate): boolean => {
-    return candidate.status === 'onboarded' || candidate.status === 'hired'
-  }
-
  const canCandidateBeSelected = (candidate: Candidate | CandidateWithHistory): boolean => {
+  // Cannot select cancelled candidates
+  if (candidate.interview_status === 'cancelled') {
+    return false;
+  }
+  
+  // Only select candidates who DON'T have feedback yet (need action)
   return !(candidate.feedback && candidate.rating && candidate.rating > 0) && !isCandidateAlreadyOnboarded(candidate)
 }
 
+const canCandidateBeMoved = (candidate: Candidate): boolean => {
+  // Cannot move cancelled candidates
+  if (candidate.interview_status === 'cancelled') {
+    return false;
+  }
+  
+  // Can only be moved if they have feedback and rating > 0 and interview status is still scheduled
+  return !!(candidate.feedback && candidate.rating && candidate.rating > 0 && candidate.interview_status === 'scheduled')
+}
+
+const canCandidateBeOnboarded = (candidate: Candidate): boolean => {
+  // Cannot onboard cancelled candidates
+  if (candidate.interview_status === 'cancelled') {
+    return false;
+  }
+  // Can onboard if they have feedback, rating, and interview status is scheduled
+  return !!(candidate.feedback && candidate.rating && candidate.rating > 0 && candidate.interview_status === 'scheduled')
+}
+
+const isCandidateAlreadyOnboarded = (candidate: Candidate): boolean => {
+  // Check INTERVIEW status for completion
+  return candidate.interview_status === 'completed'
+}
+
+const isCandidateRejected = (candidate: Candidate | CandidateWithHistory): boolean => {
+  // Check INTERVIEW status for cancellation
+  return candidate.interview_status === 'cancelled'
+}
   const selectableCandidates = filteredCandidates.filter(canCandidateBeSelected)
 
   // Filter candidates for bulk actions
@@ -1255,46 +1285,91 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
     }
   }
 
-  // Process stages with candidates
-  useEffect(() => {
-    if (jobPositionAdvert?.interview_stages && interviews.length >= 0) {
-      const interviewStages = jobPositionAdvert.interview_stages as unknown as IInterviewStage[]
-      const stagesWithCorrectCounts = recalculateStageCandidateCounts(interviewStages, interviews)
+ 
+useEffect(() => {
+  if (interviews.length >= 0 && jobPositionAdvert?.interview_stages) {
+    const interviewStages = jobPositionAdvert.interview_stages as unknown as IInterviewStage[]
+    
+    // Filter interviews for this specific job position
+    const jobInterviews = interviews.filter(interview => 
+      interview.job_position_application_details?.job_position_advert === parseInt(resolvedParams.id)
+    );
 
-      const processed: ProcessedStage[] = stagesWithCorrectCounts
-        .sort((a, b) => a.level - b.level)
-        .map((stage, index) => {
-          const colors = getStageColors(index)
-          const interviewerNames = stage.interviewers_details && Array.isArray(stage.interviewers_details)
-            ? stage.interviewers_details.map(emp => emp.user?.fullname || 'Unknown').join(', ')
-            : 'Not assigned'
+    const processed: ProcessedStage[] = interviewStages
+      .sort((a, b) => a.level - b.level)
+      .map((stage, index) => {
+        const colors = getStageColors(index)
+        
+        // Find interviews for this specific stage
+        const stageInterviews = jobInterviews.filter(
+          interview => interview.interview_stage === stage.id
+        );
 
-          const mergedCandidates = mergeInterviewData(
-            stage.candidates || [],
-            interviews,
-            stage.id.toString()
-          )
+        // Convert interviews to candidates format - properly typed as Candidate[]
+        const candidates: Candidate[] = stageInterviews.map(interview => ({
+          id: interview.job_position_application,
+          job_position_advert: interview.job_position_application_details?.job_position_advert || parseInt(resolvedParams.id),
+          job_position_advert_job_details: interview.job_position_application_details?.job_position_advert_job_details || {
+            name: '',
+            description: '',
+            job_posted_date: ''
+          },
+          applicant_name: interview.job_position_application_details?.applicant_name || 'Unknown',
+          applicant_email: interview.job_position_application_details?.applicant_email || '',
+          applicant_phone: interview.job_position_application_details?.applicant_phone || '',
+          resume: interview.job_position_application_details?.resume || '',
+          cover_letter: interview.job_position_application_details?.cover_letter || '',
+          application_date: interview.job_position_application_details?.application_date || '',
+          status: interview.job_position_application_details?.status || '',
+          gender: interview.job_position_application_details?.gender || '',
+          state: interview.job_position_application_details?.state || '',
+          address: interview.job_position_application_details?.address || '',
+          country: interview.job_position_application_details?.country || '',
+          source: interview.job_position_application_details?.source || '',
+          positions: interview.job_position_application_details?.positions || 0,
+          // Interview-specific fields
+          feedback: interview.feedback || undefined,
+          rating: interview.rating || undefined,
+          interview_date: interview.interview_date,
+          interview_time: interview.interview_time,
+          location: interview.location,
+          interview_id: interview.id,
+          interview: interview,
+          interview_status: interview.status,
+        }));
 
-          return {
-            id: stage.id.toString(),
-            name: stage.name,
-            count: stage.candidates_count || 0,
-            level: stage.level,
-            interviewer: interviewerNames,
-            icon: getStageIcon(stage.name, index),
-            candidates: mergedCandidates,
-            ...colors
-          }
-        })
+        // Count active candidates (exclude rejected/cancelled)
+        const activeCandidates = candidates.filter(candidate => 
+          candidate.interview_status !== 'rejected' && 
+          candidate.interview_status !== 'cancelled'
+        );
 
-      setProcessedStages(processed)
+        const interviewerNames = stage.interviewers_details && Array.isArray(stage.interviewers_details)
+          ? stage.interviewers_details.map(emp => emp.user?.fullname || 'Unknown').join(', ')
+          : 'Not assigned'
 
-      // Set active stage to first stage if none selected
-      if (!activeStageId && processed.length > 0) {
-        setActiveStageId(processed[0].id)
-      }
+        return {
+          id: stage.id.toString(),
+          name: stage.name,
+          count: activeCandidates.length,
+          level: stage.level,
+          interviewer: interviewerNames,
+          icon: getStageIcon(stage.name, index),
+          candidates: candidates, // Now properly typed as Candidate[]
+          color: colors.color,
+          bgColor: colors.bgColor
+        }
+      })
+
+    setProcessedStages(processed)
+
+    // Set active stage to first stage if none selected
+    if (!activeStageId && processed.length > 0) {
+      setActiveStageId(processed[0].id)
     }
-  }, [jobPositionAdvert, interviews])
+  }
+}, [interviews, jobPositionAdvert, resolvedParams.id]) // Add resolvedParams.id to dependencies
+
 
   useEffect(() => {
     if (resolvedParams.id) {
@@ -1433,60 +1508,85 @@ const handleSelectAll = (checked: boolean) => {
     setSelectedCandidates([])
   }
 }
-  const moveToNextStage = async (candidateId: number, targetStageId: number) => {
-    try {
-      const candidate = filteredCandidates.find(c => c.id === candidateId);
 
-      if (!candidate || !candidate.interview_id) {
-        throw new Error(`No interview found for candidate ${candidateId}`);
-      }
+const moveToNextStage = async (candidateId: number, targetStageId: number) => {
+  try {
+    const candidate = filteredCandidates.find(c => c.id === candidateId);
 
-      // Only mark current interview as completed
-      // The new interview for next stage will be created when scheduled
-      const currentInterviewData = {
-        status: 'completed'
-      };
-
-      const result = await updateInterview({
-        interviewId: candidate.interview_id,
-        interviewData: currentInterviewData
-      });
-
-      if (!result) {
-        throw new Error('Failed to update current interview status');
-      }
-
-      return { success: true, data: result };
-    } catch (error) {
-      throw error;
+    if (!candidate || !candidate.interview_id) {
+      throw new Error(`No interview found for candidate ${candidateId}`);
     }
-  };
 
-  const rejectCandidate = async (candidateId: number) => {
-    try {
-      const candidate = filteredCandidates.find(c => c.id === candidateId);
+    return { success: true, data: { message: 'Ready to schedule next stage' } };
+  } catch (error) {
+    throw error;
+  }
+};
 
-      if (!candidate || !candidate.interview_id) {
-        throw new Error(`No interview found for candidate ${candidateId}`);
-      }
+const rejectCandidate = async (candidateId: number) => {
+  try {
+    const candidate = filteredCandidates.find(c => c.id === candidateId);
 
-      const interviewData = {
-        status: 'rejected'
-      };
-
-      const result = await updateInterview({
-        interviewId: candidate.interview_id,
-        interviewData: interviewData
-      });
-
-      if (!result) {
-        throw new Error('Failed to reject candidate');
-      }
-      return { success: true, data: result };
-    } catch (error) {
-      throw error;
+    if (!candidate || !candidate.interview_id) {
+      throw new Error(`No interview found for candidate ${candidateId}`);
     }
-  };
+
+    // Use "cancelled" instead of "rejected" - this matches your database
+    const interviewData = {
+      status: 'cancelled' // Database accepts "cancelled", not "rejected"
+    };
+
+    const result = await updateInterview({
+      interviewId: candidate.interview_id,
+      interviewData: interviewData
+    });
+
+    if (!result) {
+      throw new Error('Failed to reject candidate');
+    }
+    return { success: true, data: result };
+  } catch (error) {
+    throw error;
+  }
+};
+
+// ADD THIS STATUS DISPLAY FUNCTION:
+const getStatusBadge = (candidate: Candidate | CandidateWithHistory) => {
+  const status = candidate.interview_status?.toLowerCase() || 'unknown';
+  
+  switch (status) {
+    case 'scheduled':
+      return (
+        <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+          <Clock className="h-3 w-3 mr-1" />
+          Scheduled
+        </Badge>
+      );
+    case 'completed':
+      return (
+        <Badge variant="secondary" className="bg-green-100 text-green-700">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Completed/Onboarded
+        </Badge>
+      );
+    case 'cancelled':
+      return (
+        <Badge variant="secondary" className="bg-red-100 text-red-700">
+          <XCircle className="h-3 w-3 mr-1" />
+          Cancelled
+        </Badge>
+      );
+    default:
+      return (
+        <Badge variant="secondary" className="bg-gray-100 text-gray-500">
+          <Clock className="h-3 w-3 mr-1" />
+          {status.charAt(0).toUpperCase() + status.slice(1)}
+        </Badge>
+      );
+  }
+}
+
+
 
   const scheduleInterviewsForNextStage = async (
     candidates: Candidate[],
@@ -1574,107 +1674,94 @@ const handleSelectAll = (checked: boolean) => {
       throw error;
     }
   };
-  const handleUpdateFeedback = async (feedback: string, rating: number) => {
-    if (!selectedCandidate) return
 
-    try {
-      const interviewId = selectedCandidate.interview_id;
+const handleUpdateFeedback = async (feedback: string, rating: number) => {
+  if (!selectedCandidate) return
 
-      if (!interviewId) {
-        throw new Error('No interview found for this candidate');
-      }
+  try {
+    const interviewId = selectedCandidate.interview_id;
 
-      const isFinalStage = !nextStageForActive;
+    if (!interviewId) {
+      throw new Error('No interview found for this candidate');
+    }
 
-      const interviewData = {
-        feedback: feedback,
-        rating: rating,
-        // Mark as completed if it's the final stage, otherwise keep current status
-        status: isFinalStage ? 'completed' : selectedCandidate.interview?.status || 'scheduled'
-      }
+    // ONLY update feedback and rating, DO NOT change status
+    const interviewData = {
+      feedback: feedback,
+      rating: rating,
+      // DO NOT include status - it remains "scheduled"
+    }
 
-      const result = await updateInterview({
-        interviewId: interviewId,
-        interviewData: interviewData
-      });
+    const result = await updateInterview({
+      interviewId: interviewId,
+      interviewData: interviewData
+    });
 
-      if (!result) {
-        throw new Error('Failed to update interview feedback');
-      }
+    if (!result) {
+      throw new Error('Failed to update interview feedback');
+    }
 
-      setInterviews(prev =>
-        prev.map(interview => {
-          if (interview.id === interviewId) {
-            return {
-              ...interview,
-              feedback: result.feedback,
-              rating: result.rating,
-              status: result.status
-            }
+    // Update local state - keep status as scheduled
+    setInterviews(prev =>
+      prev.map(interview => {
+        if (interview.id === interviewId) {
+          return {
+            ...interview,
+            feedback: result.feedback,
+            rating: result.rating,
+            // Keep original status (should be "scheduled")
+            status: interview.status
           }
-          return interview
-        })
-      )
-
-      setSelectedCandidate(prev => {
-        if (!prev || prev.interview_id !== interviewId) return prev
-        return {
-          ...prev,
-          feedback: result.feedback || undefined,
-          rating: result.rating || undefined
         }
+        return interview
       })
+    )
 
-      await fetchData() // Refresh data
-    } catch (error) {
-      throw error
-    }
-  }
-
-  const handleScheduleAndMove = async (scheduleData: InterviewScheduleData) => {
-    setIsProcessingProgression(true)
-
-    try {
-      // Step 1: Schedule interviews for next stage
-      const scheduleResult = await scheduleInterviewsForNextStage(candidatesToSchedule, scheduleData)
-
-      if (scheduleResult.successCount > 0) {
-        // Step 2: Mark current interviews as completed
-        const moveResults = []
-        const moveErrors = []
-
-        for (const candidate of candidatesToSchedule) {
-          try {
-            // Only mark current interview as completed
-            const result = await moveToNextStage(candidate.id, parseInt(nextStageForActive!.id))
-            moveResults.push({ candidateId: candidate.id, success: true, data: result })
-          } catch (error) {
-            moveErrors.push({ candidateId: candidate.id, error })
-          }
-        }
-
-        if (moveErrors.length === 0) {
-          toast.success(`Successfully scheduled interviews and moved ${candidatesToSchedule.length} candidates to ${nextStageForActive?.name}`)
-        } else if (moveResults.length > 0) {
-          toast.warning(`${moveResults.length} candidates moved successfully, ${moveErrors.length} failed to move`)
-        } else {
-          toast.error('Failed to move any candidates to the next stage')
-        }
-
-        setSelectedCandidates([])
-        setIsSchedulingDialogOpen(false)
-        setCandidatesToSchedule([])
-
-        await fetchData()
-      } else {
-        toast.error('Failed to schedule interviews')
+    setSelectedCandidate(prev => {
+      if (!prev || prev.interview_id !== interviewId) return prev
+      return {
+        ...prev,
+        feedback: result.feedback || undefined,
+        rating: result.rating || undefined,
+        // Keep original interview_status (should be "scheduled")
+        interview_status: prev.interview_status
       }
-    } catch (error) {
-      toast.error('Failed to schedule interviews and move candidates')
-    } finally {
-      setIsProcessingProgression(false)
-    }
+    })
+
+    await fetchData()
+  } catch (error) {
+    throw error
   }
+}
+
+
+
+const handleScheduleAndMove = async (scheduleData: InterviewScheduleData) => {
+  setIsProcessingProgression(true)
+
+  try {
+    // Step 1: Schedule interviews for next stage
+    const scheduleResult = await scheduleInterviewsForNextStage(candidatesToSchedule, scheduleData)
+
+    if (scheduleResult.successCount > 0) {
+
+      toast.success(`Successfully scheduled interviews and moved ${candidatesToSchedule.length} candidates to ${nextStageForActive?.name}`)
+      
+      setSelectedCandidates([])
+      setIsSchedulingDialogOpen(false)
+      setCandidatesToSchedule([])
+
+      await fetchData()
+    } else {
+      toast.error('Failed to schedule interviews')
+    }
+  } catch (error) {
+    toast.error('Failed to schedule interviews and move candidates')
+  } finally {
+    setIsProcessingProgression(false)
+  }
+}
+
   const handleBulkOnboard = async () => {
     if (candidatesEligibleForOnboarding.length === 0) {
       toast.error('No candidates eligible for onboarding. Candidates need feedback and rating first.')
@@ -1712,45 +1799,76 @@ const handleSelectAll = (checked: boolean) => {
     }
   }
 
-  const handleIndividualOnboard = async (candidate: Candidate) => {
-    try {
-      const result = await bulkCreateOnBoarding({ applicationIds: [candidate.id] })
+const handleIndividualOnboard = async (candidate: Candidate) => {
+  // Validation checks
+  if (!candidate.feedback || !candidate.rating || candidate.rating <= 0) {
+    return {
+      success: false,
+      alreadyOnboarded: false,
+      message: 'Candidate must have feedback and rating to be onboarded'
+    }
+  }
 
-      if (result) {
-        const createdCount = result.summary?.created_count || result.created?.length || 0
-        const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0
+  if (candidate.interview_status === 'cancelled') {
+    return {
+      success: false,
+      alreadyOnboarded: false,
+      message: 'Cannot onboard cancelled candidates'
+    }
+  }
 
-        if (createdCount > 0) {
-          await fetchData()
-          return { success: true }
-        } else if (skippedCount > 0) {
-          return {
-            success: false,
-            alreadyOnboarded: true,
-            message: 'Candidate is already onboarded'
+  if (candidate.interview_status === 'completed') {
+    return {
+      success: false,
+      alreadyOnboarded: true,
+      message: 'Candidate is already onboarded'
+    }
+  }
+
+  try {
+    const result = await bulkCreateOnBoarding({ applicationIds: [candidate.id] })
+
+    if (result) {
+      const createdCount = result.summary?.created_count || result.created?.length || 0
+
+      if (createdCount > 0) {
+        // Update interview status to "completed" after successful onboarding
+        try {
+          if (candidate.interview_id) {
+            await updateInterview({
+              interviewId: candidate.interview_id,
+              interviewData: { status: 'completed' }
+            })
           }
-        } else {
-          return {
-            success: false,
-            alreadyOnboarded: false,
-            message: 'Failed to onboard candidate - unknown error'
-          }
+        } catch (statusUpdateError) {
+          console.error('Failed to update interview status after onboarding:', statusUpdateError)
         }
+
+        await fetchData()
+        return { success: true }
       } else {
         return {
           success: false,
-          alreadyOnboarded: false,
-          message: 'Failed to onboard candidate - API returned no response'
+          alreadyOnboarded: true,
+          message: 'Candidate is already onboarded'
         }
       }
-    } catch (error) {
+    } else {
       return {
         success: false,
         alreadyOnboarded: false,
-        message: error instanceof Error ? error.message : 'Unknown error occurred'
+        message: 'Failed to onboard candidate - API returned no response'
       }
     }
+  } catch (error) {
+    return {
+      success: false,
+      alreadyOnboarded: false,
+      message: error instanceof Error ? error.message : 'Unknown error occurred'
+    }
   }
+}
+
 
   // UI Event Handlers
   const handleBack = () => {
@@ -2289,19 +2407,9 @@ const handleSelectAll = (checked: boolean) => {
                                       )}
                                     </div>
                                   </TableCell>
-                                  <TableCell>
+                                      <TableCell>
                                     <div className="flex items-center">
-                                      {candidate.feedback && candidate.rating ? (
-                                        <Badge variant="secondary" className="bg-green-100 text-green-700">
-                                          <CheckCircle className="h-3 w-3 mr-1" />
-                                          Reviewed
-                                        </Badge>
-                                      ) : (
-                                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
-                                          <Clock className="h-3 w-3 mr-1" />
-                                          Pending
-                                        </Badge>
-                                      )}
+                                      {getStatusBadge(candidate)}
                                     </div>
                                   </TableCell>
                                   <TableCell>
@@ -2527,13 +2635,32 @@ const handleSelectAll = (checked: boolean) => {
                       </TableHeader>
                       <TableBody>
                         {filteredHistoryCandidates.map((candidate) => (
-                          <TableRow key={candidate.id}>
+                          <TableRow  key={candidate.id}
+                                      className={
+                                        candidate.interview_status === 'cancelled'
+
+                                          ? 'opacity-60 bg-red-50' 
+                                          : ''
+                                      }>
                             <TableCell>
-                              <Checkbox
-                                checked={selectedCandidates.includes(candidate.id)}
-                                onCheckedChange={(checked) => handleSelectCandidate(candidate.id, checked as boolean)}
-                              />
-                            </TableCell>
+                                <Checkbox
+                                  checked={selectedCandidates.includes(candidate.id)}
+                                  onCheckedChange={(checked) => handleSelectCandidate(candidate.id, checked as boolean)}
+                                  disabled={!canCandidateBeSelected(candidate) || isCandidateRejected(candidate)}
+                                  title={
+                                    isCandidateRejected(candidate)
+                                      ? "Candidate is rejected/cancelled"
+                                      : canCandidateBeSelected(candidate)
+                                        ? viewMode === 'current' ? "Select for feedback" : "Select for onboarding"
+                                        : candidate.feedback && candidate.rating 
+                                          ? "Already has feedback and rating - use individual actions"
+                                          : isCandidateAlreadyOnboarded(candidate)
+                                            ? "Already onboarded"
+                                            : "Cannot be selected"
+                                  }
+                                  className={!canCandidateBeSelected(candidate) || isCandidateRejected(candidate) ? "opacity-50" : ""}
+                                />
+                              </TableCell>
                             <TableCell>
                               <div className="space-y-1">
                                 <div className="font-medium">{candidate.applicant_name}</div>
