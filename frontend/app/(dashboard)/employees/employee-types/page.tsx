@@ -596,14 +596,14 @@ export default function EmployeeTypeManagement() {
                                 className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
                               >
                                 <Edit className="h-4 w-4 mr-3 text-gray-500" />
-                                Edit employee type
+                                Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleDelete(type)}
                                 className="flex items-center px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
                               >
                                 <Trash2 className="h-4 w-4 mr-3 text-red-500" />
-                                Delete employee type
+                                Delete 
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

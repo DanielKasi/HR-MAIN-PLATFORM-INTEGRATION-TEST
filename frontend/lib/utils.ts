@@ -773,6 +773,89 @@ export const createInterviewStageJSON = async ({
   }
 };
 
+export const downloadEmployeesTemplate = async ({
+  accessToken,
+}: {
+  accessToken: string;
+}): Promise<void> => {
+  try {
+
+    const baseURL = process.env.NEXT_PUBLIC_BASE_API_URL;
+
+      // Create a direct fetch request for file download
+      const response = await fetch(`${baseURL}/employee/template/`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        //console.error("Download error response:", errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+      }
+
+      // Check if response is actually a file
+      const contentType = response.headers.get("content-type");
+      if (
+        !contentType ||
+        (!contentType.includes("application/vnd.openxmlformats") &&
+          !contentType.includes("application/vnd.ms-excel") &&
+          !contentType.includes("application/octet-stream"))
+      ) {
+        const responseText = await response.text();
+        //console.error("Unexpected response type:", contentType, responseText);
+        throw new Error("Server did not return an Excel file. Please check the API endpoint.");
+      }
+
+      // Get the blob data
+      const blob = await response.blob();
+
+    // Create a URL for the blob
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'employees_template.xlsx');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const bulkCreateEmployees = async ({
+  institutionId,
+  file,
+}: {
+  institutionId: number;
+  file: File;
+}): Promise<{
+  created_count: number;
+  error_count: number;
+  created_employees: Array<{
+    id: number;
+    fullname: string;
+    email: string;
+  }>;
+  errors?: string[];
+}> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('institution', institutionId.toString());
+
+    const response = await apiRequest.post('employee/create/', formData);
+
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const getAllEmployees = async ({institutionId}: {institutionId: number}) => {
   try {
     const endpoint = `employee/${institutionId}/employee/`;
@@ -2906,7 +2989,7 @@ export const updateContract = async ({
     const formData = new FormData();
     Object.entries(contractData).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        if (key === "contract_file" && value instanceof File) {
+        if (key === "signed_contract" && value instanceof File) {
           formData.append(key, value);
         } else {
           formData.append(key, value.toString());
@@ -2967,7 +3050,6 @@ export const createDocumentType = async ({
     );
     return response.data as IDocumentType;
   } catch (error) {
-    console.error("Failed to create document type:", error);
     return null;
   }
 };
@@ -2982,7 +3064,6 @@ export const getDocumentTypes = async ({
     const data = response.data as PaginatedResponse<IDocumentType>;
     return data.results;
   } catch (error) {
-    console.error("Failed to fetch document types:", error);
     return [];
   }
 };
@@ -3007,7 +3088,6 @@ export const updateDocumentType = async ({
     const response = await apiRequest.patch(`documents/types/${documentTypeId}/`, formData);
     return response.data as IDocumentType;
   } catch (error) {
-    console.error("Failed to update document type:", error);
     return null;
   }
 };
@@ -3110,8 +3190,7 @@ export const deleteDocumentTemplate = async ({
     await apiRequest.delete(`documents/templates/${documentTemplateId}/`);
     return true;
   } catch (error) {
-    console.error("Failed to delete document template:", error);
-    return false;
+    throw error;
   }
 };
 

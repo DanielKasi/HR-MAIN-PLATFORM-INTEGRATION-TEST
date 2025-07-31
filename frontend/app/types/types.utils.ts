@@ -1475,7 +1475,7 @@ export interface IContract {
 
 export interface IContractFormData {
   employee: number;
-  contract_file?: File | null;
+  signed_contract?: File | null;
   status?: ContractStatus;
   start_date: string;
   end_date?: string | null;

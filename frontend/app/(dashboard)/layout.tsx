@@ -544,7 +544,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col" style={{marginLeft: isSideBarOpen ? "16rem" : "5rem"}}>
         {/* Header */}
-        <div className="bg-white p-4 flex justify-between items-center border-b">
+        <div className="bg-white p-4 flex justify-between items-center border-b min-h-16 h-20 max-h-20">
           <button
             onClick={onToggle}
             className="w-8 h-8 z-[50] bg-primary rounded-full flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"

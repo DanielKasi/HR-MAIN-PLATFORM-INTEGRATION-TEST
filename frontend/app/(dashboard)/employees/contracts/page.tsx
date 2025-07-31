@@ -67,7 +67,7 @@ export default function ContractsPage() {
     try {
       const result = await updateContract({
         contractId,
-        contractData: { contract_file: file },
+        contractData: { signed_contract: file },
       })
 
       if (result) {
@@ -241,10 +241,10 @@ export default function ContractsPage() {
                             getFileUrl(contract.original_contract as string),
                             getFileName(contract.original_contract as string)
                           )}
-                          className="h-8"
+                          className="h-8 !text-xs"
                         >
                           <Download className="h-3 w-3 mr-1" />
-                          <span>Download {getFileName(contract.original_contract as string)}</span>
+                          <span> {getFileName(contract.original_contract as string)}</span>
                         </Button>
                       ) : (
                         <span className="text-sm text-muted-foreground">Not available</span>
@@ -252,21 +252,19 @@ export default function ContractsPage() {
                     </td>
                     <td className="p-4 align-middle">
                       {contract.signed_contract ? (
-                        <div className="flex flex-col gap-2">
-                          <div className="text-sm text-muted-foreground">
-                            {getFileName(contract.signed_contract as string)}
-                          </div>
+                        <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
                             size="sm"
+                            
                             onClick={() => handleDownload(
                               getFileUrl(contract.signed_contract as string),
                               getFileName(contract.signed_contract as string)
                             )}
-                            className="h-8"
+                            className="h-8 !text-xs"
                           >
                             <Download className="h-3 w-3 mr-1" />
-                            Download
+                          <span>{getFileName(contract.signed_contract as string)}</span>
                           </Button>
                         </div>
                       ) : (

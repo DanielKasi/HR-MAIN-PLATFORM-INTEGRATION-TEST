@@ -430,7 +430,6 @@ export default function LeaveBalanceComponent() {
   if (!selectedInstitution?.id) {
     return (
       <div className="p-6 text-center">
-        <Leaf className="w-12 h-12 text-orange-300 mx-auto mb-4" />
         <h3 className="text-lg font-semibold text-gray-900 mb-2">No Institution Selected</h3>
         <p className="text-gray-600">Please select an institution to manage leave balances.</p>
       </div>
@@ -443,7 +442,6 @@ export default function LeaveBalanceComponent() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <Leaf className="w-8 h-8 text-orange-600" />
             Leave Balance
           </h1>
           <p className="text-gray-600">Manage employee leave balances</p>
@@ -765,7 +763,6 @@ export default function LeaveBalanceComponent() {
 
               {groupedEmployees.length === 0 && !isLoading && (
                 <div className="text-center py-12">
-                  <Leaf className="w-12 h-12 text-orange-300 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No Records Found</h3>
                   <p className="text-gray-600">No leave balance records match your search criteria.</p>
                 </div>
