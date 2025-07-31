@@ -2,11 +2,11 @@
 
 import type React from "react";
 
-import {useState, useMemo, useEffect} from "react";
-import {Badge} from "@/components/ui/badge";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
+import { useState, useMemo, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -26,38 +26,23 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Search,
-  Eye,
-  Edit,
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  UserPlus,
-  Upload,
-  ChevronDown,
-  MoreHorizontal,
-  MoreVertical,
-} from "lucide-react";
-import {getAllEmployees} from "@/lib/utils";
-import {useSelector} from "react-redux";
-import {selectAttachedInstitutions} from "@/store/auth/selectors";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import {IUserInstitution} from "@/app/types";
-import {EmployeeFormData, IEmployee, PERMISSION_CODES} from "@/app/types/types.utils";
-import Link from "next/link";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-
-import ProtectedComponent from "@/components/ProtectedComponent";
-import {useRouter} from "next/navigation";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {BulkUploadEmployeesDialog} from "@/components/dialogs/bulk-upload-employees-dialog";
+import { Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Plus, MoreHorizontal } from "lucide-react";
+import { getAllEmployees } from "@/lib/utils";
+import { useSelector } from "react-redux";
+import { selectAttachedInstitutions } from "@/store/auth/selectors";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { IUserInstitution } from "@/app/types";
+import { EmployeeFormData, IEmployee, PERMISSION_CODES } from "@/app/types/types.utils";
+import Link from "next/link";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { useRouter } from "next/navigation";
 
 // Union type to handle both data structures
 type EmployeeData = IEmployee | EmployeeFormData;
@@ -117,13 +102,7 @@ interface EmployeeTableProps {
   loadEmployees: () => void;
 }
 
-function EmployeeTable({
-  employees,
-  onDelete,
-  isBulkUploadDialogOpen,
-  setIsBulkUploadDialogOpen,
-  loadEmployees,
-}: EmployeeTableProps) {
+function EmployeeTable({ employees, onDelete }: EmployeeTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -132,8 +111,8 @@ function EmployeeTable({
   const router = useRouter();
 
   const handleBack = () => {
-    router.back();
-  };
+    router.back()
+  }
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -341,9 +320,9 @@ function EmployeeTable({
                     <TableRow
                       key={idx}
                       className="cursor-pointer hover:bg-muted/50"
-                      // onClick={() => {
-                      //   router.push(`/employees/profile/${employee.id}`);
-                      // }}
+                    // onClick={() => {
+                    //   router.push(`/employees/profile/${employee.id}`);
+                    // }}
                     >
                       <TableCell>
                         <div className="font-medium">{getFullName(employee)}</div>
@@ -362,76 +341,65 @@ function EmployeeTable({
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreVertical className="h-4 w-4" />
+                            <Button variant="ghost" size="sm" title="More Actions">
+                              <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start">
-                            <DropdownMenuItem>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
                               <Link href={`/employees/profile/${employee.id}`}>
-                                <Button variant="ghost" size="sm" title="View Details">
-                                  <Eye className="h-4 w-4" /> View Details
-                                </Button>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
                               </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Link
-                                href={`/employees/update-employee/${employee.id}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  localStorage.setItem(
-                                    `employee_${employee.id || "unknown"}`,
-                                    JSON.stringify(employee),
-                                  );
-                                }}
-                              >
-                                <ProtectedComponent
-                                  permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEES}
+                            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEES}>
+                              <DropdownMenuItem asChild>
+                                <Link
+                                  href={`/employees/update-employee/${employee.id}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    localStorage.setItem(
+                                      `employee_${employee.id || "unknown"}`,
+                                      JSON.stringify(employee),
+                                    );
+                                  }}
                                 >
-                                  <Button variant="ghost" size="sm" title="Update Employee">
-                                    <Edit className="h-4 w-4" /> Edit
-                                  </Button>
-                                </ProtectedComponent>
-                              </Link>
-                            </DropdownMenuItem>
-
-                            <DropdownMenuItem className="text-red-600">
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    title="Delete Employee"
-                                    className="text-red-600 hover:text-red-700"
-                                    onClick={(e) => e.stopPropagation()}
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Update Employee
+                                </Link>
+                              </DropdownMenuItem>
+                            </ProtectedComponent>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="text-red-600 hover:text-red-700 focus:text-red-700"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Employee
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Employee</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete {getFullName(employee)}? This
+                                    action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => employee.id && onDelete(employee.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                   >
-                                    <Trash2 className="h-4 w-4" /> Delete
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Employee</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to delete {getFullName(employee)}? This
-                                      action cannot be undone.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => employee.id && onDelete(employee.id)}
-                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </DropdownMenuItem>
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </DropdownMenuContent>
                         </DropdownMenu>
-
-
                       </TableCell>
                     </TableRow>
                   ))}
@@ -459,7 +427,7 @@ function EmployeeTable({
                   </Button>
 
                   <div className="flex items-center gap-1">
-                    {Array.from({length: Math.min(5, totalPages)}, (_, i) => {
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                       let pageNumber;
                       if (totalPages <= 5) {
                         pageNumber = i + 1;
@@ -522,9 +490,10 @@ export default function EmployeesPage() {
       return;
     }
 
-    try {
-      setLoading(true);
-      const result = await getAllEmployees({institutionId: selectedInstitution.id});
+      try {
+        setLoading(true);
+        const institutionIdNumber = parseInt(InstitutionId);
+        const result = await getAllEmployees({ institutionId: institutionIdNumber });
 
       if (result && Array.isArray(result)) {
         setEmployees(result);

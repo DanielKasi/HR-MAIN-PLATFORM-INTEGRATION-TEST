@@ -152,7 +152,19 @@ class Employee(models.Model):
         """Custom validation for the Employee model"""
         super().clean()
 
-        # Validate minimum age of 18 years
+        # 🚫 Enforce unique phone number only if provided
+        if self.phone_number:
+            existing = Employee.objects.filter(phone_number=self.phone_number)
+            if self.pk:
+                existing = existing.exclude(pk=self.pk)
+            if existing.exists():
+                raise ValidationError(
+                    {
+                        "phone_number": "An employee with this phone number already exists."
+                    }
+                )
+
+        # ✅ Validate minimum age of 18 years
         if self.date_of_birth:
             today = date.today()
             age = (
@@ -163,7 +175,6 @@ class Employee(models.Model):
                     < (self.date_of_birth.month, self.date_of_birth.day)
                 )
             )
-
             if age < 18:
                 raise ValidationError(
                     {
@@ -171,7 +182,7 @@ class Employee(models.Model):
                     }
                 )
 
-        # Validate date of birth is not in the future
+        # 🚫 Prevent future date of birth
         if self.date_of_birth and self.date_of_birth > date.today():
             raise ValidationError(
                 {"date_of_birth": "Date of birth cannot be in the future."}
@@ -210,35 +221,31 @@ class Employee(models.Model):
         return f"{prefix}{new_number:05d}"
 
     def save(self, *args, **kwargs):
+        # 🔐 Ensure validations run before saving
+        self.full_clean()
+
         is_new_employee = self.pk is None
         old_department = None
         old_gender = None
         old_is_active = None
 
-        # Get old values for comparison if updating
         if not is_new_employee:
             old_employee = Employee.objects.get(pk=self.pk)
             old_department = old_employee.department
             old_gender = old_employee.gender
             old_is_active = old_employee.is_active
 
-        # Auto-set payroll_branch to default branch if not set
         if self.user and not self.payroll_branch:
             self.payroll_branch = self.get_default_branch()
 
         if self.position and hasattr(self.position, "salary"):
-            if is_new_employee:
-                self.salary = self.position.salary
-            else:
-                self.salary = self.position.salary
+            self.salary = self.position.salary
 
-        # Generate employee_id if not set
         if not self.employee_id:
             self.employee_id = self.generate_employee_id()
 
         super().save(*args, **kwargs)
 
-        # Initialize or update leave balances based on changes
         should_initialize = (
             is_new_employee and self.is_active and self.department
         ) or (

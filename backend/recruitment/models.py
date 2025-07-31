@@ -6,6 +6,8 @@ from django.template.loader import render_to_string
 import os
 from rest_framework.exceptions import ValidationError
 from users.models import Profile
+from django.utils import timezone
+from django.db import transaction
 
 
 class JobPosition(models.Model):
@@ -111,7 +113,7 @@ class JobPositionAdvert(models.Model):
         ],
         default="external",
     )
-    published_date = models.DateTimeField(default=datetime.now)
+    published_date = models.DateTimeField(default=timezone.now)
     expiry_date = models.DateTimeField()
     number_of_employees_expected = models.PositiveIntegerField(blank=True, null=True)
     extra_information = models.TextField(blank=True, null=True)
@@ -119,63 +121,75 @@ class JobPositionAdvert(models.Model):
     def __str__(self):
         return f"{self.job_position.name} - {self.job_position_advert_status} ({self.published_date})"
 
-    def _clean(self):
+    def clean(self):
+        """Validate that no other active advert exists for the same job position."""
         if self.job_position_advert_status == "active":
             existing_active = JobPositionAdvert.objects.filter(
                 job_position=self.job_position,
                 job_position_advert_status="active",
             )
-
             if self.pk:
                 existing_active = existing_active.exclude(pk=self.pk)
-
             if existing_active.exists():
+                conflicting_advert = existing_active.first()
                 raise ValidationError(
-                    f"There is already an active advert for '{self.job_position.name}'."
+                    f"There is already an active advert for '{self.job_position.name}' (ID: {conflicting_advert.pk})."
                 )
 
     def save(self, *args, **kwargs):
-        self._clean()
+        """Ensure validation is performed before saving."""
+        self.full_clean()  # Calls clean() and other validation
         super().save(*args, **kwargs)
 
     def approve(self):
+        """Approve the advert, ensuring it’s in the correct state."""
         if self.job_position_advert_status != "pending_approval":
             raise ValidationError(
-                "Only pending approval job positions adeverts can be approved."
+                "Only job position adverts with 'pending_approval' status can be approved."
             )
-
-        self.job_position_advert_status == "active"
+        self.job_position_advert_status = "active"  # Fixed typo
+        self.full_clean()  # Validate before saving
         self.save()
 
     def finish_workflow(self):
+        """Handle workflow completion and status transitions."""
         from workflows.models import ApprovalTask
         from django.contrib.contenttypes.models import ContentType
 
         content_type = ContentType.objects.get_for_model(self.__class__)
 
-        tasks = ApprovalTask.objects.filter(
-            content_type=content_type, object_id=self.pk
-        )
-
-        if tasks.exists() and tasks.filter(status="rejected").exists():
-            self.job_position_advert_status = "inactive"
-            self.save()
-            return
-        if (
-            tasks.exists()
-            and not tasks.filter(
-                status__in=["not_started", "pending", "rejected"]
-            ).exists()
-        ):
-            self.approve()
-            return
-        elif not tasks.exists():
-            self.approve()
-            return
-        else:
-            raise Exception(
-                "Cannot finish workflow: Some tasks are not completed or rejected."
+        with transaction.atomic():  # Ensure atomicity
+            tasks = ApprovalTask.objects.filter(
+                content_type=content_type, object_id=self.pk
             )
+            if tasks.exists() and tasks.filter(status="rejected").exists():
+                self.job_position_advert_status = "inactive"
+                self.save()
+                return
+            if (
+                tasks.exists()
+                and not tasks.filter(
+                    status__in=["not_started", "pending", "rejected"]
+                ).exists()
+            ):
+                self.approve()
+                return
+            elif not tasks.exists():
+                self.approve()
+                return
+            else:
+                raise Exception(
+                    "Cannot finish workflow: Some tasks are not completed or rejected."
+                )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["job_position"],
+                condition=models.Q(job_position_advert_status="active"),
+                name="unique_active_advert_per_job_position",
+            )
+        ]
 
 
 class JobAdvertApplication(models.Model):
