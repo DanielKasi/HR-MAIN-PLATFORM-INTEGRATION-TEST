@@ -172,7 +172,7 @@ export default function JobPositionsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Job Positions/Titles</h1>
+          <h1 className="text-2xl font-bold">Job Positions / Titles</h1>
           <p className="text-muted-foreground">
             Manage job positions/titles for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
           </p>
@@ -190,7 +190,7 @@ export default function JobPositionsPage() {
           </Button>
           <Button onClick={handleCreateJobPosition} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Create Job Position/ Title 
+            Create Job Position / Title 
           </Button>
         </div>
       </div>
@@ -235,7 +235,7 @@ export default function JobPositionsPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">{jobPositions.length}</div>
-              <p className="text-xs text-muted-foreground">Total Job Positions/Titles</p>
+              <p className="text-xs text-muted-foreground">Total Job Positions / Titles</p>
             </CardContent>
           </Card>
           <Card>
@@ -282,7 +282,7 @@ export default function JobPositionsPage() {
       ) : filteredJobPositions.length === 0 ? (
         <Card className="p-12 text-center">
           <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No job positions/titles found</h3>
+          <h3 className="text-lg font-semibold mb-2">No job positions / titles found</h3>
           <p className="text-muted-foreground mb-4">
             {searchTerm
               ? "No job positions/titles match your search criteria."
