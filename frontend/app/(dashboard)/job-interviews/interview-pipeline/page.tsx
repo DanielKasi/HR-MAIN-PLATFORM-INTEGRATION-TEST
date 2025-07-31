@@ -1849,13 +1849,16 @@ const handleSelectAll = (checked: boolean) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            Select Job Position/ Title 
+            Select Job Position / Title 
           </CardTitle>
+          <p className="text-muted-foreground mb-4">
+                Choose a job position / title above to manage its interview pipeline
+          </p>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
             <div className="flex-1">
-              <Label htmlFor="job-position">Job Position/ Title </Label>
+              <Label htmlFor="job-position">Job Position / Title </Label>
               <Select
                 value={selectedJobPosition?.id.toString() || ""}
                 onValueChange={handleJobPositionChange}
@@ -2015,7 +2018,7 @@ const handleSelectAll = (checked: boolean) => {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Select a Job Position/ Title </h3>
+              <h3 className="text-lg font-semibold mb-2">Select a Job Position / Title </h3>
               <p className="text-muted-foreground mb-4">
                 Choose a job position/title above to manage its interview pipeline
               </p>
