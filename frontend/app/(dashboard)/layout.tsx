@@ -226,6 +226,8 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       icon: <Icon icon="hugeicons:user-multiple-02" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
         {title: "Employees", href: "/employees/employee-list"},
+        {title: "Employee Types", href: "/employees/employee-types"},
+        {title: "Work Types", href: "/employees/work-types"},
         {title: "Contracts", href: "/employees/contracts"},
         {title: "Attendance", href: "/employees/attendance"},
         {title: "Discipline", href: "/employees/discipline"},
@@ -599,7 +601,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         </div>
 
         {/* Content */}
-        <div className="w-full overflow-y-auto p-4">
+        <div className="w-full p-4 relative">
           {selectedInstitution ? (
             <>
         {/* <div className={`flex items-center gap-4 my-2 ${isSideBarOpen ? "pl-0" : "pl-4"}`}>
@@ -612,7 +614,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                   <Icon icon="hugeicons:arrow-left-02" className="!w-8 !h-8" />
                 </Button>
               </div> */}
+              <div className="overflow-y-auto max-h-[87svh] relative">
+
               {children}
+              </div>
             </>
           ) : (
             <CreateOrganisationWizard />

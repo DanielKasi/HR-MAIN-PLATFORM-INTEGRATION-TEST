@@ -26,7 +26,6 @@ import { toast } from "sonner"
 
 
 
-// Virtual scrolling component for performance with large lists
 const VirtualizedEmployeeList: React.FC<{
   employees: IEmployee[]
   selectedEmployees: Set<number>
@@ -37,10 +36,10 @@ const VirtualizedEmployeeList: React.FC<{
   const [startIndex, setStartIndex] = useState(0)
   const scrollElementRef = useRef<HTMLDivElement>(null)
 
-  const ITEM_HEIGHT = 60 // Height of each employee item
-  const BUFFER_SIZE = 5 // Extra items to render for smooth scrolling
+  const ITEM_HEIGHT = 60 
+  const BUFFER_SIZE = 5 
 
-  // Filter employees based on search term
+ 
   const filteredEmployees = useMemo(() => {
     if (!searchTerm.trim()) return employees
 
@@ -64,6 +63,8 @@ const VirtualizedEmployeeList: React.FC<{
 
   const totalHeight = filteredEmployees.length * ITEM_HEIGHT
   const offsetY = Math.max(0, startIndex - BUFFER_SIZE) * ITEM_HEIGHT
+
+  
 
   return (
     <div
@@ -563,26 +564,28 @@ export default function EditJobPositionPage() {
     }
   }
 
-  const updateFormData = (field: keyof JobPositionFormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+  // Replace your existing updateFormData function with this:
+const updateFormData = (field: keyof JobPositionFormData, value: any) => {
+  setFormData((prev) => ({ ...prev, [field]: value }))
 
-    // Track salary changes
-    if (field === "salary") {
-      const salaryChanged = value !== originalSalary
-      setIsSalaryChanged(salaryChanged)
+  // Track salary changes
+  if (field === "salary") {
+    // Compare with original salary - if they're the same OR if the field is empty, reset the changed state
+    const salaryChanged = value !== originalSalary && value.trim() !== ""
+    setIsSalaryChanged(salaryChanged)
 
-      // Reset employee selection state when salary changes back to original
-      if (!salaryChanged) {
-        setEmployeesSelected(false)
-        setSelectedEmployees([])
-      }
-    }
-
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }))
+    // Reset employee selection state when salary changes back to original OR is empty
+    if (!salaryChanged) {
+      setEmployeesSelected(false)
+      setSelectedEmployees([])
     }
   }
+  
 
+  if (errors[field]) {
+    setErrors((prev) => ({ ...prev, [field]: undefined }))
+  }
+}
 
   const removeFile = (field: "offer_letter_template") => {
     updateFormData(field, null)
@@ -732,7 +735,7 @@ export default function EditJobPositionPage() {
   }
 
   return (
-    <div className="w-full h-full p-6">
+    <div className="w-full max-h-full p-6">
       <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -794,14 +797,26 @@ export default function EditJobPositionPage() {
                   </Label>
                   <div className="relative">
                     <Input
-                      id="salary"
-                      type="number"
-                      placeholder="50000"
-                      value={formData.salary}
-                      onChange={(e) => updateFormData("salary", e.target.value)}
-                      className={`pr-10 ${errors.salary ? "border-destructive" : ""} ${isSalaryChanged ? "border-amber-300 bg-amber-50" : ""
-                        }`}
-                    />
+                          id="salary"
+                          type="text" 
+                          inputMode="numeric" 
+                          placeholder="50,000"
+                          value={
+                            formData.salary !== undefined && formData.salary !== null
+                              ? Number(formData.salary).toLocaleString("en-US")
+                              : ""
+                          }
+                          onChange={(e) => {
+                            const rawValue = e.target.value.replace(/,/g, ""); 
+                            if (/^\d*$/.test(rawValue)) {
+                              updateFormData("salary", rawValue); 
+                            }
+                          }}
+                          className={`pr-10 ${errors.salary ? "border-destructive" : ""} ${
+                            isSalaryChanged ? "border-amber-300 bg-amber-50" : ""
+                          }`}
+                        />
+
                     <Coins className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   </div>
 
@@ -849,7 +864,7 @@ export default function EditJobPositionPage() {
                   {/* Show original salary info when not changed */}
                   {!isSalaryChanged && originalSalary && (
                     <p className="text-xs text-muted-foreground">
-                      Current salary: ${Number(originalSalary).toLocaleString()}
+                      Current salary: {Number(originalSalary).toLocaleString()}
                     </p>
                   )}
 

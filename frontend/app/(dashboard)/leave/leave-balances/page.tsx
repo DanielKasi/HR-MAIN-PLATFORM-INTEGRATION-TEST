@@ -30,7 +30,7 @@ import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { getAllLeaveBalances, createLeaveBalance, updateLeaveBalance, deleteLeaveBalance } from "@/lib/utils"
 import { getAllEmployees } from "@/lib/utils"
 import { getLeaveTypes } from "@/lib/utils"
-import { ILeaveBalance, EmployeeFromAPI, ILeaveType } from "@/app/types/types.utils"
+import { ILeaveBalance, IEmployee, ILeaveType } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
@@ -51,7 +51,7 @@ export default function LeaveBalanceComponent() {
   
   // State management
   const [data, setData] = useState<ILeaveBalance[]>([])
-  const [employees, setEmployees] = useState<EmployeeFromAPI[]>([])
+  const [employees, setEmployees] = useState<IEmployee[]>([])
   const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all")
@@ -722,7 +722,7 @@ export default function LeaveBalanceComponent() {
                         group.status === 'overused' ? 'text-red-600' : 
                         group.status === 'low' ? 'text-yellow-600' : 'text-green-600'
                       }`}>
-                        {group.totalAvailable.toFixed(1)}
+                        {group.totalAvailable}
                       </TableCell>
                       <TableCell className="text-center">
                         {getStatusBadge(group.status)}

@@ -16,6 +16,7 @@ from .views import (
     EmployeeTemplateDownloadAPIView,
     EmployeeContractDetailAPIView,
     EmployeeContractListAPIView,
+    EmployeeContractApprovalAPIView
 
 )
 
@@ -89,4 +90,5 @@ urlpatterns = [
         EmployeeContractListAPIView.as_view(),
         name="employee-contract-list-create",
     ),
+    path('contracts/<int:pk>/approve/', EmployeeContractApprovalAPIView.as_view(), name='employee-contract-approve'),
 ]

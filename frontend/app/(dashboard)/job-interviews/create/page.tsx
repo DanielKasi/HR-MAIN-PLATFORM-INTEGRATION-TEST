@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { CreateJobPositionDialog } from "@/components/dialogs/create-job-position-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -898,25 +899,7 @@ interface IInterviewStageFormData {
                   <p className="text-xs text-muted-foreground">Must be a future date and time</p>
                 </div>
 
-                {/* Interview Location */}
-                <div className="space-y-2">
-                  <Label htmlFor="location" className="text-sm font-medium">
-                    Interview Location *
-                  </Label>
-                  <Input
-                    id="location"
-                    type="text"
-                    value={formData.location}
-                    onChange={(e) => updateFormData("location", e.target.value)}
-                    className={errors.location ? "border-destructive" : ""}
-                  />
-                  {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
-                  <p className="text-xs text-muted-foreground">
-                    Specify if interview is in-person or virtual
-                  </p>
-                </div>
-
-                {/* Interview Type */}
+                  {/* Interview Type */}
                 <div className="space-y-2">
                   <Label htmlFor="interview_type" className="text-sm font-medium">
                     Interview Type
@@ -934,6 +917,25 @@ interface IInterviewStageFormData {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Interview Location */}
+                <div className="space-y-2">
+                  <Label htmlFor="location" className="text-sm font-medium">
+                    Interview Location *
+                  </Label>
+                  <Input
+                    id="location"
+                    type="text"
+                    value={formData.location}
+                    onChange={(e) => updateFormData("location", e.target.value)}
+                    className={errors.location ? "border-destructive" : ""}
+                  />
+                  {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
+                  <p className="text-xs text-muted-foreground">
+                    Specify if interview is in-person or virtual
+                  </p>
+                </div>
+              
               </div>
 
               {/* Selected Applications Summary */}

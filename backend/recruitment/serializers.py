@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from institution.serializers import DepartmentSerializer
 from recruitment.models import (
     JobPosition,
     JobPositionAdvert,
@@ -220,7 +219,7 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
 
 
 class JobPositionSerializer(serializers.ModelSerializer):
-    department_details = DepartmentSerializer(source="department", read_only=True)
+    department_details = serializers.SerializerMethodField(read_only=True)
     reports_to_details = serializers.SerializerMethodField()
     job_adverts = serializers.SerializerMethodField(read_only=True)
     apply_salary_to_employees = serializers.ListField(
@@ -248,6 +247,11 @@ class JobPositionSerializer(serializers.ModelSerializer):
             "apply_salary_to_employees",
             "job_position_status",
         ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from institution.serializers import DepartmentSerializer
+        self.fields['department_details'] = DepartmentSerializer(source="department", read_only=True)
 
     def get_reports_to_details(self, obj):
         if obj.reports_to:

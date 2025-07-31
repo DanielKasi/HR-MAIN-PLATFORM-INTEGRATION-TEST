@@ -1796,251 +1796,247 @@ export default function ApplicationsPage() {
             </Alert>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="job_position_advert">Job Position/ Title *</Label>
-                <Select
-                  value={formData.job_position_advert.toString()}
-                  onValueChange={(value) =>
-                    handleInputChange("job_position_advert", Number.parseInt(value))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        isLoadingAdverts ? "Loading job adverts..." : "Select a job advert"
-                      }
+          <form onSubmit={handleSubmit} className="space-y-4 ">
+            <div className="max-h-[80vh] overflow-y-auto py-8">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="job_position_advert">Job Position/ Title *</Label>
+                  <Select
+                    value={formData.job_position_advert.toString()}
+                    onValueChange={(value) =>
+                      handleInputChange("job_position_advert", Number.parseInt(value))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          isLoadingAdverts ? "Loading job adverts..." : "Select a job advert"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {jobPositionAdverts
+                        .filter(
+                          (advert) =>
+                            advert.job_position_advert_status !== "expired" &&
+                            advert.job_position_advert_status !== "closed",
+                        )
+                        .map((advert) => (
+                          <SelectItem key={advert.id} value={advert.id.toString()}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">
+                                {advert.job_position_details.name || `Job Advert #${advert.id}`}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* ... rest of your form fields */}
+                <div className="space-y-2">
+                  <Label htmlFor="application_date">Application Date *</Label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                    </div>
+                    <Input
+                      id="application_date"
+                      type="date"
+                      value={formData.application_date}
+                      onChange={(e) => handleInputChange("application_date", e.target.value)}
+                      className="pl-10"
+                      max={new Date().toISOString().split("T")[0]}
+                      required
                     />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {jobPositionAdverts
-                      .filter(
-                        (advert) =>
-                          advert.job_position_advert_status !== "expired" &&
-                          advert.job_position_advert_status !== "closed",
-                      )
-                      .map((advert) => (
-                        <SelectItem key={advert.id} value={advert.id.toString()}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">
-                              {advert.job_position_details.name || `Job Advert #${advert.id}`}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* ... rest of your form fields */}
-              <div className="space-y-2">
-                <Label htmlFor="application_date">Application Date *</Label>
-                <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
                   </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="applicant_name">Applicant Name *</Label>
                   <Input
-                    id="application_date"
-                    type="date"
-                    value={formData.application_date}
-                    onChange={(e) => handleInputChange("application_date", e.target.value)}
-                    className="pl-10"
-                    max={new Date().toISOString().split("T")[0]}
+                    id="applicant_name"
+                    value={formData.applicant_name}
+                    onChange={(e) => handleInputChange("applicant_name", e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender *</Label>
+                  <Select
+                    value={formData.gender}
+                    onValueChange={(value) => handleInputChange("gender", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="applicant_email">Email *</Label>
+                  <Input
+                    id="applicant_email"
+                    type="email"
+                    value={formData.applicant_email}
+                    onChange={(e) => handleInputChange("applicant_email", e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="applicant_phone">Phone</Label>
+                  <Input
+                    id="applicant_phone"
+                    value={formData.applicant_phone}
+                    onChange={(e) => handleInputChange("applicant_phone", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Source and Address Grid - CLEAN VERSION */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="source">Source</Label>
+                  <Select
+                    value={formData.source}
+                    onValueChange={(value) => {
+                      handleInputChange("source", value);
+                      // Clear recommended_by when source changes away from head_hunt
+                      if (value !== "head_hunt") {
+                        handleInputChange("recommended_by", null);
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="website">Website</SelectItem>
+                      <SelectItem value="referral">Referral</SelectItem>
+                      <SelectItem value="job_board">Job Board</SelectItem>
+                      <SelectItem value="social_media">Social Media</SelectItem>
+                      <SelectItem value="head_hunt">Head Hunt</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address *</Label>
+                  <LocationAutocomplete
+                    value={formData.address}
+                    onChange={(value) => handleInputChange("address", value)}
+                    onCoordinatesChange={handleAddressCoordinatesChange}
+                    placeholder="Search for applicant's address..."
+                    showCurrentLocationButton={true}
+                  />
+                </div>
+              </div>
+
+              {/* HEAD HUNT FIELD - PUT IT RIGHT HERE, OUTSIDE THE GRID */}
+              {formData.source === "head_hunt" && (
+                <div className="space-y-2">
+                  <Label htmlFor="recommended_by">Head Hunted By *</Label>
+                  <div className="w-full">
+                    <EmployeeSearchableSelect
+                      employees={employees.map((emp) => ({
+                        ...emp,
+                        department: emp.department?.name || "No Department",
+                        position: emp.position?.name || "No Position",
+                        user: emp.user
+                          ? {
+                              fullname: emp.user.fullname,
+                              email: emp.user.email,
+                            }
+                          : undefined,
+                      }))}
+                      value={formData.recommended_by ? [formData.recommended_by.toString()] : []}
+                      onValueChange={(values) => {
+                        const selectedValue = Array.isArray(values) ? values[0] : values;
+                        handleInputChange(
+                          "recommended_by",
+                          selectedValue ? Number(selectedValue) : null,
+                        );
+                      }}
+                      placeholder="Select the employee who head hunted this candidate"
+                      showEmployeeId={false}
+                      showDepartment={true}
+                      multiple={false}
+                    />
+                  </div>
+                  {!formData.recommended_by && (
+                    <p className="text-sm text-muted-foreground">
+                      Please select which employee was responsible for head hunting this candidate.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="state">State</Label>
+                  <Input
+                    id="state"
+                    value={formData.state}
+                    onChange={(e) => handleInputChange("state", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country *</Label>
+                  <Input
+                    id="country"
+                    value={formData.country}
+                    onChange={(e) => handleInputChange("country", e.target.value)}
                     required
                   />
                 </div>
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="applicant_name">Applicant Name *</Label>
-                <Input
-                  id="applicant_name"
-                  value={formData.applicant_name}
-                  onChange={(e) => handleInputChange("applicant_name", e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="gender">Gender *</Label>
-                <Select
-                  value={formData.gender}
-                  onValueChange={(value) => handleInputChange("gender", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="applicant_email">Email *</Label>
-                <Input
-                  id="applicant_email"
-                  type="email"
-                  value={formData.applicant_email}
-                  onChange={(e) => handleInputChange("applicant_email", e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="applicant_phone">Phone</Label>
-                <Input
-                  id="applicant_phone"
-                  value={formData.applicant_phone}
-                  onChange={(e) => handleInputChange("applicant_phone", e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Source and Address Grid - CLEAN VERSION */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="source">Source</Label>
-                <Select
-                  value={formData.source}
-                  onValueChange={(value) => {
-                    handleInputChange("source", value);
-                    // Clear recommended_by when source changes away from head_hunt
-                    if (value !== "head_hunt") {
-                      handleInputChange("recommended_by", null);
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="website">Website</SelectItem>
-                    <SelectItem value="referral">Referral</SelectItem>
-                    <SelectItem value="job_board">Job Board</SelectItem>
-                    <SelectItem value="social_media">Social Media</SelectItem>
-                    <SelectItem value="head_hunt">Head Hunt</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
 
               <div className="space-y-2">
-                <Label htmlFor="address">Address *</Label>
-                <LocationAutocomplete
-                  value={formData.address}
-                  onChange={(value) => handleInputChange("address", value)}
-                  onCoordinatesChange={handleAddressCoordinatesChange}
-                  placeholder="Search for applicant's address..."
-                  showCurrentLocationButton={true}
-                />
-                {formData.address_latitude && formData.address_longitude && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Coordinates: {formData.address_latitude}, {formData.address_longitude}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* HEAD HUNT FIELD - PUT IT RIGHT HERE, OUTSIDE THE GRID */}
-            {formData.source === "head_hunt" && (
-              <div className="space-y-2">
-                <Label htmlFor="recommended_by">Head Hunted By *</Label>
-                <div className="w-full">
-                  <EmployeeSearchableSelect
-                    employees={employees.map((emp) => ({
-                      ...emp,
-                      department: emp.department?.name || "No Department",
-                      position: emp.position?.name || "No Position",
-                      user: emp.user
-                        ? {
-                            fullname: emp.user.fullname,
-                            email: emp.user.email,
-                          }
-                        : undefined,
-                    }))}
-                    value={formData.recommended_by ? [formData.recommended_by.toString()] : []}
-                    onValueChange={(values) => {
-                      const selectedValue = Array.isArray(values) ? values[0] : values;
-                      handleInputChange(
-                        "recommended_by",
-                        selectedValue ? Number(selectedValue) : null,
-                      );
-                    }}
-                    placeholder="Select the employee who head hunted this candidate"
-                    showEmployeeId={false}
-                    showDepartment={true}
-                    multiple={false}
+                <Label htmlFor="resume">Curriculum Vitae /Resume *</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id="resume"
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={(e) => handleFileChange("resume", e.target.files?.[0] || null)}
+                    required
                   />
+                  <Upload className="h-4 w-4 text-muted-foreground" />
                 </div>
-                {!formData.recommended_by && (
-                  <p className="text-sm text-muted-foreground">
-                    Please select which employee was responsible for head hunting this candidate.
+                {formData.resume && (
+                  <p className="text-sm text-muted-foreground flex items-center">
+                    <FileText className="mr-1 h-3 w-3" />
+                    {formData.resume.name}
                   </p>
                 )}
               </div>
-            )}
 
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="state">State</Label>
-                <Input
-                  id="state"
-                  value={formData.state}
-                  onChange={(e) => handleInputChange("state", e.target.value)}
-                />
+                <Label htmlFor="cover_letter">Cover Letter</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id="cover_letter"
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={(e) => handleFileChange("cover_letter", e.target.files?.[0] || null)}
+                  />
+                  <Upload className="h-4 w-4 text-muted-foreground" />
+                </div>
+                {formData.cover_letter && (
+                  <p className="text-sm text-muted-foreground flex items-center">
+                    <FileText className="mr-1 h-3 w-3" />
+                    {formData.cover_letter.name}
+                  </p>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="country">Country *</Label>
-                <Input
-                  id="country"
-                  value={formData.country}
-                  onChange={(e) => handleInputChange("country", e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="resume">Curriculum Vitae /Resume *</Label>
-              <div className="flex items-center space-x-2">
-                <Input
-                  id="resume"
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={(e) => handleFileChange("resume", e.target.files?.[0] || null)}
-                  required
-                />
-                <Upload className="h-4 w-4 text-muted-foreground" />
-              </div>
-              {formData.resume && (
-                <p className="text-sm text-muted-foreground flex items-center">
-                  <FileText className="mr-1 h-3 w-3" />
-                  {formData.resume.name}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cover_letter">Cover Letter</Label>
-              <div className="flex items-center space-x-2">
-                <Input
-                  id="cover_letter"
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={(e) => handleFileChange("cover_letter", e.target.files?.[0] || null)}
-                />
-                <Upload className="h-4 w-4 text-muted-foreground" />
-              </div>
-              {formData.cover_letter && (
-                <p className="text-sm text-muted-foreground flex items-center">
-                  <FileText className="mr-1 h-3 w-3" />
-                  {formData.cover_letter.name}
-                </p>
-              )}
             </div>
 
             <div className="flex justify-end space-x-2 pt-4">

@@ -1163,21 +1163,17 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
   }
 
   const canCandidateBeOnboarded = (candidate: Candidate): boolean => {
-    // Can only be onboarded if they have feedback, rating, and have been scheduled/completed interviews
     return !!(candidate.feedback && candidate.rating && candidate.rating > 0)
   }
 
   const isCandidateAlreadyOnboarded = (candidate: Candidate): boolean => {
-    // This would typically come from your API data - you might have an 'onboarded' status field
-    // For now, we'll assume candidates with status 'onboarded' or similar are already onboarded
     return candidate.status === 'onboarded' || candidate.status === 'hired'
   }
 
  const canCandidateBeSelected = (candidate: Candidate | CandidateWithHistory): boolean => {
-  // Only select candidates who DON'T have feedback yet (need action) and aren't already onboarded
   return !(candidate.feedback && candidate.rating && candidate.rating > 0) && !isCandidateAlreadyOnboarded(candidate)
 }
-  // Smart filtered candidates for selection (only those that need action)
+
   const selectableCandidates = filteredCandidates.filter(canCandidateBeSelected)
 
   // Filter candidates for bulk actions
@@ -1192,7 +1188,6 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
     canCandidateBeMoved(candidate)
   )
 
-  // Build all candidates with history for history view (rebuild when data changes)
   const allCandidatesWithHistory = React.useMemo(() => {
     if (!jobPositionAdvert?.applications) return []
 
