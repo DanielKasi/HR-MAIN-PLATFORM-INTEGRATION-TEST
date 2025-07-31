@@ -625,7 +625,7 @@ export default function JobAdvertsPage() {
       {!isLoading && (
         <div className="text-sm text-muted-foreground">
           Showing {filteredJobAdverts.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to{" "}
-          {Math.min(currentPage * pageSize, filteredJobAdverts.length)} of {filteredJobAdverts.length} job adverts
+          {Math.min(currentPage * pageSize, filteredJobAdverts.length)} of {filteredJobAdverts.length} job openings
           {(searchTerm || statusFilter !== "all" || dateRange.from || dateRange.to) && ` (filtered from ${paginationInfo.count} total)`}
         </div>
       )}

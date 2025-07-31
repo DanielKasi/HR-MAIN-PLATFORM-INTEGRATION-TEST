@@ -39,8 +39,12 @@ export interface DisplayTask {
     | "other";
 }
 
+export type TaskType = "incoming" |"outgoing" | "all"|"open"|"critical"|"expired";
+
 export default function TasksPage() {
   const [tasks, setTasks] = useState<DisplayTask[]>([]);
+  const originParams = useSearchParams();
+  const originTaskType = originParams.get("type") || "all" as TaskType;
   const [filteredTasks, setFilteredTasks] = useState<DisplayTask[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("");
@@ -257,7 +261,7 @@ export default function TasksPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Pending Tasks</CardTitle>
+          <CardTitle><span className="capitalize">{originTaskType} Tasks</span></CardTitle>
           <CardDescription>Tasks that require your attention and action</CardDescription>
         </CardHeader>
         <CardContent>
@@ -281,9 +285,11 @@ export default function TasksPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="product_approval">Product Approval</SelectItem>
-                      <SelectItem value="stock_approval">Stock Approval</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="open">Open</SelectItem>
+                      <SelectItem value="incoming">Incoming</SelectItem>
+                      <SelectItem value="outgoing">Outgoing</SelectItem>
+                      <SelectItem value="expired">Expired</SelectItem>
+                      <SelectItem value="critical">Critical</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
