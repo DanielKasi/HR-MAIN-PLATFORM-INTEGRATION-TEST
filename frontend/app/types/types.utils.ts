@@ -256,7 +256,7 @@ export interface IDepartment {
   description?: string | null;
   institution: number; // ForeignKey as ID
   institution_details?: IInstitution | null; // Embedded serializer
-  job_positions?: { id: number; name: string; department_id: number }[];
+  job_positions?: { id: number; name: string; description: string; department_id: number }[];
 }
 
 export interface PaginatedResponse<T> {

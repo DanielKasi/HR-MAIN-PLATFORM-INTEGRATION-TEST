@@ -182,7 +182,7 @@ export default function CreateTemplatePage() {
             <CardDescription>Choose how you want to create your template</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
                 onClick={() => handleTemplateTypeChange("text")}
@@ -197,7 +197,7 @@ export default function CreateTemplatePage() {
                 <div className="text-sm text-muted-foreground">Rich text editor</div>
               </button>
 
-              <button
+              {/* <button
                 type="button"
                 onClick={() => handleTemplateTypeChange("pdf")}
                 className={`p-4 border rounded-lg text-center transition-colors ${
@@ -209,7 +209,7 @@ export default function CreateTemplatePage() {
                 <File className="h-8 w-8 mx-auto mb-2 text-red-500" />
                 <div className="font-medium">PDF</div>
                 <div className="text-sm text-muted-foreground">Upload PDF file</div>
-              </button>
+              </button> */}
 
               <button
                 type="button"

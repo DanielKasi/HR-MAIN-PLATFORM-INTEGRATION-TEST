@@ -14,6 +14,7 @@ from .views import (
     DepartmentListAPIView,
     DepartmentDetailAPIView,
     delete_user_branch_by_ids,
+    DefaultDataAPIView
 )
 
 urlpatterns = [
@@ -65,4 +66,5 @@ urlpatterns = [
         name="department-detail",
     ),
     path("api/activate/", SystemActivationView.as_view(), name="system_activation"),
+    path('default-data/', DefaultDataAPIView.as_view(), name='default-data'),
 ]

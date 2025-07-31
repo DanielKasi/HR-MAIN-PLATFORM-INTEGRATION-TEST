@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -18,16 +17,19 @@ import {
   MapPin,
   Upload,
   X,
+  Users,
 } from "lucide-react";
-import { useSelector } from "react-redux";
-import { useDispatch } from "react-redux";
-
+import { useSelector, useDispatch } from "react-redux";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import apiRequest from "@/lib/apiRequest";
-import { selectRefreshToken, selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
+import {
+  selectRefreshToken,
+  selectSelectedInstitution,
+  selectUser,
+} from "@/store/auth/selectors";
 import {
   logoutStart,
   setAccessToken,
@@ -45,6 +47,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@radix-ui/react-progress";
 import PhoneNumberInput from "@/components/phone-number-input";
 import type { ICountry } from "@/app/types/types.utils";
+import type { IDepartment } from "@/app/types/types.utils";
+import { getDefaultData } from "@/lib/utils";
 
 interface DocumentFile {
   id: string;
@@ -53,21 +57,28 @@ interface DocumentFile {
   fileName: string;
 }
 
+interface DefaultJobPosition {
+  name: string;
+  description: string;
+}
+
+interface DefaultDepartment {
+  name: string;
+  description: string;
+  job_positions: DefaultJobPosition[];
+}
+
 interface OrganisationFormData {
-  // Step 1: Basic Info
   institutionName: string;
   institutionEmail: string;
   firstPhoneNumber: string;
   secondPhoneNumber: string;
   description: string;
-
-  // Step 2: Location
   location: string;
   latitude: string;
   longitude: string;
-
-  // Step 3: Documents
   documents: DocumentFile[];
+  departments: IDepartment[];
 }
 
 const STEPS = [
@@ -81,7 +92,16 @@ const STEPS = [
     title: "Location Details",
     description: "Where is your organisation located",
   },
-  { id: 3, title: "Documents", description: "Upload required documents" },
+  {
+    id: 3,
+    title: "Documents",
+    description: "Upload required documents",
+  },
+  {
+    id: 4,
+    title: "Departments",
+    description: "Review and select default departments and job positions",
+  },
 ];
 
 export default function CreateOrganisationWizard() {
@@ -89,7 +109,6 @@ export default function CreateOrganisationWizard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [userId, setUserId] = useState<number | null>(null);
-  // const [isCreated, setIsCreated] = useState(false);
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -107,6 +126,7 @@ export default function CreateOrganisationWizard() {
     latitude: "",
     longitude: "",
     documents: [],
+    departments: [],
   });
 
   const [firstPhone, setFirstPhone] = useState<{
@@ -120,7 +140,7 @@ export default function CreateOrganisationWizard() {
     countryCode: string;
     phoneNumber: string;
     isValid: boolean;
-  }>({ country: null, countryCode: "", phoneNumber: "", isValid: true }); // not required
+  }>({ country: null, countryCode: "", phoneNumber: "", isValid: true });
 
   useEffect(() => {
     if (userData) {
@@ -144,11 +164,37 @@ export default function CreateOrganisationWizard() {
     } else {
       setIsLoading(false);
     }
-  }, [router]);
+  }, [router, selectedInstitution]);
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+  useEffect(() => {
+    const fetchDefaultDepartments = async () => {
+      try {
+        const departments = await getDefaultData();
+        if (departments && formData.departments.length === 0) { // Only set if departments is empty
+          // Map the default departments to IDepartment type
+          const mappedDepartments: IDepartment[] = departments.map((dept) => ({
+            id: 0, // Temporary ID, will be assigned by backend
+            name: dept.name,
+            description: dept.description ?? "",
+            institution: 0, // Temporary, will be set by backend
+            institution_details: null,
+            job_positions: (dept.job_positions ?? []).map((job) => ({
+              id: 0, // Temporary ID
+              name: job.name,
+              description: job.description ?? "",
+              department_id: 0, // Temporary, will be set by backend
+            })),
+          }));
+          setFormData((prev) => ({ ...prev, departments: mappedDepartments }));
+        }
+      } catch (error) {
+        toast.error("Failed to fetch default departments.");
+      }
+    };
+    if (currentStep === 4) { // Updated to step 4 due to reordered STEPS
+      fetchDefaultDepartments();
+    }
+  }, [currentStep, formData.departments.length]);
 
   const updateFormData = (field: keyof OrganisationFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -186,24 +232,45 @@ export default function CreateOrganisationWizard() {
     updateDocument(id, "fileName", file ? file.name : "");
   };
 
+  const removeDepartment = (deptName: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      departments: prev.departments.filter((dept) => dept.name !== deptName),
+    }));
+  };
+
+  const removeJobPosition = (deptName: string, jobName: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      departments: prev.departments.map((dept) =>
+        dept.name === deptName
+          ? {
+              ...dept,
+              job_positions: (dept.job_positions ?? []).filter((job) => job.name !== jobName),
+            }
+          : dept,
+      ),
+    }));
+  };
+
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
         return !!(
           formData.institutionName &&
           formData.institutionEmail &&
-          firstPhone.isValid && firstPhone.phoneNumber // use validated phone
+          firstPhone.isValid &&
+          firstPhone.phoneNumber
         );
       case 2:
         return !!(formData.location && formData.latitude && formData.longitude);
       case 3:
-        // For step 3, we'll consider it valid if either:
-        // 1. There are no documents (documents are optional)
-        // 2. All documents have both title and file
         return (
           formData.documents.length === 0 ||
           formData.documents.every((doc) => doc.title && doc.file)
         );
+      case 4:
+        return formData.departments.length > 0;
       default:
         return false;
     }
@@ -227,8 +294,6 @@ export default function CreateOrganisationWizard() {
     dispatch(setAccessToken(loginResponse.tokens.access));
     dispatch(setRefreshToken(loginResponse.tokens.refresh));
     dispatch(setUserAction(loginResponse.user));
-
-    console.log("\n\n Refreshed with response : ", loginResponse)
 
     if (loginResponse.institution_attached.length) {
       const defaultSelectedInstitution = loginResponse.institution_attached.find(
@@ -258,7 +323,7 @@ export default function CreateOrganisationWizard() {
       return;
     }
 
-    if (!validateStep(3)) {
+    if (!validateStep(4)) {
       setErrorMessage("Please complete all required fields and documents.");
       return;
     }
@@ -275,60 +340,39 @@ export default function CreateOrganisationWizard() {
       if (secondPhone.phoneNumber) {
         formdata.append("second_phone_number", `${secondPhone.countryCode}${secondPhone.phoneNumber}`);
       }
-
       if (formData.description && formData.description.trim()) {
         formdata.append("description", formData.description);
       }
-
-      // Institution owner
       formdata.append("institution_owner_id", userId.toString());
-
-      // Location data
       formdata.append("location", formData.location);
       formdata.append("latitude", formData.latitude.toString());
       formdata.append("longitude", formData.longitude.toString());
+      // Map departments to backend-compatible format
+      const backendDepartments = formData.departments.map((dept) => ({
+        name: dept.name,
+        description: dept.description || "",
+        job_positions: (dept.job_positions ?? []).map((job) => ({
+          name: job.name,
+          description: job.description || "",
+        })),
+      }));
 
-      // Documents - Only add if we have valid documents
+      formdata.append("departments", JSON.stringify(backendDepartments));
+
       const validDocuments = formData.documents.filter(
         (doc) => doc.file && doc.title && doc.title.trim(),
       );
-      // console.log("Valid documents count:", validDocuments.length);
-
-      // if (validDocuments.length > 0) {
-      //   // Append document files and titles
-      //   validDocuments.forEach((doc) => {
-      //     if (doc.file && doc.title) {
-      //       console.log(`Adding document: ${doc.title} - ${doc.file.name}`);
-      //       formdata.append("document_files", doc.file);
-      //       formdata.append("document_titles", doc.title.trim());
-      //     }
-      //   });
-      // }
-      // Important: We don't add empty document fields at all if there are no valid documents
-
-      // Log the complete form data
-      // console.log("=== Complete FormData Contents ===");
-      for (const [key, value] of formdata.entries()) {
-        if (value instanceof File) {
-          console.log(`${key}: File - ${value.name} (${value.size} bytes, ${value.type})`);
-        } else {
-          console.log(`${key}: ${value}`);
+      validDocuments.forEach((doc) => {
+        if (doc.file && doc.title) {
+          formdata.append("document_files", doc.file);
+          formdata.append("document_titles", doc.title.trim());
         }
-      }
+      });
 
-      console.log("Making API request to create institution...");
-
-      // Make the API request
       const response = await apiRequest.post("institution/", formdata);
 
-      console.log("API Response:", response.status, response.data);
-
       if (response.status === 200 || response.status === 201) {
-        // console.log("Institution created successfully:", response.data);
-
-        // Refresh user data to get updated institutions
         try {
-          console.log("Refreshing user data...");
           const fetchedUserResponse = await axios.post(
             `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/user/token/refresh/`,
             { refresh: refreshToken },
@@ -339,26 +383,20 @@ export default function CreateOrganisationWizard() {
             },
           );
           const responseData = fetchedUserResponse.data as LoginResponse;
-
           handleUserRefresh(responseData);
         } catch (refreshError) {
-          console.log(refreshError)
           toast.error(
             "Organisation created, but failed to refresh user data. Please log out and log in again.",
           );
           dispatch(logoutStart());
         }
-
-        // toast.success("Organisation created successfully! It's now pending approval.");
-        // setIsCreated(true);
       }
     } catch (error: any) {
       toast.error("Failed to create organisation. Please try again.");
 
       if (error.response) {
         toast.error(
-          `Server error: ${error.response.status} - ${error.response.data?.detail || "Unknown error"
-          }`,
+          `Server error: ${error.response.status} - ${error.response.data?.detail || "Unknown error"}`,
         );
 
         if (error.response.data?.detail && typeof error.response.data.detail === "object") {
@@ -394,8 +432,6 @@ export default function CreateOrganisationWizard() {
       } else {
         toast.error("Request setup error. Please try again.");
       }
-
-      toast.error("Something went wrong!");
     } finally {
       setIsSubmitting(false);
     }
@@ -647,6 +683,86 @@ export default function CreateOrganisationWizard() {
           </div>
         );
 
+      case 4:
+        return (
+          <div className="w-full space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm font-medium">Departments and Job Positions</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Review and select the default departments and job positions for your organisation
+                </p>
+              </div>
+            </div>
+
+            {formData.departments.length === 0 ? (
+              <div className="w-full border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                <h3 className="text-base font-medium mb-2">No departments selected</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Please select at least one department to proceed.
+                </p>
+              </div>
+            ) : (
+              <div className="w-full space-y-3">
+                {formData.departments.map((dept, deptIndex) => (
+                  <div key={dept.name} className="w-full border rounded-lg p-4 space-y-3 bg-card">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Users className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <Badge className="mb-1">Department {deptIndex + 1}</Badge>
+                          <h4 className="font-medium">{dept.name}</h4>
+                          <p className="text-xs text-muted-foreground">{dept.description}</p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeDepartment(dept.name)}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Job Positions</Label>
+                      {(dept.job_positions?.length ?? 0) === 0 ? (
+                        <p className="text-xs text-muted-foreground">No job positions selected</p>
+                      ) : (
+                        dept.job_positions?.map((job, jobIndex) => (
+                          <div
+                            key={job.name}
+                            className="flex items-center justify-between bg-muted/50 p-2 rounded-md"
+                          >
+                            <div>
+                              <p className="text-sm font-medium">{job.name}</p>
+                              <p className="text-xs text-muted-foreground">{job.description}</p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeJobPosition(dept.name, job.name)}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+
       default:
         return null;
     }
@@ -690,8 +806,7 @@ export default function CreateOrganisationWizard() {
                       <Check className="h-3 w-3 text-primary" />
                     ) : (
                       <div
-                        className={`h-3 w-3 rounded-full ${currentStep === step.id ? "bg-primary" : "bg-muted"
-                          }`}
+                        className={`h-3 w-3 rounded-full ${currentStep === step.id ? "bg-primary" : "bg-muted"}`}
                       />
                     )}
                     <span className={currentStep === step.id ? "font-medium" : ""}>
@@ -710,7 +825,6 @@ export default function CreateOrganisationWizard() {
               </div>
             )}
 
-            {/* Step Content */}
             <div className="h-full">{renderStepContent()}</div>
           </CardContent>
 
