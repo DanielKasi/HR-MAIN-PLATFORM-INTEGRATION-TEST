@@ -1587,3 +1587,44 @@ export type ApprovalStep = {
   };
   level: number;
 };
+
+// Separation Policy Types
+export type SeparationCategory = "resignation" | "termination" | "retirement" | "contract_end" | "other";
+
+export interface ISeparationPolicyType {
+  id: number;
+  institution: number;
+  separation_type: string;
+  description: string;
+  supported_stages: number[] | IOffboardingStage[];
+  category: SeparationCategory;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ISeparationPolicyTypeFormData {
+  separation_type: string;
+  description: string;
+  supported_stages: number[];
+  category: SeparationCategory;
+  is_active: boolean;
+}
+
+// Offboarding Stage Interfaces
+export interface IOffboardingStage {
+  id: number;
+  institution: number;
+  stage_name: string;
+  stage_description: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IOffboardingStageFormData {
+  institution:number|string,
+  stage_name: string;
+  stage_description: string;
+  is_active?: boolean;
+}
