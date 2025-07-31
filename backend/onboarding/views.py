@@ -407,7 +407,9 @@ class InstitutionSeparationPolicyListCreateView(APIView):
         tags=["Offboarding"],
     )
     def post(self, request):
-        serializer = InstitutionSeparationPolicySerializer(data=request.data)
+        serializer = InstitutionSeparationPolicySerializer(
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=201)
@@ -419,7 +421,18 @@ class InstitutionSeparationPolicyListCreateView(APIView):
         tags=["Offboarding"],
     )
     def get(self, request):
-        policies = InstitutionSeparationPolicy.objects.all().order_by("-created_at")
+        user = request.user
+
+        institution = getattr(user.profile, "institution", None)
+
+        try:
+            institution = Institution.objects.get(id=institution.id)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=404)
+
+        policies = InstitutionSeparationPolicy.objects.filter(
+            separation_type__institution=institution
+        ).order_by("-created_at")
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(policies, request)
         serializer = InstitutionSeparationPolicySerializer(paginated_qs, many=True)
@@ -597,7 +610,7 @@ class TerminationInitiationListCreateView(APIView):
     @extend_schema(
         request=TerminationInitiationSerializer,
         responses={201: TerminationInitiationSerializer},
-        summary="Create Termination Initiation",
+        summary="Initiate Employee Termination",
         tags=["Offboarding"],
     )
     def post(self, request):

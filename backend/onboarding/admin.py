@@ -7,6 +7,7 @@ from .models import (
     ResignationRequest,
     TerminationInitiation,
     RetirementRequest,
+    EmployeeSeparation,
 )
 
 admin.site.register(OnBoarding)
@@ -16,3 +17,4 @@ admin.site.register(InstitutionSeparationPolicy)
 admin.site.register(ResignationRequest)
 admin.site.register(TerminationInitiation)
 admin.site.register(RetirementRequest)
+admin.site.register(EmployeeSeparation)
