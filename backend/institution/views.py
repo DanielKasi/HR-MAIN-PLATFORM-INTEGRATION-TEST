@@ -554,6 +554,19 @@ class DepartmentDetailAPIView(APIView):
         except Department.DoesNotExist:
             return Response({"detail": "Department not found."}, status=404)
 
+    @extend_schema(
+        responses={204: None},
+        description="Delete an existing department.",
+        summary="Delete a department",
+        tags=["Department Management"],
+    )
+    def delete(self, request, department_id):
+        try:
+            department = Department.objects.get(id=department_id)
+            department.delete()
+            return Response(status=204)
+        except Department.DoesNotExist:
+            return Response({"detail": "Department not found."}, status=404)
 
 # TODO: Make sure a user who does this has permissions to do so
 @extend_schema(
