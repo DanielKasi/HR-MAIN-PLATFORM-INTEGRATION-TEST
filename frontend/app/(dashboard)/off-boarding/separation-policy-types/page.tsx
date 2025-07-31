@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { toast } from "sonner"
-import { Plus, Pencil, Trash2, CheckCircle2, XCircle, MoreHorizontal } from "lucide-react"
+import {useEffect, useState} from "react";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Textarea} from "@/components/ui/textarea";
+import {Badge} from "@/components/ui/badge";
+import {toast} from "sonner";
+import {Plus, Pencil, Trash2, CheckCircle2, XCircle, MoreHorizontal} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -16,13 +16,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Form,
   FormControl,
@@ -31,38 +31,31 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
+} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Switch } from "@/components/ui/switch"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
-import { useSelector } from "react-redux"
-import { selectSelectedInstitution } from "@/store/auth/selectors"
-import { cn, OffboardingStagesAPI, SeparationPolicyTypesAPI } from "@/lib/utils"
-import { ISeparationPolicyType, IOffboardingStage, SeparationCategory } from "@/app/types/types.utils"
+} from "@/components/ui/select";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Switch} from "@/components/ui/switch";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {useForm} from "react-hook-form";
+import * as z from "zod";
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {cn, OffboardingStagesAPI, SeparationPolicyTypesAPI} from "@/lib/utils";
+import {ISeparationType, IOffboardingStage, SeparationCategory} from "@/app/types/types.utils";
 
 const SEPARATION_CATEGORIES = [
-  { value: "resignation", label: "Resignation" },
-  { value: "termination", label: "Termination" },
-  { value: "retirement", label: "Retirement" },
-  { value: "contract_end", label: "Contract End" },
-  { value: "other", label: "Other" },
-] as const
+  {value: "resignation", label: "Resignation"},
+  {value: "termination", label: "Termination"},
+  {value: "retirement", label: "Retirement"},
+  {value: "contract_end", label: "Contract End"},
+  {value: "other", label: "Other"},
+] as const;
 
 const formSchema = z.object({
   separation_type: z.string().min(2, "Type name must be at least 2 characters"),
@@ -70,21 +63,21 @@ const formSchema = z.object({
   supported_stages: z.array(z.number()),
   category: z.enum(["resignation", "termination", "retirement", "contract_end", "other"]),
   is_active: z.boolean().optional(),
-})
+});
 
 export default function SeparationPolicyTypesPage() {
-  const [policyTypes, setPolicyTypes] = useState<ISeparationPolicyType[]>([])
-  const [stages, setStages] = useState<IOffboardingStage[]>([])
-  const [loading, setLoading] = useState(true)
-  const [editingPolicyType, setEditingPolicyType] = useState<ISeparationPolicyType | null>(null)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [policyTypeToDelete, setPolicyTypeToDelete] = useState<ISeparationPolicyType | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalItems, setTotalItems] = useState(0)
-  const pageSize = 10
-  const selectedInstitution = useSelector(selectSelectedInstitution)
-  const institutionId = selectedInstitution?.id
+  const [policyTypes, setPolicyTypes] = useState<ISeparationType[]>([]);
+  const [stages, setStages] = useState<IOffboardingStage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingPolicyType, setEditingPolicyType] = useState<ISeparationType | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [policyTypeToDelete, setPolicyTypeToDelete] = useState<ISeparationType | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 10;
+  const selectedInstitution = useSelector(selectSelectedInstitution);
+  const institutionId = selectedInstitution?.id;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -95,108 +88,112 @@ export default function SeparationPolicyTypesPage() {
       category: "resignation",
       is_active: true,
     },
-  })
+  });
 
   const fetchPolicyTypes = async (page = currentPage) => {
-    if (!institutionId) return
-    setLoading(true)
+    if (!institutionId) return;
+    setLoading(true);
     const paginationParams = new URLSearchParams();
-    paginationParams.append("page", page.toString())
+    paginationParams.append("page", page.toString());
     try {
-      const data = await SeparationPolicyTypesAPI.getAll({ 
+      const data = await SeparationPolicyTypesAPI.getAll({
         institutionId,
-        searchParams: paginationParams
-      })
-      setPolicyTypes(data.results)
-      setTotalItems(data.count)
-      setTotalPages(Math.ceil(data.count / pageSize))
+        searchParams: paginationParams,
+      });
+      setPolicyTypes(data.results);
+      setTotalItems(data.count);
+      setTotalPages(Math.ceil(data.count / pageSize));
     } catch (error) {
-      toast.error("Failed to fetch separation policy types")
+      toast.error("Failed to fetch separation policy types");
     }
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   const fetchStages = async () => {
-    if (!institutionId) return
+    if (!institutionId) return;
     try {
-      const data = await OffboardingStagesAPI.getAll({ institutionId })
-      setStages(data.results)
+      const data = await OffboardingStagesAPI.getAll({institutionId});
+      setStages(data.results);
     } catch (error) {
-      toast.error("Failed to fetch offboarding stages")
+      toast.error("Failed to fetch offboarding stages");
     }
-  }
+  };
 
   useEffect(() => {
-    fetchPolicyTypes(1)
-    fetchStages()
-  }, [institutionId])
-  
+    fetchPolicyTypes(1);
+    fetchStages();
+  }, [institutionId]);
+
   const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage)
-    fetchPolicyTypes(newPage)
-  }
+    setCurrentPage(newPage);
+    fetchPolicyTypes(newPage);
+  };
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    if(!selectedInstitution){return}
+    if (!selectedInstitution) {
+      return;
+    }
     try {
       if (editingPolicyType) {
         await SeparationPolicyTypesAPI.update({
           policyTypeId: editingPolicyType.id,
           policyTypeData: values,
-        })
-        toast.success("Policy type updated successfully")
+        });
+        toast.success("Policy type updated successfully");
         // Stay on current page when editing
-        fetchPolicyTypes(currentPage)
+        fetchPolicyTypes(currentPage);
       } else {
         await SeparationPolicyTypesAPI.create({
           policyTypeData: {...values},
-        })
-        toast.success("Policy type created successfully")
+        });
+        toast.success("Policy type created successfully");
         // Go to first page when creating new policy type
-        setCurrentPage(1)
-        fetchPolicyTypes(1)
+        setCurrentPage(1);
+        fetchPolicyTypes(1);
       }
-      form.reset()
-      setEditingPolicyType(null)
-      setIsEditDialogOpen(false)
+      form.reset();
+      setEditingPolicyType(null);
+      setIsEditDialogOpen(false);
     } catch (error) {
-      toast.error(editingPolicyType ? "Failed to update policy type" : "Failed to create policy type")
+      toast.error(
+        editingPolicyType ? "Failed to update policy type" : "Failed to create policy type",
+      );
     }
-  }
+  };
 
-  const handleDelete = async (policyType: ISeparationPolicyType) => {
+  const handleDelete = async (policyType: ISeparationType) => {
     try {
-      await SeparationPolicyTypesAPI.delete(policyType.id)
-      toast.success("Policy type deleted successfully")
-      setPolicyTypeToDelete(null)
-      
+      await SeparationPolicyTypesAPI.delete(policyType.id);
+      toast.success("Policy type deleted successfully");
+      setPolicyTypeToDelete(null);
+
       // If we're on the last page and it's now empty, go to previous page
       if (policyTypes.length === 1 && currentPage > 1) {
-        const newPage = currentPage - 1
-        setCurrentPage(newPage)
-        fetchPolicyTypes(newPage)
+        const newPage = currentPage - 1;
+        setCurrentPage(newPage);
+        fetchPolicyTypes(newPage);
       } else {
         // Stay on current page
-        fetchPolicyTypes(currentPage)
+        fetchPolicyTypes(currentPage);
       }
     } catch (error) {
-      toast.error("Failed to delete policy type")
+      toast.error("Failed to delete policy type");
     }
-  }
+  };
 
-  const handleEdit = (policyType: ISeparationPolicyType) => {
-    setEditingPolicyType(policyType)
+  const handleEdit = (policyType: ISeparationType) => {
+    setEditingPolicyType(policyType);
     form.reset({
       separation_type: policyType.separation_type,
       description: policyType.description,
-      supported_stages: Array.isArray(policyType.supported_stages) 
-        ? policyType.supported_stages.map(stage => typeof stage === 'number' ? stage : stage.id)
+      supported_stages: Array.isArray(policyType.supported_stages)
+        ? policyType.supported_stages.map((stage) => (typeof stage === "number" ? stage : stage.id))
         : [],
       category: policyType.category,
       is_active: policyType.is_active,
-    })
-    setIsEditDialogOpen(true)
-  }
+    });
+    setIsEditDialogOpen(true);
+  };
 
   if (loading) {
     return (
@@ -205,7 +202,7 @@ export default function SeparationPolicyTypesPage() {
           <div className="text-lg">Loading separation policy types...</div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -213,7 +210,9 @@ export default function SeparationPolicyTypesPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Separation Policy Types</h1>
-          <p className="text-muted-foreground mt-2">Manage separation policy types for employee exits</p>
+          <p className="text-muted-foreground mt-2">
+            Manage separation policy types for employee exits
+          </p>
         </div>
         <Dialog>
           <DialogTrigger asChild>
@@ -225,16 +224,14 @@ export default function SeparationPolicyTypesPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add New Policy Type</DialogTitle>
-              <DialogDescription>
-                Create a new separation policy type
-              </DialogDescription>
+              <DialogDescription>Create a new separation policy type</DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="separation_type"
-                  render={({ field }) => (
+                  render={({field}) => (
                     <FormItem>
                       <FormLabel>Type Name</FormLabel>
                       <FormControl>
@@ -247,7 +244,7 @@ export default function SeparationPolicyTypesPage() {
                 <FormField
                   control={form.control}
                   name="description"
-                  render={({ field }) => (
+                  render={({field}) => (
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
@@ -260,7 +257,7 @@ export default function SeparationPolicyTypesPage() {
                 <FormField
                   control={form.control}
                   name="category"
-                  render={({ field }) => (
+                  render={({field}) => (
                     <FormItem>
                       <FormLabel>Category</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -284,18 +281,18 @@ export default function SeparationPolicyTypesPage() {
                 <FormField
                   control={form.control}
                   name="supported_stages"
-                  render={({ field }) => (
+                  render={({field}) => (
                     <FormItem>
                       <FormLabel>Supported Stages</FormLabel>
                       <Select
                         onValueChange={(value) => {
-                          const currentValues = field.value || []
-                          const numValue = parseInt(value)
-                          const index = currentValues.indexOf(numValue)
+                          const currentValues = field.value || [];
+                          const numValue = parseInt(value);
+                          const index = currentValues.indexOf(numValue);
                           if (index === -1) {
-                            field.onChange([...currentValues, numValue])
+                            field.onChange([...currentValues, numValue]);
                           } else {
-                            field.onChange(currentValues.filter(v => v !== numValue))
+                            field.onChange(currentValues.filter((v) => v !== numValue));
                           }
                         }}
                       >
@@ -312,9 +309,7 @@ export default function SeparationPolicyTypesPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormDescription>
-                        Selected stages: {field.value?.length || 0}
-                      </FormDescription>
+                      <FormDescription>Selected stages: {field.value?.length || 0}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -329,26 +324,27 @@ export default function SeparationPolicyTypesPage() {
       </div>
 
       {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
-        if (!open) {
-          setEditingPolicyType(null)
-          setIsEditDialogOpen(false)
-          form.reset()
-        }
-      }}>
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingPolicyType(null);
+            setIsEditDialogOpen(false);
+            form.reset();
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Policy Type</DialogTitle>
-            <DialogDescription>
-              Update the details of this separation policy type
-            </DialogDescription>
+            <DialogDescription>Update the details of this separation policy type</DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="separation_type"
-                render={({ field }) => (
+                render={({field}) => (
                   <FormItem>
                     <FormLabel>Type Name</FormLabel>
                     <FormControl>
@@ -361,7 +357,7 @@ export default function SeparationPolicyTypesPage() {
               <FormField
                 control={form.control}
                 name="description"
-                render={({ field }) => (
+                render={({field}) => (
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
@@ -374,7 +370,7 @@ export default function SeparationPolicyTypesPage() {
               <FormField
                 control={form.control}
                 name="category"
-                render={({ field }) => (
+                render={({field}) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -398,18 +394,18 @@ export default function SeparationPolicyTypesPage() {
               <FormField
                 control={form.control}
                 name="supported_stages"
-                render={({ field }) => (
+                render={({field}) => (
                   <FormItem>
                     <FormLabel>Supported Stages</FormLabel>
                     <Select
                       onValueChange={(value) => {
-                        const currentValues = field.value || []
-                        const numValue = parseInt(value)
-                        const index = currentValues.indexOf(numValue)
+                        const currentValues = field.value || [];
+                        const numValue = parseInt(value);
+                        const index = currentValues.indexOf(numValue);
                         if (index === -1) {
-                          field.onChange([...currentValues, numValue])
+                          field.onChange([...currentValues, numValue]);
                         } else {
-                          field.onChange(currentValues.filter(v => v !== numValue))
+                          field.onChange(currentValues.filter((v) => v !== numValue));
                         }
                       }}
                     >
@@ -426,9 +422,7 @@ export default function SeparationPolicyTypesPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormDescription>
-                      Selected stages: {field.value?.length || 0}
-                    </FormDescription>
+                    <FormDescription>Selected stages: {field.value?.length || 0}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -436,7 +430,7 @@ export default function SeparationPolicyTypesPage() {
               <FormField
                 control={form.control}
                 name="is_active"
-                render={({ field }) => (
+                render={({field}) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">Active Status</FormLabel>
@@ -445,10 +439,7 @@ export default function SeparationPolicyTypesPage() {
                       </FormDescription>
                     </div>
                     <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
+                      <Switch checked={field.value} onCheckedChange={field.onChange} />
                     </FormControl>
                   </FormItem>
                 )}
@@ -479,16 +470,23 @@ export default function SeparationPolicyTypesPage() {
                 {policyTypes.map((policyType) => (
                   <TableRow key={policyType.id}>
                     <TableCell className="font-medium">{policyType.separation_type}</TableCell>
-                    <TableCell className="text-muted-foreground">{policyType.description}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {policyType.description}
+                    </TableCell>
                     <TableCell>
-                      {SEPARATION_CATEGORIES.find(cat => cat.value === policyType.category)?.label}
+                      {
+                        SEPARATION_CATEGORIES.find((cat) => cat.value === policyType.category)
+                          ?.label
+                      }
                     </TableCell>
                     <TableCell>
                       <Badge
                         variant={policyType.is_active ? "default" : "secondary"}
                         className={cn(
                           "flex w-fit items-center gap-1",
-                          policyType.is_active ? "bg-green-100 text-green-800 hover:bg-green-200" : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                          policyType.is_active
+                            ? "bg-green-100 text-green-800 hover:bg-green-200"
+                            : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200",
                         )}
                       >
                         {policyType.is_active ? (
@@ -514,7 +512,7 @@ export default function SeparationPolicyTypesPage() {
                             <Pencil className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => setPolicyTypeToDelete(policyType)}
                             className="text-destructive focus:text-destructive"
                           >
@@ -539,7 +537,7 @@ export default function SeparationPolicyTypesPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-4 border-t">
               <div className="text-sm text-muted-foreground">
-                Showing {((currentPage - 1) * pageSize) + 1}-
+                Showing {(currentPage - 1) * pageSize + 1}-
                 {Math.min(currentPage * pageSize, totalItems)} of {totalItems} policy types
               </div>
               <div className="flex items-center space-x-2">
@@ -551,7 +549,7 @@ export default function SeparationPolicyTypesPage() {
                 >
                   Previous
                 </Button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
                   <Button
                     key={page}
                     variant={currentPage === page ? "default" : "outline"}
@@ -576,19 +574,20 @@ export default function SeparationPolicyTypesPage() {
       </Card>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!policyTypeToDelete} onOpenChange={(open) => !open && setPolicyTypeToDelete(null)}>
+      <Dialog
+        open={!!policyTypeToDelete}
+        onOpenChange={(open) => !open && setPolicyTypeToDelete(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Policy Type</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this separation policy type? This action cannot be undone.
+              Are you sure you want to delete this separation policy type? This action cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setPolicyTypeToDelete(null)}
-            >
+            <Button variant="outline" onClick={() => setPolicyTypeToDelete(null)}>
               Cancel
             </Button>
             <Button
@@ -601,5 +600,5 @@ export default function SeparationPolicyTypesPage() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

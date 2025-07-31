@@ -1591,7 +1591,7 @@ export type ApprovalStep = {
 // Separation Policy Types
 export type SeparationCategory = "resignation" | "termination" | "retirement" | "contract_end" | "other";
 
-export interface ISeparationPolicyType {
+export interface ISeparationType {
   id: number;
   institution: number;
   separation_type: string;
@@ -1603,7 +1603,9 @@ export interface ISeparationPolicyType {
   updated_at: string;
 }
 
-export interface ISeparationPolicyTypeFormData {
+
+
+export interface ISeparationTypeFormData {
   separation_type: string;
   description: string;
   supported_stages: number[];
@@ -1627,4 +1629,19 @@ export interface IOffboardingStageFormData {
   stage_name: string;
   stage_description: string;
   is_active?: boolean;
+}
+
+export interface ISeparationPolicy {
+  id: number;
+  separation_type: ISeparationType;
+  policy_document: string;
+  description: string;
+  min_notice_days: number;
+  max_notice_days: number;
+  require_separation_letter: boolean;
+  require_all_stages: boolean;
+  is_active: boolean;
+  enforce_policy: boolean;
+  created_at: string;
+  updated_at: string;
 }
