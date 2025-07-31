@@ -3,19 +3,36 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
-import { Building2,Eye, Plus, Search, Filter, MoreVertical, Edit, Trash2, RefreshCw } from "lucide-react"
+import {
+  Building2,
+  Eye,
+  Plus,
+  Search,
+  Filter,
+  MoreVertical,
+  Edit,
+  Trash2,
+  RefreshCw,
+  AlertTriangle,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { getDepartments } from "@/lib/utils"
-import { IDepartment, PERMISSION_CODES  } from "@/app/types/types.utils"
+import { getDepartments, deleteDepartment } from "@/lib/utils"
+import { type IDepartment, PERMISSION_CODES } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import ProtectedComponent from "@/components/ProtectedComponent"
-
 
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<IDepartment[]>([])
@@ -23,6 +40,9 @@ export default function DepartmentsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [error, setError] = useState("")
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [departmentToDelete, setDepartmentToDelete] = useState<IDepartment | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
@@ -33,7 +53,6 @@ export default function DepartmentsPage() {
       router.push("/dashboard")
       return
     }
-
     fetchDepartments()
   }, [selectedBranch, selectedInstitution, router])
 
@@ -49,7 +68,6 @@ export default function DepartmentsPage() {
       setError("")
 
       const fetchedDepartments = await getDepartments({ institutionId: selectedInstitution.id })
-
       if (fetchedDepartments) {
         setDepartments(fetchedDepartments)
       } else {
@@ -70,12 +88,12 @@ export default function DepartmentsPage() {
   }
 
   const filteredDepartments = Array.isArray(departments)
-  ? departments.filter(
-      dept =>
-        dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        dept?.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  : [];
+    ? departments.filter(
+        (dept) =>
+          dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          dept?.description?.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+    : []
 
   const handleCreateDepartment = () => {
     router.push("/admin/departments/create")
@@ -89,11 +107,32 @@ export default function DepartmentsPage() {
     router.push(`/admin/departments/${departmentId}/view`)
   }
 
+  const handleDeleteDepartment = (department: IDepartment) => {
+    setDepartmentToDelete(department)
+    setDeleteModalOpen(true)
+  }
 
+  const confirmDelete = async () => {
+    if (!departmentToDelete) return
 
-  const handleDeleteDepartment = (departmentId: number) => {
-    // TODO: Implement delete functionality
-    toast.success("Department deletion would be implemented here")
+    setIsDeleting(true)
+    try {
+      await deleteDepartment({ departmentId: departmentToDelete.id })
+      setDepartments(departments.filter((dept) => dept.id !== departmentToDelete.id))
+      toast.success("Department deleted successfully")
+      setDeleteModalOpen(false)
+      setDepartmentToDelete(null)
+    } catch (error) {
+      console.error("Error deleting department:", error)
+      toast.error("Failed to delete department")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const cancelDelete = () => {
+    setDeleteModalOpen(false)
+    setDepartmentToDelete(null)
   }
 
   if (!selectedInstitution || !selectedBranch) {
@@ -116,7 +155,7 @@ export default function DepartmentsPage() {
             size="sm"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-transparent"
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
             Refresh
@@ -139,7 +178,7 @@ export default function DepartmentsPage() {
             className="pl-10"
           />
         </div>
-        <Button variant="outline" className="flex items-center gap-2">
+        <Button variant="outline" className="flex items-center gap-2 bg-transparent">
           <Filter className="h-4 w-4" />
           Filter
         </Button>
@@ -222,7 +261,7 @@ export default function DepartmentsPage() {
                       <CardTitle className="text-lg">{department.name}</CardTitle>
                     </div>
                   </div>
-                    <DropdownMenu>
+                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                         <MoreVertical className="h-4 w-4" />
@@ -243,7 +282,7 @@ export default function DepartmentsPage() {
                       </ProtectedComponent>
                       <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_DEPARTMENTS}>
                         <DropdownMenuItem
-                          onClick={() => handleDeleteDepartment(department.id)}
+                          onClick={() => handleDeleteDepartment(department)}
                           className="text-destructive"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
@@ -251,7 +290,7 @@ export default function DepartmentsPage() {
                         </DropdownMenuItem>
                       </ProtectedComponent>
                     </DropdownMenuContent>
-                    </DropdownMenu>
+                  </DropdownMenu>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -261,6 +300,53 @@ export default function DepartmentsPage() {
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <DialogTitle>Delete Department</DialogTitle>
+                <DialogDescription className="mt-1">This action cannot be undone.</DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-foreground">{departmentToDelete?.name}</span>? This will permanently
+              remove the department and all associated data.
+            </p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={cancelDelete} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="flex items-center gap-2"
+            >
+              {isDeleting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Delete Department
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

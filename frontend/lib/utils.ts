@@ -175,6 +175,14 @@ export const updateDepartment = async ({ departmentData }: { departmentData: IDe
   }
 }
 
+export const deleteDepartment = async ({ departmentId }: { departmentId: number }) => {
+  try {
+    await apiRequest.delete(`institution/department/${departmentId}/`)
+  } catch (error) {
+    console.error("Error deleting department:", error)
+  }
+}
+
 export const getDepartments = async ({ institutionId }: { institutionId: number }) => {
   try {
     const response = await apiRequest.get(`institution/${institutionId}/department/`)

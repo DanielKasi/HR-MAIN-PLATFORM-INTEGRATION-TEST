@@ -17,8 +17,9 @@ class JobPosition(models.Model):
     description = models.TextField()
     department = models.ForeignKey(
         "institution.Department",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         related_name="job_positions",
+        null=True,
     )
     offer_letter_template = models.FileField(
         upload_to="job_positions/offer_letters/", blank=True, null=True
