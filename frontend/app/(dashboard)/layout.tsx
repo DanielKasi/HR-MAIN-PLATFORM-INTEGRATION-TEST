@@ -221,6 +221,17 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       icon: <Icon height="20" icon="hugeicons:inbox-download" className="!w-6 !h-6" width="20" />,
     },
     {
+      title: "Offboarding",
+      href: "/off-boarding",
+      icon: <Icon icon="hugeicons:inbox-upload" className="!w-6 !h-6" width="28" height="28" />,
+      submenu: [
+        {title: "Offboarding Stages", href: "/off-boarding/stages"},
+        {title: "Separation Policy", href: "/off-boarding/separation-policy"},
+        {title: "Separation Policy types", href: "/off-boarding/separation-policy-types"},
+      ],
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+    },
+    {
       title: "Employees",
       href: "#1",
       icon: <Icon icon="hugeicons:user-multiple-02" className="!w-6 !h-6" width="28" height="28" />,

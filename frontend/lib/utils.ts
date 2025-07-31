@@ -19,7 +19,11 @@ import {
   IDocumentTypeFormData,
   IDocumentType,
   IDocumentTemplateFormData,
-  IDocumentTemplate
+  IDocumentTemplate,
+  IOffboardingStageFormData,
+  IOffboardingStage,
+  ISeparationPolicyType,
+  ISeparationPolicyTypeFormData
 } from "@/app/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -3272,4 +3276,156 @@ export const deleteDocumentTemplate = async ({
     console.error("Failed to delete document template:", error);
     return false;
   }
+};
+
+
+// Separation Policy Types API Namespace
+export const SeparationPolicyTypesAPI = {
+  getAll: async ({ 
+    institutionId,
+    searchParams
+  }: { 
+    institutionId: number;
+    searchParams?: URLSearchParams
+  }): Promise<PaginatedResponse<ISeparationPolicyType>> => {
+    try {
+      const response = await apiRequest.get(`on-boarding/separation-types/?${searchParams}`);
+      return response.data as PaginatedResponse<ISeparationPolicyType>;
+    } catch (error) {
+      console.error('Failed to fetch separation policy types:', error);
+      return {
+        count: 0,
+        next: null,
+        previous: null,
+        results: []
+      };
+    }
+  },
+
+  getById: async (policyTypeId: number): Promise<ISeparationPolicyType | null> => {
+    try {
+      const response = await apiRequest.get(`on-boarding/separation-types/${policyTypeId}/`);
+      return response.data as ISeparationPolicyType;
+    } catch (error) {
+      console.error('Failed to fetch separation policy type:', error);
+      return null;
+    }
+  },
+
+  create: async ({
+    policyTypeData,
+  }: {
+    policyTypeData: Partial<ISeparationPolicyTypeFormData>;
+  }): Promise<ISeparationPolicyType | null> => {
+    try {
+      const response = await apiRequest.post('on-boarding/separation-types/', policyTypeData);
+      return response.data as ISeparationPolicyType;
+    } catch (error) {
+      console.error('Failed to create separation policy type:', error);
+      throw error;
+    }
+  },
+
+  update: async ({
+    policyTypeId,
+    policyTypeData,
+  }: {
+    policyTypeId: number,
+    policyTypeData: Partial<ISeparationPolicyTypeFormData>;
+  }): Promise<ISeparationPolicyType | null> => {
+    try {
+      const response = await apiRequest.patch(`on-boarding/separation-types/${policyTypeId}/`, policyTypeData);
+      return response.data as ISeparationPolicyType;
+    } catch (error) {
+      console.error('Failed to update separation policy type:', error);
+      throw error;
+    }
+  },
+
+  delete: async (policyTypeId: number): Promise<boolean> => {
+    try {
+      await apiRequest.delete(`on-boarding/separation-types/${policyTypeId}/`);
+      return true;
+    } catch (error) {
+      console.error('Failed to delete separation policy type:', error);
+      throw error;
+    }
+  },
+};
+
+// Offboarding Stages API Namespace
+export const OffboardingStagesAPI = {
+  getAll: async ({ 
+    institutionId,
+    searchParams
+  }: { 
+    institutionId: number;
+    searchParams?:URLSearchParams
+  }): Promise<IPaginatedResponse<IOffboardingStage>> => {
+    try {
+      const response = await apiRequest.get(`on-boarding/offboarding-stages/?${searchParams}`);
+      return response.data as IPaginatedResponse<IOffboardingStage>;
+    } catch (error) {
+      console.error('Failed to fetch offboarding stages:', error);
+      return {
+        count: 0,
+        next: null,
+        previous: null,
+        results: []
+      };
+    }
+  },
+
+  getById: async (stageId: number): Promise<IOffboardingStage | null> => {
+    try {
+      const response = await apiRequest.get(`on-boarding/offboarding-stages/${stageId}/`);
+      return response.data as IOffboardingStage;
+    } catch (error) {
+      console.error('Failed to fetch offboarding stage:', error);
+      return null;
+    }
+  },
+
+  create: async ({
+    stageData,
+  }: {
+    stageData: IOffboardingStageFormData;
+  }): Promise<IOffboardingStage | null> => {
+    try {
+      const response = await apiRequest.post('on-boarding/offboarding-stages/', stageData);
+      return response.data as IOffboardingStage;
+    } catch (error) {
+      console.error('Failed to create offboarding stage:', error);
+      throw error;
+    }
+  },
+
+  update: async ({
+    stageId,
+    stageData,
+  }: {
+    stageId: number;
+    stageData: Partial<IOffboardingStageFormData>;
+  }): Promise<IOffboardingStage | null> => {
+    try {
+      const response = await apiRequest.patch(
+        `on-boarding/offboarding-stages/${stageId}/`,
+        stageData
+      );
+      return response.data as IOffboardingStage;
+    } catch (error) {
+      console.error('Failed to update offboarding stage:', error);
+      throw error;
+    }
+  },
+
+  delete: async (stageId: number): Promise<boolean> => {
+    try {
+      await apiRequest.delete(`on-boarding/offboarding-stages/${stageId}/`);
+      return true;
+    } catch (error) {
+      console.error('Failed to delete offboarding stage:', error);
+      throw error;
+    }
+  },
 };
