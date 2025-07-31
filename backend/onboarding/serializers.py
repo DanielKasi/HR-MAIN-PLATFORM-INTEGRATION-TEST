@@ -50,6 +50,27 @@ class OffboardingStageSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Stage name cannot be empty.")
         return value
 
+    def create(self, validated_data):
+        from institution.models import Institution
+
+        request = self.context.get("request")
+
+        user = request.user.profile
+
+        institution = getattr(user, "institution", None)
+
+        try:
+            institution = Institution.objects.get(id=institution.id)
+        except Institution.DoesNotExist:
+            raise serializers.ValidationError("Institution does not exist.")
+
+        if not institution:
+            raise serializers.ValidationError("Institution is required.")
+
+        validated_data["institution"] = institution
+
+        return super().create(validated_data)
+
 
 class InstitutionEmployeeSeparationTypesSerializer(serializers.ModelSerializer):
     class Meta:
@@ -71,6 +92,27 @@ class InstitutionEmployeeSeparationTypesSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("Separation type cannot be empty.")
         return value
+
+    def create(self, validated_data):
+        from institution.models import Institution
+
+        request = self.context.get("request")
+
+        user = request.user.profile
+
+        institution = getattr(user, "institution", None)
+
+        try:
+            institution = Institution.objects.get(id=institution.id)
+        except Institution.DoesNotExist:
+            raise serializers.ValidationError("Institution does not exist.")
+
+        if not institution:
+            raise serializers.ValidationError("Institution is required.")
+
+        validated_data["institution"] = institution
+
+        return super().create(validated_data)
 
 
 class InstitutionSeparationPolicySerializer(serializers.ModelSerializer):
