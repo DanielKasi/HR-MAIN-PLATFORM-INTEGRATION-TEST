@@ -3,66 +3,85 @@ from django.core.validators import MinLengthValidator
 from employee.models import Employee
 from users.models import CustomUser
 
+
 class DisciplineType(models.Model):
     """Types of disciplinary actions"""
+
     SEVERITY_CHOICES = [
-        ('low', 'Low'),
-        ('medium', 'Medium'),
-        ('high', 'High'),
-        ('critical', 'Critical'),
+        ("low", "Low"),
+        ("medium", "Medium"),
+        ("high", "High"),
+        ("critical", "Critical"),
     ]
-    
+
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
-    severity = models.CharField(max_length=10, choices=SEVERITY_CHOICES, default='low')
+    severity = models.CharField(max_length=10, choices=SEVERITY_CHOICES, default="low")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     def __str__(self):
         return f"{self.name} ({self.get_severity_display()})"
-    
+
     class Meta:
-        ordering = ['severity', 'name']
+        ordering = ["severity", "name"]
+
 
 class DisciplinaryAction(models.Model):
     """Main disciplinary action record"""
+
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('in_progress', 'In Progress'),
-        ('completed', 'Completed'),
-        ('dismissed', 'Dismissed'),
+        ("pending", "Pending"),
+        ("in_progress", "In Progress"),
+        ("completed", "Completed"),
+        ("dismissed", "Dismissed"),
     ]
-    
+
     # Basic Info
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='disciplinary_actions')
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name="disciplinary_actions"
+    )
     discipline_type = models.ForeignKey(DisciplineType, on_delete=models.CASCADE)
-    
+
     # Details
     incident_date = models.DateField()
     reported_date = models.DateField(auto_now_add=True)
     description = models.TextField(validators=[MinLengthValidator(10)])
-    evidence = models.TextField(blank=True, help_text="Any supporting evidence or documentation")
-    
+    evidence = models.TextField(
+        blank=True, help_text="Any supporting evidence or documentation"
+    )
+
     # Processing
-    reported_by = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='reported_disciplines')
-    assigned_to = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, 
-                                   related_name='assigned_disciplines')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    
+    reported_by = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name="reported_disciplines"
+    )
+    assigned_to = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_disciplines",
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+
     # Resolution
     action_taken = models.TextField(blank=True)
     resolution_date = models.DateField(null=True, blank=True)
     follow_up_required = models.BooleanField(default=False)
     follow_up_date = models.DateField(null=True, blank=True)
-    
+
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     notes = models.TextField(blank=True, help_text="Any additional notes or comments")
 
     def __str__(self):
-        employee_name = self.employee.user.fullname if (self.employee.user and hasattr(self.employee.user, 'fullname')) else str(self.employee)
+        employee_name = (
+            self.employee.user.fullname
+            if (self.employee.user and hasattr(self.employee.user, "fullname"))
+            else str(self.employee)
+        )
         return f"{employee_name} - {self.discipline_type.name} ({self.incident_date})"
-    
+
     class Meta:
-        ordering = ['-incident_date', '-created_at']        
+        ordering = ["-incident_date", "-created_at"]
