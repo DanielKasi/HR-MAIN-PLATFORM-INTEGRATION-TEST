@@ -198,6 +198,16 @@ export const getDepartments = async ({ institutionId }: { institutionId: number 
   }
 }
 
+export const getDefaultData = async (): Promise<IDepartment[] | null> => {
+  try {
+    const response = await apiRequest.get("institution/default-data/");
+    return response.data as IDepartment[];
+  } catch (error) {
+    console.error("Failed to fetch default departments", error);
+    return null;
+  }
+};
+
 export const getJobPositions = async ({ institutionId }: { institutionId: number }) => {
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`)

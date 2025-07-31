@@ -34,10 +34,39 @@ from django.db.models import Q
 from django.contrib.auth import get_user_model
 import logging
 from django.db import transaction
+from utilities.default_data import default_data
+import json
+import uuid
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
+class DefaultDataAPIView(APIView):
+    @extend_schema(
+        responses={200: dict},
+        description="Retrieve default departments and their job positions",
+        summary="Get default departments and job positions",
+        tags=["Institution Management"],
+    )
+    def get(self, request):
+        # Add unique IDs to default data
+        modified_data = [
+            {
+                "id": str(uuid.uuid4()),
+                "name": dept["name"],
+                "description": dept["description"],
+                "job_positions": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "name": job["name"],
+                        "description": job["description"],
+                    }
+                    for job in dept["job_positions"]
+                ],
+            }
+            for dept in default_data
+        ]
+        return Response(modified_data, status=status.HTTP_200_OK)
 
 class InstitutionListAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -45,7 +74,7 @@ class InstitutionListAPIView(APIView):
     @extend_schema(
         request=InstitutionSerializer,
         responses={201: InstitutionSerializer},
-        description="Create a new institution with name, address, and owner.",
+        description="Create a new institution with name, address, owner, and optional departments",
         summary="Create a new institution",
         tags=["Institution Management"],
     )
@@ -55,17 +84,28 @@ class InstitutionListAPIView(APIView):
             institution_name=request.data.get("institution_name"),
         ).exists():
             return Response(
-                {"detail": "User Already has an Institution with the same name."},
+                {"detail": "User already has an institution with the same name."},
                 status=status.HTTP_409_CONFLICT,
             )
 
+        # Parse departments JSON string if present
+        departments_data = request.data.get("departments", [])
+        if isinstance(departments_data, str):
+            try:
+                departments_data = json.loads(departments_data)
+            except json.JSONDecodeError:
+                return Response(
+                    {"detail": "Invalid departments data format. Expected valid JSON."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
         serializer = InstitutionSerializer(
-            data=request.data, context={"request": request}
+            data=request.data, context={"request": request, "user": request.user, "departments": departments_data}
         )
         if serializer.is_valid():
             institution = serializer.save()
             return Response(
-                InstitutionSerializer(institution).data,
+                InstitutionSerializer(institution, context={"user": request.user}).data,
                 status=status.HTTP_201_CREATED,
             )
 

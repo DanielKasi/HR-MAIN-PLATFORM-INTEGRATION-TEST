@@ -9,6 +9,7 @@ from utilities.default_data import default_data
 from django.db import transaction
 from django.utils import timezone
 from recruitment.models import JobPosition
+import json
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -38,7 +39,6 @@ class Institution(models.Model):
         "users.System", on_delete=models.PROTECT, blank=True, null=True
     )
     theme_color = models.CharField(max_length=400, blank=True, null=True)
-
     default_employee_role = models.ForeignKey(
         "users.Role",
         related_name="default_role",
@@ -46,20 +46,14 @@ class Institution(models.Model):
         blank=True,
         null=True,
     )
-
     setup = models.BooleanField(default=False)
-
-    # Location fields
     location = models.CharField(max_length=500, blank=True, null=True)
     country_code = models.CharField(max_length=10, blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
-
-    # Zoom Settings
     zoom_account_id = models.CharField(max_length=100, blank=True, null=True)
     zoom_client_id = models.CharField(max_length=100, blank=True, null=True)
     zoom_client_secret = models.CharField(max_length=100, blank=True, null=True)
-
     approval_status = models.CharField(
         max_length=20,
         choices=APPROVAL_STATUS_CHOICES,
@@ -74,9 +68,7 @@ class Institution(models.Model):
         null=True,
     )
     rejection_reason = models.TextField(blank=True, null=True)
-
     description = models.TextField(blank=True, null=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
@@ -143,6 +135,9 @@ class Institution(models.Model):
             )
 
     def save(self, *args, **kwargs):
+        from calendar2.models import Calendar
+        from payroll.utils import PayrollProcessor
+
         with transaction.atomic():
             # Set country_code if not provided
             if not self.country_code:
@@ -152,36 +147,12 @@ class Institution(models.Model):
             super().save(*args, **kwargs)
 
             if is_new:
-                from payroll.utils import PayrollProcessor
-
                 PayrollProcessor.setup_default_payroll_types_for_institution(self)
                 self._create_calendar_for_institution()
                 self._create_default_document_types()
 
-                for dept_data in default_data:
-                    # Create department
-                    department = Department.objects.create(
-                        name=dept_data["name"],
-                        description=dept_data["description"],
-                        institution=self,
-                        created_by=self.institution_owner,
-                        created_at=timezone.now(),
-                        updated_at=timezone.now(),
-                    )
-
-                    # Create job positions
-                    for job_data in dept_data["job_positions"]:
-                        JobPosition.objects.create(
-                            name=job_data["name"],
-                            description=job_data["description"],
-                            department=department,
-                            job_position_status="active",
-                            created_at=timezone.now(),
-                        )
-
     def _create_calendar_for_institution(self):
         from calendar2.models import Calendar
-
         current_year = datetime.now().year
         Calendar.create_with_holidays(institution=self, year=current_year)
 
@@ -361,7 +332,7 @@ class Department(models.Model):
     created_by = models.ForeignKey(
         "users.CustomUser",
         related_name="created_departments",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
     )
