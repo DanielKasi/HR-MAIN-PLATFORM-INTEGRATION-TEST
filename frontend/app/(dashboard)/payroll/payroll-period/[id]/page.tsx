@@ -71,6 +71,7 @@ interface DisplayPayslip {
 }
 
 export default function Payslips() {
+  const router = useRouter();
   const [payslips, setPayslips] = useState<DisplayPayslip[]>([]);
   const [employees, setEmployees] = useState<IEmployee[]>([]);
   const [payrollPeriod, setPayrollPeriod] = useState<IPayrollPeriod | null>(null);
@@ -84,6 +85,7 @@ export default function Payslips() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const accessToken = useSelector(selectAccessToken)
+   
 
   const params = useParams();
   const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -430,8 +432,8 @@ export default function Payslips() {
     }
   };
 
-  const navigateToPayslipItems = (payslipId: number) => {
-    (useRouter()).push(`/payroll/payroll-period/payslip/${payslipId}/items`);
+   const navigateToPayslipItems = (payslipId: number) => {
+    router.push(`/payroll/payroll-period/payslip/${payslipId}/items`);
   };
 
   const getInitials = (name: string) => {
