@@ -19,7 +19,16 @@ from django.template.loader import render_to_string
 from django.core.files import File
 import os
 from django.conf import settings
-from rest_framework.exceptions import ValidationError
+import hashlib
+from django.core.exceptions import ValidationError
+import PyPDF2
+from pdf2image import convert_from_bytes
+import pytesseract
+from django.core.files.base import ContentFile
+import io
+from io import BytesIO
+from difflib import Differ, SequenceMatcher
+import re
 
 
 class EmployeeType(models.Model):
@@ -152,7 +161,19 @@ class Employee(models.Model):
         """Custom validation for the Employee model"""
         super().clean()
 
-        # Validate minimum age of 18 years
+        # 🚫 Enforce unique phone number only if provided
+        if self.phone_number:
+            existing = Employee.objects.filter(phone_number=self.phone_number)
+            if self.pk:
+                existing = existing.exclude(pk=self.pk)
+            if existing.exists():
+                raise ValidationError(
+                    {
+                        "phone_number": "An employee with this phone number already exists."
+                    }
+                )
+
+        # ✅ Validate minimum age of 18 years
         if self.date_of_birth:
             today = date.today()
             age = (
@@ -163,7 +184,6 @@ class Employee(models.Model):
                     < (self.date_of_birth.month, self.date_of_birth.day)
                 )
             )
-
             if age < 18:
                 raise ValidationError(
                     {
@@ -171,7 +191,7 @@ class Employee(models.Model):
                     }
                 )
 
-        # Validate date of birth is not in the future
+        # 🚫 Prevent future date of birth
         if self.date_of_birth and self.date_of_birth > date.today():
             raise ValidationError(
                 {"date_of_birth": "Date of birth cannot be in the future."}
@@ -210,35 +230,31 @@ class Employee(models.Model):
         return f"{prefix}{new_number:05d}"
 
     def save(self, *args, **kwargs):
+        # 🔐 Ensure validations run before saving
+        self.full_clean()
+
         is_new_employee = self.pk is None
         old_department = None
         old_gender = None
         old_is_active = None
 
-        # Get old values for comparison if updating
         if not is_new_employee:
             old_employee = Employee.objects.get(pk=self.pk)
             old_department = old_employee.department
             old_gender = old_employee.gender
             old_is_active = old_employee.is_active
 
-        # Auto-set payroll_branch to default branch if not set
         if self.user and not self.payroll_branch:
             self.payroll_branch = self.get_default_branch()
 
         if self.position and hasattr(self.position, "salary"):
-            if is_new_employee:
-                self.salary = self.position.salary
-            else:
-                self.salary = self.position.salary
+            self.salary = self.position.salary
 
-        # Generate employee_id if not set
         if not self.employee_id:
             self.employee_id = self.generate_employee_id()
 
         super().save(*args, **kwargs)
 
-        # Initialize or update leave balances based on changes
         should_initialize = (
             is_new_employee and self.is_active and self.department
         ) or (
@@ -343,6 +359,10 @@ class Employee(models.Model):
             user_branch = UserBranch.objects.get(user=self.user, is_default=True)
             return user_branch.branch
         except UserBranch.DoesNotExist:
+            institution = self.department.institution
+
+            if institution:
+                return institution.branches.first()
             return None
 
     def get_all_branches(self):
@@ -492,6 +512,12 @@ class EmployeeAttendance(models.Model):
 
 
 class EmployeeContract(models.Model):
+    STATUS_CHOICES = (
+        ("MATCHED_NEEDS_REVIEW", "Matched, Needs Review"),
+        ("NOT_MATCHED_NEEDS_REVIEW", "Not Matched, Needs Review"),
+        ("APPROVED", "Approved"),
+    )
+
     applicant = models.ForeignKey(
         "recruitment.JobAdvertApplication",
         on_delete=models.CASCADE,
@@ -516,6 +542,13 @@ class EmployeeContract(models.Model):
     signed_contract = models.FileField(
         upload_to="contracts/signed/", blank=True, null=True
     )
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default="PENDING",
+        blank=True,
+    )
+    differences = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -529,16 +562,152 @@ class EmployeeContract(models.Model):
             .order_by("-contract_reference")
             .first()
         )
-
         if last_contract and last_contract.contract_reference:
             last_number = int(last_contract.contract_reference.replace(prefix, ""))
             new_number = last_number + 1
         else:
             new_number = 1
-
         return f"{prefix}{new_number:05d}"
 
+    def normalize_text(self, text):
+        """Normalize text by removing extra whitespace and standardizing punctuation."""
+        text = re.sub(r"\s+", " ", text.strip())
+        text = re.sub(r"[.,;:!?]+", "", text)
+        return text.lower()
+
+    def extract_text_from_pdf(self, file_content):
+        """Extract text from PDF content using PyPDF2, returning page-by-page text."""
+
+        pdf_reader = PyPDF2.PdfReader(BytesIO(file_content))
+        page_count = len(pdf_reader.pages)
+        pages_text = []
+        for page_num, page in enumerate(pdf_reader.pages, 1):
+            page_text = page.extract_text() or ""
+            normalized_text = self.normalize_text(page_text)
+            print(f"Page {page_num} extracted text length: {len(normalized_text)}")
+            pages_text.append(normalized_text)
+        return pages_text
+
+    def extract_text_with_ocr(self, file_content, max_pages=3):
+        """Extract text from PDF content using OCR, returning page-by-page text."""
+        try:
+            images = convert_from_bytes(file_content, first_page=1, last_page=max_pages)
+            pages_text = []
+            for image_num, image in enumerate(images, 1):
+                page_text = pytesseract.image_to_string(image)
+                normalized_text = self.normalize_text(page_text)
+                print(f"OCR text length for image {image_num}: {len(normalized_text)}")
+                pages_text.append(normalized_text)
+            return pages_text
+        except Exception as e:
+            raise ValidationError(f"OCR failed: {str(e)}")
+
+    def compare_contracts(self):
+        """Compare original_contract and signed_contract, setting status."""
+        if not self.original_contract or not self.signed_contract:
+            self.status = "NOT_MATCHED_NEEDS_REVIEW"
+            return
+
+        try:
+            # Read original_contract content
+            with self.original_contract.open("rb") as original_file:
+                original_content = original_file.read()
+
+            # Read signed_contract content
+            with self.signed_contract.open("rb") as signed_file:
+                signed_content = signed_file.read()
+
+            original_pages = self.extract_text_from_pdf(original_content)
+            if not any(original_pages):
+                print("No text extracted from original_contract, trying OCR")
+                original_pages = self.extract_text_with_ocr(original_content)
+            if not any(original_pages):
+                self.status = "NOT_MATCHED_NEEDS_REVIEW"
+                raise ValidationError("Cannot extract text from original contract.")
+
+            # Extract text from signed_contract
+            signed_pages = self.extract_text_from_pdf(signed_content)
+            if not any(signed_pages):
+
+                signed_pages = self.extract_text_with_ocr(signed_content)
+            if not any(signed_pages):
+
+                self.status = "NOT_MATCHED_NEEDS_REVIEW"
+                raise ValidationError("Cannot extract text from signed contract.")
+
+            # Compare number of pages
+            if len(original_pages) != len(signed_pages):
+                self.status = "NOT_MATCHED_NEEDS_REVIEW"
+                raise ValidationError(
+                    f"Page count mismatch: original has {len(original_pages)} pages, signed has {len(signed_pages)} pages"
+                )
+
+            # Compare page-by-page, focusing on word differences
+            differences = []
+            for page_num, (orig_text, sign_text) in enumerate(
+                zip(original_pages, signed_pages), 1
+            ):
+                if orig_text != sign_text:
+                    print(f"Page {page_num} differs")
+                    matcher = SequenceMatcher(
+                        None, orig_text.split(), sign_text.split()
+                    )
+                    word_diffs = []
+                    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+                        if tag in ("replace", "delete", "insert"):
+                            orig_words = (
+                                " ".join(orig_text.split()[i1:i2])[:100] or "None"
+                            )
+                            sign_words = (
+                                " ".join(sign_text.split()[j1:j2])[:100] or "None"
+                            )
+                            word_diffs.append(f"- Original: {orig_words}")
+                            word_diffs.append(f"+ Signed: {sign_words}")
+                    if word_diffs:
+                        differences.append(
+                            f"Page {page_num} differences:\n"
+                            + "\n".join(word_diffs[:3])
+                        )
+                    else:
+                        differences.append(
+                            f"Page {page_num} differs (no specific word differences detected)"
+                        )
+
+            if differences:
+                self.status = "NOT_MATCHED_NEEDS_REVIEW"
+                diff_message = "\n".join(differences[:3])
+                # raise ValidationError(
+                #     f"The signed contract content does not match the original contract at:\n{diff_message}"
+                # )
+                self.differences = diff_message
+
+            else:
+                self.status = "MATCHED_NEEDS_REVIEW"
+
+        except ValidationError as e:
+            self.status = "NOT_MATCHED_NEEDS_REVIEW"
+            raise e
+        except Exception as e:
+            self.status = "NOT_MATCHED_NEEDS_REVIEW"
+            raise ValidationError(f"Error comparing contracts: {str(e)}")
+
     def save(self, *args, **kwargs):
-        if not self.contract_reference:  # Only generate if not already set
+        if not self.contract_reference:
             self.contract_reference = self.generate_contract_reference()
+
+        if self.signed_contract and not self.original_contract:
+            self.status = "NOT_MATCHED_NEEDS_REVIEW"
+
         super().save(*args, **kwargs)
+
+
+# class HRDocument(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE)
+#     title = models.CharField(max_length=255)
+#     signature = JSignatureField(null=True, blank=True)
+#     signature_date = models.DateTimeField(auto_now_add=True)
+#     document = models.FileField(upload_to='documents/')
+#     signature_image = models.ImageField(upload_to='signatures/', null=True, blank=True)
+
+#     def __str__(self):
+#         return f"{self.title} - {self.user.username}"

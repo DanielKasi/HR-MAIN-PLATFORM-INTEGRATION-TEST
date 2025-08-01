@@ -59,9 +59,6 @@ export const EmployeeSearchableSelect = ({
     const email = getEmployeeEmail(employee)
     const details = []
 
-    if (showEmployeeId && employee.employee_id && employee.employee_id !== employee.id.toString()) {
-      details.push(`ID: ${employee.employee_id}`)
-    }
 
     if (showDepartment && employee.department) {
       details.push(employee.department)
@@ -75,7 +72,7 @@ export const EmployeeSearchableSelect = ({
     return {
       id: employee.id,
       label: label,
-      value: `${name} ${email} ${employee.employee_id || ""} ${employee.department || ""}`.toLowerCase(),
+      value: `${name} ${email} ${employee.department || ""}`.toLowerCase(),
     }
   })
 
@@ -118,7 +115,7 @@ export const EmployeeSearchableSelect = ({
         emptyMessage={displayEmptyMessage}
         searchPlaceholder="Search employees by name, email, ID, or department..."
         onSelect={handleSelect}
-        multiple={true}
+        multiple={multiple} 
         disabled={disabled || isLoading}
         triggerClassName={`w-full justify-between focus:ring-orange-500 focus:border-orange-500 ${triggerClassName || ""}`}
         popoverClassName="w-full"

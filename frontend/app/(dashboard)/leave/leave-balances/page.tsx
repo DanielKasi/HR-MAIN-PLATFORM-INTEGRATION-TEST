@@ -1,178 +1,259 @@
-"use client"
+"use client";
 
-import React from "react"
-import { useState, useMemo, useEffect, useCallback } from "react"
-import { useSelector } from "react-redux"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Search,
   Edit,
   Trash2,
-  User,
-  Calendar,
   Eye,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  RefreshCw,
+  Filter,
+  User,
+  Settings,
   Loader2,
-  Leaf,
-} from "lucide-react"
-import { selectSelectedInstitution } from "@/store/auth/selectors"
-import { getAllLeaveBalances, createLeaveBalance, updateLeaveBalance, deleteLeaveBalance } from "@/lib/utils"
-import { getAllEmployees } from "@/lib/utils"
-import { getLeaveTypes } from "@/lib/utils"
-import { ILeaveBalance, IEmployee, ILeaveType } from "@/app/types/types.utils"
-import { toast } from "sonner"
-import { useRouter } from "next/navigation"
+  MoreVertical,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import {
+  getAllLeaveBalances,
+  createLeaveBalance,
+  updateLeaveBalance,
+  deleteLeaveBalance,
+  getAllEmployees,
+  getLeaveTypes,
+} from "@/lib/utils";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { ILeaveBalance, IEmployee, ILeaveType } from "@/app/types/types.utils";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/app/types/types.utils";
 
-const years = [2023, 2024, 2025, 2026]
+// Pagination constants
+const PAGE_SIZES = [10, 25, 50, 100];
+const DEFAULT_PAGE_SIZE = 10;
 
 // Define grouped employee interface
 interface GroupedEmployee {
-  employeeId: number
-  employeeName: string
-  employeeCode: string
-  leaveBalances: ILeaveBalance[]
-  totalAvailable: number
-  status: 'good' | 'low' | 'overused'
+  employeeId: number;
+  employeeName: string;
+  employeeCode: string;
+  leaveBalances: ILeaveBalance[];
+  totalAvailable: number;
+  status: "good" | "low" | "overused";
 }
 
-export default function LeaveBalanceComponent() {
-  const selectedInstitution = useSelector(selectSelectedInstitution)
-  
-  // State management
-  const [data, setData] = useState<ILeaveBalance[]>([])
-  const [employees, setEmployees] = useState<IEmployee[]>([])
-  const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([])
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterType, setFilterType] = useState("all")
-  const [filterYear, setFilterYear] = useState("2025")
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<ILeaveBalance | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const router = useRouter()
+// Color utilities
+const getStatusColor = (status: "good" | "low" | "overused") => {
+  switch (status) {
+    case "overused":
+      return "bg-red-100 text-red-800 border-red-200";
+    case "low":
+      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    default:
+      return "bg-green-100 text-green-800 border-green-200";
+  }
+};
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(10)
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
+export default function LeaveBalanceComponent() {
+  const selectedInstitution = useSelector(selectSelectedInstitution);
+  const router = useRouter();
+
+  // State management
+  const [data, setData] = useState<ILeaveBalance[]>([]);
+  const [employees, setEmployees] = useState<IEmployee[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("all");
+  const [filterYear, setFilterYear] = useState("all");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<ILeaveBalance | null>(null);
+  const [deletingEmployee, setDeletingEmployee] = useState<GroupedEmployee | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const [formData, setFormData] = useState({
     employee: "",
     leave_type: "",
-    year: new Date().getFullYear(),
+    year: new Date().getFullYear().toString(),
     allocated_days: "",
     used_days: "",
     pending_days: "",
     carried_forward_days: "",
-  })
+  });
 
   // Calculate available days
   const calculateAvailable = (item: typeof formData) => {
-    const allocated = parseFloat(item.allocated_days) || 0
-    const used = parseFloat(item.used_days) || 0
-    const pending = parseFloat(item.pending_days) || 0
-    const carriedForward = parseFloat(item.carried_forward_days) || 0
-    return allocated + carriedForward - used - pending
-  }
+    const allocated = parseFloat(item.allocated_days) || 0;
+    const used = parseFloat(item.used_days) || 0;
+    const pending = parseFloat(item.pending_days) || 0;
+    const carriedForward = parseFloat(item.carried_forward_days) || 0;
+    return allocated + carriedForward - used - pending;
+  };
 
-  // Optimized data fetching - fetch all data in parallel
-  const fetchAllData = useCallback(async () => {
-    if (!selectedInstitution?.id) {
-      setData([])
-      setEmployees([])
-      setLeaveTypes([])
-      return
-    }
+  // Optimized data fetching
+  const fetchAllData = useCallback(
+    async (showRefreshLoader = false) => {
+      if (!selectedInstitution?.id) {
+        setData([]);
+        setEmployees([]);
+        setLeaveTypes([]);
+        return;
+      }
 
-    setIsLoading(true)
-    try {
-      // Fetch all data in parallel instead of sequentially
-      const [balances, employeeData, types] = await Promise.all([
-        getAllLeaveBalances({ institutionId: selectedInstitution.id }),
-        getAllEmployees({ institutionId: selectedInstitution.id }),
-        getLeaveTypes({ institutionId: selectedInstitution.id })
-      ])
-      
-      setData(balances)
-      setEmployees(employeeData)
-      setLeaveTypes(types)
-    } catch (error) {
-      toast.error("Failed to load data")
-      console.error("Error fetching data:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [selectedInstitution?.id])
+      try {
+        if (showRefreshLoader) {
+          setIsRefreshing(true);
+        } else {
+          setIsLoading(true);
+        }
 
-  // Effects
+        const [balances, employeeData, types] = await Promise.all([
+          getAllLeaveBalances({ institutionId: selectedInstitution.id }),
+          getAllEmployees({ institutionId: selectedInstitution.id }),
+          getLeaveTypes({ institutionId: selectedInstitution.id }),
+        ]);
+
+        setData(balances);
+        setEmployees(employeeData);
+        setLeaveTypes(types.filter((type) => type.is_active !== false));
+      } catch (error: any) {
+        console.error("Error fetching data:", error);
+        toast.error(error.message || "Failed to load data");
+        setData([]);
+        setEmployees([]);
+        setLeaveTypes([]);
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [selectedInstitution?.id]
+  );
+
   useEffect(() => {
-    fetchAllData()
-  }, [fetchAllData])
+    fetchAllData();
+  }, [fetchAllData]);
 
-  // Memoized helper functions to avoid recalculation
-  const getEmployeeName = useCallback((employee: any) => {
-    if (typeof employee === 'object' && employee?.user?.fullname) {
-      return employee.user.fullname
-    }
-    const emp = employees.find(emp => emp.id === employee)
-    return emp?.user?.fullname || 'Unknown Employee'
-  }, [employees])
+  // Memoized helper functions
+  const getEmployeeName = useCallback(
+    (employee: any) => {
+      if (typeof employee === "object" && employee?.user?.fullname) {
+        return employee.user.fullname;
+      }
+      const emp = employees.find((emp) => emp.id === employee);
+      return emp?.user?.fullname || "Unknown Employee";
+    },
+    [employees]
+  );
 
-  const getEmployeeCode = useCallback((employee: any) => {
-    if (typeof employee === 'object' && employee?.employee_id !== undefined) {
-      return employee.employee_id
+ const getEmployeeCode = useCallback(
+  (employee: any) => {
+    if (typeof employee === "object" && employee?.employee_id !== undefined) {
+      return employee.employee_id || "N/A";  // return here
     }
-    const emp = employees.find(emp => emp.id === employee)
-    //return emp?.employee_id || 'N/A'
-  }, [employees])
+    const emp = employees.find((emp) => emp.id === employee);
+    return emp?.employee_id || "N/A";        // and here
+  },
+  [employees]
+);
 
-  const getLeaveTypeName = useCallback((leaveType: any) => {
-    if (typeof leaveType === 'object' && leaveType?.name) {
-      return leaveType.name
-    }
-    const type = leaveTypes.find(type => type.id === leaveType)
-    return type ? type.name : 'Unknown Leave Type'
-  }, [leaveTypes])
+
+  const getLeaveTypeName = useCallback(
+    (leaveType: any) => {
+      if (typeof leaveType === "object" && leaveType?.name) {
+        return leaveType.name;
+      }
+      const type = leaveTypes.find((type) => type.id === leaveType);
+      return type ? type.name : "Unknown Leave Type";
+    },
+    [leaveTypes]
+  );
 
   const getEmployeeId = (employee: any) => {
-    return typeof employee === 'object' ? employee.id : employee
-  }
+    return typeof employee === "object" ? employee.id : employee;
+  };
 
   const getLeaveTypeId = (leaveType: any) => {
-    return typeof leaveType === 'object' ? leaveType.id : leaveType
-  }
+    return typeof leaveType === "object" ? leaveType.id : leaveType;
+  };
 
-  // Group employees with their leave balances - optimized
+  // Group employees with their leave balances
   const groupedEmployees = useMemo((): GroupedEmployee[] => {
     const filtered = data.filter((item) => {
-      const employeeName = getEmployeeName(item.employee)
-      const employeeCode = getEmployeeCode(item.employee)
-      const leaveTypeName = getLeaveTypeName(item.leave_type)
-      
+      const employeeName = getEmployeeName(item.employee);
+      const employeeCode = getEmployeeCode(item.employee);
+      const leaveTypeName = getLeaveTypeName(item.leave_type);
+
       const matchesSearch =
+        !searchTerm.trim() ||
         employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        employeeCode.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesType = filterType === "all" || leaveTypeName === filterType
-      const matchesYear = filterYear === "all" || item.year.toString() === filterYear
-      return matchesSearch && matchesType && matchesYear
-    })
+       ((employeeCode ?? '') as string).toLowerCase().includes(searchTerm.toLowerCase())
+        leaveTypeName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType = filterType === "all" || leaveTypeName === filterType;
+      const matchesYear = filterYear === "all" || item.year.toString() === filterYear;
+      return matchesSearch && matchesType && matchesYear;
+    });
 
-    const grouped = new Map<number, GroupedEmployee>()
+    const grouped = new Map<number, GroupedEmployee>();
 
-    filtered.forEach(item => {
-      const employeeId = getEmployeeId(item.employee)
-      const employeeName = getEmployeeName(item.employee)
-      const employeeCode = getEmployeeCode(item.employee)
+    filtered.forEach((item) => {
+      const employeeId = getEmployeeId(item.employee);
+      const employeeName = getEmployeeName(item.employee);
+      const employeeCode = getEmployeeCode(item.employee);
 
       if (!grouped.has(employeeId)) {
         grouped.set(employeeId, {
@@ -181,339 +262,831 @@ export default function LeaveBalanceComponent() {
           employeeCode,
           leaveBalances: [],
           totalAvailable: 0,
-          status: 'good'
-        })
+          status: "good",
+        });
       }
 
-      const group = grouped.get(employeeId)!
-      group.leaveBalances.push(item)
-    })
+      const group = grouped.get(employeeId)!;
+      group.leaveBalances.push(item);
+    });
 
-    // Calculate total available and status for each employee
-    return Array.from(grouped.values()).map(group => {
+    return Array.from(grouped.values()).map((group) => {
       const totalAvailable = group.leaveBalances.reduce((sum, balance) => {
-        const available = typeof balance.available_days === 'string' 
-          ? parseFloat(balance.available_days) 
-          : balance.available_days
-        return sum + available
-      }, 0)
+        const available = typeof balance.available_days === "string"
+          ? parseFloat(balance.available_days)
+          : balance.available_days || 0;
+        return sum + available;
+      }, 0);
 
-      let status: 'good' | 'low' | 'overused' = 'good'
+      let status: "good" | "low" | "overused" = "good";
       if (totalAvailable < 0) {
-        status = 'overused'
+        status = "overused";
       } else if (totalAvailable <= 5) {
-        status = 'low'
+        status = "low";
       }
 
       return {
         ...group,
         totalAvailable,
-        status
-      }
-    })
-  }, [data, searchTerm, filterType, filterYear, getEmployeeName, getEmployeeCode, getLeaveTypeName])
+        status,
+      };
+    });
+  }, [data, searchTerm, filterType, filterYear, getEmployeeName, getEmployeeCode, getLeaveTypeName]);
 
-  // Pagination calculations
-  const totalPages = Math.ceil(groupedEmployees.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentData = groupedEmployees.slice(startIndex, endIndex)
-  const startRecord = startIndex + 1
-  const endRecord = Math.min(endIndex, groupedEmployees.length)
+  // Stats calculations
+  const totalEmployees = useMemo(() => groupedEmployees.length, [groupedEmployees]);
+  const lowBalanceEmployees = useMemo(
+    () => groupedEmployees.filter((g) => g.status === "low").length,
+    [groupedEmployees]
+  );
+  const overusedBalanceEmployees = useMemo(
+    () => groupedEmployees.filter((g) => g.status === "overused").length,
+    [groupedEmployees]
+  );
+  const totalLeaveTypes = useMemo(
+    () => new Set(groupedEmployees.flatMap((g) => g.leaveBalances.map((b) => getLeaveTypeId(b.leave_type)))).size,
+    [groupedEmployees, getLeaveTypeId]
+  );
 
-  // Reset to first page when filters change
-  React.useEffect(() => {
-    setCurrentPage(1)
-  }, [searchTerm, filterType, filterYear])
+  // Pagination
+  const totalPages = Math.ceil(groupedEmployees.length / pageSize);
+  const paginatedEmployees = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return groupedEmployees.slice(start, end);
+  }, [groupedEmployees, currentPage, pageSize]);
 
-  // Pagination handlers
-  const goToPage = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)))
-  }
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
-  const goToFirstPage = () => setCurrentPage(1)
-  const goToLastPage = () => setCurrentPage(totalPages)
-  const goToPreviousPage = () => setCurrentPage((prev) => Math.max(1, prev - 1))
-  const goToNextPage = () => setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+  const handlePageSizeChange = (newPageSize: string) => {
+    setPageSize(parseInt(newPageSize));
+    setCurrentPage(1);
+  };
 
-  const handleItemsPerPageChange = (value: string) => {
-    setItemsPerPage(Number(value))
-    setCurrentPage(1)
-  }
+  const clearFilters = () => {
+    setSearchTerm("");
+    setFilterType("all");
+    setFilterYear("all");
+    setCurrentPage(1);
+  };
 
-  // Get status badge for grouped employee
-  const getStatusBadge = (status: 'good' | 'low' | 'overused') => {
-    switch (status) {
-      case 'overused':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Overused</Badge>
-      case 'low':
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Low</Badge>
-      default:
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Good</Badge>
-    }
-  }
-
-  // Handle form submission
+  // Form submission
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!selectedInstitution?.id) {
-      toast.error("Institution not selected")
-      return
+      toast.error("Institution not selected");
+      return;
     }
 
-    if (!formData.employee || !formData.leave_type) {
-      toast.error("Please fill in all required fields")
-      return
+    if (!formData.employee || !formData.leave_type || !formData.year) {
+      toast.error("Please fill in all required fields");
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
-      const leaveBalanceData = {
-        employee: parseInt(formData.employee),
-        leave_type: parseInt(formData.leave_type),
-        year: formData.year,
-        allocated_days: formData.allocated_days,
-        used_days: formData.used_days,
-        pending_days: formData.pending_days,
-        carried_forward_days: formData.carried_forward_days,
-      }
+     const leaveBalanceData: Partial<ILeaveBalance> = {
+      employee: parseInt(formData.employee),
+      leave_type: parseInt(formData.leave_type),
+      year: parseInt(formData.year),
+      institution: selectedInstitution.id,
+      allocated_days: (parseFloat(formData.allocated_days) || 0).toString(),
+      used_days: (parseFloat(formData.used_days) || 0).toString(),
+      pending_days: (parseFloat(formData.pending_days) || 0).toString(),
+      carried_forward_days: (parseFloat(formData.carried_forward_days) || 0).toString(),
+    };
 
       if (editingItem) {
-        await updateLeaveBalance({
+        const updatedBalance = await updateLeaveBalance({
           id: editingItem.id,
           leaveBalanceData,
-        })
-        toast.success("Leave balance updated successfully")
+        });
+        if (updatedBalance) {
+          setData((prev) =>
+            prev.map((item) =>
+              item.id === editingItem.id ? { ...item, ...updatedBalance } : item
+            )
+          );
+          toast.success("Leave balance updated successfully");
+        } else {
+          toast.error("Failed to update leave balance");
+        }
       } else {
-        await createLeaveBalance({
+        const newBalance = await createLeaveBalance({
           institutionId: selectedInstitution.id,
           leaveBalanceData,
-        })
-        toast.success("Leave balance created successfully")
+        });
+        if (newBalance) {
+          setData((prev) => [...prev, newBalance]);
+          toast.success("Leave balance created successfully");
+        } else {
+          toast.error("Failed to create leave balance");
+        }
       }
 
-      // Only refetch leave balances, not all data
-      const balances = await getAllLeaveBalances({ institutionId: selectedInstitution.id })
-      setData(balances)
-      
       setFormData({
         employee: "",
         leave_type: "",
-        year: new Date().getFullYear(),
+        year: new Date().getFullYear().toString(),
         allocated_days: "",
         used_days: "",
         pending_days: "",
         carried_forward_days: "",
-      })
-      setEditingItem(null)
-      setIsDialogOpen(false)
-    } catch (error) {
-      toast.error("Failed to save leave balance")
-      console.error("Error saving leave balance:", error)
+      });
+      setEditingItem(null);
+      setIsAddDialogOpen(false);
+      setIsEditDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error saving leave balance:", error);
+      toast.error(error.message || "Failed to save leave balance");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
-  // Handle view - navigate to employee detail page with loading feedback
- const handleView = (employeeId: number) => {
-  // Show immediate loading feedback
-  toast.loading("Loading employee details...", { id: `loading-${employeeId}` })
-  
-  // Updated to match your URL structure
-  router.push(`/leave/leave-balances/${employeeId}`)  // Changed from leave-balances/${employeeId}
-}
+  // Handle view
+  const handleView = (employeeId: number) => {
+    toast.loading("Loading employee details...", { id: `loading-${employeeId}` });
+    router.push(`/leave/leave-balances/${employeeId}`);
+  };
 
-  // Handle edit - find first leave balance for the employee
+  // Handle edit
   const handleEdit = (group: GroupedEmployee) => {
-    const firstBalance = group.leaveBalances[0]
+    const firstBalance = group.leaveBalances[0];
     if (firstBalance) {
-      setEditingItem(firstBalance)
+      setEditingItem(firstBalance);
       setFormData({
         employee: getEmployeeId(firstBalance.employee).toString(),
         leave_type: getLeaveTypeId(firstBalance.leave_type).toString(),
-        year: firstBalance.year,
-        allocated_days: firstBalance.allocated_days,
-        used_days: firstBalance.used_days,
-        pending_days: firstBalance.pending_days,
-        carried_forward_days: firstBalance.carried_forward_days,
-      })
-      setIsDialogOpen(true)
+        year: firstBalance.year.toString(),
+        allocated_days: firstBalance.allocated_days.toString(),
+        used_days: firstBalance.used_days.toString(),
+        pending_days: firstBalance.pending_days.toString(),
+        carried_forward_days: firstBalance.carried_forward_days.toString(),
+      });
+      setIsEditDialogOpen(true);
     }
-  }
+  };
 
-  // Handle delete - delete all leave balances for employee with optimistic update
-  const handleDelete = async (group: GroupedEmployee) => {
-    if (!confirm(`Are you sure you want to delete all leave balance records for ${group.employeeName}?`)) return
+  // Handle delete
+  const handleDelete = async () => {
+    if (!deletingEmployee) return;
 
+    setIsSubmitting(true);
     try {
-      // Optimistic update - remove from UI first
-      const updatedData = data.filter(item => {
-        const employeeId = getEmployeeId(item.employee)
-        return employeeId !== group.employeeId
-      })
-      setData(updatedData)
-
-      // Delete all leave balances for this employee
       await Promise.all(
-        group.leaveBalances.map(balance => 
+        deletingEmployee.leaveBalances.map((balance) =>
           deleteLeaveBalance({ id: balance.id })
         )
-      )
-      
-      toast.success("Leave balances deleted successfully")
-    } catch (error) {
-      toast.error("Failed to delete leave balances")
-      console.error("Error deleting leave balances:", error)
-      // Revert optimistic update on error
-      await fetchAllData()
+      );
+      setData((prev) =>
+        prev.filter((item) => getEmployeeId(item.employee) !== deletingEmployee.employeeId)
+      );
+      toast.success("Leave balances deleted successfully");
+      setIsDeleteDialogOpen(false);
+      setDeletingEmployee(null);
+    } catch (error: any) {
+      console.error("Error deleting leave balances:", error);
+      toast.error(error.message || "Failed to delete leave balances");
+      await fetchAllData();
+    } finally {
+      setIsSubmitting(false);
     }
-  }
+  };
 
-  // Generate page numbers for pagination
-  const getPageNumbers = () => {
-    const pages = []
-    const maxVisiblePages = 5
+  const handleRefresh = () => {
+    fetchAllData(true);
+    setCurrentPage(1);
+  };
 
-    if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i)
-      }
-    } else {
-      if (currentPage <= 3) {
-        for (let i = 1; i <= 5; i++) {
-          pages.push(i)
-        }
-      } else if (currentPage >= totalPages - 2) {
-        for (let i = totalPages - 4; i <= totalPages; i++) {
-          pages.push(i)
-        }
-      } else {
-        for (let i = currentPage - 2; i <= currentPage + 2; i++) {
-          pages.push(i)
-        }
-      }
-    }
-
-    return pages
-  }
-
-  // Get unique years from data - memoized
+  // Get unique years and leave types
   const availableYears = useMemo(() => {
-    const years = new Set<number>()
-    data.forEach(item => {
-      years.add(item.year)
-    })
-    return Array.from(years).sort((a, b) => b - a)
-  }, [data])
+    const years = new Set<number>(data.map((item) => item.year));
+    return Array.from(years).sort((a, b) => b - a);
+  }, [data]);
 
-  // Set default filter year to the most recent year when data loads
+  const uniqueLeaveTypes = useMemo(() => {
+    const types = new Set<string>(
+      data
+        .map((item) => getLeaveTypeName(item.leave_type))
+        .filter((type) => type !== "Unknown Leave Type")
+    );
+    return Array.from(types);
+  }, [data, getLeaveTypeName]);
+
+  // Set default filter year to the most recent year
   useEffect(() => {
     if (availableYears.length > 0 && filterYear === "all") {
-      setFilterYear(availableYears[0].toString())
+      setFilterYear(availableYears[0].toString());
     }
-  }, [availableYears, filterYear])
-
-  // Get unique leave type names for filter - memoized
-  const uniqueLeaveTypes = useMemo(() => {
-    const types = new Set<string>()
-    data.forEach(item => {
-      const typeName = getLeaveTypeName(item.leave_type)
-      if (typeName !== 'Unknown Leave Type') {
-        types.add(typeName)
-      }
-    })
-    return Array.from(types)
-  }, [data, getLeaveTypeName])
+  }, [availableYears, filterYear]);
 
   if (!selectedInstitution?.id) {
     return (
-      <div className="p-6 text-center">
-        <Leaf className="w-12 h-12 text-orange-300 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Institution Selected</h3>
-        <p className="text-gray-600">Please select an institution to manage leave balances.</p>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4 text-center">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+            <Settings className="w-6 h-6 text-orange-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-gray-800">No Institution Selected</h3>
+            <p className="text-gray-600">Please select an institution to manage leave balances.</p>
+          </div>
+        </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="w-full h-full p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <Leaf className="w-8 h-8 text-orange-600" />
-            Leave Balance
-          </h1>
-          <p className="text-gray-600">Manage employee leave balances</p>
+          <h1 className="text-2xl font-bold">Leave Balances</h1>
+          <p className="text-muted-foreground">
+            Manage employee leave balances for {selectedInstitution?.institution_name}
+          </p>
         </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                {/* <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Leave Balance
+                </Button> */}
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[650px] rounded-2xl border-0 shadow-2xl">
+                <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
+                  <DialogTitle className="text-2xl font-bold text-gray-900">
+                    Add Leave Balance
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-600 text-base">
+                    Create a new leave balance record for an employee.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="employee" className="text-sm font-semibold text-gray-800">
+                      Employee *
+                    </Label>
+                    <Select
+                      value={formData.employee}
+                      onValueChange={(value) => setFormData({ ...formData, employee: value })}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger className="h-12 rounded-xl">
+                        <SelectValue placeholder="Select employee" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {employees.map((employee) => (
+                          <SelectItem key={employee.id} value={employee.id.toString()}>
+                            {employee.user?.fullname || "Unknown Employee"} ({employee.employee_id || "N/A"})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="leave_type" className="text-sm font-semibold text-gray-800">
+                      Leave Type *
+                    </Label>
+                    <Select
+                      value={formData.leave_type}
+                      onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger className="h-12 rounded-xl">
+                        <SelectValue placeholder="Select leave type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {leaveTypes.map((type) => (
+                          <SelectItem key={type.id} value={type.id.toString()}>
+                            {type.name} ({type.max_days_per_year} days/year)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="year" className="text-sm font-semibold text-gray-800">
+                      Year *
+                    </Label>
+                    <Select
+                      value={formData.year}
+                      onValueChange={(value) => setFormData({ ...formData, year: value })}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger className="h-12 rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableYears.map((year) => (
+                          <SelectItem key={year} value={year.toString()}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="allocated_days" className="text-sm font-semibold text-gray-800">
+                      Allocated Days
+                    </Label>
+                    <Input
+                      id="allocated_days"
+                      type="number"
+                      step="0.01"
+                      value={formData.allocated_days}
+                      onChange={(e) => setFormData({ ...formData, allocated_days: e.target.value })}
+                      placeholder="e.g., 21"
+                      disabled={isSubmitting}
+                      className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="used_days" className="text-sm font-semibold text-gray-800">
+                      Used Days
+                    </Label>
+                    <Input
+                      id="used_days"
+                      type="number"
+                      step="0.01"
+                      value={formData.used_days}
+                      onChange={(e) => setFormData({ ...formData, used_days: e.target.value })}
+                      placeholder="e.g., 5"
+                      disabled={isSubmitting}
+                      className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="pending_days" className="text-sm font-semibold text-gray-800">
+                      Pending Days
+                    </Label>
+                    <Input
+                      id="pending_days"
+                      type="number"
+                      step="0.01"
+                      value={formData.pending_days}
+                      onChange={(e) => setFormData({ ...formData, pending_days: e.target.value })}
+                      placeholder="e.g., 2"
+                      disabled={isSubmitting}
+                      className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="carried_forward_days" className="text-sm font-semibold text-gray-800">
+                      Carried Forward Days
+                    </Label>
+                    <Input
+                      id="carried_forward_days"
+                      type="number"
+                      step="0.01"
+                      value={formData.carried_forward_days}
+                      onChange={(e) => setFormData({ ...formData, carried_forward_days: e.target.value })}
+                      placeholder="e.g., 3"
+                      disabled={isSubmitting}
+                      className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                    />
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-4 md:col-span-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-semibold text-gray-800">Available Days:</span>
+                      <span className="text-lg font-bold text-orange-600">{calculateAvailable(formData)}</span>
+                    </div>
+                  </div>
+                </form>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsAddDialogOpen(false)}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      "Create Leave Balance"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </ProtectedComponent>
+        </div>
+      </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            {/* <Button className="bg-orange-600 hover:bg-orange-700 text-white">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Balance
-            </Button> */}
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-orange-900">{editingItem ? "Edit" : "Add"} Leave Balance</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Employee</Label>
-                  <Select
-                    value={formData.employee}
-                    onValueChange={(value) => setFormData({ ...formData, employee: value })}
-                    disabled={isSubmitting}
-                  >
-                    <SelectTrigger className="border-orange-200 focus:border-orange-500">
-                      <SelectValue placeholder="Select employee" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.map((employee) => (
-                        <SelectItem key={employee.id} value={employee.id.toString()}>
-                          {employee.user?.fullname || 'Unknown Employee'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Leave Type</Label>
-                  <Select
-                    value={formData.leave_type}
-                    onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
-                    disabled={isSubmitting}
-                  >
-                    <SelectTrigger className="border-orange-200 focus:border-orange-500">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leaveTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id.toString()}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Search by name, employee code, or leave type..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex gap-2 min-w-80">
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-full px-6">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <SelectValue placeholder="Filter by leave type" />
               </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Leave Types</SelectItem>
+              {uniqueLeaveTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterYear} onValueChange={setFilterYear}>
+            <SelectTrigger className="w-full px-6">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <SelectValue placeholder="Filter by year" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Years</SelectItem>
+              {availableYears.map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-              <div className="space-y-2">
-                <Label>Year</Label>
+      {/* Rows per Page Selector */}
+      <div className="flex justify-end">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Rows per page:</span>
+          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+            <SelectTrigger className="w-[70px] h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZES.map((size) => (
+                <SelectItem key={size} value={size.toString()}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      {!isLoading && (
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-blue-600">{totalEmployees}</div>
+              <p className="text-xs text-muted-foreground">Total Employees</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-green-600">{totalLeaveTypes}</div>
+              <p className="text-xs text-muted-foreground">Leave Types</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-yellow-600">{lowBalanceEmployees}</div>
+              <p className="text-xs text-muted-foreground">Low Balances</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-red-600">{overusedBalanceEmployees}</div>
+              <p className="text-xs text-muted-foreground">Overused Balances</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Leave Balances Table */}
+      {isLoading ? (
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="w-full h-12 bg-muted/10 rounded-md animate-pulse" />
+          ))}
+        </div>
+      ) : groupedEmployees.length === 0 ? (
+        <Card className="p-12 text-center">
+          <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No leave balances found</h3>
+          <p className="text-muted-foreground mb-4">
+            {searchTerm || filterType !== "all" || filterYear !== "all"
+              ? "No leave balances match your filter criteria."
+              : "Get started by creating your first leave balance."}
+          </p>
+          {searchTerm || filterType !== "all" || filterYear !== "all" ? (
+            <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
+              //Clear Filters
+            </Button>
+          ) : (
+            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}>
+              <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Create First Leave Balance
+              </Button>
+            </ProtectedComponent>
+          )}
+        </Card>
+      ) : (
+        <Card className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Employee</TableHead>
+                <TableHead className="text-center">Leave Types</TableHead>
+                <TableHead className="text-center">Total Available</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+                <TableHead className="text-center">Last Updated</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedEmployees.map((group) => (
+                <TableRow key={group.employeeId}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`h-8 w-8 rounded-full ${
+                          group.status === "good"
+                            ? "bg-green-50"
+                            : group.status === "low"
+                            ? "bg-yellow-50"
+                            : "bg-red-50"
+                        } flex items-center justify-center`}
+                      >
+                        <User
+                          className={`h-4 w-4 ${
+                            group.status === "good"
+                              ? "text-green-600"
+                              : group.status === "low"
+                              ? "text-yellow-600"
+                              : "text-red-600"
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <div className="font-medium">{group.employeeName}</div>
+                        <div className="text-sm text-muted-foreground">{group.employeeCode}</div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                      {group.leaveBalances.length} {group.leaveBalances.length === 1 ? "Type" : "Types"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell
+                    className={`text-center font-bold text-lg ${
+                      group.status === "overused"
+                        ? "text-red-600"
+                        : group.status === "low"
+                        ? "text-yellow-600"
+                        : "text-green-600"
+                    }`}
+                  >
+                    {group.totalAvailable}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge className={getStatusColor(group.status)}>
+                      {group.status.charAt(0).toUpperCase() + group.status.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {formatDate(
+                      group.leaveBalances.reduce((latest, balance) =>
+                        new Date(balance.updated_at) > new Date(latest.updated_at) ? balance : latest
+                      ).updated_at
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleView(group.employeeId)}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </DropdownMenuItem>
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}>
+                          {/* <DropdownMenuItem onClick={() => handleEdit(group)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem> */}
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setDeletingEmployee(group);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+
+
+      {/* Results Summary */}
+      {!isLoading && (
+        <div className="text-sm text-muted-foreground">
+          Showing {groupedEmployees.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to{" "}
+          {Math.min(currentPage * pageSize, groupedEmployees.length)} of {groupedEmployees.length} employees
+          {(searchTerm || filterType !== "all" || filterYear !== "all") &&
+            ` (filtered from ${new Set(data.map((item) => getEmployeeId(item.employee))).size} total)`}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(1)}
+            disabled={currentPage === 1}
+          >
+            <ChevronsLeft className="h-4 w-4" />
+            First
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+          <Select
+            value={currentPage.toString()}
+            onValueChange={(value) => handlePageChange(parseInt(value))}
+          >
+            <SelectTrigger className="w-[70px] h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <SelectItem key={page} value={page.toString()}>
+                  {page}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(totalPages)}
+            disabled={currentPage === totalPages}
+          >
+            Last
+            <ChevronsRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* Edit Dialog */}
+      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}>
+        <Dialog
+          open={isEditDialogOpen}
+          onOpenChange={(open) => {
+            setIsEditDialogOpen(open);
+            if (!open) {
+              setEditingItem(null);
+              setFormData({
+                employee: "",
+                leave_type: "",
+                year: new Date().getFullYear().toString(),
+                allocated_days: "",
+                used_days: "",
+                pending_days: "",
+                carried_forward_days: "",
+              });
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-[650px] rounded-2xl border-0 shadow-2xl">
+            <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
+              <DialogTitle className="text-2xl font-bold text-gray-900">
+                Edit Leave Balance
+              </DialogTitle>
+              <DialogDescription className="text-gray-600 text-base">
+                Update the leave balance record for the selected employee.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+              <div className="space-y-3">
+                <Label htmlFor="edit-employee" className="text-sm font-semibold text-gray-800">
+                  Employee *
+                </Label>
                 <Select
-                  value={formData.year.toString()}
-                  onValueChange={(value) => setFormData({ ...formData, year: Number.parseInt(value) })}
+                  value={formData.employee}
+                  onValueChange={(value) => setFormData({ ...formData, employee: value })}
                   disabled={isSubmitting}
                 >
-                  <SelectTrigger className="border-orange-200 focus:border-orange-500">
+                  <SelectTrigger className="h-12 rounded-xl">
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id.toString()}>
+                        {employee.user?.fullname || "Unknown Employee"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="edit-leave_type" className="text-sm font-semibold text-gray-800">
+                  Leave Type *
+                </Label>
+                <Select
+                  value={formData.leave_type}
+                  onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger className="h-12 rounded-xl">
+                    <SelectValue placeholder="Select leave type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {leaveTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.id.toString()}>
+                        {type.name} ({type.max_days_per_year} days/year)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="edit-year" className="text-sm font-semibold text-gray-800">
+                  Year *
+                </Label>
+                <Select
+                  value={formData.year}
+                  onValueChange={(value) => setFormData({ ...formData, year: value })}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger className="h-12 rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {years.map((year) => (
+                    {availableYears.map((year) => (
                       <SelectItem key={year} value={year.toString()}>
                         {year}
                       </SelectItem>
@@ -521,326 +1094,151 @@ export default function LeaveBalanceComponent() {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Allocated Days</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.allocated_days}
-                    onChange={(e) => setFormData({ ...formData, allocated_days: e.target.value })}
-                    className="border-orange-200 focus:border-orange-500"
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Used Days</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.used_days}
-                    onChange={(e) => setFormData({ ...formData, used_days: e.target.value })}
-                    className="border-orange-200 focus:border-orange-500"
-                    disabled={isSubmitting}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Pending Days</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.pending_days}
-                    onChange={(e) => setFormData({ ...formData, pending_days: e.target.value })}
-                    className="border-orange-200 focus:border-orange-500"
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Carried Forward</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.carried_forward_days}
-                    onChange={(e) => setFormData({ ...formData, carried_forward_days: e.target.value })}
-                    className="border-orange-200 focus:border-orange-500"
-                    disabled={isSubmitting}
-                  />
-                </div>
-              </div>
-
-              <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-orange-900">Available Days:</span>
-                  <span className="text-lg font-bold text-orange-700">{calculateAvailable(formData)}</span>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button 
-                  type="submit" 
-                  className="bg-orange-600 hover:bg-orange-700 text-white"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  {editingItem ? "Update" : "Add"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsDialogOpen(false)
-                    setEditingItem(null)
-                    setFormData({
-                      employee: "",
-                      leave_type: "",
-                      year: new Date().getFullYear(),
-                      allocated_days: "",
-                      used_days: "",
-                      pending_days: "",
-                      carried_forward_days: "",
-                    })
-                  }}
-                  className="border-orange-300 text-orange-700 hover:bg-orange-50"
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-4 items-center justify-between">
-            <div className="flex flex-wrap gap-4 items-center flex-1">
-              <div className="relative flex-1 min-w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-orange-500" />
+              <div className="space-y-3">
+                <Label htmlFor="edit-allocated_days" className="text-sm font-semibold text-gray-800">
+                  Allocated Days
+                </Label>
                 <Input
-                  placeholder="Search by name or employee code..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 border-orange-200 focus:border-orange-500"
+                  id="edit-allocated_days"
+                  type="number"
+                  step="0.01"
+                  value={formData.allocated_days}
+                  onChange={(e) => setFormData({ ...formData, allocated_days: e.target.value })}
+                  placeholder="e.g., 21"
+                  disabled={isSubmitting}
+                  className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
                 />
               </div>
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-48 border-orange-200 focus:border-orange-500">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Leave Types</SelectItem>
-                  {uniqueLeaveTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={filterYear} onValueChange={setFilterYear}>
-                <SelectTrigger className="w-32 border-orange-200 focus:border-orange-500">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Years</SelectItem>
-                  {availableYears.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-700 whitespace-nowrap">Rows per page:</span>
-              <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
-                <SelectTrigger className="w-20 h-8 border-orange-200 focus:border-orange-500">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5</SelectItem>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Table */}
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle className="text-orange-900 flex items-center gap-2">
-            <User className="w-5 h-5" />
-            Employee Leave Balances
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
-              <span className="ml-2 text-gray-600">Loading leave balances...</span>
-            </div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-gray-50">
-                    <TableHead className="font-semibold text-gray-900">Employee</TableHead>
-                    <TableHead className="font-semibold text-gray-900 text-center">Leave Types</TableHead>
-                    <TableHead className="font-semibold text-gray-900 text-center">Total Available</TableHead>
-                    <TableHead className="font-semibold text-gray-900 text-center">Status</TableHead>
-                    <TableHead className="font-semibold text-gray-900 text-center">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentData.map((group) => (
-                    <TableRow key={group.employeeId} className="hover:bg-orange-50">
-                      <TableCell>
-                        <div>
-                          <div className="font-medium text-gray-900">{group.employeeName}</div>
-                          <div className="text-sm text-gray-500">{group.employeeCode}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center">
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                            {group.leaveBalances.length} {group.leaveBalances.length === 1 ? 'Type' : 'Types'}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell className={`text-center font-bold text-lg ${
-                        group.status === 'overused' ? 'text-red-600' : 
-                        group.status === 'low' ? 'text-yellow-600' : 'text-green-600'
-                      }`}>
-                        {group.totalAvailable}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {getStatusBadge(group.status)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleView(group.employeeId)}
-                            className="h-8 w-8 p-0 hover:bg-orange-100"
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4 text-gray-600" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(group)}
-                            className="h-8 w-8 p-0 hover:bg-orange-100"
-                            title="Edit Record"
-                          >
-                            <Edit className="w-4 h-4 text-gray-600" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(group)}
-                            className="h-8 w-8 p-0 hover:bg-orange-100"
-                            title="Delete Records"
-                          >
-                            <Trash2 className="w-4 h-4 text-gray-600" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              {groupedEmployees.length === 0 && !isLoading && (
-                <div className="text-center py-12">
-                  <Leaf className="w-12 h-12 text-orange-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Records Found</h3>
-                  <p className="text-gray-600">No leave balance records match your search criteria.</p>
+              <div className="space-y-3">
+                <Label htmlFor="edit-used_days" className="text-sm font-semibold text-gray-800">
+                  Used Days
+                </Label>
+                <Input
+                  id="edit-used_days"
+                  type="number"
+                  step="0.01"
+                  value={formData.used_days}
+                  onChange={(e) => setFormData({ ...formData, used_days: e.target.value })}
+                  placeholder="e.g., 5"
+                  disabled={isSubmitting}
+                  className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                />
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="edit-pending_days" className="text-sm font-semibold text-gray-800">
+                  Pending Days
+                </Label>
+                <Input
+                  id="edit-pending_days"
+                  type="number"
+                  step="0.01"
+                  value={formData.pending_days}
+                  onChange={(e) => setFormData({ ...formData, pending_days: e.target.value })}
+                  placeholder="e.g., 2"
+                  disabled={isSubmitting}
+                  className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                />
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="edit-carried_forward_days" className="text-sm font-semibold text-gray-800">
+                  Carried Forward Days
+                </Label>
+                <Input
+                  id="edit-carried_forward_days"
+                  type="number"
+                  step="0.01"
+                  value={formData.carried_forward_days}
+                  onChange={(e) => setFormData({ ...formData, carried_forward_days: e.target.value })}
+                  placeholder="e.g., 3"
+                  disabled={isSubmitting}
+                  className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                />
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 md:col-span-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-semibold text-gray-800">Available Days:</span>
+                  <span className="text-lg font-bold text-orange-600">{calculateAvailable(formData)}</span>
                 </div>
-              )}
+              </div>
+            </form>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Leave Balance"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </ProtectedComponent>
 
-              {/* Pagination */}
-              {groupedEmployees.length > 0 && (
-                <div className="flex items-center justify-between px-6 py-4 border-t">
-                  <div className="text-sm text-gray-700">
-                    Showing {startRecord} to {endRecord} of {groupedEmployees.length} employees
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={goToFirstPage}
-                      disabled={currentPage === 1}
-                      className="h-8 w-8 p-0 bg-transparent border-orange-300 hover:bg-orange-50"
-                    >
-                      <ChevronsLeft className="w-4 h-4 text-orange-700" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={goToPreviousPage}
-                      disabled={currentPage === 1}
-                      className="h-8 w-8 p-0 bg-transparent border-orange-300 hover:bg-orange-50"
-                    >
-                      <ChevronLeft className="w-4 h-4 text-orange-700" />
-                    </Button>
-
-                    <div className="flex items-center gap-1">
-                      {getPageNumbers().map((pageNum) => (
-                        <Button
-                          key={pageNum}
-                          variant={currentPage === pageNum ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => goToPage(pageNum)}
-                          className={`h-8 w-8 p-0 ${
-                            currentPage === pageNum
-                              ? "bg-orange-600 hover:bg-orange-700 text-white"
-                              : "border-orange-300 text-orange-700 hover:bg-orange-50"
-                          }`}
-                        >
-                          {pageNum}
-                        </Button>
-                      ))}
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={goToNextPage}
-                      disabled={currentPage === totalPages}
-                      className="h-8 w-8 p-0 bg-transparent border-orange-300 hover:bg-orange-50"
-                    >
-                      <ChevronRight className="w-4 h-4 text-orange-700" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={goToLastPage}
-                      disabled={currentPage === totalPages}
-                      className="h-8 w-8 p-0 bg-transparent border-orange-300 hover:bg-orange-50"
-                    >
-                      <ChevronsRight className="w-4 h-4 text-orange-700" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+      {/* Delete Confirmation Dialog */}
+      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}>
+        <Dialog
+          open={isDeleteDialogOpen}
+          onOpenChange={(open) => {
+            setIsDeleteDialogOpen(open);
+            if (!open) {
+              setDeletingEmployee(null);
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-[500px] rounded-2xl border-0 shadow-2xl">
+            <DialogHeader className="space-y-4 pb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto">
+                <Trash2 className="w-8 h-8 text-red-600" />
+              </div>
+              <DialogTitle className="text-2xl font-bold text-gray-900 text-center">
+                Delete Leave Balances
+              </DialogTitle>
+              <DialogDescription className="text-gray-600 text-center text-base leading-relaxed">
+                Are you sure you want to delete all leave balance records for{" "}
+                <span className="font-semibold text-gray-900">"{deletingEmployee?.employeeName}"</span>? This action
+                cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete Permanently"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </ProtectedComponent>
     </div>
-  )
+  );
 }

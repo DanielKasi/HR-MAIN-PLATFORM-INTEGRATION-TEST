@@ -1617,7 +1617,7 @@ export default function ApplicationsPage() {
                         <div className="space-y-1">
                           <Button variant="link" size="sm" className="h-auto p-0" asChild>
                             <a
-                              href={`${process.env.NEXT_PUBLIC_URL || "http://127.0.0.1:8000"}${application.resume}`}
+                              href={`${process.env.NEXT_PUBLIC_BASE_URL}${application.resume}`}
                               target="_blank"
                               rel="noopener noreferrer"
                             >
@@ -1627,7 +1627,7 @@ export default function ApplicationsPage() {
                           {application.cover_letter && (
                             <Button variant="link" size="sm" className="h-auto p-0" asChild>
                               <a
-                                href={`${process.env.NEXT_PUBLIC_URL || "http://127.0.0.1:8000"}${application.cover_letter}`}
+                                href={`${process.env.NEXT_PUBLIC_BASE_URL }${application.cover_letter}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >

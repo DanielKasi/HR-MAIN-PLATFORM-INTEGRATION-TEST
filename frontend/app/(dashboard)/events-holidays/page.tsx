@@ -27,6 +27,7 @@ import {
   Edit,
   Trash2,
   MoreHorizontal,
+  MoreVertical,
 } from "lucide-react";
 import Link from "next/link";
 import {useSelector} from "react-redux";
@@ -547,7 +548,7 @@ export default function CalendarPage() {
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                    <MoreHorizontal className="h-3 w-3" />
+                                    <MoreVertical className="h-3 w-3" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">

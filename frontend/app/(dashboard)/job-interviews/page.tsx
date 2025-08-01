@@ -56,6 +56,8 @@ import type {IInterview} from "@/app/types/types.utils";
 import {PERMISSION_CODES} from "@/app/types/types.utils";
 import {toast} from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
+import {formatCurrency} from "@/lib/helpers";
+import {useDocumentTitle} from "@/hooks/use-document-title";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -85,12 +87,15 @@ export default function InterviewsPage() {
     from: null,
     to: null,
   });
+  const [jobPositionFilter, setJobPositionFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const router = useRouter();
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const selectedBranch = useSelector(selectSelectedBranch);
+
+  useDocumentTitle("JOB INTERVIEWS");
 
   // Get unique interviewers for filter
   const interviewers = useMemo(() => {
@@ -106,6 +111,22 @@ export default function InterviewsPage() {
     ];
   }, [interviews]);
 
+  // Get unique job positions for filter
+  const jobPositions = useMemo(() => {
+    const uniquePositions = new Set<string>();
+    interviews.forEach((interview) => {
+      const positionName =
+        interview.job_position_application_details?.job_position_advert_job_details?.name;
+      if (positionName) {
+        uniquePositions.add(positionName);
+      }
+    });
+    return [
+      {value: "all", label: "All Positions"},
+      ...Array.from(uniquePositions).map((name) => ({value: name, label: name})),
+    ];
+  }, [interviews]);
+
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
       router.push("/dashboard");
@@ -118,8 +139,7 @@ export default function InterviewsPage() {
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, interviewerFilter, dateRange]);
-
+  }, [searchTerm, statusFilter, interviewerFilter, jobPositionFilter, dateRange]);
   const fetchInterviews = async (showRefreshLoader = false) => {
     if (!selectedInstitution) return;
 
@@ -188,6 +208,15 @@ export default function InterviewsPage() {
         interview.interview_stage_details?.interviewers_details?.some(
           (employee) => `${employee.first_name} ${employee.last_name}` === interviewerFilter,
         ),
+      );
+    }
+
+    // Apply job position filter
+    if (jobPositionFilter && jobPositionFilter !== "all") {
+      filtered = filtered.filter(
+        (interview) =>
+          interview.job_position_application_details?.job_position_advert_job_details?.name ===
+          jobPositionFilter,
       );
     }
 
@@ -351,6 +380,7 @@ export default function InterviewsPage() {
     setSearchTerm("");
     setStatusFilter("all");
     setInterviewerFilter("all");
+    setJobPositionFilter("all");
     setDateRange({from: null, to: null});
     setCurrentPage(1);
   };
@@ -438,15 +468,20 @@ export default function InterviewsPage() {
           </Card>
           <Card>
             <CardContent className="p-4">
-            <div className="text-2xl font-bold">
-              {(
-                interviews.filter((i) => i.rating).reduce((sum, i) => sum + (i.rating || 0), 0) /
-                  interviews.filter((i) => i.rating).length || 0
-              ).toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">Avg Rating</p>
-          </CardContent>
-
+              {(() => {
+                const ratedInterviews = interviews.filter((i) => i.rating);
+                const averageRating =
+                  ratedInterviews.reduce((sum, i) => sum + (i.rating || 0), 0) /
+                    ratedInterviews.length || 0;
+                const roundedAverage = Math.round(averageRating);
+                return (
+                  <>
+                    <div className="text-2xl font-bold">{formatCurrency(roundedAverage)}</div>
+                    <p className="text-xs text-muted-foreground">Avg Rating</p>
+                  </>
+                );
+              })()}
+            </CardContent>
           </Card>
         </div>
       )}
@@ -471,6 +506,18 @@ export default function InterviewsPage() {
               {STATUS_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={jobPositionFilter} onValueChange={setJobPositionFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {jobPositions.map((position) => (
+                <SelectItem key={position.value} value={position.value}>
+                  {position.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -681,7 +728,11 @@ export default function InterviewsPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getStatusIcon(data.interviews[data.interviews.length - 1].status)}
-                          <Badge variant={getStatusBadgeVariant(data.interviews[data.interviews.length - 1].status)}>
+                          <Badge
+                            variant={getStatusBadgeVariant(
+                              data.interviews[data.interviews.length - 1].status,
+                            )}
+                          >
                             {data.interviews[data.interviews.length - 1].status}
                           </Badge>
                         </div>
@@ -691,7 +742,9 @@ export default function InterviewsPage() {
                           variant="ghost"
                           size="sm"
                           className="text-xs"
-                          onClick={() => handleViewInterview(data.interviews[data.interviews.length - 1].id)}
+                          onClick={() =>
+                            handleViewInterview(data.interviews[data.interviews.length - 1].id)
+                          }
                         >
                           View Latest
                         </Button>
@@ -703,7 +756,10 @@ export default function InterviewsPage() {
                           <TableCell />
                           <TableCell className="pl-11">
                             <div className="font-medium">
-                              {interview.job_position_application_details?.job_position_advert_job_details?.name}
+                              {
+                                interview.job_position_application_details
+                                  ?.job_position_advert_job_details?.name
+                              }
                             </div>
                             <Badge variant="outline" className="mt-1">
                               {interview.interview_stage_details?.name}
@@ -750,7 +806,7 @@ export default function InterviewsPage() {
                                   <Edit className="h-4 w-4 mr-2" />
                                   Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   onClick={() => handleDeleteInterview(interview.id)}
                                   className="text-destructive"
                                 >

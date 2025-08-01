@@ -6,6 +6,7 @@ import apiRequest from "./apiRequest";
 
 import { IMarketPlaceOrder, IPaginatedResponse, IPermission, IUser, Permission, Role } from "@/app/types";
 import { store } from "@/store";
+import { toast } from "sonner";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -338,8 +339,47 @@ export const getInstitutionById = async (InstitutionId: number) =>
 
 
 export const downloadFile = (filePath: string, fileName: string) => {
-  window.open(`${process.env.NEXT_BASE_URL || 'http://127.0.0.1:8000'}${filePath}`, "_blank")
+  window.open(`${process.env.NEXT_PUBLIC_BASE_URL}${filePath}`, "_blank")
 }
+
+
+  export const getFileUrl = (filePath: string) => {
+    if (filePath.startsWith("http")) {
+      return filePath;
+    }
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    return `${baseUrl}${filePath}`;
+  }
+
+  export const getFileName = (filePath: string) => {
+    return filePath.split("/").pop() || "document.pdf";
+  }
+
+    export const handleDownload = async (fileUrl: string, fileName: string) => {
+      try {
+        const response = await fetch(fileUrl);
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        link.target = "_blank";
+        document.body.appendChild(link);
+        link.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+  
+        toast.success("Download started", {
+          description: `${fileName} is being downloaded.`,
+        })
+      } catch (error) {
+        toast.error("Download failed", {
+          description: "Failed to download the file. Please try again.",
+        })
+      }
+    }
 
 
 export const countryAPI = {
@@ -349,3 +389,4 @@ export const countryAPI = {
     return await response.json();
   },
 };
+

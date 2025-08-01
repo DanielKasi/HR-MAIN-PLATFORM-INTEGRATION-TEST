@@ -1,7 +1,7 @@
 "use client";
 
-import React, {useState, useEffect} from "react";
-import {useRouter, usePathname} from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import {
   ChevronDown,
   ChevronRight,
@@ -14,15 +14,15 @@ import {
   CircleArrowLeft,
 } from "lucide-react";
 import Image from "next/image";
-import {useSelector, useDispatch} from "react-redux";
-import {Icon} from "@iconify/react";
+import { useSelector, useDispatch } from "react-redux";
+import { Icon } from "@iconify/react";
 
-import {IUserInstitution} from "../types";
-import {PERMISSION_CODES} from "../types/types.utils";
+import { IUserInstitution } from "../types";
+import { PERMISSION_CODES } from "../types/types.utils";
 
-import {useSetupProgress} from "@/components/guide";
-import {selectAttachedInstitutions, selectTemporaryPermissions} from "@/store/auth/selectors";
-import {Button} from "@/components/ui/button";
+import { useSetupProgress } from "@/components/guide";
+import { selectAttachedInstitutions, selectTemporaryPermissions } from "@/store/auth/selectors";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,9 +38,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {useMobile} from "@/hooks/use-mobile";
-import {InstitutionBranchSelector} from "@/components/institution-branch-selector";
-import {TaskNotification} from "@/components/task-notification";
+import { useMobile } from "@/hooks/use-mobile";
+import { InstitutionBranchSelector } from "@/components/institution-branch-selector";
+import { TaskNotification } from "@/components/task-notification";
 import Modules from "@/components/modules";
 import {
   selectAccessToken,
@@ -55,13 +55,14 @@ import {
   logoutStart,
 } from "@/store/auth/actions";
 import FixedLoader from "@/components/fixed-loader";
-import {hasPermission} from "@/lib/helpers";
+import { hasPermission } from "@/lib/helpers";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import apiRequest from "@/lib/apiRequest";
 import CreateOrganisationWizard from "./create-organisation/page";
-import {selectSidebarOpened} from "@/store/miscellaneous/selectors";
-import {closeSideBar, openSideBar} from "@/store/miscellaneous/actions";
+import { selectSidebarOpened } from "@/store/miscellaneous/selectors";
+import { closeSideBar, openSideBar } from "@/store/miscellaneous/actions";
 import Link from "next/link";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export function hexToHSL(hex: string) {
   hex = hex.replace("#", "");
@@ -114,7 +115,7 @@ interface NavItem {
   requiredPermission?: string;
 }
 
-export default function DashboardLayout({children}: {children: React.ReactNode}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isMobile = useMobile();
   const [userName, setUserName] = useState("");
@@ -124,7 +125,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const [canViewAdmin, setCanViewAdmin] = useState(false);
   const [canViewSettings, setCanViewSettings] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<{[key: string]: boolean}>({});
+  const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
 
   const [InstitutionId, setInstitutionId] = useState<string | null>(null);
 
@@ -183,7 +184,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     ) {
       let role = selectedInstitution.institution_owner_id === userData.id ? "Owner" : "";
       if (!role && Array.isArray(userData.roles) && userData.roles.length > 0) {
-        const matchingRole = userData.roles.find((r: {name: string}) => !!r.name);
+        const matchingRole = userData.roles.find((r: { name: string }) => !!r.name);
         if (matchingRole)
           role =
             matchingRole.name.charAt(0).toUpperCase() + matchingRole.name.slice(1).toLowerCase();
@@ -211,9 +212,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       href: "#1",
       icon: <Icon icon="hugeicons:user-add-02" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Job Openings", href: "/job-adverts"},
-        {title: "Applications", href: "/applications"},
-        {title: "Interviews", href: "/job-interviews"},
+        { title: "Job Openings", href: "/job-adverts" },
+        { title: "Applications", href: "/applications" },
+        { title: "Interviews", href: "/job-interviews" },
       ],
       requiredPermission: PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS,
     },
@@ -227,10 +228,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       href: "/off-boarding",
       icon: <Icon icon="hugeicons:inbox-upload" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Offboarding Stages", href: "/off-boarding/stages"},
-        {title: "Separation Policy", href: "/off-boarding/separation-policy"},
-        {title: "Separation Types", href: "/off-boarding/separation-types"},
-        {title: "Terminations", href: "/off-boarding/terminations"},
+        { title: "Offboarding Stages", href: "/off-boarding/stages" },
+        { title: "Separation Policy", href: "/off-boarding/separation-policy" },
+        { title: "Separation Types", href: "/off-boarding/separation-types" },
+        { title: "Terminations", href: "/off-boarding/terminations" },
       ],
       requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
     },
@@ -239,12 +240,12 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       href: "#1",
       icon: <Icon icon="hugeicons:user-multiple-02" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Employees", href: "/employees/employee-list"},
-        {title: "Employee Types", href: "/employees/employee-types"},
-        {title: "Work Types", href: "/employees/work-types"},
-        {title: "Contracts", href: "/employees/contracts"},
-        {title: "Attendance", href: "/employees/attendance"},
-        {title: "Discipline", href: "/employees/discipline"},
+        { title: "Employees", href: "/employees/employee-list" },
+        { title: "Employee Types", href: "/employees/employee-types" },
+        { title: "Work Types", href: "/employees/work-types" },
+        { title: "Contracts", href: "/employees/contracts" },
+        { title: "Attendance", href: "/employees/attendance" },
+        { title: "Discipline", href: "/employees/discipline" },
       ],
       requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
     },
@@ -253,10 +254,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       href: "#1",
       icon: <Icon icon="hugeicons:calendar-03" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Leave Types", href: "/leave/leave-types"},
-        {title: "Leave Policy", href: "/leave/leave-policy"},
-        {title: "Leave Balances", href: "/leave/leave-balances"},
-        {title: "Leave Application", href: "/leave/leave-application"},
+        { title: "Leave Types", href: "/leave/leave-types" },
+        { title: "Leave Policy", href: "/leave/leave-policy" },
+        { title: "Leave Balances", href: "/leave/leave-balances" },
+        { title: "Leave Application", href: "/leave/leave-application" },
       ],
     },
     {
@@ -264,12 +265,11 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       href: "#1",
       icon: <Icon icon="hugeicons:payment-01" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Allowance Types", href: "/payroll/allowance-types"},
-        {title: "Deduction Types", href: "/payroll/deduction-types"},
-        {title: "Employee Allowance", href: "/payroll/employee-allowance"},
-        {title: "Employee Deductions", href: "/payroll/employee-deductions"},
-        {title: "Payroll Period", href: "/payroll/payroll-period"},
-        {title: "Payslip", href: "/payroll/payslip"},
+        { title: "Allowance Types", href: "/payroll/allowance-types" },
+        { title: "Deduction Types", href: "/payroll/deduction-types" },
+        { title: "Employee Allowance", href: "/payroll/employee-allowance" },
+        { title: "Employee Deductions", href: "/payroll/employee-deductions" },
+        { title: "Payroll Period", href: "/payroll/payroll-period" },
       ],
     },
     // ,
@@ -409,7 +409,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
           const filteredSubmenu = item.submenu.filter(
             (subItem) => !subItem.requiredPermission || hasPermission(subItem.requiredPermission),
           );
-          return {...item, submenu: filteredSubmenu};
+          return { ...item, submenu: filteredSubmenu };
         }
         return item;
       })
@@ -445,7 +445,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   };
 
   const toggleExpand = (title: string) => {
-    setExpandedItems((prev) => ({[title]: !prev[title]}));
+    setExpandedItems((prev) => ({ [title]: !prev[title] }));
   };
 
   const renderNavigationItem = (item: NavItem) => {
@@ -454,27 +454,27 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       : pathname === item.href;
     const isExpanded = expandedItems[item.title];
 
-    if (item.title === "Admin") {
-      return (
-        <Button
-          key={item.title}
-          variant="ghost"
-          className={`w-full !rounded-3xl flex items-center justify-start px-4 py-8 !h-12 text-sm font-medium text-gray-600 ${isActive ? "bg-orange-500 bg-opacity-40" : "hover:bg-orange-500/60 hover:bg-opacity-60"}`}
-          onClick={() => router.push(item.href)}
-        >
-          <div className="flex items-center space-x-2">
-            {item.icon}
-            {isSideBarOpen && <span>{item.title}</span>}
-          </div>
-        </Button>
-      );
-    }
+    // if (item.title === "Admin") {
+    //   return (
+    //     <Button
+    //       key={item.title}
+    //       variant="ghost"
+    //       className={`w-full !rounded-3xl flex items-center justify-start px-4 py-8 !h-12 text-sm font-medium text-gray-600 ${isActive ? "bg-orange-500 bg-opacity-40" : "hover:bg-orange-500/60 hover:bg-opacity-60"}`}
+    //       onClick={() => router.push(item.href)}
+    //     >
+    //       <div className="flex items-center space-x-2">
+    //         {item.icon}
+    //         {isSideBarOpen && <span>{item.title}</span>}
+    //       </div>
+    //     </Button>
+    //   );
+    // }
 
     return (
       <div key={item.title} className="w-full py-1">
         <Button
           variant="ghost"
-          className={`w-full !rounded-xl flex items-center justify-between px-4 !py-6 text-sm font-medium text-gray-600 ${isActive ? "bg-orange-500/60 bg-opacity-20" : "hover:bg-orange-500 hover:bg-opacity-30"}`}
+          className={`w-full !rounded-xl flex items-center justify-between px-4 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 ${isActive ? "bg-primary/80 text-gray-100" : "hover:bg-opacity-30"}`}
           onClick={() => (item.submenu ? toggleExpand(item.title) : router.push(item.href))}
         >
           <div className="flex items-center space-x-2">
@@ -490,14 +490,14 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             ))}
         </Button>
         {item.submenu && isExpanded && (
-          <div className="ml-6 flex flex-col gap-2 mt-2 border-l-2 border-primary/20 bg-gray-200/20">
+          <div className="ml-6 flex flex-col mt-2 border-l-2 border-primary/20 bg-gray-200/20">
             {item.submenu.map(
               (sub) =>
                 isSideBarOpen && (
                   <Button
                     key={sub.href}
                     variant="ghost"
-                    className={`w-full !rounded-none !text-left flex items-start px-2 !py-3 text-sm text-gray-600 ${pathname === sub.href ? "bg-orange-500/20" : "hover:bg-orange-500/30"}`}
+                    className={`w-full !rounded-none !text-left flex items-center px-2 !py-4 text-sm text-gray-600 hover:bg-primary/80 ${pathname === sub.href ? "bg-primary/80  text-gray-100" : "bg-gray-200/20  hover:bg-primary/60"}`}
                     onClick={() => router.push(sub.href)}
                   >
                     <span className="!w-full !text-left !bg-transparent">{sub.title}</span>
@@ -542,9 +542,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col" style={{marginLeft: isSideBarOpen ? "16rem" : "5rem"}}>
+      <div className="flex-1 flex flex-col" style={{ marginLeft: isSideBarOpen ? "16rem" : "5rem" }}>
         {/* Header */}
-        <div className="bg-white p-4 flex justify-between items-center border-b">
+        <div className="bg-white p-4 flex justify-between items-center border-b min-h-16 h-20 max-h-20">
           <button
             onClick={onToggle}
             className="w-8 h-8 z-[50] bg-primary rounded-full flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"

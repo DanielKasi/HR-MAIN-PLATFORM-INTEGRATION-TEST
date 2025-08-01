@@ -6,16 +6,13 @@ import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { User, Calendar, Edit, Loader2, Leaf, ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { User, Calendar, Edit, ArrowLeft, Trash2 } from "lucide-react";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { getAllLeaveBalances, updateLeaveBalance, createLeaveBalance, deleteLeaveBalance } from "@/lib/utils";
 import { getAllEmployees, getLeaveTypes } from "@/lib/utils";
-import { ILeaveBalance, EmployeeFromAPI, ILeaveType } from "@/app/types/types.utils";
+import { IEmployee, ILeaveBalance, ILeaveType } from "@/app/types/types.utils";
 import { toast } from "sonner";
 
 const years = [2023, 2024, 2025, 2026];
@@ -28,8 +25,8 @@ export default function EmployeeLeaveBalanceDetails() {
   const employeeId = params?.employeeId as string;
 
   const [employeeLeaveBalances, setEmployeeLeaveBalances] = useState<ILeaveBalance[]>([]);
-  const [employee, setEmployee] = useState<EmployeeFromAPI | null>(null);
-  const [employees, setEmployees] = useState<EmployeeFromAPI[]>([]);
+  const [employee, setEmployee] = useState<IEmployee | null>(null);
+  const [employees, setEmployees] = useState<IEmployee[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -200,7 +197,9 @@ export default function EmployeeLeaveBalanceDetails() {
 
   return (
     <div className="p-6 space-y-6">
-       <Button
+       
+      <div className="flex items-center justify-between">
+        <Button
             variant="outline"
             onClick={() => router.push("../leave-balances")}
             className="border-orange-300 text-orange-700 hover:bg-orange-50"
@@ -208,10 +207,9 @@ export default function EmployeeLeaveBalanceDetails() {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
-      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <Leaf className="w-8 h-8 text-orange-600" />
+            
             {employee?.user?.fullname || "Employee"} - Leave Balances
           </h1>
         </div>

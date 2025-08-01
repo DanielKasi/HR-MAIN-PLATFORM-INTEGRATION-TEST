@@ -34,6 +34,7 @@ import {
   AlertCircle,
   Loader2,
   RefreshCw,
+  MoreVertical,
 } from "lucide-react"
 import { getDisciplinaryActions, deleteDisciplinaryAction } from "@/lib/utils"
 import { transformDisciplinaryActionData, PERMISSION_CODES } from "@/app/types/types.utils"
@@ -339,7 +340,7 @@ export default function DisciplinaryActionsTable({
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

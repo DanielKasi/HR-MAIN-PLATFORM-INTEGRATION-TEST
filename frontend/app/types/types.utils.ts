@@ -200,7 +200,8 @@ export enum PERMISSION_CODES {
   CAN_EDIT_DOCUMENTS = "can_edit_documents",
   CAN_DELETE_DOCUMENTS = "can_delete_documents",
   CAN_APPROVE_DOCUMENTS = "can_approve_documents",
-  CAN_ARCHIVE_DOCUMENTS = "can_archive_documents"
+  CAN_ARCHIVE_DOCUMENTS = "can_archive_documents",
+  CAN_MANAGE_PAYROLL_PERIODS = "CAN_MANAGE_PAYROLL_PERIODS",
 
 }
 
@@ -1471,11 +1472,12 @@ export interface IContract {
   signed_contract: string | null;
   created_at: string;
   updated_at: string;
+  differences?:string
 }
 
 export interface IContractFormData {
   employee: number;
-  contract_file?: File | null;
+  signed_contract?: File | null;
   status?: ContractStatus;
   start_date: string;
   end_date?: string | null;
@@ -1551,11 +1553,7 @@ export type ApprovalStepApprover = {
   approver_user: UserProfile;
 };
 
-// ("not_started", "Not Started"),
-//         ("pending", "Pending"),
-//         ("completed", "Completed"),
-//         ("rejected", "Rejected"),
-//         ("terminated", "Terminated"),
+
 export interface ITask {
   id: string;
   step: ApprovalStep;
@@ -1678,3 +1676,25 @@ export interface ISeparationPolicy {
   created_at: string;
   updated_at: string;
 }
+
+
+export interface IAttendance {
+  id: number;
+  employee: IEmployee,
+  check_in_time: string;
+  check_out_time: string | null;
+  status: string;
+  date: string;
+  overtime_hours:string
+}
+
+export interface IAttendanceFormData {
+  employee: number;
+  check_in_time: string;
+  check_out_time?: string | null;
+  status: string;
+  date?: string;
+  overtime_hours?: string;
+}
+
+

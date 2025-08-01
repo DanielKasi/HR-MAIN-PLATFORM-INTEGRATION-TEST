@@ -2,7 +2,7 @@
 
 import {useState, useEffect} from "react";
 import Link from "next/link";
-import {Plus, Search, Eye, Edit, Trash2} from "lucide-react";
+import {Plus, Search, Eye, Edit, Trash2, MoreHorizontal, MoreVertical} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
@@ -18,6 +18,13 @@ import {
 } from "@/components/ui/dialog";
 import {ISeparationPolicy} from "@/app/types/types.utils";
 import apiRequest from "@/lib/apiRequest";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useRouter } from "next/navigation";
 
 export default function SeparationPoliciesPage() {
   const [separationPolicies, setSeparationPolicies] = useState<ISeparationPolicy[]>([]);
@@ -29,6 +36,8 @@ export default function SeparationPoliciesPage() {
     open: false,
     policy: null,
   });
+
+  const router = useRouter();
 
   const fetchPolicies = async () => {
     setLoading(true);
@@ -119,25 +128,33 @@ export default function SeparationPoliciesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Link href={`/off-boarding/separation-policy/${policy.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
+                          >
+                            <MoreVertical className="h-4 w-4 text-gray-600" />
                           </Button>
-                        </Link>
-                        <Link href={`/off-boarding/separation-policy/edit/${policy.id}/`}>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteDialog({open: true, policy})}
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-48 bg-white border border-gray-200 shadow-lg"
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                          <DropdownMenuItem onClick={()=>{router.push(`/off-boarding/separation-policy/${policy.id}`)}} className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer">
+                                <Eye className="h-4 w-4" /> View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={()=>{router.push(`/off-boarding/separation-policy/edit/${policy.id}/`)}} className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer">
+                                <Edit className="h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setDeleteDialog({open: true, policy})} className="flex items-center px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer">
+
+                              <Trash2 className="h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
                     </TableCell>
                   </TableRow>
                 ))}

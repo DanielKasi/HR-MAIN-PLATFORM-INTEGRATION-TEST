@@ -323,7 +323,62 @@ class AuditLogListAPIView(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
 
-class GenerateDocumentView(APIView):
+class BaseDocumentView(APIView):
+    def _normalize_placeholder(self, placeholder):
+        """Normalize placeholder to snake_case {{variable_name}} format, removing apostrophes."""
+        cleaned_name = re.sub(r"[\{\}<>\[\]]+", "", placeholder).strip()
+        normalized_name = re.sub(r"\s+", "_", cleaned_name.replace("'", "")).lower()
+        return f"{{{{{normalized_name}}}}}" if normalized_name else placeholder
+
+    def _replace_placeholders(self, content, placeholder_values):
+        """Replace all placeholder formats in HTML content with values, preserving structure."""
+        if not content:
+            return ""
+
+        preview = content
+        normalized_values = {
+            re.sub(r"\s+", "_", k.replace("'", "")).lower(): v
+            for k, v in placeholder_values.items()
+            if v is not None
+        }
+
+        placeholder_patterns = [
+            r"\{\{[\w\s\'-]+\}\}",  # {{variable_name}} or {{Employee's Name}}
+            r"<<[\w\s\'-]+>>",  # <<variable_name>> or <<Employee's Name>>
+            r"\[\[[\w\s\'-]+\]\]",  # [[variable_name]] or [[Employee's Name]]
+            r"\[[\w\s\'-]*\w+\]",  # [variable_name] or [Parent]
+            r"([\w\s\'-]+?)\s*:?\s*_{10,}",  # Phrase: __________
+        ]
+        combined_pattern = "|".join(f"({pattern})" for pattern in placeholder_patterns)
+        all_matches = re.findall(combined_pattern, content)
+
+        for match_tuple in all_matches:
+            match = next(m for m in match_tuple if m)
+            if re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match):
+                phrase = re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match).group(1).strip()
+                normalized_key = re.sub(r"\s+", "_", phrase.replace("'", "")).lower()
+                value = normalized_values.get(normalized_key, "__________")
+                replacement = f"{phrase}: {value}"
+                preview = re.sub(re.escape(match), replacement, preview, count=1)
+            else:
+                normalized = self._normalize_placeholder(match)
+                normalized_key = normalized.strip("{}").lower()
+                value = normalized_values.get(normalized_key, match)
+                preview = preview.replace(match, str(value))
+
+        special_keys = ["initials", "signature", "days", "state"]
+        for key in special_keys:
+            if key in normalized_values:
+                preview = re.sub(
+                    rf"(?i){key}\s*:?\s*_{{10,}}",
+                    f"{key.title()}: {normalized_values[key]}",
+                    preview,
+                    count=1,
+                )
+
+        return preview
+
+class GenerateDocumentView(BaseDocumentView):
     @extend_schema(
         tags=["Document Generation"],
         parameters=[
@@ -350,86 +405,69 @@ class GenerateDocumentView(APIView):
         description="Fetches placeholders for a document template with pre-filled values based on context",
     )
     def get(self, request, template_id):
-        # Fetch the document template
         template = get_object_or_404(DocumentTemplate, pk=template_id)
         template_placeholders = template.placeholders or []
 
-        # Get system configuration for required fields
         system_config = SystemConfiguration.objects.filter(
             code="doc_required_fields"
         ).first()
         required_placeholders = system_config.content if system_config else []
-
-        # remove placeholders from required_placeholders that are not in template_placeholders
         required_placeholders = [
             ph for ph in required_placeholders if ph in template_placeholders
         ]
 
-        # Combine placeholders (remove duplicates, preserve template formatting for non-required placeholders)
-        # Convert template placeholders to clean format (strip {{}})
-        clean_template_placeholders = [p.strip("{}") for p in template_placeholders]
-        # Ensure all required placeholders are included, even if not in template
-        all_placeholders = list(
-            set(clean_template_placeholders + required_placeholders)
-        )
+        clean_template_placeholders = [p.strip("{}").lower() for p in template_placeholders]
+        all_placeholders = list(set(clean_template_placeholders + required_placeholders))
 
-        # Get context and context_id from query params
         context = request.query_params.get("context")
         context_id = request.query_params.get("context_id")
-
         if not context or not context_id:
             return Response(
                 {"error": "context and context_id are required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Dynamic value mapping based on context
         known_values = {}
         if context == "onboarding":
             onboarding = get_object_or_404(OnBoarding, pk=context_id)
             known_values = {
-                "FULLNAME": (
+                "fullname": (
                     onboarding.application.applicant_name
                     if onboarding.application
                     else ""
                 ),
-                "SALARY": (
+                "salary": (
                     str(onboarding.application.job_position_advert.job_position.salary)
                     if onboarding.application.job_position_advert.job_position.salary
                     else ""
                 ),
-                "DATE": str(datetime.now().date()),
+                "date": str(datetime.now().date()),
             }
         elif context == "employee":
             employee = get_object_or_404(Employee, pk=context_id)
             known_values = {
-                "FULLNAME": (
+                "fullname": (
                     employee.user.fullname if hasattr(employee.user, "fullname") else ""
                 ),
-                "SALARY": str(employee.salary) if hasattr(employee, "salary") else "",
-                "DATE": str(datetime.now().date()),
+                "salary": str(employee.salary) if hasattr(employee, "salary") else "",
+                "date": str(datetime.now().date()),
             }
         elif context == "leave":
             leave = get_object_or_404(Leave, pk=context_id)
             known_values = {
-                "FULLNAME": (
+                "fullname": (
                     leave.employee.fullname
                     if hasattr(leave.employee, "fullname")
                     else ""
                 ),
-                "DATE": str(datetime.now().date()),
+                "date": str(datetime.now().date()),
             }
         else:
             return Response(
                 {"error": "Invalid context"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Construct placeholder data
-        placeholder_data = {}
-        for placeholder in all_placeholders:
-            value = known_values.get(placeholder, "")
-            placeholder_data[placeholder] = {"value": value}
-
+        placeholder_data = {ph: {"value": known_values.get(ph, "")} for ph in all_placeholders}
         serializer = GenerateDocumentResponseSerializer(
             {"placeholders": placeholder_data, "template_id": template_id}
         )
@@ -449,19 +487,10 @@ class GenerateDocumentView(APIView):
             400: {"description": "Invalid input or missing required placeholders"},
             404: {"description": "Template or context record not found"},
         },
-        description="Creates a new document with the provided placeholder values and updates OnBoarding status to contract_review if context is onboarding",
+        description="Creates a new document with provided placeholder values and updates OnBoarding status to contract_review if context is onboarding",
     )
     def post(self, request, template_id):
-        # Fetch the document template
         template = get_object_or_404(DocumentTemplate, pk=template_id)
-
-        # Get system configuration for required fields
-        system_config = SystemConfiguration.objects.filter(
-            code="doc_required_fields"
-        ).first()
-        required_placeholders = system_config.content if system_config else []
-
-        # Validate input
         serializer = GenerateDocumentRequestSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -470,14 +499,12 @@ class GenerateDocumentView(APIView):
         context = serializer.validated_data.get("context")
         context_id = serializer.validated_data.get("context_id")
 
-        # Create Document instance
         document = Document.objects.create(
             document_template=template,
             placeholder_values=placeholder_values,
             status="pending",
         )
 
-        # Update OnBoarding status if context is onboarding
         if context == "onboarding" and context_id:
             try:
                 onboarding = OnBoarding.objects.get(pk=context_id)
@@ -494,287 +521,52 @@ class GenerateDocumentView(APIView):
             status=status.HTTP_201_CREATED,
         )
 
-
-class DocumentContentPreviewView(APIView):
-    def _normalize_placeholder(self, placeholder):
-        """Normalize placeholder to snake_case {{variable_name}} format, removing apostrophes."""
-        # Remove delimiters ({{}}, <<>>, [[]], [])
-        cleaned_name = re.sub(r"[\{\}<>\[\]]+", "", placeholder).strip()
-        # Convert to snake_case, remove apostrophes
-        normalized_name = re.sub(r"\s+", "_", cleaned_name.replace("'", "")).lower()
-        return f"{{{{{normalized_name}}}}}" if normalized_name else placeholder
-
-    def _replace_placeholders(self, content, placeholder_values):
-        """Replace all placeholder formats in content with values, handling apostrophes."""
-        if not content:
-            return ""
-
-        preview = content
-        lines = content.split("\n")
-        placeholder_values = {
-            k.lower(): v for k, v in placeholder_values.items()
-        }  # Normalize keys
-
-        # Define placeholder patterns, supporting apostrophes
-        placeholder_patterns = [
-            r"\{\{[\w\s\'-]+\}\}",  # {{variable_name}} or {{Employee's Name}}
-            r"<<[\w\s\'-]+>>",  # <<variable_name>> or <<Employee's Name>>
-            r"\[\[[\w\s\'-]+\]\]",  # [[variable_name]] or [[Employee's Name]]
-            r"\[[\w\s\'-]+\]",  # [variable_name] or [Employee's Name]
-            r"_{10,}",  # ___________________
-        ]
-        combined_pattern = "|".join(f"({pattern})" for pattern in placeholder_patterns)
-        all_matches = re.findall(combined_pattern, content)
-
-        # Flatten matches
-        matches = [match for group in all_matches for match in group if match]
-
-        # Handle standard placeholders
-        for match in matches:
-            if not re.match(r"_{10,}", match):  # Skip underscores
-                normalized = self._normalize_placeholder(match)
-                normalized_key = normalized.strip("{}").lower()
-                value = placeholder_values.get(
-                    normalized_key, match
-                )  # Keep placeholder if no value
-                preview = preview.replace(match, value)
-
-        # Handle underscore placeholders
-        for line in lines:
-            line_lower = line.lower().strip()
-            # Find phrases before underscores, allowing apostrophes
-            match = re.search(r"([\w\s\'-]+?)\s*:?\s*_{10,}", line_lower)
-            if match:
-                phrase = match.group(1).strip()
-                normalized_key = re.sub(r"\s+", "_", phrase.replace("'", "")).lower()
-                value = placeholder_values.get(normalized_key, None)
-                # Replace with value if provided, else keep underscores
-                replacement = f"{phrase}: {value}" if value else f"{phrase}: __________"
-                preview = re.sub(
-                    r"([\w\s\'-]+?)\s*:?\s*_{10,}", replacement, preview, count=1
-                )
-            # Handle special cases
-            if "initials" in line_lower and "initials" in placeholder_values:
-                preview = preview.replace("initials", placeholder_values["initials"], 1)
-            if "signature" in line_lower and "signature" in placeholder_values:
-                preview = preview.replace(
-                    "signature", placeholder_values["signature"], 1
-                )
-            if "days" in line_lower and "days" in placeholder_values:
-                preview = preview.replace("days", placeholder_values["days"], 1)
-            if "state" in line_lower and "state" in placeholder_values:
-                preview = preview.replace("state", placeholder_values["state"], 1)
-            # Handle standalone underscores
-            if re.search(r"_{10,}", line_lower) and not match:
-                preview = re.sub(r"_{10,}", "__________", preview, count=1)
-
-        return preview
-
+class DocumentContentPreviewView(BaseDocumentView):
     @extend_schema(
         tags=["Document Generation"],
         responses={
             200: DocumentContentPreviewSerializer,
             404: {"description": "Document not found"},
         },
-        description="Generates a preview of the document content by replacing placeholders (including those with apostrophes) with stored values, removing underscores when values are provided",
+        description="Generates a preview of the document content by replacing placeholders with stored values",
     )
     def get(self, request, document_id):
-        # Fetch the document
         document = get_object_or_404(Document, pk=document_id)
         template = document.document_template
         template_content = template.content or ""
-
-        # Get placeholder values
         placeholder_values = document.placeholder_values or {}
 
-        # Generate preview
         preview = self._replace_placeholders(template_content, placeholder_values)
-
         serializer = DocumentContentPreviewSerializer({"preview": preview})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
-class DocumentStatusUpdateView(APIView):
-    def _replace_placeholders(self, content, placeholder_values):
-        """Replace all placeholder formats, preserving content structure and handling signatures."""
-        if not content:
-            logger.error("Template content is empty")
-            return ""
-
-        preview = content
-        placeholder_values = {
-            k.lower(): v for k, v in placeholder_values.items() if v is not None
-        }
-        logger.debug(f"Placeholder values: {placeholder_values}")
-
-        # Define placeholder patterns
-        placeholder_patterns = [
-            r"\{\{[\w\s\'’,-]+\}\}",  # {{variable_name}} or {{Employee's Name}}
-            r"<<[\w\s\'’,-]+>>",  # <<variable_name>> or <<Employee's Name>>
-            r"\[\[[\w\s\'’,-]+\]\]",  # [[variable_name]] or [[Employee's Name]]
-            r"\[[\w\s\'’,-]+\]",  # [variable_name] or [list specific tasks...]
-        ]
-        combined_pattern = "|".join(f"({pattern})" for pattern in placeholder_patterns)
-        all_matches = re.findall(combined_pattern, content)
-        matches = [match for group in all_matches for match in group if match]
-        logger.debug(f"Found placeholders: {matches}")
-
-        # Replace standard placeholders
-        unreplaced_placeholders = []
-        for match in matches:
-            cleaned_name = re.sub(r"[\{\}<>\[\]]+", "", match).strip()
-            normalized_key = re.sub(
-                r"\s+",
-                "_",
-                cleaned_name.replace("'", "").replace("’", "").replace(",", ""),
-            ).lower()
-            value = placeholder_values.get(normalized_key)
-            if not value:
-                alt_key = (
-                    cleaned_name.lower()
-                    .replace("'", "")
-                    .replace("’", "")
-                    .replace(" ", "_")
-                    .replace(",", "")
-                )
-                value = placeholder_values.get(
-                    alt_key, match
-                )  # Keep original if no value
-                if value == match:
-                    unreplaced_placeholders.append(match)
-            logger.debug(f"Replacing {match} with {value}")
-            preview = preview.replace(match, str(value))
-
-        if unreplaced_placeholders:
-            logger.warning(f"Unreplaced placeholders: {unreplaced_placeholders}")
-
-        # Handle underscores and signature section
-        lines = preview.split("\n")
-        for i, line in enumerate(lines):
-            line_lower = line.lower().strip()
-            # Handle underscores with preceding phrases
-            match = re.search(r"([\w\s\'’,-]+?)\s*:?\s*_{10,}", line_lower)
-            if match:
-                phrase = match.group(1).strip()
-                normalized_key = re.sub(
-                    r"\s+",
-                    "_",
-                    phrase.replace("'", "").replace("’", "").replace(",", ""),
-                ).lower()
-                value = placeholder_values.get(normalized_key, None)
-                replacement = (
-                    f"{phrase}: {value}"
-                    if value is not None
-                    else f"{phrase}: __________"
-                )
-                logger.debug(f"Replacing underscore in '{line}' with '{replacement}'")
-                preview = re.sub(
-                    rf"{re.escape(phrase)}\s*:?\s*_{{10,}}",
-                    replacement,
-                    preview,
-                    count=1,
-                )
-            elif "signature" in line_lower:
-                # Handle signature section explicitly
-                for key in ["caregivers_name", "clients_name", "date"]:
-                    value = placeholder_values.get(key, None)
-                    if key == "date":
-                        replacement = (
-                            f"Date: {value}"
-                            if value is not None
-                            else "Date: __________"
-                        )
-                        preview = re.sub(
-                            r"Date\s*:\s*_{10,}",
-                            replacement,
-                            preview,
-                            count=1,
-                        )
-                    else:
-                        title_key = key.replace("_", " ").title()
-                        replacement = f"{value}" if value is not None else "__________"
-                        preview = re.sub(
-                            rf"\[{re.escape(title_key)}\]\s*_{{10,}}",
-                            replacement,
-                            preview,
-                            count=1,
-                        )
-            elif re.search(r"_{10,}", line_lower):
-                # Handle standalone underscores
-                preview = re.sub(r"_{10,}", "__________", preview, count=1)
-
-        return preview
-
+class DocumentStatusUpdateView(BaseDocumentView):
     def _generate_pdf(self, content, placeholder_values):
-        """Generate a PDF from content using weasyprint, preserving paragraph structure."""
-        logger.debug(
-            f"Generating PDF with content: {content[:100]}... and placeholders: {placeholder_values}"
-        )
+        """Generate a PDF from HTML content using weasyprint, preserving template formatting."""
+        logger.debug(f"Generating PDF with content length: {len(content)}")
         rendered_content = self._replace_placeholders(content, placeholder_values)
-
-        # Remove the "CARE GIVER CONTRACT" title from content if present
-        # if rendered_content.startswith("CARE GIVER CONTRACT\n"):
-        #     rendered_content = rendered_content[len("CARE GIVER CONTRACT\n") :]
-
-        # Process content to convert newlines to HTML paragraphs
-        paragraphs = rendered_content.split(
-            "\n"
-        )  # Split by double newlines for paragraphs
-        html_paragraphs = []
-        for paragraph in paragraphs:
-            lines = paragraph.split("\n")
-            # Detect section headers (all caps, single line)
-            if len(lines) == 1 and lines[0].strip().isupper():
-                html_paragraphs.append(
-                    f'<p class="section-header">{lines[0].strip()}</p>'
-                )
-            else:
-                # Handle signature section specially
-                if "This Contract is signed" in paragraph:
-                    formatted_lines = []
-                    for line in lines:
-                        if line.strip():
-                            # Clean up signature lines
-                            line = re.sub(r"_{10,}", "", line).strip()
-                            formatted_lines.append(line)
-                    formatted_paragraph = "<br>".join(formatted_lines)
-                    html_paragraphs.append(f"<p>{formatted_paragraph}</p>")
-                else:
-                    formatted_lines = "<br>".join(
-                        line.strip() for line in lines if line.strip()
-                    )
-                    html_paragraphs.append(f"<p>{formatted_lines}</p>")
 
         html_content = f"""
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="utf-8" />
-            <title>Caregiver Contract</title>
+            <title>Document</title>
             <style>
             body {{
                 font-family: Arial, sans-serif;
                 font-size: 12pt;
-                margin: 40px;
+                margin: 35px;
             }}
             h1 {{
-                text-align: center;
-                font-size: 16pt;
-                margin-bottom: 30px;
-            }}
-            p {{
-                margin: 0 0 8px 0;
-                line-height: 1.2;
-            }}
-            .section-header {{
-                font-weight: bold;
                 font-size: 14pt;
-                margin: 10px 0 6px 0;
+                font-weight: bold;
+                margin: 10px 0;
             }}
             </style>
         </head>
         <body>
-            {''.join(html_paragraphs)}
+            {rendered_content}
         </body>
         </html>
         """
@@ -788,68 +580,65 @@ class DocumentStatusUpdateView(APIView):
             raise
 
     def _get_email_values(self, placeholder_values, context, context_obj):
-        """Derive email values based on context and context object, with placeholder_values overrides."""
+        """Derive email values based on context and context object."""
         email_values = {
             "due_date": str(datetime.now().date() + timedelta(days=7)),
             "hr_email": getattr(settings, "HR_EMAIL", settings.DEFAULT_FROM_EMAIL),
         }
 
         if context == "onboarding":
-            onboarding = context_obj
             job_position = (
-                onboarding.application.job_position_advert.job_position
-                if onboarding.application and onboarding.application.job_position_advert
+                context_obj.application.job_position_advert.job_position
+                if context_obj.application and context_obj.application.job_position_advert
                 else None
             )
             email_values.update(
                 {
                     "employee_name": (
-                        onboarding.application.applicant_name
-                        if onboarding.application
+                        context_obj.application.applicant_name
+                        if context_obj.application
                         else ""
                     ),
                     "position_title": job_position.name if job_position else "",
                     "institution_name": (
-                        onboarding.application.job_position_advert.job_position.department.institution.institution_name
-                        if onboarding.application
-                        and onboarding.application.job_position_advert
-                        and onboarding.application.job_position_advert.job_position
-                        and onboarding.application.job_position_advert.job_position.department
+                        context_obj.application.job_position_advert.job_position.department.institution.institution_name
+                        if context_obj.application
+                        and context_obj.application.job_position_advert
+                        and context_obj.application.job_position_advert.job_position
+                        and context_obj.application.job_position_advert.job_position.department
                         else ""
                     ),
                 }
             )
         elif context == "employee":
-            employee = context_obj
             email_values.update(
                 {
                     "employee_name": (
-                        employee.user.fullname if hasattr(employee, "user") else ""
+                        context_obj.user.fullname if hasattr(context_obj, "user") else ""
                     ),
                     "position_title": (
-                        employee.job_position.name
-                        if hasattr(employee, "job_position")
+                        context_obj.job_position.name
+                        if hasattr(context_obj, "job_position")
                         else ""
                     ),
                 }
             )
         elif context == "leave":
-            leave = context_obj
             email_values.update(
                 {
                     "employee_name": (
-                        leave.employee.user.fullname
-                        if hasattr(leave.employee, "user")
+                        context_obj.employee.user.fullname
+                        if hasattr(context_obj.employee, "user")
                         else ""
                     ),
                     "leave_type": (
-                        leave.leave_type if hasattr(leave, "leave_type") else ""
+                        context_obj.leave_type if hasattr(context_obj, "leave_type") else ""
                     ),
                     "start_date": (
-                        str(leave.start_date) if hasattr(leave, "start_date") else ""
+                        str(context_obj.start_date) if hasattr(context_obj, "start_date") else ""
                     ),
                     "end_date": (
-                        str(leave.end_date) if hasattr(leave, "end_date") else ""
+                        str(context_obj.end_date) if hasattr(context_obj, "end_date") else ""
                     ),
                 }
             )
@@ -868,8 +657,7 @@ class DocumentStatusUpdateView(APIView):
             return get_object_or_404(Employee, pk=context_id)
         elif context == "leave":
             return get_object_or_404(Leave, pk=context_id)
-        else:
-            raise ValueError("Invalid context")
+        raise ValueError("Invalid context")
 
     @extend_schema(
         tags=["Document Generation"],
@@ -880,14 +668,14 @@ class DocumentStatusUpdateView(APIView):
                 location=OpenApiParameter.QUERY,
                 required=True,
                 enum=["onboarding", "employee", "leave"],
-                description="The context for document generation (e.g., onboarding, employee, leave)",
+                description="The context for document generation",
             ),
             OpenApiParameter(
                 name="context_id",
                 type=int,
                 location=OpenApiParameter.QUERY,
                 required=True,
-                description="The ID of the context record (e.g., OnBoarding ID, Employee ID, Leave ID)",
+                description="The ID of the context record",
             ),
         ],
         request=DocumentStatusUpdateSerializer,
@@ -896,10 +684,9 @@ class DocumentStatusUpdateView(APIView):
             400: {"description": "Invalid input or missing required placeholders"},
             404: {"description": "Document or context record not found"},
         },
-        description="Updates the status of a document, sends PDF email, and creates context-specific records (e.g., EmployeeContract for onboarding) if status is reviewed",
+        description="Updates document status, sends PDF email, and creates context-specific records if status is reviewed",
     )
     def patch(self, request, document_id):
-        # Validate query parameters
         context = request.query_params.get("context")
         context_id = request.query_params.get("context_id")
         if not context or not context_id:
@@ -908,7 +695,6 @@ class DocumentStatusUpdateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Fetch document and validate serializer
         document = get_object_or_404(Document, pk=document_id)
         serializer = DocumentStatusUpdateSerializer(data=request.data)
         if not serializer.is_valid():
@@ -916,17 +702,10 @@ class DocumentStatusUpdateView(APIView):
 
         new_status = serializer.validated_data["status"]
         placeholder_values = document.placeholder_values or {}
-        system_config = SystemConfiguration.objects.filter(
-            code="doc_required_fields"
-        ).first()
-        required_placeholders = system_config.content if system_config else []
 
-
-        # Update document status
         document.status = new_status
         document.save()
 
-        # Fetch context object
         try:
             context_obj = self._get_context_object(context, context_id)
         except ValueError:
@@ -939,7 +718,6 @@ class DocumentStatusUpdateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Determine template content based on context
         template = document.document_template
         template_content = template.content or ""
 
@@ -954,19 +732,18 @@ class DocumentStatusUpdateView(APIView):
                 if job_position and job_position.contract_template
                 else template.content
             )
-        # Add more context-specific template logic here if needed for employee or leave
-
-        elif context == "employee" and hasattr(context_obj, "position"):
-
+        elif (
+            context == "employee"
+            and hasattr(context_obj, "job_position")
+        ):
             template_content = (
-                context_obj.position.contract_template.content
-                if context_obj.position and context_obj.position.contract_template
+                context_obj.job_position.contract_template.content
+                if context_obj.job_position and context_obj.job_position.contract_template
                 else template.content
             )
 
         if new_status == "reviewed":
             try:
-                # Generate email values and PDF
                 email_values = self._get_email_values(
                     placeholder_values, context, context_obj
                 )
@@ -974,7 +751,6 @@ class DocumentStatusUpdateView(APIView):
                 pdf_filename = f"document_{context}_{document.pk}.pdf"
                 document_file = ContentFile(pdf_content, name=pdf_filename)
 
-                # Context-specific logic
                 if context == "onboarding":
                     employee_contract = EmployeeContract.objects.create(
                         applicant=context_obj.application,
@@ -988,15 +764,13 @@ class DocumentStatusUpdateView(APIView):
                         employee=context_obj,
                         is_active=False,
                         original_contract=document_file,
+                        
                     )
                     context_obj.status = "issued_contract"
                     context_obj.save()
-
                 elif context == "leave":
-                    # Example: Save document to leave record or perform leave-specific action
                     pass
 
-                # Send email if applicable
                 recipient_email = None
                 if context == "onboarding" and hasattr(context_obj, "application"):
                     recipient_email = getattr(
@@ -1036,7 +810,6 @@ class DocumentStatusUpdateView(APIView):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
-        # Generate preview
         preview = self._replace_placeholders(template_content, placeholder_values)
         serializer = DocumentContentPreviewSerializer({"preview": preview})
         return Response(serializer.data, status=status.HTTP_200_OK)

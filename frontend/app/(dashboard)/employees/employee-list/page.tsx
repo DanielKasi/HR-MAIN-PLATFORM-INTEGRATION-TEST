@@ -25,7 +25,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {Search, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Plus} from "lucide-react";
+import {
+  Search,
+  Eye,
+  Edit,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  UserPlus,
+  Upload,
+  ChevronDown,
+  MoreHorizontal,
+  MoreVertical,
+} from "lucide-react";
 import {getAllEmployees} from "@/lib/utils";
 import {useSelector} from "react-redux";
 import {selectAttachedInstitutions} from "@/store/auth/selectors";
@@ -37,6 +50,14 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/c
 
 import ProtectedComponent from "@/components/ProtectedComponent";
 import {useRouter} from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {BulkUploadEmployeesDialog} from "@/components/dialogs/bulk-upload-employees-dialog";
 
 // Union type to handle both data structures
 type EmployeeData = IEmployee | EmployeeFormData;
@@ -91,9 +112,18 @@ const getRoleNames = (employee: EmployeeData) => {
 interface EmployeeTableProps {
   employees: EmployeeData[];
   onDelete: (id: number) => void;
+  isBulkUploadDialogOpen: boolean;
+  setIsBulkUploadDialogOpen: (open: boolean) => void;
+  loadEmployees: () => void;
 }
 
-function EmployeeTable({employees, onDelete}: EmployeeTableProps) {
+function EmployeeTable({
+  employees,
+  onDelete,
+  isBulkUploadDialogOpen,
+  setIsBulkUploadDialogOpen,
+  loadEmployees,
+}: EmployeeTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -101,9 +131,9 @@ function EmployeeTable({employees, onDelete}: EmployeeTableProps) {
   const itemsPerPage = 10;
   const router = useRouter();
 
-  const handleBack  = () =>{
-    router.back()
-  }
+  const handleBack = () => {
+    router.back();
+  };
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -180,12 +210,35 @@ function EmployeeTable({employees, onDelete}: EmployeeTableProps) {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Employees ({filteredEmployees.length} employees)</span>
-          <Link href="/employees/add-employee">
-            <Button className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700">
-              <Plus className="h-4 w-4" />
-              Add Employee
-            </Button>
-          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="bg-orange-600 hover:bg-orange-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Employee
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => router.push("/employees/add-employee")}>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Add Single Employee
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setIsBulkUploadDialogOpen(true)}>
+                <Upload className="w-4 h-4 mr-2" />
+                Bulk Upload Employees
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {}
+          <BulkUploadEmployeesDialog
+            isOpen={isBulkUploadDialogOpen}
+            onClose={() => setIsBulkUploadDialogOpen(false)}
+            onUploadSuccess={() => {
+              loadEmployees();
+              setIsBulkUploadDialogOpen(false);
+            }}
+          />
         </CardTitle>
 
         {/* Filters */}
@@ -288,9 +341,6 @@ function EmployeeTable({employees, onDelete}: EmployeeTableProps) {
                     <TableRow
                       key={idx}
                       className="cursor-pointer hover:bg-muted/50"
-                      // onClick={() => {
-                      //   router.push(`/employees/profile/${employee.id}`);
-                      // }}
                     >
                       <TableCell>
                         <div className="font-medium">{getFullName(employee)}</div>
@@ -307,66 +357,78 @@ function EmployeeTable({employees, onDelete}: EmployeeTableProps) {
                       <TableCell>{getPositionName(employee)}</TableCell>
                       <TableCell>{getStatusBadge(employee.is_active)}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Link href={`/employees/profile/${employee.id}`}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="View Details"
-                            >
-                              <Eye className="h-4 w-4" />
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
-                          </Link>
-                          <Link
-                            href={`/employees/update-employee/${employee.id}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              localStorage.setItem(
-                                `employee_${employee.id || "unknown"}`,
-                                JSON.stringify(employee),
-                              );
-                            }}
-                          >
-                            <ProtectedComponent
-                              permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEES}
-                            >
-                              <Button variant="ghost" size="sm" title="Update Employee">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </ProtectedComponent>
-                          </Link>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Delete Employee"
-                                className="text-red-600 hover:text-red-700"
-                                onClick={(e) => e.stopPropagation()}
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem>
+                              <Link href={`/employees/profile/${employee.id}`}>
+                                <Button variant="ghost" size="sm" title="View Details">
+                                  <Eye className="h-4 w-4" /> View Details
+                                </Button>
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Link
+                                href={`/employees/update-employee/${employee.id}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  localStorage.setItem(
+                                    `employee_${employee.id || "unknown"}`,
+                                    JSON.stringify(employee),
+                                  );
+                                }}
                               >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Employee</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete {getFullName(employee)}? This
-                                  action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => employee.id && onDelete(employee.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                <ProtectedComponent
+                                  permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEES}
                                 >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
+                                  <Button variant="ghost" size="sm" title="Update Employee">
+                                    <Edit className="h-4 w-4" /> Edit
+                                  </Button>
+                                </ProtectedComponent>
+                              </Link>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem className="text-red-600">
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    title="Delete Employee"
+                                    className="text-red-600 hover:text-red-700"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Trash2 className="h-4 w-4" /> Delete
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Employee</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete {getFullName(employee)}? This
+                                      action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => employee.id && onDelete(employee.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+
+
                       </TableCell>
                     </TableRow>
                   ))}
@@ -439,61 +501,42 @@ function EmployeeTable({employees, onDelete}: EmployeeTableProps) {
   );
 }
 
-export default function Component() {
+export default function EmployeesPage() {
   const [employees, setEmployees] = useState<EmployeeData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const selectedInstitution = useSelector(selectSelectedInstitution);
-  const [InstitutionId, setInstitutionId] = useState<string | null>(null);
-  const InstitutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
-
-
-  useEffect(() => {
-    if (selectedInstitution) {
-      setInstitutionId(selectedInstitution.id.toString());
-    }
-    // Get the first Institution ID from attached Institutions
-    else if (InstitutionsAttached && InstitutionsAttached.length > 0) {
-      // Convert the numeric ID to a string
-      const id = String(InstitutionsAttached[0].id);
-      setInstitutionId(id);
-    }
-  }, [InstitutionsAttached, selectedInstitution]);
+  const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);
 
   // function to load Employees
   useEffect(() => {
-    const loadEmployees = async () => {
-      if (!InstitutionId) {
-        if (InstitutionsAttached && InstitutionsAttached.length > 0) {
-          const testId = String(InstitutionsAttached[0].id);
-          setInstitutionId(testId);
-        }
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const institutionIdNumber = parseInt(InstitutionId);
-        const result = await getAllEmployees({institutionId: institutionIdNumber});
-
-        if (result && Array.isArray(result)) {
-          setEmployees(result);
-          setError(null);
-        } else {
-          setError("No employee data available");
-          setEmployees([]);
-        }
-      } catch (err) {
-        console.error("Error loading employees:", err);
-        setError("Failed to load employees");
-        setEmployees([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadEmployees();
-  }, [InstitutionId, InstitutionsAttached]);
+  }, [selectedInstitution]);
+
+  const loadEmployees = async () => {
+    if (!selectedInstitution) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const result = await getAllEmployees({institutionId: selectedInstitution.id});
+
+      if (result && Array.isArray(result)) {
+        setEmployees(result);
+        setError(null);
+      } else {
+        setError("No employee data available");
+        setEmployees([]);
+      }
+    } catch (err) {
+      console.error("Error loading employees:", err);
+      setError("Failed to load employees");
+      setEmployees([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDelete = async (id: number) => {
     try {
@@ -525,7 +568,13 @@ export default function Component() {
           </div>
         </div>
 
-        <EmployeeTable employees={employees} onDelete={handleDelete} />
+        <EmployeeTable
+          isBulkUploadDialogOpen={isBulkUploadDialogOpen}
+          setIsBulkUploadDialogOpen={setIsBulkUploadDialogOpen}
+          employees={employees}
+          onDelete={handleDelete}
+          loadEmployees={loadEmployees}
+        />
       </div>
     </div>
   );

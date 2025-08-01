@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { CheckCircle, AlertCircle, Search, Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, ChevronLeft, ChevronRight } from "lucide-react"
+import { CheckCircle, AlertCircle, Search, Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, ChevronLeft, ChevronRight, MoreVertical } from "lucide-react"
 import { toast } from "sonner"
 
 // Import your API functions and types
@@ -301,8 +301,6 @@ export default function EmployeeTypeManagement() {
     setCurrentPage(1)
   }
 
-  // Temporary debug - remove this after testing
-  console.log("Current state - employeeTypes:", employeeTypes.length, "searchTerm:", `"${searchTerm}"`, "filteredTypes:", filteredTypes.length)
 
   // Fetch employee types on component mount
   useEffect(() => {
@@ -317,7 +315,6 @@ export default function EmployeeTypeManagement() {
     try {
       setLoading(true)
       const data = await getEmployeeTypes({ institutionId: selectedInstitution.id })
-      console.log("Fetched employee types:", data) // Debug log
       setEmployeeTypes(data)
     } catch (error) {
       console.error("Error fetching employee types:", error)
@@ -506,7 +503,6 @@ export default function EmployeeTypeManagement() {
                 <TableHeader>
                   <TableRow className="bg-gray-50 border-b border-gray-200">
                     <TableHead className="font-semibold text-gray-900 py-4 px-6">Name</TableHead>
-                    <TableHead className="font-semibold text-gray-900 py-4 px-6">Code</TableHead>
                     <TableHead className="font-semibold text-gray-900 py-4 px-6">Description</TableHead>
                     <TableHead className="font-semibold text-gray-900 py-4 px-6 w-[100px] text-center">Actions</TableHead>
                   </TableRow>
@@ -546,18 +542,6 @@ export default function EmployeeTypeManagement() {
                         <TableCell className="py-4 px-6">
                           <div className="font-medium text-gray-900">{type.name}</div>
                         </TableCell>
-                        <TableCell className="py-4 px-6">
-                          {type.code ? (
-                            <Badge
-                              variant="outline"
-                              className="border-orange-200 bg-orange-50 text-orange-700 font-medium px-3 py-1"
-                            >
-                              {type.code}
-                            </Badge>
-                          ) : (
-                            <span className="text-gray-400 italic">No code</span>
-                          )}
-                        </TableCell>
                         <TableCell className="py-4 px-6 max-w-md">
                           <div className="text-gray-700 leading-relaxed">
                             {type.description ? (
@@ -579,7 +563,7 @@ export default function EmployeeTypeManagement() {
                                 {deleting === type.id ? (
                                   <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
                                 ) : (
-                                  <MoreHorizontal className="h-4 w-4 text-gray-600" />
+                                  <MoreVertical className="h-4 w-4 text-gray-600" />
                                 )}
                               </Button>
                             </DropdownMenuTrigger>
@@ -596,14 +580,14 @@ export default function EmployeeTypeManagement() {
                                 className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
                               >
                                 <Edit className="h-4 w-4 mr-3 text-gray-500" />
-                                Edit employee type
+                                Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleDelete(type)}
                                 className="flex items-center px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
                               >
                                 <Trash2 className="h-4 w-4 mr-3 text-red-500" />
-                                Delete employee type
+                                Delete 
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

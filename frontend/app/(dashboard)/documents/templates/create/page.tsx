@@ -17,6 +17,13 @@ import { getDocumentTypes, createDocumentTemplate } from "@/lib/utils"
 import { IDocumentTemplateFormData, IDocumentType } from "@/app/types/types.utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
+import { RichEditorField } from "@/components/common/rich-editor"
+// import dynamic from "next/dynamic"
+
+// const QuillRichTextEditor = dynamic(
+//   () => import("@/components/common/rich-editor").then((mod) => mod.RichEditorField),
+//   { ssr: false, loading: () => <p>Loading Text Editor...</p> }
+// );
 
 
 export default function CreateTemplatePage() {
@@ -182,7 +189,7 @@ export default function CreateTemplatePage() {
             <CardDescription>Choose how you want to create your template</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <button
                 type="button"
                 onClick={() => handleTemplateTypeChange("text")}
@@ -197,7 +204,7 @@ export default function CreateTemplatePage() {
                 <div className="text-sm text-muted-foreground">Rich text editor</div>
               </button>
 
-              {/* <button
+              <button
                 type="button"
                 onClick={() => handleTemplateTypeChange("pdf")}
                 className={`p-4 border rounded-lg text-center transition-colors ${
@@ -209,7 +216,7 @@ export default function CreateTemplatePage() {
                 <File className="h-8 w-8 mx-auto mb-2 text-red-500" />
                 <div className="font-medium">PDF</div>
                 <div className="text-sm text-muted-foreground">Upload PDF file</div>
-              </button> */}
+              </button> 
 
               <button
                 type="button"
@@ -241,7 +248,7 @@ export default function CreateTemplatePage() {
             {formData.template_type === "text" ? (
               <div className="space-y-2">
                 <Label htmlFor="content">Content</Label>
-                <Textarea
+                {/* <Textarea
                   id="content"
                   placeholder="Enter your template content here. Use {{placeholder}} for dynamic values."
                   value={formData.content || ""}
@@ -251,7 +258,11 @@ export default function CreateTemplatePage() {
                 />
                 <p className="text-sm text-muted-foreground">
                   Use double curly braces for placeholders, e.g., {"{{employee_name}}"}, {"{{company_name}}"}
-                </p>
+                </p> */}
+                <RichEditorField
+                value={formData.content || ""}
+                  onChange={(value) => setFormData((prev) => ({ ...prev, content: value }))}
+                />
               </div>
             ) : (
               <div className="space-y-2">

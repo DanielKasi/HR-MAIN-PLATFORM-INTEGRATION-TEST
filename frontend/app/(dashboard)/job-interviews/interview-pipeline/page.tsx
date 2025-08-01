@@ -986,13 +986,7 @@ const allCandidatesWithHistory = React.useMemo(() => {
 
 
 
-useEffect(() => {
-  if (selectedInstitution?.id) {
-    console.log("Interview Stages from state:", interviewStages);
-  }
-}, [interviewStages]); // Watch the state, not call the API
-  // Process interviews into stages when job position changes
- // Update the useEffect that processes interviews into stages
+
 useEffect(() => {
   if (interviewStages.length > 0 && selectedJobPosition) {
     const stages = buildStagesForJob(interviewStages, interviews, selectedJobPosition.id)
@@ -1935,8 +1929,8 @@ const handleIndividualOnboard = async (candidate: InterviewCandidate | Interview
             <Building2 className="h-5 w-5" />
             Select Job Position / Title 
           </CardTitle>
-          <p className="text-muted-foreground mb-4">
-                Choose a job position / title above to manage its interview pipeline
+          <p className="text-muted-foreground py-4 my-4 text-sm">
+              Organize and track candidates through multiple interview stages for each job position. Create custom interview stages, assign interviewers, manage candidate progression, provide feedback, and monitor the entire recruitment pipeline from initial screening to final selection. View comprehensive interview history and make data-driven hiring decisions.
           </p>
         </CardHeader>
         <CardContent>
@@ -2942,7 +2936,7 @@ const handleIndividualOnboard = async (candidate: InterviewCandidate | Interview
               <Card>
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Pipeline Progress for {selectedJobPosition.name}</h3>
-                  <div className="flex items-center space-x-2 overflow-x-auto pb-4">
+                  <div className="flex items-center space-x-2 overflow-x-auto pb-4 px-2">
                     {processedStages.map((stage, index) => (
                       <div key={stage.id} className="flex items-center flex-shrink-0">
                         <div

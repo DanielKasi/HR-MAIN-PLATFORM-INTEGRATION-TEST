@@ -42,6 +42,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { getJobPositionAdverts, updateJobPositionAdvert } from "@/lib/utils";
@@ -49,6 +58,7 @@ import type { JobPositionAdvert, JobAdvertStatus, PaginatedResponse } from "@/ap
 import { toast } from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -112,12 +122,15 @@ export default function JobAdvertsPage() {
   const [dateRange, setDateRange] = useState<{ from: string | null; to: string | null }>({ from: null, to: null });
   const [error, setError] = useState("");
   const [isClosing, setIsClosing] = useState(false);
+  const [closingAdvertId, setClosingAdvertId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const router = useRouter();
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const selectedBranch = useSelector(selectSelectedBranch);
+
+  useDocumentTitle("JOB OPENINGS")
 
   const fetchJobAdverts = useCallback(
     async (showRefreshLoader = false, page = 1, size = DEFAULT_PAGE_SIZE) => {
@@ -189,18 +202,18 @@ export default function JobAdvertsPage() {
       const matchesSearch = !searchTerm.trim()
         ? true
         : advert.job_position_details?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          advert.extra_information?.toLowerCase().includes(searchTerm.toLowerCase());
+        advert.extra_information?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus = statusFilter === "all" || advert.job_position_advert_status === statusFilter;
 
       const matchesDateRange = !dateRange.from && !dateRange.to
         ? true
         : (() => {
-            const publishedDate = new Date(advert.published_date).getTime();
-            const fromDate = dateRange.from ? new Date(dateRange.from).getTime() : -Infinity;
-            const toDate = dateRange.to ? new Date(dateRange.to).getTime() : Infinity;
-            return publishedDate >= fromDate && publishedDate <= toDate;
-          })();
+          const publishedDate = new Date(advert.published_date).getTime();
+          const fromDate = dateRange.from ? new Date(dateRange.from).getTime() : -Infinity;
+          const toDate = dateRange.to ? new Date(dateRange.to).getTime() : Infinity;
+          return publishedDate >= fromDate && publishedDate <= toDate;
+        })();
 
       return matchesSearch && matchesStatus && matchesDateRange;
     });
@@ -261,6 +274,7 @@ export default function JobAdvertsPage() {
         toast.error("Failed to close job openings");
       } finally {
         setIsClosing(false);
+        setClosingAdvertId(null); // Reset the closing advert ID
       }
     },
     [fetchJobAdverts, currentPage, pageSize]
@@ -470,7 +484,7 @@ export default function JobAdvertsPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Published Date</TableHead>
                 <TableHead>Expiry Date</TableHead>
-                <TableHead>Expected Employees</TableHead>
+                <TableHead>Employees Required</TableHead>
                 <TableHead>Interview Stages</TableHead>
                 <TableHead>Additional Info</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -481,20 +495,22 @@ export default function JobAdvertsPage() {
                 <TableRow key={advert.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
-                      <div className={`h-8 w-8 rounded-full ${
-                        advert.job_position_advert_status === "active" 
-                          ? "bg-green-50" 
-                          : advert.job_position_advert_status === "expired"
-                          ? "bg-red-50"
-                          : "bg-gray-50"
-                      } flex items-center justify-center`}>
-                        <Megaphone className={`h-4 w-4 ${
-                          advert.job_position_advert_status === "active"
-                            ? "text-green-600"
+                      <div
+                        className={`h-8 w-8 rounded-full ${advert.job_position_advert_status === "active"
+                            ? "bg-green-50"
                             : advert.job_position_advert_status === "expired"
-                            ? "text-red-600"
-                            : "text-gray-600"
-                        }`} />
+                              ? "bg-red-50"
+                              : "bg-gray-50"
+                          } flex items-center justify-center`}
+                      >
+                        <Megaphone
+                          className={`h-4 w-4 ${advert.job_position_advert_status === "active"
+                              ? "text-green-600"
+                              : advert.job_position_advert_status === "expired"
+                                ? "text-red-600"
+                                : "text-gray-600"
+                            }`}
+                        />
                       </div>
                       <span>{advert.job_position_details?.name || "N/A"}</span>
                     </div>
@@ -504,9 +520,7 @@ export default function JobAdvertsPage() {
                       {advert.job_position_advert_status.toUpperCase()}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    {formatDate(advert.published_date)}
-                  </TableCell>
+                  <TableCell>{formatDate(advert.published_date)}</TableCell>
                   <TableCell>
                     <span className={`${isExpired(advert.expiry_date) ? "text-red-600 font-medium" : ""}`}>
                       {formatDate(advert.expiry_date)}
@@ -550,14 +564,44 @@ export default function JobAdvertsPage() {
                           </DropdownMenuItem>
                         </ProtectedComponent>
                         <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_JOB_ADVERTS}>
-                          <DropdownMenuItem
-                            onClick={() => handleCloseJobAdvert(advert.id)}
-                            className="text-destructive"
-                            disabled={isClosing}
+                          <Dialog
+                            open={closingAdvertId === advert.id}
+                            onOpenChange={(open) => setClosingAdvertId(open ? advert.id : null)}
                           >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Close
-                          </DropdownMenuItem>
+                            <DialogTrigger asChild>
+                              <DropdownMenuItem
+                                onSelect={(e) => e.preventDefault()}
+                                className="text-destructive"
+                                disabled={isClosing}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Close
+                              </DropdownMenuItem>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Are you sure you want to close this job opening?</DialogTitle>
+                                <DialogDescription>
+                                  Closing this job advert will change its status to "closed" and prevent further applications. This action cannot be undone.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <DialogFooter>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setClosingAdvertId(null)}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  onClick={() => handleCloseJobAdvert(advert.id)}
+                                  disabled={isClosing}
+                                >
+                                  {isClosing ? "Closing..." : "Close Job Opening"}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
                         </ProtectedComponent>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -582,7 +626,7 @@ export default function JobAdvertsPage() {
       {!isLoading && (
         <div className="text-sm text-muted-foreground">
           Showing {filteredJobAdverts.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to{" "}
-          {Math.min(currentPage * pageSize, filteredJobAdverts.length)} of {filteredJobAdverts.length} job adverts
+          {Math.min(currentPage * pageSize, filteredJobAdverts.length)} of {filteredJobAdverts.length} job openings
           {(searchTerm || statusFilter !== "all" || dateRange.from || dateRange.to) && ` (filtered from ${paginationInfo.count} total)`}
         </div>
       )}

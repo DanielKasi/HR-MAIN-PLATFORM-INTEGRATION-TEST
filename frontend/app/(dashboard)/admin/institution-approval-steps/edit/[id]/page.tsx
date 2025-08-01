@@ -8,17 +8,18 @@ import type {
   WorkflowAction,
 } from "@/app/types";
 
-import {useParams, useRouter} from "next/navigation";
-import {useEffect, useState} from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {SearchableSelect, type SearchableSelectItem} from "@/components/searchable-select";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { SearchableSelect, type SearchableSelectItem } from "@/components/searchable-select";
 import apiRequest from "@/lib/apiRequest";
-import {fetchInstitutionRoles} from "@/lib/helpers";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import {useSelector} from "react-redux";
+import { fetchInstitutionRoles } from "@/lib/helpers";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { useSelector } from "react-redux";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function EditApprovalStep() {
   const institutionId = useSelector(selectSelectedInstitution)?.id;
@@ -35,6 +36,8 @@ export default function EditApprovalStep() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+
+  useDocumentTitle("EDIT APPROVAL STEPS")
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,7 +69,7 @@ export default function EditApprovalStep() {
     fetchUserProfiles();
   }, [stepId]);
 
-  useEffect(() => {}, [selectedUserIds]);
+  useEffect(() => { }, [selectedUserIds]);
 
   const fetchUserProfiles = async () => {
     try {

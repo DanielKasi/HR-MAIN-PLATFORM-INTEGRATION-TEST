@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Edit, Trash2, Coins, Percent } from "lucide-react"
+import { Plus, Edit, Trash2, Coins, Percent, MoreVertical } from "lucide-react"
 import {
   Search,
   Download,
@@ -49,6 +49,7 @@ import {
   deleteEmployeeDeduction,
   getAllEmployees,
   getDeductionTypes,
+  createDeductionType,
 } from "@/lib/utils"
 import { IEmployeeDeductionFormData } from "@/app/types/types.utils"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
@@ -56,6 +57,7 @@ import { IUserInstitution } from "@/app/types"
 import { useSelector } from "react-redux"
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"
 import { select } from "redux-saga/effects"
+import { Textarea } from "@/components/ui/textarea"
 
 
 interface ApiEmployee {
@@ -210,7 +212,14 @@ export default function EmployeeDeductionComponent() {
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
-
+  const [isAddDeductionTypeDialogOpen, setIsAddDeductionTypeDialogOpen] = useState(false)
+  const [isCreatingDeductionType, setIsCreatingDeductionType] = useState(false)
+  const [newDeductionTypeForm, setNewDeductionTypeForm] = useState({
+  name: "",
+  description: "",
+  is_mandatory: false, 
+  is_active: true,
+})
 
   const [formData, setFormData] = useState({
     employee: "",
@@ -422,6 +431,66 @@ export default function EmployeeDeductionComponent() {
       setBulkDeductionData((prev) => prev.filter(data => !deptEmployeeIds.includes(data.employee_id)))
     }
   }
+
+const handleCreateDeductionType = async () => {
+  if (!newDeductionTypeForm.name || !newDeductionTypeForm.description) {
+    toast.error("Please fill in all required fields")
+    return
+  }
+
+  // Check for duplicates in frontend
+  const existingDeductionType = deductionTypes.find(
+    type => type.name.toLowerCase().trim() === newDeductionTypeForm.name.toLowerCase().trim()
+  )
+  
+  if (existingDeductionType) {
+    toast.error("A deduction type with this name already exists")
+    return
+  }
+
+  setIsCreatingDeductionType(true)
+  try {
+    const deductionTypeData = {
+      name: newDeductionTypeForm.name.trim(), // Trim whitespace
+      description: newDeductionTypeForm.description,
+      is_mandatory: newDeductionTypeForm.is_mandatory,
+      is_active: newDeductionTypeForm.is_active,
+    }
+
+    const newDeductionType = await createDeductionType({
+      institutionId: selectedInstitution!.id,
+      deductionTypeData,
+    })
+
+    if (newDeductionType) {
+      setDeductionTypes(prev => [...prev, {
+        id: newDeductionType.id,
+        name: newDeductionType.name
+      }])
+      
+      setFormData({ ...formData, deduction_type: newDeductionType.id.toString() })
+      
+      setNewDeductionTypeForm({
+        name: "",
+        description: "",
+        is_mandatory: false,
+        is_active: true,
+      })
+      setIsAddDeductionTypeDialogOpen(false)
+      toast.success("Deduction type created successfully")
+    }
+  } catch (error: any) {
+    if (error.response?.data?.code === "DUPLICATE_ENTRY" || 
+        error.message?.includes("already exists") ||
+        error.response?.status === 409) {
+      toast.error("A deduction type with this name already exists")
+    } else {
+      toast.error(error.message || "Failed to create deduction type")
+    }
+  } finally {
+    setIsCreatingDeductionType(false)
+  }
+}
 
   const handleBulkEmployeeSelection = (employeeId: number, checked: boolean) => {
     if (checked) {
@@ -863,7 +932,7 @@ export default function EmployeeDeductionComponent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-red-50/30">
+    <div>
       <div className="w-full px-2 py-8">
         {/* Header Section */}
         <div className="mb-8 px-2">
@@ -902,6 +971,79 @@ export default function EmployeeDeductionComponent() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              {/* Create Deduction Type Dialog */}
+              <Dialog open={isAddDeductionTypeDialogOpen} onOpenChange={setIsAddDeductionTypeDialogOpen}>
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
+                    <DialogTitle>Create New Deduction Type</DialogTitle>
+                    <DialogDescription>
+                      Add a new deduction type that can be used for employee deductions.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="new-name">Name *</Label>
+                      <Input
+                        id="new-name"
+                        value={newDeductionTypeForm.name}
+                        onChange={(e) => setNewDeductionTypeForm({ ...newDeductionTypeForm, name: e.target.value })}
+                        placeholder="e.g., Income Tax, Insurance Premium"
+                        disabled={isCreatingDeductionType}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="new-description">Description *</Label>
+                      <Textarea
+                        id="new-description"
+                        value={newDeductionTypeForm.description}
+                        onChange={(e) => setNewDeductionTypeForm({ ...newDeductionTypeForm, description: e.target.value })}
+                        placeholder="Describe this deduction type..."
+                        disabled={isCreatingDeductionType}
+                        rows={3}
+                      />
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="new-mandatory"
+                          checked={newDeductionTypeForm.is_mandatory}
+                          onChange={(e) => setNewDeductionTypeForm({ ...newDeductionTypeForm, is_mandatory: e.target.checked })}
+                          disabled={isCreatingDeductionType}
+                        />
+                        <Label htmlFor="new-mandatory">Mandatory</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="new-active"
+                          checked={newDeductionTypeForm.is_active}
+                          onChange={(e) => setNewDeductionTypeForm({ ...newDeductionTypeForm, is_active: e.target.checked })}
+                          disabled={isCreatingDeductionType}
+                        />
+                        <Label htmlFor="new-active">Active</Label>
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsAddDeductionTypeDialogOpen(false)}
+                      disabled={isCreatingDeductionType}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleCreateDeductionType}
+                      disabled={isCreatingDeductionType}
+                      className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                    >
+                      {isCreatingDeductionType && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Create Deduction Type
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               {/* Bulk Add Deductions Dialog */}
               <Dialog open={isBulkModalOpen} onOpenChange={setIsBulkModalOpen}>
@@ -1511,7 +1653,7 @@ export default function EmployeeDeductionComponent() {
                 <DialogTrigger asChild>
                   <Button
                     onClick={openNewDeductionDialog}
-                    className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2.5"
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2.5"
                     disabled={!selectedInstitution?.id}
                   >
                     <Plus className="mr-2 h-4 w-4" />
@@ -1529,9 +1671,13 @@ export default function EmployeeDeductionComponent() {
                   </DialogHeader>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
                     <div className="space-y-2">
-                      <Label htmlFor="employee" className="text-sm font-medium">
-                        Employee *
-                      </Label>
+                      <div className="flex items-center justify-between h-8">
+                        <Label htmlFor="employee" className="text-sm font-medium">
+                          Employee *
+                        </Label>
+                        {/* Empty div for spacing consistency */}
+                        <div className="h-8 w-8"></div>
+                      </div>
                       <EmployeeSearchableSelect
                         employees={employees}
                         value={[formData.employee]}
@@ -1539,7 +1685,7 @@ export default function EmployeeDeductionComponent() {
                         disabled={saving}
                         placeholder="Search and select employee"
                         showEmployeeId={false}
-                        showDepartment={true}
+                        showDepartment={false}
                       />
                       {validationErrors.employee && (
                         <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -1550,14 +1696,26 @@ export default function EmployeeDeductionComponent() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="deduction_type" className="text-sm font-medium">
-                        Deduction Type *
-                      </Label>
-                      <Select
-                        value={formData.deduction_type}
-                        onValueChange={(value) => setFormData({ ...formData, deduction_type: value })}
-                        disabled={saving}
-                      >
+                       <div className="flex items-center justify-between h-8">
+                        <Label htmlFor="deduction_type" className="text-sm font-medium">
+                          Deduction Type *
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsAddDeductionTypeDialogOpen(true)}
+                          disabled={saving}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                       <Select
+                          value={formData.deduction_type}
+                          onValueChange={(value) => setFormData({ ...formData, deduction_type: value })}
+                          disabled={saving}
+                        >
                         <SelectTrigger className={`focus:ring-red-500 focus:border-red-500 ${validationErrors.deduction_type ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
                           }`}>
                           <SelectValue placeholder="Please select a deduction type" />
@@ -1748,7 +1906,7 @@ export default function EmployeeDeductionComponent() {
                     </Button>
                     <Button
                       onClick={handleSubmit}
-                      className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
+                      className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
                       disabled={saving || !employees.length || !deductionTypes.length || hasValidationErrors()}
                     >
                       {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -1965,7 +2123,7 @@ export default function EmployeeDeductionComponent() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
-                            <MoreHorizontal className="h-4 w-4 text-gray-600" />
+                            <MoreVertical className="h-4 w-4 text-gray-600" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">

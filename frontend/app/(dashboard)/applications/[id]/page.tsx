@@ -557,12 +557,13 @@ export default function ApplicationViewPage() {
   return (
     <div className="w-full min-h-full p-6 space-y-6">
       {/* Header */}
-      <Button variant="outline" size="sm" onClick={handleGoBack}>
+
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col items-start xl:flex-row xl:items-center gap-4">
+                <Button variant="outline" size="sm" onClick={handleGoBack}>
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
             <div className="flex items-center justify-start gap-8">
               <h1 className="text-2xl font-bold">Application from {application.applicant_name}</h1>
               <Badge className="mt-1 bg-green-500 text-white hover:!bg-green-500">

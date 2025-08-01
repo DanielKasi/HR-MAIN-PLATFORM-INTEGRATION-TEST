@@ -56,6 +56,7 @@ import {IUserInstitution, USER_GENDER} from "@/app/types";
 import {SimpleCalendarWidget} from "@/components/calendar-widget";
 import { TasksCards } from "@/components/dashboard_components/tasks-cards";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Link from "next/link";
 
 // Interface for employee data from API
 interface EmployeeFromAPI {
@@ -466,24 +467,24 @@ const StatsCards = ({
       color: "bg-emerald-50 text-emerald-600",
       trend: "up",
     },
-    {
-      title: "Turnover Rate",
-      subtitle: "Quarterly rate",
-      value: `${stats.turnoverRate}%`,
-      change: "-2.1% from last quarter",
-      icon: UserX,
-      color: "bg-red-50 text-red-600",
-      trend: "down",
-    },
-    {
-      title: "Satisfaction Score",
-      subtitle: "Employee happiness",
-      value: `${stats.satisfactionScore}/5`,
-      change: "+0.3 from last survey",
-      icon: Heart,
-      color: "bg-pink-50 text-pink-600",
-      trend: "up",
-    },
+    // {
+    //   title: "Turnover Rate",
+    //   subtitle: "Quarterly rate",
+    //   value: `${stats.turnoverRate}%`,
+    //   change: "-2.1% from last quarter",
+    //   icon: UserX,
+    //   color: "bg-red-50 text-red-600",
+    //   trend: "down",
+    // },
+    // {
+    //   title: "Satisfaction Score",
+    //   subtitle: "Employee happiness",
+    //   value: `${stats.satisfactionScore}/5`,
+    //   change: "+0.3 from last survey",
+    //   icon: Heart,
+    //   color: "bg-pink-50 text-pink-600",
+    //   trend: "up",
+    // },
   ];
 
   return (
@@ -833,13 +834,18 @@ const RecentActivities = ({
 };
 
 const QuickActions = () => {
-  const actions = [
-    {title: "Add New Employee", icon: UserPlus, color: "bg-blue-500 hover:bg-blue-600"},
-    {title: "Approve Leave Requests", icon: Calendar, color: "bg-green-500 hover:bg-green-600"},
-    {title: "Schedule Interview", icon: Clock, color: "bg-orange-500 hover:bg-orange-600"},
-    {title: "Post Job Advert", icon: Megaphone, color: "bg-purple-500 hover:bg-purple-600"},
-    {title: "View Reports", icon: BarChart3, color: "bg-indigo-500 hover:bg-indigo-600"},
-    {title: "Manage Policies", icon: Settings, color: "bg-gray-500 hover:bg-gray-600"},
+  const actions:Array<{
+    title: string;
+    icon: any;
+    color: string;
+    actionUrl?: string;
+  }> = [
+    {title: "Add New Employee", icon: UserPlus, color: "bg-blue-500 hover:bg-blue-600", actionUrl:"/employees/add-employee"},
+    {title: "Leave Management", icon: Calendar, color: "bg-green-500 hover:bg-green-600", actionUrl:"/leave/leave-policy"},
+    {title: "Schedule Interview", icon: Clock, color: "bg-orange-500 hover:bg-orange-600", actionUrl:"/job-interviews/create"},
+    {title: "Post Job Opening", icon: Megaphone, color: "bg-purple-500 hover:bg-purple-600", actionUrl:"/job-adverts/create"},
+    // {title: "View Reports", icon: BarChart3, color: "bg-indigo-500 hover:bg-indigo-600"},
+    // {title: "Manage Policies", icon: Settings, color: "bg-gray-500 hover:bg-gray-600", actionUrl:"/leave/leave-policy"},
   ];
 
   return (
@@ -850,13 +856,13 @@ const QuickActions = () => {
       </h3>
       <div className="grid grid-cols-2 gap-3">
         {actions.map((action, index) => (
-          <button
+          <Link href={action.actionUrl || "#"}
             key={index}
             className={`${action.color} text-white p-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 hover:transform hover:scale-105 hover:shadow-lg`}
           >
             <action.icon className="h-4 w-4" />
             <span className="hidden lg:inline">{action.title}</span>
-          </button>
+          </Link>
         ))}
       </div>
     </div>
