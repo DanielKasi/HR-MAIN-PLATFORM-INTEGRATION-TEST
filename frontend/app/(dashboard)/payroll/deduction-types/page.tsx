@@ -381,7 +381,7 @@ const DeductionTypesComponent = () => {
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g., Income Tax, Health Insurance"
                     disabled={isSubmitting}
-                    className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                    className="h-12 rounded-xl border-gray-200 focus:border-500 focus:ring-500/20 text-base"
                   />
                 </div>
                 <div className="space-y-3">
@@ -393,7 +393,7 @@ const DeductionTypesComponent = () => {
                     rows={4}
                     placeholder="Provide a detailed description of this deduction type..."
                     disabled={isSubmitting}
-                    className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base resize-none"
+                    className="rounded-xl border-gray-200 focus:border-500 focus:ring-500/20 text-base resize-none"
                   />
                 </div>
                 <div className="bg-gray-50 rounded-xl p-4 space-y-4">
@@ -553,16 +553,6 @@ const DeductionTypesComponent = () => {
               ? "No deduction types match your filter criteria."
               : "Get started by creating your first deduction type."}
           </p>
-          {searchTerm || statusFilter !== "all" ? (
-            <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
-              Clear Filters
-            </Button>
-          ) : (
-            <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Create First Deduction Type
-            </Button>
-          )}
         </Card>
       ) : (
         <Card className="rounded-md border">
@@ -758,7 +748,7 @@ const DeductionTypesComponent = () => {
                 rows={4}
                 placeholder="Provide a detailed description of this deduction type..."
                 disabled={isSubmitting}
-                className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base resize-none"
+                className="rounded-xl border-gray-200 focus:border-500 focus:ring-500/20 text-base resize-none"
               />
             </div>
             <div className="bg-gray-50 rounded-xl p-4 space-y-4">

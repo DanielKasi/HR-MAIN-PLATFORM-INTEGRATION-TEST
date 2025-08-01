@@ -23,6 +23,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
   Table,
   TableBody,
   TableCell,
@@ -69,8 +74,11 @@ import {
   deletePayrollPeriod,
   generatePeriodName,
   checkPeriodOverlap,
+  getAllEmployees,
+  getPayslips,
+  createBulkPayslips
 } from "@/lib/utils";
-import { IPayrollPeriod, IPayrollPeriodFormData } from "@/app/types/types.utils";
+import { IPayrollPeriod, IPayrollPeriodFormData, IEmployee,IPayslip, } from "@/app/types/types.utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/app/types/types.utils";
@@ -107,9 +115,193 @@ export default function PayrollPeriods() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [employees, setEmployees] = useState<IEmployee[]>([]);
+  const [payslips, setPayslips] = useState<any[]>([]);
+  const [availablePayrollPeriods, setAvailablePayrollPeriods] = useState<IPayrollPeriod[]>([]);
+  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+  const [generateFormData, setGenerateFormData] = useState({
+    payroll_period_id: "",
+  });
+  const [generating, setGenerating] = useState(false);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
+  // Add these helper functions
+  const fetchEmployeesAndPayslips = useCallback(async () => {
+  if (!selectedInstitution?.id) {
+    setEmployees([]);
+    setPayslips([]);
+    setAvailablePayrollPeriods([]);
+    return;
+  }
+
+  try {
+    // Fetch employees
+    const fetchedEmployees = await getAllEmployees({ institutionId: selectedInstitution.id });
+    if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
+      const formattedEmployees = fetchedEmployees
+        .filter((emp) => emp.id && emp.id.toString() !== "0");
+      setEmployees(formattedEmployees);
+    } else {
+      setEmployees([]);
+    }
+
+    // Fetch payslips
+    const payslipsData: any = await getPayslips(selectedInstitution.id);
+    if (payslipsData && Array.isArray(payslipsData)) {
+      setPayslips(payslipsData);
+    } else {
+      setPayslips([]);
+    }
+
+    // Filter available periods for payslip generation
+// Filter available periods for payslip generation
+const filteredPeriods = payrollPeriods.filter((period) => {
+  // Get today's date
+  const today = new Date();
+  const payDate = new Date(period.pay_date);
+  
+  // Create date objects with only year, month, day (no time)
+  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const payDateOnly = new Date(payDate.getFullYear(), payDate.getMonth(), payDate.getDate());
+  
+  // Allow payslip generation if pay date is today or in the past
+  const payDateReached = payDateOnly <= todayOnly;
+  
+  // Check if there are incomplete payslips for this period
+  const periodPayslips = payslipsData.filter(
+    (payslip: any) => payslip.payroll_period.id === period.id
+  );
+  const employeesWithPayslips = new Set(
+    periodPayslips.map((payslip: any) => payslip.employee.id.toString())
+  );
+  
+  // Use the correct variable name here
+  const formattedEmployeesLength = fetchedEmployees && Array.isArray(fetchedEmployees) 
+    ? fetchedEmployees.filter((emp) => emp.id && emp.id.toString() !== "0").length 
+    : 0;
+  
+  const hasIncompletePayslips = employeesWithPayslips.size < formattedEmployeesLength;
+  
+  console.log('Period:', period.name);
+  console.log('Pay Date Reached:', payDateReached);
+  console.log('Has Incomplete Payslips:', hasIncompletePayslips);
+  console.log('Employees with payslips:', employeesWithPayslips.size);
+  console.log('Total formatted employees:', formattedEmployeesLength);
+  
+  return payDateReached && hasIncompletePayslips;
+});
+    
+    setAvailablePayrollPeriods(filteredPeriods); // ← This was missing!
+
+  } catch (error) {
+    console.error("Error fetching employees and payslips:", error);
+    setEmployees([]);
+    setPayslips([]);
+    setAvailablePayrollPeriods([]);
+  }
+}, [selectedInstitution?.id, payrollPeriods]);
+
+const resetGenerateForm = () => {
+  setGenerateFormData({
+    payroll_period_id: "",
+  });
+};
+
+const handleGenerateInputChange = (field: string, value: string) => {
+  setGenerateFormData((prev) => ({
+    ...prev,
+    [field]: value,
+  }));
+};
+
+
+const handleGeneratePayslips = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!selectedInstitution) {
+    toast.error("Institution ID is required");
+    return;
+  }
+
+  if (!generateFormData.payroll_period_id) {
+    toast.error("Please select a payroll period", { duration: 5000 });
+    return;
+  }
+
+  const payrollPeriod = availablePayrollPeriods.find(
+    (period) => period.id === Number.parseInt(generateFormData.payroll_period_id)
+  );
+  if (!payrollPeriod) {
+    toast.error("Invalid payroll period selected", { duration: 5000 });
+    return;
+  }
+
+  // Get employees who don't have payslips for this period
+  const existingPayslipEmployeeIds = new Set(
+    payslips
+      .filter((p) => p.payroll_period.id.toString() === generateFormData.payroll_period_id)
+      .map((p) => p.employee.id.toString())
+  );
+  const eligibleEmployeeIds = employees
+    .filter((emp) => !existingPayslipEmployeeIds.has(emp.id.toString()))
+    .map((emp) => parseInt(emp.id.toString()));
+
+  if (eligibleEmployeeIds.length === 0) {
+    toast.info("All employees already have payslips for this period.", {
+      duration: 5000,
+    });
+    setIsGenerateModalOpen(false);
+    return;
+  }
+
+  setGenerating(true);
+
+  try {
+    const newPayslips = await createBulkPayslips({
+      institutionId: selectedInstitution.id,
+      payrollPeriodId: parseInt(generateFormData.payroll_period_id),
+      employeeIds: eligibleEmployeeIds,
+    });
+
+    if (newPayslips && Array.isArray(newPayslips)) {
+      toast.success(`Successfully generated ${newPayslips.length} payslips`, {
+        duration: 5000,
+      });
+      
+      // Update the payroll period status to processed
+      const updatedPeriods = payrollPeriods.map((period) => {
+        if (period.id.toString() === generateFormData.payroll_period_id) {
+          return {
+            ...period,
+            is_processed: true
+          };
+        }
+        return period;
+      });
+      
+      // Update the payroll periods state
+      setPayrollPeriods(updatedPeriods);
+      
+      // Refresh data to get the latest payslips and update available periods
+      await fetchEmployeesAndPayslips();
+      
+    } else {
+      toast.error("Failed to generate payslips", {
+        duration: 5000,
+      });
+    }
+
+    setIsGenerateModalOpen(false);
+    resetGenerateForm();
+  } catch (error: any) {
+    toast.error(error.message || "An error occurred while processing payslips", {
+      duration: 5000,
+    });
+  } finally {
+    setGenerating(false);
+  }
+};
   // Fetch payroll periods
   const fetchPayrollPeriods = useCallback(async () => {
     if (!selectedInstitution?.id) {
@@ -138,6 +330,13 @@ export default function PayrollPeriods() {
   useEffect(() => {
     fetchPayrollPeriods();
   }, [fetchPayrollPeriods]);
+
+
+  useEffect(() => {
+  if (payrollPeriods.length > 0) {
+    fetchEmployeesAndPayslips();
+  }
+}, [fetchEmployeesAndPayslips, payrollPeriods]);
 
   // Auto-generate period name
   useEffect(() => {
@@ -401,168 +600,319 @@ export default function PayrollPeriods() {
   return (
     <div className="w-full h-full p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Payroll Periods</h1>
-          <p className="text-muted-foreground">
-            Manage payroll periods for {selectedInstitution?.institution_name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+  <div>
+    <h1 className="text-2xl font-bold text-gray-900">Payroll Periods</h1>
+    <p className="text-muted-foreground">
+      Manage payroll periods for {selectedInstitution?.institution_name}
+    </p>
+  </div>
+  <div className="flex items-center gap-2">
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleRefresh}
+      disabled={isRefreshing}
+      className="flex items-center gap-2"
+    >
+      <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+      Refresh
+    </Button>
+    
+    {/* Add Period Button */}
+    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_PAYROLL_PERIODS}>
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogTrigger asChild>
           <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="flex items-center gap-2"
+            onClick={resetForm}
+            className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 flex items-center gap-2"
           >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            Refresh
+            <Plus className="h-4 w-4" />
+            Add Period
           </Button>
-          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_PAYROLL_PERIODS}>
-            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  onClick={resetForm}
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Period
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[650px] rounded-2xl border-0 shadow-2xl">
-                <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
-                  <DialogTitle className="text-2xl font-bold text-gray-900">
-                    {editingPeriod ? "Edit Payroll Period" : "Add New Payroll Period"}
-                  </DialogTitle>
-                  <DialogDescription className="text-gray-600 text-base">
-                    Configure payroll period details and dates
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="name" className="text-sm font-semibold text-gray-800">
-                      Period Name *
-                    </Label>
-                    <Input
-                      id="name"
-                      type="text"
-                      placeholder="Enter period name"
-                      value={formData.name}
-                      onChange={(e) => handleInputChange("name", e.target.value)}
-                      disabled={saving}
-                      className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
-                        validationErrors.name ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                      }`}
-                    />
-                    {validationErrors.name && (
-                      <p className="text-xs text-red-500 mt-1 flex items-center">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        {validationErrors.name}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="start_date" className="text-sm font-semibold text-gray-800">
-                      Start Date *
-                    </Label>
-                    <Input
-                      id="start_date"
-                      type="date"
-                      value={formData.start_date}
-                      onChange={(e) => handleInputChange("start_date", e.target.value)}
-                      disabled={saving}
-                      className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
-                        validationErrors.start_date ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                      }`}
-                    />
-                    {validationErrors.start_date && (
-                      <p className="text-xs text-red-500 mt-1 flex items-center">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        {validationErrors.start_date}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="end_date" className="text-sm font-semibold text-gray-800">
-                      End Date *
-                    </Label>
-                    <Input
-                      id="end_date"
-                      type="date"
-                      value={formData.end_date}
-                      onChange={(e) => handleInputChange("end_date", e.target.value)}
-                      disabled={saving}
-                      min={formData.start_date}
-                      className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
-                        validationErrors.end_date ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                      }`}
-                    />
-                    {validationErrors.end_date && (
-                      <p className="text-xs text-red-500 mt-1 flex items-center">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        {validationErrors.end_date}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="pay_date" className="text-sm font-semibold text-gray-800">
-                      Pay Date *
-                    </Label>
-                    <Input
-                      id="pay_date"
-                      type="date"
-                      value={formData.pay_date}
-                      onChange={(e) => handleInputChange("pay_date", e.target.value)}
-                      disabled={saving}
-                      className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
-                        validationErrors.pay_date ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                      }`}
-                    />
-                    {validationErrors.pay_date && (
-                      <p className="text-xs text-red-500 mt-1 flex items-center">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        {validationErrors.pay_date}
-                      </p>
-                    )}
-                  </div>
-                  {validationErrors.warning && (
-                    <div className="md:col-span-2 bg-amber-50 rounded-xl p-4">
-                      <div className="flex items-start gap-2">
-                        <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                        <p className="text-sm font-medium text-amber-800">{validationErrors.warning}</p>
-                      </div>
-                    </div>
-                  )}
-                </form>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsModalOpen(false)}
-                    disabled={saving}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={saving || hasValidationErrors()}
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
-                  >
-                    {saving ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        {editingPeriod ? "Updating..." : "Creating..."}
-                      </>
-                    ) : (
-                      editingPeriod ? "Update Period" : "Create Period"
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </ProtectedComponent>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[650px] rounded-2xl border-0 shadow-2xl">
+          <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
+            <DialogTitle className="text-2xl font-bold text-gray-900">
+              {editingPeriod ? "Edit Payroll Period" : "Add New Payroll Period"}
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 text-base">
+              Configure payroll period details and dates
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+            <div className="space-y-3">
+              <Label htmlFor="name" className="text-sm font-semibold text-gray-800">
+                Period Name *
+              </Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Enter period name"
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                disabled={saving}
+                className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
+                  validationErrors.name ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                }`}
+              />
+              {validationErrors.name && (
+                <p className="text-xs text-red-500 mt-1 flex items-center">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  {validationErrors.name}
+                </p>
+              )}
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="start_date" className="text-sm font-semibold text-gray-800">
+                Start Date *
+              </Label>
+              <Input
+                id="start_date"
+                type="date"
+                value={formData.start_date}
+                onChange={(e) => handleInputChange("start_date", e.target.value)}
+                disabled={saving}
+                className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
+                  validationErrors.start_date ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                }`}
+              />
+              {validationErrors.start_date && (
+                <p className="text-xs text-red-500 mt-1 flex items-center">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  {validationErrors.start_date}
+                </p>
+              )}
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="end_date" className="text-sm font-semibold text-gray-800">
+                End Date *
+              </Label>
+              <Input
+                id="end_date"
+                type="date"
+                value={formData.end_date}
+                onChange={(e) => handleInputChange("end_date", e.target.value)}
+                disabled={saving}
+                min={formData.start_date}
+                className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
+                  validationErrors.end_date ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                }`}
+              />
+              {validationErrors.end_date && (
+                <p className="text-xs text-red-500 mt-1 flex items-center">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  {validationErrors.end_date}
+                </p>
+              )}
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="pay_date" className="text-sm font-semibold text-gray-800">
+                Pay Date *
+              </Label>
+              <Input
+                id="pay_date"
+                type="date"
+                value={formData.pay_date}
+                onChange={(e) => handleInputChange("pay_date", e.target.value)}
+                disabled={saving}
+                className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
+                  validationErrors.pay_date ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                }`}
+              />
+              {validationErrors.pay_date && (
+                <p className="text-xs text-red-500 mt-1 flex items-center">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  {validationErrors.pay_date}
+                </p>
+              )}
+            </div>
+            {validationErrors.warning && (
+              <div className="md:col-span-2 bg-amber-50 rounded-xl p-4">
+                <div className="flex items-start gap-2">
+                  <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm font-medium text-amber-800">{validationErrors.warning}</p>
+                </div>
+              </div>
+            )}
+          </form>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsModalOpen(false)}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={saving || hasValidationErrors()}
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  {editingPeriod ? "Updating..." : "Creating..."}
+                </>
+              ) : (
+                editingPeriod ? "Update Period" : "Create Period"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </ProtectedComponent>
+
+    {/* Generate Payslips Button with Popover */}
+    <Popover>
+      <PopoverTrigger asChild>
+        <div className="relative">
+          <Button
+            onClick={() => {
+              resetGenerateForm();
+              setIsGenerateModalOpen(true);
+            }}
+            className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400"
+            disabled={!selectedInstitution?.id || employees.length === 0 || availablePayrollPeriods.length === 0}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Generate Payslips
+          </Button>
+          
+          {/* Show info icon when disabled */}
+          {(!selectedInstitution?.id || employees.length === 0 || availablePayrollPeriods.length === 0) && (
+            <Info className="w-4 h-4 text-amber-500 absolute -top-1 -right-1 cursor-help" />
+          )}
         </div>
+      </PopoverTrigger>
+      
+      {(!selectedInstitution?.id || employees.length === 0 || availablePayrollPeriods.length === 0) && (
+        <PopoverContent className="w-80" side="bottom" align="end">
+          <div className="space-y-2">
+            <h4 className="font-medium text-sm">Why is this button disabled?</h4>
+            <div className="text-xs text-gray-600 space-y-1">
+              {!selectedInstitution?.id && (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                  Please select an institution first
+                </div>
+              )}
+              {selectedInstitution?.id && employees.length === 0 && (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                  No employees found. Add employees to generate payslips
+                </div>
+              )}
+              {selectedInstitution?.id && employees.length > 0 && availablePayrollPeriods.length === 0 && (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+                  No payroll periods available for payslip generation
+                </div>
+              )}
+            </div>
+            
+            {selectedInstitution?.id && employees.length > 0 && availablePayrollPeriods.length === 0 && (
+              <div className="mt-3 p-2 bg-blue-50 rounded text-xs text-blue-800">
+                <strong>Tip:</strong> Payroll periods only appear here when their pay date has been reached and not all employees have payslips yet.
+              </div>
+            )}
+          </div>
+        </PopoverContent>
+      )}
+    </Popover>
+  </div>
+</div>
+
+
+{/* Generate Payslips Dialog - Place this OUTSIDE the header */}
+<Dialog open={isGenerateModalOpen} onOpenChange={setIsGenerateModalOpen}>
+  <DialogContent className="max-w-2xl">
+    <DialogHeader>
+      <DialogTitle>Generate Payslips</DialogTitle>
+      <DialogDescription>
+        Select a payroll period to generate payslips for employees without existing payslips
+      </DialogDescription>
+    </DialogHeader>
+    <form onSubmit={handleGeneratePayslips} className="space-y-6">
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="payroll_period">Payroll Period *</Label>
+          <Select
+            value={generateFormData.payroll_period_id}
+            onValueChange={(value) => handleGenerateInputChange("payroll_period_id", value)}
+            disabled={generating || availablePayrollPeriods.length === 0}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select payroll period" />
+            </SelectTrigger>
+            <SelectContent>
+              {availablePayrollPeriods.length > 0 ? (
+                availablePayrollPeriods.map((period) => (
+                  <SelectItem key={period.id} value={period.id.toString()}>
+                    {period.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="px-2 py-1.5 text-sm text-gray-500">
+                  {payrollPeriods.some(p => new Date(p.pay_date) > new Date()) 
+                    ? "No payroll periods with reached pay dates available for payslip generation"
+                    : "All payroll periods have payslips generated for all employees"
+                  }
+                </div>  
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {employees.length > 0 && generateFormData.payroll_period_id && (
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-blue-900 mb-2">
+              Payslips will be generated for{" "}
+              {employees.length -
+                payslips.filter(
+                  (p) => p.payroll_period.id.toString() === generateFormData.payroll_period_id
+                ).length}{" "}
+              employees
+            </h4>
+            <div className="text-sm text-blue-800">
+              This will create payslips for employees without existing payslips in the selected period.
+            </div>
+          </div>
+        )}
       </div>
+
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={() => setIsGenerateModalOpen(false)} disabled={generating}>
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          className="bg-orange-600 hover:bg-orange-700"
+          disabled={
+            generating ||
+            !generateFormData.payroll_period_id ||
+            availablePayrollPeriods.length === 0 ||
+            (generateFormData.payroll_period_id !== "" &&
+              employees.length -
+              payslips.filter(
+                (p) => p.payroll_period.id.toString() === generateFormData.payroll_period_id
+              ).length === 0)
+          }
+        >
+          {generating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Generate Payslips for{" "}
+          {generateFormData.payroll_period_id
+            ? employees.length -
+            payslips.filter(
+              (p) => p.payroll_period.id.toString() === generateFormData.payroll_period_id
+            ).length
+            : employees.length}{" "}
+          Employees
+        </Button>
+      </DialogFooter>
+    </form>
+  </DialogContent>
+</Dialog>
 
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
@@ -663,24 +1013,6 @@ export default function PayrollPeriods() {
               ? "No payroll periods match your filter criteria."
               : "Get started by creating your first payroll period."}
           </p>
-          {searchTerm || filterStatus !== "all" ? (
-            <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
-              Clear Filters
-            </Button>
-          ) : (
-            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_PAYROLL_PERIODS}>
-              <Button
-                onClick={() => {
-                  resetForm();
-                  setIsModalOpen(true);
-                }}
-                className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
-              >
-                <Plus className="h-4 w-4" />
-                Create First Payroll Period
-              </Button>
-            </ProtectedComponent>
-          )}
         </div>
       ) : (
         <Table>
