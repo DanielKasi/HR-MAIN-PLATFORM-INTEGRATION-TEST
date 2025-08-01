@@ -41,7 +41,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@radix-ui/react-dropdown-menu";
-import router from "next/router";
+import router from "next/navigation";
 
 interface DisplayPayslip {
   id: number;
@@ -486,7 +486,7 @@ export default function Payslips() {
           <div className="flex justify-between items-center">
             <Button
               variant="outline"
-              onClick={() => router.back()} // ✅ Use hook result
+               onClick={() => window.history.back()}  // ✅ Use hook result
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
