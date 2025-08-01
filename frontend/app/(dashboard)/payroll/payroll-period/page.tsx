@@ -1005,7 +1005,7 @@ const handleGeneratePayslips = async (e: React.FormEvent) => {
           ))}
         </div>
       ) : filteredPeriods.length === 0 ? (
-        <div className="p-12 text-center">
+        <Card className="p-12 text-center">
           <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No payroll periods found</h3>
           <p className="text-muted-foreground mb-4">
@@ -1013,7 +1013,8 @@ const handleGeneratePayslips = async (e: React.FormEvent) => {
               ? "No payroll periods match your filter criteria."
               : "Get started by creating your first payroll period."}
           </p>
-        </div>
+
+        </Card>
       ) : (
         <Table>
           <TableHeader className="bg-gray-50/80 sticky top-0 z-10">

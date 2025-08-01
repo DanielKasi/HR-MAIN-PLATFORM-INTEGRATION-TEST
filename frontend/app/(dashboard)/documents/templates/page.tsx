@@ -23,6 +23,7 @@ import { getDocumentTemplates, deleteDocumentTemplate } from "@/lib/utils"
 import { IDocumentTemplate } from "@/app/types/types.utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
+import RichTextDisplay from "@/components/common/rich-text-display"
 
 
 
@@ -206,8 +207,9 @@ export default function DocumentTemplatesPage() {
 
                 {template.content && (
                   <div>
-                    <p className="text-sm font-medium mb-1">Preview:</p>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{template.content}</p>
+                    <p className="text-sm font-medium mb-2">Preview:</p>
+                    {/* <p >{template.content}</p> */}
+                    <RichTextDisplay className="text-sm text-muted-foreground line-clamp-2"   htmlContent={template.content} />
                   </div>
                 )}
               </div>

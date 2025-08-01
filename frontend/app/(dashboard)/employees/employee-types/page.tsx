@@ -301,8 +301,6 @@ export default function EmployeeTypeManagement() {
     setCurrentPage(1)
   }
 
-  // Temporary debug - remove this after testing
-  console.log("Current state - employeeTypes:", employeeTypes.length, "searchTerm:", `"${searchTerm}"`, "filteredTypes:", filteredTypes.length)
 
   // Fetch employee types on component mount
   useEffect(() => {
@@ -317,7 +315,6 @@ export default function EmployeeTypeManagement() {
     try {
       setLoading(true)
       const data = await getEmployeeTypes({ institutionId: selectedInstitution.id })
-      console.log("Fetched employee types:", data) // Debug log
       setEmployeeTypes(data)
     } catch (error) {
       console.error("Error fetching employee types:", error)

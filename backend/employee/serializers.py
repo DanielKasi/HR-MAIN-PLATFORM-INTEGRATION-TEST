@@ -280,6 +280,7 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "status",
+            "differences",
         ]
         read_only_fields = ["contract_reference", "created_at", "status", "updated_at"]
 
