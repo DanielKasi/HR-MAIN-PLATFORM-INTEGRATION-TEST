@@ -23,6 +23,10 @@ from django.utils.text import slugify
 from docx import Document
 from weasyprint import HTML
 from utilities.helpers import get_or_create_default_role_with_permissions
+from django.core.validators import FileExtensionValidator
+import PyPDF2
+from io import BytesIO
+from django.core.files.base import ContentFile
 
 
 
@@ -234,6 +238,18 @@ class EmployeeActivationSerializer(serializers.Serializer):
     department = serializers.CharField(max_length=100, required=False, allow_blank=True)
     date_of_joining = serializers.DateField(required=False, allow_null=True)
 
+def validate_pdf(file):
+    """Validate that the file is a valid PDF."""
+    print(f"Validating PDF: {file.name}")
+    try:
+        file.seek(0)
+        PyPDF2.PdfReader(BytesIO(file.read()))
+        file.seek(0)
+        print("PDF validation successful")
+    except Exception as e:
+        print(f"PDF validation failed: {str(e)}")
+        raise serializers.ValidationError(f"Invalid PDF file: {str(e)}")
+    return file
 
 class EmployeeContractSerializer(serializers.ModelSerializer):
    
@@ -242,6 +258,14 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
     )
     employee = serializers.PrimaryKeyRelatedField(
         queryset=Employee.objects.all(), required=False, allow_null=True
+    )
+    original_contract = serializers.FileField(
+        validators=[FileExtensionValidator(allowed_extensions=['pdf']), validate_pdf],
+        required=False
+    )
+    signed_contract = serializers.FileField(
+        validators=[FileExtensionValidator(allowed_extensions=['pdf']), validate_pdf],
+        required=False
     )
     class Meta:
         model = EmployeeContract
@@ -255,8 +279,9 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
             "signed_contract",
             "created_at",
             "updated_at",
+            "status",
         ]
-        read_only_fields = ["contract_reference", "created_at", "updated_at"]
+        read_only_fields = ["contract_reference", "created_at", "status", "updated_at"]
 
     def create(self, validated_data):
         # Generate contract_reference
@@ -264,6 +289,34 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
         contract.contract_reference = contract.generate_contract_reference()
         contract.save()
         return contract
+
+    def update(self, instance, validated_data):
+        if 'signed_contract' in validated_data:
+            signed_contract = validated_data['signed_contract']
+            try:
+                signed_contract.seek(0)
+                content = signed_contract.read()
+                validated_data['signed_contract'] = ContentFile(content, name=signed_contract.name)
+            except Exception as e:
+                raise serializers.ValidationError(f"Failed to read signed_contract: {str(e)}")
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        # Save the instance to persist signed_contract
+        instance.save()
+
+        # Run comparison after saving to set status
+        if 'signed_contract' in validated_data and instance.original_contract:
+            try:
+                instance.compare_contracts()
+                instance.save()  # Save again to persist status
+            except ValidationError as e:
+                raise serializers.ValidationError(
+                    f"Contract comparison failed: {str(e)}"
+                )
+
+        return instance
 
     def to_representation(self, instance):
         from recruitment.serializers import JobAdvertApplicationSerializer
