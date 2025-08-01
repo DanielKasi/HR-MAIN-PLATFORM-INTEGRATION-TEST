@@ -1,53 +1,28 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Calendar, ArrowLeft, Search, Filter, Upload, CalendarDays, Clock, User } from "lucide-react";
-import { fetchEmployeeAttendanceRecords } from "@/lib/utils.attendance";
-import { fetchEmployeeDetail } from "@/lib/utils";
-import { useSelector } from "react-redux";
-import { selectAttachedInstitutions, selectSelectedInstitution } from "@/store/auth/selectors";
-import { IUserInstitution } from "@/app/types";
+import React, {useState, useEffect} from "react";
+import {useParams, useRouter} from "next/navigation";
+import {Card, CardHeader, CardTitle, CardContent} from "@/components/ui/card";
+import {Badge} from "@/components/ui/badge";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import { ArrowLeft, Search, Filter, Upload, CalendarDays, Clock, User} from "lucide-react";
+
+import {AttendanceAPI, getEmployeeById} from "@/lib/utils";
+
 import Link from "next/link";
+import { IAttendance, IEmployee } from "@/app/types/types.utils";
 
-interface AttendanceRecord {
-  id: number;
-  employee: {
-    id: number;
-    user: {
-      fullname: string;
-      email: string;
-      branches?: { branch_closing_time: string }[];
-    };
-    department: {
-      name: string;
-    };
-  };
-  check_in_time: string;
-  check_out_time: string | null;
-  status: string;
-  date: string;
-}
 
-interface Employee {
-  id: number;
-  name: string;
-  department: string;
-  email: string;
-}
+
+
 
 const EmployeeAttendanceHistory = () => {
   const params = useParams();
   const router = useRouter();
   const employeeId = params.id as string;
-  
-  console.log("[DEBUG] employeeId param:", employeeId);
-  
-  const [employee, setEmployee] = useState<Employee | null>(null);
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+
+  const [employee, setEmployee] = useState<IEmployee | null>(null);
+  const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -57,93 +32,71 @@ const EmployeeAttendanceHistory = () => {
     return date.toISOString().slice(0, 10);
   });
   const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
-  
-  const selectedInstitution = useSelector(selectSelectedInstitution);
-  const [InstitutionId, setInstitutionId] = useState<string | null>(null);
-  const InstitutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
-
-  useEffect(() => {
-    if (selectedInstitution) {
-      setInstitutionId(selectedInstitution.id.toString());
-    } else if (InstitutionsAttached && InstitutionsAttached.length > 0) {
-      setInstitutionId(String(InstitutionsAttached[0].id));
-    }
-  }, [InstitutionsAttached, selectedInstitution]);
-
   // Fetch employee details
   useEffect(() => {
-    const loadEmployee = async () => {
-      if (!employeeId) {
-        console.log("[DEBUG] No employeeId, skipping employee fetch");
-        return;
-      }
-      try {
-        console.log("[DEBUG] Fetching employee detail for:", employeeId);
-        const data = await fetchEmployeeDetail(Number(employeeId));
-        setEmployee({
-          id: data.id,
-          name: data.user?.fullname || "",
-          department: data.department?.name || "",
-          email: data.email || ""
-        });
-        console.log("[DEBUG] Employee detail fetched:", data);
-      } catch (err) {
-        setError("Failed to load employee details");
-        console.error("[DEBUG] Error fetching employee detail:", err);
-      }
-    };
     loadEmployee();
   }, [employeeId]);
 
+  const loadEmployee = async () => {
+    if (!employeeId) {
+      return;
+    }
+    try {
+      const data = await getEmployeeById({employeeId});
+      setEmployee(data);
+    } catch (err) {
+      setError("Failed to load employee details");
+    }
+  };
+
   // Fetch attendance records
   useEffect(() => {
-    const loadAttendanceRecords = async () => {
-      if (!employeeId) {
-        console.log("[DEBUG] No employeeId, skipping attendance fetch");
-        return;
-      }
-      try {
-        setLoading(true);
-        console.log("[DEBUG] Fetching attendance records for:", employeeId, startDate, endDate);
-        const records = await fetchEmployeeAttendanceRecords(
-          parseInt(employeeId),
-          startDate,
-          endDate
-        );
-        setAttendanceRecords(records || []);
-        setError(null);
-        console.log("[DEBUG] Attendance records fetched:", records);
-      } catch (err) {
-        setError("Failed to load attendance records");
-        setAttendanceRecords([]);
-        console.error("[DEBUG] Error fetching attendance records:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     loadAttendanceRecords();
   }, [employeeId, startDate, endDate]);
 
+  const loadAttendanceRecords = async () => {
+    if (!employeeId) {
+      return;
+    }
+    try {
+      setLoading(true);
+      const response = await AttendanceAPI.fetchEmployeeAttendanceRecords(
+        parseInt(employeeId),
+        startDate,
+        endDate,
+      );
+      setAttendanceRecords(response.results);
+      setError(null);
+    } catch (err) {
+      setError("Failed to load attendance records");
+      setAttendanceRecords([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filter records by search
-  const filteredRecords = attendanceRecords.filter(record => 
-    record.date.toLowerCase().includes(search.toLowerCase()) ||
-    record.status.toLowerCase().includes(search.toLowerCase())
+  const filteredRecords = attendanceRecords.filter(
+    (record) =>
+      record.date.toLowerCase().includes(search.toLowerCase()) ||
+      record.status.toLowerCase().includes(search.toLowerCase()),
   );
 
   // Calculate statistics
   const stats = {
     totalDays: attendanceRecords.length,
-    presentDays: attendanceRecords.filter(r => r.check_in_time).length,
-    absentDays: attendanceRecords.filter(r => !r.check_in_time).length,
-    averageHours: attendanceRecords
-      .filter(r => r.check_in_time && r.check_out_time)
-      .reduce((acc, r) => {
-        const checkIn = new Date(`2000-01-01T${r.check_in_time}`);
-        const checkOut = new Date(`2000-01-01T${r.check_out_time}`);
-        const hours = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
-        return acc + hours;
-      }, 0) / Math.max(attendanceRecords.filter(r => r.check_in_time && r.check_out_time).length, 1)
+    presentDays: attendanceRecords.filter((r) => r.check_in_time).length,
+    absentDays: attendanceRecords.filter((r) => !r.check_in_time).length,
+    averageHours:
+      attendanceRecords
+        .filter((r) => r.check_in_time && r.check_out_time)
+        .reduce((acc, r) => {
+          const checkIn = new Date(`2000-01-01T${r.check_in_time}`);
+          const checkOut = new Date(`2000-01-01T${r.check_out_time}`);
+          const hours = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
+          return acc + hours;
+        }, 0) /
+      Math.max(attendanceRecords.filter((r) => r.check_in_time && r.check_out_time).length, 1),
   };
 
   const formatTime = (timeString: string) => {
@@ -154,12 +107,12 @@ const EmployeeAttendanceHistory = () => {
   const formatDate = (dateString: string) => {
     const d = new Date(dateString);
     const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
 
-  const getStatusBadge = (record: AttendanceRecord) => {
+  const getStatusBadge = (record: IAttendance) => {
     if (!record.check_in_time) {
       return <Badge variant="destructive">Absent</Badge>;
     }
@@ -171,15 +124,15 @@ const EmployeeAttendanceHistory = () => {
 
   const calculateWorkHours = (checkIn: string, checkOut: string | null) => {
     if (!checkIn || !checkOut) return "N/A";
-    
+
     const checkInTime = new Date(`2000-01-01T${checkIn}`);
     const checkOutTime = new Date(`2000-01-01T${checkOut}`);
     const diffMs = checkOutTime.getTime() - checkInTime.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
-    
+
     const hours = Math.floor(diffHours);
     const minutes = Math.floor((diffHours - hours) * 60);
-    
+
     return `${hours}h ${minutes}m`;
   };
 
@@ -195,7 +148,7 @@ const EmployeeAttendanceHistory = () => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
-    return `${h > 0 ? h + 'h ' : ''}${m > 0 ? m + 'm ' : ''}${s}s`;
+    return `${h > 0 ? h + "h " : ""}${m > 0 ? m + "m " : ""}${s}s`;
   }
 
   // Helper to calculate work hours in seconds
@@ -207,7 +160,11 @@ const EmployeeAttendanceHistory = () => {
   }
 
   // Helper to calculate overtime in seconds
-  function calculateOvertimeSeconds(checkOut: string | null, branchClosingTime: string | null, date: string) {
+  function calculateOvertimeSeconds(
+    checkOut: string | null,
+    branchClosingTime: string | null,
+    date: string,
+  ) {
     if (!checkOut || !branchClosingTime) return 0;
     const checkOutDate = new Date(`${date}T${checkOut}`);
     const closingDate = new Date(`${date}T${branchClosingTime}`);
@@ -246,7 +203,7 @@ const EmployeeAttendanceHistory = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 ">
           <div className="flex items-center gap-4 mb-4">
             <Link href="/employees/attendance">
               <Button variant="outline" size="sm">
@@ -255,16 +212,14 @@ const EmployeeAttendanceHistory = () => {
               </Button>
             </Link>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Attendance History
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Attendance History</h1>
           {employee && (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <User className="w-5 h-5 text-gray-500" />
-                <span className="text-lg font-semibold text-gray-700">{employee.name}</span>
+                <span className="text-lg font-semibold text-gray-700">{employee.user?.fullname || ""}</span>
               </div>
-              <Badge variant="outline">{employee.department}</Badge>
+              <Badge variant="outline">{employee.department.name}</Badge>
               <span className="text-gray-500">{employee.email}</span>
             </div>
           )}
@@ -283,7 +238,7 @@ const EmployeeAttendanceHistory = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
@@ -295,7 +250,7 @@ const EmployeeAttendanceHistory = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
@@ -307,7 +262,7 @@ const EmployeeAttendanceHistory = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
@@ -369,11 +324,7 @@ const EmployeeAttendanceHistory = () => {
               </div>
               <div className="flex flex-col gap-1 justify-end">
                 <label className="block text-sm font-medium text-gray-700 mb-1">&nbsp;</label>
-                <Button 
-                  onClick={setToday}
-                  variant="outline"
-                  className="w-full h-11 font-semibold"
-                >
+                <Button onClick={setToday} variant="outline" className="w-full h-11 font-semibold">
                   Today
                 </Button>
               </div>
@@ -411,13 +362,12 @@ const EmployeeAttendanceHistory = () => {
                   </div>
                 ) : (
                   filteredRecords.map((record) => (
-                    <div key={record.id} className="grid grid-cols-7 gap-4 p-4 border-b hover:bg-gray-50 items-center">
-                      <div className="font-medium">
-                        {formatDate(record.date)}
-                      </div>
-                      <div>
-                        {getStatusBadge(record)}
-                      </div>
+                    <div
+                      key={record.id}
+                      className="grid grid-cols-7 gap-4 p-4 border-b hover:bg-gray-50 items-center"
+                    >
+                      <div className="font-medium">{formatDate(record.date)}</div>
+                      <div>{getStatusBadge(record)}</div>
                       <div>
                         {record.check_in_time ? (
                           <Badge className="bg-green-100 text-green-800">
@@ -438,14 +388,22 @@ const EmployeeAttendanceHistory = () => {
                       </div>
                       <div className="font-medium">
                         {(() => {
-                          const secs = calculateWorkSeconds(record.check_in_time, record.check_out_time);
-                          return secs !== null ? formatDuration(secs) : 'N/A';
+                          const secs = calculateWorkSeconds(
+                            record.check_in_time,
+                            record.check_out_time,
+                          );
+                          return secs !== null ? formatDuration(secs) : "N/A";
                         })()}
                       </div>
                       <div className="font-medium">
                         {(() => {
-                          const branchClosingTime = record.employee.user.branches?.[0]?.branch_closing_time || null;
-                          const overtimeSecs = calculateOvertimeSeconds(record.check_out_time, branchClosingTime, record.date);
+                          const branchClosingTime =
+                            record.employee.user?.branches?.[0]?.branch_closing_time || null;
+                          const overtimeSecs = calculateOvertimeSeconds(
+                            record.check_out_time,
+                            branchClosingTime,
+                            record.date,
+                          );
                           return overtimeSecs > 0 ? formatDuration(overtimeSecs) : "—";
                         })()}
                       </div>
@@ -461,4 +419,4 @@ const EmployeeAttendanceHistory = () => {
   );
 };
 
-export default EmployeeAttendanceHistory; 
+export default EmployeeAttendanceHistory;

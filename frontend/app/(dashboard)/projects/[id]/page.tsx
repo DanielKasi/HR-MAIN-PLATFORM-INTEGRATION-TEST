@@ -24,6 +24,7 @@ import {
   FileText,
   TrendingUp,
   Activity,
+  MoreVertical,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -331,7 +332,7 @@ export default function ProjectDetailsPage() {
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
+                                <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">

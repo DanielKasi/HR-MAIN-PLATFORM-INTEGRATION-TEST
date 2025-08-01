@@ -19,7 +19,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Plus, CheckCircle, Clock, Users, Loader2, ChevronLeft, ChevronRight, FileText, MoreVertical, Trash2 } from "lucide-react";
+import { Plus, CheckCircle, Clock, Users, Loader2, ChevronLeft, ChevronRight, FileText, MoreVertical, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useSelector } from "react-redux";
 import {
@@ -29,9 +29,10 @@ import {
   getAllEmployees,
   getPayrollPeriods,
   createBulkPayslips,
+  downloadPayrollDocument,
 } from "@/lib/utils";
 import { IEmployee, IPayrollPeriod, IPayslip } from "@/app/types/types.utils";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,6 +82,7 @@ export default function Payslips() {
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const accessToken = useSelector(selectAccessToken)
 
   const params = useParams();
   const router = useRouter();
@@ -260,6 +262,15 @@ export default function Payslips() {
     setItemsPerPage(items);
     setCurrentPage(1);
   };
+
+  const handleDowloadPayroll = async () =>{
+    if(!periodId){return}
+    try {
+      await downloadPayrollDocument({accessToken, payrollId:periodId})
+    } catch (error) {
+      
+    }
+  }
 
   const getPageNumbers = () => {
     const pages = [];
@@ -563,6 +574,15 @@ export default function Payslips() {
                   </div>
                 </DialogContent>
               </Dialog>
+
+              <Button
+                    onClick={handleDowloadPayroll}
+                    className="bg-orange-600 hover:bg-orange-700 shadow-md"
+                    disabled={!selectedInstitution?.id || employees.length === 0 }
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
             </div>
           </div>
         </CardHeader>
@@ -616,7 +636,8 @@ export default function Payslips() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mx-2">
+        {/* Results Table */}
+        <div className="bg-white rounded-lg shadow-sm  overflow-hidden mx-2">
           <div className="p-4 border-b border-gray-200">
             <div className="flex justify-between items-center">
               <div>

@@ -228,7 +228,7 @@ export default function DepartmentsPage() {
 
       {/* Departments Table */}
       {isLoading ? (
-        <Table>
+        <Table className="rounded-md border bg-gray-50">
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -269,55 +269,82 @@ export default function DepartmentsPage() {
           )}
         </Card>
       ) : (
-        <div className="border rounded-md">
+        <Card className="border rounded-md bg-white shadow-sm">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-muted/50">
                 <TableHead className="w-[50px]"></TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
+                <TableHead className="font-semibold">Name</TableHead>
+                <TableHead className="font-semibold">Description</TableHead>
                 <TableHead className="w-[100px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredDepartments.map((department) => (
-                <TableRow key={department.id} className="hover:bg-muted/50">
+              {filteredDepartments.map((department, index) => (
+                <TableRow 
+                  key={department.id} 
+                  className={`
+                    hover:bg-muted/50 transition-colors
+                    ${index % 2 === 0 ? 'bg-white' : 'bg-muted/5'}
+                  `}
+                >
                   <TableCell>
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center ring-1 ring-primary/20">
                       <Building2 className="h-4 w-4 text-primary" />
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">{department.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {department.description || "No description"}
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-sm">{department.name}</span>
+                      <span className="text-xs text-muted-foreground">ID: {department.id}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {department.description ? (
+                      <div className="flex flex-col">
+                        <span className="text-sm">{department.description}</span>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-muted-foreground italic">No description</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 hover:bg-muted/50"
+                        >
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="w-48">
                         <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DEPARTMENTS}>
-                          <DropdownMenuItem onClick={() => handleViewDepartment(department.id)}>
+                          <DropdownMenuItem 
+                            onClick={() => handleViewDepartment(department.id)}
+                            className="hover:bg-muted/50"
+                          >
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
                         </ProtectedComponent>
                         <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_DEPARTMENTS}>
-                          <DropdownMenuItem onClick={() => handleEditDepartment(department.id)}>
+                          <DropdownMenuItem 
+                            onClick={() => handleEditDepartment(department.id)}
+                            className="hover:bg-muted/50"
+                          >
                             <Edit className="h-4 w-4 mr-2" />
-                            Edit
+                            Edit Department
                           </DropdownMenuItem>
                         </ProtectedComponent>
                         <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_DEPARTMENTS}>
                           <DropdownMenuItem
                             onClick={() => handleDeleteDepartment(department)}
-                            className="text-destructive"
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                            Delete Department
                           </DropdownMenuItem>
                         </ProtectedComponent>
                       </DropdownMenuContent>
@@ -327,7 +354,7 @@ export default function DepartmentsPage() {
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Card>
       )}
 
       {/* Delete Confirmation Modal */}

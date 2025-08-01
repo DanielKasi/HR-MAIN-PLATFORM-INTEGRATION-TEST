@@ -845,7 +845,7 @@ const QuickActions = () => {
     {title: "Schedule Interview", icon: Clock, color: "bg-orange-500 hover:bg-orange-600", actionUrl:"/job-interviews/create"},
     {title: "Post Job Opening", icon: Megaphone, color: "bg-purple-500 hover:bg-purple-600", actionUrl:"/job-adverts/create"},
     // {title: "View Reports", icon: BarChart3, color: "bg-indigo-500 hover:bg-indigo-600"},
-    {title: "Manage Policies", icon: Settings, color: "bg-gray-500 hover:bg-gray-600", actionUrl:"/leave/leave-policy"},
+    // {title: "Manage Policies", icon: Settings, color: "bg-gray-500 hover:bg-gray-600", actionUrl:"/leave/leave-policy"},
   ];
 
   return (

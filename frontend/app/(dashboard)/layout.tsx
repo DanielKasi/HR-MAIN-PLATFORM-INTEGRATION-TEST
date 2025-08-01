@@ -454,27 +454,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       : pathname === item.href;
     const isExpanded = expandedItems[item.title];
 
-    if (item.title === "Admin") {
-      return (
-        <Button
-          key={item.title}
-          variant="ghost"
-          className={`w-full !rounded-3xl flex items-center justify-start px-4 py-8 !h-12 text-sm font-medium text-gray-600 ${isActive ? "bg-orange-500 bg-opacity-40" : "hover:bg-orange-500/60 hover:bg-opacity-60"}`}
-          onClick={() => router.push(item.href)}
-        >
-          <div className="flex items-center space-x-2">
-            {item.icon}
-            {isSideBarOpen && <span>{item.title}</span>}
-          </div>
-        </Button>
-      );
-    }
+    // if (item.title === "Admin") {
+    //   return (
+    //     <Button
+    //       key={item.title}
+    //       variant="ghost"
+    //       className={`w-full !rounded-3xl flex items-center justify-start px-4 py-8 !h-12 text-sm font-medium text-gray-600 ${isActive ? "bg-orange-500 bg-opacity-40" : "hover:bg-orange-500/60 hover:bg-opacity-60"}`}
+    //       onClick={() => router.push(item.href)}
+    //     >
+    //       <div className="flex items-center space-x-2">
+    //         {item.icon}
+    //         {isSideBarOpen && <span>{item.title}</span>}
+    //       </div>
+    //     </Button>
+    //   );
+    // }
 
     return (
       <div key={item.title} className="w-full py-1">
         <Button
           variant="ghost"
-          className={`w-full !rounded-xl flex items-center justify-between px-4 !py-6 text-sm font-medium text-gray-600 ${isActive ? "bg-orange-500/60 bg-opacity-20" : "hover:bg-orange-500 hover:bg-opacity-30"}`}
+          className={`w-full !rounded-xl flex items-center justify-between px-4 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 ${isActive ? "bg-primary/80 text-gray-100" : "hover:bg-opacity-30"}`}
           onClick={() => (item.submenu ? toggleExpand(item.title) : router.push(item.href))}
         >
           <div className="flex items-center space-x-2">
@@ -490,14 +490,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             ))}
         </Button>
         {item.submenu && isExpanded && (
-          <div className="ml-6 flex flex-col gap-2 mt-2 border-l-2 border-primary/20 bg-gray-200/20">
+          <div className="ml-6 flex flex-col mt-2 border-l-2 border-primary/20 bg-gray-200/20">
             {item.submenu.map(
               (sub) =>
                 isSideBarOpen && (
                   <Button
                     key={sub.href}
                     variant="ghost"
-                    className={`w-full !rounded-none !text-left flex items-start px-2 !py-3 text-sm text-gray-600 ${pathname === sub.href ? "bg-orange-500/20" : "hover:bg-orange-500/30"}`}
+                    className={`w-full !rounded-none !text-left flex items-center px-2 !py-4 text-sm text-gray-600 hover:bg-primary/80 ${pathname === sub.href ? "bg-primary/80  text-gray-100" : "bg-gray-200/20  hover:bg-primary/60"}`}
                     onClick={() => router.push(sub.href)}
                   >
                     <span className="!w-full !text-left !bg-transparent">{sub.title}</span>

@@ -18,6 +18,7 @@ import {
   LineChart,
   Lock,
   MoreHorizontal,
+  MoreVertical,
   PlayCircle,
   Shield,
   Sparkles,
@@ -420,7 +421,7 @@ export default function LandingPage() {
                           <LineChart className="h-5 w-5 text-primary" />
                         </div>
                         <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                          <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
+                          <MoreVertical className="h-5 w-5 text-muted-foreground" />
                         </button>
                       </div>
                     </div>

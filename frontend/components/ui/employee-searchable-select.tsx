@@ -59,9 +59,6 @@ export const EmployeeSearchableSelect = ({
     const email = getEmployeeEmail(employee)
     const details = []
 
-    if (showEmployeeId && employee.employee_id && employee.employee_id !== employee.id.toString()) {
-      details.push(`ID: ${employee.employee_id}`)
-    }
 
     if (showDepartment && employee.department) {
       details.push(employee.department)
@@ -75,7 +72,7 @@ export const EmployeeSearchableSelect = ({
     return {
       id: employee.id,
       label: label,
-      value: `${name} ${email} ${employee.employee_id || ""} ${employee.department || ""}`.toLowerCase(),
+      value: `${name} ${email} ${employee.department || ""}`.toLowerCase(),
     }
   })
 

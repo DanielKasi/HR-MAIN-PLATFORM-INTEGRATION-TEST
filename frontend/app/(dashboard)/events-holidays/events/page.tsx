@@ -23,6 +23,7 @@ import {
   Edit,
   Trash2,
   MoreHorizontal,
+  MoreVertical,
 } from "lucide-react";
 import Link from "next/link";
 import {useSelector} from "react-redux";
@@ -311,7 +312,7 @@ export default function EventsPage() {
                           size="sm"
                           className="opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <MoreHorizontal className="h-4 w-4" />
+                          <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">

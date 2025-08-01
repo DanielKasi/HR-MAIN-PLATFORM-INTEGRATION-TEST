@@ -7,7 +7,7 @@ import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
 import {Badge} from "@/components/ui/badge";
 import {toast} from "sonner";
-import {Plus, Pencil, Trash2, CheckCircle2, XCircle, MoreHorizontal} from "lucide-react";
+import {Plus, Pencil, Trash2, CheckCircle2, XCircle, MoreHorizontal, MoreVertical} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -504,7 +504,7 @@ export default function SeparationPolicyTypesPage() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

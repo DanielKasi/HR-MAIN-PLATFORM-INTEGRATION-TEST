@@ -507,12 +507,11 @@ export default function EmployeesPage() {
   const [error, setError] = useState<string | null>(null);
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);
-  const InstitutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
 
   // function to load Employees
   useEffect(() => {
     loadEmployees();
-  }, [selectedInstitution, InstitutionsAttached]);
+  }, [selectedInstitution]);
 
   const loadEmployees = async () => {
     if (!selectedInstitution) {
