@@ -2,16 +2,16 @@
 
 import type React from "react";
 
-import {useState, useEffect} from "react";
-import {Filter, Search, SortAsc, SortDesc} from "lucide-react";
-import {useRouter, useSearchParams} from "next/navigation";
-import {formatDistanceToNow} from "date-fns";
-import {useSelector} from "react-redux";
+import { useState, useEffect } from "react";
+import { Filter, Search, SortAsc, SortDesc } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { formatDistanceToNow } from "date-fns";
+import { useSelector } from "react-redux";
 
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
-import {Input} from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -19,9 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {useWebSocket} from "@/lib/WebSocketProvider";
-import {selectUser} from "@/store/auth/selectors";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useWebSocket } from "@/lib/WebSocketProvider";
+import { selectUser } from "@/store/auth/selectors";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export interface DisplayTask {
   id: number;
@@ -30,16 +31,16 @@ export interface DisplayTask {
   time: string;
   link: string;
   type:
-    | "product_approval"
-    | "stock_approval"
-    | "purchase_order_approval"
-    | "stock_movement_to_branch"
-    | "stock_movement_to_shelf"
-    | "return_request"
-    | "other";
+  | "product_approval"
+  | "stock_approval"
+  | "purchase_order_approval"
+  | "stock_movement_to_branch"
+  | "stock_movement_to_shelf"
+  | "return_request"
+  | "other";
 }
 
-export type TaskType = "incoming" |"outgoing" | "all"|"open"|"critical"|"expired";
+export type TaskType = "incoming" | "outgoing" | "all" | "open" | "critical" | "expired";
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<DisplayTask[]>([]);
@@ -54,7 +55,9 @@ export default function TasksPage() {
   const router = useRouter();
   const taskId = useSearchParams().get("taskId");
   const currentUser = useSelector(selectUser);
-  const {tasks: apiTasks, connected, sendMessage} = useWebSocket();
+  const { tasks: apiTasks, connected, sendMessage } = useWebSocket();
+
+  useDocumentTitle("TASKS")
 
   // Convert API tasks to display format
   useEffect(() => {
@@ -72,11 +75,11 @@ export default function TasksPage() {
       .filter(
         (task) =>
           task.status === "pending" &&
-          (task.step.roles_details.find((role: {id: number}) =>
+          (task.step.roles_details.find((role: { id: number }) =>
             currentUser?.roles.some((u_role) => u_role.id === role.id),
           ) ||
             task.step.approvers_details?.map(
-              (appr: {approver_user: {user: {id: number | undefined}}}) =>
+              (appr: { approver_user: { user: { id: number | undefined } } }) =>
                 appr.approver_user.user.id === currentUser?.id,
             )),
       )
@@ -135,7 +138,7 @@ export default function TasksPage() {
   // Request fresh data when component mounts
   useEffect(() => {
     if (connected) {
-      sendMessage({type: "fetch_tasks"});
+      sendMessage({ type: "fetch_tasks" });
     }
   }, [connected, sendMessage]);
 
@@ -190,7 +193,7 @@ export default function TasksPage() {
 
   const refreshTasks = () => {
     if (connected) {
-      sendMessage({type: "fetch_tasks"});
+      sendMessage({ type: "fetch_tasks" });
     }
   };
 

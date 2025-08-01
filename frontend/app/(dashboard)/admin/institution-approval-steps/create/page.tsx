@@ -1,14 +1,14 @@
 "use client";
 import type React from "react";
-import type {Role, UserProfile, WorkflowAction} from "@/app/types";
+import type { Role, UserProfile, WorkflowAction } from "@/app/types";
 
-import {useRouter} from "next/navigation";
-import {useEffect, useState} from "react";
-import {toast} from "react-toastify";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -17,10 +17,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import apiRequest from "@/lib/apiRequest";
-import {fetchInstitutionRoles, getDefaultInstitutionId} from "@/lib/helpers";
-import {useSelector} from "react-redux";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
+import { fetchInstitutionRoles, getDefaultInstitutionId } from "@/lib/helpers";
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
 import next from "next";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function CreateApprovalStep() {
   const institutionId = useSelector(selectSelectedInstitution)?.id;
@@ -35,6 +36,8 @@ export default function CreateApprovalStep() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+
+  useDocumentTitle("CREATE AN APPROVAL STEP")
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,8 +63,8 @@ export default function CreateApprovalStep() {
 
   const fetchAllRoles = async () => {
     try {
-      let allRoles:Role[] = [];
-      let nextUrl:string|null = `user/role/?Institution_id=${getDefaultInstitutionId()}`;
+      let allRoles: Role[] = [];
+      let nextUrl: string | null = `user/role/?Institution_id=${getDefaultInstitutionId()}`;
       while (nextUrl) {
         const response = await apiRequest.get(nextUrl);
         allRoles = allRoles.concat(response.data.results);
@@ -69,7 +72,7 @@ export default function CreateApprovalStep() {
         if (response.data.next) {
           const receivedNextUrl = new URL(response.data.next);
           nextUrl = `user/role/?Institution_id=${getDefaultInstitutionId()}&${receivedNextUrl.search}`;
-        }else{
+        } else {
           nextUrl = null;
         }
       }

@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import {useState, useEffect, useMemo} from "react";
-import {useRouter} from "next/navigation";
-import {useSelector} from "react-redux";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 import {
   Users,
   Plus,
@@ -28,20 +28,20 @@ import {
   Briefcase,
 } from "lucide-react";
 
-import {Button} from "@/components/ui/button";
-import {Card, CardContent} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Badge} from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {Skeleton} from "@/components/ui/skeleton";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Avatar, AvatarFallback} from "@/components/ui/avatar";
-import {Checkbox} from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -50,13 +50,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
-import {getInterviews, bulkCreateOnBoarding} from "@/lib/utils";
-import type {IInterview} from "@/app/types/types.utils";
-import {PERMISSION_CODES} from "@/app/types/types.utils";
-import {toast} from "sonner";
+import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
+import { getInterviews, bulkCreateOnBoarding } from "@/lib/utils";
+import type { IInterview } from "@/app/types/types.utils";
+import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { toast } from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import {formatCurrency} from "@/lib/helpers"
+import { formatCurrency } from "@/lib/helpers"
+import { useDocumentTitle } from "@/hooks/use-document-title";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -64,10 +65,10 @@ const DEFAULT_PAGE_SIZE = 10;
 
 // Status options for filtering
 const STATUS_OPTIONS = [
-  {value: "all", label: "All Statuses"},
-  {value: "scheduled", label: "Scheduled"},
-  {value: "completed", label: "Completed"},
-  {value: "cancelled", label: "Cancelled"},
+  { value: "all", label: "All Statuses" },
+  { value: "scheduled", label: "Scheduled" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
 export default function InterviewsPage() {
@@ -82,7 +83,7 @@ export default function InterviewsPage() {
   // Filter and pagination states
   const [statusFilter, setStatusFilter] = useState("all");
   const [interviewerFilter, setInterviewerFilter] = useState("all");
-  const [dateRange, setDateRange] = useState<{from: string | null; to: string | null}>({
+  const [dateRange, setDateRange] = useState<{ from: string | null; to: string | null }>({
     from: null,
     to: null,
   });
@@ -93,6 +94,8 @@ export default function InterviewsPage() {
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const selectedBranch = useSelector(selectSelectedBranch);
 
+  useDocumentTitle("JOB INTERVIEWS")
+
   // Get unique interviewers for filter
   const interviewers = useMemo(() => {
     const uniqueInterviewers = new Set<string>();
@@ -102,8 +105,8 @@ export default function InterviewsPage() {
       });
     });
     return [
-      {value: "all", label: "All Interviewers"},
-      ...Array.from(uniqueInterviewers).map((name) => ({value: name, label: name})),
+      { value: "all", label: "All Interviewers" },
+      ...Array.from(uniqueInterviewers).map((name) => ({ value: name, label: name })),
     ];
   }, [interviews]);
 
@@ -132,7 +135,7 @@ export default function InterviewsPage() {
       }
       setError("");
 
-      const fetchedInterviews = await getInterviews({institutionId: selectedInstitution.id});
+      const fetchedInterviews = await getInterviews({ institutionId: selectedInstitution.id });
 
       if (fetchedInterviews) {
         setInterviews(fetchedInterviews);
@@ -268,7 +271,7 @@ export default function InterviewsPage() {
   };
 
   const getRatingStars = (rating: number) => {
-    return Array.from({length: 5}, (_, i) => (
+    return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
         className={`h-3 w-3 ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
@@ -323,7 +326,7 @@ export default function InterviewsPage() {
 
     setIsOnboarding(true);
     try {
-      const result = await bulkCreateOnBoarding({applicationIds});
+      const result = await bulkCreateOnBoarding({ applicationIds });
       if (result) {
         toast.success(`Successfully onboarded ${applicationIds.length} candidates`);
         setSelectedInterviews([]);
@@ -352,7 +355,7 @@ export default function InterviewsPage() {
     setSearchTerm("");
     setStatusFilter("all");
     setInterviewerFilter("all");
-    setDateRange({from: null, to: null});
+    setDateRange({ from: null, to: null });
     setCurrentPage(1);
   };
 
@@ -437,25 +440,25 @@ export default function InterviewsPage() {
               <p className="text-xs text-muted-foreground">Scheduled</p>
             </CardContent>
           </Card>
-        <Card>
-  <CardContent className="p-4">
-    {(() => {
-      const ratedInterviews = interviews.filter((i) => i.rating);
-      const averageRating =
-        ratedInterviews.reduce((sum, i) => sum + (i.rating || 0), 0) /
-          ratedInterviews.length || 0;
-      const roundedAverage = Math.round(averageRating);
-      return (
-        <>
-          <div className="text-2xl font-bold">
-            {formatCurrency(roundedAverage)}
-          </div>
-          <p className="text-xs text-muted-foreground">Avg Rating</p>
-        </>
-      );
-    })()}
-  </CardContent>
-</Card>
+          <Card>
+            <CardContent className="p-4">
+              {(() => {
+                const ratedInterviews = interviews.filter((i) => i.rating);
+                const averageRating =
+                  ratedInterviews.reduce((sum, i) => sum + (i.rating || 0), 0) /
+                  ratedInterviews.length || 0;
+                const roundedAverage = Math.round(averageRating);
+                return (
+                  <>
+                    <div className="text-2xl font-bold">
+                      {formatCurrency(roundedAverage)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Avg Rating</p>
+                  </>
+                );
+              })()}
+            </CardContent>
+          </Card>
 
 
         </div>
@@ -502,14 +505,14 @@ export default function InterviewsPage() {
               type="date"
               placeholder="From date"
               value={dateRange.from || ""}
-              onChange={(e) => setDateRange((prev) => ({...prev, from: e.target.value}))}
+              onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
               className="w-[140px]"
             />
             <Input
               type="date"
               placeholder="To date"
               value={dateRange.to || ""}
-              onChange={(e) => setDateRange((prev) => ({...prev, to: e.target.value}))}
+              onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
               className="w-[140px]"
             />
           </div>
@@ -518,10 +521,10 @@ export default function InterviewsPage() {
             interviewerFilter !== "all" ||
             dateRange.from ||
             dateRange.to) && (
-            <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
-              Clear Filters
-            </Button>
-          )}
+              <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
+                Clear Filters
+              </Button>
+            )}
         </div>
       </div>
 
@@ -589,18 +592,18 @@ export default function InterviewsPage() {
             <h3 className="text-lg font-semibold mb-2">No interviews found</h3>
             <p className="text-muted-foreground mb-4">
               {searchTerm ||
-              statusFilter !== "all" ||
-              interviewerFilter !== "all" ||
-              dateRange.from ||
-              dateRange.to
+                statusFilter !== "all" ||
+                interviewerFilter !== "all" ||
+                dateRange.from ||
+                dateRange.to
                 ? "No interviews match your search criteria."
                 : "Get started by scheduling your first interview."}
             </p>
             {searchTerm ||
-            statusFilter !== "all" ||
-            interviewerFilter !== "all" ||
-            dateRange.from ||
-            dateRange.to ? (
+              statusFilter !== "all" ||
+              interviewerFilter !== "all" ||
+              dateRange.from ||
+              dateRange.to ? (
               <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
                 Clear Filters
               </Button>
@@ -644,7 +647,7 @@ export default function InterviewsPage() {
                       groups[applicantName].interviews.push(interview);
                       return groups;
                     },
-                    {} as Record<string, {interviews: IInterview[]; contact: any}>,
+                    {} as Record<string, { interviews: IInterview[]; contact: any }>,
                   ),
                 ).map(([applicantName, data]) => (
                   <React.Fragment key={applicantName}>
@@ -760,7 +763,7 @@ export default function InterviewsPage() {
                                   <Edit className="h-4 w-4 mr-2" />
                                   Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   onClick={() => handleDeleteInterview(interview.id)}
                                   className="text-destructive"
                                 >
@@ -812,7 +815,7 @@ export default function InterviewsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                         <SelectItem key={page} value={page.toString()}>
                           {page}
                         </SelectItem>

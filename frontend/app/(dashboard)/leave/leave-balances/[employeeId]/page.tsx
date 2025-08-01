@@ -6,12 +6,9 @@ import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { User, Calendar, Edit, Loader2, Leaf, ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { User, Calendar, Edit, ArrowLeft, Trash2 } from "lucide-react";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { getAllLeaveBalances, updateLeaveBalance, createLeaveBalance, deleteLeaveBalance } from "@/lib/utils";
 import { getAllEmployees, getLeaveTypes } from "@/lib/utils";

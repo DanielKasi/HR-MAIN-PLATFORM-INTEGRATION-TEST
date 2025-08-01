@@ -17,6 +17,13 @@ import { getDocumentTypes, createDocumentTemplate } from "@/lib/utils"
 import { IDocumentTemplateFormData, IDocumentType } from "@/app/types/types.utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
+import { RichEditorField } from "@/components/common/rich-editor"
+// import dynamic from "next/dynamic"
+
+// const QuillRichTextEditor = dynamic(
+//   () => import("@/components/common/rich-editor").then((mod) => mod.RichEditorField),
+//   { ssr: false, loading: () => <p>Loading Text Editor...</p> }
+// );
 
 
 export default function CreateTemplatePage() {
@@ -241,7 +248,7 @@ export default function CreateTemplatePage() {
             {formData.template_type === "text" ? (
               <div className="space-y-2">
                 <Label htmlFor="content">Content</Label>
-                <Textarea
+                {/* <Textarea
                   id="content"
                   placeholder="Enter your template content here. Use {{placeholder}} for dynamic values."
                   value={formData.content || ""}
@@ -251,7 +258,11 @@ export default function CreateTemplatePage() {
                 />
                 <p className="text-sm text-muted-foreground">
                   Use double curly braces for placeholders, e.g., {"{{employee_name}}"}, {"{{company_name}}"}
-                </p>
+                </p> */}
+                <RichEditorField
+                value={formData.content || ""}
+                  onChange={(value) => setFormData((prev) => ({ ...prev, content: value }))}
+                />
               </div>
             ) : (
               <div className="space-y-2">

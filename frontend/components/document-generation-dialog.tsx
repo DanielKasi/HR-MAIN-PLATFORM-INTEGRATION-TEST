@@ -37,6 +37,8 @@ import {IDocumentTemplate, IGeneratedDocumentTemplate} from "@/app/types/types.u
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {number} from "framer-motion";
+import RichTextDisplay from "./common/rich-text-display";
+import PdfPreview from "./common/pdf-preview";
 
 interface DocumentGenerationDialogProps {
   open: boolean;
@@ -213,11 +215,11 @@ export function DocumentGenerationDialog({
             <div className="mt-6 space-y-4">
               <div className="border rounded-lg p-4 bg-muted/50 mb-8">
                 <Label className="mb-2 block">Document Preview</Label>
-                <div className="prose prose-sm max-h-[200px] overflow-y-auto">
-                  <pre className="text-sm whitespace-pre-wrap">{previewContent}</pre>
+                <div className="prose prose-sm min-h-32 overflow-y-auto">
+                  <RichTextDisplay htmlContent={previewContent}/>
                 </div>
               </div>
-              <PDFDownloadLink
+              {/* <PDFDownloadLink
                 document={
                   <DocumentPreviewPDF
                     content={previewContent}
@@ -236,14 +238,14 @@ export function DocumentGenerationDialog({
                     {pdfLoading ? "Preparing PDF..." : "Preview PDF"}
                   </Button>
                 )}
-              </PDFDownloadLink>
+              </PDFDownloadLink> */}
             </div>
           )}
         </div>
         <DialogFooter>
           <div className="flex items-center justify-end gap-8">
             <Button onClick={handleGenerateDocument} disabled={loading || !selectedTemplate}>
-              {loading ? "Generating..." : "Generate Document"}
+              {"Generate Document"}
             </Button>
             <Button
               onClick={handleSendDocument}
