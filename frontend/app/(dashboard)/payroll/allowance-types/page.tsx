@@ -266,7 +266,7 @@ const AllowanceTypesComponent = () => {
 
   const handleRefresh = () => {
     fetchAllowanceTypes(true);
-    setCurrentPage(1);
+    setCurrentPage;
   };
 
   const filteredAllowanceTypes = useMemo(() => {
@@ -374,14 +374,14 @@ const AllowanceTypesComponent = () => {
               </DialogHeader>
               <div className="grid grid-cols-1 gap-6 py-6">
                 <div className="space-y-3">
-                  <Label htmlFor="name" className="text-sm font-semibold text-gray-800">Name *</Label>
+                  <Label htmlFor="name" className="text-sm text-gray-800">Name *</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g., Housing Allowance, Transportation"
                     disabled={isSubmitting}
-                    className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                    className="rounded-xl border-gray-200 focus:border-500 focus:ring-500/20 text-base resize-none"
                   />
                 </div>
                 <div className="space-y-3">
@@ -393,7 +393,7 @@ const AllowanceTypesComponent = () => {
                     rows={4}
                     placeholder="Provide a detailed description of this allowance type..."
                     disabled={isSubmitting}
-                    className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base resize-none"
+                    className="rounded-xl border-gray-200 focus:border-500 focus:ring-500/20 text-base resize-none"
                   />
                 </div>
                 <div className="bg-gray-50 rounded-xl p-4 space-y-4">
@@ -553,16 +553,6 @@ const AllowanceTypesComponent = () => {
               ? "No allowance types match your filter criteria."
               : "Get started by creating your first allowance type."}
           </p>
-          {searchTerm || statusFilter !== "all" ? (
-            <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
-              Clear Filters
-            </Button>
-          ) : (
-            <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Create First Allowance Type
-            </Button>
-          )}
         </Card>
       ) : (
         <Card className="rounded-md border">
