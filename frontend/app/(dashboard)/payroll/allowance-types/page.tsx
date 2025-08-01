@@ -172,6 +172,7 @@ const AllowanceTypesComponent = () => {
 
       if (newAllowanceType) {
         setAllowanceTypes([newAllowanceType, ...allowanceTypes]);
+        clearFilters()
         toast.success("Allowance type created successfully");
         resetFormData();
         setIsAddDialogOpen(false);
@@ -213,6 +214,7 @@ const AllowanceTypesComponent = () => {
           allowanceType.id === editingAllowanceType.id ? updatedAllowanceType : allowanceType
         );
         setAllowanceTypes(updatedAllowanceTypes);
+        clearFilters()
         toast.success("Allowance type updated successfully");
         resetFormData();
         setIsEditDialogOpen(false);
