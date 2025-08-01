@@ -352,7 +352,6 @@ export default function ContractsPage() {
                       <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem 
                           disabled={!!contract.is_active}
-                            onClick={() => handleApproval(contract.id)}
                             className="hover:bg-muted/50"
                           >
                             {!contract.is_active ? (
@@ -360,8 +359,8 @@ export default function ContractsPage() {
                           variant="default"
                           size="sm"
                           onClick={() => handleApproval(contract.id)}
-                          disabled={approvingId === contract.id || !!contract.signed_contract}
-                          className="h-8"
+                          disabled={approvingId === contract.id || !contract.signed_contract}
+                          className="h-8 w-full"
                         >
                           {approvingId === contract.id ? "Approving..." : "Approve"}
                         </Button>
