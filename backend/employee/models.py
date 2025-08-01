@@ -638,9 +638,9 @@ class EmployeeContract(models.Model):
             # Compare number of pages
             if len(original_pages) != len(signed_pages):
                 self.status = "NOT_MATCHED_NEEDS_REVIEW"
-                raise ValidationError(
-                    f"Page count mismatch: original has {len(original_pages)} pages, signed has {len(signed_pages)} pages"
-                )
+                # raise ValidationError(
+                #     f"Page count mismatch: original has {len(original_pages)} pages, signed has {len(signed_pages)} pages"
+                # )
 
             # Compare page-by-page, focusing on word differences
             differences = []

@@ -27,7 +27,7 @@ from django.core.validators import FileExtensionValidator
 import PyPDF2
 from io import BytesIO
 from django.core.files.base import ContentFile
-
+from django.core.exceptions import ValidationError
 
 
 class EmployeeTypeSerializer(serializers.ModelSerializer):
@@ -238,6 +238,7 @@ class EmployeeActivationSerializer(serializers.Serializer):
     department = serializers.CharField(max_length=100, required=False, allow_blank=True)
     date_of_joining = serializers.DateField(required=False, allow_null=True)
 
+
 def validate_pdf(file):
     """Validate that the file is a valid PDF."""
     print(f"Validating PDF: {file.name}")
@@ -251,8 +252,9 @@ def validate_pdf(file):
         raise serializers.ValidationError(f"Invalid PDF file: {str(e)}")
     return file
 
+
 class EmployeeContractSerializer(serializers.ModelSerializer):
-   
+
     applicant = serializers.PrimaryKeyRelatedField(
         queryset=JobAdvertApplication.objects.all(), required=False, allow_null=True
     )
@@ -260,13 +262,14 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
         queryset=Employee.objects.all(), required=False, allow_null=True
     )
     original_contract = serializers.FileField(
-        validators=[FileExtensionValidator(allowed_extensions=['pdf']), validate_pdf],
-        required=False
+        validators=[FileExtensionValidator(allowed_extensions=["pdf"]), validate_pdf],
+        required=False,
     )
     signed_contract = serializers.FileField(
-        validators=[FileExtensionValidator(allowed_extensions=['pdf']), validate_pdf],
-        required=False
+        validators=[FileExtensionValidator(allowed_extensions=["pdf"]), validate_pdf],
+        required=False,
     )
+
     class Meta:
         model = EmployeeContract
         fields = [
@@ -292,39 +295,45 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
         return contract
 
     def update(self, instance, validated_data):
-        if 'signed_contract' in validated_data:
-            signed_contract = validated_data['signed_contract']
+        if "signed_contract" in validated_data:
+            signed_contract = validated_data["signed_contract"]
             try:
                 signed_contract.seek(0)
                 content = signed_contract.read()
-                validated_data['signed_contract'] = ContentFile(content, name=signed_contract.name)
+                validated_data["signed_contract"] = ContentFile(
+                    content, name=signed_contract.name
+                )
             except Exception as e:
-                raise serializers.ValidationError(f"Failed to read signed_contract: {str(e)}")
+                raise serializers.ValidationError(
+                    f"Failed to read signed_contract: {str(e)}"
+                )
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        
+
         # Save the instance to persist signed_contract
         instance.save()
 
         # Run comparison after saving to set status
-        if 'signed_contract' in validated_data and instance.original_contract:
-            try:
-                instance.compare_contracts()
-                instance.save()  # Save again to persist status
-            except ValidationError as e:
-                raise serializers.ValidationError(
-                    f"Contract comparison failed: {str(e)}"
-                )
+        if "signed_contract" in validated_data and instance.original_contract:
+            instance.compare_contracts()
+            instance.save()  # Save again to persist status
 
         return instance
 
     def to_representation(self, instance):
         from recruitment.serializers import JobAdvertApplicationSerializer
+
         rep = super().to_representation(instance)
-        rep['applicant'] = JobAdvertApplicationSerializer(instance.applicant).data if instance.applicant else None
-        rep['employee'] = EmployeeSerializer(instance.employee).data if instance.employee else None
-        return rep    
+        rep["applicant"] = (
+            JobAdvertApplicationSerializer(instance.applicant).data
+            if instance.applicant
+            else None
+        )
+        rep["employee"] = (
+            EmployeeSerializer(instance.employee).data if instance.employee else None
+        )
+        return rep
 
     # def validate(self, data):
     #     # Ensure either applicant or employee is provided, not both
