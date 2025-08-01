@@ -2,7 +2,15 @@ from rest_framework import serializers
 from employee.serializers import EmployeeActivationSerializer, EmployeeSerializer
 from users.models import CustomUser
 from users.serializers import CustomUserSerializer
-from .models import Department, Institution, Branch, UserBranch, InstitutionDocument
+from .models import (
+    Department,
+    Institution,
+    Branch,
+    UserBranch,
+    InstitutionDocument,
+    InstitutionBankType,
+    InstitutionBankAccount,
+)
 import os
 from django.db import transaction
 from recruitment.models import JobPosition
@@ -137,7 +145,9 @@ class InstitutionSerializer(serializers.ModelSerializer):
                     title=title,
                 )
 
-        logger.info(f"Institution {institution.institution_name} created successfully with {len(departments_data)} departments")
+        logger.info(
+            f"Institution {institution.institution_name} created successfully with {len(departments_data)} departments"
+        )
         return institution
 
     def get_branches(self, institution):
@@ -152,6 +162,55 @@ class InstitutionSerializer(serializers.ModelSerializer):
         return BranchSerializer(branches, many=True).data
 
 
+class InstitutionBankTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InstitutionBankType
+
+        fields = [
+            "id",
+            "institution",
+            "bank_fullname",
+            "bank_code",
+            "br_code",
+            "created_by",
+            "created_at",
+            "updated_by",
+            "updated_at",
+        ]
+
+        read_only_fields = [
+            "id",
+            "institution",
+            "created_by",
+            "created_at",
+            "updated_by",
+            "updated_at",
+        ]
+
+
+class InstitutionBankAccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InstitutionBankAccount
+
+        fields = [
+            "id",
+            "institution_bank",
+            "account_name",
+            "account_number",
+            "created_at",
+            "updated_at",
+            "created_by",
+            "updated_by",
+        ]
+
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "created_by",
+            "updated_by",
+        ]
+
 
 class BranchSerializer(serializers.ModelSerializer):
     institution_name = serializers.SerializerMethodField()
@@ -164,6 +223,7 @@ class BranchSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "institution",
+            "paying_bank_account",
             "institution_name",
             "institution_logo",
             "branch_name",

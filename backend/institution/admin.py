@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import Institution, Branch, UserBranch, Department
+from .models import (
+    Institution,
+    Branch,
+    UserBranch,
+    Department,
+    InstitutionBankType,
+    InstitutionBankAccount,
+)
 
 
 class InstitutionAdmin(admin.ModelAdmin):
@@ -20,3 +27,5 @@ admin.site.register(Branch, BranchAdmin)
 admin.site.register(Institution, InstitutionAdmin)
 admin.site.register(UserBranch)
 admin.site.register(Department)
+admin.site.register(InstitutionBankType)
+admin.site.register(InstitutionBankAccount)

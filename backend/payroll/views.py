@@ -26,7 +26,85 @@ from .serializers import (
     PayslipGenerationInputSerializer,
 )
 from employee.models import Employee
-from .utils import PayrollProcessor
+from .utils import PayrollProcessor, generate_eft_excel
+from datetime import datetime
+from django.http import HttpResponse
+from django.utils.encoding import escape_uri_path
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+
+
+class ExportEFTExcelView(APIView):
+    """
+    API endpoint to generate and download an EFT Excel file for a given payroll period.
+    Access this endpoint with a GET request, providing `payroll_period_id` as a query parameter.
+    Example: /api/payroll/export-eft/?payroll_period_id=1
+    """
+
+    @extend_schema(
+        tags=["export2excel"],
+        parameters=[
+            OpenApiParameter(
+                name="payroll_period_id",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description="ID of the payroll period to generate the EFT Excel for",
+                required=True,
+            )
+        ],
+        responses={
+            200: None,
+            400: None,
+            404: None,
+            500: None,
+        },
+    )
+    def get(self, request, *args, **kwargs):
+        payroll_period_id = request.query_params.get("payroll_period_id")
+
+        if not payroll_period_id:
+            return Response(
+                {"error": "payroll_period_id is required as a query parameter."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            payroll_period_id = int(payroll_period_id)
+        except ValueError:
+            return Response(
+                {"error": "payroll_period_id must be an integer."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            excel_file = generate_eft_excel(payroll_period_id)
+            payroll_period = PayrollPeriod.objects.get(id=payroll_period_id)
+
+            # Generate a dynamic filename
+            filename = f"BULK_EFT_UPLOAD_TEMPLATE_{payroll_period.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+
+            response = HttpResponse(
+                excel_file.getvalue(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+            response["Content-Disposition"] = (
+                f'attachment; filename="{escape_uri_path(filename)}"'
+            )
+            return response
+        except PayrollPeriod.DoesNotExist:
+            return Response(
+                {"error": f"Payroll period with ID {payroll_period_id} not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            return Response(
+                {
+                    "error": "An internal server error occurred while generating the Excel file."
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class EmployeeAllowanceAPIView(APIView):
@@ -429,6 +507,7 @@ class PayslipsByPayrollAPIView(APIView):
     """
     API view to list all payslips associated with a given payroll (payroll_id).
     """
+
     @extend_schema(
         summary="List payslips by payroll",
         responses=PayslipSerializer(many=True),
