@@ -24,6 +24,7 @@ import { getDepartments, getJobPositions, getJobPosition, updateJobPosition } fr
 import type { JobPositionFormData, IDepartment, IJobPosition, CreateJobPositionData, IEmployee } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
+import { apiGet } from "@/lib/apiRequest"
 
 const VirtualizedEmployeeList: React.FC<{
   employees: IEmployee[]
@@ -508,15 +509,10 @@ export default function EditJobPositionPage() {
         allEmployees = jobPosition.employees
       } else {
         try {
-          const response = await fetch(`/api/institutions/${selectedInstitution.id}/employees`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          })
+          const response = await apiGet(`/employee/${selectedInstitution.id}/employee`)
 
-          if (response.ok) {
-            allEmployees = await response.json()
+          if (response.status ===200) {
+            allEmployees = await response.data.results
           } else {
             allEmployees = jobPosition.employees || []
           }

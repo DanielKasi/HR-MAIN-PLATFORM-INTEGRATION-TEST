@@ -172,6 +172,7 @@ const DeductionTypesComponent = () => {
 
       if (newDeductionType) {
         setDeductionTypes([newDeductionType, ...deductionTypes]);
+        clearFilters()
         toast.success("Deduction type created successfully");
         resetFormData();
         setIsAddDialogOpen(false);
@@ -213,6 +214,7 @@ const DeductionTypesComponent = () => {
           deductionType.id === editingDeductionType.id ? updatedDeductionType : deductionType
         );
         setDeductionTypes(updatedDeductionTypes);
+        clearFilters()
         toast.success("Deduction type updated successfully");
         resetFormData();
         setIsEditDialogOpen(false);

@@ -2119,7 +2119,7 @@ export const getEmployeeAllowances = async (
 ): Promise<IEmployeeAllowance[] | null> => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/employee-allowances/`);
-    return response.data as IEmployeeAllowance[];
+    return response.data.results as IEmployeeAllowance[];
   } catch (error) {
     console.error("Failed to get employee allowances:", error);
     return null;
