@@ -8,6 +8,7 @@ from .models import (
     Role,
     RolePermission,
     UserRole,
+    Signature,
 )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from utilities.password_validator import validate_password_strength
@@ -237,3 +238,11 @@ class RolePermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = RolePermission
         fields = ["id", "role", "permission"]
+
+class SignatureSerializer(serializers.ModelSerializer):
+    signature_image_url = serializers.CharField(read_only=True, allow_null=True)
+
+    class Meta:
+        model = Signature
+        fields = ["id", "user", "signature", "signature_image_url"]
+        read_only_fields = ["id", "signature_image_url"]

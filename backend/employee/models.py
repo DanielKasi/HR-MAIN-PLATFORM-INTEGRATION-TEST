@@ -701,13 +701,4 @@ class EmployeeContract(models.Model):
         super().save(*args, **kwargs)
 
 
-# class HRDocument(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     title = models.CharField(max_length=255)
-#     signature = JSignatureField(null=True, blank=True)
-#     signature_date = models.DateTimeField(auto_now_add=True)
-#     document = models.FileField(upload_to='documents/')
-#     signature_image = models.ImageField(upload_to='signatures/', null=True, blank=True)
-
-#     def __str__(self):
-#         return f"{self.title} - {self.user.username}"
+    
