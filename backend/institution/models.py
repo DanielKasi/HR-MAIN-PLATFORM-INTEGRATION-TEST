@@ -11,11 +11,7 @@ from django.utils import timezone
 from recruitment.models import JobPosition
 import json
 
-# Set up logging
 logger = logging.getLogger(__name__)
-
-
-# from django.contrib.gis.db import models as gis_models
 
 
 class Institution(models.Model):
@@ -153,6 +149,7 @@ class Institution(models.Model):
 
     def _create_calendar_for_institution(self):
         from calendar2.models import Calendar
+
         current_year = datetime.now().year
         Calendar.create_with_holidays(institution=self, year=current_year)
 
@@ -220,20 +217,87 @@ class InstitutionDocument(models.Model):
         return 0
 
 
+class InstitutionBankType(models.Model):
+    institution = models.ForeignKey(
+        Institution, related_name="banks", on_delete=models.CASCADE
+    )
+    bank_fullname = models.CharField(max_length=255, blank=False, null=False)
+    bank_code = models.CharField(max_length=20, blank=False, null=False)
+    br_code = models.CharField(max_length=20, blank=False, null=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        "users.CustomUser",
+        related_name="created_institution_banks",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    updated_by = models.ForeignKey(
+        "users.CustomUser",
+        related_name="updated_institution_banks",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+
+    def __str__(self):
+        return f"Type: {self.bank_fullname} FOR {self.institution.institution_name}"
+
+
+class InstitutionBankAccount(models.Model):
+    institution_bank = models.ForeignKey(
+        InstitutionBankType, related_name="accounts", on_delete=models.CASCADE
+    )
+    account_name = models.CharField(max_length=255, blank=False, null=False)
+    account_number = models.CharField(max_length=50, blank=False, null=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        "users.CustomUser",
+        related_name="created_institution_bank_accounts",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    updated_by = models.ForeignKey(
+        "users.CustomUser",
+        related_name="updated_institution_bank_accounts",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        unique_together = ("institution_bank", "account_number")
+
+    def __str__(self):
+        return f"{self.account_name} - {self.institution_bank.bank_fullname} - {self.institution_bank.institution.institution_name}"
+
+
 class Branch(models.Model):
     institution = models.ForeignKey(
         Institution, related_name="branches", on_delete=models.CASCADE
     )
+
+    paying_bank_account = models.ForeignKey(
+        InstitutionBankAccount,
+        related_name="branches",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+
     branch_name = models.CharField(max_length=255, blank=True, null=True)
     branch_phone_number = models.CharField(max_length=20, blank=True, null=True)
     branch_location = models.CharField(max_length=255)
     branch_latitude = models.FloatField(blank=True, null=True)
     branch_longitude = models.FloatField(blank=True, null=True)
     branch_email = models.EmailField(max_length=255, blank=True, null=True)
-    branch_opening_time = models.TimeField(default=time(8, 0, 0))  # Default to 8:00 AM
-    branch_closing_time = models.TimeField(
-        default=time(23, 0, 0)
-    )  # Default to 11:00 PM
+    branch_opening_time = models.TimeField(default=time(8, 0, 0))
+    branch_closing_time = models.TimeField(default=time(23, 0, 0))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(

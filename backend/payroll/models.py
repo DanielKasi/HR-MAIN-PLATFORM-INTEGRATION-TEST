@@ -107,6 +107,7 @@ class EmployeeAllowance(models.Model):
     class Meta:
         unique_together = ["employee", "allowance_type"]
 
+
 class EmployeeDeduction(models.Model):
     """
     Employee-specific deductions
@@ -159,6 +160,7 @@ class EmployeeDeduction(models.Model):
 
     class Meta:
         unique_together = ["employee", "deduction_type"]
+
 
 class PayrollPeriod(models.Model):
     """
