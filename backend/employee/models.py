@@ -511,6 +511,7 @@ class EmployeeContract(models.Model):
     STATUS_CHOICES = (
         ('MATCHED_NEEDS_REVIEW', 'Matched, Needs Review'),
         ('NOT_MATCHED_NEEDS_REVIEW', 'Not Matched, Needs Review'),
+        ('APPROVED', 'Approved'),
     )
 
     applicant = models.ForeignKey(
