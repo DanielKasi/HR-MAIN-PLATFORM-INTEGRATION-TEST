@@ -85,9 +85,9 @@ export default function Payslips() {
   const accessToken = useSelector(selectAccessToken)
 
   const params = useParams();
-  const router = useRouter();
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const periodId = params.id as string;
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -430,7 +430,7 @@ export default function Payslips() {
   };
 
   const navigateToPayslipItems = (payslipId: number) => {
-    router.push(`/payroll/payroll-period/payslip/${payslipId}/items`);
+    (useRouter()).push(`/payroll/payroll-period/payslip/${payslipId}/items`);
   };
 
   const getInitials = (name: string) => {
@@ -483,6 +483,14 @@ export default function Payslips() {
       <Card className="h-[calc(100vh-2rem)] shadow-lg">
         <CardHeader className="border-b">
           <div className="flex justify-between items-center">
+            <Button
+              variant="outline"
+              onClick={() => router.back()} // ✅ Use hook result
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Payroll Periods
+            </Button>
             <div>
               <CardTitle className="text-2xl font-bold text-gray-900">
                 Payslips for {payrollPeriod.name}
