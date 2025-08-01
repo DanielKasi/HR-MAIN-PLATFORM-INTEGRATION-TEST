@@ -1463,6 +1463,7 @@ class EmployeeContractApprovalAPIView(APIView):
 
         # Set contract to active first
         contract.is_active = True
+        contract.status = 'APPROVED'
         contract.save()
 
         # If contract has an applicant and no employee, create Employee instance

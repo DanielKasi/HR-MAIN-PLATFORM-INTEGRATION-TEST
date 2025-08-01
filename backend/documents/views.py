@@ -556,7 +556,7 @@ class DocumentStatusUpdateView(BaseDocumentView):
             body {{
                 font-family: Arial, sans-serif;
                 font-size: 12pt;
-                margin: 40px;
+                margin: 35px;
             }}
             h1 {{
                 font-size: 14pt;
@@ -764,6 +764,7 @@ class DocumentStatusUpdateView(BaseDocumentView):
                         employee=context_obj,
                         is_active=False,
                         original_contract=document_file,
+                        
                     )
                     context_obj.status = "issued_contract"
                     context_obj.save()
