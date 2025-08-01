@@ -1,6 +1,6 @@
 default_data = [
     {
-        'name': 'Human Resources',
+        'name': 'Human Resources Department',
         'description': 'Manages employee relations, recruitment, and training',
         'job_positions': [
             {'name': 'HR Manager', 'description': 'Oversees HR operations'},
@@ -9,7 +9,7 @@ default_data = [
         ]
     },
     {
-        'name': 'Information Technology',
+        'name': 'Information Technology Department',
         'description': 'Manages technology infrastructure and support',
         'job_positions': [
             {'name': 'IT Manager', 'description': 'Oversees IT operations'},
@@ -18,7 +18,7 @@ default_data = [
         ]
     },
     {
-        'name': 'Finance',
+        'name': 'Finance Department',
         'description': 'Handles financial operations and reporting',
         'job_positions': [
             {'name': 'Finance Manager', 'description': 'Oversees financial operations'},
@@ -27,7 +27,7 @@ default_data = [
         ]
     },
     {
-        'name': 'Operations',
+        'name': 'Operations Department',
         'description': 'Manages daily operations and processes',
         'job_positions': [
             {'name': 'Operations Manager', 'description': 'Oversees operational activities'},
@@ -36,7 +36,7 @@ default_data = [
         ]
     },
     {
-        'name': 'Marketing',
+        'name': 'Marketing Department',
         'description': 'Handles marketing and promotional activities',
         'job_positions': [
             {'name': 'Marketing Manager', 'description': 'Oversees marketing strategies'},
@@ -45,7 +45,7 @@ default_data = [
         ]
     },
     {
-        'name': 'Sales',
+        'name': 'Sales Department',
         'description': 'Manages sales operations and client relationships',
         'job_positions': [
             {'name': 'Sales Manager', 'description': 'Leads sales team'},
@@ -54,7 +54,7 @@ default_data = [
         ]
     },
     {
-        'name': 'Research and Development',
+        'name': 'Research and Development Department',
         'description': 'Conducts research and product development',
         'job_positions': [
             {'name': 'R&D Manager', 'description': 'Oversees research projects'},
@@ -63,7 +63,7 @@ default_data = [
         ]
     },
     {
-        'name': 'Customer Service',
+        'name': 'Customer Service Department',
         'description': 'Handles customer inquiries and support',
         'job_positions': [
             {'name': 'Customer Service Manager', 'description': 'Oversees customer support'},
@@ -72,7 +72,7 @@ default_data = [
         ]
     },
     {
-        'name': 'Legal',
+        'name': 'Legal Department',
         'description': 'Manages legal affairs and compliance',
         'job_positions': [
             {'name': 'Legal Counsel', 'description': 'Provides legal advice'},
@@ -81,7 +81,7 @@ default_data = [
         ]
     },
     {
-        'name': 'Facilities',
+        'name': 'Facilities Management Department',
         'description': 'Manages physical infrastructure and maintenance',
         'job_positions': [
             {'name': 'Facilities Manager', 'description': 'Oversees facility operations'},
