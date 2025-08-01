@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Plus, FileText, Eye, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { Plus, FileText, Eye, MoreHorizontal, Pencil, Trash2, MoreVertical } from "lucide-react"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { TerminationInitiationsAPI } from "@/lib/utils"
@@ -177,7 +177,7 @@ export default function TerminationInitiationsPage() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

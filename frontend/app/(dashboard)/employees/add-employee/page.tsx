@@ -56,7 +56,7 @@ import type {
   ICountry,
 } from "@/app/types/types.utils";
 import type {IUserInstitution} from "@/app/types";
-import { toast } from "sonner";
+import {toast} from "sonner";
 
 const maritalStatusOptions = [
   {value: "single", label: "Single"},
@@ -77,12 +77,12 @@ export default function AddEmployeeForm() {
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
 
-  const [institutionId, setInstitutionId] = useState<number | null>(null);
+  // const [institutionId, setInstitutionId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
 
-  const {branches, loading: branchesLoading, error: branchesError} = useBranches({institutionId});
+  const {branches, loading: branchesLoading, error: branchesError} = useBranches();
 
   const [positions, setPositions] = useState<IJobPosition[]>([]);
   const [departments, setDepartments] = useState<IDepartment[]>([]);
@@ -157,56 +157,60 @@ export default function AddEmployeeForm() {
     isValid: boolean;
   }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
 
-  const showErrorToast = (message:string) => {      
-    toast.error(message)
-  }
+  const showErrorToast = (message: string) => {
+    toast.error(message);
+  };
 
-    const showSuccessToast = (message:string) => {      
-    toast.success(message)
-  }
-
-  useEffect(() => {
-    if (selectedInstitution) {
-      setInstitutionId(selectedInstitution.id);
-    } else if (institutionsAttached && institutionsAttached.length > 0) {
-      setInstitutionId(institutionsAttached[0].id);
-    }
-  }, [institutionsAttached, selectedInstitution]);
+  const showSuccessToast = (message: string) => {
+    toast.success(message);
+  };
 
   useEffect(() => {
-    const loadDropdownData = async () => {
-      if (!institutionId) return;
-
-      setLoadingData(true);
-      try {
-        const [positionsData, departmentsData, workTypesData, employeeTypesData] =
-          await Promise.all([
-            getPositions({institutionId}),
-            getDepartments({institutionId}),
-            getWorkTypes({institutionId}),
-            getEmployeeTypes({institutionId}),
-          ]);
-
-        setPositions(Array.isArray(positionsData) ? positionsData : []);
-        setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
-        setWorkTypes(Array.isArray(workTypesData) ? workTypesData : []);
-        setEmployeeTypes(Array.isArray(employeeTypesData) ? employeeTypesData : []);
-      } catch (error: unknown) {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : "An unknown error occurred while loading form data.";
-        setSubmitError(errorMessage);
-      } finally {
-        setLoadingData(false);
-      }
-    };
-
     loadDropdownData();
-  }, [institutionId]);
+  }, [selectedInstitution]);
+
+  useEffect(() => {
+    if (formData.position) {
+      const position = positions.find((p) => p.id === formData.position);
+      if (position) {
+        setFormData((prev) => ({...prev, department: position.department || 0}));
+      }
+    }
+  }, [formData.position]);
+
+  useEffect(()=>{
+    setFormData(prev => ({...prev, selected_branches:branches.map(br => br.id)}))
+  }, [branches])
+
+  const loadDropdownData = async () => {
+    if (!selectedInstitution) return;
+
+    setLoadingData(true);
+    try {
+      const [positionsData, departmentsData, workTypesData, employeeTypesData] = await Promise.all([
+        getPositions({institutionId: selectedInstitution.id}),
+        getDepartments({institutionId: selectedInstitution.id}),
+        getWorkTypes({institutionId: selectedInstitution.id}),
+        getEmployeeTypes({institutionId: selectedInstitution.id}),
+      ]);
+
+      setPositions(Array.isArray(positionsData) ? positionsData : []);
+      setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
+      setWorkTypes(Array.isArray(workTypesData) ? workTypesData : []);
+      setEmployeeTypes(Array.isArray(employeeTypesData) ? employeeTypesData : []);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An unknown error occurred while loading form data.";
+      setSubmitError(errorMessage);
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const handleInputChange = (
-    field: string,
+    field: keyof EmployeeFormState,
     value: string | boolean | File | null | number | number[],
   ) => {
     setFormData((prev) => ({...prev, [field]: value}));
@@ -278,6 +282,9 @@ export default function AddEmployeeForm() {
   }, [previewUrl]);
 
   const handleAddWorkType = async () => {
+    if (!selectedInstitution) {
+      return;
+    }
     if (!workTypeFormData.name.trim()) {
       showErrorToast("Work type name is required");
       return;
@@ -287,7 +294,7 @@ export default function AddEmployeeForm() {
 
     try {
       const newWorkType = await createWorkType({
-        institutionId: institutionId ?? 0,
+        institutionId: selectedInstitution.id,
         workTypeData: workTypeFormData,
       });
 
@@ -312,6 +319,9 @@ export default function AddEmployeeForm() {
   };
 
   const handleAddEmployeeType = async () => {
+    if (!selectedInstitution) {
+      return;
+    }
     if (!employeeTypeFormData.name.trim()) {
       showErrorToast("Employee type name is required");
       return;
@@ -321,7 +331,7 @@ export default function AddEmployeeForm() {
 
     try {
       const newEmployeeType = await createEmployeeType({
-        institutionId: institutionId ?? 0,
+        institutionId: selectedInstitution.id,
         employeeTypeData: employeeTypeFormData,
       });
 
@@ -466,8 +476,8 @@ export default function AddEmployeeForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!institutionId) {
-      setSubmitError("No institution selected");
+    if (!selectedInstitution) {
+      setSubmitError("No institution found");
       return;
     }
 
@@ -514,7 +524,7 @@ export default function AddEmployeeForm() {
       };
 
       const result = await createEmployee({
-        institutionId,
+        institutionId: selectedInstitution.id,
         employeeData: dataToSubmit,
       });
 
@@ -534,7 +544,9 @@ export default function AddEmployeeForm() {
             );
           } catch (branchError) {
             // Still show success for employee creation, but log the branch attachment error
-            toast.warning("Employee created successfully, but some branches could not be attached.");
+            toast.warning(
+              "Employee created successfully, but some branches could not be attached.",
+            );
           }
         }
 

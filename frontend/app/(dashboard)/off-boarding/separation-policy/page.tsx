@@ -2,7 +2,7 @@
 
 import {useState, useEffect} from "react";
 import Link from "next/link";
-import {Plus, Search, Eye, Edit, Trash2, MoreHorizontal} from "lucide-react";
+import {Plus, Search, Eye, Edit, Trash2, MoreHorizontal, MoreVertical} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
@@ -135,7 +135,7 @@ export default function SeparationPoliciesPage() {
                             size="sm"
                             className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
                           >
-                            <MoreHorizontal className="h-4 w-4 text-gray-600" />
+                            <MoreVertical className="h-4 w-4 text-gray-600" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent

@@ -145,6 +145,7 @@ export default function CreateDepartmentPage() {
                   <Input
                     id="name"
                     type="text"
+                    required
                     placeholder="e.g., Human Resources, Finance, Operations"
                     value={formData.name}
                     onChange={(e) => updateFormData("name", e.target.value)}
@@ -168,6 +169,8 @@ export default function CreateDepartmentPage() {
                   value={formData.description}
                   onChange={(e) => updateFormData("description", e.target.value)}
                   rows={4}
+                  required
+                  minLength={30}
                   className={errors.description ? "border-destructive" : ""}
                 />
                 {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}

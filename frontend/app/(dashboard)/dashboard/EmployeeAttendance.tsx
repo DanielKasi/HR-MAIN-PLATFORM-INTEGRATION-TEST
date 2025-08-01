@@ -1,40 +1,17 @@
 "use client";
 import React, { useState } from "react";
 import {Card, CardHeader, CardTitle, CardContent} from "@/components/ui/card";
-import {createAttendanceRecord} from "@/lib/utils.attendance";
 import {Input} from "@/components/ui/input";
 import {Badge} from "@/components/ui/badge";
-import {Search, X, Clock, Calendar} from "lucide-react";
-import ProtectedComponent from "@/components/ProtectedComponent"
-import { PERMISSION_CODES } from "@/app/types/types.utils"
+import {Search, X, Clock} from "lucide-react";
+import { IAttendance, IEmployee } from "@/app/types/types.utils"
+import { toast } from "sonner";
+import Link from "next/link";
+import {CheckInModal} from "@/components/checkin-modal";
+import { AttendanceAPI } from "@/lib/utils";
+import { CheckOutModal } from "@/components/checkout-modal";
 
-interface Employee {
-  id: number;
-  name: string;
-  department: string;
-  email?: string;
-}
 
-interface AttendanceRecord {
-  employeeId: number;
-  checkIn: string | null;
-  checkOut: string | null;
-}
-
-const getCurrentTime = () => {
-  const now = new Date();
-  // Format as hh:mm:ss
-  return now.toTimeString().split(" ")[0]; // "14:15:02"
-};
-
-const getCurrentDateTime = () => {
-  const now = new Date();
-  // Format as YYYY-MM-DD for date input
-  const date = now.toISOString().split('T')[0];
-  // Format as HH:MM for time input
-  const time = now.toTimeString().slice(0, 5);
-  return { date, time };
-};
 
 interface Stat {
   label: string;
@@ -43,253 +20,16 @@ interface Stat {
 }
 
 interface EmployeeAttendanceProps {
-  employees: Employee[];
+  employees: IEmployee[];
   search: string;
   setSearch: (val: string) => void;
-  attendance: AttendanceRecord[];
-  setAttendance: React.Dispatch<React.SetStateAction<AttendanceRecord[]>>;
+  attendance: IAttendance[];
+  setAttendance: React.Dispatch<React.SetStateAction<IAttendance[]>>;
   stats: Stat[];
   selectedDate: string;
   setSelectedDate: (date: string) => void;
 }
 
-// Check-in Modal Component
-interface CheckInModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (date: string, time: string) => void;
-  employeeName: string;
-}
-
-const CheckInModal: React.FC<CheckInModalProps> = ({ isOpen, onClose, onConfirm, employeeName }) => {
-  const { date: currentDate, time: currentTime } = getCurrentDateTime();
-  const [selectedDate, setSelectedDate] = useState(currentDate);
-  const [selectedTime, setSelectedTime] = useState(currentTime);
-
-  if (!isOpen) return null;
-
-  const handleConfirm = () => {
-    // Combine date and time to create the check-in time string
-    const checkInTime = `${selectedTime}:00`; // Add seconds
-    onConfirm(selectedDate, checkInTime);
-    onClose();
-  };
-
-  const handleUseCurrentTime = () => {
-    const { date, time } = getCurrentDateTime();
-    setSelectedDate(date);
-    setSelectedTime(time);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
-        onClick={onClose}
-      />
-      
-      {/* Modal Content */}
-      <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Check In - {employeeName}
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-500 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="p-6 space-y-4">
-          <div className="text-sm text-gray-600 mb-4">
-            Select the check-in date and time or use the current time.
-          </div>
-
-          {/* Date Input */}
-          {/* <div className="space-y-2">
-            <label className="flex items-center text-sm font-medium text-gray-700">
-              <Calendar className="w-4 h-4 mr-2" />
-              Date
-            </label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              max={currentDate}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div> */}
-
-          {/* Time Input */}
-          <div className="space-y-2">
-            <label className="flex items-center text-sm font-medium text-gray-700">
-              <Clock className="w-4 h-4 mr-2" />
-              Time
-            </label>
-            <input
-              type="time"
-              value={selectedTime}
-              onChange={(e) => setSelectedTime(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          {/* Use Current Time Button */}
-          <button
-            onClick={handleUseCurrentTime}
-            className="w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-md transition-colors flex items-center justify-center"
-          >
-            <Clock className="w-4 h-4 mr-2" />
-            Use Current Time
-          </button>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Confirm Check In
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Check-out Modal Component
-interface CheckOutModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (date: string, time: string) => void;
-  employeeName: string;
-  checkInTime: string | null;
-}
-
-const CheckOutModal: React.FC<CheckOutModalProps> = ({ isOpen, onClose, onConfirm, employeeName, checkInTime }) => {
-  const { date: currentDate, time: currentTime } = getCurrentDateTime();
-  const [selectedDate, setSelectedDate] = useState(currentDate);
-  const [selectedTime, setSelectedTime] = useState(currentTime);
-
-  if (!isOpen) return null;
-
-  const handleConfirm = () => {
-    // Combine date and time to create the check-out time string
-    const checkOutTime = `${selectedTime}:00`; // Add seconds
-    onConfirm(selectedDate, checkOutTime);
-    onClose();
-  };
-
-  const handleUseCurrentTime = () => {
-    const { date, time } = getCurrentDateTime();
-    setSelectedDate(date);
-    setSelectedTime(time);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
-        onClick={onClose}
-      />
-      
-      {/* Modal Content */}
-      <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Check Out - {employeeName}
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-500 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="p-6 space-y-4">
-          <div className="text-sm text-gray-600 mb-4">
-            Select the check-out date and time or use the current time.
-            {checkInTime && (
-              <div className="mt-2 text-xs text-gray-500">
-                Check-in time: <span className="font-medium">{checkInTime}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Date Input */}
-          {/* <div className="space-y-2">
-            <label className="flex items-center text-sm font-medium text-gray-700">
-              <Calendar className="w-4 h-4 mr-2" />
-              Date
-            </label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              max={currentDate}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-            />
-          </div> */}
-
-          {/* Time Input */}
-          <div className="space-y-2">
-            <label className="flex items-center text-sm font-medium text-gray-700">
-              <Clock className="w-4 h-4 mr-2" />
-              Time
-            </label>
-            <input
-              type="time"
-              value={selectedTime}
-              onChange={(e) => setSelectedTime(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-            />
-          </div>
-
-          {/* Use Current Time Button */}
-          <button
-            onClick={handleUseCurrentTime}
-            className="w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-md transition-colors flex items-center justify-center"
-          >
-            <Clock className="w-4 h-4 mr-2" />
-            Use Current Time
-          </button>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-          >
-            Confirm Check Out
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
   employees,
@@ -303,85 +43,32 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
 }) => {
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const [checkOutModalOpen, setCheckOutModalOpen] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<IEmployee | null>(null);
 
-  const processAttendanceData = (rawData: any): any[] => {
-
-    let records: any[] = [];
-
-    // Handle different response formats
-    if (rawData && typeof rawData === 'object' && 'results' in rawData && Array.isArray(rawData.results)) {
-      records = rawData.results;
-    }
-    else if (Array.isArray(rawData)) {
-      records = rawData;
-      console.log("✅ Using direct array format");
-    }
-    else if (!rawData) {
-      records = [];
-      console.log("⚠️ No attendance data found, using empty array");
-    }
-    else {
-      console.error("❌ Unexpected attendance data structure:", typeof rawData, rawData);
-      records = [];
-    }
-
-    console.log("📋 Processed attendance records:", records);
-    return records;
-  };
 
   // Fetch attendance from backend on mount and when employees or selectedDate change
   React.useEffect(() => {
-    async function fetchAttendance() {
+    if (employees.length > 0 && selectedDate) {
+      fetchAttendance();
+    }
+  }, [employees, selectedDate]);
+
+      async function fetchAttendance() {
       try {
-        console.log("⏳ Fetching attendance for date:", selectedDate);
-        const rawData = await import("@/lib/utils.attendance").then((mod) =>
-          mod.fetchAttendanceRecords(selectedDate),
-        );
-        console.log("📥 Raw attendance fetch response:", rawData);
-
-        // Safely process the attendance data
-        const records = processAttendanceData(rawData);
-
-        const attendanceMap = new Map<number, {checkIn: string | null; checkOut: string | null}>();
-
-        // Now safely iterate over the records array
-        records.forEach((rec: any) => {
-          console.log("🔁 Mapping record:", rec);
-          attendanceMap.set(rec.employee.id, {
-            checkIn: rec.check_in_time || null,
-            checkOut: rec.check_out_time || null,
-          });
-        });
-
-        const newAttendance = employees.map((emp) => ({
-          employeeId: emp.id,
-          checkIn: attendanceMap.get(emp.id)?.checkIn || null,
-          checkOut: attendanceMap.get(emp.id)?.checkOut || null,
-        }));
-
-        console.log("🧩 Final attendance state to set:", newAttendance);
-        setAttendance(newAttendance);
-      } catch (err) {
-        console.error("❌ Error fetching attendance:", err);
-        setAttendance(
-          employees.map((emp) => ({employeeId: emp.id, checkIn: null, checkOut: null})),
-        );
+        const fetchedAttendance = await AttendanceAPI.fetchAttendanceRecords(selectedDate)
+        setAttendance(fetchedAttendance.results);
+      } catch (err:any) {
+        let errorMessage =  err?.message || err?.detail ||  "Failed to fetch attendance records";
+        toast.error(errorMessage)
       }
     }
 
-    if (employees.length > 0 && selectedDate) {
-      console.log("📆 Triggering fetchAttendance due to selectedDate or employees change");
-      fetchAttendance();
-    }
-  }, [employees, selectedDate, setAttendance]);
-
-  const openCheckInModal = (employee: Employee) => {
+  const openCheckInModal = (employee: IEmployee) => {
     setSelectedEmployee(employee);
     setCheckInModalOpen(true);
   };
 
-  const openCheckOutModal = (employee: Employee) => {
+  const openCheckOutModal = (employee: IEmployee) => {
     setSelectedEmployee(employee);
     setCheckOutModalOpen(true);
   };
@@ -389,92 +76,40 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
   const handleCheckIn = async (date: string, checkInTime: string) => {
     if (!selectedEmployee) return;
     
-    console.log(`🟢 Check-in triggered for employee ${selectedEmployee.id} at ${checkInTime} on ${date}`);
     try {
-      await import("@/lib/utils.attendance").then((mod) =>
-        mod.createAttendanceRecord({
+      await AttendanceAPI.createAttendanceRecord({
           employee: selectedEmployee.id,
           check_in_time: checkInTime,
           status: "approved",
-        }),
-      );
-      console.log("✅ Check-in API call succeeded");
-
-      const rawData = await import("@/lib/utils.attendance").then((mod) =>
-        mod.fetchAttendanceRecords(selectedDate),
-      );
-
-      // Safely process the refreshed attendance data
-      const records = processAttendanceData(rawData);
-      console.log("📥 Attendance refreshed after check-in:", records);
-
-      const attendanceMap = new Map<number, {checkIn: string | null; checkOut: string | null}>();
-      records.forEach((rec: any) => {
-        attendanceMap.set(rec.employee.id, {
-          checkIn: rec.check_in_time || null,
-          checkOut: rec.check_out_time || null,
         });
-      });
-
-      setAttendance(
-        employees.map((emp) => ({
-          employeeId: emp.id,
-          checkIn: attendanceMap.get(emp.id)?.checkIn || null,
-          checkOut: attendanceMap.get(emp.id)?.checkOut || null,
-        })),
-      );
-    } catch (err) {
-      console.error("❌ Check-in failed for employee:", selectedEmployee.id, err);
-      alert("Failed to record check-in!");
+      
+      fetchAttendance()
+    } catch (error:any) {
+      let errorMessage = error?.detail || error?.message || "Failed to record check-in!";
+      toast.error(errorMessage)
     }
   };
 
   const handleCheckOut = async (date: string, checkOutTime: string) => {
     if (!selectedEmployee) return;
-    
-    const record = attendance.find((r) => r.employeeId === selectedEmployee.id);
-    const checkInTime = record?.checkIn || "";
-    console.log(
-      `🔴 Check-out triggered for employee ${selectedEmployee.id} at ${checkOutTime} on ${date}, check-in was: ${checkInTime}`,
-    );
+    const record = attendance.find((r) => r.employee.id === selectedEmployee.id);
+    const checkInTime = record?.check_in_time || "";
+
 
     try {
-      await import("@/lib/utils.attendance").then((mod) =>
-        mod.createAttendanceRecord({
+      await AttendanceAPI.createAttendanceRecord({
           employee: selectedEmployee.id,
           check_in_time: checkInTime,
           check_out_time: checkOutTime,
           status: "approved",
-        }),
-      );
-      console.log("✅ Check-out API call succeeded");
-
-      const rawData = await import("@/lib/utils.attendance").then((mod) =>
-        mod.fetchAttendanceRecords(selectedDate),
-      );
-
-      // Safely process the refreshed attendance data
-      const records = processAttendanceData(rawData);
-      console.log("📥 Attendance refreshed after check-out:", records);
-
-      const attendanceMap = new Map<number, {checkIn: string | null; checkOut: string | null}>();
-      records.forEach((rec: any) => {
-        attendanceMap.set(rec.employee.id, {
-          checkIn: rec.check_in_time || null,
-          checkOut: rec.check_out_time || null,
         });
-      });
+      
 
-      setAttendance(
-        employees.map((emp) => ({
-          employeeId: emp.id,
-          checkIn: attendanceMap.get(emp.id)?.checkIn || null,
-          checkOut: attendanceMap.get(emp.id)?.checkOut || null,
-        })),
-      );
-    } catch (err) {
-      console.error("❌ Check-out failed for employee:", selectedEmployee.id, err);
-      alert("Failed to record check-out!");
+      await fetchAttendance();
+
+    } catch (error:any) {
+      let errorMessage = error?.detail || error?.message || "Failed to record check-out!";
+      toast.error(errorMessage)
     }
   };
 
@@ -543,7 +178,7 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
                 </div>
               ) : (
                 employees.map((emp) => {
-                  const record = attendance.find((r) => r.employeeId === emp.id);
+                  const record = attendance.find((r) => r.employee.id === emp.id);
                   return (
                     <div
                       key={emp.id}
@@ -552,14 +187,14 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
                       <div>{selectedDate}</div>
                       <div className="flex flex-col">
                         <span className="font-semibold text-gray-900">
-                          <a
+                          <Link
                             href={`/employees/attendance/${emp.id}`}
                             className="hover:underline text-blue-600"
                           >
-                            {emp.name}
-                          </a>
+                            {emp.user?.fullname || ""}
+                          </Link>
                         </span>
-                        <span className="text-xs text-gray-400 font-normal">{emp.department}</span>
+                        <span className="text-xs text-gray-400 font-normal">{emp.department.name}</span>
                       </div>
                       <div className="text-sm text-blue-600 underline underline-offset-2">
                         {emp.email ? (
@@ -574,8 +209,8 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
                         )}
                       </div>
                       <div>
-                        {record?.checkIn ? (
-                          <Badge className="bg-green-100 text-green-800">{record.checkIn}</Badge>
+                        {record?.check_in_time ? (
+                          <Badge className="bg-green-100 text-green-800">{record.check_in_time}</Badge>
                         ) : isToday(selectedDate) ? (
                           <button
                             className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold"
@@ -588,14 +223,14 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
                         )}
                       </div>
                       <div>
-                        {record?.checkOut ? (
-                          <Badge className="bg-purple-100 text-purple-800">{record.checkOut}</Badge>
+                        {record?.check_out_time ? (
+                          <Badge className="bg-purple-100 text-purple-800">{record.check_out_time}</Badge>
                         ) : isToday(selectedDate) ? (
                           <button
                             className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-semibold"
                             onClick={() => openCheckOutModal(emp)}
-                            disabled={!record?.checkIn}
-                            style={{opacity: record?.checkIn ? 1 : 0.5}}
+                            disabled={!record?.check_in_time}
+                            style={{opacity: record?.check_in_time ? 1 : 0.5}}
                           >
                             Check Out
                           </button>
@@ -617,7 +252,7 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
         isOpen={checkInModalOpen}
         onClose={() => setCheckInModalOpen(false)}
         onConfirm={handleCheckIn}
-        employeeName={selectedEmployee?.name || ''}
+        employeeName={selectedEmployee?.user?.fullname || ''}
       />
 
       {/* Check-out Modal */}
@@ -625,8 +260,8 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
         isOpen={checkOutModalOpen}
         onClose={() => setCheckOutModalOpen(false)}
         onConfirm={handleCheckOut}
-        employeeName={selectedEmployee?.name || ''}
-        checkInTime={attendance.find(r => r.employeeId === selectedEmployee?.id)?.checkIn || null}
+        employeeName={selectedEmployee?.user?.fullname || ''}
+        checkInTime={attendance.find(r => r.employee.id === selectedEmployee?.id)?.check_in_time || null}
       />
     </>
   );
