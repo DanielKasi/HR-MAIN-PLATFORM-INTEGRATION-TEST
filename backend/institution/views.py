@@ -15,7 +15,14 @@ from utilities.helpers import (
 )
 from users.models import Profile, System
 
-from .models import Department, Institution, Branch, UserBranch
+from .models import (
+    Department,
+    Institution,
+    Branch,
+    UserBranch,
+    InstitutionBankAccount,
+    InstitutionBankType,
+)
 from users.serializers import ProfileSerializer
 from .serializers import (
     DepartmentSerializer,
@@ -25,6 +32,8 @@ from .serializers import (
     BranchSerializer,
     SuccessResponseSerializer,
     UserBranchSerializer,
+    InstitutionBankTypeSerializer,
+    InstitutionBankAccountSerializer,
 )
 from django.shortcuts import get_object_or_404
 from .utils import generate_compliant_password
@@ -40,6 +49,7 @@ import uuid
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
+
 
 class DefaultDataAPIView(APIView):
     @extend_schema(
@@ -67,6 +77,7 @@ class DefaultDataAPIView(APIView):
             for dept in default_data
         ]
         return Response(modified_data, status=status.HTTP_200_OK)
+
 
 class InstitutionListAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -100,7 +111,12 @@ class InstitutionListAPIView(APIView):
                 )
 
         serializer = InstitutionSerializer(
-            data=request.data, context={"request": request, "user": request.user, "departments": departments_data}
+            data=request.data,
+            context={
+                "request": request,
+                "user": request.user,
+                "departments": departments_data,
+            },
         )
         if serializer.is_valid():
             institution = serializer.save()
@@ -607,6 +623,7 @@ class DepartmentDetailAPIView(APIView):
             return Response(status=204)
         except Department.DoesNotExist:
             return Response({"detail": "Department not found."}, status=404)
+
 
 # TODO: Make sure a user who does this has permissions to do so
 @extend_schema(
