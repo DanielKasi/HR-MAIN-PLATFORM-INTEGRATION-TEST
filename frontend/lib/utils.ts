@@ -187,7 +187,6 @@ export async function verifyResetToken(token: string): Promise<TokenVerification
  * @param newPassword New password
  */
 
-
 export async function resetPassword(
   token: string,
   newPassword: string,
@@ -251,7 +250,7 @@ export const getDepartments = async ({institutionId}: {institutionId: number}) =
   } catch (error) {
     return null;
   }
-}
+};
 
 export const getDefaultData = async (): Promise<IDepartment[] | null> => {
   try {
@@ -783,45 +782,44 @@ export const downloadEmployeesTemplate = async ({
   accessToken: string;
 }): Promise<void> => {
   try {
-
     const baseURL = process.env.NEXT_PUBLIC_BASE_API_URL;
 
-      // Create a direct fetch request for file download
-      const response = await fetch(`${baseURL}/employee/template/`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
+    // Create a direct fetch request for file download
+    const response = await fetch(`${baseURL}/employee/template/`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        //console.error("Download error response:", errorText);
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
+    if (!response.ok) {
+      const errorText = await response.text();
+      //console.error("Download error response:", errorText);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
 
-      // Check if response is actually a file
-      const contentType = response.headers.get("content-type");
-      if (
-        !contentType ||
-        (!contentType.includes("application/vnd.openxmlformats") &&
-          !contentType.includes("application/vnd.ms-excel") &&
-          !contentType.includes("application/octet-stream"))
-      ) {
-        const responseText = await response.text();
-        //console.error("Unexpected response type:", contentType, responseText);
-        throw new Error("Server did not return an Excel file. Please check the API endpoint.");
-      }
+    // Check if response is actually a file
+    const contentType = response.headers.get("content-type");
+    if (
+      !contentType ||
+      (!contentType.includes("application/vnd.openxmlformats") &&
+        !contentType.includes("application/vnd.ms-excel") &&
+        !contentType.includes("application/octet-stream"))
+    ) {
+      const responseText = await response.text();
+      //console.error("Unexpected response type:", contentType, responseText);
+      throw new Error("Server did not return an Excel file. Please check the API endpoint.");
+    }
 
-      // Get the blob data
-      const blob = await response.blob();
+    // Get the blob data
+    const blob = await response.blob();
 
     // Create a URL for the blob
     const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.setAttribute('download', 'employees_template.xlsx');
+    link.setAttribute("download", "employees_template.xlsx");
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -831,59 +829,63 @@ export const downloadEmployeesTemplate = async ({
   }
 };
 
-
 export const downloadPayrollDocument = async ({
   accessToken,
-  payrollId
+  payrollId,
 }: {
   accessToken: string;
-  payrollId:string
+  payrollId: string;
 }): Promise<void> => {
   try {
-
     const baseURL = process.env.NEXT_PUBLIC_BASE_API_URL;
 
-      // Create a direct fetch request for file download
-      const response = await fetch(`${baseURL}/payroll/export/?payroll_period_id=${payrollId}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
+    // Create a direct fetch request for file download
+    const response = await fetch(`${baseURL}/payroll/export/?payroll_period_id=${payrollId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        //console.error("Download error response:", errorText);
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
+    if (!response.ok) {
+      const errorText = await response.text();
+      //console.error("Download error response:", errorText);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
 
-      // Check if response is actually a file
-      const contentType = response.headers.get("content-type");
-      if (
-        !contentType ||
-        (!contentType.includes("application/vnd.openxmlformats") &&
-          !contentType.includes("application/vnd.ms-excel") &&
-          !contentType.includes("application/octet-stream"))
-      ) {
-        const responseText = await response.text();
-        //console.error("Unexpected response type:", contentType, responseText);
-        throw new Error("Server did not return an Excel file. Please check the API endpoint.");
-      }
+    // Check if response is actually a file
+    const contentType = response.headers.get("content-type");
+    if (
+      !contentType ||
+      (!contentType.includes("application/vnd.openxmlformats") &&
+        !contentType.includes("application/vnd.ms-excel") &&
+        !contentType.includes("application/octet-stream"))
+    ) {
+      const responseText = await response.text();
+      //console.error("Unexpected response type:", contentType, responseText);
+      throw new Error("Server did not return an Excel file. Please check the API endpoint.");
+    }
 
-      // Get the blob data
-      const blob = await response.blob();
+    // Get the blob data
+    const blob = await response.blob();
 
     // Create a URL for the blob
     const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.setAttribute('download', 'payroll.xlsx');
+    link.setAttribute("download", "payroll.xlsx");
     document.body.appendChild(link);
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+    toast.success("Download started", {
+      description: `Payroll is being downloaded.`,
+    });
   } catch (error) {
+    toast.error("Download failed", {
+      description: "Failed to download the file. Please try again.",
+    });
     throw error;
   }
 };
@@ -906,10 +908,10 @@ export const bulkCreateEmployees = async ({
 }> => {
   try {
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('institution', institutionId.toString());
+    formData.append("file", file);
+    formData.append("institution", institutionId.toString());
 
-    const response = await apiRequest.post('employee/create/', formData);
+    const response = await apiRequest.post("employee/create/", formData);
 
     return response.data;
   } catch (error) {
@@ -1003,8 +1005,7 @@ export const updateEmployee = async ({
   }
 };
 
-
-export const getEmployeeById = async ({employeeId}: {employeeId: number|string}) => {
+export const getEmployeeById = async ({employeeId}: {employeeId: number | string}) => {
   try {
     const response = await apiRequest.get(`/employee/${employeeId}/`);
     return response.data as IEmployee;
@@ -1019,7 +1020,7 @@ export const getEmployeeById = async ({employeeId}: {employeeId: number|string})
 };
 
 // Helper function to get roles for an institution
-export const getRoles = async ({institutionId}: {institutionId: number}):Promise<Role[]> => {
+export const getRoles = async ({institutionId}: {institutionId: number}): Promise<Role[]> => {
   try {
     const response = await apiRequest.get(`user/role/?Institution_id=${institutionId}`);
     if (response.data && response.data.results) {
@@ -1033,11 +1034,7 @@ export const getRoles = async ({institutionId}: {institutionId: number}):Promise
 };
 
 // Helper function to get positions for an institution
-export const getPositions = async ({
-  institutionId,
-}: {
-  institutionId: number;
-}) =>{ 
+export const getPositions = async ({institutionId}: {institutionId: number}) => {
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`);
     const data = response.data as PaginatedResponse<IJobPosition>;
@@ -1664,7 +1661,7 @@ export const createLeaveApplication = async ({
     );
     return response.data;
   } catch (error: any) {
-    throw error
+    throw error;
   }
 };
 
@@ -2275,8 +2272,6 @@ export const getActiveEmployeeAllowances = async (
     return null;
   }
 };
-
-
 
 export const createEmployeeDeduction = async ({
   institutionId,
@@ -3263,8 +3258,6 @@ export const TerminationInitiationsAPI = {
     }
   },
 
-
-
   update: async ({
     terminationId,
     terminationData,
@@ -3352,7 +3345,6 @@ export const SeparationPolicyTypesAPI = {
       const response = await apiRequest.get(`on-boarding/separation-types/?${searchParams}`);
       return response.data as PaginatedResponse<ISeparationType>;
     } catch (error) {
-
       throw error;
     }
   },
@@ -3420,7 +3412,6 @@ export const OffboardingStagesAPI = {
       const response = await apiRequest.get(`on-boarding/offboarding-stages/?${searchParams}`);
       return response.data as IPaginatedResponse<IOffboardingStage>;
     } catch (error) {
-
       throw error;
     }
   },
@@ -3475,37 +3466,41 @@ export const OffboardingStagesAPI = {
   },
 };
 
-export const AttendanceAPI  = {
- createAttendanceRecord: async (data: IAttendanceFormData) =>  {
-  const response = await apiRequest.post(`/employee/${data.employee}/attendance/`, data);
-  return response.data;
-},
+export const AttendanceAPI = {
+  createAttendanceRecord: async (data: IAttendanceFormData) => {
+    const response = await apiRequest.post(`/employee/${data.employee}/attendance/`, data);
+    return response.data;
+  },
 
-fetchAttendanceRecords: async (date?: string) => {
-  const response = await apiRequest.get(`/employee/attendance/${date?`?date=${date}`:''}`);
-  return response.data as IPaginatedResponse<IAttendance>;
-},
+  fetchAttendanceRecords: async (date?: string) => {
+    const response = await apiRequest.get(`/employee/attendance/${date ? `?date=${date}` : ""}`);
+    return response.data as IPaginatedResponse<IAttendance>;
+  },
 
-// Fetch attendance records for a specific employee over a date range
-fetchEmployeeAttendanceRecords: async (employeeId: number|string, startDate?: string, endDate?: string)  =>{
-  let url = `/employee/${employeeId}/attendance/`;
-  const params = [];
-  if (startDate) params.push(`start_date=${startDate}`);
-  if (endDate) params.push(`end_date=${endDate}`);
-  if (params.length) url += `?${params.join("&")}`;
-  const response = await apiRequest.get(url);
-  return response.data as PaginatedResponse<IAttendance>;
-},
+  // Fetch attendance records for a specific employee over a date range
+  fetchEmployeeAttendanceRecords: async (
+    employeeId: number | string,
+    startDate?: string,
+    endDate?: string,
+  ) => {
+    let url = `/employee/${employeeId}/attendance/`;
+    const params = [];
+    if (startDate) params.push(`start_date=${startDate}`);
+    if (endDate) params.push(`end_date=${endDate}`);
+    if (params.length) url += `?${params.join("&")}`;
+    const response = await apiRequest.get(url);
+    return response.data as PaginatedResponse<IAttendance>;
+  },
 
-// Update an attendance record by ID
-updateAttendanceRecord: async (id: number, data: Partial<IAttendanceFormData>)=> {
-  const response = await apiRequest.put(`/employee/attendance/${id}/`, data);
-  return response.data;
-},
+  // Update an attendance record by ID
+  updateAttendanceRecord: async (id: number, data: Partial<IAttendanceFormData>) => {
+    const response = await apiRequest.put(`/employee/attendance/${id}/`, data);
+    return response.data;
+  },
 
-// Delete an attendance record by ID
-deleteAttendanceRecord: async (id: number)  => {
-  const response = await apiRequest.delete(`/employee/attendance/${id}/`);
-  return response.data;
-}
-}
+  // Delete an attendance record by ID
+  deleteAttendanceRecord: async (id: number) => {
+    const response = await apiRequest.delete(`/employee/attendance/${id}/`);
+    return response.data;
+  },
+};
