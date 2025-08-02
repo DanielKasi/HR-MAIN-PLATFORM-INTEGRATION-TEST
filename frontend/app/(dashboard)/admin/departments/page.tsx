@@ -42,6 +42,7 @@ import { type IDepartment, PERMISSION_CODES } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import ProtectedComponent from "@/components/ProtectedComponent"
 import { useDocumentTitle } from "@/hooks/use-document-title"
+import RichTextDisplay from "@/components/common/rich-text-display"
 
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<IDepartment[]>([])
@@ -299,13 +300,11 @@ export default function DepartmentsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {department.description ? (
-                      <div className="flex flex-col">
-                        <span className="text-sm">{department.description}</span>
-                      </div>
-                    ) : (
-                      <span className="text-sm text-muted-foreground italic">No description</span>
-                    )}
+
+                    <RichTextDisplay
+                      className={"text-sm" + !department.description ? 'text-muted-foreground italic' : ''}
+                      htmlContent={department.description || "No description"}
+                    />
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>

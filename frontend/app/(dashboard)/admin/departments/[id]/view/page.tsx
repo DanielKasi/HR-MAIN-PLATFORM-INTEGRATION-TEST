@@ -57,6 +57,7 @@ import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/se
 import { getDepartments, getAllEmployees, getOnBoardings, getJobPositions } from "@/lib/utils"
 import type { IDepartment, IOnBoarding, IJobPosition, IEmployee } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import RichTextDisplay from "@/components/common/rich-text-display"
 
 
 
@@ -401,7 +402,10 @@ export default function DepartmentDetailView() {
             </div>
             <div>
               <h1 className="text-2xl font-bold">{department.name}</h1>
-              <p className="text-sm text-muted-foreground">{department.description}</p>
+              <RichTextDisplay
+                className={"text-sm" + !department.description ? 'text-muted-foreground italic' : ''}
+                htmlContent={department.description || "No description"}
+              />
             </div>
           </div>
         </div>
@@ -519,7 +523,10 @@ export default function DepartmentDetailView() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Description</p>
-                  <p className="text-sm">{department.description}</p>
+                  <RichTextDisplay
+                    className={"text-sm" + !department.description ? 'text-muted-foreground italic' : ''}
+                    htmlContent={department.description || "No description"}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -774,9 +781,7 @@ export default function DepartmentDetailView() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <p className="text-sm text-muted-foreground max-w-[200px] truncate">
-                                {position.description || "No description available"}
-                              </p>
+                              <RichTextDisplay className="text-sm text-muted-foreground max-w-[200px] truncate" htmlContent={position.description || ""} />
                             </TableCell>
                             <TableCell>
                               <p className="font-medium">{formatCurrency(position.salary || 0)}</p>

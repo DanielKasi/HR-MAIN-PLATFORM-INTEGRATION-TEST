@@ -18,6 +18,7 @@ import { getJobPositions, createJobPositionAdvert, createJobPosition, } from "@/
 import type { JobPositionAdvertFormData, IJobPosition, JobAdvertStatus, JobAdvertTypes } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
+import { RichEditorField } from "@/components/common/rich-editor";
 
 export default function CreateJobAdvertPage() {
   const [formData, setFormData] = useState<JobPositionAdvertFormData>({
@@ -131,19 +132,16 @@ export default function CreateJobAdvertPage() {
         advert_type: formData.advert_type,
       };
 
-      const newJobAdvert = await createJobPositionAdvert({
+      await createJobPositionAdvert({
         institutionId: selectedInstitution.id,
         advertData: createData,
       });
+      toast.success("Job opening created successfully!");
+      router.push("/job-adverts");
 
-      if (newJobAdvert) {
-        toast.success("Job opening created successfully!");
-        router.push("/job-adverts");
-      } else {
-        toast.error("Failed to create job opening. Please try again.");
-      }
-    } catch (error) {
-      toast.error("Failed to create job opening. Please try again.");
+    } catch (error: any) {
+      const errorMessage = error?.detail || error?.message || "Failed to create job opening. Please try again."
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -333,17 +331,8 @@ export default function CreateJobAdvertPage() {
                 <Label htmlFor="extra_information" className="text-sm font-medium">
                   Job Description (Optional)
                 </Label>
-                <Textarea
-                  id="extra_information"
-                  placeholder="Add any additional information about this job opening..."
-                  value={formData.extra_information || ""}
-                  onChange={(e) => updateFormData("extra_information", e.target.value)}
-                  rows={4}
-                  className="resize-none"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Provide additional details about the role, requirements, or company benefits
-                </p>
+                <RichEditorField id="extra_information" placeholder="Add any additional information about this job opening..." value={formData.extra_information || ""} onChange={(value) => updateFormData("extra_information", value)} />
+
               </div>
 
               {/* Form Actions */}
