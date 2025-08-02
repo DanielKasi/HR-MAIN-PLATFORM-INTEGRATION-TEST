@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter, usePathname } from "next/navigation"
-import { Coins, TrendingUp, TrendingDown, ArrowLeft, Edit,  } from "lucide-react"
+import { Coins, TrendingUp, TrendingDown, ArrowLeft } from "lucide-react"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +11,62 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner"
 
 import { getPayslipItems } from "@/lib/utils"
-import { PayslipItem, PayslipItemData } from "@/app/types/types.utils"
+
+interface PayslipItemData {
+  id: number
+  payslip: {
+    id: number
+    employee: {
+      id: number
+      user: {
+        id: number
+        email: string
+        fullname: string
+        is_active: boolean
+      }
+      department: {
+        id: number
+        name: string
+        institution_id: number
+      }
+      position: {
+        id: number
+        name: string
+        department_id: number
+      }
+    }
+    payroll_period: {
+      id: number
+      name: string
+      start_date: string
+      end_date: string
+      pay_date: string
+      is_processed: boolean
+      institution: number
+    }
+    basic_salary: string
+    total_allowances: string
+    total_deductions: string
+    gross_salary: string
+    net_salary: string
+    days_worked: number
+    is_paid: boolean
+    paid_date: string | null
+  }
+  item_type: "allowance" | "deduction" | "overtime"
+  name: string
+  amount: string
+  description?: string
+}
+
+interface PayslipItem {
+  id: number
+  payslip_id: number
+  item_type: "allowance" | "deduction" | "overtime"
+  name: string
+  amount: number
+  description?: string
+}
 
 export default function PayslipItems() {
   const params = useParams()
@@ -187,6 +242,16 @@ export default function PayslipItems() {
               </p>
               <div className="text-sm text-gray-500 mt-1">
                 Period: {new Date(payslipInfo.payroll_period.start_date).toLocaleDateString()} - {new Date(payslipInfo.payroll_period.end_date).toLocaleDateString()}
+              </div>
+              <div className="text-sm text-gray-700 mt-2 font-medium">
+                Status: <span className={payslipInfo.is_paid ? "text-green-600" : "text-yellow-600"}>
+                  {payslipInfo.is_paid ? "Paid" : "Unpaid"}
+                </span>
+                {payslipInfo.paid_date && (
+                  <span className="text-gray-500 ml-2">
+                    (Paid on: {new Date(payslipInfo.paid_date).toLocaleDateString()})
+                  </span>
+                )}
               </div>
             </div>
           ) : (
