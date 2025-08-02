@@ -1,11 +1,11 @@
 "use client";
 
 import type React from "react";
-import {useState, useEffect} from "react";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import PhoneNumberInput from "@/components/phone-number-input";
 import CountrySelect from "@/components/common/country-select";
 import {
@@ -15,9 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Checkbox} from "@/components/ui/checkbox";
-import {Separator} from "@/components/ui/separator";
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -27,12 +27,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {Textarea} from "@/components/ui/textarea";
-import {Upload, User, X, Loader2, Plus} from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Upload, User, X, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
-import {useRouter} from "next/navigation";
-import {useSelector} from "react-redux";
-import {selectSelectedInstitution, selectAttachedInstitutions} from "@/store/auth/selectors";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
 import {
   createEmployee,
   getPositions,
@@ -42,8 +42,8 @@ import {
   getWorkTypes,
   getEmployeeTypes,
 } from "@/lib/utils";
-import {useBranches} from "@/hooks/use-branches";
-import {MultiSelectBranches} from "@/components/multi-select-branches";
+import { useBranches } from "@/hooks/use-branches";
+import { MultiSelectBranches } from "@/components/multi-select-branches";
 import type {
   EmployeeFormData,
   EmployeeFormState,
@@ -55,20 +55,20 @@ import type {
   IEmployeeTypeFormData,
   ICountry,
 } from "@/app/types/types.utils";
-import type {IUserInstitution} from "@/app/types";
-import {toast} from "sonner";
+import type { IUserInstitution } from "@/app/types";
+import { toast } from "sonner";
 
 const maritalStatusOptions = [
-  {value: "single", label: "Single"},
-  {value: "married", label: "Married"},
-  {value: "divorced", label: "Divorced"},
-  {value: "widowed", label: "Widowed"},
+  { value: "single", label: "Single" },
+  { value: "married", label: "Married" },
+  { value: "divorced", label: "Divorced" },
+  { value: "widowed", label: "Widowed" },
 ];
 
 const steps = [
-  {id: 1, title: "Personal Information"},
-  {id: 2, title: "Work Information"},
-  {id: 3, title: "Financial Information"},
+  { id: 1, title: "Personal Information" },
+  { id: 2, title: "Work Information" },
+  { id: 3, title: "Financial Information" },
 ];
 
 export default function AddEmployeeForm() {
@@ -82,7 +82,7 @@ export default function AddEmployeeForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
 
-  const {branches, loading: branchesLoading, error: branchesError} = useBranches();
+  const { branches, loading: branchesLoading, error: branchesError } = useBranches();
 
   const [positions, setPositions] = useState<IJobPosition[]>([]);
   const [departments, setDepartments] = useState<IDepartment[]>([]);
@@ -147,7 +147,7 @@ export default function AddEmployeeForm() {
     countryCode: string;
     phoneNumber: string;
     isValid: boolean;
-  }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
+  }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
 
   // Add state for emergency contact phone input
   const [emergencyPhoneInput, setEmergencyPhoneInput] = useState<{
@@ -155,7 +155,7 @@ export default function AddEmployeeForm() {
     countryCode: string;
     phoneNumber: string;
     isValid: boolean;
-  }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
+  }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
 
   const showErrorToast = (message: string) => {
     toast.error(message);
@@ -173,13 +173,13 @@ export default function AddEmployeeForm() {
     if (formData.position) {
       const position = positions.find((p) => p.id === formData.position);
       if (position) {
-        setFormData((prev) => ({...prev, department: position.department || 0}));
+        setFormData((prev) => ({ ...prev, department: position.department || 0 }));
       }
     }
   }, [formData.position]);
 
-  useEffect(()=>{
-    setFormData(prev => ({...prev, selected_branches:branches.map(br => br.id)}))
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, selected_branches: branches.map(br => br.id) }))
   }, [branches])
 
   const loadDropdownData = async () => {
@@ -188,10 +188,10 @@ export default function AddEmployeeForm() {
     setLoadingData(true);
     try {
       const [positionsData, departmentsData, workTypesData, employeeTypesData] = await Promise.all([
-        getPositions({institutionId: selectedInstitution.id}),
-        getDepartments({institutionId: selectedInstitution.id}),
-        getWorkTypes({institutionId: selectedInstitution.id}),
-        getEmployeeTypes({institutionId: selectedInstitution.id}),
+        getPositions({ institutionId: selectedInstitution.id }),
+        getDepartments({ institutionId: selectedInstitution.id }),
+        getWorkTypes({ institutionId: selectedInstitution.id }),
+        getEmployeeTypes({ institutionId: selectedInstitution.id }),
       ]);
 
       setPositions(Array.isArray(positionsData) ? positionsData : []);
@@ -213,7 +213,7 @@ export default function AddEmployeeForm() {
     field: keyof EmployeeFormState,
     value: string | boolean | File | null | number | number[],
   ) => {
-    setFormData((prev) => ({...prev, [field]: value}));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -300,8 +300,8 @@ export default function AddEmployeeForm() {
 
       if (newWorkType) {
         setWorkTypes((prev) => [...prev, newWorkType]);
-        setFormData((prev) => ({...prev, work_type: newWorkType.id}));
-        setWorkTypeFormData({name: "", description: "", code: ""});
+        setFormData((prev) => ({ ...prev, work_type: newWorkType.id }));
+        setWorkTypeFormData({ name: "", description: "", code: "" });
         setIsWorkTypeModalOpen(false);
         showSuccessToast("Work type added successfully");
       } else {
@@ -337,8 +337,8 @@ export default function AddEmployeeForm() {
 
       if (newEmployeeType) {
         setEmployeeTypes((prev) => [...prev, newEmployeeType]);
-        setFormData((prev) => ({...prev, employee_type: newEmployeeType.id}));
-        setEmployeeTypeFormData({name: "", description: "", code: ""});
+        setFormData((prev) => ({ ...prev, employee_type: newEmployeeType.id }));
+        setEmployeeTypeFormData({ name: "", description: "", code: "" });
         setIsEmployeeTypeModalOpen(false);
         showSuccessToast("Employee type name added successfully");
       } else {
@@ -560,6 +560,7 @@ export default function AddEmployeeForm() {
         error instanceof Error
           ? error.message
           : "An unknown error occurred while creating the employee.";
+      console.log("\n\n\n The error : ", error)
       showErrorToast(errorMessage);
       setSubmitError(errorMessage);
     } finally {
@@ -848,7 +849,7 @@ export default function AddEmployeeForm() {
                             id="workTypeName"
                             value={workTypeFormData.name}
                             onChange={(e) =>
-                              setWorkTypeFormData((prev) => ({...prev, name: e.target.value}))
+                              setWorkTypeFormData((prev) => ({ ...prev, name: e.target.value }))
                             }
                             placeholder="Enter work type name"
                           />
@@ -859,7 +860,7 @@ export default function AddEmployeeForm() {
                             id="workTypeCode"
                             value={workTypeFormData.code}
                             onChange={(e) =>
-                              setWorkTypeFormData((prev) => ({...prev, code: e.target.value}))
+                              setWorkTypeFormData((prev) => ({ ...prev, code: e.target.value }))
                             }
                             placeholder="Enter work type code (optional)"
                             maxLength={10}
@@ -887,7 +888,7 @@ export default function AddEmployeeForm() {
                           variant="outline"
                           onClick={() => {
                             setIsWorkTypeModalOpen(false);
-                            setWorkTypeFormData({name: "", description: "", code: ""});
+                            setWorkTypeFormData({ name: "", description: "", code: "" });
                           }}
                           disabled={isAddingWorkType}
                         >
@@ -964,7 +965,7 @@ export default function AddEmployeeForm() {
                             id="employeeTypeName"
                             value={employeeTypeFormData.name}
                             onChange={(e) =>
-                              setEmployeeTypeFormData((prev) => ({...prev, name: e.target.value}))
+                              setEmployeeTypeFormData((prev) => ({ ...prev, name: e.target.value }))
                             }
                             placeholder="Enter employee type name"
                           />
@@ -975,7 +976,7 @@ export default function AddEmployeeForm() {
                             id="employeeTypeCode"
                             value={employeeTypeFormData.code}
                             onChange={(e) =>
-                              setEmployeeTypeFormData((prev) => ({...prev, code: e.target.value}))
+                              setEmployeeTypeFormData((prev) => ({ ...prev, code: e.target.value }))
                             }
                             placeholder="Enter employee type code (optional)"
                             maxLength={10}
@@ -1003,7 +1004,7 @@ export default function AddEmployeeForm() {
                           variant="outline"
                           onClick={() => {
                             setIsEmployeeTypeModalOpen(false);
-                            setEmployeeTypeFormData({name: "", description: "", code: ""});
+                            setEmployeeTypeFormData({ name: "", description: "", code: "" });
                           }}
                           disabled={isAddingEmployeeType}
                         >
@@ -1157,18 +1158,16 @@ export default function AddEmployeeForm() {
               {steps.map((step, index) => (
                 <div key={step.id} className="flex items-center">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      currentStep >= step.id
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= step.id
                         ? "bg-orange-600 text-white"
                         : "bg-gray-200 text-gray-600"
-                    }`}
+                      }`}
                   >
                     {step.id}
                   </div>
                   <span
-                    className={`ml-2 text-sm ${
-                      currentStep >= step.id ? "text-orange-600 font-medium" : "text-gray-500"
-                    }`}
+                    className={`ml-2 text-sm ${currentStep >= step.id ? "text-orange-600 font-medium" : "text-gray-500"
+                      }`}
                   >
                     {step.title}
                   </span>

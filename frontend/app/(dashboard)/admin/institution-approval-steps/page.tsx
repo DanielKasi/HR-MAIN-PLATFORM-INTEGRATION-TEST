@@ -1,5 +1,5 @@
 "use client";
-import type {ApprovalStep} from "@/app/types";
+import type { ApprovalStep } from "@/app/types";
 
 import {
   Search,
@@ -12,13 +12,13 @@ import {
   ArrowDown,
   Save,
 } from "lucide-react";
-import {Fragment, useEffect, useState} from "react";
-import {useRouter} from "next/navigation";
-import {toast} from "react-toastify";
+import { Fragment, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -26,13 +26,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Input} from "@/components/ui/input";
-import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import apiRequest from "@/lib/apiRequest";
-import {DeleteConfirmationDialog} from "@/components/delete-confirmation-dialog";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import {useSelector} from "react-redux";
-import {capitalizeEachWord} from "@/lib/helpers";
+import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { useSelector } from "react-redux";
+import { capitalizeEachWord } from "@/lib/helpers";
 
 export default function ShopApprovalStepsPage() {
   const currentInstitution = useSelector(selectSelectedInstitution);
@@ -43,7 +43,7 @@ export default function ShopApprovalStepsPage() {
   const [entriesPerPage, setEntriesPerPage] = useState("10");
   const [expandedActions, setExpandedActions] = useState<number[]>([]);
   const router = useRouter();
-  const [deleteDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingStepId, setDeletingStepId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [reorderedActions, setReorderedActions] = useState<Record<string, boolean>>({});
@@ -97,7 +97,7 @@ export default function ShopApprovalStepsPage() {
 
       return acc;
     },
-    {} as Record<string, {action: ApprovalStep["action_details"]; steps: ApprovalStep[]}>,
+    {} as Record<string, { action: ApprovalStep["action_details"]; steps: ApprovalStep[] }>,
   );
 
   // Sort steps by level within each action group
@@ -177,7 +177,7 @@ export default function ShopApprovalStepsPage() {
           };
 
           // Mark this action as reordered
-          setReorderedActions((prev) => ({...prev, [actionId]: true}));
+          setReorderedActions((prev) => ({ ...prev, [actionId]: true }));
         }
       }
 
@@ -217,7 +217,7 @@ export default function ShopApprovalStepsPage() {
           };
 
           // Mark this action as reordered
-          setReorderedActions((prev) => ({...prev, [actionId]: true}));
+          setReorderedActions((prev) => ({ ...prev, [actionId]: true }));
         }
       }
 
@@ -227,8 +227,8 @@ export default function ShopApprovalStepsPage() {
 
   const saveReorderedSteps = async (actionId: number) => {
     try {
-      setSavingOrder((prev) => ({...prev, [actionId]: true}));
-      
+      setSavingOrder((prev) => ({ ...prev, [actionId]: true }));
+
 
       if (!currentInstitution?.id) {
         throw new Error("No institution context found");
@@ -249,7 +249,7 @@ export default function ShopApprovalStepsPage() {
 
       // Update success state
       setReorderedActions((prev) => {
-        const newState = {...prev};
+        const newState = { ...prev };
 
         delete newState[actionId];
 
@@ -262,7 +262,7 @@ export default function ShopApprovalStepsPage() {
       toast.error("Failed to update the approval steps order.");
     } finally {
       setSavingOrder((prev) => {
-        const newState = {...prev};
+        const newState = { ...prev };
 
         delete newState[actionId];
 
@@ -397,7 +397,7 @@ export default function ShopApprovalStepsPage() {
                     </TableCell>
                   </TableRow>
                 ) : Object.keys(stepsByAction).length > 0 ? (
-                  Object.entries(stepsByAction).map(([actionId, {action, steps}], idx) => (
+                  Object.entries(stepsByAction).map(([actionId, { action, steps }], idx) => (
                     <Fragment key={idx}>
                       <TableRow
                         key={`${actionId}-${idx}-${action.code}`}
@@ -471,9 +471,9 @@ export default function ShopApprovalStepsPage() {
                                       <TableCell>
                                         {step.approvers_details && step.approvers_details.length > 0
                                           ? formatItemsList(
-                                              step.approvers_details,
-                                              "approver_user.user.fullname",
-                                            )
+                                            step.approvers_details,
+                                            "approver_user.user.fullname",
+                                          )
                                           : "None"}
                                       </TableCell>
                                       <TableCell>
@@ -483,7 +483,7 @@ export default function ShopApprovalStepsPage() {
                                             {step.level === Math.min(...steps.map((s) => s.level))
                                               ? "(First)"
                                               : step.level ===
-                                                  Math.max(...steps.map((s) => s.level))
+                                                Math.max(...steps.map((s) => s.level))
                                                 ? "(Last)"
                                                 : ""}
                                           </span>
@@ -590,11 +590,12 @@ export default function ShopApprovalStepsPage() {
       <DeleteConfirmationDialog
         description="Are you sure you want to delete this approval step? This action cannot be undone."
         isDeleting={isDeleting}
-        isOpen={deleteDeleteDialogOpen}
+        isOpen={deleteDialogOpen}
         title="Delete Approval Step"
         onConfirm={confirmDelete}
-        onClose={function (): void {
-          throw new Error("Function not implemented.");
+        onClose={() => {
+          setIsDeleting(false);
+          setDeleteDialogOpen(false)
         }}
       />
     </div>

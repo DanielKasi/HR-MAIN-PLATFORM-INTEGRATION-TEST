@@ -470,7 +470,7 @@ export default function DisciplinaryForm() {
                     </SelectContent>
                   </Select>
                 </div>
-                 <div className="space-y-2">
+                <div className="space-y-2">
                   <Label htmlFor="incident_date">Incident Date *</Label>
                   <Input
                     id="incident_date"
@@ -495,40 +495,40 @@ export default function DisciplinaryForm() {
                     disabled={isSubmitting}
                   />
                 </div>
-                 <div className="flex items-center gap-4">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="follow_up_required"
-                        checked={disciplinaryAction.follow_up_required}
-                        onCheckedChange={(checked) =>
-                          setDisciplinaryAction({
-                            ...disciplinaryAction,
-                            follow_up_required: !!checked,
-                            follow_up_date: checked ? disciplinaryAction.follow_up_date : null, // Change to null
-                          })
-                        }
-                        className="data-[state=checked]:bg-orange-600 data-[state=checked]:border-orange-600"
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="follow_up_required"
+                      checked={disciplinaryAction.follow_up_required}
+                      onCheckedChange={(checked) =>
+                        setDisciplinaryAction({
+                          ...disciplinaryAction,
+                          follow_up_required: !!checked,
+                          follow_up_date: checked ? disciplinaryAction.follow_up_date : null, // Change to null
+                        })
+                      }
+                      className="data-[state=checked]:bg-orange-600 data-[state=checked]:border-orange-600"
+                      disabled={isSubmitting}
+                    />
+                    <Label htmlFor="follow_up_required" className="text-orange-800 font-medium">
+                      Follow-up Required
+                    </Label>
+                  </div>
+                  {disciplinaryAction.follow_up_required && (
+                    <div className="flex-1">
+                      <Label htmlFor="follow_up_date" className="sr-only">Follow-up Date *</Label>
+                      <Input
+                        id="follow_up_date"
+                        type="date"
+                        value={disciplinaryAction.follow_up_date || ""}
+                        onChange={(e) => setDisciplinaryAction({ ...disciplinaryAction, follow_up_date: e.target.value })}
                         disabled={isSubmitting}
+                        required
+                        placeholder="Follow-up Date"
                       />
-                      <Label htmlFor="follow_up_required" className="text-orange-800 font-medium">
-                        Follow-up Required
-                      </Label>
                     </div>
-                    {disciplinaryAction.follow_up_required && (
-                      <div className="flex-1">
-                        <Label htmlFor="follow_up_date" className="sr-only">Follow-up Date *</Label>
-                        <Input
-                          id="follow_up_date"
-                          type="date"
-                          value={disciplinaryAction.follow_up_date || ""}
-                          onChange={(e) => setDisciplinaryAction({ ...disciplinaryAction, follow_up_date: e.target.value })}
-                          disabled={isSubmitting}
-                          required
-                          placeholder="Follow-up Date"
-                        />
-                      </div>
-                    )}
-                  </div>   
+                  )}
+                </div>
               </div>
 
               {/* Assignment */}
@@ -622,8 +622,11 @@ export default function DisciplinaryForm() {
                 />
               </div>
 
-              <div className="flex gap-4 pt-6">
-                <Button type="submit" className="flex-1 bg-orange-600 hover:bg-orange-700 h-12" disabled={isSubmitting}>
+              <div className="flex items-center justify-end gap-8 pt-6">
+                <Button type="button" variant="outline" className="px-6" onClick={handleDisciplinaryActionCancel} disabled={isSubmitting}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -632,9 +635,6 @@ export default function DisciplinaryForm() {
                   ) : (
                     "Create Disciplinary Action"
                   )}
-                </Button>
-                <Button type="button" variant="outline" className="flex-1 h-12" onClick={handleDisciplinaryActionCancel} disabled={isSubmitting}>
-                  Cancel
                 </Button>
               </div>
             </form>
