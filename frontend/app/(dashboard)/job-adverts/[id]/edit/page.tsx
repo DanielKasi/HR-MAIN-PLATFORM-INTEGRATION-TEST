@@ -23,6 +23,7 @@ import type {
 } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
+import { RichEditorField } from "@/components/common/rich-editor"
 
 export default function EditJobAdvertPage() {
   const [jobAdvert, setJobAdvert] = useState<JobPositionAdvert | null>(null)
@@ -290,21 +291,18 @@ export default function EditJobAdvertPage() {
   return (
     <div className="w-full h-full p-6">
       <div className="w-full space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </div>
+
 
         <Card className="w-full">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Megaphone className="h-5 w-5 text-primary" />
-              </div>
               <div>
-                <CardTitle className="text-xl">Edit Job Opening</CardTitle>
+                <div className="flex items-center justify-start">
+                  <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  <CardTitle className="text-xl">Edit Job Opening</CardTitle>
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Update job opening for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
                 </p>
@@ -401,17 +399,15 @@ export default function EditJobAdvertPage() {
               </div>
 
               {/* Extra Information - Full Width */}
-              <div className="space-y-2">
+              <div >
                 <Label htmlFor="extra_information" className="text-sm font-medium">
                   Job Description (Optional)
                 </Label>
-                <Textarea
-                  id="extra_information"
+
+                <RichEditorField id="extra_information"
                   placeholder="Add any additional information about this job opening..."
                   value={formData.extra_information || ""}
-                  onChange={(e) => updateFormData("extra_information", e.target.value)}
-                  rows={4}
-                  maxLength={2000}
+                  onChange={(value) => updateFormData("extra_information", value)}
                   className={errors.extra_information ? "border-destructive" : ""}
                 />
                 {errors.extra_information && <p className="text-sm text-destructive">{errors.extra_information}</p>}

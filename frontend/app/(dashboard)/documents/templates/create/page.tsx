@@ -132,13 +132,16 @@ export default function CreateTemplatePage() {
   return (
     <div className="w-full py-8 px-4 ">
       <div className="mb-8">
-        <Link
-          href="/documents/templates"
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4 rounded-full aspect-square"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-        </Link>
-        <h1 className="text-3xl font-bold">Create Document Template</h1>
+        <div className="flex items-center justify-start gap-6">
+          <Link
+            href="/documents/templates"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+          ><Button variant={"ghost"} className="rounded-full aspect-square">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <h1 className="text-3xl font-bold">Create Document Template</h1>
+        </div>
         <p className="text-muted-foreground mt-2">Create a new template for generating documents</p>
       </div>
 
@@ -193,8 +196,8 @@ export default function CreateTemplatePage() {
                 type="button"
                 onClick={() => handleTemplateTypeChange("text")}
                 className={`p-4 border rounded-lg text-center transition-colors ${formData.template_type === "text"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/50"
                   }`}
               >
                 <FileText className="h-8 w-8 mx-auto mb-2" />
@@ -206,8 +209,8 @@ export default function CreateTemplatePage() {
                 type="button"
                 onClick={() => handleTemplateTypeChange("pdf")}
                 className={`p-4 border rounded-lg text-center transition-colors ${formData.template_type === "pdf"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/50"
                   }`}
               >
                 <File className="h-8 w-8 mx-auto mb-2 text-red-500" />
@@ -219,8 +222,8 @@ export default function CreateTemplatePage() {
                 type="button"
                 onClick={() => handleTemplateTypeChange("word")}
                 className={`p-4 border rounded-lg text-center transition-colors ${formData.template_type === "word"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/50"
                   }`}
               >
                 <File className="h-8 w-8 mx-auto mb-2 text-blue-500" />

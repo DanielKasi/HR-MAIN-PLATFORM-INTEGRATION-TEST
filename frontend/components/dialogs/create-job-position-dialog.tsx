@@ -31,6 +31,7 @@ import { getDepartments, createJobPosition } from "@/lib/utils"
 import type { JobPositionFormData, IDepartment, CreateJobPositionData } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import { CreateDepartmentDialog } from "./create-department-dialog"
+import { RichEditorField } from "../common/rich-editor"
 
 function formatWithCommas(value: string) {
   const num = value.replace(/,/g, "")
@@ -210,8 +211,8 @@ export function CreateJobPositionDialog({
             </div>
           </div>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
+        <form onSubmit={handleSubmit} >
+          <div className="grid gap-4 overflow-y-auto h-full max-h-[70svh] py-8 mb-8">
             <div className="grid grid-cols-1 gap-6">
               {/* Job Position Name */}
               <div className="space-y-2">
@@ -288,12 +289,12 @@ export function CreateJobPositionDialog({
               {/* Job Description */}
               <div className="space-y-2">
                 <Label htmlFor="description">Job Description</Label>
-                <Textarea
+
+                <RichEditorField
                   id="description"
                   placeholder="Describe the job responsibilities, requirements, and qualifications..."
                   value={formData.description}
-                  onChange={(e) => updateFormData("description", e.target.value)}
-                  rows={4}
+                  onChange={(value) => updateFormData("description", value)}
                   className={errors.description ? "border-destructive" : ""}
                 />
                 {errors.description && (

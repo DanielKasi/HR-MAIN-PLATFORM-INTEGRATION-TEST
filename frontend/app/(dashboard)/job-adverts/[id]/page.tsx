@@ -16,6 +16,7 @@ import { getJobPositionAdvertById, getJobPosition, updateJobPositionAdvert } fro
 import type { JobPositionAdvert, IJobPosition, JobAdvertStatus } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import { formatCurrency } from "@/lib/helpers"
+import RichTextDisplay from "@/components/common/rich-text-display"
 
 const getStatusColor = (status: JobAdvertStatus) => {
   switch (status) {
@@ -319,7 +320,7 @@ export default function JobAdvertDetailsPage() {
                       </div>
                     </div>
                     {jobPosition.description && (
-                      <p className="text-sm text-muted-foreground leading-relaxed">{jobPosition.description}</p>
+                      <RichTextDisplay className="text-sm text-muted-foreground leading-relaxed" htmlContent={jobPosition.description} />
                     )}
                   </div>
                 </div>
@@ -408,7 +409,7 @@ export default function JobAdvertDetailsPage() {
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Additional Information</h3>
                   <div className="bg-muted/50 p-4 rounded-lg">
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{jobAdvert.extra_information}</p>
+                    <RichTextDisplay className="text-sm leading-relaxed whitespace-pre-wrap" htmlContent={jobAdvert.extra_information || "-"} />
                   </div>
                 </div>
               </>
