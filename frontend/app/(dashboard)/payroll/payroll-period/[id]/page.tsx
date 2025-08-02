@@ -1,11 +1,11 @@
 "use client";
 
 import type React from "react";
-import {useState, useEffect} from "react";
-import {useParams, useRouter} from "next/navigation";
-import {Button} from "@/components/ui/button";
-import {Card, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -22,9 +22,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Badge} from "@/components/ui/badge";
-import {Avatar, AvatarFallback} from "@/components/ui/avatar";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Plus,
   CheckCircle,
@@ -39,8 +39,8 @@ import {
   Download,
   ArrowLeft,
 } from "lucide-react";
-import {toast} from "sonner";
-import {useSelector} from "react-redux";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
 import {
   getPayslips,
   deletePayslip,
@@ -50,8 +50,8 @@ import {
   createBulkPayslips,
   downloadPayrollDocument,
 } from "@/lib/utils";
-import {IEmployee, IPayrollPeriod, IPayslip} from "@/app/types/types.utils";
-import {selectAccessToken, selectSelectedInstitution} from "@/store/auth/selectors";
+import { IEmployee, IPayrollPeriod, IPayslip } from "@/app/types/types.utils";
+import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -111,7 +111,7 @@ export default function Payslips() {
   const params = useParams();
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const periodId = params.id as string;
-  
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -137,7 +137,7 @@ export default function Payslips() {
         setPayrollPeriod(targetPeriod);
 
         // Fetch employees
-        const fetchedEmployees = await getAllEmployees({institutionId: selectedInstitution.id});
+        const fetchedEmployees = await getAllEmployees({ institutionId: selectedInstitution.id });
         if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
           const formattedEmployees = fetchedEmployees.filter(
             (emp) => emp.id && emp.id.toString() !== "0",
@@ -145,7 +145,7 @@ export default function Payslips() {
           setEmployees(formattedEmployees);
         } else {
           setEmployees([]);
-          toast.error("Invalid employee data received", {duration: 5000});
+          toast.error("Invalid employee data received", { duration: 5000 });
         }
 
         // Fetch payslips and filter by period
@@ -164,9 +164,9 @@ export default function Payslips() {
                 department: apiPayslip.employee.department?.name || "",
                 user: apiPayslip.employee.user
                   ? {
-                      fullname: apiPayslip.employee.user.fullname,
-                      email: apiPayslip.employee.user.email,
-                    }
+                    fullname: apiPayslip.employee.user.fullname,
+                    email: apiPayslip.employee.user.email,
+                  }
                   : null,
               },
               payroll_period: {
@@ -196,7 +196,7 @@ export default function Payslips() {
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        toast.error("Failed to load data", {duration: 5000});
+        toast.error("Failed to load data", { duration: 5000 });
       } finally {
         setIsLoading(false);
       }
@@ -224,9 +224,9 @@ export default function Payslips() {
               department: apiPayslip.employee.department?.name || "",
               user: apiPayslip.employee.user
                 ? {
-                    fullname: apiPayslip.employee.user.fullname,
-                    email: apiPayslip.employee.user.email,
-                  }
+                  fullname: apiPayslip.employee.user.fullname,
+                  email: apiPayslip.employee.user.email,
+                }
                 : null,
             },
             payroll_period: {
@@ -294,8 +294,8 @@ export default function Payslips() {
       return;
     }
     try {
-      await downloadPayrollDocument({accessToken, payrollId: periodId});
-    } catch (error) {}
+      await downloadPayrollDocument({ accessToken, payrollId: periodId });
+    } catch (error) { }
   };
 
   const getPageNumbers = () => {
@@ -387,7 +387,7 @@ export default function Payslips() {
           prev.map((p) => {
             const wasMarked = unpaidPayslips.find((up) => up.id === p.id);
             return wasMarked && !p.is_paid
-              ? {...p, is_paid: true, paid_date: new Date().toISOString()}
+              ? { ...p, is_paid: true, paid_date: new Date().toISOString() }
               : p;
           }),
         );
@@ -423,7 +423,7 @@ export default function Payslips() {
       if (success) {
         setPayslips((prev) =>
           prev.map((p) =>
-            p.id === payslip.id ? {...p, is_paid: true, paid_date: new Date().toISOString()} : p,
+            p.id === payslip.id ? { ...p, is_paid: true, paid_date: new Date().toISOString() } : p,
           ),
         );
         toast.success(`Payslip for ${payslip.employee.name} marked as paid`);
@@ -452,7 +452,7 @@ export default function Payslips() {
     }
   };
 
-   const navigateToPayslipItems = (payslipId: number) => {
+  const navigateToPayslipItems = (payslipId: number) => {
     router.push(`/payroll/payroll-period/payslip/${payslipId}/items`);
   };
 
@@ -508,11 +508,10 @@ export default function Payslips() {
           <div className="flex justify-between items-center">
             <Button
               variant="outline"
-               onClick={() => window.history.back()}  // ✅ Use hook result
-              className="flex items-center gap-2"
+              onClick={() => router.back()}
+              className="flex items-center gap-2 rounded-full aspect-square"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Payroll Periods
             </Button>
             <div>
               <CardTitle className="text-2xl font-bold text-gray-900">
@@ -749,9 +748,8 @@ export default function Payslips() {
                   {paginatedPayslips.map((payslip, index) => (
                     <TableRow
                       key={payslip.id}
-                      className={`hover:bg-orange-50/30 transition-colors border-b ${
-                        index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
-                      }`}
+                      className={`hover:bg-orange-50/30 transition-colors border-b ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                        }`}
                     >
                       <TableCell className="py-4">
                         <div className="flex items-center gap-3">
@@ -798,11 +796,10 @@ export default function Payslips() {
                       <TableCell>
                         <Badge
                           variant={payslip.is_paid ? "default" : "secondary"}
-                          className={`${
-                            payslip.is_paid
-                              ? "bg-green-100 text-green-800 border-green-200"
-                              : "bg-yellow-100 text-yellow-800 border-yellow-200"
-                          } font-medium px-3 py-1`}
+                          className={`${payslip.is_paid
+                            ? "bg-green-100 text-green-800 border-green-200"
+                            : "bg-yellow-100 text-yellow-800 border-yellow-200"
+                            } font-medium px-3 py-1`}
                         >
                           <div className="flex items-center gap-1">
                             {payslip.is_paid ? (
@@ -933,11 +930,10 @@ export default function Payslips() {
                               variant={currentPage === page ? "default" : "outline"}
                               size="sm"
                               onClick={() => handlePageChange(page as number)}
-                              className={`w-8 h-8 p-0 ${
-                                currentPage === page
-                                  ? "bg-orange-600 hover:bg-orange-700 text-white"
-                                  : "hover:bg-gray-50"
-                              }`}
+                              className={`w-8 h-8 p-0 ${currentPage === page
+                                ? "bg-orange-600 hover:bg-orange-700 text-white"
+                                : "hover:bg-gray-50"
+                                }`}
                             >
                               {page}
                             </Button>

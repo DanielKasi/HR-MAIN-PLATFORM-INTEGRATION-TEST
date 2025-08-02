@@ -229,9 +229,8 @@ export default function JobAdvertDetailsPage() {
       <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
             <ArrowLeft className="h-4 w-4" />
-            Back to Job Openings
           </Button>
           <div className="flex items-center gap-2">
             {jobAdvert.job_position_advert_status !== "closed" && (
@@ -316,7 +315,7 @@ export default function JobAdvertDetailsPage() {
                       {/* <h4 className="text-xl font-semibold">{jobPosition.name}</h4> */}
                       <div className="flex items-center gap-1 text-lg font-bold text-green-600">
                         UGX {" "}
-                        {formatCurrency(jobPosition.salary||0)}
+                        {formatCurrency(jobPosition.salary || 0)}
                       </div>
                     </div>
                     {jobPosition.description && (

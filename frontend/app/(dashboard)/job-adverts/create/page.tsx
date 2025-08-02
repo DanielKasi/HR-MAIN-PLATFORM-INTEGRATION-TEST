@@ -52,7 +52,7 @@ export default function CreateJobAdvertPage() {
 
     try {
       setIsLoading(true);
-      const fetchedJobPositions = await getJobPositions({institutionId: selectedInstitution.id});
+      const fetchedJobPositions = await getJobPositions({ institutionId: selectedInstitution.id });
       if (fetchedJobPositions) {
         setJobPositions(fetchedJobPositions);
       } else {
@@ -69,10 +69,10 @@ export default function CreateJobAdvertPage() {
     field: keyof Exclude<JobPositionAdvertFormData, "job_position_advert_status">,
     value: any,
   ) => {
-    setFormData((prev) => ({...prev, [field]: value}));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors((prev) => ({...prev, [field]: undefined}));
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
@@ -196,26 +196,23 @@ export default function CreateJobAdvertPage() {
     <div className="w-full h-full p-6">
       <div className="w-full space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleBack}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Job Openings
-          </Button>
-        </div>
+
 
         <Card className="w-full">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Megaphone className="h-5 w-5 text-primary" />
-              </div>
               <div>
-                <CardTitle className="text-xl">Create New Job Openings</CardTitle>
+                <div className="flex items-center gap-4 justify-start">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleBack}
+                    className="flex items-center gap-2 rounded-full aspect-square"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  <CardTitle className="text-xl">Create New Job Openings</CardTitle>
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Create a job opening for {selectedBranch.branch_name} -{" "}
                   {selectedInstitution.institution_name}

@@ -22,7 +22,7 @@ import { toast } from "sonner"
 
 export default function EditInterviewPage() {
   const [interview, setInterview] = useState<IInterview | null>(null)
-  
+
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([])
   const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([])
   const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null)
@@ -286,9 +286,8 @@ export default function EditInterviewPage() {
       <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
             <ArrowLeft className="h-4 w-4" />
-            Back to Interview
           </Button>
         </div>
 
@@ -340,8 +339,8 @@ export default function EditInterviewPage() {
               )}
 
               {/* Selected Application Info */}
-             selectedApplication   
-                        {/* Selected Stage Info */}
+              selectedApplication
+              {/* Selected Stage Info */}
               {selectedStage && (
                 <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
                   <h4 className="font-medium text-sm mb-2 text-green-800">Selected Interview Stage</h4>
@@ -400,4 +399,4 @@ export default function EditInterviewPage() {
       </div>
     </div>
   )
-  }
+}

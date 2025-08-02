@@ -123,8 +123,8 @@ export default function RoleDetailsPage() {
   return (
     <div className="container mx-auto py-6 max-w-full bg-white-50 min-h-screen">
       <div className="flex items-center mb-6">
-        <Button variant="outline" onClick={() => router.push("/users/roles")}>
-          Back to Roles
+        <Button variant="outline" className="rounded-full aspect-square" onClick={() => router.push("/users/roles")}>
+          <ArrowLeft/>
         </Button>
         <h1 className="text-2xl font-bold">Role Details</h1>
       </div>

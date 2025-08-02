@@ -20,6 +20,7 @@ import { fetchInstitutionRoles } from "@/lib/helpers";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { useSelector } from "react-redux";
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { ArrowLeft } from "lucide-react";
 
 export default function EditApprovalStep() {
   const institutionId = useSelector(selectSelectedInstitution)?.id;
@@ -205,7 +206,7 @@ export default function EditApprovalStep() {
             variant="outline"
             onClick={() => router.push("/admin/institution-approval-steps")}
           >
-            Back to Approval Steps
+            <ArrowLeft />
           </Button>
           <h1 className="text-2xl font-bold tracking-tight">Edit Approval Step</h1>
         </div>

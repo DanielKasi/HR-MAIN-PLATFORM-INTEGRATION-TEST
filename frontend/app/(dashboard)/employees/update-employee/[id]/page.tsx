@@ -1203,9 +1203,8 @@ export default function UpdateEmployeePage() {
           <CardHeader>
             <div className="flex items-center space-x-4">
               <Link href="/employees/employee-list">
-                <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+                <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900 rounded-full aspect-square">
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Employees
                 </Button>
               </Link>
               <div className="h-6 w-px bg-gray-300" />

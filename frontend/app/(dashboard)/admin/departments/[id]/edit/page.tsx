@@ -23,7 +23,7 @@ export default function EditDepartmentPage() {
   const [formData, setFormData] = useState<DepartmentFormData>({
     name: "",
     description: "",
-    institution:0
+    institution: 0
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -52,7 +52,7 @@ export default function EditDepartmentPage() {
   }, [selectedInstitution, selectedBranch, departmentId, router])
 
   const fetchDepartment = async () => {
-    if(!selectedInstitution){return}
+    if (!selectedInstitution) { return }
     try {
       setIsLoading(true)
       const fetchedDepartment = await getDepartment({ departmentId })
@@ -61,8 +61,8 @@ export default function EditDepartmentPage() {
         setDepartment(fetchedDepartment)
         setFormData({
           name: fetchedDepartment.name,
-          description: fetchedDepartment?.description||"",
-          institution:selectedInstitution.id
+          description: fetchedDepartment?.description || "",
+          institution: selectedInstitution.id
         })
       } else {
         toast.error("Department not found")
@@ -203,9 +203,9 @@ export default function EditDepartmentPage() {
       <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
             <ArrowLeft className="h-4 w-4" />
-            Back to Departments
+
           </Button>
         </div>
 

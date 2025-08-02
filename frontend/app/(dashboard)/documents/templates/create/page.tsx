@@ -39,7 +39,7 @@ export default function CreateTemplatePage() {
   const [newPlaceholder, setNewPlaceholder] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
-    const selectedInstitution = useSelector(selectSelectedInstitution);
+  const selectedInstitution = useSelector(selectSelectedInstitution);
   const INSTITUTION_ID = selectedInstitution?.id;
 
   useEffect(() => {
@@ -134,10 +134,9 @@ export default function CreateTemplatePage() {
       <div className="mb-8">
         <Link
           href="/documents/templates"
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4 rounded-full aspect-square"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Templates
         </Link>
         <h1 className="text-3xl font-bold">Create Document Template</h1>
         <p className="text-muted-foreground mt-2">Create a new template for generating documents</p>
@@ -193,11 +192,10 @@ export default function CreateTemplatePage() {
               <button
                 type="button"
                 onClick={() => handleTemplateTypeChange("text")}
-                className={`p-4 border rounded-lg text-center transition-colors ${
-                  formData.template_type === "text"
+                className={`p-4 border rounded-lg text-center transition-colors ${formData.template_type === "text"
                     ? "border-primary bg-primary/5"
                     : "border-border hover:border-primary/50"
-                }`}
+                  }`}
               >
                 <FileText className="h-8 w-8 mx-auto mb-2" />
                 <div className="font-medium">Text</div>
@@ -207,25 +205,23 @@ export default function CreateTemplatePage() {
               <button
                 type="button"
                 onClick={() => handleTemplateTypeChange("pdf")}
-                className={`p-4 border rounded-lg text-center transition-colors ${
-                  formData.template_type === "pdf"
+                className={`p-4 border rounded-lg text-center transition-colors ${formData.template_type === "pdf"
                     ? "border-primary bg-primary/5"
                     : "border-border hover:border-primary/50"
-                }`}
+                  }`}
               >
                 <File className="h-8 w-8 mx-auto mb-2 text-red-500" />
                 <div className="font-medium">PDF</div>
                 <div className="text-sm text-muted-foreground">Upload PDF file</div>
-              </button> 
+              </button>
 
               <button
                 type="button"
                 onClick={() => handleTemplateTypeChange("word")}
-                className={`p-4 border rounded-lg text-center transition-colors ${
-                  formData.template_type === "word"
+                className={`p-4 border rounded-lg text-center transition-colors ${formData.template_type === "word"
                     ? "border-primary bg-primary/5"
                     : "border-border hover:border-primary/50"
-                }`}
+                  }`}
               >
                 <File className="h-8 w-8 mx-auto mb-2 text-blue-500" />
                 <div className="font-medium">Word</div>
@@ -260,7 +256,7 @@ export default function CreateTemplatePage() {
                   Use double curly braces for placeholders, e.g., {"{{employee_name}}"}, {"{{company_name}}"}
                 </p> */}
                 <RichEditorField
-                value={formData.content || ""}
+                  value={formData.content || ""}
                   onChange={(value) => setFormData((prev) => ({ ...prev, content: value }))}
                 />
               </div>
@@ -295,8 +291,8 @@ export default function CreateTemplatePage() {
           <Link href="/documents/templates">
             <Button type="button" variant="outline">
               Cancel
-            </Button>   
-            </Link>
+            </Button>
+          </Link>
         </div>
       </form>
     </div>

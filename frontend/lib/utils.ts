@@ -841,7 +841,7 @@ export const downloadPayrollDocument = async ({
   payrollId: string;
 }): Promise<void> => {
   try {
-    const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
+    const baseURL = process.env.NEXT_PUBLIC_API_URL;
 
     // Create a direct fetch request for file download
     const response = await fetch(`${baseURL}/payroll/export/?payroll_period_id=${payrollId}`, {
@@ -3595,3 +3595,5 @@ export const bankAccountsAPI = {
     }
   },
 }
+
+

@@ -743,7 +743,7 @@ export default function EditJobPositionPage() {
       <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
             <ArrowLeft className="h-4 w-4" />
             Back to Job Position / Title
           </Button>
@@ -794,111 +794,108 @@ export default function EditJobPositionPage() {
                   {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
                 </div>
 
-                {/* Enhanced Salary Field with Better UX */}
+                {/* Salary with Employee Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="salary" className="text-sm font-medium">
+                    Salary scale * {isSalaryChanged && <span className="text-xs text-amber-600">(Changed - Select employees)</span>}
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="salary"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="50,000"
+                      value={
+                        formData.salary !== undefined && formData.salary !== null
+                          ? Number(formData.salary).toLocaleString("en-US")
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/,/g, "")
+                        if (/^\d*$/.test(rawValue)) {
+                          updateFormData("salary", rawValue)
+                        }
+                      }}
+                      className={`pr-10 ${errors.salary ? "border-destructive" : ""} ${isSalaryChanged ? "border-amber-300 bg-amber-50" : ""
+                        }`}
+                    />
+                    <Coins className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  </div>
 
-{/* Simple Enhanced Salary Field */}
-<div className="space-y-2">
-  <Label htmlFor="salary" className="text-sm font-medium">
-    Salary scale * {isSalaryChanged && <span className="text-xs text-orange-600">(Modified)</span>}
-  </Label>
-  <div className="relative">
-    <Input
-      id="salary"
-      type="text"
-      inputMode="numeric"
-      placeholder="50,000"
-      value={
-        formData.salary !== undefined && formData.salary !== null
-          ? Number(formData.salary).toLocaleString("en-US")
-          : ""
-      }
-      onChange={(e) => {
-        const rawValue = e.target.value.replace(/,/g, "")
-        if (/^\d*$/.test(rawValue)) {
-          updateFormData("salary", rawValue)
-        }
-      }}
-      className={`pr-10 ${errors.salary ? "border-destructive" : ""} ${
-        isSalaryChanged ? "border-orange-300 bg-orange-50" : ""
-      }`}
-    />
-    <Coins className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-  </div>
+                  {/* Simple Salary Update Detection */}
+                  {isSalaryChanged && (
+                    <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-orange-800">Salary Update Detected</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={revertSalaryToOriginal}
+                          className="text-xs text-orange-600 hover:text-orange-700"
+                        >
+                          Revert
+                        </Button>
+                      </div>
 
-  {/* Simple Salary Update Detection */}
-  {isSalaryChanged && (
-    <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-medium text-orange-800">Salary Update Detected</span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={revertSalaryToOriginal}
-          className="text-xs text-orange-600 hover:text-orange-700"
-        >
-          Revert
-        </Button>
-      </div>
+                      {/* Employee Selection */}
+                      {employeesSelected && selectedEmployees.length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2">
+                            ✓ {selectedEmployees.length} employee(s) selected for salary update
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={handleReopenEmployeeSelection}
+                              className="text-xs"
+                            >
+                              Change Selection
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedEmployees([])
+                                setEmployeesSelected(false)
+                              }}
+                              className="text-xs"
+                            >
+                              Clear
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleSalaryFieldClick}
+                            className="text-xs border-orange-300 text-orange-700"
+                          >
+                            Select Employees (Optional)
+                          </Button>
+                          <p className="text-xs text-orange-600">
+                            Skip to only update position base salary
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-      {/* Employee Selection */}
-      {employeesSelected && selectedEmployees.length > 0 ? (
-        <div className="space-y-2">
-          <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2">
-            ✓ {selectedEmployees.length} employee(s) selected for salary update
-          </div>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleReopenEmployeeSelection}
-              className="text-xs"
-            >
-              Change Selection
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setSelectedEmployees([])
-                setEmployeesSelected(false)
-              }}
-              className="text-xs"
-            >
-              Clear
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleSalaryFieldClick}
-            className="text-xs border-orange-300 text-orange-700"
-          >
-            Select Employees (Optional)
-          </Button>
-          <p className="text-xs text-orange-600">
-            Skip to only update position base salary
-          </p>
-        </div>
-      )}
-    </div>
-  )}
+                  {/* Show original salary when unchanged */}
+                  {!isSalaryChanged && originalSalary && (
+                    <p className="text-xs text-muted-foreground">
+                      Current salary: ${Number(originalSalary).toLocaleString()}
+                    </p>
+                  )}
 
-  {/* Show original salary when unchanged */}
-  {!isSalaryChanged && originalSalary && (
-    <p className="text-xs text-muted-foreground">
-      Current salary: ${Number(originalSalary).toLocaleString()}
-    </p>
-  )}
-
-  {errors.salary && <p className="text-sm text-destructive">{errors.salary}</p>}
-</div>
+                  {errors.salary && <p className="text-sm text-destructive">{errors.salary}</p>}
+                </div>
 
                 {/* Department */}
                 <div className="space-y-2">

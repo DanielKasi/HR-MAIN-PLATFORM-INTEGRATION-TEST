@@ -1,16 +1,16 @@
 "use client";
 
 import type React from "react";
-import {useState, useEffect} from "react";
-import {useRouter} from "next/navigation";
-import {useSelector} from "react-redux";
-import {Briefcase, ArrowLeft, Check, Upload, X, FileText, Plus} from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { Briefcase, ArrowLeft, Check, Upload, X, FileText, Plus } from "lucide-react";
 
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
-import {Textarea} from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/select";
 import { CreateDepartmentDialog } from "@/components/dialogs/create-department-dialog";
 
-import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
-import {getDepartments, getJobPositions, createJobPosition} from "@/lib/utils";
+import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
+import { getDepartments, getJobPositions, createJobPosition } from "@/lib/utils";
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 
 import type {
@@ -30,7 +30,7 @@ import type {
   IJobPosition,
   CreateJobPositionData,
 } from "@/app/types/types.utils";
-import {toast} from "sonner";
+import { toast } from "sonner";
 
 function formatWithCommas(value: string) {
   const num = value.replace(/,/g, "");
@@ -84,8 +84,8 @@ export default function CreateJobPositionPage() {
     try {
       setIsLoading(true);
       const [fetchedDepartments, fetchedJobPositions] = await Promise.all([
-        getDepartments({institutionId: selectedInstitution.id}),
-        getJobPositions({institutionId: selectedInstitution.id}),
+        getDepartments({ institutionId: selectedInstitution.id }),
+        getJobPositions({ institutionId: selectedInstitution.id }),
       ]);
 
       if (fetchedDepartments) {
@@ -102,9 +102,9 @@ export default function CreateJobPositionPage() {
   };
 
   const updateFormData = (field: keyof JobPositionFormData, value: any) => {
-    setFormData((prev) => ({...prev, [field]: value}));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors((prev) => ({...prev, [field]: undefined}));
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
@@ -228,10 +228,9 @@ export default function CreateJobPositionPage() {
             variant="ghost"
             size="sm"
             onClick={handleBack}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 rounded-full aspect-square"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Job Positions /Titles
           </Button>
         </div>
 
@@ -296,13 +295,13 @@ export default function CreateJobPositionPage() {
                   {errors.salary && <p className="text-sm text-destructive">{errors.salary}</p>}
                 </div>
 
-                  {/* Department */}
+                {/* Department */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="department" className="text-sm font-medium">
                       Department *
                     </Label>
-                    <CreateDepartmentDialog 
+                    <CreateDepartmentDialog
                       trigger={
                         <Button
                           type="button"
@@ -357,13 +356,13 @@ export default function CreateJobPositionPage() {
                     placeholder="Select a position (optional)"
                     searchPlaceholder="Search positions..."
                     emptyMessage="No positions found."
-                    onSelect={(itemId) => 
+                    onSelect={(itemId) =>
                       updateFormData("reports_to", Number(itemId) === 0 ? null : Number(itemId))
                     }
                     multiple={false}
                     popoverClassName="w-[500px]"
                   />
-                </div>  
+                </div>
 
                 {/* Job Description */}
                 <div className="space-y-2">
@@ -459,7 +458,7 @@ export default function CreateJobPositionPage() {
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      Create Job Position / Title 
+                      Create Job Position / Title
                     </>
                   )}
                 </Button>

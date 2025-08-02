@@ -195,12 +195,12 @@ export default function EmployeeAllowanceComponent() {
     is_active: true,
   })
   const [paginationInfo, setPaginationInfo] = useState({
-  count: 0,
-  next: null,
-  previous: null,
-  currentPage: 1,
-  totalPages: 1
-});
+    count: 0,
+    next: null,
+    previous: null,
+    currentPage: 1,
+    totalPages: 1
+  });
 
 
   const [formData, setFormData] = useState({
@@ -387,51 +387,51 @@ export default function EmployeeAllowanceComponent() {
   }
 
   const handleCreateAllowanceType = async () => {
-  if (!newAllowanceTypeForm.name || !newAllowanceTypeForm.description) {
-    toast.error("Please fill in all required fields")
-    return
-  }
-
-  setIsCreatingAllowanceType(true)
-  try {
-    const allowanceTypeData = {
-      name: newAllowanceTypeForm.name,
-      description: newAllowanceTypeForm.description,
-      is_taxable: newAllowanceTypeForm.is_taxable,
-      is_active: newAllowanceTypeForm.is_active,
+    if (!newAllowanceTypeForm.name || !newAllowanceTypeForm.description) {
+      toast.error("Please fill in all required fields")
+      return
     }
 
-    const newAllowanceType = await createAllowanceType({
-      institutionId: selectedInstitution!.id,
-      allowanceTypeData,
-    })
+    setIsCreatingAllowanceType(true)
+    try {
+      const allowanceTypeData = {
+        name: newAllowanceTypeForm.name,
+        description: newAllowanceTypeForm.description,
+        is_taxable: newAllowanceTypeForm.is_taxable,
+        is_active: newAllowanceTypeForm.is_active,
+      }
 
-    if (newAllowanceType) {
-      // Add to the allowanceTypes list
-      setAllowanceTypes(prev => [...prev, {
-        id: newAllowanceType.id,
-        name: newAllowanceType.name
-      }])
-
-      // Select the newly created allowance type
-      setFormData({ ...formData, allowance_type: newAllowanceType.id.toString() })
-
-      // Reset and close dialog
-      setNewAllowanceTypeForm({
-        name: "",
-        description: "",
-        is_taxable: true,
-        is_active: true,
+      const newAllowanceType = await createAllowanceType({
+        institutionId: selectedInstitution!.id,
+        allowanceTypeData,
       })
-      setIsAddAllowanceTypeDialogOpen(false)
-      toast.success("Allowance type created successfully")
+
+      if (newAllowanceType) {
+        // Add to the allowanceTypes list
+        setAllowanceTypes(prev => [...prev, {
+          id: newAllowanceType.id,
+          name: newAllowanceType.name
+        }])
+
+        // Select the newly created allowance type
+        setFormData({ ...formData, allowance_type: newAllowanceType.id.toString() })
+
+        // Reset and close dialog
+        setNewAllowanceTypeForm({
+          name: "",
+          description: "",
+          is_taxable: true,
+          is_active: true,
+        })
+        setIsAddAllowanceTypeDialogOpen(false)
+        toast.success("Allowance type created successfully")
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create allowance type")
+    } finally {
+      setIsCreatingAllowanceType(false)
     }
-  } catch (error: any) {
-    toast.error(error.message || "Failed to create allowance type")
-  } finally {
-    setIsCreatingAllowanceType(false)
   }
-}
 
   const hasValidationErrors = () => {
     // Check for missing required fields
@@ -753,78 +753,78 @@ export default function EmployeeAllowanceComponent() {
                 </DropdownMenuContent>
               </DropdownMenu>
               {/* Create Allowance Type Dialog */}
-          <Dialog open={isAddAllowanceTypeDialogOpen} onOpenChange={setIsAddAllowanceTypeDialogOpen}>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Create New Allowance Type</DialogTitle>
-                <DialogDescription>
-                  Add a new allowance type that can be used for employee allowances.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="new-name">Name *</Label>
-                  <Input
-                    id="new-name"
-                    value={newAllowanceTypeForm.name}
-                    onChange={(e) => setNewAllowanceTypeForm({ ...newAllowanceTypeForm, name: e.target.value })}
-                    placeholder="e.g., Housing Allowance, Transportation"
-                    disabled={isCreatingAllowanceType}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="new-description">Description *</Label>
-                  <Textarea
-                    id="new-description"
-                    value={newAllowanceTypeForm.description}
-                    onChange={(e) => setNewAllowanceTypeForm({ ...newAllowanceTypeForm, description: e.target.value })}
-                    placeholder="Describe this allowance type..."
-                    disabled={isCreatingAllowanceType}
-                    rows={3}
-                  />
-                </div>
-                <div className="flex gap-4">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="new-taxable"
-                      checked={newAllowanceTypeForm.is_taxable}
-                      onChange={(e) => setNewAllowanceTypeForm({ ...newAllowanceTypeForm, is_taxable: e.target.checked })}
-                      disabled={isCreatingAllowanceType}
-                    />
-                    <Label htmlFor="new-taxable">Taxable</Label>
+              <Dialog open={isAddAllowanceTypeDialogOpen} onOpenChange={setIsAddAllowanceTypeDialogOpen}>
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
+                    <DialogTitle>Create New Allowance Type</DialogTitle>
+                    <DialogDescription>
+                      Add a new allowance type that can be used for employee allowances.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="new-name">Name *</Label>
+                      <Input
+                        id="new-name"
+                        value={newAllowanceTypeForm.name}
+                        onChange={(e) => setNewAllowanceTypeForm({ ...newAllowanceTypeForm, name: e.target.value })}
+                        placeholder="e.g., Housing Allowance, Transportation"
+                        disabled={isCreatingAllowanceType}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="new-description">Description *</Label>
+                      <Textarea
+                        id="new-description"
+                        value={newAllowanceTypeForm.description}
+                        onChange={(e) => setNewAllowanceTypeForm({ ...newAllowanceTypeForm, description: e.target.value })}
+                        placeholder="Describe this allowance type..."
+                        disabled={isCreatingAllowanceType}
+                        rows={3}
+                      />
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="new-taxable"
+                          checked={newAllowanceTypeForm.is_taxable}
+                          onChange={(e) => setNewAllowanceTypeForm({ ...newAllowanceTypeForm, is_taxable: e.target.checked })}
+                          disabled={isCreatingAllowanceType}
+                        />
+                        <Label htmlFor="new-taxable">Taxable</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="new-active"
+                          checked={newAllowanceTypeForm.is_active}
+                          onChange={(e) => setNewAllowanceTypeForm({ ...newAllowanceTypeForm, is_active: e.target.checked })}
+                          disabled={isCreatingAllowanceType}
+                        />
+                        <Label htmlFor="new-active">Active</Label>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="new-active"
-                      checked={newAllowanceTypeForm.is_active}
-                      onChange={(e) => setNewAllowanceTypeForm({ ...newAllowanceTypeForm, is_active: e.target.checked })}
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsAddAllowanceTypeDialogOpen(false)}
                       disabled={isCreatingAllowanceType}
-                    />
-                    <Label htmlFor="new-active">Active</Label>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsAddAllowanceTypeDialogOpen(false)}
-                  disabled={isCreatingAllowanceType}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreateAllowanceType}
-                  disabled={isCreatingAllowanceType}
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
-                >
-                  {isCreatingAllowanceType && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Create Allowance Type
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleCreateAllowanceType}
+                      disabled={isCreatingAllowanceType}
+                      className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                    >
+                      {isCreatingAllowanceType && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Create Allowance Type
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
@@ -837,274 +837,331 @@ export default function EmployeeAllowanceComponent() {
                     Add Allowance
                   </Button>
                 </DialogTrigger>
-                  <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-  <DialogHeader>
-    <DialogTitle className="text-xl font-semibold">
-      {editingAllowance ? "Edit Allowance" : "Add New Allowance"}
-    </DialogTitle>
-    <DialogDescription>
-      Configure employee allowance details and calculation method.
-    </DialogDescription>
-  </DialogHeader>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-    <div className="space-y-2">
-      <div className="flex items-center justify-between h-8">
-        <Label htmlFor="employee" className="text-sm font-medium">
-          Employee *
-        </Label>
-      </div>
-      <EmployeeSearchableSelect
-        employees={employees}
-        value={[formData.employee]}
-        onValueChange={(value) => setFormData({ ...formData, employee: value.toString() })}
-        disabled={saving || isLoadingEmployees}
-        placeholder="Search and select employee"
-        isLoading={isLoadingEmployees}
-        showEmployeeId={false}
-        showDepartment={false}
-      />
-      {validationErrors.employee && (
-        <p className="text-xs text-red-500 mt-1 flex items-center">
-          <AlertTriangle className="h-3 w-3 mr-1" />
-          {validationErrors.employee}
-        </p>
-      )}
-    </div>
+                <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl font-semibold">
+                      {editingAllowance ? "Edit Allowance" : "Add New Allowance"}
+                    </DialogTitle>
+                    <DialogDescription>
+                      Configure employee allowance details and calculation method.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between h-8">
+                        <Label htmlFor="employee" className="text-sm font-medium">
+                          Employee *
+                        </Label>
+                      </div>
+                      <EmployeeSearchableSelect
+                        employees={employees}
+                        value={[formData.employee]}
+                        onValueChange={(value) => setFormData({ ...formData, employee: value.toString() })}
+                        disabled={saving || isLoadingEmployees}
+                        placeholder="Search and select employee"
+                        isLoading={isLoadingEmployees}
+                        showEmployeeId={false}
+                        showDepartment={false}
+                      />
+                      {validationErrors.employee && (
+                        <p className="text-xs text-red-500 mt-1 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {validationErrors.employee}
+                        </p>
+                      )}
+                    </div>
 
-    <div className="space-y-2">
-      <div className="flex items-center justify-between h-8">
-        <Label htmlFor="allowance_type" className="text-sm font-medium">
-          Allowance Type *
-        </Label>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsAddAllowanceTypeDialogOpen(true)}
-          disabled={saving}
-          className="h-8 w-8 p-0"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
-      <Select
-        value={formData.allowance_type}
-        onValueChange={(value) => setFormData({ ...formData, allowance_type: value })}
-        disabled={saving}
-      >
-        <SelectTrigger className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.allowance_type ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-          }`}>
-          <SelectValue placeholder="Please select an allowance type" />
-        </SelectTrigger>
-        <SelectContent>
-          {allowanceTypes.length > 0 ? (
-            allowanceTypes.map((type) => (
-              <SelectItem key={type.id} value={type.id.toString()}>
-                {type.name}
-              </SelectItem>
-            ))
-          ) : (
-            <div className="px-2 py-1.5 text-sm text-gray-500">
-              No allowance types available
-            </div>
-          )}
-        </SelectContent>
-      </Select>
-      {validationErrors.allowance_type ? (
-        <p className="text-xs text-red-500 mt-1 flex items-center">
-          <AlertTriangle className="h-3 w-3 mr-1" />
-          {validationErrors.allowance_type}
-        </p>
-      ) : allowanceTypes.length === 0 ? (
-        <p className="text-xs text-red-500 mt-1">
-          No allowance types found. Please create allowance types first.
-        </p>
-      ) : null}
-    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between h-8">
+                        <Label htmlFor="allowance_type" className="text-sm font-medium">
+                          Allowance Type *
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsAddAllowanceTypeDialogOpen(true)}
+                          disabled={saving}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <Select
+                        value={formData.allowance_type}
+                        onValueChange={(value) => setFormData({ ...formData, allowance_type: value })}
+                        disabled={saving}
+                      >
+                        <SelectTrigger className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.allowance_type ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}>
+                          <SelectValue placeholder="Please select an allowance type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allowanceTypes.length > 0 ? (
+                            allowanceTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.id.toString()}>
+                                {type.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="px-2 py-1.5 text-sm text-gray-500">
+                              No allowance types available
+                            </div>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {validationErrors.allowance_type ? (
+                        <p className="text-xs text-red-500 mt-1 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {validationErrors.allowance_type}
+                        </p>
+                      ) : allowanceTypes.length === 0 ? (
+                        <p className="text-xs text-red-500 mt-1">
+                          No allowance types found. Please create allowance types first.
+                        </p>
+                      ) : null}
+                    </div>
 
-    <div className="space-y-2 md:col-span-2">
-      <Label htmlFor="calculation_method" className="text-sm font-medium">
-        Calculation Method *
-      </Label>
-      <Select
-        value={formData.calculation_method}
-        onValueChange={(value: "fixed" | "percentage") => setFormData({ ...formData, calculation_method: value })}
-        disabled={saving}
-      >
-        <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="fixed">Fixed Amount</SelectItem>
-          <SelectItem value="percentage">Percentage of Salary</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="calculation_method" className="text-sm font-medium">
+                        Calculation Method *
+                      </Label>
+                      <Select
+                        value={formData.calculation_method}
+                        onValueChange={(value: "fixed" | "percentage") => setFormData({ ...formData, calculation_method: value })}
+                        disabled={saving}
+                      >
+                        <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="fixed">Fixed Amount</SelectItem>
+                          <SelectItem value="percentage">Percentage of Salary</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-    {/* Conditionally render amount or percentage field based on calculation method */}
-    {formData.calculation_method === "fixed" ? (
-      <div className="space-y-2">
-      <Label htmlFor="amount" className="text-sm font-medium">
-        Fixed Amount *
-      </Label>
-      <Input
-        id="amount"
-        type="text"  // Changed from "number" to "text"
-        placeholder="0.00"
-        value={formData.amount ? formatCurrency(formData.amount) : ''}  // Format the display value
-        onChange={(e) => {
-          // Remove formatting to get raw number
-          const rawValue = e.target.value.replace(/[,$]/g, '');
+                    {/* Conditionally render amount or percentage field based on calculation method */}
+                    {formData.calculation_method === "fixed" ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="amount" className="text-sm font-medium">
+                          Fixed Amount *
+                        </Label>
+                        <Input
+                          id="amount"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={formData.amount}
+                          onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                          disabled={saving}
+                          className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.amount ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                            }`}
+                        />
+                        {validationErrors.amount ? (
+                          <p className="text-xs text-red-500 mt-1 flex items-center">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            {validationErrors.amount}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-gray-500">
+                            Enter the fixed allowance amount
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label htmlFor="percentage" className="text-sm font-medium">
+                          Percentage *
+                        </Label>
+                        <Input
+                          id="percentage"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          placeholder="0.00"
+                          value={formData.percentage}
+                          onChange={(e) => setFormData({ ...formData, percentage: e.target.value })}
+                          disabled={saving}
+                          className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.percentage ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                            }`}
+                        />
+                        {validationErrors.percentage ? (
+                          <p className="text-xs text-red-500 mt-1 flex items-center">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            {validationErrors.percentage}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-gray-500">
+                            Percentage of base salary (0-100)
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {/* Conditionally render amount or percentage field based on calculation method */}
+                    {formData.calculation_method === "fixed" ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="amount" className="text-sm font-medium">
+                          Fixed Amount *
+                        </Label>
+                        <Input
+                          id="amount"
+                          type="text"  // Changed from "number" to "text"
+                          placeholder="0.00"
+                          value={formData.amount ? formatCurrency(formData.amount) : ''}  // Format the display value
+                          onChange={(e) => {
+                            // Remove formatting to get raw number
+                            const rawValue = e.target.value.replace(/[,$]/g, '');
 
-          // Only update if it's a valid number or empty
-          if (rawValue === '' || (!isNaN(parseFloat(rawValue)) && isFinite(parseFloat(rawValue)))) {
-            setFormData({
-              ...formData,
-              amount: rawValue, // Store the raw number value
-            });
-          }
-        }}
-        disabled={saving}
-        className={`focus:ring-orange-500 focus:border-orange-500 ${
-          validationErrors.amount
-            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-            : ''
-        }`}
-      />
-      {validationErrors.amount ? (
-        <p className="text-xs text-red-500 mt-1 flex items-center">
-          <AlertTriangle className="h-3 w-3 mr-1" />
-          {validationErrors.amount}
-        </p>
-      ) : (
-        <>
-          <p className="text-xs text-gray-500">Enter the fixed allowance amount</p>
-        </>
-      )}
-    </div>
+                            // Only update if it's a valid number or empty
+                            if (rawValue === '' || (!isNaN(parseFloat(rawValue)) && isFinite(parseFloat(rawValue)))) {
+                              setFormData({
+                                ...formData,
+                                amount: rawValue, // Store the raw number value
+                              });
+                            }
+                          }}
+                          disabled={saving}
+                          className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.amount
+                              ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                              : ''
+                            }`}
+                        />
+                        {validationErrors.amount ? (
+                          <p className="text-xs text-red-500 mt-1 flex items-center">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            {validationErrors.amount}
+                          </p>
+                        ) : (
+                          <>
+                            <p className="text-xs text-gray-500">Enter the fixed allowance amount</p>
+                          </>
+                        )}
+                      </div>
 
-    ) : (
-      <div className="space-y-2">
-        <Label htmlFor="percentage" className="text-sm font-medium">
-          Percentage *
-        </Label>
-        <Input
-          id="percentage"
-          type="number"
-          step="0.01"
-          min="0"
-          max="100"
-          placeholder="0.00"
-          value={formData.percentage}
-          onChange={(e) => setFormData({ ...formData, percentage: e.target.value })}
-          disabled={saving}
-          className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.percentage ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-            }`}
-        />
-        {validationErrors.percentage ? (
-          <p className="text-xs text-red-500 mt-1 flex items-center">
-            <AlertTriangle className="h-3 w-3 mr-1" />
-            {validationErrors.percentage}
-          </p>
-        ) : (
-          <p className="text-xs text-gray-500">
-            Percentage of base salary (0-100)
-          </p>
-        )}
-      </div>
-    )}
+                    ) : (
+                      <div className="space-y-2">
+                        <Label htmlFor="percentage" className="text-sm font-medium">
+                          Percentage *
+                        </Label>
+                        <Input
+                          id="percentage"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          placeholder="0.00"
+                          value={formData.percentage}
+                          onChange={(e) => setFormData({ ...formData, percentage: e.target.value })}
+                          disabled={saving}
+                          className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.percentage ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                            }`}
+                        />
+                        {validationErrors.percentage ? (
+                          <p className="text-xs text-red-500 mt-1 flex items-center">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            {validationErrors.percentage}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-gray-500">
+                            Percentage of base salary (0-100)
+                          </p>
+                        )}
+                      </div>
+                    )}
 
-    <div className="space-y-2">
-      <Label htmlFor="effective_from" className="text-sm font-medium">
-        Effective From *
-      </Label>
-      <Input
-        id="effective_from"
-        type="date"
-        value={formData.effective_from}
-        onChange={(e) => setFormData({ ...formData, effective_from: e.target.value })}
-        className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.effective_from ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-          }`}
-        disabled={saving}
-        placeholder="Please select an effective from date"
-      />
-      {validationErrors.effective_from && (
-        <p className="text-xs text-red-500 mt-1 flex items-center">
-          <AlertTriangle className="h-3 w-3 mr-1" />
-          {validationErrors.effective_from}
-        </p>
-      )}
-    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="effective_from" className="text-sm font-medium">
+                        Effective From *
+                      </Label>
+                      <Input
+                        id="effective_from"
+                        type="date"
+                        value={formData.effective_from}
+                        onChange={(e) => setFormData({ ...formData, effective_from: e.target.value })}
+                        className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.effective_from ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
+                        disabled={saving}
+                        placeholder="Please select an effective from date"
+                      />
+                      {validationErrors.effective_from && (
+                        <p className="text-xs text-red-500 mt-1 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {validationErrors.effective_from}
+                        </p>
+                      )}
+                    </div>
 
-    <div className="space-y-2">
-      <Label htmlFor="effective_to" className="text-sm font-medium">
-        Effective To (Optional)
-      </Label>
-      <Input
-        id="effective_to"
-        type="date"
-        value={formData.effective_to}
-        onChange={(e) => setFormData({ ...formData, effective_to: e.target.value })}
-        className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.effective_to ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-          }`}
-        disabled={saving}
-        min={formData.effective_from}
-      />
-      {validationErrors.effective_to && (
-        <p className="text-xs text-red-500 mt-1 flex items-center">
-          <AlertTriangle className="h-3 w-3 mr-1" />
-          {validationErrors.effective_to}
-        </p>
-      )}
-    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="effective_to" className="text-sm font-medium">
+                        Effective To (Optional)
+                      </Label>
+                      <Input
+                        id="effective_to"
+                        type="date"
+                        value={formData.effective_to}
+                        onChange={(e) => setFormData({ ...formData, effective_to: e.target.value })}
+                        className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.effective_to ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
+                        disabled={saving}
+                        min={formData.effective_from}
+                      />
+                      {validationErrors.effective_to && (
+                        <p className="text-xs text-red-500 mt-1 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {validationErrors.effective_to}
+                        </p>
+                      )}
+                    </div>
 
-    <div className="space-y-2 md:col-span-2">
-      <div className="flex flex-row items-center justify-between rounded-lg border p-4">
-        <div className="space-y-0.5">
-          <Label className="text-base font-medium">Active Status</Label>
-          <p className="text-sm text-gray-500">Enable or disable this allowance</p>
-        </div>
-        <Switch
-          checked={formData.is_active}
-          onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-          className="data-[state=checked]:bg-orange-600"
-          disabled={saving}
-        />
-      </div>
-    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <Label className="text-base font-medium">Active Status</Label>
+                          <p className="text-sm text-gray-500">Enable or disable this allowance</p>
+                        </div>
+                        <Switch
+                          checked={formData.is_active}
+                          onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                          className="data-[state=checked]:bg-orange-600"
+                          disabled={saving}
+                        />
+                      </div>
+                    </div>
 
-    {/* Warning message for high percentage */}
-    {validationErrors.warning && (
-      <div className="md:col-span-2 space-y-2">
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
-          <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-          <p className="text-sm font-medium text-amber-800">
-            {validationErrors.warning}
-          </p>
-        </div>
-      </div>
-    )}
-  </div>
+                    {/* Warning message for high percentage */}
+                    {validationErrors.warning && (
+                      <div className="md:col-span-2 space-y-2">
+                        <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                          <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                          <p className="text-sm font-medium text-amber-800">
+                            {validationErrors.warning}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-  <DialogFooter>
-    <Button
-      type="button"
-      variant="outline"
-      onClick={() => setIsDialogOpen(false)}
-      disabled={saving}
-    >
-      Cancel
-    </Button>
-    <Button
-      onClick={handleSubmit}
-      className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
-      disabled={saving || !employees.length || !allowanceTypes.length || hasValidationErrors()}
-    >
-      {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-      {saving ? "Saving..." : editingAllowance ? "Update" : "Create"} Allowance
-    </Button>
-  </DialogFooter>
-</DialogContent>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                      disabled={saving}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSubmit}
+                      className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
+                      disabled={saving || !employees.length || !allowanceTypes.length || hasValidationErrors()}
+                    >
+                      {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {saving ? "Saving..." : editingAllowance ? "Update" : "Create"} Allowance
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
               </Dialog>
             </div>
           </div>
@@ -1171,7 +1228,7 @@ export default function EmployeeAllowanceComponent() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6 mx-2">
           <div className="space-y-4">
             {/* Search Bar */}
-            <div className="relative">
+            <div className="relative w-full max-w-xl">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by employee name or allowance type..."
@@ -1182,12 +1239,12 @@ export default function EmployeeAllowanceComponent() {
             </div>
 
             {/* Filter Row */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="flex items-center justify-start gap-4">
               <Select
                 value={statusFilter}
                 onValueChange={(value: "all" | "active" | "inactive") => setStatusFilter(value)}
               >
-                <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
+                <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500 w-24 lg:w-36">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1201,7 +1258,7 @@ export default function EmployeeAllowanceComponent() {
                 value={methodFilter}
                 onValueChange={(value: "all" | "fixed" | "percentage") => setMethodFilter(value)}
               >
-                <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
+                <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500 w-24 lg:w-36">
                   <SelectValue placeholder="Method" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1211,15 +1268,17 @@ export default function EmployeeAllowanceComponent() {
                 </SelectContent>
               </Select>
 
-              <div></div> {/* Empty div for spacing */}
+              {(methodFilter !== "all" || statusFilter !== "all") ? (
 
-              <Button
-                onClick={clearAllFilters}
-                variant="outline"
-                className="border-orange-200 text-orange-700 hover:bg-orange-50 bg-transparent"
-              >
-                Clear Filters
-              </Button>
+                <Button
+                  onClick={clearAllFilters}
+                  variant="outline"
+                  className="border-orange-200 text-orange-700 hover:bg-orange-50 bg-transparent"
+                >
+                  Clear Filters
+                </Button>
+              ) : <></>
+              }
             </div>
           </div>
         </div>
