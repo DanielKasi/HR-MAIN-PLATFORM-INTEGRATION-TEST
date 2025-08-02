@@ -11,6 +11,7 @@ import {
   ArrowUp,
   ArrowDown,
   Save,
+  ArrowLeft,
 } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -325,8 +326,8 @@ export default function ShopApprovalStepsPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => router.back()}>
-            Back to Admin
+          <Button size="sm" className="rounded-full aspect-square" variant="outline" onClick={() => router.back()}>
+            <ArrowLeft />
           </Button>
           <h1 className="text-2xl font-bold tracking-tight">Approval Steps</h1>
         </div>

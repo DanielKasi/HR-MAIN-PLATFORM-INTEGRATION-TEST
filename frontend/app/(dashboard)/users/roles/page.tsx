@@ -1,15 +1,15 @@
 "use client";
-import type {Role} from "@/app/types";
+import type { Role } from "@/app/types";
 
-import {Search, Plus, Pen, Eye, Trash2} from "lucide-react";
-import {useEffect, useState} from "react";
-import {useRouter} from "next/navigation";
+import { Search, Plus, Pen, Eye, Trash2, ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {capitalizeEachWord, getDefaultInstitutionId} from "@/lib/helpers";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { capitalizeEachWord, getDefaultInstitutionId } from "@/lib/helpers";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,12 +20,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import apiRequest, {apiDelete} from "@/lib/apiRequest";
-import {PaginationControls} from "@/components/ui/pagination-controls";
-import {PageSizeSelector} from "@/components/ui/page-size-selector";
+import apiRequest, { apiDelete } from "@/lib/apiRequest";
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { PageSizeSelector } from "@/components/ui/page-size-selector";
 import ProtectedPage from "@/components/ProtectedPage";
-import {PERMISSION_CODES} from "@/app/types/types.utils";
-import {handleApiError} from "@/lib/apiErrorHandler";
+import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { handleApiError } from "@/lib/apiErrorHandler";
 
 export default function RolesPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -123,8 +123,8 @@ export default function RolesPage() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => router.push("/admin")}>
-              Back to Admin
+            <Button size="sm" className="rounded-full aspect-square" variant="outline" onClick={() => router.push("/admin")}>
+              <ArrowLeft />
             </Button>
             <h1 className="text-2xl font-bold tracking-tight">Staff Roles</h1>
           </div>

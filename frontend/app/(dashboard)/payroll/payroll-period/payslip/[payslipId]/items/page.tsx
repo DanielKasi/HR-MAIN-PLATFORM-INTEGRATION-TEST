@@ -223,10 +223,9 @@ export default function PayslipItems() {
           variant="outline"
           size="sm"
           onClick={() => router.back()}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 rounded-full aspect-square"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Payslips
         </Button>
       </div>
 

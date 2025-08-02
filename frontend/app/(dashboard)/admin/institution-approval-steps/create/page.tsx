@@ -22,6 +22,7 @@ import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import next from "next";
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { ArrowLeft } from "lucide-react";
 
 export default function CreateApprovalStep() {
   const institutionId = useSelector(selectSelectedInstitution)?.id;
@@ -140,8 +141,8 @@ export default function CreateApprovalStep() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => router.push("/admin")}>
-            Back to Admin
+          <Button size="sm" variant="outline" className="rounded-full aspect-square" onClick={() => router.push("/admin")}>
+            <ArrowLeft />
           </Button>
           <h1 className="text-2xl font-bold tracking-tight">Create Approval Step</h1>
         </div>

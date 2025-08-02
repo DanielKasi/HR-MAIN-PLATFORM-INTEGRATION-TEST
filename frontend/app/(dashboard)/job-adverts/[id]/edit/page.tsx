@@ -97,7 +97,7 @@ export default function EditJobAdvertPage() {
       }
 
       // Populate form data with fetched job advert data - FIXED STATUS ISSUE
-      const expiryDate = fetchedJobAdvert.expiry_date 
+      const expiryDate = fetchedJobAdvert.expiry_date
         ? new Date(fetchedJobAdvert.expiry_date).toISOString().split('T')[0]
         : ""
 
@@ -127,15 +127,15 @@ export default function EditJobAdvertPage() {
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof JobPositionAdvertFormData, string>> = {}
-    
+
     if (!formData.job_position || formData.job_position === 0) {
       newErrors.job_position = "Please select a job position"
     }
-    
+
     if (!formData.job_position_advert_status) {
       newErrors.job_position_advert_status = "Status is required"
     }
-    
+
     if (!formData.expiry_date) {
       newErrors.expiry_date = "Expiry date is required"
     } else {
@@ -148,16 +148,16 @@ export default function EditJobAdvertPage() {
       }
 
       const maxDate = new Date()
-      maxDate.setFullYear(maxDate.getFullYear() + 2) 
+      maxDate.setFullYear(maxDate.getFullYear() + 2)
       if (expiryDate > maxDate) {
         newErrors.expiry_date = "Expiry date cannot be more than 2 years in the future"
       }
     }
-    
+
     if (formData.job_position && !jobPositions.some((pos) => pos.id === formData.job_position)) {
       newErrors.job_position = "Selected job position/title does not exist"
     }
-    
+
     if (formData.number_of_employees_expected !== undefined && formData.number_of_employees_expected !== null) {
       const numEmployees = Number(formData.number_of_employees_expected)
 
@@ -173,7 +173,7 @@ export default function EditJobAdvertPage() {
     if (formData.extra_information && formData.extra_information.length > 0 && formData.extra_information.length < 10) {
       newErrors.extra_information = "Extra information must be at least 10 characters"
     }
-    
+
     if (formData.extra_information && formData.extra_information.length > 2000) {
       newErrors.extra_information = "Extra information cannot exceed 2000 characters"
     }
@@ -292,9 +292,8 @@ export default function EditJobAdvertPage() {
       <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
             <ArrowLeft className="h-4 w-4" />
-            Back to Job Position
           </Button>
         </div>
 
@@ -417,7 +416,7 @@ export default function EditJobAdvertPage() {
                 />
                 {errors.extra_information && <p className="text-sm text-destructive">{errors.extra_information}</p>}
               </div>
-              
+
               {/* Form Actions */}
               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
                 <Button

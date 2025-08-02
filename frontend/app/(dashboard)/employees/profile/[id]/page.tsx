@@ -1,15 +1,15 @@
 "use client";
 
-import {useState, useEffect} from "react";
-import {useParams} from "next/navigation";
-import {useSelector} from "react-redux";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import {Separator} from "@/components/ui/separator";
-import {Button} from "@/components/ui/button";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Input} from "@/components/ui/input";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import { useSelector } from "react-redux";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -23,9 +23,9 @@ import {
   CustomTabsTrigger,
   CustomTabsContent,
 } from "@/components/employee/custom-tabs";
-import type {IAttendance} from "@/app/types/types.utils";
+import type { IAttendance } from "@/app/types/types.utils";
 
-import {DocumentGenerationDialog} from "@/components/document-generation-dialog";
+import { DocumentGenerationDialog } from "@/components/document-generation-dialog";
 import {
   User,
   Mail,
@@ -48,10 +48,10 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import {AttendanceAPI, getEmployeeById} from "@/lib/utils";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import type {IEmployee} from "@/app/types/types.utils";
-import {toast} from "sonner";
+import { AttendanceAPI, getEmployeeById } from "@/lib/utils";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import type { IEmployee } from "@/app/types/types.utils";
+import { toast } from "sonner";
 
 const formatDate = (dateString: string) => {
   if (!dateString) return "Not provided";
@@ -63,7 +63,7 @@ const formatDate = (dateString: string) => {
 };
 
 const getMaritalStatusLabel = (status: string) => {
-  const statusMap: {[key: string]: string} = {
+  const statusMap: { [key: string]: string } = {
     single: "Single",
     married: "Married",
     divorced: "Divorced",
@@ -120,10 +120,10 @@ const formatTime = (timeString: string) => {
 
 const getStatusBadge = (status: string) => {
   const statusConfig = {
-    present: {label: "Present", className: "bg-green-100 text-green-800 border-green-200"},
-    absent: {label: "Absent", className: "bg-red-100 text-red-800 border-red-200"},
-    late: {label: "Late", className: "bg-yellow-100 text-yellow-800 border-yellow-200"},
-    "half-day": {label: "Half Day", className: "bg-blue-100 text-blue-800 border-blue-200"},
+    present: { label: "Present", className: "bg-green-100 text-green-800 border-green-200" },
+    absent: { label: "Absent", className: "bg-red-100 text-red-800 border-red-200" },
+    late: { label: "Late", className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+    "half-day": { label: "Half Day", className: "bg-blue-100 text-blue-800 border-blue-200" },
   };
 
   const config = statusConfig[status as keyof typeof statusConfig] || {
@@ -194,7 +194,7 @@ export default function EmployeeProfilePage() {
     }
     setError(null);
     try {
-      const fetchedEmployee = await getEmployeeById({employeeId});
+      const fetchedEmployee = await getEmployeeById({ employeeId });
       setEmployee(fetchedEmployee);
     } catch (error: any) {
       let errorMessage = "Failed to fetch employee";
@@ -249,9 +249,8 @@ export default function EmployeeProfilePage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <Link href="/employees/employee-list">
-                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900 rounded-full aspect-square">
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Employees
                   </Button>
                 </Link>
                 <div className="h-6 w-px bg-gray-300" />

@@ -266,8 +266,8 @@ export default function DepartmentDetailView() {
   const filteredJobPositions = useMemo(() => {
     return allJobPositions.filter((position) => {
       const positionBelongsToDepartment = position.department === departmentId
-      
-      const matchesSearch = searchTerm === "" || 
+
+      const matchesSearch = searchTerm === "" ||
         position.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (position.description ?? "").toLowerCase().includes(searchTerm.toLowerCase())
       return positionBelongsToDepartment && matchesSearch
@@ -305,10 +305,10 @@ export default function DepartmentDetailView() {
   const formatCurrency = (amount: string | number) => {
     if (!amount) return "N/A"
     const num = typeof amount === 'string' ? parseFloat(amount) : amount
-    return new Intl.NumberFormat('en-UG', { 
-      style: 'currency', 
+    return new Intl.NumberFormat('en-UG', {
+      style: 'currency',
       currency: 'UGX',
-      minimumFractionDigits: 0 
+      minimumFractionDigits: 0
     }).format(num)
   }
 
@@ -330,9 +330,8 @@ export default function DepartmentDetailView() {
     return (
       <div className="w-full h-full p-6 space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" disabled>
+          <Button onClick={() => { router.back() }} className="rounded-full aspect-square" variant="ghost" disabled>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Departments
           </Button>
           <div className="h-6 w-px bg-border" />
           <div className="flex items-center gap-3">
@@ -389,10 +388,9 @@ export default function DepartmentDetailView() {
       <Button
         variant="ghost"
         onClick={() => router.push("/admin/departments")}
-        className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+        className="flex items-center gap-2 text-muted-foreground hover:text-foreground rounded-full aspect-square"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to Departments
       </Button>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">

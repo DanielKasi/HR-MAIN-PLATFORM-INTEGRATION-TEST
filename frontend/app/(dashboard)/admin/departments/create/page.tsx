@@ -21,7 +21,7 @@ export default function CreateDepartmentPage() {
   const [formData, setFormData] = useState<DepartmentFormData>({
     name: "",
     description: "",
-    institution:0
+    institution: 0
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Partial<DepartmentFormData>>({})
@@ -82,7 +82,7 @@ export default function CreateDepartmentPage() {
         departmentData: {
           name: formData.name.trim(),
           description: formData.description.trim(),
-          institution:selectedInstitution.id
+          institution: selectedInstitution.id
         },
       })
 
@@ -112,9 +112,8 @@ export default function CreateDepartmentPage() {
       <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
             <ArrowLeft className="h-4 w-4" />
-            Back to Departments
           </Button>
         </div>
 
