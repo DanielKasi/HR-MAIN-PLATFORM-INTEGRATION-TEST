@@ -45,6 +45,7 @@ from recruitment.models import JobPosition
 from django.http import HttpResponse
 from openpyxl.styles import Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+from decimal import Decimal, InvalidOperation
 
 
 class EmployeeListAPIView(APIView):
@@ -112,7 +113,6 @@ class EmployeeCreateAPIView(APIView):
         tags=["Employee Management"],
     )
     def post(self, request):
-
         """Create a new employee or multiple employees via file upload."""
         if "file" in request.FILES:
             return self.handle_bulk_upload(request)
@@ -209,38 +209,40 @@ class EmployeeCreateAPIView(APIView):
                 )
 
             gender_map = {
-                'male': 'male',
-                'female': 'female',
-                'other': 'other',
-                'Male': 'male',
-                'Female': 'female',
-                'Other': 'other'
+                "male": "male",
+                "female": "female",
+                "other": "other",
+                "Male": "male",
+                "Female": "female",
+                "Other": "other",
             }
             marital_status_map = {
-                'single': 'single',
-                'married': 'married',
-                'divorced': 'divorced',
-                'widowed': 'widowed',
-                'Single': 'single',
-                'Married': 'married',
-                'Divorced': 'divorced',
-                'Widowed': 'widowed'
-            }    
+                "single": "single",
+                "married": "married",
+                "divorced": "divorced",
+                "widowed": "widowed",
+                "Single": "single",
+                "Married": "married",
+                "Divorced": "divorced",
+                "Widowed": "widowed",
+            }
 
             # Validate foreign key fields
             field_mappings = {
-                'position': (JobPosition, 'position_map'),
-                'department': (Department, 'department_map'),
-                'work_type': (WorkType, 'work_type_map'),
-                'employee_type': (EmployeeType, 'employee_type_map')
+                "position": (JobPosition, "position_map"),
+                "department": (Department, "department_map"),
+                "work_type": (WorkType, "work_type_map"),
+                "employee_type": (EmployeeType, "employee_type_map"),
             }
             for field, (model, map_name) in field_mappings.items():
                 if field in df.columns:
                     names = df[field].dropna().str.strip().str.lower().unique()
                     existing = model.objects.filter(
-                        name__iregex=r'^(' + '|'.join([re.escape(name) for name in names]) + ')$'
-                    ).values('name', 'id')
-                    mapping = {item['name'].lower(): item['id'] for item in existing}
+                        name__iregex=r"^("
+                        + "|".join([re.escape(name) for name in names])
+                        + ")$"
+                    ).values("name", "id")
+                    mapping = {item["name"].lower(): item["id"] for item in existing}
                     missing = [name for name in names if name.lower() not in mapping]
                     if missing:
                         return Response(
@@ -273,26 +275,44 @@ class EmployeeCreateAPIView(APIView):
                                 if column in field_mappings and value:
                                     map_name = field_mappings[column][1]
                                     mapping = getattr(self, map_name)
-                                    employee_data[column] = mapping.get(str(value).strip().lower())
+                                    employee_data[column] = mapping.get(
+                                        str(value).strip().lower()
+                                    )
 
-                                elif column == 'gender' and value:
-                                    employee_data[column] = gender_map.get(str(value).strip(), None)
+                                elif column == "gender" and value:
+                                    employee_data[column] = gender_map.get(
+                                        str(value).strip(), None
+                                    )
                                     if employee_data[column] is None:
-                                        errors.append({
-                                            "row": index + 2,
-                                            "errors": {"gender": [f"\"{value}\" is not a valid choice."]}
-                                        })
+                                        errors.append(
+                                            {
+                                                "row": index + 2,
+                                                "errors": {
+                                                    "gender": [
+                                                        f'"{value}" is not a valid choice.'
+                                                    ]
+                                                },
+                                            }
+                                        )
                                         continue
 
                                 # Handle marital_status
-                                elif column == 'marital_status' and value:
-                                    employee_data[column] = marital_status_map.get(str(value).strip(), None)
+                                elif column == "marital_status" and value:
+                                    employee_data[column] = marital_status_map.get(
+                                        str(value).strip(), None
+                                    )
                                     if employee_data[column] is None:
-                                        errors.append({
-                                            "row": index + 2,
-                                            "errors": {"marital_status": [f"\"{value}\" is not a valid choice."]}
-                                        })
-                                        continue    
+                                        errors.append(
+                                            {
+                                                "row": index + 2,
+                                                "errors": {
+                                                    "marital_status": [
+                                                        f'"{value}" is not a valid choice.'
+                                                    ]
+                                                },
+                                            }
+                                        )
+                                        continue
                                 else:
                                     employee_data[column] = str(value).strip()
 
@@ -312,7 +332,9 @@ class EmployeeCreateAPIView(APIView):
                             except (ValueError, TypeError):
                                 employee_data[field] = 0
 
-                    serializer = EmployeeSerializer(data=employee_data, context={"request": request})
+                    serializer = EmployeeSerializer(
+                        data=employee_data, context={"request": request}
+                    )
                     if serializer.is_valid():
                         try:
                             employee = serializer.save()
@@ -320,7 +342,11 @@ class EmployeeCreateAPIView(APIView):
                                 errors.append(
                                     {
                                         "row": index + 2,
-                                        "errors": {"non_field_errors": ["Failed to create employee: No instance returned"]}
+                                        "errors": {
+                                            "non_field_errors": [
+                                                "Failed to create employee: No instance returned"
+                                            ]
+                                        },
                                     }
                                 )
                                 continue
@@ -332,7 +358,9 @@ class EmployeeCreateAPIView(APIView):
                             errors.append(
                                 {
                                     "row": index + 2,
-                                    "errors": {"non_field_errors": f"Error saving employee: {str(e)}"}
+                                    "errors": {
+                                        "non_field_errors": f"Error saving employee: {str(e)}"
+                                    },
                                 }
                             )
                     else:
@@ -372,7 +400,7 @@ class EmployeeTemplateDownloadAPIView(APIView):
         description="Download an Excel template for bulk employee creation.",
         tags=["Employee Management"],
     )
-    def get(self, request, format_type='xlsx'):
+    def get(self, request, format_type="xlsx"):
         """Generate and return an Excel template for bulk employee upload."""
         columns = [
             "user.fullname",
@@ -397,7 +425,7 @@ class EmployeeTemplateDownloadAPIView(APIView):
             "emergency_contact_phone",
             "emergency_contact_relationship",
             "marital_status",
-            "children_count"
+            "children_count",
         ]
 
         # Sample data for the first row
@@ -417,7 +445,6 @@ class EmployeeTemplateDownloadAPIView(APIView):
             "nin": "123456789",
             "bank": "National Bank",
             "bank_account_number": "123456789012",
-
             "experience": "5 Years",
             "qualifications": "BSc Computer Science",
             "skills": "Python, Django",
@@ -425,15 +452,15 @@ class EmployeeTemplateDownloadAPIView(APIView):
             "emergency_contact_phone": "+1234567891",
             "emergency_contact_relationship": "Spouse",
             "marital_status": "Married",
-            "children_count": "2"
+            "children_count": "2",
         }
 
-        if format_type == 'csv':
+        if format_type == "csv":
             df = pd.DataFrame([sample_data], columns=columns)
             output = io.StringIO()
             df.to_csv(output, index=False)
             output.seek(0)
-            
+
             response = HttpResponse(
                 content_type="text/csv",
                 headers={
@@ -460,8 +487,7 @@ class EmployeeTemplateDownloadAPIView(APIView):
             for col_num, column_title in enumerate(columns, 1):
                 column_letter = get_column_letter(col_num)
                 max_length = max(
-                    len(str(sample_data.get(column_title, ""))),
-                    len(column_title)
+                    len(str(sample_data.get(column_title, ""))), len(column_title)
                 )
                 adjusted_width = max_length + 2
                 ws.column_dimensions[column_letter].width = adjusted_width
@@ -469,7 +495,7 @@ class EmployeeTemplateDownloadAPIView(APIView):
             output = io.BytesIO()
             wb.save(output)
             output.seek(0)
-            
+
             response = HttpResponse(
                 content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 headers={
@@ -477,8 +503,9 @@ class EmployeeTemplateDownloadAPIView(APIView):
                 },
             )
             response.write(output.getvalue())
-        
+
         return response
+
 
 class EmployeeUpdateAPIView(APIView):
     permission_classes = [AllowAny]
@@ -493,6 +520,7 @@ class EmployeeUpdateAPIView(APIView):
     )
     def patch(self, request, employee_id):
         """Update an existing employee."""
+
         try:
             employee = Employee.objects.get(id=employee_id)
         except Employee.DoesNotExist:
@@ -532,6 +560,12 @@ class EmployeeUpdateAPIView(APIView):
                     )
                 except (ValueError, TypeError):
                     final_data[field] = 0
+
+        if "salary" in final_data:
+            try:
+                final_data["salary"] = Decimal(final_data["salary"])
+            except (InvalidOperation, TypeError, ValueError):
+                final_data["salary"] = None
 
         # Update employee data
         serializer = EmployeeSerializer(employee, data=final_data, partial=True)
@@ -573,6 +607,10 @@ class EmployeeUpdateAPIView(APIView):
                 employee.user.is_password_verified = False
                 employee.user.save()
                 employee.setup_employee_password(request)
+
+        # if "salary" in final_data:
+        #     employee.salary = final_data["salary"]
+        #     employee.save()
 
         return Response(EmployeeSerializer(employee).data, status=status.HTTP_200_OK)
 
@@ -1453,17 +1491,17 @@ class EmployeeContractApprovalAPIView(APIView):
     )
     def post(self, request, pk):
         contract = get_object_or_404(EmployeeContract, pk=pk)
-        
+
         # Check if contract is already active
         if contract.is_active:
             return Response(
                 {"error": "Contract is already active"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Set contract to active first
         contract.is_active = True
-        contract.status = 'APPROVED'
+        contract.status = "APPROVED"
         contract.save()
 
         # If contract has an applicant and no employee, create Employee instance
@@ -1473,39 +1511,39 @@ class EmployeeContractApprovalAPIView(APIView):
                 if hasattr(contract.applicant, "created_employee"):
                     return Response(
                         {"error": "Employee already created for this application"},
-                        status=status.HTTP_400_BAD_REQUEST
+                        status=status.HTTP_400_BAD_REQUEST,
                     )
 
                 # Create CustomUser if it doesn't exist
                 user, created = CustomUser.objects.get_or_create(
                     email=contract.applicant.applicant_email,
                     defaults={
-                        'fullname': contract.applicant.applicant_name,
-                        'is_active': True,
-                    }
+                        "fullname": contract.applicant.applicant_name,
+                        "is_active": True,
+                    },
                 )
 
                 # Create Employee instance
                 employee_data = {
-                    'user': user,
-                    'email': contract.applicant.applicant_email,
-                    'phone_number': contract.applicant.applicant_phone,
-                    'position': contract.applicant.job_position_advert.job_position,
-                    'address': contract.applicant.address,
-                    'gender': contract.applicant.gender,
-                    'date_of_joining': timezone.now().date(),
-                    'is_active': True,
-                    'department': contract.applicant.job_position_advert.job_position.department,
-                    'salary': contract.applicant.job_position_advert.job_position.salary,
+                    "user": user,
+                    "email": contract.applicant.applicant_email,
+                    "phone_number": contract.applicant.applicant_phone,
+                    "position": contract.applicant.job_position_advert.job_position,
+                    "address": contract.applicant.address,
+                    "gender": contract.applicant.gender,
+                    "date_of_joining": timezone.now().date(),
+                    "is_active": True,
+                    "department": contract.applicant.job_position_advert.job_position.department,
+                    "salary": contract.applicant.job_position_advert.job_position.salary,
                 }
 
                 employee = Employee(**employee_data)
                 employee.employee_id = employee.generate_employee_id()
-                
+
                 # Validate and save employee
                 employee.full_clean()  # Run model validation
                 employee.save()
-                
+
                 # Update contract to reference employee instead of applicant
                 contract.employee = employee
                 contract.applicant = None
@@ -1514,12 +1552,12 @@ class EmployeeContractApprovalAPIView(APIView):
             except ValidationError as e:
                 return Response(
                     {"error": f"Failed to create employee: {str(e)}"},
-                    status=status.HTTP_400_BAD_REQUEST
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             except Exception as e:
                 return Response(
                     {"error": f"Unexpected error creating employee: {str(e)}"},
-                    status=status.HTTP_400_BAD_REQUEST
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
         serializer = EmployeeContractSerializer(contract)
