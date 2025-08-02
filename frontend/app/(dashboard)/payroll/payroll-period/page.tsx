@@ -96,7 +96,7 @@ interface ValidationResult {
 }
 
 export default function PayrollPeriods() {
-  // Form state (moved to the top)
+  // Form state
   const [formData, setFormData] = useState({
     name: "",
     start_date: "",
@@ -126,7 +126,7 @@ export default function PayrollPeriods() {
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  // Add these helper functions
+  // Fetch employees and payslips
   const fetchEmployeesAndPayslips = useCallback(async () => {
     if (!selectedInstitution?.id) {
       setEmployees([]);
@@ -155,7 +155,6 @@ export default function PayrollPeriods() {
       }
 
       // Filter available periods for payslip generation
-      // Filter available periods for payslip generation
       const filteredPeriods = payrollPeriods.filter((period) => {
         // Get today's date
         const today = new Date();
@@ -183,16 +182,10 @@ export default function PayrollPeriods() {
 
         const hasIncompletePayslips = employeesWithPayslips.size < formattedEmployeesLength;
 
-        console.log('Period:', period.name);
-        console.log('Pay Date Reached:', payDateReached);
-        console.log('Has Incomplete Payslips:', hasIncompletePayslips);
-        console.log('Employees with payslips:', employeesWithPayslips.size);
-        console.log('Total formatted employees:', formattedEmployeesLength);
-
         return payDateReached && hasIncompletePayslips;
       });
 
-      setAvailablePayrollPeriods(filteredPeriods); // ← This was missing!
+      setAvailablePayrollPeriods(filteredPeriods);
 
     } catch (error) {
       console.error("Error fetching employees and payslips:", error);
@@ -214,7 +207,6 @@ export default function PayrollPeriods() {
       [field]: value,
     }));
   };
-
 
   const handleGeneratePayslips = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -302,6 +294,7 @@ export default function PayrollPeriods() {
       setGenerating(false);
     }
   };
+
   // Fetch payroll periods
   const fetchPayrollPeriods = useCallback(async () => {
     if (!selectedInstitution?.id) {
@@ -330,7 +323,6 @@ export default function PayrollPeriods() {
   useEffect(() => {
     fetchPayrollPeriods();
   }, [fetchPayrollPeriods]);
-
 
   useEffect(() => {
     if (payrollPeriods.length > 0) {
@@ -819,8 +811,7 @@ export default function PayrollPeriods() {
         </div>
       </div>
 
-
-      {/* Generate Payslips Dialog - Place this OUTSIDE the header */}
+      {/* Generate Payslips Dialog */}
       <Dialog open={isGenerateModalOpen} onOpenChange={setIsGenerateModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -909,6 +900,7 @@ export default function PayrollPeriods() {
           </form>
         </DialogContent>
       </Dialog>
+
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
@@ -929,7 +921,6 @@ export default function PayrollPeriods() {
               }
             }}
           >
-
             <SelectTrigger className="w-full px-6 h-12 rounded-xl">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4" />
@@ -1008,7 +999,6 @@ export default function PayrollPeriods() {
               ? "No payroll periods match your filter criteria."
               : "Get started by creating your first payroll period."}
           </p>
-
         </Card>
       ) : (
         <Card className="rounded-lg border">
@@ -1037,8 +1027,7 @@ export default function PayrollPeriods() {
               {paginatedPeriods.map((period, index) => (
                 <TableRow
                   key={period.id}
-                  className={`hover:bg-orange-50/30 transition-colors border-b ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
-                    }`}
+                  className={`hover:bg-orange-50/30 transition-colors border-b ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`}
                 >
                   <TableCell className="py-4">
                     <div className="font-medium text-gray-900">{period.name}</div>
@@ -1118,6 +1107,8 @@ export default function PayrollPeriods() {
                         </ProtectedComponent>
                       </DropdownMenuContent>
                     </DropdownMenu>
+
+                    {/* Delete Confirmation Dialog */}
                     <Dialog
                       open={deleteConfirmId === period.id}
                       onOpenChange={(open) => !open && setDeleteConfirmId(null)}

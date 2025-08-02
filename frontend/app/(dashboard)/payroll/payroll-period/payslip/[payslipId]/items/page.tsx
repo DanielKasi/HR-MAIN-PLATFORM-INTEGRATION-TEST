@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter, usePathname } from "next/navigation"
-import { Coins, TrendingUp, TrendingDown, ArrowLeft } from "lucide-react"
+import { Coins, TrendingUp, TrendingDown, ArrowLeft, Edit,  } from "lucide-react"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,62 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner"
 
 import { getPayslipItems } from "@/lib/utils"
-
-interface PayslipItemData {
-  id: number
-  payslip: {
-    id: number
-    employee: {
-      id: number
-      user: {
-        id: number
-        email: string
-        fullname: string
-        is_active: boolean
-      }
-      department: {
-        id: number
-        name: string
-        institution_id: number
-      }
-      position: {
-        id: number
-        name: string
-        department_id: number
-      }
-    }
-    payroll_period: {
-      id: number
-      name: string
-      start_date: string
-      end_date: string
-      pay_date: string
-      is_processed: boolean
-      institution: number
-    }
-    basic_salary: string
-    total_allowances: string
-    total_deductions: string
-    gross_salary: string
-    net_salary: string
-    days_worked: number
-    is_paid: boolean
-    paid_date: string | null
-  }
-  item_type: "allowance" | "deduction" | "overtime"
-  name: string
-  amount: string
-  description?: string
-}
-
-interface PayslipItem {
-  id: number
-  payslip_id: number
-  item_type: "allowance" | "deduction" | "overtime"
-  name: string
-  amount: number
-  description?: string
-}
+import { PayslipItem, PayslipItemData } from "@/app/types/types.utils"
 
 export default function PayslipItems() {
   const params = useParams()
