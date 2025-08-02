@@ -14,7 +14,11 @@ from .views import (
     DepartmentListAPIView,
     DepartmentDetailAPIView,
     delete_user_branch_by_ids,
-    DefaultDataAPIView
+    DefaultDataAPIView,
+    InstitutionBankTypeListAPIView,
+    InstitutionBankTypeDetailView,
+    InstitutionBankAccountListAPIView,
+    InstitutionBankAccountDetailView,
 )
 
 urlpatterns = [
@@ -23,6 +27,22 @@ urlpatterns = [
         "<int:institution_id>/",
         InstitutionDetailAPIView.as_view(),
         name="institution-detail",
+    ),
+    path("bank-type/", InstitutionBankTypeListAPIView.as_view(), name="bank-type-list"),
+    path(
+        "bank-type/<int:bank_type_id>/",
+        InstitutionBankTypeDetailView.as_view(),
+        name="bank-type-detail",
+    ),
+    path(
+        "bank-account/",
+        InstitutionBankAccountListAPIView.as_view(),
+        name="bank-account-list",
+    ),
+    path(
+        "bank-account/<int:bank_account_id>/",
+        InstitutionBankAccountDetailView.as_view(),
+        name="bank-account-detail",
     ),
     path("branch/", BranchListAPIView.as_view(), name="branch-management"),
     path(
@@ -66,5 +86,5 @@ urlpatterns = [
         name="department-detail",
     ),
     path("api/activate/", SystemActivationView.as_view(), name="system_activation"),
-    path('default-data/', DefaultDataAPIView.as_view(), name='default-data'),
+    path("default-data/", DefaultDataAPIView.as_view(), name="default-data"),
 ]
