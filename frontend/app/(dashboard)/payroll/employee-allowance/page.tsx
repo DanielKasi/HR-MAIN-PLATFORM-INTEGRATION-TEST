@@ -56,6 +56,7 @@ import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/a
 import { IUserInstitution } from "@/app/types"
 import { useSelector } from "react-redux"
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"
+import { formatCurrency } from "@/lib/helpers"
 
 
 interface ApiEmployee {
@@ -411,10 +412,10 @@ export default function EmployeeAllowanceComponent() {
         id: newAllowanceType.id,
         name: newAllowanceType.name
       }])
-      
+
       // Select the newly created allowance type
       setFormData({ ...formData, allowance_type: newAllowanceType.id.toString() })
-      
+
       // Reset and close dialog
       setNewAllowanceTypeForm({
         name: "",
@@ -658,8 +659,8 @@ export default function EmployeeAllowanceComponent() {
 
       // Create Excel file using HTML table method
       const excelContent = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" 
-              xmlns:x="urn:schemas-microsoft-com:office:excel" 
+        <html xmlns:o="urn:schemas-microsoft-com:office:office"
+              xmlns:x="urn:schemas-microsoft-com:office:excel"
               xmlns="http://www.w3.org/TR/REC-html40">
         <head>
           <meta charset="utf-8" />
@@ -943,31 +944,45 @@ export default function EmployeeAllowanceComponent() {
     {/* Conditionally render amount or percentage field based on calculation method */}
     {formData.calculation_method === "fixed" ? (
       <div className="space-y-2">
-        <Label htmlFor="amount" className="text-sm font-medium">
-          Fixed Amount *
-        </Label>
-        <Input
-          id="amount"
-          type="number"
-          step="0.01"
-          placeholder="0.00"
-          value={formData.amount}
-          onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-          disabled={saving}
-          className={`focus:ring-orange-500 focus:border-orange-500 ${validationErrors.amount ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-            }`}
-        />
-        {validationErrors.amount ? (
-          <p className="text-xs text-red-500 mt-1 flex items-center">
-            <AlertTriangle className="h-3 w-3 mr-1" />
-            {validationErrors.amount}
-          </p>
-        ) : (
-          <p className="text-xs text-gray-500">
-            Enter the fixed allowance amount
-          </p>
-        )}
-      </div>
+      <Label htmlFor="amount" className="text-sm font-medium">
+        Fixed Amount *
+      </Label>
+      <Input
+        id="amount"
+        type="text"  // Changed from "number" to "text"
+        placeholder="0.00"
+        value={formData.amount ? formatCurrency(formData.amount) : ''}  // Format the display value
+        onChange={(e) => {
+          // Remove formatting to get raw number
+          const rawValue = e.target.value.replace(/[,$]/g, '');
+
+          // Only update if it's a valid number or empty
+          if (rawValue === '' || (!isNaN(parseFloat(rawValue)) && isFinite(parseFloat(rawValue)))) {
+            setFormData({
+              ...formData,
+              amount: rawValue, // Store the raw number value
+            });
+          }
+        }}
+        disabled={saving}
+        className={`focus:ring-orange-500 focus:border-orange-500 ${
+          validationErrors.amount
+            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+            : ''
+        }`}
+      />
+      {validationErrors.amount ? (
+        <p className="text-xs text-red-500 mt-1 flex items-center">
+          <AlertTriangle className="h-3 w-3 mr-1" />
+          {validationErrors.amount}
+        </p>
+      ) : (
+        <>
+          <p className="text-xs text-gray-500">Enter the fixed allowance amount</p>
+        </>
+      )}
+    </div>
+
     ) : (
       <div className="space-y-2">
         <Label htmlFor="percentage" className="text-sm font-medium">

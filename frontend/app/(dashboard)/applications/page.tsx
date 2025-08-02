@@ -274,6 +274,7 @@ export default function ApplicationsPage() {
           job_position_advert: selectedApplicationForInterview.job_position_advert,
         });
         setStageErrors({});
+        clearAllFilters();
         setShowCreateStageDialog(false);
         await fetchInterviewData();
         toast.success("Interview stage created successfully!");
@@ -348,6 +349,7 @@ export default function ApplicationsPage() {
       });
 
       if (result) {
+        clearAllFilters()
         toast.success("Interview scheduled successfully!");
         setShowScheduleDialog(false);
         setSelectedApplicationForInterview(null);
@@ -791,6 +793,7 @@ export default function ApplicationsPage() {
           created_by: userData.id,
           recommended_by: undefined,
         });
+        clearAllFilters()
         toast.success("Application created successfully!");
       } else {
         setError("Failed to create application");
@@ -1097,6 +1100,7 @@ export default function ApplicationsPage() {
       setApplications((prev) =>
         prev.map((app) => (app.id === applicationId ? {...app, status: action} : app)),
       );
+      clearAllFilters();
       toast.success(`Application ${action} successfully`);
     } catch (error) {
       toast.error(`Failed to ${action} application`);
@@ -1546,7 +1550,7 @@ export default function ApplicationsPage() {
                       <TableCell>
                         <Checkbox
                           checked={selectedApplications.includes(application.id)}
-                          onCheckedChange={(checked) =>
+                          onCheckedChange={(checked:any) =>
                             handleSelectApplication(application.id, checked as boolean)
                           }
                         />
@@ -1803,7 +1807,7 @@ export default function ApplicationsPage() {
                   <Label htmlFor="job_position_advert">Job Position/ Title *</Label>
                   <Select
                     value={formData.job_position_advert.toString()}
-                    onValueChange={(value) =>
+                    onValueChange={(value: string) =>
                       handleInputChange("job_position_advert", Number.parseInt(value))
                     }
                   >
@@ -1867,7 +1871,7 @@ export default function ApplicationsPage() {
                   <Label htmlFor="gender">Gender *</Label>
                   <Select
                     value={formData.gender}
-                    onValueChange={(value) => handleInputChange("gender", value)}
+                    onValueChange={(value:any) => handleInputChange("gender", value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -1906,7 +1910,7 @@ export default function ApplicationsPage() {
                   <Label htmlFor="source">Source</Label>
                   <Select
                     value={formData.source}
-                    onValueChange={(value) => {
+                    onValueChange={(value: string | number | File | null) => {
                       handleInputChange("source", value);
                       // Clear recommended_by when source changes away from head_hunt
                       if (value !== "head_hunt") {
@@ -2054,7 +2058,7 @@ export default function ApplicationsPage() {
       {/* Individual Action Confirmation Dialog */}
       <AlertDialog
         open={confirmAction.isOpen}
-        onOpenChange={(open) => {
+        onOpenChange={(open:any) => {
           if (!open) {
             setConfirmAction({
               isOpen: false,
@@ -2095,7 +2099,7 @@ export default function ApplicationsPage() {
       {/* Bulk Action Confirmation Dialog */}
       <AlertDialog
         open={confirmBulkAction.isOpen}
-        onOpenChange={(open) => {
+        onOpenChange={(open:any) => {
           if (!open) {
             setConfirmBulkAction({
               isOpen: false,
@@ -2292,7 +2296,7 @@ export default function ApplicationsPage() {
                 </Label>
                 <Select
                   value={bulkInterviewFormData.interview_stage.toString()}
-                  onValueChange={(value) => {
+                  onValueChange={(value:any) => {
                     setBulkInterviewFormData((prev) => ({
                       ...prev,
                       interview_stage: parseInt(value),
@@ -2402,7 +2406,7 @@ export default function ApplicationsPage() {
                 </Label>
                 <Select
                   value={bulkInterviewFormData.interview_type}
-                  onValueChange={(value) =>
+                  onValueChange={(value: any) =>
                     setBulkInterviewFormData((prev) => ({
                       ...prev,
                       interview_type: value,

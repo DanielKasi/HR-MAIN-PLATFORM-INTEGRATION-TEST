@@ -46,9 +46,11 @@ import type {
   ICountry,
   IEmployee,
 } from "@/app/types/types.utils";
-import type { IUserInstitution } from "@/app/types";
+import type { IUserInstitution, Role , Branch} from "@/app/types";
 import { toast } from "sonner";
-import { getFileUrl } from "@/lib/helpers";
+import { getFileUrl, formatCurrency } from "@/lib/helpers";
+
+
 
 
 
@@ -183,6 +185,7 @@ export default function UpdateEmployeePage() {
     phoneNumber: string;
     isValid: boolean;
   }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
+
 
   const showErrorToast = (message: string) => {
     toast.error(message)
@@ -582,6 +585,7 @@ export default function UpdateEmployeePage() {
         showSuccessToast("Employee has been updated successfully.");
 
         localStorage.removeItem(`employee_${employeeId}`);
+
 
         router.push("/employees/employee-list");
       } else {
@@ -1147,11 +1151,17 @@ export default function UpdateEmployeePage() {
                 <Label htmlFor="salary">Salary</Label>
                 <Input
                   id="salary"
-                  type="number"
-                  min="0"
-                  value={formData.salary}
-                  onChange={(e) => handleInputChange("salary", parseInt(e.target.value) || 0)}
-                  placeholder="Enter salary amount"
+                  type="text"
+                  inputMode="decimal"
+                  value={formatCurrency(formData.salary)}
+                  placeholder="Enter salary"
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/,/g, "");
+                    const parsed = parseFloat(raw);
+                    if (!isNaN(parsed)) {
+                      setFormData({ ...formData, salary: parsed });
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -1362,3 +1372,4 @@ export default function UpdateEmployeePage() {
     </div>
   );
 }
+
