@@ -324,7 +324,7 @@ class InstitutionBankAccountListAPIView(APIView):
             return Response({"detail": "Institution not found."}, status=404)
 
         bank_accounts = InstitutionBankAccount.objects.filter(
-            institution=institution
+            institution_bank__institution=institution
         ).order_by("-created_at")
 
         paginator = CustomPageNumberPagination()

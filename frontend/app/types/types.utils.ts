@@ -323,14 +323,14 @@ export interface IJobPosition {
   name: string;
   description?: string | null;
   department: number;
-  department_details?: IDepartment | null; 
-  reports_to?: number | null; 
-  reports_to_details?: IReportsToDetails | null; 
-  contract_template?: string | null; 
-  offer_letter_template?: string | null; 
-  salary: number|null;
+  department_details?: IDepartment | null;
+  reports_to?: number | null;
+  reports_to_details?: IReportsToDetails | null;
+  contract_template?: string | null;
+  offer_letter_template?: string | null;
+  salary: number | null;
   employees: IEmployee[],
-  tasks:ITask[],
+  tasks: ITask[],
   job_position_status: "active" | "inactive";
 }
 
@@ -342,7 +342,7 @@ export interface JobPositionFormData {
   description: string
   department: number | null
   reports_to: number | null
-  job_position_status: "active"| "inactive",
+  job_position_status: "active" | "inactive",
   offer_letter_template: File | null
   salary: string
 }
@@ -353,7 +353,7 @@ export interface CreateJobPositionData {
   description?: string;
   department: number;
   reports_to?: number;
-  job_position_status: "active"| "inactive",
+  job_position_status: "active" | "inactive",
   offer_letter_template?: File;
   salary: number;
 }
@@ -413,7 +413,7 @@ export interface JobApplicationFormData {
 
 
 
-export type JobAdvertStatus = "expired" | "active" | "archived" | "closed"|"inactive"|"pending_approval";
+export type JobAdvertStatus = "expired" | "active" | "archived" | "closed" | "inactive" | "pending_approval";
 
 export type JobAdvertTypes = "internal" | "external";
 
@@ -505,7 +505,7 @@ export interface IInterviewStage {
   interviewers: number[];
   interviewers_details?: IEmployee[];
   candidates_count: number;
-  
+
 }
 
 
@@ -725,7 +725,7 @@ export interface IInterviewFormData {
   interview_type: string,
   status: string;
   created_by: number;
-  
+
 }
 
 
@@ -1472,7 +1472,7 @@ export interface IContract {
   signed_contract: string | null;
   created_at: string;
   updated_at: string;
-  differences?:string
+  differences?: string
 }
 
 export interface IContractFormData {
@@ -1502,7 +1502,7 @@ export interface IDocumentTemplate {
   document_type: IDocumentType;
   template_type: 'pdf' | 'word' | 'text';
   file: string | null;
-  content: string | null; 
+  content: string | null;
   placeholders: string[] | null;
   created_at: string;
   updated_at: string;
@@ -1537,8 +1537,8 @@ interface IPlaceholders {
 
 export interface IGeneratedDocumentTemplate {
   id: number;
-  template_id:number
-  placeholders:  IPlaceholders | null; 
+  template_id: number
+  placeholders: IPlaceholders | null;
 }
 
 
@@ -1655,7 +1655,7 @@ export interface IOffboardingStage {
 }
 
 export interface IOffboardingStageFormData {
-  institution:number|string,
+  institution: number | string,
   stage_name: string;
   stage_description: string;
   is_active?: boolean;
@@ -1685,7 +1685,7 @@ export interface IAttendance {
   check_out_time: string | null;
   status: string;
   date: string;
-  overtime_hours:string
+  overtime_hours: string
 }
 
 export interface IAttendanceFormData {
@@ -1697,4 +1697,44 @@ export interface IAttendanceFormData {
   overtime_hours?: string;
 }
 
+export interface IBankType {
+  id: number | string,
+  institution: number | string,
+  bank_fullname: string,
+  bank_code: string,
+  br_code: string,
+  created_by: number,
+  created_at: string,
+  updated_by: number,
+  updated_at: string
+}
 
+export interface IBankTypeFormData {
+  bank_fullname: string,
+  bank_code: string,
+  br_code: string,
+}
+
+export interface IBankAccount {
+  id: number | string,
+  institution_bank: number | string,
+  account_name: string,
+  account_number: string,
+  created_by: number,
+  created_at: string,
+  updated_by: number,
+  updated_at: string
+}
+
+export interface IBankAccountFormData {
+  institution_bank: number | string,
+  account_name: string,
+  account_number: string
+}
+
+export interface IPaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
