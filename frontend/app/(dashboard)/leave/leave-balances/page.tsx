@@ -863,7 +863,6 @@ export default function LeaveBalanceComponent() {
                       </div>
                       <div>
                         <div className="font-medium">{group.employeeName}</div>
-                        <div className="text-sm text-muted-foreground">{group.employeeCode}</div>
                       </div>
                     </div>
                   </TableCell>

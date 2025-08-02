@@ -1015,6 +1015,16 @@ export default function ApplicationViewPage() {
                 </div>
               )}
 
+            {application.scheduled_by && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Scheduled by</span>
+                  <span className="text-sm font-medium">
+                    {application.scheduled_by.fullname || application.scheduled_by.email}
+                    {application.scheduled_by.id === currentUser?.id}
+                  </span>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Source</span>
                 <Badge variant="outline">{sourceLabels[application.source]}</Badge>
@@ -1232,7 +1242,7 @@ export default function ApplicationViewPage() {
               <div className="flex items-center gap-2">
                 <Select
                   value={interviewFormData.interview_stage.toString()}
-                  onValueChange={(value) =>
+                  onValueChange={(value:any) =>
                     updateInterviewFormData("interview_stage", Number(value))
                   }
                 >
@@ -1325,7 +1335,7 @@ export default function ApplicationViewPage() {
               </Label>
               <Select
                 value={interviewFormData.interview_type}
-                onValueChange={(value) => updateInterviewFormData("interview_type", value)}
+                onValueChange={(value:any) => updateInterviewFormData("interview_type", value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select interview type" />

@@ -360,6 +360,7 @@ export interface CreateJobPositionData {
 
 
 export interface JobApplication {
+  scheduled_by: any;
   application: any;
   shortlisted_by: any;
   reviewed_by: any;
@@ -505,6 +506,7 @@ export interface IInterviewStage {
   interviewers: number[];
   interviewers_details?: IEmployee[];
   candidates_count: number;
+
 
 }
 
@@ -725,6 +727,7 @@ export interface IInterviewFormData {
   interview_type: string,
   status: string;
   created_by: number;
+
 
 }
 
