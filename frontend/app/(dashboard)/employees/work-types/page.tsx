@@ -31,7 +31,7 @@ import type { IWorkType, IWorkTypeFormData } from "@/app/types/types.utils"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 
-interface EmployeeTypeModalProps {
+interface WorkTypeModalProps {
   isOpen: boolean
   onClose: () => void
   editingType: IWorkType | null
@@ -41,7 +41,7 @@ interface EmployeeTypeModalProps {
 }
 
 // Employee Type Form Modal Component
-function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting, existingTypes }: EmployeeTypeModalProps) {
+function WorkTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting, existingTypes }: WorkTypeModalProps) {
   const [formData, setFormData] = useState<IWorkTypeFormData>({
     name: "",
     description: "",
@@ -197,13 +197,13 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
 }
 
 // Employee Type Details Modal
-interface EmployeeTypeDetailsModalProps {
+interface WorkTypeDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   employeeType: IWorkType | null
 }
 
-function EmployeeTypeDetailsModal({ isOpen, onClose, employeeType }: EmployeeTypeDetailsModalProps) {
+function WorkTypeDetailsModal({ isOpen, onClose, employeeType }: WorkTypeDetailsModalProps) {
   if (!employeeType) return null
 
   return (
@@ -263,7 +263,7 @@ function EmployeeTypeDetailsModal({ isOpen, onClose, employeeType }: EmployeeTyp
 }
 
 // Main Component
-export default function EmployeeTypeManagement() {
+export default function WorkTypeManagement() {
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const [workTypes, setWorkTypes] = useState<IWorkType[]>([])
   const [searchTerm, setSearchTerm] = useState("")
@@ -650,7 +650,7 @@ export default function EmployeeTypeManagement() {
       </Card>
 
       {/* Form Modal */}
-      <EmployeeTypeModal
+      <WorkTypeModal
         isOpen={showFormModal}
         onClose={handleCloseFormModal}
         editingType={editingType}
@@ -660,7 +660,7 @@ export default function EmployeeTypeManagement() {
       />
 
       {/* Details Modal */}
-      <EmployeeTypeDetailsModal
+      <WorkTypeDetailsModal
         isOpen={showDetailsModal}
         onClose={handleCloseDetailsModal}
         employeeType={viewingType}

@@ -75,6 +75,10 @@ import {
   ITerminationFormData,
   IAttendance,
   IAttendanceFormData,
+  IBankType,
+  IBankTypeFormData,
+  IBankAccountFormData,
+  IBankAccount,
 } from "@/app/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -3504,3 +3508,90 @@ export const AttendanceAPI = {
     return response.data;
   },
 };
+
+
+export const bankTypesAPI = {
+  getAll: async (searchParams?: string) => {
+    try {
+      const response = await apiRequest.get(`/institution/bank-type/${searchParams ? `?${searchParams}` : ''}`,);
+      return response.data as IPaginatedResponse<IBankType>
+    } catch (error) {
+      throw error;
+    }
+  },
+  getById: async ({ bankTypeId }: { bankTypeId: string }) => {
+    try {
+      const response = await apiRequest.get(`/institution/bank-type/${bankTypeId}`,);
+      return response.data as IBankType
+    } catch (error) {
+      throw error;
+    }
+  },
+  create: async ({ bankType }: { bankType: IBankTypeFormData }) => {
+    try {
+      const response = await apiRequest.post(`/institution/bank-type/`, bankType);
+      return response.data as IBankType
+    } catch (error) {
+      throw error;
+    }
+  },
+  update: async ({ bankTypeId, data }: { bankTypeId: string, data: IBankTypeFormData }) => {
+    try {
+      const response = await apiRequest.patch(`/institution/bank-type/${bankTypeId}/`, data);
+      return response.data as IBankType
+    } catch (error) {
+      throw error;
+    }
+  },
+  delete: async ({ bankTypeId }: { bankTypeId: string }) => {
+    try {
+      await apiRequest.delete(`/institution/bank-type/${bankTypeId}/`);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+}
+
+export const bankAccountsAPI = {
+  getAll: async (searchParams?: string) => {
+    try {
+      const url = searchParams ? `/institution/bank-account/${searchParams}` : `/institution/bank-account/`
+      const response = await apiRequest.get(url)
+      return response.data as IPaginatedResponse<IBankAccount>
+    } catch (error) {
+      throw error
+    }
+  },
+  getById: async ({ bankAccountId }: { bankAccountId: string }) => {
+    try {
+      const response = await apiRequest.get(`/institution/bank-account/${bankAccountId}`)
+      return response.data as IBankAccount
+    } catch (error) {
+      throw error
+    }
+  },
+  create: async ({ bankAccount }: { bankAccount: IBankAccountFormData }) => {
+    try {
+      const response = await apiRequest.post(`/institution/bank-account/`, bankAccount)
+      return response.data as IBankAccount
+    } catch (error) {
+      throw error
+    }
+  },
+  update: async ({ bankAccountId, data }: { bankAccountId: string; data: IBankAccountFormData }) => {
+    try {
+      const response = await apiRequest.patch(`/institution/bank-account/${bankAccountId}/`, data)
+      return response.data as IBankAccount
+    } catch (error) {
+      throw error
+    }
+  },
+  delete: async ({ bankAccountId }: { bankAccountId: string }) => {
+    try {
+      await apiRequest.delete(`/institution/bank-account/${bankAccountId}/`)
+    } catch (error) {
+      throw error
+    }
+  },
+}
