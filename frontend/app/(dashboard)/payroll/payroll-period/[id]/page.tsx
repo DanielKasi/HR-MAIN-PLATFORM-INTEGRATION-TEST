@@ -971,7 +971,7 @@ const resetEditForm = () => {
       Delete
     </Button>
   </DropdownMenuItem>
-</DropdownMenuContent>
+                            </DropdownMenuContent>
                           </DropdownMenu>
                           <Dialog
                             open={deleteConfirmId === payslip.id}
