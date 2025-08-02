@@ -1741,3 +1741,59 @@ export interface IPaginatedResponse<T> {
   previous: string | null;
   results: T[];
 }
+
+ export interface PayslipItemData {
+  id: number
+  payslip: {
+    id: number
+    employee: {
+      id: number
+      user: {
+        id: number
+        email: string
+        fullname: string
+        is_active: boolean
+      }
+      department: {
+        id: number
+        name: string
+        institution_id: number
+      }
+      position: {
+        id: number
+        name: string
+        department_id: number
+      }
+    }
+    payroll_period: {
+      id: number
+      name: string
+      start_date: string
+      end_date: string
+      pay_date: string
+      is_processed: boolean
+      institution: number
+    }
+    basic_salary: string
+    total_allowances: string
+    total_deductions: string
+    gross_salary: string
+    net_salary: string
+    days_worked: number
+    is_paid: boolean
+    paid_date: string | null
+  }
+  item_type: "allowance" | "deduction" | "overtime"
+  name: string
+  amount: string
+  description?: string
+}
+
+export interface PayslipItem {
+  id: number
+  payslip_id: number
+  item_type: "allowance" | "deduction" | "overtime"
+  name: string
+  amount: number
+  description?: string
+}

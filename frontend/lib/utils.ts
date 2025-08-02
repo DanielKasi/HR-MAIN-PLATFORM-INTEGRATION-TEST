@@ -2915,16 +2915,8 @@ export const updatePayslip = async ({
   payslipData: Partial<IPayslipFormData>;
 }): Promise<IPayslip | null> => {
   try {
-    const formData = new FormData();
-
-    Object.entries(payslipData).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        formData.append(key, value.toString());
-      }
+    const response = await apiRequest.patch(`payroll/payslips/${id}/`, payslipData, {
     });
-
-    const response = await apiRequest.patch(`payroll/payslips/${id}/`, formData);
-
     return response.data as IPayslip;
   } catch (error) {
     console.error("Failed to update payslip:", error);

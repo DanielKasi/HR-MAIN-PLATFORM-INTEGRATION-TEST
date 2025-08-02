@@ -38,6 +38,7 @@ import {
   Trash2,
   Download,
   ArrowLeft,
+  Edit,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useSelector } from "react-redux";
@@ -49,6 +50,7 @@ import {
   getPayrollPeriods,
   createBulkPayslips,
   downloadPayrollDocument,
+  updatePayslip,
 } from "@/lib/utils";
 import { IEmployee, IPayrollPeriod, IPayslip } from "@/app/types/types.utils";
 import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors";
@@ -105,6 +107,15 @@ export default function Payslips() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const accessToken = useSelector(selectAccessToken);
+  const [editingPayslip, setEditingPayslip] = useState<DisplayPayslip | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+  basic_salary: 0,
+  total_allowances: 0,
+  total_deductions: 0,
+  days_worked: 0,
+});
+  const [isUpdating, setIsUpdating] = useState(false);
 
 
 
@@ -484,6 +495,84 @@ export default function Payslips() {
     );
   }
 
+  const handleEditPayslip = (payslip: DisplayPayslip) => {
+  setEditingPayslip(payslip);
+  setEditFormData({
+    basic_salary: payslip.basic_salary,
+    total_allowances: payslip.total_allowances,
+    total_deductions: payslip.total_deductions,
+    days_worked: payslip.days_worked,
+  });
+  setEditModalOpen(true);
+};
+
+const handleUpdatePayslip = async () => {
+  if (!editingPayslip) return;
+
+  setIsUpdating(true);
+  try {
+    const basicSalary = Number(editFormData.basic_salary || 0);
+    const totalAllowances = Number(editFormData.total_allowances || 0);
+    const totalDeductions = Number(editFormData.total_deductions || 0);
+    const daysWorked = Number(editFormData.days_worked || 0);
+
+    // Match the exact types expected by IPayslipFormData
+    const updatedData = {
+      basic_salary: basicSalary.toString(), // string
+      total_allowances: totalAllowances.toString(), // string
+      total_deductions: totalDeductions.toString(), // string
+      days_worked: daysWorked, // number (keep as number)
+      gross_salary: (basicSalary + totalAllowances).toString(), // string
+      net_salary: (basicSalary + totalAllowances - totalDeductions).toString(), // string
+    };
+
+    console.log('Sending update data:', updatedData);
+
+    const updatedPayslip = await updatePayslip({
+      id: editingPayslip.id,
+      payslipData: updatedData // Now matches IPayslipFormData types
+    });
+
+    if (updatedPayslip) {
+      // Update local state with numbers for display
+      setPayslips(prev => prev.map(p =>
+        p.id === editingPayslip.id
+          ? {
+              ...p,
+              basic_salary: basicSalary,
+              total_allowances: totalAllowances,
+              total_deductions: totalDeductions,
+              days_worked: daysWorked,
+              gross_salary: basicSalary + totalAllowances,
+              net_salary: basicSalary + totalAllowances - totalDeductions,
+            }
+          : p
+      ));
+
+      toast.success("Payslip updated successfully");
+      setEditModalOpen(false);
+      setEditingPayslip(null);
+    } else {
+      toast.error("Failed to update payslip - no response from server");
+    }
+  } catch (error: any) {
+    console.error('Update error:', error);
+    toast.error(error.message || "Failed to update payslip");
+  } finally {
+    setIsUpdating(false);
+  }
+};
+
+const resetEditForm = () => {
+  setEditFormData({
+    basic_salary: 0,
+    total_allowances: 0,
+    total_deductions: 0,
+    days_worked: 0,
+  });
+  setEditingPayslip(null);
+};
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -830,43 +919,59 @@ export default function Payslips() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
-                              align="end"
-                              className="bg-white rounded-lg shadow-lg p-3"
-                            >
-                              <DropdownMenuItem className="flex justify-start">
-                                <Button
-                                  variant={"ghost"}
-                                  className="!w-full !justify-start flex"
-                                  onClick={() => navigateToPayslipItems(payslip.id)}
-                                >
-                                  <FileText className="w-4 h-4 mr-2 text-blue-600" />
-                                  View Payslip Items
-                                </Button>
-                              </DropdownMenuItem>
-                              {!payslip.is_paid && (
-                                <DropdownMenuItem className="!justify-start !items-start flex">
-                                  <Button
-                                    variant={"ghost"}
-                                    className="!w-full !items-start justify-start flex"
-                                    onClick={() => handleMarkAsPaid(payslip)}
-                                  >
-                                    <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
-                                    Mark as Paid
-                                  </Button>
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="flex !justify-start items-center text-red-600 focus:text-red-700">
-                                <Button
-                                  variant={"ghost"}
-                                  className="!w-full !items-start justify-start"
-                                  onClick={() => setDeleteConfirmId(payslip.id)}
-                                >
-                                  <Trash2 className="w-4 h-4 mr-2" />
-                                  Delete
-                                </Button>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
+  align="end"
+  className="bg-white rounded-lg shadow-lg p-3"
+>
+  {/* Add Edit button as first option */}
+  <DropdownMenuItem className="flex justify-start">
+    <Button
+      variant={"ghost"}
+      className="!w-full !justify-start flex"
+      onClick={() => handleEditPayslip(payslip)}
+    >
+      <Edit className="w-4 h-4 mr-2 text-blue-600" />
+      Edit Payslip
+    </Button>
+  </DropdownMenuItem>
+
+  <DropdownMenuItem className="flex justify-start">
+    <Button
+      variant={"ghost"}
+      className="!w-full !justify-start flex"
+      onClick={() => navigateToPayslipItems(payslip.id)}
+    >
+      <FileText className="w-4 h-4 mr-2 text-blue-600" />
+      View Payslip Items
+    </Button>
+  </DropdownMenuItem>
+
+  {/* Rest of your existing menu items */}
+  {!payslip.is_paid && (
+    <DropdownMenuItem className="!justify-start !items-start flex">
+      <Button
+        variant={"ghost"}
+        className="!w-full !items-start justify-start flex"
+        onClick={() => handleMarkAsPaid(payslip)}
+      >
+        <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+        Mark as Paid
+      </Button>
+    </DropdownMenuItem>
+  )}
+
+  <DropdownMenuSeparator />
+
+  <DropdownMenuItem className="flex !justify-start items-center text-red-600 focus:text-red-700">
+    <Button
+      variant={"ghost"}
+      className="!w-full !items-start justify-start"
+      onClick={() => setDeleteConfirmId(payslip.id)}
+    >
+      <Trash2 className="w-4 h-4 mr-2" />
+      Delete
+    </Button>
+  </DropdownMenuItem>
+</DropdownMenuContent>
                           </DropdownMenu>
                           <Dialog
                             open={deleteConfirmId === payslip.id}
@@ -894,6 +999,133 @@ export default function Payslips() {
                               </DialogFooter>
                             </DialogContent>
                           </Dialog>
+                          {/* Add this Edit Modal Dialog after the delete confirmation dialog */}
+<Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+  <DialogContent className="max-w-2xl">
+    <DialogHeader>
+      <DialogTitle>Edit Payslip</DialogTitle>
+      <DialogDescription>
+        Update payslip details for {editingPayslip?.employee.name} in {editingPayslip?.payroll_period.name}
+      </DialogDescription>
+    </DialogHeader>
+
+    <div className="grid grid-cols-2 gap-4 py-4">
+      <div className="space-y-2">
+        <label htmlFor="basic_salary" className="text-sm font-medium">
+          Basic Salary (UGX)
+        </label>
+        <Input
+          id="basic_salary"
+          type="number"
+          value={editFormData.basic_salary}
+          onChange={(e) => setEditFormData(prev => ({
+            ...prev,
+            basic_salary: Number(e.target.value)
+          }))}
+          disabled={isUpdating}
+          placeholder="Enter basic salary"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="days_worked" className="text-sm font-medium">
+          Days Worked
+        </label>
+        <Input
+          id="days_worked"
+          type="number"
+          value={editFormData.days_worked}
+          onChange={(e) => setEditFormData(prev => ({
+            ...prev,
+            days_worked: Number(e.target.value)
+          }))}
+          disabled={isUpdating}
+          placeholder="Enter days worked"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="total_allowances" className="text-sm font-medium">
+          Total Allowances (UGX)
+        </label>
+        <Input
+          id="total_allowances"
+          type="number"
+          value={editFormData.total_allowances}
+          onChange={(e) => setEditFormData(prev => ({
+            ...prev,
+            total_allowances: Number(e.target.value)
+          }))}
+          disabled={isUpdating}
+          placeholder="Enter total allowances"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="total_deductions" className="text-sm font-medium">
+          Total Deductions (UGX)
+        </label>
+        <Input
+          id="total_deductions"
+          type="number"
+          value={editFormData.total_deductions}
+          onChange={(e) => setEditFormData(prev => ({
+            ...prev,
+            total_deductions: Number(e.target.value)
+          }))}
+          disabled={isUpdating}
+          placeholder="Enter total deductions"
+        />
+      </div>
+    </div>
+
+    {/* Preview calculated values */}
+    <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+      <h4 className="font-medium text-gray-900">Calculated Values</h4>
+      <div className="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <span className="text-gray-600">Gross Salary:</span>
+          <span className="ml-2 font-medium">
+            {formatCurrency(Number(editFormData.basic_salary || 0) + Number(editFormData.total_allowances || 0))}
+          </span>
+        </div>
+        <div>
+          <span className="text-gray-600">Net Salary:</span>
+          <span className="ml-2 font-medium text-green-600">
+            {formatCurrency(Number(editFormData.basic_salary || 0) + Number(editFormData.total_allowances || 0) - Number(editFormData.total_deductions || 0))}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <DialogFooter>
+      <Button
+        variant="outline"
+        onClick={() => {
+          setEditModalOpen(false);
+          resetEditForm();
+        }}
+        disabled={isUpdating}
+      >
+        Cancel
+      </Button>
+      <Button
+        onClick={handleUpdatePayslip}
+        disabled={isUpdating}
+        className="bg-orange-600 hover:bg-orange-700"
+      >
+        {isUpdating ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Updating...
+          </>
+        ) : (
+          "Update Payslip"
+        )}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
                         </div>
                       </TableCell>
                     </TableRow>
