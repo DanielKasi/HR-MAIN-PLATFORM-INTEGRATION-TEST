@@ -1022,30 +1022,30 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
           </DialogHeader>
 
           <div className="space-y-4">
-            <div>
-              <Label>New Status</Label>
-              <Select
-                value={updateDialog.newStatus}
-                onValueChange={(value) => setUpdateDialog(prev => ({ ...prev, newStatus: value as IOnBoarding['status'] }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select new status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ONBOARDING_STAGES.map((stage) => {
-                    const IconComponent = stage.icon
-                    return (
-                      <SelectItem key={stage.value} value={stage.value}>
-                        <div className="flex items-center gap-2">
-                          <IconComponent className={`h-4 w-4 ${stage.color}`} />
-                          {stage.label}
-                        </div>
-                      </SelectItem>
-                    )
-                  })}
-                </SelectContent>
-              </Select>
+          <div>
+  <Label>New Status</Label>
+  <Select
+    value={updateDialog.newStatus}
+    onValueChange={(value) => setUpdateDialog(prev => ({ ...prev, newStatus: value as IOnBoarding['status'] }))}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Select new status" />
+    </SelectTrigger>
+    <SelectContent>
+      {ONBOARDING_STAGES.map((stage) => {
+        const IconComponent = stage.icon
+        return (
+          <SelectItem key={stage.value} value={stage.value}>
+            <div className="flex items-center gap-2">
+              <IconComponent className={`h-4 w-4 ${stage.color}`} />
+              {stage.label}
             </div>
+          </SelectItem>
+        )
+      })}
+    </SelectContent>
+  </Select>
+</div>
 
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -1098,38 +1098,37 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
         !bulkUpdateDialog.isSubmitting && setBulkUpdateDialog(prev => ({ ...prev, open }))
       }>
         <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Bulk Update Onboarding Status</DialogTitle>
-            <DialogDescription>
-              Update the onboarding status and feedback for {selectedIds.size} selected candidate{selectedIds.size > 1 ? 's' : ''}.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Bulk Update Onboarding Status</DialogTitle>
+          <DialogDescription>
+            Move {selectedIds.size} selected candidate{selectedIds.size > 1 ? 's' : ''} to{" "}
+            <strong>
+              {ONBOARDING_STAGES.find(s => s.value === bulkUpdateDialog.newStatus)?.label}
+            </strong>{" "}
+            stage and update their feedback.
+          </DialogDescription>
+        </DialogHeader>
 
           <div className="space-y-4">
-            <div>
-              <Label>New Status</Label>
-              <Select
-                value={bulkUpdateDialog.newStatus}
-                onValueChange={(value) => setBulkUpdateDialog(prev => ({ ...prev, newStatus: value as IOnBoarding['status'] }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select new status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ONBOARDING_STAGES.map((stage) => {
+              <div>
+                <Label>New Status</Label>
+                <div className="flex items-center gap-3 p-3 border rounded-md bg-gray-50">
+                  {(() => {
+                    const stage = ONBOARDING_STAGES.find(s => s.value === bulkUpdateDialog.newStatus)
+                    if (!stage) return null
                     const IconComponent = stage.icon
                     return (
-                      <SelectItem key={stage.value} value={stage.value}>
-                        <div className="flex items-center gap-2">
-                          <IconComponent className={`h-4 w-4 ${stage.color}`} />
-                          {stage.label}
-                        </div>
-                      </SelectItem>
+                      <>
+                        <IconComponent className={`h-5 w-5 ${stage.color}`} />
+                        <span className="font-medium">{stage.label}</span>
+                      </>
                     )
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
+                  })()}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  All selected candidates will be moved to this stage
+                </p>
+              </div>
 
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -1169,11 +1168,14 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
               Cancel
             </Button>
             <Button
-              onClick={submitBulkUpdate}
-              disabled={bulkUpdateDialog.isSubmitting || !bulkUpdateDialog.newStatus}
-            >
-              {bulkUpdateDialog.isSubmitting ? `Updating ${selectedIds.size} candidates...` : `Update ${selectedIds.size} Candidate${selectedIds.size > 1 ? 's' : ''}`}
-            </Button>
+            onClick={submitBulkUpdate}
+            disabled={bulkUpdateDialog.isSubmitting || !bulkUpdateDialog.newStatus}
+          >
+            {bulkUpdateDialog.isSubmitting
+              ? `Moving ${selectedIds.size} candidates...`
+              : `Move to ${ONBOARDING_STAGES.find(s => s.value === bulkUpdateDialog.newStatus)?.label}`
+            }
+          </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

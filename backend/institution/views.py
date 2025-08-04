@@ -15,7 +15,14 @@ from utilities.helpers import (
 )
 from users.models import Profile, System
 
-from .models import Department, Institution, Branch, UserBranch
+from .models import (
+    Department,
+    Institution,
+    Branch,
+    UserBranch,
+    InstitutionBankAccount,
+    InstitutionBankType,
+)
 from users.serializers import ProfileSerializer
 from .serializers import (
     DepartmentSerializer,
@@ -25,6 +32,8 @@ from .serializers import (
     BranchSerializer,
     SuccessResponseSerializer,
     UserBranchSerializer,
+    InstitutionBankTypeSerializer,
+    InstitutionBankAccountSerializer,
 )
 from django.shortcuts import get_object_or_404
 from .utils import generate_compliant_password
@@ -40,6 +49,7 @@ import uuid
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
+
 
 class DefaultDataAPIView(APIView):
     @extend_schema(
@@ -67,6 +77,7 @@ class DefaultDataAPIView(APIView):
             for dept in default_data
         ]
         return Response(modified_data, status=status.HTTP_200_OK)
+
 
 class InstitutionListAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -100,7 +111,12 @@ class InstitutionListAPIView(APIView):
                 )
 
         serializer = InstitutionSerializer(
-            data=request.data, context={"request": request, "user": request.user, "departments": departments_data}
+            data=request.data,
+            context={
+                "request": request,
+                "user": request.user,
+                "departments": departments_data,
+            },
         )
         if serializer.is_valid():
             institution = serializer.save()
@@ -190,6 +206,206 @@ class InstitutionDetailAPIView(APIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=404)
+
+
+class InstitutionBankTypeListAPIView(APIView):
+    @extend_schema(
+        responses={200: InstitutionBankTypeSerializer(many=True)},
+        description="Retrieve all bank types.",
+        summary="Get all bank types",
+        tags=["Bank Type Management"],
+    )
+    def get(self, request):
+        user = request.user.profile if request.user.is_authenticated else None
+
+        try:
+            institution = Institution.objects.get(id=user.institution_id)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=404)
+
+        bank_types = InstitutionBankType.objects.filter(
+            institution=institution
+        ).order_by("-created_at")
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(bank_types, request)
+
+        serializer = InstitutionBankTypeSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    @extend_schema(
+        request=InstitutionBankTypeSerializer,
+        responses={201: InstitutionBankTypeSerializer},
+        description="Create a new bank type.",
+        summary="Create a new bank type",
+        tags=["Bank Type Management"],
+    )
+    def post(self, request):
+        serializer = InstitutionBankTypeSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            bank_type = serializer.save()
+            return Response(
+                InstitutionBankTypeSerializer(bank_type).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class InstitutionBankTypeDetailView(APIView):
+    @extend_schema(
+        responses={200: InstitutionBankTypeSerializer},
+        description="Retrieve a bank type.",
+        summary="Get a bank type",
+        tags=["Bank Type Management"],
+    )
+    def get(self, request, bank_type_id):
+        try:
+            bank_type = InstitutionBankType.objects.get(id=bank_type_id)
+            serializer = InstitutionBankTypeSerializer(bank_type)
+            return Response(serializer.data)
+        except InstitutionBankType.DoesNotExist:
+            return Response({"detail": "Bank type not found."}, status=404)
+
+    @extend_schema(
+        request=InstitutionBankTypeSerializer,
+        responses={200: InstitutionBankTypeSerializer},
+        description="Update an existing bank type.",
+        summary="Update a bank type",
+        tags=["Bank Type Management"],
+    )
+    def patch(self, request, bank_type_id):
+        try:
+            bank_type = InstitutionBankType.objects.get(id=bank_type_id)
+        except InstitutionBankType.DoesNotExist:
+            return Response({"detail": "Bank type not found."}, status=404)
+
+        serializer = InstitutionBankTypeSerializer(
+            bank_type, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    @extend_schema(
+        responses={204: None},
+        description="Delete an existing bank type.",
+        summary="Delete a bank type",
+        tags=["Bank Type Management"],
+    )
+    def delete(self, request, bank_type_id):
+        try:
+            bank_type = InstitutionBankType.objects.get(id=bank_type_id)
+            bank_type.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except InstitutionBankType.DoesNotExist:
+            return Response({"detail": "Bank type not found."}, status=404)
+
+
+class InstitutionBankAccountListAPIView(APIView):
+    @extend_schema(
+        responses={200: InstitutionBankAccountSerializer(many=True)},
+        description="Retrieve all bank accounts.",
+        summary="Get all bank accounts",
+        tags=["Bank Account Management"],
+    )
+    def get(self, request):
+        user = request.user.profile if request.user.is_authenticated else None
+
+        try:
+            institution = Institution.objects.get(id=user.institution_id)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=404)
+
+        bank_accounts = InstitutionBankAccount.objects.filter(
+            institution_bank__institution=institution
+        ).order_by("-created_at")
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(bank_accounts, request)
+
+        serializer = InstitutionBankAccountSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    @extend_schema(
+        request=InstitutionBankAccountSerializer,
+        responses={201: InstitutionBankAccountSerializer},
+        description="Create a new bank account.",
+        summary="Create a new bank account",
+        tags=["Bank Account Management"],
+    )
+    def post(self, request):
+        serializer = InstitutionBankAccountSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            bank_account = serializer.save()
+            return Response(
+                InstitutionBankAccountSerializer(bank_account).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class InstitutionBankAccountDetailView(APIView):
+    @extend_schema(
+        responses={200: InstitutionBankAccountSerializer},
+        description="Retrieve a bank account.",
+        summary="Get a bank account",
+        tags=["Bank Account Management"],
+    )
+    def get(self, request, bank_account_id):
+        try:
+            bank_account = InstitutionBankAccount.objects.get(id=bank_account_id)
+            serializer = InstitutionBankAccountSerializer(bank_account)
+            return Response(serializer.data)
+        except InstitutionBankAccount.DoesNotExist:
+            return Response({"detail": "Bank account not found."}, status=404)
+
+    @extend_schema(
+        request=InstitutionBankAccountSerializer,
+        responses={200: InstitutionBankAccountSerializer},
+        description="Update an existing bank account.",
+        summary="Update a bank account",
+        tags=["Bank Account Management"],
+    )
+    def patch(self, request, bank_account_id):
+        try:
+            bank_account = InstitutionBankAccount.objects.get(id=bank_account_id)
+        except InstitutionBankAccount.DoesNotExist:
+            return Response({"detail": "Bank account not found."}, status=404)
+
+        serializer = InstitutionBankAccountSerializer(
+            bank_account, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    @extend_schema(
+        responses={204: None},
+        description="Delete an existing bank account.",
+        summary="Delete a bank account",
+        tags=["Bank Account Management"],
+    )
+    def delete(self, request, bank_account_id):
+        try:
+            bank_account = InstitutionBankAccount.objects.get(id=bank_account_id)
+            bank_account.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except InstitutionBankAccount.DoesNotExist:
+            return Response({"detail": "Bank account not found."}, status=404)
 
 
 class BranchListAPIView(APIView):
@@ -607,6 +823,7 @@ class DepartmentDetailAPIView(APIView):
             return Response(status=204)
         except Department.DoesNotExist:
             return Response({"detail": "Department not found."}, status=404)
+
 
 # TODO: Make sure a user who does this has permissions to do so
 @extend_schema(

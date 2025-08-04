@@ -34,7 +34,7 @@ import {
 import type { JobApplication, IInterviewStage, IInterview, IInterviewFormData, IEmployee } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
-import {LocationAutocomplete} from "@/components/location-autocomplete";
+import { LocationAutocomplete } from "@/components/location-autocomplete";
 
 interface MultiInterviewFormData extends Omit<IInterviewFormData, 'job_position_application'> {
   userData: any
@@ -53,10 +53,10 @@ interface IInterviewStageFormData {
 }
 
 
-  
 
-  export default function CreateInterviewPage() {
-    const [jobApplications, setJobApplications] = useState<JobApplication[]>([])
+
+export default function CreateInterviewPage() {
+  const [jobApplications, setJobApplications] = useState<JobApplication[]>([])
   const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([])
   const [selectedApplications, setSelectedApplications] = useState<JobApplication[]>([])
   const [selectedStage, setSelectedStage] = useState<IInterviewStage | null>(null)
@@ -476,8 +476,7 @@ interface IInterviewStageFormData {
 
       if (successCount > 0) {
         toast.success(
-          `${successCount} interview(s) scheduled successfully!${
-            failureCount > 0 ? ` ${failureCount} failed.` : ""
+          `${successCount} interview(s) scheduled successfully!${failureCount > 0 ? ` ${failureCount} failed.` : ""
           }`
         )
         router.push("/job-interviews")
@@ -498,26 +497,26 @@ interface IInterviewStageFormData {
   if (!selectedInstitution || !selectedBranch) {
     return <div>Loading...</div>
   }
-  
 
-const jobPositionItems: SearchableSelectItem[] = Object.entries(filteredGroupedApplications).map(
-  ([jobId, { jobName, applications }]) => ({
-    id: jobId,
-    label: `${jobName} (${applications.length} available applicant${applications.length !== 1 ? "s" : ""})`,
-    value: `${jobName}`.toLowerCase(),
-  })
-);
 
-const interviewStageItems: SearchableSelectItem[] = filteredInterviewStages.map((stage) => ({
-  id: stage.id,
-  label: `${stage.name} (Level ${stage.level})`,
-  value: `${stage.name} level ${stage.level}`.toLowerCase(),
-}));
+  const jobPositionItems: SearchableSelectItem[] = Object.entries(filteredGroupedApplications).map(
+    ([jobId, { jobName, applications }]) => ({
+      id: jobId,
+      label: `${jobName} (${applications.length} available applicant${applications.length !== 1 ? "s" : ""})`,
+      value: `${jobName}`.toLowerCase(),
+    })
+  );
 
-const interviewTypeItems: SearchableSelectItem[] = [
-  { id: "online", label: "Online", value: "online" },
-  { id: "in_person", label: "In Person", value: "in person" },
-];
+  const interviewStageItems: SearchableSelectItem[] = filteredInterviewStages.map((stage) => ({
+    id: stage.id,
+    label: `${stage.name} (Level ${stage.level})`,
+    value: `${stage.name} level ${stage.level}`.toLowerCase(),
+  }));
+
+  const interviewTypeItems: SearchableSelectItem[] = [
+    { id: "online", label: "Online", value: "online" },
+    { id: "in_person", label: "In Person", value: "in person" },
+  ];
 
   return (
     <div className="w-full h-full p-6">
@@ -528,10 +527,9 @@ const interviewTypeItems: SearchableSelectItem[] = [
             variant="ghost"
             size="sm"
             onClick={handleBack}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 rounded-full aspect-square"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Interviews
           </Button>
         </div>
 
@@ -558,17 +556,17 @@ const interviewTypeItems: SearchableSelectItem[] = [
                 <Label htmlFor="job_position" className="text-sm font-medium">
                   Job Position/ Title  *
                 </Label>
-                  <SearchableSelect
-                    items={jobPositionItems}
-                    selectedItems={selectedJobPosition ? [selectedJobPosition] : []}
-                    placeholder="Select a job position"
-                    searchPlaceholder="Search job positions..."
-                    emptyMessage="No job positions with available applicants found."
-                    onSelect={(itemId) => handleJobPositionSelect(itemId.toString())}
-                    multiple={false}
-                    triggerClassName={errors.job_position ? "border-destructive" : ""}
-                    popoverClassName="w-[400px]"
-                  />
+                <SearchableSelect
+                  items={jobPositionItems}
+                  selectedItems={selectedJobPosition ? [selectedJobPosition] : []}
+                  placeholder="Select a job position"
+                  searchPlaceholder="Search job positions..."
+                  emptyMessage="No job positions with available applicants found."
+                  onSelect={(itemId) => handleJobPositionSelect(itemId.toString())}
+                  multiple={false}
+                  triggerClassName={errors.job_position ? "border-destructive" : ""}
+                  popoverClassName="w-[400px]"
+                />
                 {errors.job_position && (
                   <p className="text-sm text-destructive">{errors.job_position}</p>
                 )}
@@ -621,14 +619,14 @@ const interviewTypeItems: SearchableSelectItem[] = [
                         )}
                         {filteredGroupedApplications[Number(selectedJobPosition)]
                           ?.applications.length === 0 && (
-                          <div className="text-center py-4 text-muted-foreground">
-                            <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">
-                              All applicants for this position have already been scheduled for
-                              interviews
-                            </p>
-                          </div>
-                        )}
+                            <div className="text-center py-4 text-muted-foreground">
+                              <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                              <p className="text-sm">
+                                All applicants for this position have already been scheduled for
+                                interviews
+                              </p>
+                            </div>
+                          )}
                       </div>
                     </div>
                     {errors.selected_applications && (
@@ -641,7 +639,7 @@ const interviewTypeItems: SearchableSelectItem[] = [
               {/* Form Fields - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Interview Stage */}
-                  {/* Interview Stage */}
+                {/* Interview Stage */}
                 <div className="space-y-2">
                   <Label htmlFor="interview_stage" className="text-sm font-normal">
                     Interview Stage *
@@ -671,7 +669,7 @@ const interviewTypeItems: SearchableSelectItem[] = [
                         popoverClassName="w-[500px]"
                       />
                     </div>
-                    
+
                     {/* Fixed Dialog Trigger Button */}
                     <Button
                       type="button"
@@ -695,7 +693,7 @@ const interviewTypeItems: SearchableSelectItem[] = [
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                  
+
                   {errors.interview_stage && (
                     <p className="text-sm text-destructive">{errors.interview_stage}</p>
                   )}
@@ -747,24 +745,24 @@ const interviewTypeItems: SearchableSelectItem[] = [
                           <Label htmlFor="stage_interviewer">Interviewers *</Label>
                           <div className="w-full max-w-full overflow-hidden">
                             <EmployeeSearchableSelect
-                                employees={employees as any}
-                                value={stageFormData.interviewers.map((id) => id.toString())}
-                                onValueChange={(values) => {
-                                  const numberValues = Array.isArray(values)
-                                    ? values.map((v) => Number(v))
-                                    : [Number(values)];
-                                  const uniqueValues = [...new Set(numberValues)];
-                                  if (uniqueValues.length !== numberValues.length) {
-                                    toast.info("Duplicate interviewers removed");
-                                  }
-                                  updateStageFormData("interviewers", uniqueValues);
-                                }}
-                                disabled={isCreatingStage}
-                                placeholder="Search and select interviewers"
-                                showEmployeeId={false}
-                                showDepartment={false}
-                                multiple={true}
-                              />
+                              employees={employees as any}
+                              value={stageFormData.interviewers.map((id) => id.toString())}
+                              onValueChange={(values) => {
+                                const numberValues = Array.isArray(values)
+                                  ? values.map((v) => Number(v))
+                                  : [Number(values)];
+                                const uniqueValues = [...new Set(numberValues)];
+                                if (uniqueValues.length !== numberValues.length) {
+                                  toast.info("Duplicate interviewers removed");
+                                }
+                                updateStageFormData("interviewers", uniqueValues);
+                              }}
+                              disabled={isCreatingStage}
+                              placeholder="Search and select interviewers"
+                              showEmployeeId={false}
+                              showDepartment={false}
+                              multiple={true}
+                            />
                           </div>
                           {stageErrors.interviewers && (
                             <p className="text-sm text-destructive">{stageErrors.interviewers}</p>
@@ -891,7 +889,7 @@ const interviewTypeItems: SearchableSelectItem[] = [
                   <p className="text-xs text-muted-foreground">Must be a future date and time</p>
                 </div>
 
-                  {/* Interview Type */}
+                {/* Interview Type */}
                 <div className="space-y-2">
                   <Label htmlFor="interview_type" className="text-sm font-medium">
                     Interview Type
@@ -910,7 +908,7 @@ const interviewTypeItems: SearchableSelectItem[] = [
                   </Select>
                 </div>
 
-                  {/* Interview Location */}
+                {/* Interview Location */}
                 <div className="space-y-2">
                   <Label htmlFor="location" className="text-sm font-medium">
                     Interview Location *
@@ -928,7 +926,7 @@ const interviewTypeItems: SearchableSelectItem[] = [
                     Search for the interview location or specify if virtual (e.g., "Zoom Meeting")
                   </p>
                 </div>
-              
+
               </div>
 
               {/* Selected Applications Summary */}

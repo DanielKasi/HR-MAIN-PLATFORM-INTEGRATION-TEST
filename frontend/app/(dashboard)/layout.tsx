@@ -536,7 +536,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
           </div>
         </div>
-        <div className="p-2 overflow-y-auto h-[90svh] py-4">
+        <div className="p-2 overflow-y-auto h-[90svh] pt-4 pb-16">
           {filteredNavItems.map(renderNavigationItem)}
         </div>
       </div>

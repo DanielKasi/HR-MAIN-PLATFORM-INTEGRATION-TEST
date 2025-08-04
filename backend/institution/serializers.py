@@ -187,6 +187,24 @@ class InstitutionBankTypeSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def create(self, validated_data):
+        request = self.context.get("request")
+
+        user = request.user if request and request.user.is_authenticated else None
+
+        if not user:
+            raise serializers.ValidationError(
+                "User must be authenticated to create a bank type."
+            )
+
+        try:
+            institution = Institution.objects.get(id=user.institution_id)
+        except Institution.DoesNotExist:
+            raise serializers.ValidationError("Institution not found.")
+
+        validated_data["institution"] = institution
+        return super().create(validated_data)
+
 
 class InstitutionBankAccountSerializer(serializers.ModelSerializer):
     class Meta:

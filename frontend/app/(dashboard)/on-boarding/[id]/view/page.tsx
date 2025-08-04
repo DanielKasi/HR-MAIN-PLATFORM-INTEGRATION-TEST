@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { 
+import {
   ArrowLeft,
   Calendar,
   User,
@@ -76,25 +76,25 @@ export default function ViewOnboardingDetails() {
 
   const getApplicationData = (onboarding: IOnBoarding) => {
     const applicationData = onboarding.application_details
-    
+
     if (!applicationData) {
       return {
         applicantName: "N/A",
-        applicantEmail: "N/A", 
+        applicantEmail: "N/A",
         jobDesc: "N/A",
         applicantPhone: "N/A",
         applicantAddress: "N/A",
         applicantPositions: "N/A"
       }
     }
-    
+
     const jobDetails = applicationData.job_position_advert_job_details
     const jobName = jobDetails?.name || "N/A"
     const jobDescription = jobDetails?.description || "N/A"
-    
+
     return {
       applicantName: applicationData.applicant_name || "N/A",
-      applicantEmail: applicationData.applicant_email || "N/A", 
+      applicantEmail: applicationData.applicant_email || "N/A",
       jobDesc: jobName !== "N/A" ? jobName : jobDescription,
       applicantPhone: applicationData.applicant_phone || "N/A",
       applicantAddress: applicationData.address || "N/A",
@@ -164,7 +164,7 @@ export default function ViewOnboardingDetails() {
           </div>
           <Skeleton className="h-10 w-32" />
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <Card>
@@ -181,7 +181,7 @@ export default function ViewOnboardingDetails() {
               </CardContent>
             </Card>
           </div>
-          
+
           <div className="space-y-6">
             <Card>
               <CardHeader>
@@ -226,11 +226,18 @@ export default function ViewOnboardingDetails() {
       <div className="flex items-center justify-between ">
         <div>
           <div className="flex items-center gap-4 mb-2">
+            <Button
+              variant="outline"
+              onClick={() => router.back()}
+              className="flex items-center gap-2 rounded-full aspect-square"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
             <div className=" flex items-center justify-center gap-8">
               <h1 className="text-2xl font-bold">{applicationData.applicantName}</h1>
               <p className="text-muted-foreground">{applicationData.jobDesc}</p>
             </div>
-                      {/* {onboarding.status && getStatusIcon(onboarding.status)} */}
+            {/* {onboarding.status && getStatusIcon(onboarding.status)} */}
             <Badge variant={getStatusBadgeVariant(onboarding.status)} className="text-sm">
               {formatStatus(onboarding.status)}
             </Badge>
@@ -261,7 +268,7 @@ export default function ViewOnboardingDetails() {
                     <p className="text-sm font-medium">{applicationData.applicantName}</p>
                   </div>
                 </div>
-                
+
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Email Address</Label>
                   <div className="flex items-center gap-2 mt-1">
@@ -279,7 +286,7 @@ export default function ViewOnboardingDetails() {
                     <p className="text-sm">{applicationData.applicantPhone}</p>
                   </div>
                 </div>
-                
+
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Address</Label>
                   <div className="flex items-center gap-2 mt-1">
@@ -307,7 +314,7 @@ export default function ViewOnboardingDetails() {
                   <p className="text-sm font-medium">{applicationData.jobDesc}</p>
                 </div>
               </div>
-              
+
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Number of Positions</Label>
                 <div className="flex items-center gap-2 mt-1">
@@ -356,7 +363,7 @@ export default function ViewOnboardingDetails() {
                   </Badge>
                 </div>
               </div>
-              
+
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Training Attendance</Label>
                 <div className="flex items-center gap-2 mt-2">
@@ -409,7 +416,7 @@ export default function ViewOnboardingDetails() {
                   <p className="text-sm">{formatDate(onboarding.created_at)}</p>
                 </div>
               </div>
-              
+
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
                 <div className="flex items-center gap-2 mt-1">

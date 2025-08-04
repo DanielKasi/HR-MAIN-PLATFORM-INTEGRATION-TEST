@@ -42,6 +42,7 @@ import { type IDepartment, PERMISSION_CODES } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import ProtectedComponent from "@/components/ProtectedComponent"
 import { useDocumentTitle } from "@/hooks/use-document-title"
+import RichTextDisplay from "@/components/common/rich-text-display"
 
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<IDepartment[]>([])
@@ -281,8 +282,8 @@ export default function DepartmentsPage() {
             </TableHeader>
             <TableBody>
               {filteredDepartments.map((department, index) => (
-                <TableRow 
-                  key={department.id} 
+                <TableRow
+                  key={department.id}
                   className={`
                     hover:bg-muted/50 transition-colors
                     ${index % 2 === 0 ? 'bg-white' : 'bg-muted/5'}
@@ -296,24 +297,21 @@ export default function DepartmentsPage() {
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-medium text-sm">{department.name}</span>
-                      <span className="text-xs text-muted-foreground">ID: {department.id}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    {department.description ? (
-                      <div className="flex flex-col">
-                        <span className="text-sm">{department.description}</span>
-                      </div>
-                    ) : (
-                      <span className="text-sm text-muted-foreground italic">No description</span>
-                    )}
+
+                    <RichTextDisplay
+                      className={"text-sm" + !department.description ? 'text-muted-foreground italic' : ''}
+                      htmlContent={department.description || "No description"}
+                    />
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="h-8 w-8 p-0 hover:bg-muted/50"
                         >
                           <MoreVertical className="h-4 w-4" />
@@ -321,7 +319,7 @@ export default function DepartmentsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
                         <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DEPARTMENTS}>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleViewDepartment(department.id)}
                             className="hover:bg-muted/50"
                           >
@@ -330,7 +328,7 @@ export default function DepartmentsPage() {
                           </DropdownMenuItem>
                         </ProtectedComponent>
                         <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_DEPARTMENTS}>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleEditDepartment(department.id)}
                             className="hover:bg-muted/50"
                           >

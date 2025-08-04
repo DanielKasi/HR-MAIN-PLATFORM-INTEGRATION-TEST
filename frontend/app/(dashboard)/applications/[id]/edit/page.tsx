@@ -227,6 +227,7 @@ export default function EditApplicationPage() {
       })
 
       if (updatedApplication) {
+        clearFilters(),
         toast.success("Application updated successfully")
         router.push(`/applications/${applicationId}`)
       } else {
@@ -357,7 +358,7 @@ export default function EditApplicationPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="gender">Gender *</Label>
-                  <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
+                  <Select value={formData.gender} onValueChange={(value:any) => handleInputChange("gender", value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -409,7 +410,7 @@ export default function EditApplicationPage() {
                   <Label htmlFor="job_position_advert">Job Position/ Title  *</Label>
                   <Select
                     value={formData.job_position_advert.toString()}
-                    onValueChange={(value) => handleInputChange("job_position_advert", Number.parseInt(value))}
+                    onValueChange={(value:any) => handleInputChange("job_position_advert", Number.parseInt(value))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a job advert" />
@@ -434,7 +435,7 @@ export default function EditApplicationPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status">Status *</Label>
-                  <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                  <Select value={formData.status} onValueChange={(value:any) => handleInputChange("status", value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -451,7 +452,7 @@ export default function EditApplicationPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="source">Source</Label>
-                <Select value={formData.source} onValueChange={(value) => handleInputChange("source", value)}>
+                <Select value={formData.source} onValueChange={(value:any) => handleInputChange("source", value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -608,3 +609,7 @@ export default function EditApplicationPage() {
     </div>
   )
 }
+function clearFilters() {
+  throw new Error("Function not implemented.")
+}
+

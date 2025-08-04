@@ -2,18 +2,20 @@
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
 import "../../styles/rich-editor.css"; // Custom styles for the rich editor
+import ReactQuill from 'react-quill-new';
 
-const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
+const ReactQuillInstance = dynamic(() => import('react-quill-new'), { ssr: false });
 
-interface IRichEditorFieldProps {
+interface IRichEditorFieldProps extends ReactQuill.ReactQuillProps {
   placeholder?: string;
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  maxLength?: number
 }
 
 export const RichEditorField = (props: IRichEditorFieldProps) => {
-  const { placeholder, value, onChange, disabled } = props;
+  const { placeholder, value, onChange, disabled, maxLength } = props;
 
   const modules = {
     toolbar: [
@@ -43,9 +45,9 @@ export const RichEditorField = (props: IRichEditorFieldProps) => {
   ];
 
   return (
-    <ReactQuill
+    <ReactQuillInstance
       placeholder={placeholder}
-      value={value}
+      value={maxLength ? value.slice(0, maxLength) : value}
       modules={modules}
       onChange={onChange}
       className="rich-editor-container"
