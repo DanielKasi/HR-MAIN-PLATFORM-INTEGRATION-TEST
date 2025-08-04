@@ -699,6 +699,3 @@ class EmployeeContract(models.Model):
             self.status = "NOT_MATCHED_NEEDS_REVIEW"
 
         super().save(*args, **kwargs)
-
-
-    
