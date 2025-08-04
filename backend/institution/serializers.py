@@ -190,7 +190,9 @@ class InstitutionBankTypeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context.get("request")
 
-        user = request.user if request and request.user.is_authenticated else None
+        user = (
+            request.user.profile if request and request.user.is_authenticated else None
+        )
 
         if not user:
             raise serializers.ValidationError(
@@ -198,7 +200,7 @@ class InstitutionBankTypeSerializer(serializers.ModelSerializer):
             )
 
         try:
-            institution = Institution.objects.get(id=user.institution_id)
+            institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
             raise serializers.ValidationError("Institution not found.")
 
