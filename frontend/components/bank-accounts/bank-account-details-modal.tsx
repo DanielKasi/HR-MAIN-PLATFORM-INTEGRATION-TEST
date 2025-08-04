@@ -25,7 +25,7 @@ export function BankAccountDetailsModal({ isOpen, onClose, bankAccount }: BankAc
 
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 gap-6">
-                        <div className="space-y-2">
+                        <div className="space-y-2">                                                            
                             <Label className="text-sm font-medium text-gray-700">Account Name</Label>
                             <div className="p-3 bg-gray-50 rounded-md border">
                                 <span className="font-medium">{bankAccount.account_name}</span>
@@ -57,6 +57,21 @@ export function BankAccountDetailsModal({ isOpen, onClose, bankAccount }: BankAc
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <p className="py-4 text-lg">Attached Branches</p>
+                <div className="flex flex-col items-center justify-start">
+                        {   bankAccount.paid_branches?.length ?
+                            bankAccount.paid_branches.map(br => (
+                                <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">{br.branch_name}</Label>
+                                <div className="p-3 bg-gray-50 rounded-md border">
+                                    {br.branch_name}
+                                </div>
+                            </div>
+                            )):
+                            <span>No branches found on this account</span>
+                        }
                 </div>
 
                 <div className="flex justify-end pt-4">
