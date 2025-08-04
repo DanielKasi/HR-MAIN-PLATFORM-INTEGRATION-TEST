@@ -28,6 +28,9 @@ import PyPDF2
 from io import BytesIO
 from django.core.files.base import ContentFile
 from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
+
+
 
 
 class EmployeeTypeSerializer(serializers.ModelSerializer):
@@ -282,12 +285,8 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
     original_contract = serializers.FileField(
         validators=[FileExtensionValidator(allowed_extensions=["pdf"]), validate_pdf],
         required=False,
-        validators=[FileExtensionValidator(allowed_extensions=["pdf"]), validate_pdf],
-        required=False,
     )
     signed_contract = serializers.FileField(
-        validators=[FileExtensionValidator(allowed_extensions=["pdf"]), validate_pdf],
-        required=False,
         validators=[FileExtensionValidator(allowed_extensions=["pdf"]), validate_pdf],
         required=False,
     )
