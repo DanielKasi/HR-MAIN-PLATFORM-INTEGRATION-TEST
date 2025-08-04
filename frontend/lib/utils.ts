@@ -3505,7 +3505,7 @@ export const AttendanceAPI = {
 export const bankTypesAPI = {
   getAll: async (searchParams?: string) => {
     try {
-      const response = await apiRequest.get(`/institution/bank-type/${searchParams ? `?${searchParams}` : ''}`,);
+      const response = await apiRequest.get(`/institution/bank-type/${searchParams ? `${searchParams}` : ''}`,);
       return response.data as IPaginatedResponse<IBankType>
     } catch (error) {
       throw error;

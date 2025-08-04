@@ -53,12 +53,12 @@ export default function BankAccountManagement() {
     }, [searchTerm])
 
     // Reset to first page when search changes
-    useEffect(() => {
-        if (debouncedSearchTerm !== searchTerm) return
-        setCurrentPage(1)
-        setCurrentPageUrl(null)
-        fetchBankAccounts()
-    }, [debouncedSearchTerm])
+    // useEffect(() => {
+    //     if (debouncedSearchTerm !== searchTerm) return
+    //     setCurrentPage(1)
+    //     setCurrentPageUrl(null)
+    //     fetchBankAccounts()
+    // }, [debouncedSearchTerm])
 
     // Fetch bank accounts on component mount
     useEffect(() => {
