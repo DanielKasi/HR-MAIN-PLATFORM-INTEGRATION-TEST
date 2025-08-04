@@ -1,18 +1,10 @@
-"use client";
-
-import type React from "react";
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+"use client"
+import { useState, useEffect } from "react"
+import { useParams, useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -21,10 +13,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+} from "@/components/ui/dialog"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { TableSkeleton } from "@/components/common/table-skeleton"
 import {
   Plus,
   CheckCircle,
@@ -39,547 +32,346 @@ import {
   Download,
   ArrowLeft,
   Edit,
-} from "lucide-react";
-import { toast } from "sonner";
-import { useSelector } from "react-redux";
+} from "lucide-react"
+import { toast } from "sonner"
+import { useSelector } from "react-redux"
 import {
-  getPayslips,
   deletePayslip,
   markPayslipAsPaid,
-  getAllEmployees,
-  getPayrollPeriods,
   createBulkPayslips,
   downloadPayrollDocument,
   updatePayslip,
-} from "@/lib/utils";
-import { IEmployee, IPayrollPeriod, IPayslip } from "@/app/types/types.utils";
-import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors";
+  getPayrollPeriod,
+  getDepartments,
+} from "@/lib/utils"
+import type { IDepartment, IPayrollPeriod, IPayslip } from "@/app/types/types.utils"
+import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@radix-ui/react-dropdown-menu";
-import router from "next/navigation";
+} from "@radix-ui/react-dropdown-menu"
+import { formatCurrency } from "@/lib/helpers"
+import { payrollAPI } from "@/lib/utils"
 
-interface DisplayPayslip {
-  id: number;
-  employee: {
-    id: string;
-    name: string;
-    email: string;
-    employee_id?: string;
-    salary?: number;
-    department?: string;
-    user?: {
-      fullname: string;
-      email: string;
-    } | null; // Allow null to match API response
-  };
-  payroll_period: IPayrollPeriod;
-  basic_salary: number;
-  total_allowances: number;
-  total_deductions: number;
-  gross_salary: number;
-  net_salary: number;
-  days_worked: number;
-  is_paid: boolean;
-  paid_date: string | null;
-  created_at: string;
-  updated_at: string;
-}
+export default function PayrollPeriodDetails() {
+  const router = useRouter()
+  const [payslips, setPayslips] = useState<IPayslip[]>([])
+  const [payrollPeriod, setPayrollPeriod] = useState<IPayrollPeriod | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filterStatus, setFilterStatus] = useState<"all" | "paid" | "unpaid">("all")
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
+  const [bulkPaymentModalOpen, setBulkPaymentModalOpen] = useState(false)
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all")
+  const [bulkProcessing, setBulkProcessing] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [departments, setDepartments] = useState<IDepartment[]>([])
 
-export default function Payslips() {
-  const router = useRouter();
-  const [payslips, setPayslips] = useState<DisplayPayslip[]>([]);
-  const [employees, setEmployees] = useState<IEmployee[]>([]);
-  const [payrollPeriod, setPayrollPeriod] = useState<IPayrollPeriod | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "paid" | "unpaid">("all");
-  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-  const [bulkPaymentModalOpen, setBulkPaymentModalOpen] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
-  const [bulkProcessing, setBulkProcessing] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-
-  const accessToken = useSelector(selectAccessToken);
-  const [editingPayslip, setEditingPayslip] = useState<DisplayPayslip | null>(null);
-  const [editModalOpen, setEditModalOpen] = useState(false);
+  const accessToken = useSelector(selectAccessToken)
+  const [editingPayslip, setEditingPayslip] = useState<IPayslip | null>(null)
+  const [editModalOpen, setEditModalOpen] = useState(false)
   const [editFormData, setEditFormData] = useState({
-  basic_salary: 0,
-  total_allowances: 0,
-  total_deductions: 0,
-  days_worked: 0,
-});
-  const [isUpdating, setIsUpdating] = useState(false);
+    basic_salary: 0,
+    total_allowances: 0,
+    total_deductions: 0,
+    days_worked: 0,
+  })
+  const [isUpdating, setIsUpdating] = useState(false)
 
+  // Add these state variables after the existing ones
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
 
-
-  const params = useParams();
-  const selectedInstitution = useSelector(selectSelectedInstitution);
-  const periodId = params.id as string;
-
+  const params = useParams()
+  const selectedInstitution = useSelector(selectSelectedInstitution)
+  const payrollPeriodId = params.id as string
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!selectedInstitution?.id || !periodId) {
-        setIsLoading(false);
-        setPayslips([]);
-        setEmployees([]);
-        setPayrollPeriod(null);
-        return;
-      }
+    if (selectedInstitution && payrollPeriodId) {
+      fetchData(currentPage, itemsPerPage)
+      fetchDepartments()
+    }
+  }, [selectedInstitution, payrollPeriodId, currentPage, itemsPerPage, filterStatus])
 
-      try {
-        setIsLoading(true);
+  const handleErrorToast = (error: any, defaultMessage: string) => {
+    toast.error(error?.message || error?.detail || defaultMessage)
+  }
 
-        // Fetch payroll period
-        const periods = await getPayrollPeriods(selectedInstitution.id);
-        const targetPeriod = periods?.find((p) => p.id.toString() === periodId);
-        if (!targetPeriod) {
-          toast.error("Payroll period not found");
-          setIsLoading(false);
-          return;
-        }
-        setPayrollPeriod(targetPeriod);
+  const fetchDepartments = async () => {
+    if (!selectedInstitution) {
+      return
+    }
+    try {
+      const depts = await getDepartments({ institutionId: selectedInstitution.id })
+      setDepartments(depts)
+    } catch (error: any) {
+      handleErrorToast(error, "Failed to fetch departments")
+    }
+  }
 
-        // Fetch employees
-        const fetchedEmployees = await getAllEmployees({ institutionId: selectedInstitution.id });
-        if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
-          const formattedEmployees = fetchedEmployees.filter(
-            (emp) => emp.id && emp.id.toString() !== "0",
-          );
-          setEmployees(formattedEmployees);
-        } else {
-          setEmployees([]);
-          toast.error("Invalid employee data received", { duration: 5000 });
-        }
-
-        // Fetch payslips and filter by period
-        const payslipsData = await getPayslips(selectedInstitution.id);
-        if (payslipsData && Array.isArray(payslipsData)) {
-          const displayPayslips: DisplayPayslip[] = payslipsData
-            .filter((p) => p.payroll_period.id.toString() === periodId)
-            .map((apiPayslip) => ({
-              id: apiPayslip.id,
-              employee: {
-                id: apiPayslip.employee.id.toString(),
-                name: apiPayslip.employee.user?.fullname || apiPayslip.employee.email,
-                email: apiPayslip.employee.user?.email || apiPayslip.employee.email,
-                employee_id: apiPayslip.employee.id.toString(),
-                salary: Number(apiPayslip.employee.salary),
-                department: apiPayslip.employee.department?.name || "",
-                user: apiPayslip.employee.user
-                  ? {
-                    fullname: apiPayslip.employee.user.fullname,
-                    email: apiPayslip.employee.user.email,
-                  }
-                  : null,
-              },
-              payroll_period: {
-                id: apiPayslip.payroll_period.id,
-                name: apiPayslip.payroll_period.name,
-                start_date: apiPayslip.payroll_period.start_date,
-                end_date: apiPayslip.payroll_period.end_date,
-                pay_date: apiPayslip.payroll_period.pay_date,
-                institution: apiPayslip.payroll_period.institution,
-                created_at: apiPayslip.payroll_period.created_at,
-                is_processed: apiPayslip.payroll_period.is_processed,
-              },
-              basic_salary: parseFloat(apiPayslip.basic_salary) || 0,
-              total_allowances: parseFloat(apiPayslip.total_allowances) || 0,
-              total_deductions: parseFloat(apiPayslip.total_deductions) || 0,
-              gross_salary: parseFloat(apiPayslip.gross_salary) || 0,
-              net_salary: parseFloat(apiPayslip.net_salary) || 0,
-              days_worked: apiPayslip.days_worked || 0,
-              is_paid: apiPayslip.is_paid || false,
-              paid_date: apiPayslip.paid_date || null,
-              created_at: apiPayslip.created_at,
-              updated_at: apiPayslip.updated_at,
-            }));
-          setPayslips(displayPayslips);
-        } else {
-          setPayslips([]);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        toast.error("Failed to load data", { duration: 5000 });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [selectedInstitution?.id, periodId]);
-
-  const refreshPayslips = async () => {
-    if (!selectedInstitution?.id || !periodId) return;
+  const fetchData = async (page = 1, pageSize: number = itemsPerPage) => {
+    if (!selectedInstitution?.id || !payrollPeriodId) {
+      return
+    }
 
     try {
-      const payslipsData = await getPayslips(selectedInstitution.id);
-      if (payslipsData && Array.isArray(payslipsData)) {
-        const displayPayslips: DisplayPayslip[] = payslipsData
-          .filter((p) => p.payroll_period.id.toString() === periodId)
-          .map((apiPayslip) => ({
-            id: apiPayslip.id,
-            employee: {
-              id: apiPayslip.employee.id.toString(),
-              name: apiPayslip.employee.user?.fullname || apiPayslip.employee.email,
-              email: apiPayslip.employee.user?.email || apiPayslip.employee.email,
-              employee_id: apiPayslip.employee.id.toString(),
-              salary: Number(apiPayslip.employee.salary),
-              department: apiPayslip.employee.department?.name || "",
-              user: apiPayslip.employee.user
-                ? {
-                  fullname: apiPayslip.employee.user.fullname,
-                  email: apiPayslip.employee.user.email,
-                }
-                : null,
-            },
-            payroll_period: {
-              id: apiPayslip.payroll_period.id,
-              name: apiPayslip.payroll_period.name,
-              start_date: apiPayslip.payroll_period.start_date,
-              end_date: apiPayslip.payroll_period.end_date,
-              pay_date: apiPayslip.payroll_period.pay_date,
-              institution: apiPayslip.payroll_period.institution,
-              created_at: apiPayslip.payroll_period.created_at,
-              is_processed: apiPayslip.payroll_period.is_processed,
-            },
-            basic_salary: parseFloat(apiPayslip.basic_salary) || 0,
-            total_allowances: parseFloat(apiPayslip.total_allowances) || 0,
-            total_deductions: parseFloat(apiPayslip.total_deductions) || 0,
-            gross_salary: parseFloat(apiPayslip.gross_salary) || 0,
-            net_salary: parseFloat(apiPayslip.net_salary) || 0,
-            days_worked: apiPayslip.days_worked || 0,
-            is_paid: apiPayslip.is_paid || false,
-            paid_date: apiPayslip.paid_date || null,
-            created_at: apiPayslip.created_at,
-            updated_at: apiPayslip.updated_at,
-          }));
-        setPayslips(displayPayslips);
-      } else {
-        setPayslips([]);
+      setIsLoading(true)
+
+      // Fetch payroll period info
+      const fetchedPeriod = await getPayrollPeriod({ payrollPeriodId })
+      setPayrollPeriod(fetchedPeriod)
+
+      // Build API parameters for pagination and filters
+      const apiParams: {
+        page: number
+        page_size: number
+        is_paid?: boolean
+      } = {
+        page,
+        page_size: pageSize,
       }
+
+      // Add filter parameters
+      if (filterStatus === "paid") {
+        apiParams.is_paid = true
+      } else if (filterStatus === "unpaid") {
+        apiParams.is_paid = false
+      }
+
+      // Fetch paginated payslips
+      const response = await payrollAPI.getPayslipsByPayrollPeriod({
+        payrollId: payrollPeriodId,
+        params: apiParams,
+      })
+
+
+      setPayslips(response.results)
+      setTotalItems(response.count || 0)
+      setTotalPages(Math.ceil((response.count || 0) / pageSize))
     } catch (error) {
-      console.error("Error refreshing payslips:", error);
+      console.error("Error fetching data:", error)
+      toast.error("Failed to load data", { duration: 5000 })
+    } finally {
+      setIsLoading(false)
     }
-  };
+  }
 
-  const filteredPayslips = payslips.filter((payslip) => {
-    const matchesSearch =
-      payslip.employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payslip.employee.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      filterStatus === "all" ||
-      (filterStatus === "paid" && payslip.is_paid) ||
-      (filterStatus === "unpaid" && !payslip.is_paid);
-    return matchesSearch && matchesStatus;
-  });
+  // Remove the filteredPayslips calculation and replace with:
+  const displayedPayslips = payslips // Data is already filtered and paginated from server
 
-  const totalItems = filteredPayslips.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedPayslips = filteredPayslips.slice(startIndex, endIndex);
-
-  const resetPagination = () => {
-    setCurrentPage(1);
-  };
-
+  // Update pagination handlers
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
+    setCurrentPage(page)
+    // fetchData will be called by useEffect
+  }
 
   const handleItemsPerPageChange = (items: number) => {
-    setItemsPerPage(items);
-    setCurrentPage(1);
-  };
+    setItemsPerPage(items)
+    setCurrentPage(1)
+    // fetchData will be called by useEffect
+  }
+
+  const resetPagination = () => {
+    setCurrentPage(1)
+    // fetchData will be called by useEffect
+  }
 
   const handleDowloadPayroll = async () => {
-    if (!periodId) {
-      return;
+    if (!payrollPeriodId) {
+      return
     }
     try {
-      await downloadPayrollDocument({ accessToken, payrollId: periodId });
-    } catch (error) { }
-  };
+      await downloadPayrollDocument({ accessToken, payrollId: payrollPeriodId })
+    } catch (error) {}
+  }
 
   const getPageNumbers = () => {
-    const pages = [];
-    const maxVisiblePages = 5;
+    const pages = []
+    const maxVisiblePages = 5
 
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
+        pages.push(i)
       }
     } else {
-      const halfVisible = Math.floor(maxVisiblePages / 2);
-      let startPage = Math.max(1, currentPage - halfVisible);
-      let endPage = Math.min(totalPages, currentPage + halfVisible);
+      const halfVisible = Math.floor(maxVisiblePages / 2)
+      let startPage = Math.max(1, currentPage - halfVisible)
+      let endPage = Math.min(totalPages, currentPage + halfVisible)
 
       if (currentPage <= halfVisible) {
-        endPage = Math.min(totalPages, maxVisiblePages);
+        endPage = Math.min(totalPages, maxVisiblePages)
       }
       if (currentPage > totalPages - halfVisible) {
-        startPage = Math.max(1, totalPages - maxVisiblePages + 1);
+        startPage = Math.max(1, totalPages - maxVisiblePages + 1)
       }
 
       if (startPage > 1) {
-        pages.push(1);
+        pages.push(1)
         if (startPage > 2) {
-          pages.push("...");
+          pages.push("...")
         }
       }
 
       for (let i = startPage; i <= endPage; i++) {
-        pages.push(i);
+        pages.push(i)
       }
 
       if (endPage < totalPages) {
         if (endPage < totalPages - 1) {
-          pages.push("...");
+          pages.push("...")
         }
-        pages.push(totalPages);
+        pages.push(totalPages)
       }
     }
 
-    return pages;
-  };
-
-  const getDepartments = () => {
-    const departments = employees
-      .map((emp) => emp.department?.name) // Extract department name (string | undefined)
-      .filter((dept): dept is string => !!dept && dept.trim() !== "") // Filter out undefined and empty strings
-      .filter((dept, index, arr) => arr.indexOf(dept) === index) // Remove duplicates
-      .sort(); // Sort alphabetically
-    return departments;
-  };
+    return pages
+  }
 
   const getUnpaidPayslipsByDepartment = (department: string) => {
-    return filteredPayslips.filter(
+    return displayedPayslips.filter(
       (payslip) =>
-        !payslip.is_paid && (department === "all" || payslip.employee.department === department),
-    );
-  };
+        !payslip.is_paid && (department === "all" || payslip.employee.department.id.toString() === department),
+    )
+  }
 
   const handleBulkMarkAsPaid = async () => {
-    const unpaidPayslips = getUnpaidPayslipsByDepartment(selectedDepartment);
+    const unpaidPayslips = getUnpaidPayslipsByDepartment(selectedDepartment)
 
     if (unpaidPayslips.length === 0) {
-      toast.info("No unpaid payslips found for the selected criteria");
-      return;
+      toast.info("No unpaid payslips found for the selected criteria")
+      return
     }
 
-    setBulkProcessing(true);
-    let successCount = 0;
-    let errorCount = 0;
+    setBulkProcessing(true)
+    let successCount = 0
+    let errorCount = 0
 
     try {
       for (const payslip of unpaidPayslips) {
         try {
-          const success = await markPayslipAsPaid(payslip.id);
+          const success = await markPayslipAsPaid(payslip.id)
           if (success) {
-            successCount++;
+            successCount++
           } else {
-            errorCount++;
+            errorCount++
           }
         } catch (error) {
-          errorCount++;
+          errorCount++
         }
       }
 
       if (successCount > 0) {
         setPayslips((prev) =>
           prev.map((p) => {
-            const wasMarked = unpaidPayslips.find((up) => up.id === p.id);
-            return wasMarked && !p.is_paid
-              ? { ...p, is_paid: true, paid_date: new Date().toISOString() }
-              : p;
+            const wasMarked = unpaidPayslips.find((up) => up.id === p.id)
+            return wasMarked && !p.is_paid ? { ...p, is_paid: true, paid_date: new Date().toISOString() } : p
           }),
-        );
+        )
       }
 
-      if (successCount > 0 && errorCount === 0) {
-        toast.success(`Successfully processed payment for ${successCount} payslips`);
-      } else if (successCount > 0 && errorCount > 0) {
-        toast.warning(`Processed payments for ${successCount} payslips, ${errorCount} failed`);
+      if (successCount > 0 && errorCount > 0) {
+        toast.warning(`Processed payments for ${successCount} payslips, ${errorCount} failed`)
+      } else if (successCount > 0 && errorCount === 0) {
+        toast.success(`Successfully processed payment for ${successCount} payslips`)
       } else {
-        toast.error("Failed to mark any payslips as paid");
+        toast.error("Failed to mark any payslips as paid")
       }
 
-      setBulkPaymentModalOpen(false);
-      setSelectedDepartment("all");
+      setBulkPaymentModalOpen(false)
+      setSelectedDepartment("all")
     } catch (error: any) {
-      toast.error("An error occurred during bulk payment processing");
+      toast.error("An error occurred during bulk payment processing")
     } finally {
-      setBulkProcessing(false);
+      setBulkProcessing(false)
     }
-  };
+  }
 
-  const handleMarkAsPaid = async (payslip: DisplayPayslip) => {
+  const handleMarkAsPaid = async (payslip: IPayslip) => {
     if (payslip.is_paid) {
-      toast.info("This payslip is already marked as paid");
-      return;
+      toast.info("This payslip is already marked as paid")
+      return
     }
 
     try {
-      setIsLoading(true);
-      const success = await markPayslipAsPaid(payslip.id);
+      setIsLoading(true)
+      const success = await markPayslipAsPaid(payslip.id)
 
       if (success) {
         setPayslips((prev) =>
-          prev.map((p) =>
-            p.id === payslip.id ? { ...p, is_paid: true, paid_date: new Date().toISOString() } : p,
-          ),
-        );
-        toast.success(`Payslip for ${payslip.employee.name} marked as paid`);
+          prev.map((p) => (p.id === payslip.id ? { ...p, is_paid: true, paid_date: new Date().toISOString() } : p)),
+        )
+        toast.success(`Payslip for ${payslip.employee.user?.fullname} marked as paid`)
       } else {
-        toast.error("Failed to mark payslip as paid");
+        toast.error("Failed to mark payslip as paid")
       }
     } catch (error: any) {
-      toast.error(error.message || "An error occurred while marking payslip as paid");
+      toast.error(error.message || "An error occurred while marking payslip as paid")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleDelete = async (id: number) => {
     try {
-      const success = await deletePayslip(id);
+      const success = await deletePayslip(id)
       if (success) {
-        setPayslips((prev) => prev.filter((p) => p.id !== id));
-        toast.success("Payslip deleted successfully");
-        setDeleteConfirmId(null);
+        setPayslips((prev) => prev.filter((p) => p.id !== id))
+        toast.success("Payslip deleted successfully")
+        setDeleteConfirmId(null)
       } else {
-        toast.error("Failed to delete payslip");
+        toast.error("Failed to delete payslip")
       }
     } catch (error: any) {
-      toast.error(error.message || "An error occurred while deleting the payslip");
+      toast.error(error.message || "An error occurred while deleting the payslip")
     }
-  };
+  }
 
   const navigateToPayslipItems = (payslipId: number) => {
-    router.push(`/payroll/payroll-period/payslip/${payslipId}/items`);
-  };
+    router.push(`/payroll/payroll-period/payslip/${payslipId}/items`)
+  }
 
   const getInitials = (name: string) => {
     return name
       .split(" ")
       .map((n) => n[0])
       .join("")
-      .toUpperCase();
-  };
+      .toUpperCase()
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
-    });
-  };
+    })
+  }
 
-  const formatCurrency = (amount: number) => {
-    return `UGX ${amount.toLocaleString()}`;
-  };
+  // Add debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchTerm) {
+        // For now, we'll handle search client-side since the API doesn't support it
+        // You may want to add search support to your API later
+        fetchData(1, itemsPerPage)
+      } else {
+        fetchData(currentPage, itemsPerPage)
+      }
+    }, 500)
 
-  if (!selectedInstitution || !periodId) {
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm, currentPage, itemsPerPage])
+
+  if (!selectedInstitution || !payrollPeriodId) {
     return (
       <div className="flex justify-center items-center h-64">
         <span className="ml-2">No institution or payroll period selected...</span>
       </div>
-    );
-  }
-
-  const handleEditPayslip = (payslip: DisplayPayslip) => {
-  setEditingPayslip(payslip);
-  setEditFormData({
-    basic_salary: payslip.basic_salary,
-    total_allowances: payslip.total_allowances,
-    total_deductions: payslip.total_deductions,
-    days_worked: payslip.days_worked,
-  });
-  setEditModalOpen(true);
-};
-
-const handleUpdatePayslip = async () => {
-  if (!editingPayslip) return;
-
-  setIsUpdating(true);
-  try {
-    const basicSalary = Number(editFormData.basic_salary || 0);
-    const totalAllowances = Number(editFormData.total_allowances || 0);
-    const totalDeductions = Number(editFormData.total_deductions || 0);
-    const daysWorked = Number(editFormData.days_worked || 0);
-
-    // Match the exact types expected by IPayslipFormData
-    const updatedData = {
-      basic_salary: basicSalary.toString(), // string
-      total_allowances: totalAllowances.toString(), // string
-      total_deductions: totalDeductions.toString(), // string
-      days_worked: daysWorked, // number (keep as number)
-      gross_salary: (basicSalary + totalAllowances).toString(), // string
-      net_salary: (basicSalary + totalAllowances - totalDeductions).toString(), // string
-    };
-
-    console.log('Sending update data:', updatedData);
-
-    const updatedPayslip = await updatePayslip({
-      id: editingPayslip.id,
-      payslipData: updatedData // Now matches IPayslipFormData types
-    });
-
-    if (updatedPayslip) {
-      // Update local state with numbers for display
-      setPayslips(prev => prev.map(p =>
-        p.id === editingPayslip.id
-          ? {
-              ...p,
-              basic_salary: basicSalary,
-              total_allowances: totalAllowances,
-              total_deductions: totalDeductions,
-              days_worked: daysWorked,
-              gross_salary: basicSalary + totalAllowances,
-              net_salary: basicSalary + totalAllowances - totalDeductions,
-            }
-          : p
-      ));
-
-      toast.success("Payslip updated successfully");
-      setEditModalOpen(false);
-      setEditingPayslip(null);
-    } else {
-      toast.error("Failed to update payslip - no response from server");
-    }
-  } catch (error: any) {
-    console.error('Update error:', error);
-    toast.error(error.message || "Failed to update payslip");
-  } finally {
-    setIsUpdating(false);
-  }
-};
-
-const resetEditForm = () => {
-  setEditFormData({
-    basic_salary: 0,
-    total_allowances: 0,
-    total_deductions: 0,
-    days_worked: 0,
-  });
-  setEditingPayslip(null);
-};
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading payslips...</span>
-      </div>
-    );
+    )
   }
 
   if (!payrollPeriod) {
@@ -587,38 +379,142 @@ const resetEditForm = () => {
       <div className="flex justify-center items-center h-64">
         <span className="ml-2">Payroll period not found.</span>
       </div>
-    );
+    )
   }
+
+  const handleEditPayslip = (payslip: IPayslip) => {
+    setEditingPayslip(payslip)
+    setEditFormData({
+      basic_salary: Number(payslip.basic_salary || 0),
+      total_allowances: Number(payslip.total_allowances || 0),
+      total_deductions: Number(payslip.total_deductions || 0),
+      days_worked: payslip.days_worked,
+    })
+    setEditModalOpen(true)
+  }
+
+  const handleUpdatePayslip = async () => {
+    if (!editingPayslip) return
+
+    setIsUpdating(true)
+    try {
+      const basicSalary = Number(editFormData.basic_salary || 0)
+      const totalAllowances = Number(editFormData.total_allowances || 0)
+      const totalDeductions = Number(editFormData.total_deductions || 0)
+      const daysWorked = Number(editFormData.days_worked || 0)
+
+      // Match the exact types expected by IPayslipFormData
+      const updatedData = {
+        basic_salary: basicSalary.toString(), // string
+        total_allowances: totalAllowances.toString(), // string
+        total_deductions: totalDeductions.toString(), // string
+        days_worked: daysWorked, // number (keep as number)
+        gross_salary: (basicSalary + totalAllowances).toString(), // string
+        net_salary: (basicSalary + totalAllowances - totalDeductions).toString(), // string
+      }
+
+      const updatedPayslip = await updatePayslip({
+        id: editingPayslip.id,
+        payslipData: updatedData, // Now matches IPayslipFormData types
+      })
+      setPayslips((prev) => [...prev.map((slip) => (slip.id === updatedPayslip.id ? updatedPayslip : slip))])
+
+      toast.success("Payslip updated successfully")
+      setEditModalOpen(false)
+      setEditingPayslip(null)
+    } catch (error: any) {
+      toast.error(error?.message || error?.detail || "Failed to update payslip")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const resetEditForm = () => {
+    setEditFormData({
+      basic_salary: 0,
+      total_allowances: 0,
+      total_deductions: 0,
+      days_worked: 0,
+    })
+    setEditingPayslip(null)
+  }
+
+  const handleGeneratePayslips = async () => {
+    if (!selectedInstitution) {
+      toast.error("No institution found")
+      return
+    }
+
+    setIsGenerating(true)
+    try {
+      await createBulkPayslips({
+        institutionId: selectedInstitution.id,
+        payrollPeriodId: Number(payrollPeriodId),
+      })
+      toast.success(`Successfully generated payslips`)
+      await fetchData(currentPage, itemsPerPage)
+    } catch (error: any) {
+      toast.error(error?.message || error?.detail || "An error occurred while processing payslips")
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  // Show skeleton loading state
+  if (isLoading) {
+    return (
+      <div className="p-2 space-y-6">
+        <Card className="h-[calc(100vh-2rem)] shadow-lg">
+          <CardHeader className="border-b">
+            <div className="flex justify-between gap-8 items-center">
+              <div className="flex items-center justify-start gap-4">
+                <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="space-y-2">
+                  <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+          </CardHeader>
+          <TableSkeleton rows={10} columns={8} />
+        </Card>
+      </div>
+    )
+  }
+
+  const startIndex = (currentPage - 1) * itemsPerPage
 
   return (
     <div className="p-2 space-y-6">
       <Card className="h-[calc(100vh-2rem)] shadow-lg">
         <CardHeader className="border-b">
-          <div className="flex justify-between items-center">
-            <Button
-              variant="outline"
-              onClick={() => router.back()}
-              className="flex items-center gap-2 rounded-full aspect-square"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <CardTitle className="text-2xl font-bold text-gray-900">
-                Payslips for {payrollPeriod.name}
-              </CardTitle>
-              <CardDescription className="text-gray-600">
-                Manage payslips for {formatDate(payrollPeriod.start_date)} -{" "}
-                {formatDate(payrollPeriod.end_date)}
-              </CardDescription>
+          <div className="flex justify-between gap-8 items-center">
+            <div className="flex items-center justify-start gap-4">
+              <Button
+                variant="outline"
+                onClick={() => router.back()}
+                className="flex items-center gap-2 rounded-full aspect-square"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <CardTitle className="text-2xl font-bold text-gray-900">Payslips for {payrollPeriod.name}</CardTitle>
+                <CardDescription className="text-gray-600">
+                  Manage payslips for {formatDate(payrollPeriod.start_date)} - {formatDate(payrollPeriod.end_date)}
+                </CardDescription>
+              </div>
             </div>
             <div className="flex gap-2">
               <Dialog open={bulkPaymentModalOpen} onOpenChange={setBulkPaymentModalOpen}>
                 <DialogTrigger asChild>
                   <Button
                     className="bg-green-600 hover:bg-green-700 shadow-md"
-                    disabled={
-                      !selectedInstitution || payslips.filter((p) => !p.is_paid).length === 0
-                    }
+                    disabled={!selectedInstitution || displayedPayslips.filter((p) => !p.is_paid).length === 0}
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Bulk Payments
@@ -647,9 +543,9 @@ const resetEditForm = () => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Departments</SelectItem>
-                            {getDepartments().map((dept, idx) => (
+                            {departments.map((dept, idx) => (
                               <SelectItem key={idx} value={dept.toString()}>
-                                {dept}
+                                {dept.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -658,8 +554,7 @@ const resetEditForm = () => {
                       {selectedDepartment && (
                         <div className="bg-green-50 p-4 rounded-lg">
                           <h4 className="font-semibold text-green-900 mb-2">
-                            {getUnpaidPayslipsByDepartment(selectedDepartment).length} unpaid
-                            payslips found
+                            {getUnpaidPayslipsByDepartment(selectedDepartment).length} unpaid payslips found
                           </h4>
                           <div className="text-sm text-green-800">
                             {selectedDepartment === "all"
@@ -674,8 +569,8 @@ const resetEditForm = () => {
                         type="button"
                         variant="outline"
                         onClick={() => {
-                          setBulkPaymentModalOpen(false);
-                          setSelectedDepartment("all");
+                          setBulkPaymentModalOpen(false)
+                          setSelectedDepartment("all")
                         }}
                         disabled={bulkProcessing}
                       >
@@ -699,9 +594,18 @@ const resetEditForm = () => {
               </Dialog>
 
               <Button
+                onClick={handleGeneratePayslips}
+                className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400"
+                disabled={!selectedInstitution || !payrollPeriodId}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Generate Payslips
+              </Button>
+
+              <Button
                 onClick={handleDowloadPayroll}
                 className="bg-orange-600 hover:bg-orange-700 shadow-md"
-                disabled={!selectedInstitution?.id || employees.length === 0}
+                disabled={!selectedInstitution?.id}
               >
                 <Download className="w-4 h-4 mr-2" />
                 Download
@@ -717,8 +621,8 @@ const resetEditForm = () => {
                 placeholder="Search by employee name or email..."
                 value={searchTerm}
                 onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  resetPagination();
+                  setSearchTerm(e.target.value)
+                  resetPagination()
                 }}
                 className="max-w-sm"
               />
@@ -727,8 +631,8 @@ const resetEditForm = () => {
               <Select
                 value={filterStatus}
                 onValueChange={(value: "all" | "paid" | "unpaid") => {
-                  setFilterStatus(value);
-                  resetPagination();
+                  setFilterStatus(value)
+                  resetPagination()
                 }}
               >
                 <SelectTrigger className="w-32">
@@ -742,7 +646,7 @@ const resetEditForm = () => {
               </Select>
               <Select
                 value={itemsPerPage.toString()}
-                onValueChange={(value: string) => handleItemsPerPageChange(parseInt(value))}
+                onValueChange={(value: string) => handleItemsPerPageChange(Number.parseInt(value))}
               >
                 <SelectTrigger className="w-20">
                   <SelectValue />
@@ -766,13 +670,11 @@ const resetEditForm = () => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
                   Payslips for {payrollPeriod.name}
-                  <span className="text-sm font-normal text-gray-500 ml-2">
-                    ({totalItems} total records)
-                  </span>
+                  <span className="text-sm font-normal text-gray-500 ml-2">({totalItems} total records)</span>
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  Showing {Math.min(startIndex + 1, totalItems)} to {Math.min(endIndex, totalItems)}{" "}
-                  of {totalItems} records
+                  Showing {totalItems > 0 ? startIndex + 1 : 0} to {startIndex + displayedPayslips.length} of{" "}
+                  {totalItems} records
                 </p>
               </div>
               {totalItems > 0 && (
@@ -783,7 +685,7 @@ const resetEditForm = () => {
             </div>
           </div>
 
-          {paginatedPayslips.length === 0 ? (
+          {displayedPayslips.length === 0 ? (
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No payslips found</h3>
@@ -795,9 +697,9 @@ const resetEditForm = () => {
               {payslips.length > 0 && (
                 <Button
                   onClick={() => {
-                    setSearchTerm("");
-                    setFilterStatus("all");
-                    resetPagination();
+                    setSearchTerm("")
+                    setFilterStatus("all")
+                    resetPagination()
                   }}
                   variant="outline"
                   className="mt-4 bg-transparent"
@@ -828,81 +730,63 @@ const resetEditForm = () => {
                     </TableHead>
                     <TableHead className="font-semibold text-gray-700">Days</TableHead>
                     <TableHead className="font-semibold text-gray-700">Status</TableHead>
-                    <TableHead className="font-semibold text-gray-700 text-center">
-                      Actions
-                    </TableHead>
+                    <TableHead className="font-semibold text-gray-700 text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedPayslips.map((payslip, index) => (
+                  {displayedPayslips.map((payslip, index) => (
                     <TableRow
                       key={payslip.id}
-                      className={`hover:bg-orange-50/30 transition-colors border-b ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
-                        }`}
+                      className={`hover:bg-orange-50/30 transition-colors border-b ${
+                        index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                      }`}
                     >
                       <TableCell className="py-4">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10 border-2 border-orange-100">
                             <AvatarFallback className="bg-orange-100 text-orange-700 font-semibold">
-                              {getInitials(payslip.employee.name)}
+                              {getInitials(payslip.employee.user?.fullname || "")}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-semibold text-gray-900">
-                              {payslip.employee.name}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {payslip.employee.department || payslip.employee.email}
-                            </div>
+                            <div className="font-semibold text-gray-900">{payslip.employee.user?.fullname || ""}</div>
+                            <div className="text-sm text-gray-500">{payslip.employee.department.name}</div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="font-semibold text-gray-900">
-                          {formatCurrency(payslip.basic_salary)}
-                        </div>
+                        <div className="font-semibold text-gray-900">UGX {formatCurrency(payslip.basic_salary)}</div>
                       </TableCell>
                       <TableCell>
                         <div className="font-semibold text-green-600">
-                          {formatCurrency(payslip.total_allowances)}
+                          UGX {formatCurrency(payslip.total_allowances)}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="font-semibold text-red-600">
-                          {formatCurrency(payslip.total_deductions)}
-                        </div>
+                        <div className="font-semibold text-red-600">UGX {formatCurrency(payslip.total_deductions)}</div>
                       </TableCell>
                       <TableCell>
-                        <div className="font-semibold text-green-700">
-                          {formatCurrency(payslip.net_salary)}
-                        </div>
+                        <div className="font-semibold text-green-700">UGX {formatCurrency(payslip.net_salary)}</div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-center font-medium text-gray-700">
-                          {payslip.days_worked}
-                        </div>
+                        <div className="text-center font-medium text-gray-700">{payslip.days_worked}</div>
                       </TableCell>
                       <TableCell>
                         <Badge
                           variant={payslip.is_paid ? "default" : "secondary"}
-                          className={`${payslip.is_paid
-                            ? "bg-green-100 text-green-800 border-green-200"
-                            : "bg-yellow-100 text-yellow-800 border-yellow-200"
-                            } font-medium px-3 py-1`}
+                          className={`${
+                            payslip.is_paid
+                              ? "bg-green-100 text-green-800 border-green-200"
+                              : "bg-yellow-100 text-yellow-800 border-yellow-200"
+                          } font-medium px-3 py-1`}
                         >
                           <div className="flex items-center gap-1">
-                            {payslip.is_paid ? (
-                              <CheckCircle className="w-3 h-3" />
-                            ) : (
-                              <Clock className="w-3 h-3" />
-                            )}
+                            {payslip.is_paid ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                             {payslip.is_paid ? "Paid" : "Unpaid"}
                           </div>
                         </Badge>
                         {payslip.paid_date && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {formatDate(payslip.paid_date)}
-                          </div>
+                          <div className="text-xs text-gray-500 mt-1">{formatDate(payslip.paid_date)}</div>
                         )}
                       </TableCell>
                       <TableCell>
@@ -918,59 +802,56 @@ const resetEditForm = () => {
                                 <MoreVertical className="w-5 h-5 text-gray-600" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent
-  align="end"
-  className="bg-white rounded-lg shadow-lg p-3"
->
-  {/* Add Edit button as first option */}
-  <DropdownMenuItem className="flex justify-start">
-    <Button
-      variant={"ghost"}
-      className="!w-full !justify-start flex"
-      onClick={() => handleEditPayslip(payslip)}
-    >
-      <Edit className="w-4 h-4 mr-2 text-blue-600" />
-      Edit Payslip
-    </Button>
-  </DropdownMenuItem>
+                            <DropdownMenuContent align="end" className="bg-white rounded-lg shadow-lg p-3">
+                              {/* Add Edit button as first option */}
+                              <DropdownMenuItem className="flex justify-start">
+                                <Button
+                                  variant={"ghost"}
+                                  className="!w-full !justify-start flex"
+                                  onClick={() => handleEditPayslip(payslip)}
+                                >
+                                  <Edit className="w-4 h-4 mr-2 text-blue-600" />
+                                  Edit Payslip
+                                </Button>
+                              </DropdownMenuItem>
 
-  <DropdownMenuItem className="flex justify-start">
-    <Button
-      variant={"ghost"}
-      className="!w-full !justify-start flex"
-      onClick={() => navigateToPayslipItems(payslip.id)}
-    >
-      <FileText className="w-4 h-4 mr-2 text-blue-600" />
-      View Payslip Items
-    </Button>
-  </DropdownMenuItem>
+                              <DropdownMenuItem className="flex justify-start">
+                                <Button
+                                  variant={"ghost"}
+                                  className="!w-full !justify-start flex"
+                                  onClick={() => navigateToPayslipItems(payslip.id)}
+                                >
+                                  <FileText className="w-4 h-4 mr-2 text-blue-600" />
+                                  View Payslip Items
+                                </Button>
+                              </DropdownMenuItem>
 
-  {/* Rest of your existing menu items */}
-  {!payslip.is_paid && (
-    <DropdownMenuItem className="!justify-start !items-start flex">
-      <Button
-        variant={"ghost"}
-        className="!w-full !items-start justify-start flex"
-        onClick={() => handleMarkAsPaid(payslip)}
-      >
-        <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
-        Mark as Paid
-      </Button>
-    </DropdownMenuItem>
-  )}
+                              {/* Rest of your existing menu items */}
+                              {!payslip.is_paid && (
+                                <DropdownMenuItem className="!justify-start !items-start flex">
+                                  <Button
+                                    variant={"ghost"}
+                                    className="!w-full !items-start justify-start flex"
+                                    onClick={() => handleMarkAsPaid(payslip)}
+                                  >
+                                    <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                                    Mark as Paid
+                                  </Button>
+                                </DropdownMenuItem>
+                              )}
 
-  <DropdownMenuSeparator />
+                              <DropdownMenuSeparator />
 
-  <DropdownMenuItem className="flex !justify-start items-center text-red-600 focus:text-red-700">
-    <Button
-      variant={"ghost"}
-      className="!w-full !items-start justify-start"
-      onClick={() => setDeleteConfirmId(payslip.id)}
-    >
-      <Trash2 className="w-4 h-4 mr-2" />
-      Delete
-    </Button>
-  </DropdownMenuItem>
+                              <DropdownMenuItem className="flex !justify-start items-center text-red-600 focus:text-red-700">
+                                <Button
+                                  variant={"ghost"}
+                                  className="!w-full !items-start justify-start"
+                                  onClick={() => setDeleteConfirmId(payslip.id)}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete
+                                </Button>
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                           <Dialog
@@ -982,150 +863,165 @@ const resetEditForm = () => {
                                 <DialogTitle>Confirm Deletion</DialogTitle>
                                 <DialogDescription>
                                   Are you sure you want to delete the payslip for{" "}
-                                  {payslip.employee.name} in {payslip.payroll_period.name}? This
-                                  action cannot be undone.
+                                  {payslip.employee.user?.fullname || ""} in {payslip.payroll_period.name}? This action
+                                  cannot be undone.
                                 </DialogDescription>
                               </DialogHeader>
                               <DialogFooter>
                                 <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
                                   Cancel
                                 </Button>
-                                <Button
-                                  variant="destructive"
-                                  onClick={() => handleDelete(payslip.id)}
-                                >
+                                <Button variant="destructive" onClick={() => handleDelete(payslip.id)}>
                                   Delete
                                 </Button>
                               </DialogFooter>
                             </DialogContent>
                           </Dialog>
                           {/* Add this Edit Modal Dialog after the delete confirmation dialog */}
-<Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-  <DialogContent className="max-w-2xl">
-    <DialogHeader>
-      <DialogTitle>Edit Payslip</DialogTitle>
-      <DialogDescription>
-        Update payslip details for {editingPayslip?.employee.name} in {editingPayslip?.payroll_period.name}
-      </DialogDescription>
-    </DialogHeader>
+                          <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+                            <DialogContent className="max-w-2xl">
+                              <DialogHeader>
+                                <DialogTitle>Edit Payslip</DialogTitle>
+                                <DialogDescription>
+                                  Update payslip details for {editingPayslip?.employee.user?.fullname || ""} in{" "}
+                                  {editingPayslip?.payroll_period.name}
+                                </DialogDescription>
+                              </DialogHeader>
 
-    <div className="grid grid-cols-2 gap-4 py-4">
-      <div className="space-y-2">
-        <label htmlFor="basic_salary" className="text-sm font-medium">
-          Basic Salary (UGX)
-        </label>
-        <Input
-          id="basic_salary"
-          type="number"
-          value={editFormData.basic_salary}
-          onChange={(e) => setEditFormData(prev => ({
-            ...prev,
-            basic_salary: Number(e.target.value)
-          }))}
-          disabled={isUpdating}
-          placeholder="Enter basic salary"
-        />
-      </div>
+                              <div className="grid grid-cols-2 gap-4 py-4">
+                                <div className="space-y-2">
+                                  <label htmlFor="basic_salary" className="text-sm font-medium">
+                                    Basic Salary (UGX)
+                                  </label>
+                                  <Input
+                                    id="basic_salary"
+                                    type="number"
+                                    value={editFormData.basic_salary}
+                                    onChange={(e) =>
+                                      setEditFormData((prev) => ({
+                                        ...prev,
+                                        basic_salary: Number(e.target.value),
+                                      }))
+                                    }
+                                    disabled={isUpdating}
+                                    placeholder="Enter basic salary"
+                                  />
+                                </div>
 
-      <div className="space-y-2">
-        <label htmlFor="days_worked" className="text-sm font-medium">
-          Days Worked
-        </label>
-        <Input
-          id="days_worked"
-          type="number"
-          value={editFormData.days_worked}
-          onChange={(e) => setEditFormData(prev => ({
-            ...prev,
-            days_worked: Number(e.target.value)
-          }))}
-          disabled={isUpdating}
-          placeholder="Enter days worked"
-        />
-      </div>
+                                <div className="space-y-2">
+                                  <label htmlFor="days_worked" className="text-sm font-medium">
+                                    Days Worked
+                                  </label>
+                                  <Input
+                                    id="days_worked"
+                                    type="number"
+                                    value={editFormData.days_worked}
+                                    onChange={(e) =>
+                                      setEditFormData((prev) => ({
+                                        ...prev,
+                                        days_worked: Number(e.target.value),
+                                      }))
+                                    }
+                                    disabled={isUpdating}
+                                    placeholder="Enter days worked"
+                                  />
+                                </div>
 
-      <div className="space-y-2">
-        <label htmlFor="total_allowances" className="text-sm font-medium">
-          Total Allowances (UGX)
-        </label>
-        <Input
-          id="total_allowances"
-          type="number"
-          value={editFormData.total_allowances}
-          onChange={(e) => setEditFormData(prev => ({
-            ...prev,
-            total_allowances: Number(e.target.value)
-          }))}
-          disabled={isUpdating}
-          placeholder="Enter total allowances"
-        />
-      </div>
+                                <div className="space-y-2">
+                                  <label htmlFor="total_allowances" className="text-sm font-medium">
+                                    Total Allowances (UGX)
+                                  </label>
+                                  <Input
+                                    id="total_allowances"
+                                    type="number"
+                                    value={editFormData.total_allowances}
+                                    onChange={(e) =>
+                                      setEditFormData((prev) => ({
+                                        ...prev,
+                                        total_allowances: Number(e.target.value),
+                                      }))
+                                    }
+                                    disabled={isUpdating}
+                                    placeholder="Enter total allowances"
+                                  />
+                                </div>
 
-      <div className="space-y-2">
-        <label htmlFor="total_deductions" className="text-sm font-medium">
-          Total Deductions (UGX)
-        </label>
-        <Input
-          id="total_deductions"
-          type="number"
-          value={editFormData.total_deductions}
-          onChange={(e) => setEditFormData(prev => ({
-            ...prev,
-            total_deductions: Number(e.target.value)
-          }))}
-          disabled={isUpdating}
-          placeholder="Enter total deductions"
-        />
-      </div>
-    </div>
+                                <div className="space-y-2">
+                                  <label htmlFor="total_deductions" className="text-sm font-medium">
+                                    Total Deductions (UGX)
+                                  </label>
+                                  <Input
+                                    id="total_deductions"
+                                    type="number"
+                                    value={editFormData.total_deductions}
+                                    onChange={(e) =>
+                                      setEditFormData((prev) => ({
+                                        ...prev,
+                                        total_deductions: Number(e.target.value),
+                                      }))
+                                    }
+                                    disabled={isUpdating}
+                                    placeholder="Enter total deductions"
+                                  />
+                                </div>
+                              </div>
 
-    {/* Preview calculated values */}
-    <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-      <h4 className="font-medium text-gray-900">Calculated Values</h4>
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <span className="text-gray-600">Gross Salary:</span>
-          <span className="ml-2 font-medium">
-            {formatCurrency(Number(editFormData.basic_salary || 0) + Number(editFormData.total_allowances || 0))}
-          </span>
-        </div>
-        <div>
-          <span className="text-gray-600">Net Salary:</span>
-          <span className="ml-2 font-medium text-green-600">
-            {formatCurrency(Number(editFormData.basic_salary || 0) + Number(editFormData.total_allowances || 0) - Number(editFormData.total_deductions || 0))}
-          </span>
-        </div>
-      </div>
-    </div>
+                              {/* Preview calculated values */}
+                              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                                <h4 className="font-medium text-gray-900">Calculated Values</h4>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-gray-600">Gross Salary:</span>
+                                    <span className="ml-2 font-medium">
+                                      UGX{" "}
+                                      {formatCurrency(
+                                        Number(editFormData.basic_salary || 0) +
+                                          Number(editFormData.total_allowances || 0),
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-600">Net Salary:</span>
+                                    <span className="ml-2 font-medium text-green-600">
+                                      UGX{" "}
+                                      {formatCurrency(
+                                        Number(editFormData.basic_salary || 0) +
+                                          Number(editFormData.total_allowances || 0) -
+                                          Number(editFormData.total_deductions || 0),
+                                      )}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
 
-    <DialogFooter>
-      <Button
-        variant="outline"
-        onClick={() => {
-          setEditModalOpen(false);
-          resetEditForm();
-        }}
-        disabled={isUpdating}
-      >
-        Cancel
-      </Button>
-      <Button
-        onClick={handleUpdatePayslip}
-        disabled={isUpdating}
-        className="bg-orange-600 hover:bg-orange-700"
-      >
-        {isUpdating ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Updating...
-          </>
-        ) : (
-          "Update Payslip"
-        )}
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+                              <DialogFooter>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setEditModalOpen(false)
+                                    resetEditForm()
+                                  }}
+                                  disabled={isUpdating}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  onClick={handleUpdatePayslip}
+                                  disabled={isUpdating}
+                                  className="bg-orange-600 hover:bg-orange-700"
+                                >
+                                  {isUpdating ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Updating...
+                                    </>
+                                  ) : (
+                                    "Update Payslip"
+                                  )}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1137,7 +1033,7 @@ const resetEditForm = () => {
                   <div className="flex items-center text-sm text-gray-700">
                     <span>
                       Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
-                      <span className="font-medium">{Math.min(endIndex, totalItems)}</span> of{" "}
+                      <span className="font-medium">{Math.min(startIndex + itemsPerPage, totalItems)}</span> of{" "}
                       <span className="font-medium">{totalItems}</span> results
                     </span>
                   </div>
@@ -1162,10 +1058,11 @@ const resetEditForm = () => {
                               variant={currentPage === page ? "default" : "outline"}
                               size="sm"
                               onClick={() => handlePageChange(page as number)}
-                              className={`w-8 h-8 p-0 ${currentPage === page
-                                ? "bg-orange-600 hover:bg-orange-700 text-white"
-                                : "hover:bg-gray-50"
-                                }`}
+                              className={`w-8 h-8 p-0 ${
+                                currentPage === page
+                                  ? "bg-orange-600 hover:bg-orange-700 text-white"
+                                  : "hover:bg-gray-50"
+                              }`}
                             >
                               {page}
                             </Button>
@@ -1191,5 +1088,5 @@ const resetEditForm = () => {
         </div>
       </Card>
     </div>
-  );
+  )
 }

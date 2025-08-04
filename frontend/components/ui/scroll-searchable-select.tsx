@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"
 import { Check, ChevronsUpDown, Loader2, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { IPaginatedResponse } from "@/app/types/types.utils"
 
 interface SearchableSelectInfiniteProps<T> {
     value?: string | number
@@ -18,12 +19,7 @@ interface SearchableSelectInfiniteProps<T> {
     fetchData: (
         searchTerm: string,
         pageUrl?: string | null,
-    ) => Promise<{
-        results: T[]
-        next: string | null
-        previous: string | null
-        count: number
-    }>
+    ) => Promise<IPaginatedResponse<T>>
     getItemValue: (item: T) => string | number
     getItemLabel: (item: T) => string
     getItemSearchText?: (item: T) => string
@@ -71,15 +67,13 @@ export function SearchableSelectInfinite<T>({
 
     // Load initial data and handle search changes
     useEffect(() => {
-        if (open && !initialLoad) {
+        if (open) {
             loadData(true)
             setInitialLoad(true)
         } else if (debouncedSearchTerm !== searchTerm) {
             return
-        } else if (initialLoad) {
-            loadData(true)
         }
-    }, [debouncedSearchTerm, open])
+    }, [open])
 
     const loadData = async (reset = false) => {
         try {

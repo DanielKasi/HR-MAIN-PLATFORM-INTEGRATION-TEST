@@ -115,185 +115,8 @@ export default function PayrollPeriods() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [employees, setEmployees] = useState<IEmployee[]>([]);
-  const [payslips, setPayslips] = useState<any[]>([]);
-  const [availablePayrollPeriods, setAvailablePayrollPeriods] = useState<IPayrollPeriod[]>([]);
-  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
-  const [generateFormData, setGenerateFormData] = useState({
-    payroll_period_id: "",
-  });
-  const [generating, setGenerating] = useState(false);
-
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  // Fetch employees and payslips
-  const fetchEmployeesAndPayslips = useCallback(async () => {
-    if (!selectedInstitution?.id) {
-      setEmployees([]);
-      setPayslips([]);
-      setAvailablePayrollPeriods([]);
-      return;
-    }
-
-    try {
-      // Fetch employees
-      const fetchedEmployees = await getAllEmployees({ institutionId: selectedInstitution.id });
-      if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
-        const formattedEmployees = fetchedEmployees
-          .filter((emp) => emp.id && emp.id.toString() !== "0");
-        setEmployees(formattedEmployees);
-      } else {
-        setEmployees([]);
-      }
-
-      // Fetch payslips
-      const payslipsData: any = await getPayslips(selectedInstitution.id);
-      if (payslipsData && Array.isArray(payslipsData)) {
-        setPayslips(payslipsData);
-      } else {
-        setPayslips([]);
-      }
-
-      // Filter available periods for payslip generation
-      const filteredPeriods = payrollPeriods.filter((period) => {
-        // Get today's date
-        const today = new Date();
-        const payDate = new Date(period.pay_date);
-
-        // Create date objects with only year, month, day (no time)
-        const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        const payDateOnly = new Date(payDate.getFullYear(), payDate.getMonth(), payDate.getDate());
-
-        // Allow payslip generation if pay date is today or in the past
-        const payDateReached = payDateOnly <= todayOnly;
-
-        // Check if there are incomplete payslips for this period
-        const periodPayslips = payslipsData.filter(
-          (payslip: any) => payslip.payroll_period.id === period.id
-        );
-        const employeesWithPayslips = new Set(
-          periodPayslips.map((payslip: any) => payslip.employee.id.toString())
-        );
-
-        // Use the correct variable name here
-        const formattedEmployeesLength = fetchedEmployees && Array.isArray(fetchedEmployees)
-          ? fetchedEmployees.filter((emp) => emp.id && emp.id.toString() !== "0").length
-          : 0;
-
-        const hasIncompletePayslips = employeesWithPayslips.size < formattedEmployeesLength;
-
-        return payDateReached && hasIncompletePayslips;
-      });
-
-      setAvailablePayrollPeriods(filteredPeriods);
-
-    } catch (error) {
-      console.error("Error fetching employees and payslips:", error);
-      setEmployees([]);
-      setPayslips([]);
-      setAvailablePayrollPeriods([]);
-    }
-  }, [selectedInstitution?.id, payrollPeriods]);
-
-  const resetGenerateForm = () => {
-    setGenerateFormData({
-      payroll_period_id: "",
-    });
-  };
-
-  const handleGenerateInputChange = (field: string, value: string) => {
-    setGenerateFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleGeneratePayslips = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!selectedInstitution) {
-      toast.error("Institution ID is required");
-      return;
-    }
-
-    if (!generateFormData.payroll_period_id) {
-      toast.error("Please select a payroll period", { duration: 5000 });
-      return;
-    }
-
-    const payrollPeriod = availablePayrollPeriods.find(
-      (period) => period.id === Number.parseInt(generateFormData.payroll_period_id)
-    );
-    if (!payrollPeriod) {
-      toast.error("Invalid payroll period selected", { duration: 5000 });
-      return;
-    }
-
-    // Get employees who don't have payslips for this period
-    const existingPayslipEmployeeIds = new Set(
-      payslips
-        .filter((p) => p.payroll_period.id.toString() === generateFormData.payroll_period_id)
-        .map((p) => p.employee.id.toString())
-    );
-    const eligibleEmployeeIds = employees
-      .filter((emp) => !existingPayslipEmployeeIds.has(emp.id.toString()))
-      .map((emp) => parseInt(emp.id.toString()));
-
-    if (eligibleEmployeeIds.length === 0) {
-      toast.info("All employees already have payslips for this period.", {
-        duration: 5000,
-      });
-      setIsGenerateModalOpen(false);
-      return;
-    }
-
-    setGenerating(true);
-
-    try {
-      const newPayslips = await createBulkPayslips({
-        institutionId: selectedInstitution.id,
-        payrollPeriodId: parseInt(generateFormData.payroll_period_id),
-        employeeIds: eligibleEmployeeIds,
-      });
-
-      if (newPayslips && Array.isArray(newPayslips)) {
-        toast.success(`Successfully generated ${newPayslips.length} payslips`, {
-          duration: 5000,
-        });
-
-        // Update the payroll period status to processed
-        const updatedPeriods = payrollPeriods.map((period) => {
-          if (period.id.toString() === generateFormData.payroll_period_id) {
-            return {
-              ...period,
-              is_processed: true
-            };
-          }
-          return period;
-        });
-
-        // Update the payroll periods state
-        setPayrollPeriods(updatedPeriods);
-
-        // Refresh data to get the latest payslips and update available periods
-        await fetchEmployeesAndPayslips();
-
-      } else {
-        toast.error("Failed to generate payslips", {
-          duration: 5000,
-        });
-      }
-
-      setIsGenerateModalOpen(false);
-      resetGenerateForm();
-    } catch (error: any) {
-      toast.error(error.message || "An error occurred while processing payslips", {
-        duration: 5000,
-      });
-    } finally {
-      setGenerating(false);
-    }
-  };
 
   // Fetch payroll periods
   const fetchPayrollPeriods = useCallback(async () => {
@@ -323,12 +146,6 @@ export default function PayrollPeriods() {
   useEffect(() => {
     fetchPayrollPeriods();
   }, [fetchPayrollPeriods]);
-
-  useEffect(() => {
-    if (payrollPeriods.length > 0) {
-      fetchEmployeesAndPayslips();
-    }
-  }, [fetchEmployeesAndPayslips, payrollPeriods]);
 
   // Auto-generate period name
   useEffect(() => {
@@ -735,7 +552,6 @@ export default function PayrollPeriods() {
                   <Button
                     onClick={handleSubmit}
                     disabled={saving || hasValidationErrors()}
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
                   >
                     {saving ? (
                       <>
@@ -751,155 +567,10 @@ export default function PayrollPeriods() {
             </Dialog>
           </ProtectedComponent>
 
-          {/* Generate Payslips Button with Popover */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <div className="relative">
-                <Button
-                  onClick={() => {
-                    resetGenerateForm();
-                    setIsGenerateModalOpen(true);
-                  }}
-                  className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400"
-                  disabled={!selectedInstitution?.id || employees.length === 0 || availablePayrollPeriods.length === 0}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Generate Payslips
-                </Button>
-
-                {/* Show info icon when disabled */}
-                {(!selectedInstitution?.id || employees.length === 0 || availablePayrollPeriods.length === 0) && (
-                  <Info className="w-4 h-4 text-amber-500 absolute -top-1 -right-1 cursor-help" />
-                )}
-              </div>
-            </PopoverTrigger>
-
-            {(!selectedInstitution?.id || employees.length === 0 || availablePayrollPeriods.length === 0) && (
-              <PopoverContent className="w-80" side="bottom" align="end">
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Why is this button disabled?</h4>
-                  <div className="text-xs text-gray-600 space-y-1">
-                    {!selectedInstitution?.id && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                        Please select an institution first
-                      </div>
-                    )}
-                    {selectedInstitution?.id && employees.length === 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                        No employees found. Add employees to generate payslips
-                      </div>
-                    )}
-                    {selectedInstitution?.id && employees.length > 0 && availablePayrollPeriods.length === 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
-                        No payroll periods available for payslip generation
-                      </div>
-                    )}
-                  </div>
-
-                  {selectedInstitution?.id && employees.length > 0 && availablePayrollPeriods.length === 0 && (
-                    <div className="mt-3 p-2 bg-blue-50 rounded text-xs text-blue-800">
-                      <strong>Tip:</strong> Payroll periods only appear here when their pay date has been reached and not all employees have payslips yet.
-                    </div>
-                  )}
-                </div>
-              </PopoverContent>
-            )}
-          </Popover>
         </div>
       </div>
 
-      {/* Generate Payslips Dialog */}
-      <Dialog open={isGenerateModalOpen} onOpenChange={setIsGenerateModalOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Generate Payslips</DialogTitle>
-            <DialogDescription>
-              Select a payroll period to generate payslips for employees without existing payslips
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleGeneratePayslips} className="space-y-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="payroll_period">Payroll Period *</Label>
-                <Select
-                  value={generateFormData.payroll_period_id}
-                  onValueChange={(value) => handleGenerateInputChange("payroll_period_id", value)}
-                  disabled={generating || availablePayrollPeriods.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select payroll period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availablePayrollPeriods.length > 0 ? (
-                      availablePayrollPeriods.map((period) => (
-                        <SelectItem key={period.id} value={period.id.toString()}>
-                          {period.name}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <div className="px-2 py-1.5 text-sm text-gray-500">
-                        {payrollPeriods.some(p => new Date(p.pay_date) > new Date())
-                          ? "No payroll periods with reached pay dates available for payslip generation"
-                          : "All payroll periods have payslips generated for all employees"
-                        }
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {employees.length > 0 && generateFormData.payroll_period_id && (
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-blue-900 mb-2">
-                    Payslips will be generated for{" "}
-                    {employees.length -
-                      payslips.filter(
-                        (p) => p.payroll_period.id.toString() === generateFormData.payroll_period_id
-                      ).length}{" "}
-                    employees
-                  </h4>
-                  <div className="text-sm text-blue-800">
-                    This will create payslips for employees without existing payslips in the selected period.
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsGenerateModalOpen(false)} disabled={generating}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="bg-orange-600 hover:bg-orange-700"
-                disabled={
-                  generating ||
-                  !generateFormData.payroll_period_id ||
-                  availablePayrollPeriods.length === 0 ||
-                  (generateFormData.payroll_period_id !== "" &&
-                    employees.length -
-                    payslips.filter(
-                      (p) => p.payroll_period.id.toString() === generateFormData.payroll_period_id
-                    ).length === 0)
-                }
-              >
-                {generating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Generate Payslips for{" "}
-                {generateFormData.payroll_period_id
-                  ? employees.length -
-                  payslips.filter(
-                    (p) => p.payroll_period.id.toString() === generateFormData.payroll_period_id
-                  ).length
-                  : employees.length}{" "}
-                Employees
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+ 
 
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
@@ -1001,7 +672,7 @@ export default function PayrollPeriods() {
           </p>
         </Card>
       ) : (
-        <Card className="rounded-lg border">
+        <Card className="rounded-lg border overflow-hidden">
           <Table>
             <TableHeader className="bg-gray-50/80 sticky top-0 z-10">
               <TableRow className="border-b-2 border-gray-200">
@@ -1027,7 +698,7 @@ export default function PayrollPeriods() {
               {paginatedPeriods.map((period, index) => (
                 <TableRow
                   key={period.id}
-                  className={`hover:bg-orange-50/30 transition-colors border-b ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`}
+                  className={` transition-colors border-b ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`}
                 >
                   <TableCell className="py-4">
                     <div className="font-medium text-gray-900">{period.name}</div>

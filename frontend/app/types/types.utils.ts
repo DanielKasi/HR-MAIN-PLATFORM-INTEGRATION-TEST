@@ -490,6 +490,22 @@ export interface IEmployee {
   roles: Role[];
 }
 
+export interface IPayslip {
+  id: number;
+  employee: IEmployee;
+  payroll_period: IPayrollPeriod;
+  basic_salary: string;
+  total_allowances: string;
+  total_deductions: string;
+  gross_salary: string;
+  net_salary: string;
+  days_worked: number;
+  is_paid: boolean;
+  paid_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface IInterviewStageFormData {
   job_position_advert: number;
   name: string;
@@ -1403,21 +1419,7 @@ export interface IPayrollPeriodFormData {
 }
 
 
-export interface IPayslip {
-  id: number;
-  employee: IEmployee;
-  payroll_period: IPayrollPeriod;
-  basic_salary: string;
-  total_allowances: string;
-  total_deductions: string;
-  gross_salary: string;
-  net_salary: string;
-  days_worked: number;
-  is_paid: boolean;
-  paid_date: string | null;
-  created_at: string;
-  updated_at: string;
-}
+
 
 export interface IPayslipFormData {
   employee: number;
