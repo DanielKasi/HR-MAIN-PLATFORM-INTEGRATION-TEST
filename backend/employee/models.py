@@ -638,9 +638,9 @@ class EmployeeContract(models.Model):
             # Compare number of pages
             if len(original_pages) != len(signed_pages):
                 self.status = "NOT_MATCHED_NEEDS_REVIEW"
-                raise ValidationError(
-                    f"Page count mismatch: original has {len(original_pages)} pages, signed has {len(signed_pages)} pages"
-                )
+                # raise ValidationError(
+                #     f"Page count mismatch: original has {len(original_pages)} pages, signed has {len(signed_pages)} pages"
+                # )
 
             # Compare page-by-page, focusing on word differences
             differences = []
@@ -701,13 +701,4 @@ class EmployeeContract(models.Model):
         super().save(*args, **kwargs)
 
 
-# class HRDocument(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     title = models.CharField(max_length=255)
-#     signature = JSignatureField(null=True, blank=True)
-#     signature_date = models.DateTimeField(auto_now_add=True)
-#     document = models.FileField(upload_to='documents/')
-#     signature_image = models.ImageField(upload_to='signatures/', null=True, blank=True)
-
-#     def __str__(self):
-#         return f"{self.title} - {self.user.username}"
+    

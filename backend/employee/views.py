@@ -37,6 +37,8 @@ from django.http import FileResponse
 from django.core.exceptions import ValidationError
 from users.models import CustomUser
 from django.utils import timezone
+from datetime import datetime
+from django.contrib.auth.hashers import make_password
 import re
 import pandas as pd
 import io
@@ -46,6 +48,7 @@ from django.http import HttpResponse
 from openpyxl.styles import Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from decimal import Decimal, InvalidOperation
+from django.contrib.auth import get_user_model
 
 
 class EmployeeListAPIView(APIView):
@@ -178,14 +181,15 @@ class EmployeeCreateAPIView(APIView):
 
     def handle_bulk_upload(self, request):
         """Handle bulk employee creation from uploaded CSV/Excel file."""
+        start_time = datetime.now()
+        logger.debug(f"Starting bulk upload at {start_time}")
+
         file = request.FILES["file"]
         file_extension = file.name.split(".")[-1].lower()
 
         if file_extension not in ["csv", "xlsx"]:
             return Response(
-                {
-                    "detail": "Invalid file format. Only CSV or Excel files are supported."
-                },
+                {"detail": "Invalid file format. Only CSV or Excel files are supported."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -196,18 +200,17 @@ class EmployeeCreateAPIView(APIView):
                 df = pd.read_excel(file)
 
             logger.debug(f"Excel/CSV columns: {df.columns.tolist()}")
-            logger.debug(f"Excel/CSV data: {df.to_dict(orient='records')}")
+            logger.debug(f"Excel/CSV row count: {len(df)}")
 
             required_columns = ["user.fullname", "user.email"]
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
                 return Response(
-                    {
-                        "detail": f"Missing required columns: {', '.join(missing_columns)}"
-                    },
+                    {"detail": f"Missing required columns: {', '.join(missing_columns)}"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+            # Define mappings for choice fields
             gender_map = {
                 "male": "male",
                 "female": "female",
@@ -227,149 +230,171 @@ class EmployeeCreateAPIView(APIView):
                 "Widowed": "widowed",
             }
 
-            # Validate foreign key fields
+            # Cache foreign key mappings
+            logger.debug("Fetching foreign key mappings")
             field_mappings = {
-                "position": (JobPosition, "position_map"),
-                "department": (Department, "department_map"),
-                "work_type": (WorkType, "work_type_map"),
-                "employee_type": (EmployeeType, "employee_type_map"),
+                "position": JobPosition,
+                "department": Department,
+                "work_type": WorkType,
+                "employee_type": EmployeeType,
+                "payroll_branch": Branch,  # Added for payroll_branch
             }
-            for field, (model, map_name) in field_mappings.items():
+            mappings = {}
+            for field, model in field_mappings.items():
                 if field in df.columns:
-                    names = df[field].dropna().str.strip().str.lower().unique()
-                    existing = model.objects.filter(
-                        name__iregex=r"^("
-                        + "|".join([re.escape(name) for name in names])
-                        + ")$"
-                    ).values("name", "id")
-                    mapping = {item["name"].lower(): item["id"] for item in existing}
-                    missing = [name for name in names if name.lower() not in mapping]
-                    if missing:
-                        return Response(
-                            {
-                                "detail": f"The following {field}s do not exist: {', '.join(missing)}"
-                            },
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
-                    setattr(self, map_name, mapping)
+                    names = df[field].dropna().str.strip().unique()
+                    if names.size > 0:
+                        existing = model.objects.filter(name__in=names).values("name", "id")
+                        logger.debug(f"Database {field} values: {[item['name'] for item in existing]}")
+                        mappings[field] = {item["name"].lower(): item["id"] for item in existing}
+                        input_names = [str(name).strip().lower() for name in names]
+                        missing = [name for name in input_names if name not in mappings[field]]
+                        if missing:
+                            logger.error(f"Missing {field}s: {missing}")
+                            return Response(
+                                {
+                                    "detail": f"The following {field}s do not exist: {', '.join(missing)}"
+                                },
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
 
+            # Process employees in batches
+            batch_size = 50  # Adjust based on your server's capacity
             employees = []
+            user_objects = []
+            employee_objects = []
             errors = []
-            with transaction.atomic():
-                for index, row in df.iterrows():
-                    employee_data = {}
-                    user_data = {
-                        "fullname": str(row["user.fullname"]).strip(),
-                        "email": str(row["user.email"]).strip(),
-                        "password": generate_compliant_password(),
-                    }
-                    employee_data["user"] = user_data
 
-                    for column in df.columns:
-                        if column not in ["user.fullname", "user.email"]:
-                            value = row[column]
-                            if pd.isna(value):
-                                employee_data[column] = None
-                            else:
-                                # Handle foreign key fields
-                                if column in field_mappings and value:
-                                    map_name = field_mappings[column][1]
-                                    mapping = getattr(self, map_name)
-                                    employee_data[column] = mapping.get(
-                                        str(value).strip().lower()
-                                    )
+            logger.debug(f"Starting batch processing with batch size {batch_size}")
+            for start_idx in range(0, len(df), batch_size):
+                batch = df[start_idx:start_idx + batch_size]
+                batch_start_time = datetime.now()
+                logger.debug(f"Processing batch {start_idx//batch_size + 1} (rows {start_idx + 1} to {start_idx + len(batch)})")
 
-                                elif column == "gender" and value:
-                                    employee_data[column] = gender_map.get(
-                                        str(value).strip(), None
-                                    )
-                                    if employee_data[column] is None:
-                                        errors.append(
-                                            {
-                                                "row": index + 2,
-                                                "errors": {
-                                                    "gender": [
-                                                        f'"{value}" is not a valid choice.'
-                                                    ]
-                                                },
-                                            }
-                                        )
-                                        continue
+                with transaction.atomic():
+                    for index, row in batch.iterrows():
+                        employee_data = {}
+                        user_data = {
+                            "fullname": str(row["user.fullname"]).strip(),
+                            "email": str(row["user.email"]).strip(),
+                            "password": make_password(generate_compliant_password()),
+                            "is_active": True,
+                            "is_email_verified": False,
+                            "is_password_verified": False,
+                            "user_type": "staff",
+                            "created_at": datetime.now(),
+                            "updated_at": datetime.now(),
+                        }
 
-                                # Handle marital_status
-                                elif column == "marital_status" and value:
-                                    employee_data[column] = marital_status_map.get(
-                                        str(value).strip(), None
-                                    )
-                                    if employee_data[column] is None:
-                                        errors.append(
-                                            {
-                                                "row": index + 2,
-                                                "errors": {
-                                                    "marital_status": [
-                                                        f'"{value}" is not a valid choice.'
-                                                    ]
-                                                },
-                                            }
-                                        )
-                                        continue
+                        for column in df.columns:
+                            if column not in ["user.fullname", "user.email"]:
+                                value = row[column]
+                                if pd.isna(value):
+                                    employee_data[column] = None
                                 else:
-                                    employee_data[column] = str(value).strip()
+                                    value = str(value).strip()
+                                    if column in field_mappings and value:
+                                        mapping = mappings.get(column, {})
+                                        employee_data[column] = mapping.get(value.lower())
+                                        if employee_data[column] is None:
+                                            errors.append(
+                                                {
+                                                    "row": index + 2,
+                                                    "errors": {
+                                                        column: [f'"{value}" does not exist.']
+                                                    },
+                                                }
+                                            )
+                                            continue
+                                    elif column == "gender" and value:
+                                        employee_data[column] = gender_map.get(value, None)
+                                        if employee_data[column] is None:
+                                            errors.append(
+                                                {
+                                                    "row": index + 2,
+                                                    "errors": {
+                                                        "gender": [f'"{value}" is not a valid choice.']
+                                                    },
+                                                }
+                                            )
+                                            continue
+                                    elif column == "marital_status" and value:
+                                        employee_data[column] = marital_status_map.get(value, None)
+                                        if employee_data[column] is None:
+                                            errors.append(
+                                                {
+                                                    "row": index + 2,
+                                                    "errors": {
+                                                        "marital_status": [f'"{value}" is not a valid choice.']
+                                                    },
+                                                }
+                                            )
+                                            continue
+                                    else:
+                                        employee_data[column] = value
 
-                    if "is_active" in employee_data:
-                        employee_data["is_active"] = (
-                            str(employee_data["is_active"]).lower() == "true"
+                        if "is_active" in employee_data:
+                            employee_data["is_active"] = str(employee_data["is_active"]).lower() == "true"
+
+                        for field in ["experience", "children_count"]:
+                            if field in employee_data and employee_data[field]:
+                                try:
+                                    employee_data[field] = int(float(employee_data[field]))
+                                except (ValueError, TypeError):
+                                    employee_data[field] = 0
+
+                        if not errors:
+                            user_objects.append(CustomUser(**user_data))
+                            employee_data["user"] = len(user_objects) - 1  # Temporary index for linking
+                            employee_data["created_at"] = datetime.now()
+                            employee_data["updated_at"] = datetime.now()
+                            employee_objects.append(employee_data)
+
+                    if errors:
+                        logger.error(f"Batch errors: {errors}")
+                        continue
+
+                    # Bulk create users
+                    try:
+                        logger.debug(f"Creating {len(user_objects)} users")
+                        created_users = CustomUser.objects.bulk_create(user_objects)
+                        logger.debug(f"Created {len(created_users)} users")
+                    except Exception as e:
+                        logger.error(f"Error bulk creating users: {str(e)}")
+                        errors.append({"non_field_errors": f"Error creating users: {str(e)}"})
+                        continue
+
+                    # Update employee objects with actual user IDs
+                    for idx, employee_data in enumerate(employee_objects):
+                        employee_data["user"] = created_users[employee_data["user"]].id
+
+                    # Bulk create employees
+                    try:
+                        logger.debug(f"Creating {len(employee_objects)} employees")
+                        created_employees = Employee.objects.bulk_create(
+                            [Employee(**data) for data in employee_objects]
                         )
+                        logger.debug(f"Created {len(created_employees)} employees")
+                        employees.extend(created_employees)
+                    except Exception as e:
+                        logger.error(f"Error bulk creating employees: {str(e)}")
+                        errors.append({"non_field_errors": f"Error creating employees: {str(e)}"})
+                        continue
 
-                    for field in [
-                        "experience",
-                        "children_count",
-                        "institutionId",
-                    ]:
-                        if field in employee_data and employee_data[field]:
-                            try:
-                                employee_data[field] = int(float(employee_data[field]))
-                            except (ValueError, TypeError):
-                                employee_data[field] = 0
-
-                    serializer = EmployeeSerializer(
-                        data=employee_data, context={"request": request}
-                    )
-                    if serializer.is_valid():
+                    # Send password setup emails (non-blocking)
+                    for employee in created_employees:
                         try:
-                            employee = serializer.save()
-                            if employee is None:
-                                errors.append(
-                                    {
-                                        "row": index + 2,
-                                        "errors": {
-                                            "non_field_errors": [
-                                                "Failed to create employee: No instance returned"
-                                            ]
-                                        },
-                                    }
-                                )
-                                continue
-                            employee.user.is_password_verified = False
-                            employee.user.save()
                             employee.setup_employee_password(request)
-                            employees.append(employee)
                         except Exception as e:
+                            logger.error(f"Error sending password email for employee {employee.user.email}: {str(e)}")
                             errors.append(
                                 {
-                                    "row": index + 2,
-                                    "errors": {
-                                        "non_field_errors": f"Error saving employee: {str(e)}"
-                                    },
+                                    "row": start_idx + idx + 2,
+                                    "errors": {"non_field_errors": f"Error sending password email: {str(e)}"},
                                 }
                             )
-                    else:
-                        errors.append(
-                            {
-                                "row": index + 2,
-                                "errors": serializer.errors,
-                            }
-                        )
+
+                logger.debug(f"Batch {start_idx//batch_size + 1} completed in {(datetime.now() - batch_start_time).total_seconds()} seconds")
 
             if errors:
                 logger.error(f"Bulk upload errors: {errors}")
@@ -378,6 +403,7 @@ class EmployeeCreateAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+            logger.debug(f"Total upload time: {(datetime.now() - start_time).total_seconds()} seconds")
             return Response(
                 EmployeeSerializer(employees, many=True).data,
                 status=status.HTTP_201_CREATED,
@@ -598,7 +624,6 @@ class EmployeeUpdateAPIView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
                 employee.user.email = user_data["email"]
-                employee.user.username = user_data["email"]
                 user_updated = True
 
             if user_updated:
