@@ -1,5 +1,5 @@
 {
     "python.languageServer": "None",
     "postman.settings.dotenv-detection-notification-visibility": false,
-    "python.analysis.typeCheckingMode": "strict"
+    "python.analysis.typeCheckingMode": "basic"
 }
