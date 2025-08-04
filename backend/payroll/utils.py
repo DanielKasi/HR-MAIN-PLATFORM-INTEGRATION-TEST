@@ -107,7 +107,7 @@ def generate_eft_excel(payroll_period_id: int, paying_account_id: int):
     payslips = (
         Payslip.objects.filter(
             payroll_period=payroll_period,
-            employee__payroll_branch=chosen_paying_account,
+            employee__payroll_branch__paying_bank_account=chosen_paying_account,
         )
         .select_related(
             "employee__user",
