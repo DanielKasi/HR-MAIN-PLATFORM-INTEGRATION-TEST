@@ -14,17 +14,17 @@ from openpyxl.utils import get_column_letter
 from .models import Payslip, PayrollPeriod
 
 
-def generate_eft_excel(payroll_period_id: int):
+def generate_eft_excel(payroll_period_id: int, paying_account_id: int):
     try:
         payroll_period = PayrollPeriod.objects.get(id=payroll_period_id)
     except PayrollPeriod.DoesNotExist:
         raise ValueError(f"PayrollPeriod with ID {payroll_period_id} not found.")
 
-    institution_bank_account = InstitutionBankAccount.objects.filter(
-        institution_bank__institution=payroll_period.institution
+    chosen_paying_account = InstitutionBankAccount.objects.filter(
+        id=paying_account_id, institution_bank__institution=payroll_period.institution
     ).first()
 
-    if not institution_bank_account:
+    if not chosen_paying_account:
         raise ValueError(
             "No institution bank account found for the payroll period's institution."
         )
@@ -69,42 +69,25 @@ def generate_eft_excel(payroll_period_id: int):
 
     ws["G1"].alignment = Alignment(horizontal="right")
 
-    # # Row 2: Instructions
-    # ws["B2"] = "Point in B2 to read instructions"
-    # ws["B2"].font = red_font
-
-    # Row 3: Salary Period, Chq Amount
     ws["A3"] = "SALARY PERIOD"
     ws["A3"].font = bold_font
-    ws["B3"] = payroll_period.start_date.strftime("%m/%Y")  # e.g., 08/2025
+    ws["B3"] = payroll_period.start_date.strftime("%m/%Y")
     ws["E3"] = "Chq Amount"
     ws["F3"] = "-"
 
-    # Row 4: Item Count
     ws["E4"] = "Item Count"
-    # Item count will be filled later after counting payslips
     ws["F4"] = 0
 
-    # Row 5: Debit Account
     ws["A5"] = "DEBIT ACCOUNT*"
     ws["A5"].font = bold_font
-    ws["B5"] = (
-        institution_bank_account.account_number if institution_bank_account else ""
-    )
+    ws["B5"] = chosen_paying_account.account_number if chosen_paying_account else ""
     ws["B5"].fill = light_blue_fill
 
     ws["E5"] = "Account Name*"
     ws["E5"].font = bold_font
-    ws["F5"] = institution_bank_account.account_name if institution_bank_account else ""
+    ws["F5"] = chosen_paying_account.account_name if chosen_paying_account else ""
     ws["F5"].fill = light_blue_fill
 
-    # # Row 7: CLEAN button
-    # ws["E7"] = "CLEAN"
-    # ws["E7"].font = white_font
-    # ws["E7"].fill = dark_blue_fill
-    # ws["E7"].alignment = center_align
-
-    # Data Headers (Row 9)
     headers = [
         "DR ACCOUNT NO.",
         "BNKCODE",
@@ -121,9 +104,11 @@ def generate_eft_excel(payroll_period_id: int):
         cell.alignment = center_align
         cell.border = thin_border
 
-    # Populate data from Payslips (starting from row 10)
     payslips = (
-        Payslip.objects.filter(payroll_period=payroll_period)
+        Payslip.objects.filter(
+            payroll_period=payroll_period,
+            employee__payroll_branch=chosen_paying_account,
+        )
         .select_related(
             "employee__user",
             "employee__payroll_branch__institution",
@@ -139,40 +124,26 @@ def generate_eft_excel(payroll_period_id: int):
         employee = payslip.employee
         beneficiary_name = f"{employee.user.fullname}" if employee.user else "N/A"
 
-        # Try to find the bank code and branch code for the employee's bank
-        bank_type = None
-        if (
-            employee.bank
-            and employee.payroll_branch
-            and employee.payroll_branch.institution
-        ):
-            bank_type = InstitutionBankType.objects.filter(
-                institution=employee.payroll_branch.institution,
-                bank_fullname__iexact=employee.bank,
-            ).first()
-
-        bank_code = bank_type.bank_code if bank_type else ""
-        br_code = bank_type.br_code if bank_type else ""
+        bank_code = (
+            chosen_paying_account.institution_bank.bank_code
+            if chosen_paying_account.institution_bank
+            else ""
+        )
+        br_code = (
+            chosen_paying_account.institution_bank.br_code
+            if chosen_paying_account.institution_bank
+            else ""
+        )
 
         data_row = [
-            (
-                institution_bank_account.account_number
-                if institution_bank_account
-                else ""
-            ),  # DR ACCOUNT NO.
-            bank_code,  # BNKCODE
-            br_code,  # BRCODE
-            employee.bank_account_number,  # CR ACCOUNT*
-            float(
-                payslip.net_salary
-            ),  # AMOUNT* (convert Decimal to float for openpyxl)
-            beneficiary_name,  # BENEFICIARY NAME*
-            (
-                institution_bank_account.account_name
-                if institution_bank_account
-                else ""
-            ),  # DR ACCOUNT NAME
-            employee.bank,  # BANK NAME*
+            (chosen_paying_account.account_number if chosen_paying_account else ""),
+            bank_code,
+            br_code,
+            employee.bank_account_number,
+            float(payslip.net_salary),
+            beneficiary_name,
+            (chosen_paying_account.account_name if chosen_paying_account else ""),
+            employee.bank,
         ]
 
         for col_num, cell_value in enumerate(data_row, 1):
@@ -184,9 +155,9 @@ def generate_eft_excel(payroll_period_id: int):
                 5,
                 6,
                 8,
-            ]:  # Apply light blue fill to specific data columns as per image
+            ]:
                 cell.fill = light_blue_fill
-            if col_num == 5:  # Amount column, right align
+            if col_num == 5:
                 cell.alignment = Alignment(horizontal="right")
             else:
                 cell.alignment = left_align
@@ -195,9 +166,8 @@ def generate_eft_excel(payroll_period_id: int):
         item_count += 1
         row_num += 1
 
-    # Update Item Count and Chq Amount
     ws["F4"] = item_count
-    ws["F3"] = float(total_amount)  # Chq Amount
+    ws["F3"] = float(total_amount)
 
     excel_file = io.BytesIO()
     wb.save(excel_file)
