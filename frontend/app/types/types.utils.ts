@@ -1728,7 +1728,8 @@ export interface IBankAccount {
   created_by: number,
   created_at: string,
   updated_by: number,
-  updated_at: string
+  updated_at: string,
+  paid_branches?:Branch[]
 }
 
 export interface IBankAccountFormData {

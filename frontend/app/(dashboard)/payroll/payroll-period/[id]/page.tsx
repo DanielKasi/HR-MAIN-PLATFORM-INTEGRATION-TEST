@@ -672,17 +672,7 @@ export default function PayrollPeriodDetails() {
               <Button
                 onClick={handleGeneratePayslips}
                 className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400"
-                disabled={!selectedInstitution || !payrollPeriodId}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Generate Payslips
-              </Button>
-
-              <Button
-                onClick={handleGeneratePayslips}
-                variant={"ghost"}
-                className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400"
-                disabled={!selectedInstitution || !payrollPeriodId}
+                disabled={ payrollPeriod.is_processed || !selectedInstitution || !payrollPeriodId}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Generate Payslips

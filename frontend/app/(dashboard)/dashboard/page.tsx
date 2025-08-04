@@ -1113,6 +1113,9 @@ export default function HRDashboard() {
                       <SelectValue placeholder="All Departments" />
                     </SelectTrigger>
                     <SelectContent className="min-w-48 lg:min-w-64 w-full max-w-80">
+                      <SelectItem value={"all"}>
+                          All departments
+                        </SelectItem>
                       {departments.map((dept) => (
                         <SelectItem key={dept.id} value={dept.id.toString()}>
                           {dept.name}
