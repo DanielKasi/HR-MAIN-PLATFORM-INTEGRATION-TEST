@@ -212,6 +212,7 @@ export const createDepartment = async ({ departmentData }: { departmentData: Dep
     return response.data as IDepartment;
   } catch (error) {
     throw error;
+    throw error;
   }
 };
 
@@ -546,6 +547,7 @@ export const getJobPositionAdverts = async ({
   institutionId,
 }: {
   institutionId: number;
+}) => {
 }) => {
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-advert/`);

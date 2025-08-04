@@ -1037,14 +1037,19 @@ export default function HRDashboard() {
         ]);
 
         setEmployees(employeesResult);
+        setEmployees(employeesResult);
 
+        setLeaveApplications(leaveAppsResult);
         setLeaveApplications(leaveAppsResult);
 
         setJobAdverts(jobAdvertsResult.results);
 
         setInterviews(interviewsResult);
         setLeaveTypes(leaveTypesResult);
+        setInterviews(interviewsResult);
+        setLeaveTypes(leaveTypesResult);
 
+        setDepartments(departmentsResult);
         setDepartments(departmentsResult);
 
         setLeavePolicies((leavePoliciesResult as any) || []);
