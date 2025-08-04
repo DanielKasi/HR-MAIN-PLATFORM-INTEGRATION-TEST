@@ -340,7 +340,7 @@ class Command(BaseCommand):
                         employee.payroll_branch = default_branch
                         employee.save()
                         self.stdout.write(
-                            f"    └─ Updated employee '{employee.full_name}' with default payroll branch '{default_branch.branch_name or default_branch.branch_location}'"
+                            f"    └─ Updated employee '{employee.fullname}' with default payroll branch '{default_branch.branch_name or default_branch.branch_location}'"
                         )
 
             if acc_created:
