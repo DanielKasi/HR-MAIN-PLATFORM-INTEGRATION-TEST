@@ -133,6 +133,13 @@ class Institution(models.Model):
     def save(self, *args, **kwargs):
         from calendar2.models import Calendar
         from payroll.utils import PayrollProcessor
+        from users.models import Profile
+
+        # from institutions.models import (
+        #     Branch,
+        #     InstitutionBankType,
+        #     InstitutionBankAccount,
+        # )
 
         with transaction.atomic():
             # Set country_code if not provided
@@ -146,6 +153,38 @@ class Institution(models.Model):
                 PayrollProcessor.setup_default_payroll_types_for_institution(self)
                 self._create_calendar_for_institution()
                 self._create_default_document_types()
+
+                profile, _ = Profile.objects.get_or_create(
+                    user=self.institution_owner,
+                )
+
+                profile.institution = self
+                profile.save()
+
+                bank_type = InstitutionBankType.objects.create(
+                    institution=self,
+                    bank_fullname="Default Bank",
+                    bank_code="0001",
+                    br_code="0001",
+                    created_by=self.created_by,
+                )
+
+                bank_account = InstitutionBankAccount.objects.create(
+                    institution_bank=bank_type,
+                    account_name=f"{self.institution_name} Main Account",
+                    account_number="0000000001",
+                    created_by=self.created_by,
+                )
+
+                Branch.objects.create(
+                    institution=self,
+                    branch_name=f"{self.institution_name} Main Branch",
+                    branch_phone_number=self.first_phone_number,
+                    branch_location="Main Location",
+                    branch_email=self.institution_email,
+                    created_by=self.created_by,
+                    paying_bank_account=bank_account,
+                )
 
     def _create_calendar_for_institution(self):
         from calendar2.models import Calendar
@@ -307,6 +346,20 @@ class Branch(models.Model):
         null=True,
         blank=True,
     )
+
+    def save(self, *args, **kwargs):
+        if not self.paying_bank_account:
+            first_account = (
+                InstitutionBankAccount.objects.filter(
+                    institution_bank__institution=self.institution
+                )
+                .order_by("created_at")
+                .first()
+            )
+            if first_account:
+                self.paying_bank_account = first_account
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return (
