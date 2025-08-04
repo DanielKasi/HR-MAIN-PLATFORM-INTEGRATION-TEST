@@ -211,8 +211,8 @@ class InstitutionDetailAPIView(APIView):
 class InstitutionBankTypeListAPIView(APIView):
     @extend_schema(
         responses={200: InstitutionBankTypeSerializer(many=True)},
-        description="Retrieve all bank types.",
-        summary="Get all bank types",
+        description="Retrieve all attached banks .",
+        summary="Get all attached banks ",
         tags=["Bank Type Management"],
     )
     def get(self, request):

@@ -65,7 +65,6 @@ import RichTextDisplay from "@/components/common/rich-text-display";
 const PAGE_SIZES = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 10;
 
-type ApiResponse = PaginatedResponse<JobPositionAdvert> | null;
 
 const getStatusColor = (status: JobAdvertStatus) => {
   switch (status) {
@@ -145,7 +144,7 @@ export default function JobAdvertsPage() {
         }
         setError("");
 
-        const response: ApiResponse = await getJobPositionAdverts({
+        const response = await getJobPositionAdverts({
           institutionId: selectedInstitution.id,
         });
 

@@ -18,6 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { TableSkeleton } from "@/components/common/table-skeleton"
+import { InfiniteScrollSelect } from "@/components/ui/infinite-scroll-select"
 import {
   Plus,
   CheckCircle,
@@ -32,6 +33,7 @@ import {
   Download,
   ArrowLeft,
   Edit,
+  CreditCard,
 } from "lucide-react"
 import { toast } from "sonner"
 import { useSelector } from "react-redux"
@@ -44,7 +46,7 @@ import {
   getPayrollPeriod,
   getDepartments,
 } from "@/lib/utils"
-import type { IDepartment, IPayrollPeriod, IPayslip } from "@/app/types/types.utils"
+import type { IDepartment, IPayrollPeriod, IPayslip, IBankAccount } from "@/app/types/types.utils"
 import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors"
 import {
   DropdownMenu,
@@ -54,7 +56,7 @@ import {
   DropdownMenuTrigger,
 } from "@radix-ui/react-dropdown-menu"
 import { formatCurrency } from "@/lib/helpers"
-import { payrollAPI } from "@/lib/utils"
+import { payrollAPI, bankAccountsAPI } from "@/lib/utils"
 
 export default function PayrollPeriodDetails() {
   const router = useRouter()
@@ -87,6 +89,16 @@ export default function PayrollPeriodDetails() {
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
 
+  // Bank account selection modal states
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false)
+  const [bankAccounts, setBankAccounts] = useState<IBankAccount[]>([])
+  const [selectedBankAccount, setSelectedBankAccount] = useState<IBankAccount | null>(null)
+  const [bankAccountsLoading, setBankAccountsLoading] = useState(false)
+  const [bankAccountsHasMore, setBankAccountsHasMore] = useState(true)
+  const [bankAccountsPage, setBankAccountsPage] = useState(1)
+  const [bankAccountsSearch, setBankAccountsSearch] = useState("")
+  const [isDownloading, setIsDownloading] = useState(false)
+
   const params = useParams()
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const payrollPeriodId = params.id as string
@@ -99,7 +111,7 @@ export default function PayrollPeriodDetails() {
   }, [selectedInstitution, payrollPeriodId, currentPage, itemsPerPage, filterStatus])
 
   const handleErrorToast = (error: any, defaultMessage: string) => {
-    toast.error(error?.message || error?.detail || defaultMessage)
+    toast.error(error?.message || error?.detail?.error || defaultMessage)
   }
 
   const fetchDepartments = async () => {
@@ -149,7 +161,6 @@ export default function PayrollPeriodDetails() {
         params: apiParams,
       })
 
-
       setPayslips(response.results)
       setTotalItems(response.count || 0)
       setTotalPages(Math.ceil((response.count || 0) / pageSize))
@@ -160,6 +171,54 @@ export default function PayrollPeriodDetails() {
       setIsLoading(false)
     }
   }
+
+  // Bank accounts fetching functions
+  const fetchBankAccounts = async (page = 1, search = "", reset = false) => {
+    try {
+      setBankAccountsLoading(true)
+
+      const searchParams = new URLSearchParams()
+      searchParams.append("page", page.toString())
+      searchParams.append("page_size", "20")
+      if (search) {
+        searchParams.append("search", search)
+      }
+
+      const response = await bankAccountsAPI.getAll(`?${searchParams.toString()}`)
+
+      if (reset) {
+        setBankAccounts(response.results)
+      } else {
+        setBankAccounts((prev) => [...prev, ...response.results])
+      }
+
+      setBankAccountsHasMore(!!response.next)
+      setBankAccountsPage(page)
+    } catch (error: any) {
+      handleErrorToast(error, "Failed to fetch bank accounts")
+    } finally {
+      setBankAccountsLoading(false)
+    }
+  }
+
+  const handleBankAccountSearch = (query: string) => {
+    setBankAccountsSearch(query)
+    setBankAccountsPage(1)
+    fetchBankAccounts(1, query, true)
+  }
+
+  const handleLoadMoreBankAccounts = () => {
+    if (!bankAccountsLoading && bankAccountsHasMore) {
+      fetchBankAccounts(bankAccountsPage + 1, bankAccountsSearch, false)
+    }
+  }
+
+  // Initialize bank accounts when modal opens
+  useEffect(() => {
+    if (downloadModalOpen && bankAccounts.length === 0) {
+      fetchBankAccounts(1, "", true)
+    }
+  }, [downloadModalOpen])
 
   // Remove the filteredPayslips calculation and replace with:
   const displayedPayslips = payslips // Data is already filtered and paginated from server
@@ -178,16 +237,33 @@ export default function PayrollPeriodDetails() {
 
   const resetPagination = () => {
     setCurrentPage(1)
-    // fetchData will be called by useEffect
   }
 
-  const handleDowloadPayroll = async () => {
+  const handleDownloadPayroll = async () => {
+    if (!selectedBankAccount) {
+      toast.error("Please select a bank account")
+      return
+    }
+
     if (!payrollPeriodId) {
       return
     }
+
     try {
-      await downloadPayrollDocument({ accessToken, payrollId: payrollPeriodId })
-    } catch (error) {}
+      setIsDownloading(true)
+      await downloadPayrollDocument({
+        accessToken,
+        payrollId: payrollPeriodId,
+        payingAccountId: selectedBankAccount.id.toString(),
+      })
+      toast.success("Payroll document download started")
+      setDownloadModalOpen(false)
+      setSelectedBankAccount(null)
+    } catch (error: any) {
+      handleErrorToast(error, "Failed to download payroll document")
+    } finally {
+      setIsDownloading(false)
+    }
   }
 
   const getPageNumbers = () => {
@@ -595,6 +671,7 @@ export default function PayrollPeriodDetails() {
 
               <Button
                 onClick={handleGeneratePayslips}
+                variant={"ghost"}
                 className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400"
                 disabled={!selectedInstitution || !payrollPeriodId}
               >
@@ -602,14 +679,74 @@ export default function PayrollPeriodDetails() {
                 Generate Payslips
               </Button>
 
-              <Button
-                onClick={handleDowloadPayroll}
-                className="bg-orange-600 hover:bg-orange-700 shadow-md"
-                disabled={!selectedInstitution?.id}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download
-              </Button>
+              {/* Updated Download Button with Modal */}
+              <Dialog open={downloadModalOpen} onOpenChange={setDownloadModalOpen}>
+                <DialogTrigger asChild>
+                  <Button className="shadow-md" disabled={!selectedInstitution?.id}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <CreditCard className="h-5 w-5" />
+                      Select Payment Account
+                    </DialogTitle>
+                    <DialogDescription>
+                      Choose the bank account from which payslips will be generated for {payrollPeriod.name}
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="py-4">
+                    <InfiniteScrollSelect
+                      items={bankAccounts}
+                      loading={bankAccountsLoading}
+                      hasMore={bankAccountsHasMore}
+                      onLoadMore={handleLoadMoreBankAccounts}
+                      onSearch={handleBankAccountSearch}
+                      onSelect={setSelectedBankAccount}
+                      selectedItem={selectedBankAccount}
+                      getItemId={(account) => account.id}
+                      getItemLabel={(account) => account.account_name || account.account_number}
+                      getItemDescription={(account) => `${account.account_name} • ${account.account_number}`}
+                      placeholder="Select a bank account..."
+                      searchPlaceholder="Search bank accounts..."
+                      emptyMessage="No bank accounts found"
+                    />
+                  </div>
+
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setDownloadModalOpen(false)
+                        setSelectedBankAccount(null)
+                      }}
+                      disabled={isDownloading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleDownloadPayroll}
+                      disabled={!selectedBankAccount || isDownloading}
+                    >
+                      {isDownloading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Downloading...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 h-4 w-4" />
+                          Download Payroll
+                        </>
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </CardHeader>

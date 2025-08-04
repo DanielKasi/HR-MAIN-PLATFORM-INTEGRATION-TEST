@@ -44,9 +44,9 @@ export function BankTypeSelect({
                 value={value}
                 onValueChange={onValueChange}
                 placeholder="Select a bank type..."
-                searchPlaceholder="Search bank types..."
-                emptyText="No bank types found"
-                loadingText="Loading bank types..."
+                searchPlaceholder="Search attached banks ..."
+                emptyText="No attached banks  found"
+                loadingText="Loading attached banks ..."
                 fetchData={fetchBankTypes}
                 getItemValue={getItemValue}
                 getItemLabel={getItemLabel}

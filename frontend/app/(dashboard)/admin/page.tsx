@@ -226,7 +226,7 @@ export default function AdminPage() {
                   >
 
                     <Landmark className="w-5 h-5 text-gray-500" />
-                    <span>Bank Types</span>
+                    <span>Attached Banks</span>
                   </Link>
 
                 </div>

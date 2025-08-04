@@ -1040,7 +1040,7 @@ export default function HRDashboard() {
 
         setLeaveApplications(leaveAppsResult);
 
-        setJobAdverts(jobAdvertsResult);
+        setJobAdverts(jobAdvertsResult.results);
 
         setInterviews(interviewsResult);
         setLeaveTypes(leaveTypesResult);

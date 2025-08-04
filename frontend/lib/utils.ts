@@ -549,7 +549,7 @@ export const getJobPositionAdverts = async ({
 }) => {
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-advert/`);
-    return (response.data as IPaginatedResponse<JobPositionAdvert>).results;
+    return response.data as IPaginatedResponse<JobPositionAdvert>;
   } catch (error) {
     throw error;
   }
@@ -835,15 +835,17 @@ export const downloadEmployeesTemplate = async ({
 export const downloadPayrollDocument = async ({
   accessToken,
   payrollId,
+  payingAccountId
 }: {
   accessToken: string;
   payrollId: string;
+  payingAccountId:string|number
 }): Promise<void> => {
   try {
     const baseURL = process.env.NEXT_PUBLIC_API_URL;
 
     // Create a direct fetch request for file download
-    const response = await fetch(`${baseURL}/payroll/export/?payroll_period_id=${payrollId}`, {
+    const response = await fetch(`${baseURL}/payroll/export/?payroll_period_id=${payrollId}&paying_account_id=${payingAccountId}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,

@@ -64,7 +64,7 @@ export default function BankTypeManagement() {
         fetchBankTypes()
     }, [debouncedSearchTerm])
 
-    // Fetch bank types on component mount
+    // Fetch attached banks  on component mount
     useEffect(() => {
         if (selectedInstitution?.id) {
             fetchBankTypes()
@@ -94,7 +94,7 @@ export default function BankTypeManagement() {
                 setPreviousPageUrl(response.previous)
                 setCurrentPageUrl(pageUrl || null)
             } catch (error) {
-                toast.error("Failed to load bank types")
+                toast.error("Failed to load attached banks ")
             } finally {
                 setLoading(false)
             }
@@ -210,7 +210,7 @@ export default function BankTypeManagement() {
             <div className="flex items-center justify-center h-64">
                 <div className="text-center">
                     <div className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Please select an institution to manage bank types.</p>
+                    <p className="text-gray-600">Please select an institution to manage attached banks .</p>
                 </div>
             </div>
         )
@@ -223,8 +223,8 @@ export default function BankTypeManagement() {
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <div>
-                            <CardTitle>Bank Types</CardTitle>
-                            <CardDescription>Manage different bank types in your organization</CardDescription>
+                            <CardTitle>Attached Banks</CardTitle>
+                            <CardDescription>Manage different attached banks  in your organization</CardDescription>
                         </div>
                         <Button onClick={handleCreate}>
                             <Plus className="h-4 w-4 mr-2" />
@@ -238,7 +238,7 @@ export default function BankTypeManagement() {
                         <div className="relative flex-1 max-w-sm">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search bank types..."
+                                placeholder="Search attached banks ..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10"
@@ -254,7 +254,7 @@ export default function BankTypeManagement() {
                             <div className="flex items-center justify-center h-64">
                                 <div className="flex items-center gap-2">
                                     <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
-                                    <span className="text-gray-600">Loading bank types...</span>
+                                    <span className="text-gray-600">Loading attached banks ...</span>
                                 </div>
                             </div>
                         ) : (
@@ -277,7 +277,7 @@ export default function BankTypeManagement() {
                                                     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2">
                                                         <Search className="h-6 w-6 text-gray-400" />
                                                     </div>
-                                                    {searchTerm ? "No bank types found matching your search." : "No bank types found."}
+                                                    {searchTerm ? "No attached banks  found matching your search." : "No attached banks  found."}
 
                                                 </div>
                                             </TableCell>
