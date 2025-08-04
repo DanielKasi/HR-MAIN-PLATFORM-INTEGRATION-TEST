@@ -159,7 +159,6 @@ class PayslipItemSerializer(serializers.ModelSerializer):
 
 
 class PayslipGenerationInputSerializer(serializers.Serializer):
-    payroll_period = serializers.IntegerField()  # ID of PayrollPeriod
-    employee_ids = serializers.ListField(
-        child=serializers.IntegerField(), required=False
+    payroll_period = serializers.PrimaryKeyRelatedField(
+        queryset=PayrollPeriod.objects.all()
     )
