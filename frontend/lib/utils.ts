@@ -548,7 +548,6 @@ export const getJobPositionAdverts = async ({
 }: {
   institutionId: number;
 }) => {
-}) => {
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-advert/`);
     return response.data as IPaginatedResponse<JobPositionAdvert>;
