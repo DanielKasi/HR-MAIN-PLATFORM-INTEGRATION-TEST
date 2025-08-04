@@ -323,7 +323,7 @@ class Branch(models.Model):
 
     paying_bank_account = models.ForeignKey(
         InstitutionBankAccount,
-        related_name="branches",
+        related_name="paid_branches",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

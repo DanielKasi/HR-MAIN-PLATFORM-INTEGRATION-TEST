@@ -451,7 +451,12 @@ class PayslipAPIView(APIView):
             return Response(input_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         payroll_period = input_serializer.validated_data["payroll_period"]
-        employee_ids = input_serializer.validated_data.get("employee_ids")
+
+        employees = Employee.objects.filter(
+            department__institution=institution_id,
+            date_of_joining__range=[payroll_period.start_date, payroll_period.end_date],
+        )
+        employee_ids = list(employees.values_list("id", flat=True))
 
         created_payslips = PayrollProcessor.generate_payslips_for_period(
             payroll_period, employee_ids

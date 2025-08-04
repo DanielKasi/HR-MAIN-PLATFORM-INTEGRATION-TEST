@@ -209,9 +209,13 @@ class InstitutionBankTypeSerializer(serializers.ModelSerializer):
 
 
 class InstitutionBankAccountSerializer(serializers.ModelSerializer):
+    institution_bank = serializers.PrimaryKeyRelatedField(
+        queryset=InstitutionBankType.objects.all()
+    )
+    paid_branches = serializers.SerializerMethodField()
+
     class Meta:
         model = InstitutionBankAccount
-
         fields = [
             "id",
             "institution_bank",
@@ -221,15 +225,30 @@ class InstitutionBankAccountSerializer(serializers.ModelSerializer):
             "updated_at",
             "created_by",
             "updated_by",
+            "paid_branches",
         ]
-
         read_only_fields = [
             "id",
             "created_at",
             "updated_at",
             "created_by",
             "updated_by",
+            "paid_branches",
         ]
+
+    paid_branches = serializers.SerializerMethodField()
+
+    def get_paid_branches(self, obj):
+        from .serializers import BranchSerializer
+
+        return BranchSerializer(obj.paid_branches.all(), many=True).data
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep["institution_bank"] = InstitutionBankTypeSerializer(
+            instance.institution_bank
+        ).data
+        return rep
 
 
 class BranchSerializer(serializers.ModelSerializer):
