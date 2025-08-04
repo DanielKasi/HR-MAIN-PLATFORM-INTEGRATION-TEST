@@ -58,6 +58,7 @@ import { useSelector } from "react-redux"
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"
 import { select } from "redux-saga/effects"
 import { Textarea } from "@/components/ui/textarea"
+import { formatCurrency } from "@/lib/helpers"
 
 
 interface ApiEmployee {
@@ -217,7 +218,7 @@ export default function EmployeeDeductionComponent() {
   const [newDeductionTypeForm, setNewDeductionTypeForm] = useState({
   name: "",
   description: "",
-  is_mandatory: false, 
+  is_mandatory: false,
   is_active: true,
 })
 
@@ -442,7 +443,7 @@ const handleCreateDeductionType = async () => {
   const existingDeductionType = deductionTypes.find(
     type => type.name.toLowerCase().trim() === newDeductionTypeForm.name.toLowerCase().trim()
   )
-  
+
   if (existingDeductionType) {
     toast.error("A deduction type with this name already exists")
     return
@@ -467,9 +468,9 @@ const handleCreateDeductionType = async () => {
         id: newDeductionType.id,
         name: newDeductionType.name
       }])
-      
+
       setFormData({ ...formData, deduction_type: newDeductionType.id.toString() })
-      
+
       setNewDeductionTypeForm({
         name: "",
         description: "",
@@ -480,7 +481,7 @@ const handleCreateDeductionType = async () => {
       toast.success("Deduction type created successfully")
     }
   } catch (error: any) {
-    if (error.response?.data?.code === "DUPLICATE_ENTRY" || 
+    if (error.response?.data?.code === "DUPLICATE_ENTRY" ||
         error.message?.includes("already exists") ||
         error.response?.status === 409) {
       toast.error("A deduction type with this name already exists")
@@ -878,8 +879,8 @@ const handleCreateDeductionType = async () => {
 
       // Create Excel file using HTML table method
       const excelContent = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" 
-              xmlns:x="urn:schemas-microsoft-com:office:excel" 
+        <html xmlns:o="urn:schemas-microsoft-com:office:office"
+              xmlns:x="urn:schemas-microsoft-com:office:excel"
               xmlns="http://www.w3.org/TR/REC-html40">
         <head>
           <meta charset="utf-8" />
@@ -1767,32 +1768,45 @@ const handleCreateDeductionType = async () => {
 
                     {/* Conditionally render amount or percentage field based on calculation method */}
                     {formData.calculation_method === "fixed" ? (
-                      <div className="space-y-2">
-                        <Label htmlFor="amount" className="text-sm font-medium">
-                          Fixed Amount *
-                        </Label>
-                        <Input
-                          id="amount"
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          value={formData.amount}
-                          onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                          disabled={saving}
-                          className={`focus:ring-red-500 focus:border-red-500 ${validationErrors.amount ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                            }`}
-                        />
-                        {validationErrors.amount ? (
-                          <p className="text-xs text-red-500 mt-1 flex items-center">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            {validationErrors.amount}
-                          </p>
-                        ) : (
-                          <p className="text-xs text-gray-500">
-                            Enter the fixed deduction amount
-                          </p>
-                        )}
-                      </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="amount" className="text-sm font-medium">
+                              Fixed Amount *
+                            </Label>
+                            <Input
+                              id="amount"
+                              type="text"  // Changed from "number" to "text"
+                              placeholder="0.00"
+                              value={formData.amount ? formatCurrency(formData.amount) : ''}  // Format the display value
+                              onChange={(e) => {
+                                // Remove formatting to get raw number
+                                const rawValue = e.target.value.replace(/[,$]/g, '');
+
+                                // Only update if it's a valid number or empty
+                                if (rawValue === '' || (!isNaN(parseFloat(rawValue)) && isFinite(parseFloat(rawValue)))) {
+                                  setFormData({
+                                    ...formData,
+                                    amount: rawValue, // Store the raw number value
+                                  });
+                                }
+                              }}
+                              disabled={saving}
+                              className={`focus:ring-orange-500 focus:border-orange-500 ${
+                                validationErrors.amount
+                                  ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                                  : ''
+                              }`}
+                            />
+                            {validationErrors.amount ? (
+                              <p className="text-xs text-red-500 mt-1 flex items-center">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                {validationErrors.amount}
+                              </p>
+                            ) : (
+                              <>
+                                <p className="text-xs text-gray-500">Enter the fixed allowance amount</p>
+                              </>
+                            )}
+                          </div>
                     ) : (
                       <div className="space-y-2">
                         <Label htmlFor="percentage" className="text-sm font-medium">

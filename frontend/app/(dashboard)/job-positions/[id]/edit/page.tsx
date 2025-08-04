@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useSelector } from "react-redux"
-import { Briefcase, ArrowLeft, Check, Upload, X, FileText, Loader2, Users, Coins, AlertCircle, Search, ChevronDown } from "lucide-react"
+import { Briefcase, ArrowLeft, Check, Upload, X, FileText, Loader2, Users, Coins, AlertCircle, Search, ChevronDown, Info } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -36,8 +36,8 @@ const VirtualizedEmployeeList: React.FC<{
   const [startIndex, setStartIndex] = useState(0)
   const scrollElementRef = useRef<HTMLDivElement>(null)
 
-  const ITEM_HEIGHT = 60 
-  const BUFFER_SIZE = 5 
+  const ITEM_HEIGHT = 60
+  const BUFFER_SIZE = 5
 
   const filteredEmployees = useMemo(() => {
     if (!searchTerm.trim()) return employees
@@ -228,7 +228,7 @@ const EmployeeSelectionModal: React.FC<{
             Select Employees for Salary Update
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
-            Choose employees who will receive the new salary. You can search and select multiple employees.
+            Choose employees who will receive the new salary. This is optional - if no employees are selected, only the position's base salary will be updated.
           </p>
         </DialogHeader>
 
@@ -375,11 +375,13 @@ const EmployeeSelectionModal: React.FC<{
 
         <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
           <div className="flex items-center text-sm text-muted-foreground mr-auto">
-            {selectedCount > 0 && (
+            {selectedCount > 0 ? (
               <span>
                 {selectedCount} employee{selectedCount !== 1 ? 's' : ''} selected
                 {searchTerm && ` (${filteredEmployees.length} shown)`}
               </span>
+            ) : (
+              <span className="text-blue-600">No employees selected - only position base salary will be updated</span>
             )}
           </div>
           <Button
@@ -393,11 +395,10 @@ const EmployeeSelectionModal: React.FC<{
           <Button
             type="button"
             onClick={handleConfirm}
-            disabled={selectedCount === 0}
             className="w-full sm:w-auto"
           >
             <Check className="h-4 w-4 mr-2" />
-            Select ({selectedCount})
+            {selectedCount > 0 ? `Apply to ${selectedCount} Employee${selectedCount !== 1 ? 's' : ''}` : 'Update Position Only'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -511,7 +512,7 @@ export default function EditJobPositionPage() {
         try {
           const response = await apiGet(`/employee/${selectedInstitution.id}/employee`)
 
-          if (response.status ===200) {
+          if (response.status === 200) {
             allEmployees = await response.data.results
           } else {
             allEmployees = jobPosition.employees || []
@@ -548,7 +549,14 @@ export default function EditJobPositionPage() {
 
     if (newSelectedEmployees.length > 0) {
       toast.success(`${newSelectedEmployees.length} employee(s) selected for salary update`)
+    } else {
+      toast.info("Only position base salary will be updated")
     }
+  }
+
+  const clearEmployeeSelection = () => {
+    setSelectedEmployees([])
+    setEmployeesSelected(false)
   }
 
   const updateFormData = (field: keyof JobPositionFormData, value: any) => {
@@ -559,10 +567,9 @@ export default function EditJobPositionPage() {
       const salaryChanged = value !== originalSalary && value.trim() !== ""
       setIsSalaryChanged(salaryChanged)
 
-      // Reset employee selection state when salary changes back to original OR is empty
-      if (!salaryChanged) {
-        setEmployeesSelected(false)
-        setSelectedEmployees([])
+      // Only auto-clear employee selection if reverting to original or empty
+      if (value === originalSalary || value.trim() === "") {
+        clearEmployeeSelection()
         setShowEmployeeModal(false)
       }
     }
@@ -575,8 +582,7 @@ export default function EditJobPositionPage() {
   const revertSalaryToOriginal = () => {
     updateFormData("salary", originalSalary)
     setIsSalaryChanged(false)
-    setEmployeesSelected(false)
-    setSelectedEmployees([])
+    clearEmployeeSelection()
     setShowEmployeeModal(false)
     toast.info("Salary reverted to original value")
   }
@@ -610,9 +616,7 @@ export default function EditJobPositionPage() {
       newErrors.salary = "Please enter a valid salary amount"
     }
 
-    if (isSalaryChanged && selectedEmployees.length === 0) {
-      newErrors.salary = "Please select employees who will be affected by this salary change or revert to the original salary"
-    }
+    // Removed mandatory employee selection validation - now optional
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -643,6 +647,7 @@ export default function EditJobPositionPage() {
         job_position_status: "active"
       }
 
+      // Only include affected employees if salary changed AND employees were selected
       if (isSalaryChanged && selectedEmployees.length > 0) {
         updateData.affected_employees = selectedEmployees.map(emp => emp.id)
       }
@@ -661,9 +666,16 @@ export default function EditJobPositionPage() {
       })
 
       if (updatedJobPosition) {
-        const message = isSalaryChanged && selectedEmployees.length > 0
-          ? `Job position updated successfully! Salary changes applied to ${selectedEmployees.length} employee(s).`
-          : "Job position updated successfully!"
+        let message = "Job position updated successfully!"
+
+        if (isSalaryChanged) {
+          if (selectedEmployees.length > 0) {
+            message = `Job position updated successfully! Salary changes applied to ${selectedEmployees.length} employee(s).`
+          } else {
+            message = "Job position updated successfully! Position salary updated for future hires."
+          }
+        }
+
         toast.success(message)
         router.push(`/job-positions/`)
       } else {
@@ -731,9 +743,9 @@ export default function EditJobPositionPage() {
       <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
             <ArrowLeft className="h-4 w-4" />
-            Back to Job Position / Title 
+            Back to Job Position / Title
           </Button>
         </div>
 
@@ -754,12 +766,12 @@ export default function EditJobPositionPage() {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Employee Selection Alert */}
-              {isSalaryChanged && !employeesSelected && (
-                <Alert className="border-amber-200 bg-amber-50 text-amber-800">
+              {/* Enhanced Information Alert */}
+              {isSalaryChanged && (
+                <Alert className="border-blue-200 bg-blue-50 text-blue-800">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    <strong>Salary Change Detected:</strong> You have modified the salary amount. Please select which employees will be affected by this change or revert to the original salary.
+                    <strong>Salary Updated:</strong> The position's base salary has been changed. You can optionally select employees to apply this change to their current records.
                   </AlertDescription>
                 </Alert>
               )}
@@ -804,23 +816,35 @@ export default function EditJobPositionPage() {
                           updateFormData("salary", rawValue)
                         }
                       }}
-                      className={`pr-10 ${errors.salary ? "border-destructive" : ""} ${
-                        isSalaryChanged ? "border-amber-300 bg-amber-50" : ""
-                      }`}
+                      className={`pr-10 ${errors.salary ? "border-destructive" : ""} ${isSalaryChanged ? "border-amber-300 bg-amber-50" : ""
+                        }`}
                     />
                     <Coins className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   </div>
 
-                  {/* Show employee selection UI or revert button when salary is changed */}
+                  {/* Simple Salary Update Detection */}
                   {isSalaryChanged && (
-                    <div className="space-y-2">
+                    <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-orange-800">Salary Update Detected</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={revertSalaryToOriginal}
+                          className="text-xs text-orange-600 hover:text-orange-700"
+                        >
+                          Revert
+                        </Button>
+                      </div>
+
+                      {/* Employee Selection */}
                       {employeesSelected && selectedEmployees.length > 0 ? (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-xs">
-                              <Users className="h-3 w-3 mr-1" />
-                              {selectedEmployees.length} employee(s) selected for salary update
-                            </Badge>
+                        <div className="space-y-2">
+                          <div className="text-xs text-green-700 bg-green-50 border border-green-200 rounded p-2">
+                            ✓ {selectedEmployees.length} employee(s) selected for salary update
+                          </div>
+                          <div className="flex gap-2">
                             <Button
                               type="button"
                               variant="outline"
@@ -830,50 +854,43 @@ export default function EditJobPositionPage() {
                             >
                               Change Selection
                             </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedEmployees([])
+                                setEmployeesSelected(false)
+                              }}
+                              className="text-xs"
+                            >
+                              Clear
+                            </Button>
                           </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={revertSalaryToOriginal}
-                            className="text-xs text-amber-600 hover:text-amber-700"
-                          >
-                            Revert to Original
-                          </Button>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between">
+                        <div className="space-y-2">
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             onClick={handleSalaryFieldClick}
-                            className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                            className="text-xs border-orange-300 text-orange-700"
                           >
-                            <Users className="h-4 w-4 mr-2" />
-                            Select Employees for Salary Update
+                            Select Employees (Optional)
                           </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={revertSalaryToOriginal}
-                            className="text-xs text-amber-600 hover:text-amber-700"
-                          >
-                            Revert to Original
-                          </Button>
+                          <p className="text-xs text-orange-600">
+                            Skip to only update position base salary
+                          </p>
                         </div>
                       )}
-                      <p className="text-xs text-amber-600">
-                        You must select employees to update the salary, or revert to the original value.
-                      </p>
                     </div>
                   )}
 
-                  {/* Show original salary info when not changed */}
+                  {/* Show original salary when unchanged */}
                   {!isSalaryChanged && originalSalary && (
                     <p className="text-xs text-muted-foreground">
-                      Current salary: {Number(originalSalary).toLocaleString()}
+                      Current salary: ${Number(originalSalary).toLocaleString()}
                     </p>
                   )}
 
@@ -921,7 +938,7 @@ export default function EditJobPositionPage() {
                     placeholder="Select a position (optional)"
                     searchPlaceholder="Search positions..."
                     emptyMessage="No positions found."
-                    onSelect={(itemId) => 
+                    onSelect={(itemId) =>
                       updateFormData("reports_to", Number(itemId) === 0 ? null : Number(itemId))
                     }
                     multiple={false}
@@ -986,7 +1003,7 @@ export default function EditJobPositionPage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSubmitting || (isSalaryChanged && selectedEmployees.length === 0)}
+                  disabled={isSubmitting}
                   className="flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
                   {isSubmitting ? (
@@ -997,7 +1014,7 @@ export default function EditJobPositionPage() {
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      Update Job Position/ Title 
+                      Update Job Position/ Title
                       {isSalaryChanged && selectedEmployees.length > 0 && (
                         <Badge variant="secondary" className="ml-2 text-xs">
                           +{selectedEmployees.length} salary updates

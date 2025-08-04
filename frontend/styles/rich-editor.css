@@ -5,6 +5,10 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   background-color: #ffffff;
   font-family: 'Arial', sans-serif;
+
+  & ::placeholder {
+    padding-inline: 12px;
+  }
 }
 
 .rich-editor-container .ql-toolbar {
@@ -37,11 +41,12 @@
   min-height: 250px;
   font-size: 16px;
   line-height: 1.6;
-  padding: 12px;
+  padding-block: 12px;
 }
 
 .rich-editor-container .ql-editor {
-  padding: 12px;
+  padding-inline: 16px;
+  padding-block: 6px;
 }
 
 .rich-editor-container .ql-editor.ql-blank::before {

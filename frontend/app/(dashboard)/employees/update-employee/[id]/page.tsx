@@ -44,74 +44,15 @@ import type {
   IWorkTypeFormData,
   IEmployeeTypeFormData,
   ICountry,
+  IEmployee,
 } from "@/app/types/types.utils";
-import type { IUserInstitution } from "@/app/types";
+import type { IUserInstitution, Role , Branch} from "@/app/types";
 import { toast } from "sonner";
+import { getFileUrl, formatCurrency } from "@/lib/helpers";
 
-interface Employee {
-  id: number;
-  user: {
-    id: number;
-    email: string;
-    fullname: string;
-    is_active: boolean;
-    is_email_verified: boolean;
-    is_password_verified: boolean;
-    is_staff: boolean;
-    roles: string;
-    branches: string;
-    permissions: string;
-  } | null;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone_number: string;
-  position: {
-    id: number;
-    name: string;
-    department_id?: number;
-  };
-  department: {
-    id: number;
-    name: string;
-    institution_id: number;
-  };
-  work_type?: {
-    id: number;
-    name: string;
-  };
-  employee_type?: {
-    id: number;
-    name: string;
-  };
-  roles: Array<{
-    id: number;
-    name: string;
-  }>;
-  date_of_birth: string;
-  date_of_joining: string;
-  address: string;
-  country: string;
-  nin: string;
-  bank: string;
-  bank_account_number: string;
-  tin: string;
-  nssf_no: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  experience: number;
-  qualifications: string;
-  skills: string;
-  emergency_contact_name: string;
-  emergency_contact_phone: string;
-  emergency_contact_relationship: string;
-  marital_status: string;
-  children_count: number;
-  employee_profile_picture: string;
-  salary: number;
-  selected_branches?: number[];
-}
+
+
+
 
 interface EmployeeUpdateFormState {
   fullname: string;
@@ -170,7 +111,7 @@ export default function UpdateEmployeePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
-  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [employee, setEmployee] = useState<IEmployee | null>(null);
 
   const [positions, setPositions] = useState<IJobPosition[]>([]);
   const [departments, setDepartments] = useState<IDepartment[]>([]);
@@ -245,11 +186,12 @@ export default function UpdateEmployeePage() {
     isValid: boolean;
   }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
 
-    const showErrorToast = (message:string) => {      
+
+  const showErrorToast = (message: string) => {
     toast.error(message)
   }
 
-    const showSuccessToast = (message:string) => {      
+  const showSuccessToast = (message: string) => {
     toast.success(message)
   }
 
@@ -262,96 +204,90 @@ export default function UpdateEmployeePage() {
   }, [institutionsAttached, selectedInstitution]);
 
   useEffect(() => {
-    const loadEmployee = async () => {
-      if (!employeeId) return;
-
-      try {
-        setIsLoading(true);
-        let employeeData: Employee | null = null;
-        
-        try {
-          employeeData = await getEmployeeById({ employeeId: parseInt(employeeId) });
-        } catch (error) {
-          const storedEmployee = localStorage.getItem(`employee_${employeeId}`);
-          if (storedEmployee) {
-            employeeData = JSON.parse(storedEmployee);
-          }
-        }
-
-        if (employeeData) {
-          setEmployee(employeeData);
-          setFormData({
-            fullname: employeeData.user?.fullname || "",
-            email: employeeData.email,
-            phone_number: employeeData.phone_number || "",
-            position: employeeData.position?.id || 0,
-            department: employeeData.department?.id || 0,
-            work_type: employeeData.work_type?.id || 0,
-            employee_type: employeeData.employee_type?.id || 0,
-            date_of_birth: employeeData.date_of_birth || "",
-            date_of_joining: employeeData.date_of_joining || "",
-            address: employeeData.address || "",
-            country: employeeData.country || "",
-            nin: employeeData.nin || "",
-            bank: employeeData.bank || "",
-            bank_account_number: employeeData.bank_account_number || "",
-            tin: employeeData.tin || "",
-            nssf_no: employeeData.nssf_no || "",
-            is_active: employeeData.is_active,
-            experience: employeeData.experience || 0,
-            qualifications: employeeData.qualifications || "",
-            skills: employeeData.skills || "",
-            emergency_contact_name: employeeData.emergency_contact_name || "",
-            emergency_contact_phone: employeeData.emergency_contact_phone || "",
-            emergency_contact_relationship: employeeData.emergency_contact_relationship || "",
-            marital_status: employeeData.marital_status || "single",
-            children_count: employeeData.children_count || 0,
-            employee_profile_picture: null,
-            salary: employeeData.salary || 0,
-          });
-
-          if (employeeData.employee_profile_picture) {
-            setPreviewUrl(employeeData.employee_profile_picture);
-          }
-        } else {
-          setSubmitError("Employee not found");
-        }
-      } catch (error) {
-        setSubmitError("Failed to load employee data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadEmployee();
   }, [employeeId]);
 
+
   useEffect(() => {
-    const loadDropdownData = async () => {
-      if (!institutionId) return;
-
-      try {
-        setLoadingData(true);
-        const [positionsData, departmentsData, workTypesData, employeeTypesData] = await Promise.all([
-          getPositions({ institutionId }),
-          getDepartments({ institutionId }),
-          getWorkTypes({ institutionId }),
-          getEmployeeTypes({ institutionId }),
-        ]);
-
-        setPositions(Array.isArray(positionsData) ? positionsData : []);
-        setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
-        setWorkTypes(Array.isArray(workTypesData) ? workTypesData : []);
-        setEmployeeTypes(Array.isArray(employeeTypesData) ? employeeTypesData : []);
-      } catch (error) {
-        setSubmitError("Failed to load form data. Please refresh the page.");
-      } finally {
-        setLoadingData(false);
-      }
-    };
-
     loadDropdownData();
   }, [institutionId]);
+
+  const loadEmployee = async () => {
+    if (!employeeId) return;
+
+    try {
+      setIsLoading(true);
+      let employeeData: IEmployee | null = null;
+
+      employeeData = await getEmployeeById({ employeeId: parseInt(employeeId) });
+
+
+      if (employeeData) {
+        setEmployee(employeeData);
+        setFormData({
+          fullname: employeeData.user?.fullname || "",
+          email: employeeData.email,
+          phone_number: employeeData.phone_number || "",
+          position: employeeData.position?.id || 0,
+          department: employeeData.department?.id || 0,
+          work_type: employeeData.work_type || 0,
+          employee_type: employeeData.employee_type || 0,
+          date_of_birth: employeeData.date_of_birth || "",
+          date_of_joining: employeeData.date_of_joining || "",
+          address: employeeData.address || "",
+          country: employeeData.country || "",
+          nin: employeeData.nin || "",
+          bank: employeeData.bank || "",
+          bank_account_number: employeeData.bank_account_number || "",
+          tin: employeeData.tin || "",
+          nssf_no: employeeData.nssf_no || "",
+          is_active: employeeData.is_active,
+          experience: employeeData.experience || 0,
+          qualifications: employeeData.qualifications || "",
+          skills: employeeData.skills || "",
+          emergency_contact_name: employeeData.emergency_contact_name || "",
+          emergency_contact_phone: employeeData.emergency_contact_phone || "",
+          emergency_contact_relationship: employeeData.emergency_contact_relationship || "",
+          marital_status: employeeData.marital_status || "single",
+          children_count: employeeData.children_count || 0,
+          employee_profile_picture: null,
+          salary: Number(employeeData.salary) || 0,
+        });
+
+        if (employeeData.employee_profile_picture) {
+          setPreviewUrl(getFileUrl(employeeData.employee_profile_picture));
+        }
+      } else {
+        setSubmitError("Employee not found");
+      }
+    } catch (error) {
+      setSubmitError("Failed to load employee data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const loadDropdownData = async () => {
+    if (!institutionId) return;
+
+    try {
+      setLoadingData(true);
+      const [positionsData, departmentsData, workTypesData, employeeTypesData] = await Promise.all([
+        getPositions({ institutionId }),
+        getDepartments({ institutionId }),
+        getWorkTypes({ institutionId }),
+        getEmployeeTypes({ institutionId }),
+      ]);
+
+      setPositions(Array.isArray(positionsData) ? positionsData : []);
+      setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
+      setWorkTypes(Array.isArray(workTypesData) ? workTypesData : []);
+      setEmployeeTypes(Array.isArray(employeeTypesData) ? employeeTypesData : []);
+    } catch (error) {
+      setSubmitError("Failed to load form data. Please refresh the page.");
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const handleInputChange = (field: string, value: string | boolean | File | null | number | number[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -649,7 +585,8 @@ export default function UpdateEmployeePage() {
         showSuccessToast("Employee has been updated successfully.");
 
         localStorage.removeItem(`employee_${employeeId}`);
-        
+
+
         router.push("/employees/employee-list");
       } else {
         setSubmitError("Failed to update employee. Please try again.");
@@ -1214,11 +1151,17 @@ export default function UpdateEmployeePage() {
                 <Label htmlFor="salary">Salary</Label>
                 <Input
                   id="salary"
-                  type="number"
-                  min="0"
-                  value={formData.salary}
-                  onChange={(e) => handleInputChange("salary", parseInt(e.target.value) || 0)}
-                  placeholder="Enter salary amount"
+                  type="text"
+                  inputMode="decimal"
+                  value={formatCurrency(formData.salary)}
+                  placeholder="Enter salary"
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/,/g, "");
+                    const parsed = parseFloat(raw);
+                    if (!isNaN(parsed)) {
+                      setFormData({ ...formData, salary: parsed });
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -1258,31 +1201,36 @@ export default function UpdateEmployeePage() {
       <div className="max-w-full mx-auto">
         <Card className="bg-white shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl flex items-center gap-2">
-              <ArrowLeft className="h-5 w-5" />
-              Update Employee
-            </CardTitle>
-            <CardDescription>
+            <div className="flex items-center space-x-4">
+              <Link href="/employees/employee-list">
+                <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900 rounded-full aspect-square">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                </Button>
+              </Link>
+              <div className="h-6 w-px bg-gray-300" />
+              <CardTitle className="text-2xl font-bold text-gray-900">Update Employee</CardTitle>
+            </div>
+            <CardDescription className="py-4">
               Update {employee.user?.fullname || employee.email}'s information
             </CardDescription>
+
+
 
             {/* Progress indicator */}
             <div className="flex items-center justify-between mt-5">
               {steps.map((step, index) => (
                 <div key={step.id} className="flex items-center">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      currentStep >= step.id
-                        ? "bg-orange-600 text-white"
-                        : "bg-gray-200 text-gray-600"
-                    }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= step.id
+                      ? "bg-orange-600 text-white"
+                      : "bg-gray-200 text-gray-600"
+                      }`}
                   >
                     {step.id}
                   </div>
                   <span
-                    className={`ml-2 text-sm ${
-                      currentStep >= step.id ? "text-orange-600 font-medium" : "text-gray-500"
-                    }`}
+                    className={`ml-2 text-sm ${currentStep >= step.id ? "text-orange-600 font-medium" : "text-gray-500"
+                      }`}
                   >
                     {step.title}
                   </span>
@@ -1423,3 +1371,4 @@ export default function UpdateEmployeePage() {
     </div>
   );
 }
+

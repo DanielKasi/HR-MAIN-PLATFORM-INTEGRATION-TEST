@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import {fetchAndSetData, fetchInstitutionBranchesFromAPI} from "@/lib/helpers";
-import {useEffect, useState} from "react";
-import type {Branch} from "@/app/types";
-import {Icon} from "@iconify/react"
+import { fetchAndSetData, fetchInstitutionBranchesFromAPI } from "@/lib/helpers";
+import { useEffect, useState } from "react";
+import type { Branch } from "@/app/types";
+import { Icon } from "@iconify/react"
 
 import {
   Users,
@@ -29,11 +29,13 @@ import {
   Cog,
   Book,
   BookAIcon,
+  Landmark,
+  CreditCard,
 } from "lucide-react";
-import {Separator} from "@/components/ui/separator";
+import { Separator } from "@/components/ui/separator";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
-import {PERMISSION_CODES} from "@/app/types/types.utils";
+import { PERMISSION_CODES } from "@/app/types/types.utils";
 
 export default function AdminPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -185,7 +187,6 @@ export default function AdminPage() {
                     <GitBranch className="w-5 h-5 text-gray-500" />
                     <span>Branches</span>
                   </Link>
-                  {/* We'll keep the branch listing functionality but hide it since it's not in the image */}
                 </div>
                 <div className="space-y-4">
                   <Link
@@ -205,7 +206,7 @@ export default function AdminPage() {
                     <LucideHouse className="w-5 h-5 text-gray-500" />
                     <span>Departments</span>
                   </Link>
-                  {/* We'll keep the branch listing functionality but hide it since it's not in the image */}
+
                 </div>
 
                 <div className="">
@@ -216,7 +217,28 @@ export default function AdminPage() {
                     <BriefcaseBusinessIcon className="w-5 h-5 text-gray-500" />
                     <span>Job Positions / Titles</span>
                   </Link>
-                  {/* We'll keep the branch listing functionality but hide it since it's not in the image */}
+
+                </div>
+                <div className="">
+                  <Link
+                    href="/admin/bank-types"
+                    className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+                  >
+
+                    <Landmark className="w-5 h-5 text-gray-500" />
+                    <span>Attached Banks</span>
+                  </Link>
+
+                </div>
+                <div className="">
+                  <Link
+                    href="/admin/bank-accounts"
+                    className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+                  >
+                    <CreditCard className="w-5 h-5 text-gray-500" />
+                    <span>Bank Accounts</span>
+                  </Link>
+
                 </div>
               </div>
             </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import {useState, useEffect} from "react";
-import {useRouter, useParams} from "next/navigation";
-import {useSelector} from "react-redux";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useSelector } from "react-redux";
 import {
   Dialog,
   DialogContent,
@@ -24,21 +24,22 @@ import {
   User,
 } from "lucide-react";
 
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
-import {Skeleton} from "@/components/ui/skeleton";
-import {Separator} from "@/components/ui/separator";
-import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import {Input} from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 
-import {selectSelectedInstitution, selectSelectedBranch, selectUser} from "@/store/auth/selectors";
-import {getJobPosition} from "@/lib/utils";
-import type {IJobPosition} from "@/app/types/types.utils";
-import {toast} from "sonner";
-import {formatCurrency} from "@/lib/helpers";
+import { selectSelectedInstitution, selectSelectedBranch, selectUser } from "@/store/auth/selectors";
+import { getJobPosition } from "@/lib/utils";
+import type { IJobPosition } from "@/app/types/types.utils";
+import { toast } from "sonner";
+import { formatCurrency } from "@/lib/helpers";
+import RichTextDisplay from "@/components/common/rich-text-display";
 
 export default function JobPositionDetailsPage() {
   const [jobPosition, setJobPosition] = useState<IJobPosition | null>(null);
@@ -80,7 +81,7 @@ export default function JobPositionDetailsPage() {
     try {
       setIsLoading(true);
       setError("");
-      const fetchedJobPosition = await getJobPosition({jobPositionId});
+      const fetchedJobPosition = await getJobPosition({ jobPositionId });
 
       if (fetchedJobPosition) {
         setJobPosition(fetchedJobPosition);
@@ -212,52 +213,46 @@ export default function JobPositionDetailsPage() {
   return (
     <div className="w-full h-full p-4">
       <div className="w-full space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back 
-          </Button>
-          <Button onClick={handleEdit} className="flex items-center gap-2">
-            <Edit className="h-4 w-4" />
-            Edit Position
-          </Button>
-        </div>
-
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Details - Left Column (2/3 width) */}
-          <div className={`${jobPosition.tasks?.length ? "lg:col-span-2":"lg:col-span-3"}`}>
+          <div className={`${jobPosition.tasks?.length ? "lg:col-span-2" : "lg:col-span-3"}`}>
             {/* Main Details Card */}
             <Card>
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Briefcase className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center justify-start gap-4">
+                      <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
+                        <ArrowLeft className="h-4 w-4" />
+                      </Button>
+
                       <CardTitle className="text-2xl">{jobPosition.name}</CardTitle>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <Building2 className="h-3 w-3" />
-                          {jobPosition.department_details?.name}
-                        </Badge>
-                        {/* Employee count */}
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {employees.length} Employees
-                        </Badge>
+
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <Building2 className="h-3 w-3" />
+                        {jobPosition.department_details?.name}
+                      </Badge>
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {employees.length} Employees
+                      </Badge>
+
+                    </div>
+                    <div className="flex items-center justify-start gap-2 mt-2 pl-12">
+                      <div className="flex flex-col items-start justify-start">
+                        <p className="flex items-center gap-1 text-2xl font-bold text-green-600">
+                          UGX
+                          {formatCurrency(jobPosition.salary?.toLocaleString() || 0)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Salary Scale</p>
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-1 text-2xl font-bold text-green-600">
-                      UGX
-                      {formatCurrency(jobPosition.salary?.toLocaleString() || 0)}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Salary Scale</p>
-                  </div>
+                  <Button onClick={handleEdit} className="flex items-center gap-2">
+                    <Edit className="h-4 w-4" />
+                    Edit Position
+                  </Button>
                 </div>
               </CardHeader>
 
@@ -275,9 +270,7 @@ export default function JobPositionDetailsPage() {
                     <div>
                       <h3 className="text-lg font-semibold mb-3">Job Description</h3>
                       <div className="bg-muted/50 p-4 rounded-lg">
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                          {jobPosition.description || "No description provided"}
-                        </p>
+                        <RichTextDisplay className="text-sm leading-relaxed whitespace-pre-wrap" htmlContent={jobPosition.description || "No description provided"} />
                       </div>
                     </div>
                     <Separator />
@@ -478,17 +471,16 @@ export default function JobPositionDetailsPage() {
                             <div className="flex gap-4 relative z-10">
                               {/* Status indicator */}
                               <div
-                                className={`w-6 h-6 rounded-full flex items-center justify-center mt-1 ${
-                                  isCompleted
-                                    ? "bg-green-100 text-green-600 border border-green-600"
-                                    : isRejected
+                                className={`w-6 h-6 rounded-full flex items-center justify-center mt-1 ${isCompleted
+                                  ? "bg-green-100 text-green-600 border border-green-600"
+                                  : isRejected
+                                    ? "bg-red-100 text-red-600 border border-red-600"
+                                    : isTerminated
                                       ? "bg-red-100 text-red-600 border border-red-600"
-                                      : isTerminated
-                                        ? "bg-red-100 text-red-600 border border-red-600"
-                                        : isCurrentStep
-                                          ? "bg-amber-100 text-amber-600 border border-amber-600"
-                                          : "bg-gray-100 text-gray-400 border border-gray-400"
-                                }`}
+                                      : isCurrentStep
+                                        ? "bg-amber-100 text-amber-600 border border-amber-600"
+                                        : "bg-gray-100 text-gray-400 border border-gray-400"
+                                  }`}
                               >
                                 {isCompleted ? "✓" : isRejected || isTerminated ? "✕" : index + 1}
                               </div>
@@ -502,8 +494,8 @@ export default function JobPositionDetailsPage() {
                                       Approver Roles:{" "}
                                       {task.step.roles_details.length > 0
                                         ? task.step.roles_details
-                                            .map((role) => role.name)
-                                            .join(", ")
+                                          .map((role) => role.name)
+                                          .join(", ")
                                         : "No roles, It's User-Based"}
                                     </p>
                                   </div>

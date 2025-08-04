@@ -1,31 +1,31 @@
 "use client";
 
-import type {UserProfile} from "@/app/types";
+import type { UserProfile } from "@/app/types";
 
-import {useEffect, useState} from "react";
-import {Search, ChevronDown, Eye, Trash2, ArrowLeft, Plus} from "lucide-react";
-import {useRouter} from "next/navigation";
+import { useEffect, useState } from "react";
+import { Search, ChevronDown, Eye, Trash2, ArrowLeft, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-import {AddUserForm} from "./addUser";
+import { AddUserForm } from "./addUser";
 
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Avatar, AvatarFallback} from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import apiRequest from "@/lib/apiRequest";
-import {capitalizeEachWord, getDefaultInstitutionId} from "@/lib/helpers";
+import { capitalizeEachWord, getDefaultInstitutionId } from "@/lib/helpers";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {PaginationControls} from "@/components/ui/pagination-controls";
-import {PageSizeSelector} from "@/components/ui/page-size-selector";
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { PageSizeSelector } from "@/components/ui/page-size-selector";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import {PERMISSION_CODES} from "@/app/types/types.utils";
-import {handleApiError} from "@/lib/apiErrorHandler";
+import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { handleApiError } from "@/lib/apiErrorHandler";
 
 export default function StaffPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -138,8 +138,8 @@ export default function StaffPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => router.push("/admin")}>
-            Back to Admin
+          <Button size="sm" className="rounded-full aspect-square" variant="outline" onClick={() => router.push("/admin")}>
+            <ArrowLeft />
           </Button>
           <h1 className="text-2xl font-bold tracking-tight">Staff</h1>
         </div>
@@ -286,11 +286,10 @@ export default function StaffPage() {
                       </TableCell>
                       <TableCell>
                         <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            userProfile.user.is_active
+                          className={`px-2 py-1 text-xs rounded-full ${userProfile.user.is_active
                               ? "bg-[#dcfce7] text-[#10b981]"
                               : "bg-[#fee2e2] text-[#ef4444]"
-                          }`}
+                            }`}
                         >
                           {userProfile.user.is_active ? "Active" : "Inactive"}
                         </span>

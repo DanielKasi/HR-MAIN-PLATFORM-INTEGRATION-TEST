@@ -28,6 +28,7 @@ import { toast } from "sonner"
 import { getEmployeeTypes, createEmployeeType, updateEmployeeType, deleteEmployeeType } from "@/lib/utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import type { IEmployeeType, IEmployeeTypeFormData } from "@/app/types/types.utils"
+import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 
 interface EmployeeTypeModalProps {
   isOpen: boolean
@@ -78,8 +79,8 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
 
     // Check for duplicate names (excluding current editing item)
     const duplicateName = existingTypes.find(
-      (type) => 
-        type.name.toLowerCase() === formData.name?.toLowerCase() && 
+      (type) =>
+        type.name.toLowerCase() === formData.name?.toLowerCase() &&
         type.id !== editingType?.id
     )
     if (duplicateName) {
@@ -89,8 +90,8 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
     // Check for duplicate codes (excluding current editing item)
     if (formData.code?.trim()) {
       const duplicateCode = existingTypes.find(
-        (type) => 
-          type.code?.toLowerCase() === formData.code?.toLowerCase() && 
+        (type) =>
+          type.code?.toLowerCase() === formData.code?.toLowerCase() &&
           type.id !== editingType?.id
       )
       if (duplicateCode) {
@@ -176,18 +177,17 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
             />
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <Button 
-              type="submit" 
-              disabled={isSubmitting} 
-              className="bg-orange-600 hover:bg-orange-700 text-white"
-            >
-              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {isSubmitting ? "Saving..." : editingType ? "Update Employee Type" : "Create Employee Type"}
-            </Button>
+          <div className="flex items-center justify-end gap-4 pt-4">
 
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSubmitting ? "Saving..." : editingType ? "Update Employee Type" : "Create Employee Type"}
             </Button>
           </div>
         </form>
@@ -211,7 +211,6 @@ function EmployeeTypeDetailsModal({ isOpen, onClose, employeeType }: EmployeeTyp
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5" />
             Employee Type Details
           </DialogTitle>
           <DialogDescription>
@@ -265,11 +264,12 @@ function EmployeeTypeDetailsModal({ isOpen, onClose, employeeType }: EmployeeTyp
 // Main Component
 export default function EmployeeTypeManagement() {
   const selectedInstitution = useSelector(selectSelectedInstitution)
-  
+
   const [employeeTypes, setEmployeeTypes] = useState<IEmployeeType[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [loading, setLoading] = useState(true)
-  const [deleting, setDeleting] = useState<number | null>(null)
+  const [employeeTypeToDelete, setEmployeeTypeToDelete] = useState<IEmployeeType | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false)
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -330,20 +330,20 @@ export default function EmployeeTypeManagement() {
     setIsSubmitting(true)
 
     try {
-     if (editingType) {
-  // Update existing
-  await updateEmployeeType({
-    institutionId: selectedInstitution.id,
-    employeeTypeId: editingType.id,
-    employeeTypeData: formData,
-  })
-  
-  // Clear search and reset page to ensure updated item is visible
-  setSearchTerm("")
-  setCurrentPage(1)
-  await fetchEmployeeTypes()
-  toast.success("Employee type updated successfully!")
-} else {
+      if (editingType) {
+        // Update existing
+        await updateEmployeeType({
+          institutionId: selectedInstitution.id,
+          employeeTypeId: editingType.id,
+          employeeTypeData: formData,
+        })
+
+        // Clear search and reset page to ensure updated item is visible
+        setSearchTerm("")
+        setCurrentPage(1)
+        await fetchEmployeeTypes()
+        toast.success("Employee type updated successfully!")
+      } else {
         // Create new
         const newType = await createEmployeeType({
           institutionId: selectedInstitution.id,
@@ -351,13 +351,13 @@ export default function EmployeeTypeManagement() {
         })
 
         console.log("Created employee type:", newType) // Debug log
-        
+
         // Add the new type to the list if we got a valid response
         if (newType) {
           // Clear search term to ensure new item is visible
           setSearchTerm("")
           setCurrentPage(1) // Reset to first page
-          
+
           setEmployeeTypes((prev) => {
             const updated = [...prev, newType]
             console.log("Previous array length:", prev.length)
@@ -365,12 +365,12 @@ export default function EmployeeTypeManagement() {
             console.log("New item:", newType)
             return updated
           })
-          
+
           // Force a small delay to ensure state has updated
           setTimeout(() => {
             console.log("Current employeeTypes state:", employeeTypes.length)
           }, 100)
-          
+
           toast.success("Employee type created successfully!")
         } else {
           // Fallback: refetch if API returned null for some reason
@@ -408,14 +408,9 @@ export default function EmployeeTypeManagement() {
   const handleDelete = async (employeeType: IEmployeeType) => {
     if (!selectedInstitution?.id) return
 
-    // Confirm deletion
-    if (!window.confirm(`Are you sure you want to delete "${employeeType.name}"? This action cannot be undone.`)) {
-      return
-    }
-
     try {
-      setDeleting(employeeType.id)
-      
+      setIsDeleting(true)
+
       await deleteEmployeeType({
         institutionId: selectedInstitution.id,
         employeeTypeId: employeeType.id,
@@ -427,7 +422,7 @@ export default function EmployeeTypeManagement() {
       console.error("Error deleting employee type:", error)
       toast.error("Failed to delete employee type")
     } finally {
-      setDeleting(null)
+      setIsDeleting(false)
     }
   }
 
@@ -462,7 +457,7 @@ export default function EmployeeTypeManagement() {
               <CardTitle>Employee Types</CardTitle>
               <CardDescription>Manage different types of employees in your organization</CardDescription>
             </div>
-            <Button onClick={handleCreate} className="bg-orange-600 hover:bg-orange-700 text-white">
+            <Button onClick={handleCreate} >
               <Plus className="h-4 w-4 mr-2" />
               Add Employee Type
             </Button>
@@ -554,13 +549,13 @@ export default function EmployeeTypeManagement() {
                         <TableCell className="py-4 px-6 text-center">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
-                                disabled={deleting === type.id}
+                                disabled={employeeTypeToDelete?.id === type.id}
                               >
-                                {deleting === type.id ? (
+                                {employeeTypeToDelete?.id === type.id ? (
                                   <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
                                 ) : (
                                   <MoreVertical className="h-4 w-4 text-gray-600" />
@@ -583,11 +578,11 @@ export default function EmployeeTypeManagement() {
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => handleDelete(type)}
+                                onClick={() => setEmployeeTypeToDelete(type)}
                                 className="flex items-center px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
                               >
                                 <Trash2 className="h-4 w-4 mr-3 text-red-500" />
-                                Delete 
+                                Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -640,11 +635,10 @@ export default function EmployeeTypeManagement() {
                         variant={currentPage === pageNumber ? "default" : "outline"}
                         size="sm"
                         onClick={() => setCurrentPage(pageNumber)}
-                        className={`w-8 h-8 p-0 ${
-                          currentPage === pageNumber 
-                            ? "bg-orange-600 hover:bg-orange-700 text-white" 
-                            : "hover:bg-gray-50"
-                        }`}
+                        className={`w-8 h-8 p-0 ${currentPage === pageNumber
+                          ? "bg-orange-600 hover:bg-orange-700 text-white"
+                          : "hover:bg-gray-50"
+                          }`}
                       >
                         {pageNumber}
                       </Button>
@@ -684,6 +678,19 @@ export default function EmployeeTypeManagement() {
         onClose={handleCloseDetailsModal}
         employeeType={viewingType}
       />
+
+      {employeeTypeToDelete &&
+        <DeleteConfirmationDialog
+          description="Are you sure you want to delete this employee type? This action cannot be undone."
+          isDeleting={isDeleting}
+          isOpen={!!employeeTypeToDelete}
+          title={`Delete ${employeeTypeToDelete.name}`}
+          onConfirm={() => handleDelete(employeeTypeToDelete)}
+          onClose={() => {
+            setEmployeeTypeToDelete(null);
+            setIsDeleting(false)
+          }} />
+      }
     </div>
   )
 }

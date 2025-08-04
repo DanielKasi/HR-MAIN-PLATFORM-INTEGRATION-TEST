@@ -138,7 +138,6 @@ export function SimpleCalendarWidget() {
 
   const getEventsForDate = (date: Date) => {
     if (!calendar) return {events: [], holidays: []};
-
     const dateStr = date.toISOString().split("T")[0];
 
     const events = calendar.event_occurrences

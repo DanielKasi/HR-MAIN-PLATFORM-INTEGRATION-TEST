@@ -49,7 +49,14 @@ class ExportEFTExcelView(APIView):
                 location=OpenApiParameter.QUERY,
                 description="ID of the payroll period to generate the EFT Excel for",
                 required=True,
-            )
+            ),
+            OpenApiParameter(
+                name="paying_account_id",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description="ID of the paying account to generate the EFT Excel for",
+                required=True,
+            ),
         ],
         responses={
             200: None,
@@ -60,6 +67,7 @@ class ExportEFTExcelView(APIView):
     )
     def get(self, request, *args, **kwargs):
         payroll_period_id = request.query_params.get("payroll_period_id")
+        paying_account_id = request.query_params.get("paying_account_id")
 
         if not payroll_period_id:
             return Response(
@@ -67,16 +75,23 @@ class ExportEFTExcelView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        try:
-            payroll_period_id = int(payroll_period_id)
-        except ValueError:
+        if not paying_account_id:
             return Response(
-                {"error": "payroll_period_id must be an integer."},
+                {"error": "paying_account_id is required as a query parameter."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
-            excel_file = generate_eft_excel(payroll_period_id)
+            payroll_period_id = int(payroll_period_id)
+            paying_account_id = int(paying_account_id)
+        except ValueError:
+            return Response(
+                {"error": "payroll_period_id and paying_account_id must be integers."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            excel_file = generate_eft_excel(payroll_period_id, paying_account_id)
             payroll_period = PayrollPeriod.objects.get(id=payroll_period_id)
 
             # Generate a dynamic filename
@@ -451,7 +466,12 @@ class PayslipAPIView(APIView):
             return Response(input_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         payroll_period = input_serializer.validated_data["payroll_period"]
-        employee_ids = input_serializer.validated_data.get("employee_ids")
+
+        employees = Employee.objects.filter(
+            department__institution=institution_id,
+            date_of_joining__range=[payroll_period.start_date, payroll_period.end_date],
+        )
+        employee_ids = list(employees.values_list("id", flat=True))
 
         created_payslips = PayrollProcessor.generate_payslips_for_period(
             payroll_period, employee_ids

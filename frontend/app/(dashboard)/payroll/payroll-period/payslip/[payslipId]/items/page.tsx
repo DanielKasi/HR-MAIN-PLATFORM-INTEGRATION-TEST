@@ -223,10 +223,9 @@ export default function PayslipItems() {
           variant="outline"
           size="sm"
           onClick={() => router.back()}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 rounded-full aspect-square"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Payslips
         </Button>
       </div>
 
@@ -243,6 +242,16 @@ export default function PayslipItems() {
               </p>
               <div className="text-sm text-gray-500 mt-1">
                 Period: {new Date(payslipInfo.payroll_period.start_date).toLocaleDateString()} - {new Date(payslipInfo.payroll_period.end_date).toLocaleDateString()}
+              </div>
+              <div className="text-sm text-gray-700 mt-2 font-medium">
+                Status: <span className={payslipInfo.is_paid ? "text-green-600" : "text-yellow-600"}>
+                  {payslipInfo.is_paid ? "Paid" : "Unpaid"}
+                </span>
+                {payslipInfo.paid_date && (
+                  <span className="text-gray-500 ml-2">
+                    (Paid on: {new Date(payslipInfo.paid_date).toLocaleDateString()})
+                  </span>
+                )}
               </div>
             </div>
           ) : (

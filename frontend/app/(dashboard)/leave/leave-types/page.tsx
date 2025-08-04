@@ -697,18 +697,6 @@ const LeaveTypesComponent = () => {
               ? "No leave types match your filter criteria."
               : "Get started by creating your first leave type."}
           </p>
-          {searchTerm || statusFilter !== "all" || categoryFilter !== "all" ? (
-            <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
-              Clear Filters
-            </Button>
-          ) : (
-            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_LEAVE_TYPES}>
-              <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Create First Leave Type
-              </Button>
-            </ProtectedComponent>
-          )}
         </Card>
       ) : (
         <Card className="rounded-md border">

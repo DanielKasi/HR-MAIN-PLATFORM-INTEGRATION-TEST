@@ -57,6 +57,7 @@ import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/se
 import { getDepartments, getAllEmployees, getOnBoardings, getJobPositions } from "@/lib/utils"
 import type { IDepartment, IOnBoarding, IJobPosition, IEmployee } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import RichTextDisplay from "@/components/common/rich-text-display"
 
 
 
@@ -266,8 +267,8 @@ export default function DepartmentDetailView() {
   const filteredJobPositions = useMemo(() => {
     return allJobPositions.filter((position) => {
       const positionBelongsToDepartment = position.department === departmentId
-      
-      const matchesSearch = searchTerm === "" || 
+
+      const matchesSearch = searchTerm === "" ||
         position.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (position.description ?? "").toLowerCase().includes(searchTerm.toLowerCase())
       return positionBelongsToDepartment && matchesSearch
@@ -305,10 +306,10 @@ export default function DepartmentDetailView() {
   const formatCurrency = (amount: string | number) => {
     if (!amount) return "N/A"
     const num = typeof amount === 'string' ? parseFloat(amount) : amount
-    return new Intl.NumberFormat('en-UG', { 
-      style: 'currency', 
+    return new Intl.NumberFormat('en-UG', {
+      style: 'currency',
       currency: 'UGX',
-      minimumFractionDigits: 0 
+      minimumFractionDigits: 0
     }).format(num)
   }
 
@@ -330,9 +331,8 @@ export default function DepartmentDetailView() {
     return (
       <div className="w-full h-full p-6 space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" disabled>
+          <Button onClick={() => { router.back() }} className="rounded-full aspect-square" variant="ghost" disabled>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Departments
           </Button>
           <div className="h-6 w-px bg-border" />
           <div className="flex items-center gap-3">
@@ -389,10 +389,9 @@ export default function DepartmentDetailView() {
       <Button
         variant="ghost"
         onClick={() => router.push("/admin/departments")}
-        className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+        className="flex items-center gap-2 text-muted-foreground hover:text-foreground rounded-full aspect-square"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to Departments
       </Button>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
@@ -403,7 +402,10 @@ export default function DepartmentDetailView() {
             </div>
             <div>
               <h1 className="text-2xl font-bold">{department.name}</h1>
-              <p className="text-sm text-muted-foreground">{department.description}</p>
+              <RichTextDisplay
+                className={"text-sm" + !department.description ? 'text-muted-foreground italic' : ''}
+                htmlContent={department.description || "No description"}
+              />
             </div>
           </div>
         </div>
@@ -521,7 +523,10 @@ export default function DepartmentDetailView() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Description</p>
-                  <p className="text-sm">{department.description}</p>
+                  <RichTextDisplay
+                    className={"text-sm" + !department.description ? 'text-muted-foreground italic' : ''}
+                    htmlContent={department.description || "No description"}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -776,9 +781,7 @@ export default function DepartmentDetailView() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <p className="text-sm text-muted-foreground max-w-[200px] truncate">
-                                {position.description || "No description available"}
-                              </p>
+                              <RichTextDisplay className="text-sm text-muted-foreground max-w-[200px] truncate" htmlContent={position.description || ""} />
                             </TableCell>
                             <TableCell>
                               <p className="font-medium">{formatCurrency(position.salary || 0)}</p>

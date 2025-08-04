@@ -23,15 +23,16 @@ import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { createDepartment } from "@/lib/utils"
 import { DepartmentFormData } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import { RichEditorField } from "../common/rich-editor"
 
 interface CreateDepartmentDialogProps {
   trigger?: React.ReactNode
   onDepartmentCreated?: (department: any) => void
 }
 
-export function CreateDepartmentDialog({ 
-  trigger, 
-  onDepartmentCreated 
+export function CreateDepartmentDialog({
+  trigger,
+  onDepartmentCreated
 }: CreateDepartmentDialogProps) {
   const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState<DepartmentFormData>({
@@ -129,7 +130,7 @@ export function CreateDepartmentDialog({
           </div>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 overflow-y-auto h-full max-h-[60svh]">
             <div className="space-y-2">
               <Label htmlFor="name">Department Name</Label>
               <Input
@@ -143,11 +144,18 @@ export function CreateDepartmentDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea
+              {/* <Textarea
                 id="description"
                 placeholder="Describe the department's role, responsibilities, and objectives..."
                 value={formData.description}
                 onChange={(e) => updateFormData("description", e.target.value)}
+                className={errors.description ? "border-destructive" : ""}
+              /> */}
+              <RichEditorField
+                id="description"
+                placeholder="Describe the department's role, responsibilities, and objectives..."
+                value={formData.description}
+                onChange={(value) => updateFormData("description", value)}
                 className={errors.description ? "border-destructive" : ""}
               />
               {errors.description && (

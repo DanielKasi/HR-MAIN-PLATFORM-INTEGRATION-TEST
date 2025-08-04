@@ -8,6 +8,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
 from django.db.models import TextChoices
 import secrets
+from jsignature.utils import draw_signature
+from jsignature.fields import JSignatureField
+from django import forms
+from jsignature.forms import JSignatureField as JSignatureFormField
 
 
 class CustomUserManager(BaseUserManager):
@@ -244,3 +248,11 @@ class System(models.Model):
 
     def __str__(self):
         return self.code
+
+
+class Signature(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    signature = JSignatureField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Signature of {self.user.fullname}"

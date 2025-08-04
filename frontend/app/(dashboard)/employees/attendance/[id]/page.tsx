@@ -1,13 +1,13 @@
 "use client";
-import React, {useState, useEffect} from "react";
-import {useParams, useRouter} from "next/navigation";
-import {Card, CardHeader, CardTitle, CardContent} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import { ArrowLeft, Search, Filter, Upload, CalendarDays, Clock, User} from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Search, Filter, Upload, CalendarDays, Clock, User } from "lucide-react";
 
-import {AttendanceAPI, getEmployeeById} from "@/lib/utils";
+import { AttendanceAPI, getEmployeeById } from "@/lib/utils";
 
 import Link from "next/link";
 import { IAttendance, IEmployee } from "@/app/types/types.utils";
@@ -42,7 +42,7 @@ const EmployeeAttendanceHistory = () => {
       return;
     }
     try {
-      const data = await getEmployeeById({employeeId});
+      const data = await getEmployeeById({ employeeId });
       setEmployee(data);
     } catch (err) {
       setError("Failed to load employee details");
@@ -206,9 +206,8 @@ const EmployeeAttendanceHistory = () => {
         <div className="mb-8 ">
           <div className="flex items-center gap-4 mb-4">
             <Link href="/employees/attendance">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="rounded-full aspect-square">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Attendance
               </Button>
             </Link>
           </div>

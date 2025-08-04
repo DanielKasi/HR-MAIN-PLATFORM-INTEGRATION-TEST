@@ -6,6 +6,13 @@ from django.conf import settings
 from users.models import Permission, PermissionCategory, SystemType, System
 from workflows.models import WorkflowAction, WorkflowCategory
 from discipline.models import DisciplineType
+from institution.models import (
+    Institution,
+    InstitutionBankType,
+    InstitutionBankAccount,
+    Branch,
+)
+from employee.models import Employee
 
 
 class Command(BaseCommand):
@@ -18,6 +25,7 @@ class Command(BaseCommand):
         self.sync_systems()
         self.sync_discipline_types()
         self.sync_workflows()
+        self.create_default_bank_info()
 
     def sync_permissions(self):
         filepath = os.path.join(
@@ -271,3 +279,75 @@ class Command(BaseCommand):
             self.style.NOTICE(f"  🧹 Removed Workflow Categories: {deleted_categories}")
         )
         self.stdout.write(self.style.SUCCESS("\n🎉 Workflows synced successfully!"))
+
+    # To be deleted
+    def create_default_bank_info(self):
+        default_bank_data = {
+            "bank_fullname": "Centenary Bank",
+            "bank_code": "0001",
+            "br_code": "MAIN",
+            "account_name": "Default Account",
+            "account_number": "1234567890",
+        }
+
+        institutions = Institution.objects.all()
+        for institution in institutions:
+            # Check if this institution already has a default bank type
+            bank_type, created = InstitutionBankType.objects.get_or_create(
+                institution=institution,
+                bank_fullname=default_bank_data["bank_fullname"],
+                bank_code=default_bank_data["bank_code"],
+                br_code=default_bank_data["br_code"],
+                defaults={"created_by": None, "updated_by": None},
+            )
+            if created:
+                self.stdout.write(
+                    f"Created default bank type for {institution.institution_name}"
+                )
+            else:
+                self.stdout.write(
+                    f"Default bank type already exists for {institution.institution_name}"
+                )
+
+            account, acc_created = InstitutionBankAccount.objects.get_or_create(
+                institution_bank=bank_type,
+                account_number=default_bank_data["account_number"],
+                defaults={
+                    "account_name": default_bank_data["account_name"],
+                    "created_by": None,
+                    "updated_by": None,
+                },
+            )
+
+            branches = Branch.objects.filter(institution=institution)
+
+            for branch in branches:
+                if branch.paying_bank_account is None:
+
+                    branch.paying_bank_account = account
+                    branch.save()
+
+                    self.stdout.write(
+                        f"    └─ Updated branch '{branch.branch_name or branch.branch_location}' with default bank account"
+                    )
+
+            employees = Employee.objects.filter(department__institution=institution)
+
+            for employee in employees:
+                if employee.payroll_branch is None:
+                    default_branch = institution.branches.first()
+                    if default_branch:
+                        employee.payroll_branch = default_branch
+                        employee.save()
+                        self.stdout.write(
+                            f"    └─ Updated employee '{employee.fullname}' with default payroll branch '{default_branch.branch_name or default_branch.branch_location}'"
+                        )
+
+            if acc_created:
+                self.stdout.write(
+                    f"  └─ Created default bank account for {institution.institution_name}"
+                )
+            else:
+                self.stdout.write(
+                    f"  └─ Default bank account already exists for {institution.institution_name}"
+                )

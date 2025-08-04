@@ -28,23 +28,26 @@ import { toast } from "sonner"
 import { getWorkTypes, updateWorkType, deleteWorkType, createWorkType } from "@/lib/utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import type { IWorkType, IWorkTypeFormData } from "@/app/types/types.utils"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 
-interface EmployeeTypeModalProps {
+interface WorkTypeModalProps {
   isOpen: boolean
   onClose: () => void
-  editingType: IWorkType| null
+  editingType: IWorkType | null
   onSave: (data: IWorkTypeFormData) => Promise<void>
   isSubmitting: boolean
   existingTypes: IWorkType[]
 }
 
 // Employee Type Form Modal Component
-function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting, existingTypes }: EmployeeTypeModalProps) {
+function WorkTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting, existingTypes }: WorkTypeModalProps) {
   const [formData, setFormData] = useState<IWorkTypeFormData>({
     name: "",
     description: "",
     code: "",
   })
+
   const [errors, setErrors] = useState<Partial<Record<keyof IWorkTypeFormData, string>>>({})
 
   // Reset form when modal opens/closes or editing type changes
@@ -77,8 +80,8 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
     }
 
     const duplicateName = existingTypes.find(
-      (type) => 
-        type.name.toLowerCase() === formData.name?.toLowerCase() && 
+      (type) =>
+        type.name.toLowerCase() === formData.name?.toLowerCase() &&
         type.id !== editingType?.id
     )
     if (duplicateName) {
@@ -88,8 +91,8 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
     // Check for duplicate codes (excluding current editing item)
     if (formData.code?.trim()) {
       const duplicateCode = existingTypes.find(
-        (type) => 
-          type.code?.toLowerCase() === formData.code?.toLowerCase() && 
+        (type) =>
+          type.code?.toLowerCase() === formData.code?.toLowerCase() &&
           type.id !== editingType?.id
       )
       if (duplicateCode) {
@@ -174,18 +177,17 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
             />
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <Button 
-              type="submit" 
-              disabled={isSubmitting} 
-              className="bg-orange-600 hover:bg-orange-700 text-white"
-            >
-              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {isSubmitting ? "Saving..." : editingType ? "Update Work Type" : "Create Work Type"}
-            </Button>
+          <div className="flex items-center justify-end gap-4 pt-4">
 
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSubmitting ? "Saving..." : editingType ? "Update Work Type" : "Create Work Type"}
             </Button>
           </div>
         </form>
@@ -195,13 +197,13 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
 }
 
 // Employee Type Details Modal
-interface EmployeeTypeDetailsModalProps {
+interface WorkTypeDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   employeeType: IWorkType | null
 }
 
-function EmployeeTypeDetailsModal({ isOpen, onClose, employeeType }: EmployeeTypeDetailsModalProps) {
+function WorkTypeDetailsModal({ isOpen, onClose, employeeType }: WorkTypeDetailsModalProps) {
   if (!employeeType) return null
 
   return (
@@ -261,13 +263,13 @@ function EmployeeTypeDetailsModal({ isOpen, onClose, employeeType }: EmployeeTyp
 }
 
 // Main Component
-export default function EmployeeTypeManagement() {
+export default function WorkTypeManagement() {
   const selectedInstitution = useSelector(selectSelectedInstitution)
-  
   const [workTypes, setWorkTypes] = useState<IWorkType[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [loading, setLoading] = useState(true)
-  const [deleting, setDeleting] = useState<number | null>(null)
+  const [workTypeToDelete, setWorkTypeToDelete] = useState<IWorkType | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false)
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -327,49 +329,48 @@ export default function EmployeeTypeManagement() {
     setIsSubmitting(true)
 
     try {
-     if (editingType) {
-  // Update existing
-      await updateWorkType({
-        institutionId: selectedInstitution.id,
-        employeeTypeId: editingType.id,
-        employeeTypeData: formData,
-      })
+      if (editingType) {
+        // Update existing
+        await updateWorkType({
+          institutionId: selectedInstitution.id,
+          employeeTypeId: editingType.id,
+          employeeTypeData: formData,
+        })
 
-      // Clear search and reset page to ensure updated item is visible
-      setSearchTerm("")
-      setCurrentPage(1)
-      await fetchWorkTypes()
-      toast.success("Work type updated successfully!")
-    } else {
+        // Clear search and reset page to ensure updated item is visible
+        setSearchTerm("")
+        setCurrentPage(1)
+        await fetchWorkTypes()
+        toast.success("Work type updated successfully!")
+      } else {
         // Create new
         const newType = await createWorkType({
           institutionId: selectedInstitution.id,
           workTypeData: formData,
         })
-        
+
         if (newType) {
           setSearchTerm("")
-          setCurrentPage(1) 
-          
+          setCurrentPage(1)
+
           setWorkTypes((prev) => {
             const updated = [...prev, newType]
             return updated
           })
-          
+
           setTimeout(() => {
           }, 100)
-          
+
           toast.success("Work type created successfully!")
         } else {
-          
-          setSearchTerm("") 
+
+          setSearchTerm("")
           setCurrentPage(1)
           await fetchWorkTypes()
           toast.success("Work type created successfully!")
         }
       }
     } catch (error) {
-      console.error("Error saving work type:", error)
       toast.error(`Failed to ${editingType ? 'update' : 'create'} work type`)
       throw error
     } finally {
@@ -392,29 +393,24 @@ export default function EmployeeTypeManagement() {
     setShowDetailsModal(true)
   }
 
-  const handleDelete = async (employeeType: IWorkType) => {
+  const handleDelete = async (workType: IWorkType) => {
     if (!selectedInstitution?.id) return
 
-    // Confirm deletion
-    if (!window.confirm(`Are you sure you want to delete "${employeeType.name}"? This action cannot be undone.`)) {
-      return
-    }
-
     try {
-      setDeleting(employeeType.id)
-      
+      setIsDeleting(true)
+
       await deleteWorkType({
         institutionId: selectedInstitution.id,
-        employeeTypeId: employeeType.id,
+        workTypeId: workType.id,
       })
 
-      setWorkTypes((prev) => prev.filter((type) => type.id !== employeeType.id))
+      setWorkTypes((prev) => prev.filter((type) => type.id !== workType.id))
       toast.success("Work type deleted successfully!")
     } catch (error) {
-      console.error("Error deleting work type:", error)
       toast.error("Failed to delete work type")
     } finally {
-      setDeleting(null)
+      setIsDeleting(false);
+      setWorkTypeToDelete(null)
     }
   }
 
@@ -449,7 +445,7 @@ export default function EmployeeTypeManagement() {
               <CardTitle>Work Types</CardTitle>
               <CardDescription>Manage different work types of employees in your organization</CardDescription>
             </div>
-            <Button onClick={handleCreate} className="bg-orange-600 hover:bg-orange-700 text-white">
+            <Button onClick={handleCreate} >
               <Plus className="h-4 w-4 mr-2" />
               Add Work Type
             </Button>
@@ -540,13 +536,13 @@ export default function EmployeeTypeManagement() {
                         <TableCell className="py-4 px-6 text-center">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
-                                disabled={deleting === type.id}
+                                disabled={workTypeToDelete?.id === type.id}
                               >
-                                {deleting === type.id ? (
+                                {workTypeToDelete?.id === type.id ? (
                                   <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
                                 ) : (
                                   <MoreVertical className="h-4 w-4 text-gray-600" />
@@ -569,7 +565,7 @@ export default function EmployeeTypeManagement() {
                                 Edit work type
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => handleDelete(type)}
+                                onClick={() => setWorkTypeToDelete(type)}
                                 className="flex items-center px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
                               >
                                 <Trash2 className="h-4 w-4 mr-3 text-red-500" />
@@ -626,11 +622,10 @@ export default function EmployeeTypeManagement() {
                         variant={currentPage === pageNumber ? "default" : "outline"}
                         size="sm"
                         onClick={() => setCurrentPage(pageNumber)}
-                        className={`w-8 h-8 p-0 ${
-                          currentPage === pageNumber 
-                            ? "bg-orange-600 hover:bg-orange-700 text-white" 
-                            : "hover:bg-gray-50"
-                        }`}
+                        className={`w-8 h-8 p-0 ${currentPage === pageNumber
+                          ? "bg-orange-600 hover:bg-orange-700 text-white"
+                          : "hover:bg-gray-50"
+                          }`}
                       >
                         {pageNumber}
                       </Button>
@@ -655,7 +650,7 @@ export default function EmployeeTypeManagement() {
       </Card>
 
       {/* Form Modal */}
-      <EmployeeTypeModal
+      <WorkTypeModal
         isOpen={showFormModal}
         onClose={handleCloseFormModal}
         editingType={editingType}
@@ -665,11 +660,23 @@ export default function EmployeeTypeManagement() {
       />
 
       {/* Details Modal */}
-      <EmployeeTypeDetailsModal
+      <WorkTypeDetailsModal
         isOpen={showDetailsModal}
         onClose={handleCloseDetailsModal}
         employeeType={viewingType}
       />
+      {workTypeToDelete &&
+        <DeleteConfirmationDialog
+          description="Are you sure you want to delete this work type? This action cannot be undone."
+          isDeleting={isDeleting}
+          isOpen={!!workTypeToDelete}
+          title={`Delete ${workTypeToDelete.name}`}
+          onConfirm={() => handleDelete(workTypeToDelete)}
+          onClose={() => {
+            setWorkTypeToDelete(null);
+            setIsDeleting(false)
+          }} />
+      }
     </div>
   )
 }

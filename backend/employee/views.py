@@ -37,6 +37,8 @@ from django.http import FileResponse
 from django.core.exceptions import ValidationError
 from users.models import CustomUser
 from django.utils import timezone
+from datetime import datetime
+from django.contrib.auth.hashers import make_password
 import re
 import pandas as pd
 import io
@@ -45,13 +47,14 @@ from recruitment.models import JobPosition
 from django.http import HttpResponse
 from openpyxl.styles import Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+from decimal import Decimal, InvalidOperation
+from django.contrib.auth import get_user_model
 
 
 class EmployeeListAPIView(APIView):
-    permission_classes = [AllowAny]
 
     @extend_schema(
-        request=EmployeeSerializer,
+        request=None,
         responses={200: EmployeeSerializer(many=True)},
         description="Retrieve a list of employees.",
         summary="List Employees",
@@ -59,16 +62,32 @@ class EmployeeListAPIView(APIView):
     )
     def get(self, request, institution_id):
         """
-        Retrieve a list of employees for a specific institution.
+        Retrieve a list of employees for a specific institution,
+        with optional filtering via query parameters.
         """
         try:
             employees = Employee.objects.filter(
                 department__institution_id=institution_id
-            ).order_by("-created_at")
+            )
+
+            query_params = request.query_params.dict()
+            model_fields = {field.name for field in Employee._meta.get_fields()}
+
+            filters = {
+                k: v
+                for k, v in query_params.items()
+                if k.split("__")[0] in model_fields
+            }
+
+            if filters:
+                employees = employees.filter(**filters)
+
+            employees = employees.order_by("-created_at")
 
             paginator = CustomPageNumberPagination()
             paginated_qs = paginator.paginate_queryset(employees, request)
             serializer = EmployeeSerializer(paginated_qs, many=True)
+
             return paginator.get_paginated_response(serializer.data)
 
         except Exception as e:
@@ -112,7 +131,6 @@ class EmployeeCreateAPIView(APIView):
         tags=["Employee Management"],
     )
     def post(self, request):
-
         """Create a new employee or multiple employees via file upload."""
         if "file" in request.FILES:
             return self.handle_bulk_upload(request)
@@ -178,6 +196,9 @@ class EmployeeCreateAPIView(APIView):
 
     def handle_bulk_upload(self, request):
         """Handle bulk employee creation from uploaded CSV/Excel file."""
+        start_time = datetime.now()
+        logger.debug(f"Starting bulk upload at {start_time}")
+
         file = request.FILES["file"]
         file_extension = file.name.split(".")[-1].lower()
 
@@ -196,7 +217,7 @@ class EmployeeCreateAPIView(APIView):
                 df = pd.read_excel(file)
 
             logger.debug(f"Excel/CSV columns: {df.columns.tolist()}")
-            logger.debug(f"Excel/CSV data: {df.to_dict(orient='records')}")
+            logger.debug(f"Excel/CSV row count: {len(df)}")
 
             required_columns = ["user.fullname", "user.email"]
             missing_columns = [col for col in required_columns if col not in df.columns]
@@ -208,140 +229,229 @@ class EmployeeCreateAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+            # Define mappings for choice fields
             gender_map = {
-                'male': 'male',
-                'female': 'female',
-                'other': 'other',
-                'Male': 'male',
-                'Female': 'female',
-                'Other': 'other'
+                "male": "male",
+                "female": "female",
+                "other": "other",
+                "Male": "male",
+                "Female": "female",
+                "Other": "other",
             }
             marital_status_map = {
-                'single': 'single',
-                'married': 'married',
-                'divorced': 'divorced',
-                'widowed': 'widowed',
-                'Single': 'single',
-                'Married': 'married',
-                'Divorced': 'divorced',
-                'Widowed': 'widowed'
-            }    
-
-            # Validate foreign key fields
-            field_mappings = {
-                'position': (JobPosition, 'position_map'),
-                'department': (Department, 'department_map'),
-                'work_type': (WorkType, 'work_type_map'),
-                'employee_type': (EmployeeType, 'employee_type_map')
+                "single": "single",
+                "married": "married",
+                "divorced": "divorced",
+                "widowed": "widowed",
+                "Single": "single",
+                "Married": "married",
+                "Divorced": "divorced",
+                "Widowed": "widowed",
             }
-            for field, (model, map_name) in field_mappings.items():
+
+            # Cache foreign key mappings
+            logger.debug("Fetching foreign key mappings")
+            field_mappings = {
+                "position": JobPosition,
+                "department": Department,
+                "work_type": WorkType,
+                "employee_type": EmployeeType,
+                "payroll_branch": Branch,  # Added for payroll_branch
+            }
+            mappings = {}
+            for field, model in field_mappings.items():
                 if field in df.columns:
-                    names = df[field].dropna().str.strip().str.lower().unique()
-                    existing = model.objects.filter(
-                        name__iregex=r'^(' + '|'.join([re.escape(name) for name in names]) + ')$'
-                    ).values('name', 'id')
-                    mapping = {item['name'].lower(): item['id'] for item in existing}
-                    missing = [name for name in names if name.lower() not in mapping]
-                    if missing:
-                        return Response(
-                            {
-                                "detail": f"The following {field}s do not exist: {', '.join(missing)}"
-                            },
-                            status=status.HTTP_400_BAD_REQUEST,
+                    names = df[field].dropna().str.strip().unique()
+                    if names.size > 0:
+                        existing = model.objects.filter(name__in=names).values(
+                            "name", "id"
                         )
-                    setattr(self, map_name, mapping)
+                        logger.debug(
+                            f"Database {field} values: {[item['name'] for item in existing]}"
+                        )
+                        mappings[field] = {
+                            item["name"].lower(): item["id"] for item in existing
+                        }
+                        input_names = [str(name).strip().lower() for name in names]
+                        missing = [
+                            name for name in input_names if name not in mappings[field]
+                        ]
+                        if missing:
+                            logger.error(f"Missing {field}s: {missing}")
+                            return Response(
+                                {
+                                    "detail": f"The following {field}s do not exist: {', '.join(missing)}"
+                                },
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
 
+            # Process employees in batches
+            batch_size = 50  # Adjust based on your server's capacity
             employees = []
+            user_objects = []
+            employee_objects = []
             errors = []
-            with transaction.atomic():
-                for index, row in df.iterrows():
-                    employee_data = {}
-                    user_data = {
-                        "fullname": str(row["user.fullname"]).strip(),
-                        "email": str(row["user.email"]).strip(),
-                        "password": generate_compliant_password(),
-                    }
-                    employee_data["user"] = user_data
 
-                    for column in df.columns:
-                        if column not in ["user.fullname", "user.email"]:
-                            value = row[column]
-                            if pd.isna(value):
-                                employee_data[column] = None
-                            else:
-                                # Handle foreign key fields
-                                if column in field_mappings and value:
-                                    map_name = field_mappings[column][1]
-                                    mapping = getattr(self, map_name)
-                                    employee_data[column] = mapping.get(str(value).strip().lower())
+            logger.debug(f"Starting batch processing with batch size {batch_size}")
+            for start_idx in range(0, len(df), batch_size):
+                batch = df[start_idx : start_idx + batch_size]
+                batch_start_time = datetime.now()
+                logger.debug(
+                    f"Processing batch {start_idx//batch_size + 1} (rows {start_idx + 1} to {start_idx + len(batch)})"
+                )
 
-                                elif column == 'gender' and value:
-                                    employee_data[column] = gender_map.get(str(value).strip(), None)
-                                    if employee_data[column] is None:
-                                        errors.append({
-                                            "row": index + 2,
-                                            "errors": {"gender": [f"\"{value}\" is not a valid choice."]}
-                                        })
-                                        continue
+                with transaction.atomic():
+                    for index, row in batch.iterrows():
+                        employee_data = {}
+                        user_data = {
+                            "fullname": str(row["user.fullname"]).strip(),
+                            "email": str(row["user.email"]).strip(),
+                            "password": make_password(generate_compliant_password()),
+                            "is_active": True,
+                            "is_email_verified": False,
+                            "is_password_verified": False,
+                            "user_type": "staff",
+                            "created_at": datetime.now(),
+                            "updated_at": datetime.now(),
+                        }
 
-                                # Handle marital_status
-                                elif column == 'marital_status' and value:
-                                    employee_data[column] = marital_status_map.get(str(value).strip(), None)
-                                    if employee_data[column] is None:
-                                        errors.append({
-                                            "row": index + 2,
-                                            "errors": {"marital_status": [f"\"{value}\" is not a valid choice."]}
-                                        })
-                                        continue    
+                        for column in df.columns:
+                            if column not in ["user.fullname", "user.email"]:
+                                value = row[column]
+                                if pd.isna(value):
+                                    employee_data[column] = None
                                 else:
-                                    employee_data[column] = str(value).strip()
+                                    value = str(value).strip()
+                                    if column in field_mappings and value:
+                                        mapping = mappings.get(column, {})
+                                        employee_data[column] = mapping.get(
+                                            value.lower()
+                                        )
+                                        if employee_data[column] is None:
+                                            errors.append(
+                                                {
+                                                    "row": index + 2,
+                                                    "errors": {
+                                                        column: [
+                                                            f'"{value}" does not exist.'
+                                                        ]
+                                                    },
+                                                }
+                                            )
+                                            continue
+                                    elif column == "gender" and value:
+                                        employee_data[column] = gender_map.get(
+                                            value, None
+                                        )
+                                        if employee_data[column] is None:
+                                            errors.append(
+                                                {
+                                                    "row": index + 2,
+                                                    "errors": {
+                                                        "gender": [
+                                                            f'"{value}" is not a valid choice.'
+                                                        ]
+                                                    },
+                                                }
+                                            )
+                                            continue
+                                    elif column == "marital_status" and value:
+                                        employee_data[column] = marital_status_map.get(
+                                            value, None
+                                        )
+                                        if employee_data[column] is None:
+                                            errors.append(
+                                                {
+                                                    "row": index + 2,
+                                                    "errors": {
+                                                        "marital_status": [
+                                                            f'"{value}" is not a valid choice.'
+                                                        ]
+                                                    },
+                                                }
+                                            )
+                                            continue
+                                    else:
+                                        employee_data[column] = value
 
-                    if "is_active" in employee_data:
-                        employee_data["is_active"] = (
-                            str(employee_data["is_active"]).lower() == "true"
+                        if "is_active" in employee_data:
+                            employee_data["is_active"] = (
+                                str(employee_data["is_active"]).lower() == "true"
+                            )
+
+                        for field in ["experience", "children_count"]:
+                            if field in employee_data and employee_data[field]:
+                                try:
+                                    employee_data[field] = int(
+                                        float(employee_data[field])
+                                    )
+                                except (ValueError, TypeError):
+                                    employee_data[field] = 0
+
+                        if not errors:
+                            user_objects.append(CustomUser(**user_data))
+                            employee_data["user"] = (
+                                len(user_objects) - 1
+                            )  # Temporary index for linking
+                            employee_data["created_at"] = datetime.now()
+                            employee_data["updated_at"] = datetime.now()
+                            employee_objects.append(employee_data)
+
+                    if errors:
+                        logger.error(f"Batch errors: {errors}")
+                        continue
+
+                    # Bulk create users
+                    try:
+                        logger.debug(f"Creating {len(user_objects)} users")
+                        created_users = CustomUser.objects.bulk_create(user_objects)
+                        logger.debug(f"Created {len(created_users)} users")
+                    except Exception as e:
+                        logger.error(f"Error bulk creating users: {str(e)}")
+                        errors.append(
+                            {"non_field_errors": f"Error creating users: {str(e)}"}
                         )
+                        continue
 
-                    for field in [
-                        "experience",
-                        "children_count",
-                        "institutionId",
-                    ]:
-                        if field in employee_data and employee_data[field]:
-                            try:
-                                employee_data[field] = int(float(employee_data[field]))
-                            except (ValueError, TypeError):
-                                employee_data[field] = 0
+                    # Update employee objects with actual user IDs
+                    for idx, employee_data in enumerate(employee_objects):
+                        employee_data["user"] = created_users[employee_data["user"]].id
 
-                    serializer = EmployeeSerializer(data=employee_data, context={"request": request})
-                    if serializer.is_valid():
+                    # Bulk create employees
+                    try:
+                        logger.debug(f"Creating {len(employee_objects)} employees")
+                        created_employees = Employee.objects.bulk_create(
+                            [Employee(**data) for data in employee_objects]
+                        )
+                        logger.debug(f"Created {len(created_employees)} employees")
+                        employees.extend(created_employees)
+                    except Exception as e:
+                        logger.error(f"Error bulk creating employees: {str(e)}")
+                        errors.append(
+                            {"non_field_errors": f"Error creating employees: {str(e)}"}
+                        )
+                        continue
+
+                    # Send password setup emails (non-blocking)
+                    for employee in created_employees:
                         try:
-                            employee = serializer.save()
-                            if employee is None:
-                                errors.append(
-                                    {
-                                        "row": index + 2,
-                                        "errors": {"non_field_errors": ["Failed to create employee: No instance returned"]}
-                                    }
-                                )
-                                continue
-                            employee.user.is_password_verified = False
-                            employee.user.save()
                             employee.setup_employee_password(request)
-                            employees.append(employee)
                         except Exception as e:
+                            logger.error(
+                                f"Error sending password email for employee {employee.user.email}: {str(e)}"
+                            )
                             errors.append(
                                 {
-                                    "row": index + 2,
-                                    "errors": {"non_field_errors": f"Error saving employee: {str(e)}"}
+                                    "row": start_idx + idx + 2,
+                                    "errors": {
+                                        "non_field_errors": f"Error sending password email: {str(e)}"
+                                    },
                                 }
                             )
-                    else:
-                        errors.append(
-                            {
-                                "row": index + 2,
-                                "errors": serializer.errors,
-                            }
-                        )
+
+                logger.debug(
+                    f"Batch {start_idx//batch_size + 1} completed in {(datetime.now() - batch_start_time).total_seconds()} seconds"
+                )
 
             if errors:
                 logger.error(f"Bulk upload errors: {errors}")
@@ -350,6 +460,9 @@ class EmployeeCreateAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+            logger.debug(
+                f"Total upload time: {(datetime.now() - start_time).total_seconds()} seconds"
+            )
             return Response(
                 EmployeeSerializer(employees, many=True).data,
                 status=status.HTTP_201_CREATED,
@@ -372,7 +485,7 @@ class EmployeeTemplateDownloadAPIView(APIView):
         description="Download an Excel template for bulk employee creation.",
         tags=["Employee Management"],
     )
-    def get(self, request, format_type='xlsx'):
+    def get(self, request, format_type="xlsx"):
         """Generate and return an Excel template for bulk employee upload."""
         columns = [
             "user.fullname",
@@ -397,7 +510,7 @@ class EmployeeTemplateDownloadAPIView(APIView):
             "emergency_contact_phone",
             "emergency_contact_relationship",
             "marital_status",
-            "children_count"
+            "children_count",
         ]
 
         # Sample data for the first row
@@ -417,7 +530,6 @@ class EmployeeTemplateDownloadAPIView(APIView):
             "nin": "123456789",
             "bank": "National Bank",
             "bank_account_number": "123456789012",
-
             "experience": "5 Years",
             "qualifications": "BSc Computer Science",
             "skills": "Python, Django",
@@ -425,15 +537,15 @@ class EmployeeTemplateDownloadAPIView(APIView):
             "emergency_contact_phone": "+1234567891",
             "emergency_contact_relationship": "Spouse",
             "marital_status": "Married",
-            "children_count": "2"
+            "children_count": "2",
         }
 
-        if format_type == 'csv':
+        if format_type == "csv":
             df = pd.DataFrame([sample_data], columns=columns)
             output = io.StringIO()
             df.to_csv(output, index=False)
             output.seek(0)
-            
+
             response = HttpResponse(
                 content_type="text/csv",
                 headers={
@@ -460,8 +572,7 @@ class EmployeeTemplateDownloadAPIView(APIView):
             for col_num, column_title in enumerate(columns, 1):
                 column_letter = get_column_letter(col_num)
                 max_length = max(
-                    len(str(sample_data.get(column_title, ""))),
-                    len(column_title)
+                    len(str(sample_data.get(column_title, ""))), len(column_title)
                 )
                 adjusted_width = max_length + 2
                 ws.column_dimensions[column_letter].width = adjusted_width
@@ -469,7 +580,7 @@ class EmployeeTemplateDownloadAPIView(APIView):
             output = io.BytesIO()
             wb.save(output)
             output.seek(0)
-            
+
             response = HttpResponse(
                 content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 headers={
@@ -477,8 +588,9 @@ class EmployeeTemplateDownloadAPIView(APIView):
                 },
             )
             response.write(output.getvalue())
-        
+
         return response
+
 
 class EmployeeUpdateAPIView(APIView):
     permission_classes = [AllowAny]
@@ -493,6 +605,7 @@ class EmployeeUpdateAPIView(APIView):
     )
     def patch(self, request, employee_id):
         """Update an existing employee."""
+
         try:
             employee = Employee.objects.get(id=employee_id)
         except Employee.DoesNotExist:
@@ -533,6 +646,12 @@ class EmployeeUpdateAPIView(APIView):
                 except (ValueError, TypeError):
                     final_data[field] = 0
 
+        if "salary" in final_data:
+            try:
+                final_data["salary"] = Decimal(final_data["salary"])
+            except (InvalidOperation, TypeError, ValueError):
+                final_data["salary"] = None
+
         # Update employee data
         serializer = EmployeeSerializer(employee, data=final_data, partial=True)
         if not serializer.is_valid():
@@ -564,7 +683,6 @@ class EmployeeUpdateAPIView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
                 employee.user.email = user_data["email"]
-                employee.user.username = user_data["email"]
                 user_updated = True
 
             if user_updated:
@@ -573,6 +691,10 @@ class EmployeeUpdateAPIView(APIView):
                 employee.user.is_password_verified = False
                 employee.user.save()
                 employee.setup_employee_password(request)
+
+        # if "salary" in final_data:
+        #     employee.salary = final_data["salary"]
+        #     employee.save()
 
         return Response(EmployeeSerializer(employee).data, status=status.HTTP_200_OK)
 
@@ -1453,17 +1575,17 @@ class EmployeeContractApprovalAPIView(APIView):
     )
     def post(self, request, pk):
         contract = get_object_or_404(EmployeeContract, pk=pk)
-        
+
         # Check if contract is already active
         if contract.is_active:
             return Response(
                 {"error": "Contract is already active"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Set contract to active first
         contract.is_active = True
-        contract.status = 'APPROVED'
+        contract.status = "APPROVED"
         contract.save()
 
         # If contract has an applicant and no employee, create Employee instance
@@ -1473,39 +1595,39 @@ class EmployeeContractApprovalAPIView(APIView):
                 if hasattr(contract.applicant, "created_employee"):
                     return Response(
                         {"error": "Employee already created for this application"},
-                        status=status.HTTP_400_BAD_REQUEST
+                        status=status.HTTP_400_BAD_REQUEST,
                     )
 
                 # Create CustomUser if it doesn't exist
                 user, created = CustomUser.objects.get_or_create(
                     email=contract.applicant.applicant_email,
                     defaults={
-                        'fullname': contract.applicant.applicant_name,
-                        'is_active': True,
-                    }
+                        "fullname": contract.applicant.applicant_name,
+                        "is_active": True,
+                    },
                 )
 
                 # Create Employee instance
                 employee_data = {
-                    'user': user,
-                    'email': contract.applicant.applicant_email,
-                    'phone_number': contract.applicant.applicant_phone,
-                    'position': contract.applicant.job_position_advert.job_position,
-                    'address': contract.applicant.address,
-                    'gender': contract.applicant.gender,
-                    'date_of_joining': timezone.now().date(),
-                    'is_active': True,
-                    'department': contract.applicant.job_position_advert.job_position.department,
-                    'salary': contract.applicant.job_position_advert.job_position.salary,
+                    "user": user,
+                    "email": contract.applicant.applicant_email,
+                    "phone_number": contract.applicant.applicant_phone,
+                    "position": contract.applicant.job_position_advert.job_position,
+                    "address": contract.applicant.address,
+                    "gender": contract.applicant.gender,
+                    "date_of_joining": timezone.now().date(),
+                    "is_active": True,
+                    "department": contract.applicant.job_position_advert.job_position.department,
+                    "salary": contract.applicant.job_position_advert.job_position.salary,
                 }
 
                 employee = Employee(**employee_data)
                 employee.employee_id = employee.generate_employee_id()
-                
+
                 # Validate and save employee
                 employee.full_clean()  # Run model validation
                 employee.save()
-                
+
                 # Update contract to reference employee instead of applicant
                 contract.employee = employee
                 contract.applicant = None
@@ -1514,12 +1636,12 @@ class EmployeeContractApprovalAPIView(APIView):
             except ValidationError as e:
                 return Response(
                     {"error": f"Failed to create employee: {str(e)}"},
-                    status=status.HTTP_400_BAD_REQUEST
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             except Exception as e:
                 return Response(
                     {"error": f"Unexpected error creating employee: {str(e)}"},
-                    status=status.HTTP_400_BAD_REQUEST
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
         serializer = EmployeeContractSerializer(contract)

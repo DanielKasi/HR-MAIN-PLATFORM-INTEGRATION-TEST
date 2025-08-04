@@ -59,12 +59,12 @@ import { toast } from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/app/types/types.utils";
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import RichTextDisplay from "@/components/common/rich-text-display";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 10;
 
-type ApiResponse = PaginatedResponse<JobPositionAdvert> | null;
 
 const getStatusColor = (status: JobAdvertStatus) => {
   switch (status) {
@@ -144,7 +144,7 @@ export default function JobAdvertsPage() {
         }
         setError("");
 
-        const response: ApiResponse = await getJobPositionAdverts({
+        const response = await getJobPositionAdverts({
           institutionId: selectedInstitution.id,
         });
 
@@ -497,18 +497,18 @@ export default function JobAdvertsPage() {
                     <div className="flex items-center gap-3">
                       <div
                         className={`h-8 w-8 rounded-full ${advert.job_position_advert_status === "active"
-                            ? "bg-green-50"
-                            : advert.job_position_advert_status === "expired"
-                              ? "bg-red-50"
-                              : "bg-gray-50"
+                          ? "bg-green-50"
+                          : advert.job_position_advert_status === "expired"
+                            ? "bg-red-50"
+                            : "bg-gray-50"
                           } flex items-center justify-center`}
                       >
                         <Megaphone
                           className={`h-4 w-4 ${advert.job_position_advert_status === "active"
-                              ? "text-green-600"
-                              : advert.job_position_advert_status === "expired"
-                                ? "text-red-600"
-                                : "text-gray-600"
+                            ? "text-green-600"
+                            : advert.job_position_advert_status === "expired"
+                              ? "text-red-600"
+                              : "text-gray-600"
                             }`}
                         />
                       </div>
@@ -540,7 +540,8 @@ export default function JobAdvertsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="max-w-xs truncate text-sm text-muted-foreground">
-                      {advert.extra_information || "-"}
+                      <RichTextDisplay htmlContent={advert.extra_information || "-"} />
+
                     </div>
                   </TableCell>
                   <TableCell className="text-right">

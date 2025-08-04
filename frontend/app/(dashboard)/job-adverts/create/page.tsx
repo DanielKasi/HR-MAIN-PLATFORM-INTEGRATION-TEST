@@ -18,6 +18,7 @@ import { getJobPositions, createJobPositionAdvert, createJobPosition, } from "@/
 import type { JobPositionAdvertFormData, IJobPosition, JobAdvertStatus, JobAdvertTypes } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
+import { RichEditorField } from "@/components/common/rich-editor";
 
 export default function CreateJobAdvertPage() {
   const [formData, setFormData] = useState<JobPositionAdvertFormData>({
@@ -52,7 +53,7 @@ export default function CreateJobAdvertPage() {
 
     try {
       setIsLoading(true);
-      const fetchedJobPositions = await getJobPositions({institutionId: selectedInstitution.id});
+      const fetchedJobPositions = await getJobPositions({ institutionId: selectedInstitution.id });
       if (fetchedJobPositions) {
         setJobPositions(fetchedJobPositions);
       } else {
@@ -69,10 +70,10 @@ export default function CreateJobAdvertPage() {
     field: keyof Exclude<JobPositionAdvertFormData, "job_position_advert_status">,
     value: any,
   ) => {
-    setFormData((prev) => ({...prev, [field]: value}));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors((prev) => ({...prev, [field]: undefined}));
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
@@ -131,19 +132,16 @@ export default function CreateJobAdvertPage() {
         advert_type: formData.advert_type,
       };
 
-      const newJobAdvert = await createJobPositionAdvert({
+      await createJobPositionAdvert({
         institutionId: selectedInstitution.id,
         advertData: createData,
       });
+      toast.success("Job opening created successfully!");
+      router.push("/job-adverts");
 
-      if (newJobAdvert) {
-        toast.success("Job opening created successfully!");
-        router.push("/job-adverts");
-      } else {
-        toast.error("Failed to create job opening. Please try again.");
-      }
-    } catch (error) {
-      toast.error("Failed to create job opening. Please try again.");
+    } catch (error: any) {
+      const errorMessage = error?.detail || error?.message || "Failed to create job opening. Please try again."
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -196,26 +194,23 @@ export default function CreateJobAdvertPage() {
     <div className="w-full h-full p-6">
       <div className="w-full space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleBack}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Job Openings
-          </Button>
-        </div>
+
 
         <Card className="w-full">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Megaphone className="h-5 w-5 text-primary" />
-              </div>
               <div>
-                <CardTitle className="text-xl">Create New Job Openings</CardTitle>
+                <div className="flex items-center gap-4 justify-start">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleBack}
+                    className="flex items-center gap-2 rounded-full aspect-square"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  <CardTitle className="text-xl">Create New Job Openings</CardTitle>
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Create a job opening for {selectedBranch.branch_name} -{" "}
                   {selectedInstitution.institution_name}
@@ -336,17 +331,8 @@ export default function CreateJobAdvertPage() {
                 <Label htmlFor="extra_information" className="text-sm font-medium">
                   Job Description (Optional)
                 </Label>
-                <Textarea
-                  id="extra_information"
-                  placeholder="Add any additional information about this job opening..."
-                  value={formData.extra_information || ""}
-                  onChange={(e) => updateFormData("extra_information", e.target.value)}
-                  rows={4}
-                  className="resize-none"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Provide additional details about the role, requirements, or company benefits
-                </p>
+                <RichEditorField id="extra_information" placeholder="Add any additional information about this job opening..." value={formData.extra_information || ""} onChange={(value) => updateFormData("extra_information", value)} />
+
               </div>
 
               {/* Form Actions */}

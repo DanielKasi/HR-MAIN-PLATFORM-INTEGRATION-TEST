@@ -156,7 +156,7 @@ interface CandidateWithHistory extends Candidate {
   overall_rating: number
   completion_rate: number
 }
-  
+
 // Utility functions from original components
 const recalculateStageCandidateCounts = (
   stages: IInterviewStage[],
@@ -1171,7 +1171,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
   if (candidate.interview_status === 'cancelled') {
     return false;
   }
-  
+
   // Only select candidates who DON'T have feedback yet (need action)
   return !(candidate.feedback && candidate.rating && candidate.rating > 0) && !isCandidateAlreadyOnboarded(candidate)
 }
@@ -1181,7 +1181,7 @@ const canCandidateBeMoved = (candidate: Candidate): boolean => {
   if (candidate.interview_status === 'cancelled') {
     return false;
   }
-  
+
   // Can only be moved if they have feedback and rating > 0 and interview status is still scheduled
   return !!(candidate.feedback && candidate.rating && candidate.rating > 0 && candidate.interview_status === 'scheduled')
 }
@@ -1285,13 +1285,13 @@ const isCandidateRejected = (candidate: Candidate | CandidateWithHistory): boole
     }
   }
 
- 
+
 useEffect(() => {
   if (interviews.length >= 0 && jobPositionAdvert?.interview_stages) {
     const interviewStages = jobPositionAdvert.interview_stages as unknown as IInterviewStage[]
-    
+
     // Filter interviews for this specific job position
-    const jobInterviews = interviews.filter(interview => 
+    const jobInterviews = interviews.filter(interview =>
       interview.job_position_application_details?.job_position_advert === parseInt(resolvedParams.id)
     );
 
@@ -1299,7 +1299,7 @@ useEffect(() => {
       .sort((a, b) => a.level - b.level)
       .map((stage, index) => {
         const colors = getStageColors(index)
-        
+
         // Find interviews for this specific stage
         const stageInterviews = jobInterviews.filter(
           interview => interview.interview_stage === stage.id
@@ -1339,8 +1339,8 @@ useEffect(() => {
         }));
 
         // Count active candidates (exclude rejected/cancelled)
-        const activeCandidates = candidates.filter(candidate => 
-          candidate.interview_status !== 'rejected' && 
+        const activeCandidates = candidates.filter(candidate =>
+          candidate.interview_status !== 'rejected' &&
           candidate.interview_status !== 'cancelled'
         );
 
@@ -1456,19 +1456,19 @@ useEffect(() => {
       toast.error("Candidate not found")
       return
     }
-    
+
     // Check if candidate already has feedback and rating
     if (candidate.feedback && candidate.rating && candidate.rating > 0) {
       toast.error("This candidate already has feedback and rating. Use individual actions to onboard or move them.")
       return
     }
-    
+
     // Check if candidate is already onboarded
     if (isCandidateAlreadyOnboarded(candidate)) {
       toast.error("This candidate is already onboarded.")
       return
     }
-    
+
     // Only allow selection if candidate can be selected (needs action)
     if (canCandidateBeSelected(candidate)) {
       setSelectedCandidates((prev) => [...prev, candidateId])
@@ -1483,7 +1483,7 @@ useEffect(() => {
 
 const handleSelectAll = (checked: boolean) => {
   const candidatesToSelect = viewMode === 'current' ? selectableCandidates : filteredHistoryCandidates.filter(canCandidateBeSelected)
-  
+
   if (checked) {
     if (candidatesToSelect.length === 0) {
       if (viewMode === 'current') {
@@ -1493,10 +1493,10 @@ const handleSelectAll = (checked: boolean) => {
       }
       return
     }
-    
+
     // Only select candidates who need action
     setSelectedCandidates(candidatesToSelect.map((candidate) => candidate.id))
-    
+
     const totalCandidates = viewMode === 'current' ? filteredCandidates.length : filteredHistoryCandidates.length
     if (candidatesToSelect.length < totalCandidates) {
       const skippedCount = totalCandidates - candidatesToSelect.length
@@ -1553,7 +1553,7 @@ const rejectCandidate = async (candidateId: number) => {
 // ADD THIS STATUS DISPLAY FUNCTION:
 const getStatusBadge = (candidate: Candidate | CandidateWithHistory) => {
   const status = candidate.interview_status?.toLowerCase() || 'unknown';
-  
+
   switch (status) {
     case 'scheduled':
       return (
@@ -1632,7 +1632,7 @@ const getStatusBadge = (candidate: Candidate | CandidateWithHistory) => {
           status: "scheduled",
           feedback: null,
           rating: null,
-          created_by: createdBy, 
+          created_by: createdBy,
         };
 
         // Validation check
@@ -1746,7 +1746,7 @@ const handleScheduleAndMove = async (scheduleData: InterviewScheduleData) => {
     if (scheduleResult.successCount > 0) {
 
       toast.success(`Successfully scheduled interviews and moved ${candidatesToSchedule.length} candidates to ${nextStageForActive?.name}`)
-      
+
       setSelectedCandidates([])
       setIsSchedulingDialogOpen(false)
       setCandidatesToSchedule([])
@@ -1922,9 +1922,8 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
             <ArrowLeft className="h-4 w-4" />
-            Back to Job Openings
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Interview Pipeline</h1>
@@ -2119,7 +2118,7 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
         </Card>
       ) : (
         /* Main interface with tabs for current view and history view */
-     <Tabs value={viewMode} onValueChange={(value) => {
+     <Tabs value={viewMode} onValueChange={(value: string) => {
           setViewMode(value as 'current' | 'history')
           setSelectedCandidates([])
           setSearchTerm('')
@@ -2262,7 +2261,7 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
         >
           Clear
         </Button>
-        
+
         {/* Only show onboard button if there are eligible candidates */}
         {candidatesEligibleForOnboarding.length > 0 && (
           <Button
@@ -2280,7 +2279,7 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
             Onboard ({candidatesEligibleForOnboarding.length})
           </Button>
         )}
-        
+
         {/* Only show move button in current view if there are eligible candidates */}
         {viewMode === 'current' && nextStageForActive && candidatesEligibleForMoving.length > 0 && (
           <Button
@@ -2297,7 +2296,7 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
             Move to {nextStageForActive.name} ({candidatesEligibleForMoving.length})
           </Button>
         )}
-        
+
         {/* Show message when no candidates are eligible for any actions */}
         {candidatesEligibleForOnboarding.length === 0 && candidatesEligibleForMoving.length === 0 && selectedCandidates.length > 0 && (
           <div className="text-xs text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">
@@ -2350,12 +2349,12 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
                                  <TableCell>
                                           <Checkbox
                                             checked={selectedCandidates.includes(candidate.id)}
-                                            onCheckedChange={(checked) => handleSelectCandidate(candidate.id, checked as boolean)}
+                                            onCheckedChange={(checked: boolean) => handleSelectCandidate(candidate.id, checked as boolean)}
                                             disabled={!canCandidateBeSelected(candidate)}
                                             title={
                                               canCandidateBeSelected(candidate)
                                                 ? viewMode === 'current' ? "Select for feedback" : "Select for onboarding"
-                                                : candidate.feedback && candidate.rating 
+                                                : candidate.feedback && candidate.rating
                                                   ? "Already has feedback and rating - use individual actions"
                                                   : isCandidateAlreadyOnboarded(candidate)
                                                     ? "Already onboarded"
@@ -2639,20 +2638,20 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
                                       className={
                                         candidate.interview_status === 'cancelled'
 
-                                          ? 'opacity-60 bg-red-50' 
+                                          ? 'opacity-60 bg-red-50'
                                           : ''
                                       }>
                             <TableCell>
                                 <Checkbox
                                   checked={selectedCandidates.includes(candidate.id)}
-                                  onCheckedChange={(checked) => handleSelectCandidate(candidate.id, checked as boolean)}
+                                  onCheckedChange={(checked: boolean) => handleSelectCandidate(candidate.id, checked as boolean)}
                                   disabled={!canCandidateBeSelected(candidate) || isCandidateRejected(candidate)}
                                   title={
                                     isCandidateRejected(candidate)
                                       ? "Candidate is rejected/cancelled"
                                       : canCandidateBeSelected(candidate)
                                         ? viewMode === 'current' ? "Select for feedback" : "Select for onboarding"
-                                        : candidate.feedback && candidate.rating 
+                                        : candidate.feedback && candidate.rating
                                           ? "Already has feedback and rating - use individual actions"
                                           : isCandidateAlreadyOnboarded(candidate)
                                             ? "Already onboarded"

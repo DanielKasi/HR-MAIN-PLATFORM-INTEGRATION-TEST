@@ -57,54 +57,8 @@ import {SimpleCalendarWidget} from "@/components/calendar-widget";
 import { TasksCards } from "@/components/dashboard_components/tasks-cards";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
+import { IDepartment, IEmployee, IInterview, ILeaveRequest, JobPositionAdvert } from "@/app/types/types.utils";
 
-// Interface for employee data from API
-interface EmployeeFromAPI {
-  id: number;
-  user: {
-    id: number;
-    email: string;
-    fullname: string;
-    is_active: boolean;
-    is_email_verified: boolean;
-    is_password_verified: boolean;
-    is_staff: boolean;
-    roles: string;
-    branches: string;
-    permissions: string;
-  } | null;
-  email: string;
-  phone_number: string;
-  position: {
-    id: number;
-    name: string;
-    department_id?: number;
-  };
-  department: {
-    id: number;
-    name: string;
-    institution_id: number;
-  };
-  roles: Array<{
-    id: number;
-    name: string;
-  }>;
-  date_of_birth: string;
-  date_of_joining: string;
-  address: string;
-  is_active: boolean;
-  experience: number;
-  qualifications: string;
-  skills: string;
-  emergency_contact_name: string;
-  emergency_contact_phone: string;
-  emergency_contact_relationship: string;
-  marital_status: string;
-  children_count: number;
-  employee_profile_picture: string;
-  created_at: string;
-  updated_at: string;
-}
 
 // Interface for leave applications
 interface LeaveApplication {
@@ -152,21 +106,6 @@ interface JobAdvert {
   extra_information?: string;
 }
 
-interface Interview {
-  id: number;
-  status: "completed" | "scheduled" | "cancelled";
-  interview_date: string;
-  rating?: number;
-  job_position_application_details?: {
-    id: number;
-    applicant_name: string;
-    applicant_email: string;
-    applicant_phone: string;
-  };
-  interview_stage_details?: {
-    name: string;
-  };
-}
 
 interface LeaveType {
   id: number;
@@ -176,12 +115,6 @@ interface LeaveType {
   is_active: boolean;
 }
 
-interface Department {
-  id: number;
-  name: string;
-  description?: string;
-  institution_id: number;
-}
 
 interface LeavePolicy {
   id: number;
@@ -240,13 +173,13 @@ const StatsCards = ({
   departments,
 }: {
   departmentId: string;
-  employees: EmployeeFromAPI[];
-  leaveApplications: LeaveApplication[];
-  jobAdverts: JobAdvert[];
-  interviews: Interview[];
+  employees: IEmployee[];
+  leaveApplications: ILeaveRequest[];
+  jobAdverts: JobPositionAdvert[];
+  interviews: IInterview[];
   leaveTypes: LeaveType[];
   leavePolicies: LeavePolicy[];
-  departments: Department[];
+  departments: IDepartment[];
 }) => {
   // Fixed filtering logic - filter employees first
   const filteredEmployees = useMemo(() => {
@@ -296,7 +229,7 @@ const StatsCards = ({
     const relevantLeaveApplications =
       departmentId === "all"
         ? leaveApplications
-        : leaveApplications.filter((app) => departmentEmployeeIds.has(app.employee.id));
+        : leaveApplications.filter((app) => departmentEmployeeIds.has(app.employee.toString()));
 
     const pendingLeaves = Array.isArray(relevantLeaveApplications)
       ? relevantLeaveApplications.filter((app) => app.status === "pending").length
@@ -304,7 +237,7 @@ const StatsCards = ({
 
     // For job adverts and interviews, these are usually organization-wide
     const openPositions = Array.isArray(jobAdverts)
-      ? jobAdverts.filter((advert) => advert.status === "active").length
+      ? jobAdverts.filter((advert) => advert.job_position_advert_status === "active").length
       : 0;
 
     const satisfactionScore = 4.2; // Static for now
@@ -529,8 +462,8 @@ const WorkforceOverview = ({
   departments,
   departmentId,
 }: {
-  employees: EmployeeFromAPI[];
-  departments: Department[];
+  employees: IEmployee[];
+  departments: IDepartment[];
   departmentId: string;
 }) => {
   // Filter employees based on selected department
@@ -704,9 +637,9 @@ const RecentActivities = ({
   leaveApplications,
   interviews,
 }: {
-  employees: EmployeeFromAPI[];
-  leaveApplications: LeaveApplication[];
-  interviews: Interview[];
+  employees: IEmployee[];
+  leaveApplications: ILeaveRequest[];
+  interviews: IInterview[];
 }) => {
   const activities = useMemo(() => {
     const recentActivities: Array<{
@@ -958,8 +891,8 @@ const NotificationsPanel = ({
   leaveApplications,
   interviews,
 }: {
-  leaveApplications: LeaveApplication[];
-  interviews: Interview[];
+  leaveApplications: ILeaveRequest[];
+  interviews: IInterview[];
 }) => {
   const notifications = useMemo(() => {
     const notifs = [];
@@ -1053,12 +986,12 @@ const NotificationsPanel = ({
 
 export default function HRDashboard() {
   const [selectedDepartment, setSelectedDepartment] = useState("all");
-  const [employees, setEmployees] = useState<EmployeeFromAPI[]>([]);
-  const [leaveApplications, setLeaveApplications] = useState<LeaveApplication[]>([]);
-  const [jobAdverts, setJobAdverts] = useState<JobAdvert[]>([]);
-  const [interviews, setInterviews] = useState<Interview[]>([]);
+  const [employees, setEmployees] = useState<IEmployee[]>([]);
+  const [leaveApplications, setLeaveApplications] = useState<ILeaveRequest[]>([]);
+  const [jobAdverts, setJobAdverts] = useState<JobPositionAdvert[]>([]);
+  const [interviews, setInterviews] = useState<IInterview[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [departments, setDepartments] = useState<IDepartment[]>([]);
   const [leavePolicies, setLeavePolicies] = useState<LeavePolicy[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -1103,17 +1036,21 @@ export default function HRDashboard() {
           getDepartments({institutionId: institutionIdNumber}),
         ]);
 
-        setEmployees((employeesResult as any) || []);
+        setEmployees(employeesResult);
+        setEmployees(employeesResult);
 
-        setLeaveApplications((leaveAppsResult as any) || []);
+        setLeaveApplications(leaveAppsResult);
+        setLeaveApplications(leaveAppsResult);
 
-        setJobAdverts((jobAdvertsResult as any) || []);
+        setJobAdverts(jobAdvertsResult.results);
 
-        setInterviews((interviewsResult as any) || []);
+        setInterviews(interviewsResult);
+        setLeaveTypes(leaveTypesResult);
+        setInterviews(interviewsResult);
+        setLeaveTypes(leaveTypesResult);
 
-        setLeaveTypes((leaveTypesResult as any) || []);
-
-        setDepartments((departmentsResult as any) || []);
+        setDepartments(departmentsResult);
+        setDepartments(departmentsResult);
 
         setLeavePolicies((leavePoliciesResult as any) || []);
 
@@ -1133,14 +1070,7 @@ export default function HRDashboard() {
     loadData();
   }, [institutionId]);
 
-  // Calculate departments for filter from real departments data
-  const departmentOptions = useMemo(() => {
-    const deptList = Array.isArray(departments) ? departments : [];
-    return [
-      {id: "all", name: "All Departments"},
-      ...deptList.map((dept) => ({id: dept.name, name: dept.name})),
-    ];
-  }, [departments]);
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -1183,8 +1113,11 @@ export default function HRDashboard() {
                       <SelectValue placeholder="All Departments" />
                     </SelectTrigger>
                     <SelectContent className="min-w-48 lg:min-w-64 w-full max-w-80">
-                      {departmentOptions.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id}>
+                      <SelectItem value={"all"}>
+                          All departments
+                        </SelectItem>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id.toString()}>
                           {dept.name}
                         </SelectItem>
                       ))}
