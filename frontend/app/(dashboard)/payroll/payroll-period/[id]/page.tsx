@@ -536,7 +536,7 @@ export default function PayrollPeriodDetails() {
     }
   }
 
-  // Show skeleton loading state
+
   if (isLoading) {
     return (
       <div className="p-2 space-y-6">

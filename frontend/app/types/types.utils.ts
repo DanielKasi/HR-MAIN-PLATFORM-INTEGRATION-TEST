@@ -419,6 +419,7 @@ export type JobAdvertStatus = "expired" | "active" | "archived" | "closed" | "in
 export type JobAdvertTypes = "internal" | "external";
 
 export interface JobPositionAdvert {
+  data: any;
   job_position_details: any;
   id: number;
   job_position: number; // Foreign key to JobPosition
@@ -434,6 +435,8 @@ export interface JobPositionAdvert {
 
 // For creating/updating job adverts
 export interface JobPositionAdvertFormData {
+  level: number;
+  interviewers: any;
   job_position: number;
   job_position_advert_status?: JobAdvertStatus;
   expiry_date: string; // ISO datetime string
@@ -456,11 +459,7 @@ export interface IEmployee {
     name: string;
     department_id: number;
   };
-  department: {
-    id: number;
-    name: string;
-    institution_id: number;
-  };
+  department: IDepartment;
   date_of_birth: string;
   date_of_joining: string;
   address: string;
@@ -1351,8 +1350,8 @@ export interface IDeductionTypeFormData {
 
 export interface IEmployeeAllowance {
   id: number;
-  employee: number;
-  allowance_type: number;
+  employee: IEmployee;
+  allowance_type: IAllowanceType;
   calculation_method: "fixed" | "percentage";
   amount: string;
   percentage: string;
@@ -1376,8 +1375,8 @@ export interface IEmployeeAllowanceFormData {
 
 export interface IEmployeeDeduction {
   id: number;
-  employee: number;
-  deduction_type: number;
+  employee: IEmployee;
+  deduction_type: IDeductionType;
   calculation_method: "fixed" | "percentage";
   amount: string;
   percentage: string;

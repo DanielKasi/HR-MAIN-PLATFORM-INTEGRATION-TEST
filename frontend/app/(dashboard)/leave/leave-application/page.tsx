@@ -68,12 +68,15 @@ import {
   ILeavePolicy,
   Employee,
   ILeaveBalance,
+  IEmployee,
 } from "@/app/types/types.utils";
 import {selectSelectedInstitution, selectAttachedInstitutions} from "@/store/auth/selectors";
 import {IUserInstitution} from "@/app/types";
 import {useSelector} from "react-redux";
 import {EmployeeSearchableSelect} from "@/components/ui/employee-searchable-select";
 import {handleDownload, getFileUrl, getFileName} from "@/lib/helpers";
+import { TableSkeleton } from "@/components/common/table-skeleton";
+import { Card, CardHeader } from "@/components/ui/card";
 
 const STATUS_CHOICES = [
   {value: "pending", label: "Pending"},
@@ -91,7 +94,7 @@ const DURATION_TYPES = [
 
 const LeaveApplicationComponent = () => {
   const [applications, setApplications] = useState<ILeaveRequest[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<IEmployee[]>([]);
   const [leavePolicies, setLeavePolicies] = useState<ILeavePolicy[]>([]);
   const [leaveBalances, setLeaveBalances] = useState<ILeaveBalance[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -191,7 +194,7 @@ const LeaveApplicationComponent = () => {
 
   const getSelectedEmployee = () => {
     if (!formData.employee) return null;
-    return employees.find((emp) => emp.id === formData.employee);
+    return employees.find((emp) => emp.id.toString() === formData.employee);
   };
 
   const getSelectedLeaveType = () => {
@@ -321,30 +324,7 @@ const LeaveApplicationComponent = () => {
 
       try {
         const fetchedEmployees = await getAllEmployees({institutionId: selectedInstitution?.id});
-
-        if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
-          const formattedEmployees: Employee[] = fetchedEmployees
-            .map((emp: any) => {
-              return {
-                id: emp.id?.toString() || emp.employee_id?.toString() || "",
-                name:
-                  emp.user?.fullname || emp.fullname || emp.name || emp.email || "Unknown Employee",
-                email: emp.user?.email || emp.email || "",
-                employee_id: emp.employee_id || emp.id?.toString() || "",
-                user: emp.user || null,
-              };
-            })
-            .filter((emp) => emp.id);
-
-          setEmployees(formattedEmployees);
-
-          if (formattedEmployees.length === 0) {
-            toast.error("No employees found for this institution");
-          }
-        } else {
-          setEmployees([]);
-          toast.error("Invalid employee data received");
-        }
+          setEmployees(fetchedEmployees);
       } catch (error) {
         setEmployees([]);
       } finally {
@@ -815,6 +795,35 @@ const LeaveApplicationComponent = () => {
     );
   }
 
+  
+    if (isLoading) {
+      return (
+        <div className="p-2 space-y-6">
+          <Card className="h-[calc(100vh-2rem)] shadow-lg">
+            <CardHeader className="border-b">
+              <div className="flex justify-between gap-8 items-center">
+                <div className="flex items-center justify-start gap-4">
+                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="space-y-2">
+                    <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </CardHeader>
+            <TableSkeleton rows={10} columns={8} />
+          </Card>
+        </div>
+      )
+    }
+
+
+    
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50/30">
       <div className="w-full px-2 py-8">

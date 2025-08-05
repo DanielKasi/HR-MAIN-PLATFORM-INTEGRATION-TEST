@@ -2109,10 +2109,10 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
             <div className="text-center">
               <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600 mb-4">No interview stages configured yet</p>
-              <Button onClick={() => setIsCreateStageDialogOpen(true)} className="bg-orange-500 hover:bg-orange-600">
+              {/* <Button onClick={() => setIsCreateStageDialogOpen(true)} className="bg-orange-500 hover:bg-orange-600">
                 <Plus className="h-4 w-4 mr-2" />
                 Add First Interview Stage
-              </Button>
+              </Button> */}
             </div>
           </div>
         </Card>

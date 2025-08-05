@@ -29,7 +29,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -71,23 +71,24 @@ import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/se
 import { getOnBoardings, updateOnBoarding } from "@/lib/utils"
 import type { IOnBoarding, IOnBoardingFormData } from "@/app/types/types.utils"
 import { toast } from "sonner"
+import { TableSkeleton } from "@/components/common/table-skeleton"
 
 // Constants matching your exact interface
 const ONBOARDING_STAGES = [
   { value: 'initial', label: 'Initial', icon: AlertTriangle, color: 'text-gray-500' },
-  { value: 'training', label: 'Training', icon: GraduationCap, color: 'text-blue-500' },
   { value: 'issued_contract', label: 'Contract Issued', icon: FileText, color: 'text-purple-500' },
+  { value: 'training', label: 'Training', icon: GraduationCap, color: 'text-blue-500' },
   { value: 'accepted_offer', label: 'Offer Accepted', icon: UserCheck, color: 'text-orange-500' },
   { value: 'declined_offer', label: 'Offer Declined', icon: UserX, color: 'text-red-500' },
 ] as const
 
 const NEXT_STAGE_MAP: Record<IOnBoarding['status'], IOnBoarding['status'][]> = {
-  'initial': ['training'],
-  'training': ['issued_contract', 'declined_offer'],
-  'issued_contract': ['accepted_offer', 'declined_offer'],
-  'accepted_offer': [],
-  'declined_offer': [],
-}
+  initial: ['issued_contract'],
+  issued_contract: ['training', 'declined_offer'],
+  training: ['accepted_offer', 'declined_offer'],
+  accepted_offer: [],
+  declined_offer: [],
+};
 
 // Types
 interface UpdateDialogState {
@@ -159,17 +160,21 @@ const handleSelectByStatus = (statuses: IOnBoarding['status'][]) => {
 }
 
 // 3. Quick selection helpers
-const selectNewCandidates = () => {
-  handleSelectByStatus(['initial', 'training', 'issued_contract'])
-}
+const selectActiveCandidates = () => {
+  handleSelectByStatus(['initial', 'issued_contract', 'training']);
+};
 
-const selectPendingCandidates = () => {
-  handleSelectByStatus(['initial', 'training'])
-}
+const selectPendingContract = () => {
+  handleSelectByStatus(['initial']);
+};
 
 const selectContractIssued = () => {
-  handleSelectByStatus(['issued_contract'])
-}
+  handleSelectByStatus(['issued_contract']);
+};
+
+const selectTraining = () => {
+  handleSelectByStatus(['training']);
+};
 
 // 4. Enhanced Select All component with dropdown options
 const SmartSelectAllDropdown = () => (
@@ -188,24 +193,25 @@ const SmartSelectAllDropdown = () => (
       <DropdownMenuItem onClick={handleSelectAll}>
         Select All ({filteredOnboardings.length})
       </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => handleSelectByStatus(['initial'])}>
-        Select Initial ({filteredOnboardings.filter(o => o.status === 'initial').length})
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => handleSelectByStatus(['training'])}>
-        Select Training ({filteredOnboardings.filter(o => o.status === 'training').length})
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => handleSelectByStatus(['issued_contract'])}>
-        Select Contract Issued ({filteredOnboardings.filter(o => o.status === 'issued_contract').length})
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => handleSelectByStatus(['initial', 'training', 'issued_contract'])}>
-        Select All Except Accepted ({filteredOnboardings.filter(o => o.status !== 'accepted_offer' && o.status !== 'declined_offer').length})
+      {ONBOARDING_STAGES.map((stage) => (
+        <DropdownMenuItem
+          key={stage.value}
+          onClick={() => handleSelectByStatus([stage.value])}
+        >
+          Select {stage.label} ({filteredOnboardings.filter(o => o.status === stage.value).length})
+        </DropdownMenuItem>
+      ))}
+      <DropdownMenuItem
+        onClick={() => handleSelectByStatus(['initial', 'issued_contract', 'training'])}
+      >
+        Select Active Candidates ({filteredOnboardings.filter(o => ['initial', 'issued_contract', 'training'].includes(o.status)).length})
       </DropdownMenuItem>
       <DropdownMenuItem onClick={clearSelection}>
         Clear Selection
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
-)
+);
 
 
   useEffect(() => {
@@ -573,6 +579,33 @@ const handleUpdateOnboarding = (onboarding: IOnBoarding, newStatus: IOnBoarding[
   if (!selectedInstitution || !selectedBranch) {
     return <div>Loading...</div>
   }
+
+
+    if (isLoading) {
+      return (
+        <div className="p-2 space-y-6">
+          <Card className="h-[calc(100vh-2rem)] shadow-lg">
+            <CardHeader className="border-b">
+              <div className="flex justify-between gap-8 items-center">
+                <div className="flex items-center justify-start gap-4">
+                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="space-y-2">
+                    <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </CardHeader>
+            <TableSkeleton rows={10} columns={8} />
+          </Card>
+        </div>
+      )
+    }
 
   return (
     <div className="w-full h-full p-2 space-y-6">

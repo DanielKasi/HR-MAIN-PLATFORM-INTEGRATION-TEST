@@ -48,6 +48,8 @@ import {
   ChevronRight,
   Filter,
   Building,
+  Search,
+  CalendarDays,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -97,6 +99,7 @@ import type {
   IInterviewStageFormData,
 } from "@/app/types/types.utils";
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select";
+import { TableSkeleton } from "@/components/common/table-skeleton";
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
@@ -1137,6 +1140,34 @@ export default function ApplicationsPage() {
     return <div>Loading...</div>;
   }
 
+
+    if (isLoading) {
+      return (
+        <div className="p-2 space-y-6">
+          <Card className="h-[calc(100vh-2rem)] shadow-lg">
+            <CardHeader className="border-b">
+              <div className="flex justify-between gap-8 items-center">
+                <div className="flex items-center justify-start gap-4">
+                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="space-y-2">
+                    <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </CardHeader>
+            <TableSkeleton rows={10} columns={8} />
+          </Card>
+        </div>
+      )
+    }
+    
+
   return (
     <div className="w-full py-8 space-y-6">
       <div className="flex items-center justify-between">
@@ -1784,276 +1815,359 @@ export default function ApplicationsPage() {
       </Card>
 
       {/* Create Application Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="w-full max-w-xl lg:max-w-2xl xl:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Create New Application</DialogTitle>
-            <DialogDescription>
-              Fill in the details to create a new job application.
-            </DialogDescription>
-          </DialogHeader>
+          {/* Create Application Dialog */}
+<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+  <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-hidden bg-white">
+    <DialogHeader className="pb-6">
+      <DialogTitle className="text-2xl font-semibold text-gray-800">Add Application</DialogTitle>
+      <DialogDescription className="text-gray-600">
+        Fill in the details to create a new job application.
+      </DialogDescription>
+    </DialogHeader>
 
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+    {error && (
+      <Alert variant="destructive" className="mb-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    )}
+
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="max-h-[60vh] overflow-y-auto px-1">
+        <div className="space-y-6">
+          {/* First Row - Job Position and Date */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label htmlFor="job_position_advert" className="block text-sm font-medium text-gray-800">
+                Job Position / Title *
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground z-10" />
+                <Select
+                  value={formData.job_position_advert.toString()}
+                  onValueChange={(value: string) =>
+                    handleInputChange("job_position_advert", Number.parseInt(value))
+                  }
+                >
+                  <SelectTrigger className="w-full bg-white border-gray-300 pl-9">
+                    <SelectValue
+                      placeholder={
+                        isLoadingAdverts ? "Loading job adverts..." : "Search job position"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {jobPositionAdverts
+                      .filter(
+                        (advert) =>
+                          advert.job_position_advert_status !== "expired" &&
+                          advert.job_position_advert_status !== "closed",
+                      )
+                      .map((advert) => (
+                        <SelectItem key={advert.id} value={advert.id.toString()}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {advert.job_position_details.name || `Job Advert #${advert.id}`}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="application_date" className="block text-sm font-medium text-gray-800">
+                Application Date *
+              </label>
+              <div className="relative">
+                <Input
+                  id="application_date"
+                  type="date"
+                  value={formData.application_date}
+                  onChange={(e) => handleInputChange("application_date", e.target.value)}
+                  className="w-full pr-10 bg-white border-gray-300"
+                  max={new Date().toISOString().split("T")[0]}
+                  required
+                />
+                <CalendarDays className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-gray-500 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Second Row - Name and Gender */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label htmlFor="applicant_name" className="block text-sm font-medium text-gray-800">
+                Applicant Name *
+              </label>
+              <Input
+                id="applicant_name"
+                placeholder="Applicant Name"
+                value={formData.applicant_name}
+                onChange={(e) => handleInputChange("applicant_name", e.target.value)}
+                className="bg-white border-gray-300"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="gender" className="block text-sm font-medium text-gray-800">
+                Gender *
+              </label>
+              <Select
+                value={formData.gender}
+                onValueChange={(value: any) => handleInputChange("gender", value)}
+              >
+                <SelectTrigger className="w-full bg-white border-gray-300">
+                  <SelectValue placeholder="Select Gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Third Row - Email and Phone */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label htmlFor="applicant_email" className="block text-sm font-medium text-gray-800">
+                Email *
+              </label>
+              <Input
+                id="applicant_email"
+                placeholder="email@email.com"
+                type="email"
+                value={formData.applicant_email}
+                onChange={(e) => handleInputChange("applicant_email", e.target.value)}
+                className="bg-white border-gray-300"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="applicant_phone" className="block text-sm font-medium text-gray-800">
+                Phone Number
+              </label>
+              <Input
+                id="applicant_phone"
+                placeholder="0751234567"
+                type="tel"
+                value={formData.applicant_phone}
+                onChange={(e) => handleInputChange("applicant_phone", e.target.value)}
+                className="bg-white border-gray-300"
+              />
+            </div>
+          </div>
+
+          {/* Fourth Row - Source and Address */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label htmlFor="source" className="block text-sm font-medium text-gray-800">
+                Source
+              </label>
+              <Select
+                value={formData.source}
+                onValueChange={(value: string | number | File | null) => {
+                  handleInputChange("source", value);
+                  if (value !== "head_hunt") {
+                    handleInputChange("recommended_by", null);
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full bg-white border-gray-300">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="website">Website</SelectItem>
+                  <SelectItem value="referral">Referral</SelectItem>
+                  <SelectItem value="job_board">Job Board</SelectItem>
+                  <SelectItem value="social_media">Social Media</SelectItem>
+                  <SelectItem value="head_hunt">Head Hunt</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="address" className="block text-sm font-medium text-gray-800">
+                Address *
+              </label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground z-10" />
+                <LocationAutocomplete
+                  value={formData.address}
+                  onChange={(value) => handleInputChange("address", value)}
+                  onCoordinatesChange={handleAddressCoordinatesChange}
+                  placeholder="Search for applicant's address..."
+                  showCurrentLocationButton={true}
+                  className="w-full pl-9 bg-white border-gray-300"
+                />
+              </div>
+              {/* Hidden coordinate fields */}
+              <input
+                type="hidden"
+                value={formData.address_latitude || ""}
+                onChange={(e) => handleInputChange("address_latitude", e.target.value)}
+              />
+              <input
+                type="hidden"
+                value={formData.address_longitude || ""}
+                onChange={(e) => handleInputChange("address_longitude", e.target.value)}
+              />
+              <input
+                type="hidden"
+                value={formData.created_by || userData?.id || 0}
+                onChange={(e) => handleInputChange("created_by", Number(e.target.value))}
+              />
+            </div>
+          </div>
+
+          {/* Head Hunt Field - Only show when source is head_hunt */}
+          {formData.source === "head_hunt" && (
+            <div className="space-y-2">
+              <label htmlFor="recommended_by" className="block text-sm font-medium text-gray-800">
+                Head Hunted By *
+              </label>
+              <div className="w-full">
+                <EmployeeSearchableSelect
+                  employees={employees}
+                  value={formData.recommended_by ? [formData.recommended_by.toString()] : []}
+                  onValueChange={(values) => {
+                    const selectedValue = Array.isArray(values) ? values[0] : values;
+                    handleInputChange(
+                      "recommended_by",
+                      selectedValue ? Number(selectedValue) : null,
+                    );
+                  }}
+                  placeholder="Select the employee who head hunted this candidate"
+                  showEmployeeId={false}
+                  showDepartment={true}
+                  multiple={false}
+                />
+              </div>
+              {!formData.recommended_by && (
+                <p className="text-sm text-muted-foreground">
+                  Please select which employee was responsible for head hunting this candidate.
+                </p>
+              )}
+            </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4 ">
-            <div className="max-h-[70vh] overflow-y-auto py-8">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="job_position_advert">Job Position/ Title *</Label>
-                  <Select
-                    value={formData.job_position_advert.toString()}
-                    onValueChange={(value: string) =>
-                      handleInputChange("job_position_advert", Number.parseInt(value))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          isLoadingAdverts ? "Loading job adverts..." : "Select a job advert"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {jobPositionAdverts
-                        .filter(
-                          (advert) =>
-                            advert.job_position_advert_status !== "expired" &&
-                            advert.job_position_advert_status !== "closed",
-                        )
-                        .map((advert) => (
-                          <SelectItem key={advert.id} value={advert.id.toString()}>
-                            <div className="flex flex-col">
-                              <span className="font-medium">
-                                {advert.job_position_details.name || `Job Advert #${advert.id}`}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {/* ... rest of your form fields */}
-                <div className="space-y-2">
-                  <Label htmlFor="application_date">Application Date *</Label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                    </div>
-                    <Input
-                      id="application_date"
-                      type="date"
-                      value={formData.application_date}
-                      onChange={(e) => handleInputChange("application_date", e.target.value)}
-                      className="pl-10"
-                      max={new Date().toISOString().split("T")[0]}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
+          {/* Fifth Row - State and Country */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label htmlFor="state" className="block text-sm font-medium text-gray-800">
+                State
+              </label>
+              <Input
+                id="state"
+                placeholder="State"
+                value={formData.state}
+                onChange={(e) => handleInputChange("state", e.target.value)}
+                className="bg-white border-gray-300"
+              />
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="applicant_name">Applicant Name *</Label>
-                  <Input
-                    id="applicant_name"
-                    value={formData.applicant_name}
-                    onChange={(e) => handleInputChange("applicant_name", e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Gender *</Label>
-                  <Select
-                    value={formData.gender}
-                    onValueChange={(value: any) => handleInputChange("gender", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="applicant_email">Email *</Label>
-                  <Input
-                    id="applicant_email"
-                    type="email"
-                    value={formData.applicant_email}
-                    onChange={(e) => handleInputChange("applicant_email", e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="applicant_phone">Phone</Label>
-                  <Input
-                    id="applicant_phone"
-                    value={formData.applicant_phone}
-                    onChange={(e) => handleInputChange("applicant_phone", e.target.value)}
-                  />
-                </div>
-              </div>
+            <div className="space-y-2">
+              <label htmlFor="country" className="block text-sm font-medium text-gray-800">
+                Country *
+              </label>
+              <Input
+                id="country"
+                placeholder="Country"
+                value={formData.country}
+                onChange={(e) => handleInputChange("country", e.target.value)}
+                className="bg-white border-gray-300"
+                required
+              />
+            </div>
+          </div>
 
-              {/* Source and Address Grid - CLEAN VERSION */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="source">Source</Label>
-                  <Select
-                    value={formData.source}
-                    onValueChange={(value: string | number | File | null) => {
-                      handleInputChange("source", value);
-                      // Clear recommended_by when source changes away from head_hunt
-                      if (value !== "head_hunt") {
-                        handleInputChange("recommended_by", null);
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="website">Website</SelectItem>
-                      <SelectItem value="referral">Referral</SelectItem>
-                      <SelectItem value="job_board">Job Board</SelectItem>
-                      <SelectItem value="social_media">Social Media</SelectItem>
-                      <SelectItem value="head_hunt">Head Hunt</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address *</Label>
-                  <LocationAutocomplete
-                    value={formData.address}
-                    onChange={(value) => handleInputChange("address", value)}
-                    onCoordinatesChange={handleAddressCoordinatesChange}
-                    placeholder="Search for applicant's address..."
-                    showCurrentLocationButton={true}
-                  />
-                </div>
-              </div>
-
-              {/* HEAD HUNT FIELD - PUT IT RIGHT HERE, OUTSIDE THE GRID */}
-              {formData.source === "head_hunt" && (
-                <div className="space-y-2">
-                  <Label htmlFor="recommended_by">Head Hunted By *</Label>
-                  <div className="w-full">
-                    <EmployeeSearchableSelect
-                      employees={employees.map((emp) => ({
-                        ...emp,
-                        department: emp.department?.name || "No Department",
-                        position: emp.position?.name || "No Position",
-                        user: emp.user
-                          ? {
-                            fullname: emp.user.fullname,
-                            email: emp.user.email,
-                          }
-                          : undefined,
-                      }))}
-                      value={formData.recommended_by ? [formData.recommended_by.toString()] : []}
-                      onValueChange={(values) => {
-                        const selectedValue = Array.isArray(values) ? values[0] : values;
-                        handleInputChange(
-                          "recommended_by",
-                          selectedValue ? Number(selectedValue) : null,
-                        );
-                      }}
-                      placeholder="Select the employee who head hunted this candidate"
-                      showEmployeeId={false}
-                      showDepartment={true}
-                      multiple={false}
-                    />
-                  </div>
-                  {!formData.recommended_by && (
-                    <p className="text-sm text-muted-foreground">
-                      Please select which employee was responsible for head hunting this candidate.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="state">State</Label>
-                  <Input
-                    id="state"
-                    value={formData.state}
-                    onChange={(e) => handleInputChange("state", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="country">Country *</Label>
-                  <Input
-                    id="country"
-                    value={formData.country}
-                    onChange={(e) => handleInputChange("country", e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="resume">Curriculum Vitae /Resume *</Label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    id="resume"
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={(e) => handleFileChange("resume", e.target.files?.[0] || null)}
-                    required
-                  />
-                  <Upload className="h-4 w-4 text-muted-foreground" />
-                </div>
+          {/* File Upload Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* CV Upload */}
+            <div className="space-y-2">
+              <label htmlFor="cv-upload" className="block text-sm font-medium text-gray-800">
+                Curriculum Vitae / Resume *
+              </label>
+              <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-md bg-gray-50 text-center cursor-pointer hover:border-gray-400 transition-colors duration-200">
+                <input
+                  id="cv-upload"
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  className="sr-only"
+                  onChange={(e) => handleFileChange("resume", e.target.files?.[0] || null)}
+                  required
+                />
+                <label htmlFor="cv-upload" className="flex flex-col items-center cursor-pointer">
+                  <Upload className="h-10 w-10 text-orange-500 mb-2" />
+                  <span className="text-sm font-medium text-orange-500">Click to Upload or drag and drop</span>
+                  <span className="text-xs text-gray-500">(Max. File size: 25 MB)</span>
+                </label>
                 {formData.resume && (
-                  <p className="text-sm text-muted-foreground flex items-center">
+                  <p className="text-sm text-gray-700 mt-2 flex items-center">
                     <FileText className="mr-1 h-3 w-3" />
                     {formData.resume.name}
                   </p>
                 )}
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="cover_letter">Cover Letter</Label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    id="cover_letter"
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={(e) => handleFileChange("cover_letter", e.target.files?.[0] || null)}
-                  />
-                  <Upload className="h-4 w-4 text-muted-foreground" />
-                </div>
+            {/* Cover Letter Upload */}
+            <div className="space-y-2">
+              <label htmlFor="cover-letter-upload" className="block text-sm font-medium text-gray-800">
+                Cover Letter
+              </label>
+              <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-md bg-gray-50 text-center cursor-pointer hover:border-gray-400 transition-colors duration-200">
+                <input
+                  id="cover-letter-upload"
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  className="sr-only"
+                  onChange={(e) => handleFileChange("cover_letter", e.target.files?.[0] || null)}
+                />
+                <label htmlFor="cover-letter-upload" className="flex flex-col items-center cursor-pointer">
+                  <Upload className="h-10 w-10 text-orange-500 mb-2" />
+                  <span className="text-sm font-medium text-orange-500">Click to Upload or drag and drop</span>
+                  <span className="text-xs text-gray-500">(Max. File size: 25 MB)</span>
+                </label>
                 {formData.cover_letter && (
-                  <p className="text-sm text-muted-foreground flex items-center">
+                  <p className="text-sm text-gray-700 mt-2 flex items-center">
                     <FileText className="mr-1 h-3 w-3" />
                     {formData.cover_letter.name}
                   </p>
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create Application"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Form Actions */}
+      <div className="flex justify-start gap-4 pt-6 border-t">
+        <Button 
+          type="submit" 
+          disabled={isSubmitting}
+          className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-8 shadow-md transition-colors duration-200 text-lg"
+        >
+          {isSubmitting ? "Creating..." : "Add Application"}
+        </Button>
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={() => setIsCreateDialogOpen(false)}
+          className="border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold py-3 px-8 transition-colors duration-200 text-lg"
+        >
+          Cancel
+        </Button>
+      </div>
+    </form>
+  </DialogContent>
+</Dialog>
 
       {/* Individual Action Confirmation Dialog */}
       <AlertDialog
@@ -2504,14 +2618,7 @@ export default function ApplicationsPage() {
               <Label htmlFor="stage_interviewers">Interviewers *</Label>
               <div className="w-full max-w-full overflow-hidden">
                 <EmployeeSearchableSelect
-                  employees={employees.map((emp) => ({
-                    ...emp,
-                    department: emp.department.name,
-                    position: emp.position.name,
-                    user: emp.user
-                      ? { fullname: emp.user.fullname, email: emp.user.email }
-                      : undefined,
-                  }))}
+                  employees={employees}
                   value={stageFormData.interviewers.map((id) => id.toString())}
                   onValueChange={(values) => {
                     const numberValues = Array.isArray(values)
