@@ -71,9 +71,8 @@ export function CreateDepartmentDialog({
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    e.stopPropagation();
+  const handleSubmit = async () => {
+
     if (!selectedInstitution) {
       toast.error("Missing organization information")
       return
@@ -115,7 +114,7 @@ export function CreateDepartmentDialog({
       <DialogTrigger asChild>
         {trigger || <Button variant="outline">Create New Department</Button>}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[28rem] md:max-w-[38rem] lg:max-w-[48rem]">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -129,8 +128,8 @@ export function CreateDepartmentDialog({
             </div>
           </div>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4 overflow-y-auto h-full max-h-[60svh]">
+        <form className="overflow-y-auto h-full max-h-[60svh]">
+          <div className="grid gap-4 py-4 ">
             <div className="space-y-2">
               <Label htmlFor="name">Department Name</Label>
               <Input
@@ -163,7 +162,8 @@ export function CreateDepartmentDialog({
               )}
             </div>
           </div>
-          <DialogFooter>
+        </form>
+          <div className="flex items-center justify-end gap-8 py-4">
             <Button
               type="button"
               variant="outline"
@@ -172,7 +172,7 @@ export function CreateDepartmentDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
@@ -182,8 +182,7 @@ export function CreateDepartmentDialog({
                 "Create Department"
               )}
             </Button>
-          </DialogFooter>
-        </form>
+          </div>
       </DialogContent>
     </Dialog>
   )

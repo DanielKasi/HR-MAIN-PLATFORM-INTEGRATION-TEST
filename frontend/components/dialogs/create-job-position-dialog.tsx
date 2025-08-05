@@ -197,7 +197,7 @@ export function CreateJobPositionDialog({
       <DialogTrigger asChild>
         {trigger || <Button variant="outline">Create New Job Position</Button>}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="max-w-[90%] sm:max-w-[37rem] md:max-w-[43rem] lg:max-w-[50rem]">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">

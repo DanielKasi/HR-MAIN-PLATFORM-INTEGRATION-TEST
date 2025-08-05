@@ -243,25 +243,26 @@ export default function DisciplinaryActionsTable({
     }
 
   return (
-    <div className="w-full">
+    <div className="w-full p-2 sm:p-4 lg:p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Disciplinary Actions</h1>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900">Disciplinary Actions</h1>
       </div>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+      <Card >
+        <CardHeader className="p-3 sm:p-4 lg:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div>
-              <CardTitle>All Disciplinary Actions ({disciplinaryActions.length})</CardTitle>
-              <CardDescription>Complete overview of disciplinary actions across all departments</CardDescription>
+              <CardTitle className="text-xs sm:text-sm lg:text-base">All Disciplinary Actions ({disciplinaryActions.length})</CardTitle>
+              <CardDescription className="text-sm sm:text-base">Complete overview of disciplinary actions across all departments</CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
                 <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
                 Refresh
               </Button>
-              <Button onClick={handleAddNewAction} className="bg-green-600 hover:bg-green-700">
+             <Button onClick={handleAddNewAction} className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
-                Add New Action
+                <span className="hidden sm:inline">Add New Action</span>
+                <span className="sm:hidden">Add New</span>
               </Button>
             </div>
           </div>
@@ -302,7 +303,9 @@ export default function DisciplinaryActionsTable({
               </SelectContent>
             </Select>
           </div>
-          <div className="rounded-md border">
+          <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-6">
+          <div className="inline-block min-w-full px-3 sm:px-4 lg:px-6">
+            <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -400,6 +403,8 @@ export default function DisciplinaryActionsTable({
                 ))}
               </TableBody>
             </Table>
+            </div>
+            </div>
           </div>
           <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
             setIsDeleteDialogOpen(open)

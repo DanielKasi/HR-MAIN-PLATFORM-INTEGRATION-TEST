@@ -9,19 +9,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { CheckCircle, AlertCircle, Search, Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, ChevronLeft, ChevronRight, MoreVertical } from "lucide-react"
+  AlertCircle,
+  Search,
+  Plus,
+  Edit,
+  Trash2,
+  Loader2,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  MoreVertical,
+} from "lucide-react"
 import { toast } from "sonner"
 
 // Import your API functions and types
@@ -41,7 +44,14 @@ interface EmployeeTypeModalProps {
 }
 
 // Employee Type Form Modal Component
-function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting, existingTypes }: EmployeeTypeModalProps) {
+function EmployeeTypeModal({
+  isOpen,
+  onClose,
+  editingType,
+  onSave,
+  isSubmitting,
+  existingTypes,
+}: EmployeeTypeModalProps) {
   const [formData, setFormData] = useState<IEmployeeTypeFormData>({
     name: "",
     description: "",
@@ -80,9 +90,7 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
 
     // Check for duplicate names (excluding current editing item)
     const duplicateName = existingTypes.find(
-      (type) =>
-        type.name.toLowerCase() === formData.name?.toLowerCase() &&
-        type.id !== editingType?.id
+      (type) => type.name.toLowerCase() === formData.name?.toLowerCase() && type.id !== editingType?.id,
     )
     if (duplicateName) {
       newErrors.name = "An employee type with this name already exists"
@@ -91,9 +99,7 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
     // Check for duplicate codes (excluding current editing item)
     if (formData.code?.trim()) {
       const duplicateCode = existingTypes.find(
-        (type) =>
-          type.code?.toLowerCase() === formData.code?.toLowerCase() &&
-          type.id !== editingType?.id
+        (type) => type.code?.toLowerCase() === formData.code?.toLowerCase() && type.id !== editingType?.id,
       )
       if (duplicateCode) {
         newErrors.code = "An employee type with this code already exists"
@@ -129,7 +135,7 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] mx-4 sm:mx-0 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editingType ? "Edit Employee Type" : "Create Employee Type"}</DialogTitle>
           <DialogDescription>
@@ -140,7 +146,7 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-2">
               <Label htmlFor="name">
                 Name <span className="text-red-500">*</span>
@@ -178,15 +184,17 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
             />
           </div>
 
-          <div className="flex items-center justify-end gap-4 pt-4">
-
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 sm:gap-4 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="w-full sm:w-auto text-sm bg-transparent"
+            >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-            >
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto text-sm">
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {isSubmitting ? "Saving..." : editingType ? "Update Employee Type" : "Create Employee Type"}
             </Button>
@@ -209,14 +217,10 @@ function EmployeeTypeDetailsModal({ isOpen, onClose, employeeType }: EmployeeTyp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] mx-4 sm:mx-0 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            Employee Type Details
-          </DialogTitle>
-          <DialogDescription>
-            View the details of this employee type
-          </DialogDescription>
+          <DialogTitle className="flex items-center gap-2">Employee Type Details</DialogTitle>
+          <DialogDescription>View the details of this employee type</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -269,7 +273,7 @@ export default function EmployeeTypeManagement() {
   const [employeeTypes, setEmployeeTypes] = useState<IEmployeeType[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [loading, setLoading] = useState(true)
-  const [employeeTypeToDelete, setEmployeeTypeToDelete] = useState<IEmployeeType | null>(null);
+  const [employeeTypeToDelete, setEmployeeTypeToDelete] = useState<IEmployeeType | null>(null)
   const [isDeleting, setIsDeleting] = useState<boolean>(false)
 
   // Pagination states
@@ -302,7 +306,6 @@ export default function EmployeeTypeManagement() {
     setCurrentPage(1)
   }
 
-
   // Fetch employee types on component mount
   useEffect(() => {
     if (selectedInstitution?.id) {
@@ -321,7 +324,6 @@ export default function EmployeeTypeManagement() {
       console.error("Error fetching employee types:", error)
       toast.error("Failed to load employee types")
     } finally {
-      
       setLoading(false)
     }
   }
@@ -385,7 +387,7 @@ export default function EmployeeTypeManagement() {
       }
     } catch (error) {
       console.error("Error saving employee type:", error)
-      toast.error(`Failed to ${editingType ? 'update' : 'create'} employee type`)
+      toast.error(`Failed to ${editingType ? "update" : "create"} employee type`)
       throw error
     } finally {
       setIsSubmitting(false)
@@ -449,213 +451,226 @@ export default function EmployeeTypeManagement() {
     )
   }
 
-
-    if (loading) {
-      return (
-        <div className="p-2 space-y-6">
-          <Card className="h-[calc(100vh-2rem)] shadow-lg">
-            <CardHeader className="border-b">
-              <div className="flex justify-between gap-8 items-center">
-                <div className="flex items-center justify-start gap-4">
-                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
-                  <div className="space-y-2">
-                    <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+  if (loading) {
+    return (
+      <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+        <Card className="h-[calc(100vh-2rem)] shadow-lg">
+          <CardHeader className="border-b p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-8 items-start sm:items-center">
+              <div className="flex items-center justify-start gap-4">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="space-y-2">
+                  <div className="h-5 sm:h-6 bg-gray-200 rounded w-48 sm:w-64 animate-pulse"></div>
+                  <div className="h-3 sm:h-4 bg-gray-200 rounded w-32 sm:w-48 animate-pulse"></div>
                 </div>
               </div>
-            </CardHeader>
-            <TableSkeleton rows={10} columns={8} />
-          </Card>
-        </div>
-      )
-    }
+              <div className="flex gap-2">
+                <div className="h-8 w-24 sm:h-10 sm:w-32 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+          </CardHeader>
+          <TableSkeleton rows={10} columns={3} />
+        </Card>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full h-full p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       {/* Employee Types List */}
       <Card className="w-full bg-white shadow-sm border border-gray-200">
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <CardTitle>Employee Types</CardTitle>
-              <CardDescription>Manage different types of employees in your organization</CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Employee Types</CardTitle>
+              <CardDescription className="text-sm sm:text-base">
+                Manage different types of employees in your organization
+              </CardDescription>
             </div>
-            <Button onClick={handleCreate} >
+            <Button onClick={handleCreate} className="w-full sm:w-auto text-sm">
               <Plus className="h-4 w-4 mr-2" />
-              Add Employee Type
+              <span className="hidden sm:inline">Add Employee Type</span>
+              <span className="sm:hidden">Add Type</span>
             </Button>
           </div>
         </CardHeader>
 
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative flex-1 max-w-sm">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-4 sm:mb-6">
+            <div className="relative flex-1 max-w-full sm:max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search employee types..."
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-10"
+                className="pl-10 text-sm"
               />
             </div>
-            <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-200">
+            <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-200 text-xs sm:text-sm">
               {filteredTypes.length} type{filteredTypes.length !== 1 ? "s" : ""}
-              {/* {totalPages > 1 && (
-                <span className="ml-1">
-                  • Page {currentPage} of {totalPages}
-                </span>
-              )} */}
             </Badge>
           </div>
 
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-            {loading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
-                  <span className="text-gray-600">Loading employee types...</span>
-                </div>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50 border-b border-gray-200">
-                    <TableHead className="font-semibold text-gray-900 py-4 px-6">Name</TableHead>
-                    <TableHead className="font-semibold text-gray-900 py-4 px-6">Description</TableHead>
-                    <TableHead className="font-semibold text-gray-900 py-4 px-6 w-[100px] text-center">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedTypes.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-12 text-gray-500 bg-white">
-                        <div className="flex flex-col items-center gap-2">
-                          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2">
-                            <Search className="h-6 w-6 text-gray-400" />
-                          </div>
-                          {searchTerm ? "No employee types found matching your search." : "No employee types found."}
-                          {!searchTerm && (
-                            <Button
-                              onClick={handleCreate}
-                              variant="outline"
-                              size="sm"
-                              className="mt-2 border-orange-300 text-orange-700 hover:bg-orange-50 bg-transparent"
-                            >
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add your first employee type
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    paginatedTypes.map((type, index) => (
-                      <TableRow
-                        key={type.id}
-                        className={`
-                          bg-white hover:bg-gray-50 transition-colors duration-150 border-b border-gray-100 last:border-b-0
-                          ${(startIndex + index) % 2 === 0 ? "bg-white" : "bg-gray-50/30"}
-                        `}
-                      >
-                        <TableCell className="py-4 px-6">
-                          <div className="font-medium text-gray-900">{type.name}</div>
-                        </TableCell>
-                        <TableCell className="py-4 px-6 max-w-md">
-                          <div className="text-gray-700 leading-relaxed">
-                            {type.description ? (
-                              <span className="line-clamp-2">{type.description}</span>
-                            ) : (
-                              <span className="text-gray-400 italic">No description provided</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-4 px-6 text-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
-                                disabled={employeeTypeToDelete?.id === type.id}
-                              >
-                                {employeeTypeToDelete?.id === type.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
-                                ) : (
-                                  <MoreVertical className="h-4 w-4 text-gray-600" />
-                                )}
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48 bg-white border border-gray-200 shadow-lg">
-                              <DropdownMenuItem
-                                onClick={() => handleView(type)}
-                                className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
-                              >
-                                <Eye className="h-4 w-4 mr-3 text-gray-500" />
-                                View details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleEdit(type)}
-                                className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
-                              >
-                                <Edit className="h-4 w-4 mr-3 text-gray-500" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => setEmployeeTypeToDelete(type)}
-                                className="flex items-center px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
-                              >
-                                <Trash2 className="h-4 w-4 mr-3 text-red-500" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+            <div className="overflow-x-auto">
+              <div className="min-w-[600px]">
+                {loading ? (
+                  <div className="flex items-center justify-center h-64">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
+                      <span className="text-gray-600 text-sm sm:text-base">Loading employee types...</span>
+                    </div>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50 border-b border-gray-200">
+                        <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm">
+                          Name
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm">
+                          Description
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 w-[80px] sm:w-[100px] text-center text-xs sm:text-sm">
+                          Actions
+                        </TableHead>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            )}
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedTypes.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-8 sm:py-12 text-gray-500 bg-white">
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                                <Search className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
+                              </div>
+                              <span className="text-sm sm:text-base">
+                                {searchTerm
+                                  ? "No employee types found matching your search."
+                                  : "No employee types found."}
+                              </span>
+                              {!searchTerm && (
+                                <Button
+                                  onClick={handleCreate}
+                                  variant="outline"
+                                  size="sm"
+                                  className="mt-2 border-orange-300 text-orange-700 hover:bg-orange-50 bg-transparent text-xs sm:text-sm"
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Add your first employee type
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedTypes.map((type, index) => (
+                          <TableRow
+                            key={type.id}
+                            className={`
+                      bg-white hover:bg-gray-50 transition-colors duration-150 border-b border-gray-100 last:border-b-0
+                      ${(startIndex + index) % 2 === 0 ? "bg-white" : "bg-gray-50/30"}
+                    `}
+                          >
+                            <TableCell className="py-3 sm:py-4 px-4 sm:px-6">
+                              <div className="font-medium text-gray-900 text-sm sm:text-base">{type.name}</div>
+                            </TableCell>
+                            <TableCell className="py-3 sm:py-4 px-4 sm:px-6 max-w-xs sm:max-w-md">
+                              <div className="text-gray-700 leading-relaxed text-xs sm:text-sm">
+                                {type.description ? (
+                                  <span className="line-clamp-2">{type.description}</span>
+                                ) : (
+                                  <span className="text-gray-400 italic">No description provided</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-3 sm:py-4 px-4 sm:px-6 text-center">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-gray-100 rounded-full"
+                                    disabled={employeeTypeToDelete?.id === type.id}
+                                  >
+                                    {employeeTypeToDelete?.id === type.id ? (
+                                      <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin text-gray-600" />
+                                    ) : (
+                                      <MoreVertical className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
+                                    )}
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-40 sm:w-48 bg-white border border-gray-200 shadow-lg"
+                                >
+                                  <DropdownMenuItem
+                                    onClick={() => handleView(type)}
+                                    className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm"
+                                  >
+                                    <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
+                                    View details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleEdit(type)}
+                                    className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm"
+                                  >
+                                    <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => setEmployeeTypeToDelete(type)}
+                                    className="flex items-center px-2 sm:px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer text-xs sm:text-sm"
+                                  >
+                                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-red-500" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Pagination Controls */}
+          {/* Responsive Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-200 gap-4">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 order-2 sm:order-1">
                 <span>
-                  Showing {startIndex + 1} to {Math.min(endIndex, filteredTypes.length)} of {filteredTypes.length} results
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredTypes.length)} of {filteredTypes.length}{" "}
+                  results
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2 overflow-x-auto">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1 text-xs px-2 sm:px-3"
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
+                  <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Previous</span>
                 </Button>
 
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNumber;
+                    let pageNumber
                     if (totalPages <= 5) {
-                      pageNumber = i + 1;
+                      pageNumber = i + 1
                     } else if (currentPage <= 3) {
-                      pageNumber = i + 1;
+                      pageNumber = i + 1
                     } else if (currentPage >= totalPages - 2) {
-                      pageNumber = totalPages - 4 + i;
+                      pageNumber = totalPages - 4 + i
                     } else {
-                      pageNumber = currentPage - 2 + i;
+                      pageNumber = currentPage - 2 + i
                     }
 
                     return (
@@ -664,26 +679,27 @@ export default function EmployeeTypeManagement() {
                         variant={currentPage === pageNumber ? "default" : "outline"}
                         size="sm"
                         onClick={() => setCurrentPage(pageNumber)}
-                        className={`w-8 h-8 p-0 ${currentPage === pageNumber
-                          ? "bg-orange-600 hover:bg-orange-700 text-white"
-                          : "hover:bg-gray-50"
-                          }`}
+                        className={`w-6 h-6 sm:w-8 sm:h-8 p-0 text-xs ${
+                          currentPage === pageNumber
+                            ? "bg-orange-600 hover:bg-orange-700 text-white"
+                            : "hover:bg-gray-50"
+                        }`}
                       >
                         {pageNumber}
                       </Button>
-                    );
+                    )
                   })}
                 </div>
 
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1 text-xs px-2 sm:px-3"
                 >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </div>
             </div>
@@ -708,7 +724,7 @@ export default function EmployeeTypeManagement() {
         employeeType={viewingType}
       />
 
-      {employeeTypeToDelete &&
+      {employeeTypeToDelete && (
         <DeleteConfirmationDialog
           description="Are you sure you want to delete this employee type? This action cannot be undone."
           isDeleting={isDeleting}
@@ -716,10 +732,11 @@ export default function EmployeeTypeManagement() {
           title={`Delete ${employeeTypeToDelete.name}`}
           onConfirm={() => handleDelete(employeeTypeToDelete)}
           onClose={() => {
-            setEmployeeTypeToDelete(null);
+            setEmployeeTypeToDelete(null)
             setIsDeleting(false)
-          }} />
-      }
+          }}
+        />
+      )}
     </div>
   )
 }
