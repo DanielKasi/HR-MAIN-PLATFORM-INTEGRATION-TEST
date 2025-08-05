@@ -9,6 +9,7 @@ from .models import (
     UserBranch,
     InstitutionDocument,
     InstitutionBankType,
+    InstitutionWorkingDays,
     InstitutionBankAccount,
 )
 import os
@@ -16,6 +17,8 @@ from django.db import transaction
 from recruitment.models import JobPosition
 import logging
 from django.utils import timezone
+from settings.serializers import SystemDaySerializer
+from settings.models import SystemDay
 
 logger = logging.getLogger(__name__)
 
@@ -248,6 +251,91 @@ class InstitutionBankAccountSerializer(serializers.ModelSerializer):
         rep["institution_bank"] = InstitutionBankTypeSerializer(
             instance.institution_bank
         ).data
+        return rep
+
+
+class InstitutionWorkingDaysSerializer(serializers.ModelSerializer):
+    days = serializers.PrimaryKeyRelatedField(
+        queryset=SystemDay.objects.all(),
+        many=True,
+    )
+
+    class Meta:
+        model = InstitutionWorkingDays
+        fields = [
+            "id",
+            "institution",
+            "days",
+            "created_by",
+            "created_at",
+            "updated_by",
+            "updated_at",
+        ]
+
+        read_only_fields = [
+            "id",
+            "institution",
+            "created_by",
+            "created_at",
+            "updated_by",
+            "updated_at",
+        ]
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        user = (
+            request.user.profile if request and request.user.is_authenticated else None
+        )
+
+        if not user:
+            raise serializers.ValidationError(
+                "User must be authenticated to create working days."
+            )
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            raise serializers.ValidationError("Institution not found.")
+
+        try:
+            existing_working_days = InstitutionWorkingDays.objects.get(
+                institution=institution
+            )
+            raise serializers.ValidationError(
+                "Working days already exist for this institution."
+            )
+        except InstitutionWorkingDays.DoesNotExist:
+            pass
+
+        created_by = request.user if request and request.user.is_authenticated else None
+
+        validated_data["institution"] = institution
+        validated_data["created_by"] = created_by
+
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        request = self.context.get("request")
+        user = (
+            request.user.profile if request and request.user.is_authenticated else None
+        )
+
+        if not user:
+            raise serializers.ValidationError(
+                "User must be authenticated to update working days."
+            )
+
+        instance.days.set(validated_data.get("days", instance.days.all()))
+        instance.updated_by = (
+            request.user if request and request.user.is_authenticated else None
+        )
+        instance.save()
+
+        return instance
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep["days"] = SystemDaySerializer(instance.days, many=True).data
         return rep
 
 

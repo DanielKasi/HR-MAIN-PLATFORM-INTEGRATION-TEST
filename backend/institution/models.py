@@ -316,6 +316,38 @@ class InstitutionBankAccount(models.Model):
         return f"{self.account_name} - {self.institution_bank.bank_fullname} - {self.institution_bank.institution.institution_name}"
 
 
+class InstitutionWorkingDays(models.Model):
+    institution = models.OneToOneField(
+        Institution, related_name="working_days", on_delete=models.CASCADE
+    )
+
+    days = models.ManyToManyField(
+        "settings.SystemDay",
+        related_name="working_day",
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        "users.CustomUser",
+        related_name="created_institution_working_days",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    updated_by = models.ForeignKey(
+        "users.CustomUser",
+        related_name="updated_institution_working_days",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+
+    def __str__(self):
+        return f"Working Days for {self.institution.institution_name}"
+
+
 class Branch(models.Model):
     institution = models.ForeignKey(
         Institution, related_name="branches", on_delete=models.CASCADE

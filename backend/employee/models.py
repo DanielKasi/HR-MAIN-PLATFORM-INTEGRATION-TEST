@@ -270,6 +270,22 @@ class Employee(models.Model):
         if should_initialize:
             self.sync_leave_balances()
 
+        if is_new_employee and self.is_active:
+            self.sync_employee_working_days()
+
+    def sync_employee_working_days(self):
+        department = self.department
+        institution = getattr(department, "institution", None)
+
+        if institution and hasattr(institution, "working_days"):
+            institution_days = institution.working_days.days.all()
+
+            employee_days, created = EmployeeWorkingDays.objects.get_or_create(
+                employee=self
+            )
+            employee_days.days.set(institution_days)
+            employee_days.save()
+
     def sync_leave_balances(self, year=None):
         """
         Synchronize leave balances for this employee.
@@ -458,6 +474,23 @@ class Employee(models.Model):
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
+
+
+class EmployeeWorkingDays(models.Model):
+    employee = models.OneToOneField(
+        Employee, on_delete=models.CASCADE, related_name="custom_working_days"
+    )
+
+    days = models.ManyToManyField(
+        "settings.SystemDay",
+        related_name="employee_working_days",
+        help_text="Must be selected from institution's working days",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.employee.user.fullname} - Custom Working Days"
 
 
 class EmployeeAttendance(models.Model):

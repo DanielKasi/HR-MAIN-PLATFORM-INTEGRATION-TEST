@@ -7,13 +7,20 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from drf_spectacular.utils import extend_schema
-from .models import Employee, EmployeeAttendance, EmployeeType, WorkType
+from .models import (
+    Employee,
+    EmployeeAttendance,
+    EmployeeType,
+    WorkType,
+    EmployeeWorkingDays,
+)
 from .serializers import (
     EmployeeAttendanceSerializer,
     EmployeeSerializer,
     EmployeeTypeSerializer,
     WorkTypeSerializer,
     EmployeeContractSerializer,
+    EmployeeWorkingDaysSerializer,
 )
 from .models import (
     Employee,
@@ -117,6 +124,37 @@ class EmployeeDetailAPIView(APIView):
             return Response(
                 {"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND
             )
+
+
+class EmployeeWorkingDaysDetailAPIView(APIView):
+
+    @extend_schema(
+        request=EmployeeWorkingDaysSerializer,
+        responses={200: EmployeeWorkingDaysSerializer, 404: "Employee not found"},
+        description="Retrieve or update working days for a specific employee.",
+        summary="Employee Working Days Detail",
+        tags=["Employee Management"],
+    )
+    def patch(self, request, employee_id):
+        """Retrieve or update working days for a specific employee."""
+        try:
+            employee = Employee.objects.get(id=employee_id)
+        except Employee.DoesNotExist:
+            return Response(
+                {"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        working_days_instance, _ = EmployeeWorkingDays.objects.get_or_create(
+            employee=employee
+        )
+
+        serializer = EmployeeWorkingDaysSerializer(
+            instance=working_days_instance, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EmployeeCreateAPIView(APIView):
