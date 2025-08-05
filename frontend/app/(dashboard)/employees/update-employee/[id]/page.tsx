@@ -1197,9 +1197,7 @@ export default function UpdateEmployeePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-full mx-auto">
-        <Card className="bg-white shadow-lg">
+    <div className="flex flex-col w-full min-h-screen p-3 sm:p-4 md:p-6 lg:p-8 bg-white">
           <CardHeader>
             <div className="flex items-center space-x-4">
               <Link href="/employees/employee-list">
@@ -1366,9 +1364,8 @@ export default function UpdateEmployeePage() {
               </div>
             </form>
           </CardContent>
-        </Card>
-      </div>
-    </div>
+        </div>
+
   );
 }
 

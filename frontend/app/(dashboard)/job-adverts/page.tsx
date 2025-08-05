@@ -322,7 +322,7 @@ export default function JobAdvertsPage() {
   
 
   return (
-    <div className="w-full h-full p-2 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
@@ -352,77 +352,9 @@ export default function JobAdvertsPage() {
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-col gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search job openings..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <SelectValue placeholder="Filter by status" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-              <SelectItem value="expired">Expired</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="flex gap-2">
-            <Input
-              type="date"
-              placeholder="From date"
-              value={dateRange.from || ""}
-              onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
-              className="flex-1 sm:w-[150px]"
-            />
-            <Input
-              type="date"
-              placeholder="To date"
-              value={dateRange.to || ""}
-              onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
-              className="flex-1 sm:w-[150px]"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Rows per Page Selector */}
-      <div className="flex justify-between items-center">
-        <div className="text-xs sm:text-sm text-muted-foreground">
-          {!isLoading && `${paginationInfo.count} total openings`}
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">Rows per page:</span>
-          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[60px] sm:w-[70px] h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZES.map((size) => (
-                <SelectItem key={size} value={size.toString()}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Stats */}
+          {/* Stats */}
       {!isLoading && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mt-8">
           <Card>
             <CardContent className="p-3 sm:p-4">
               <div className="text-lg sm:text-2xl font-bold text-blue-600">{paginationInfo.count}</div>
@@ -450,6 +382,75 @@ export default function JobAdvertsPage() {
         </div>
       )}
 
+
+        {/* Search and Filters */}
+          <div className="flex flex-col lg:flex-row gap-20 items-start lg:items-center mt-8">
+
+            <div className="relative flex-1 lg:flex-[0.4]">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search job openings..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 flex-1 lg:flex-[0.5]">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <div className="flex items-center gap-4">
+                    <Filter className="h-4 w-4" />
+                    <SelectValue placeholder="Filter by status" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  placeholder="From date"
+                  value={dateRange.from || ""}
+                  onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
+                  className="flex-1 sm:w-[150px]"
+                />
+                <Input
+                  type="date"
+                  placeholder="To date"
+                  value={dateRange.to || ""}
+                  onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
+                  className="flex-1 sm:w-[150px]"
+                />
+              </div>
+            </div>
+
+
+             {/* Rows per Page Selector */}
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">Rows per page:</span>
+          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+            <SelectTrigger className="w-[60px] sm:w-[70px] h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZES.map((size) => (
+                <SelectItem key={size} value={size.toString()}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+          </div>
+     
+  
       {/* Error Message */}
       {error && (
         <div className="text-sm font-medium text-destructive bg-destructive/10 p-4 rounded-md border border-destructive/20">
@@ -476,7 +477,7 @@ export default function JobAdvertsPage() {
           ))}
         </div>
       ) : filteredJobAdverts.length === 0 ? (
-        <Card className="p-12 text-center">
+        <div className="rounded-md border bg-white">
           <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No job adverts found</h3>
           <p className="text-muted-foreground mb-4">
@@ -484,9 +485,9 @@ export default function JobAdvertsPage() {
               ? "No job adverts match your filter criteria."
               : "Get started by creating your first job opening."}
           </p>
-        </Card>
+        </div>
       ) : (
-        <div className="rounded-md border overflow-hidden">
+        <div className="overflow-hidden bg-white mt-12">
           <div className="overflow-x-auto">
             <Table className="min-w-[800px]">
               <TableHeader>
@@ -504,27 +505,8 @@ export default function JobAdvertsPage() {
               <TableBody>
                 {filteredJobAdverts.map((advert) => (
                   <TableRow key={advert.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`h-8 w-8 rounded-full flex-shrink-0 ${advert.job_position_advert_status === "active"
-                            ? "bg-green-50"
-                            : advert.job_position_advert_status === "expired"
-                              ? "bg-red-50"
-                              : "bg-gray-50"
-                            } flex items-center justify-center`}
-                        >
-                          <Megaphone
-                            className={`h-4 w-4 ${advert.job_position_advert_status === "active"
-                              ? "text-green-600"
-                              : advert.job_position_advert_status === "expired"
-                                ? "text-red-600"
-                                : "text-gray-600"
-                              }`}
-                          />
-                        </div>
-                        <span className="truncate">{advert.job_position_details?.name || "N/A"}</span>
-                      </div>
+                    <TableCell className="font-normal">
+                      <span className="truncate">{advert.job_position_details?.name || "N/A"}</span>
                     </TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(advert.job_position_advert_status)} className="whitespace-nowrap">
@@ -537,15 +519,11 @@ export default function JobAdvertsPage() {
                         {formatDate(advert.expiry_date)}
                       </span>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 whitespace-nowrap">
-                        <Users className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                        {advert.number_of_employees_expected || "-"}
-                      </div>
+                   <TableCell className="whitespace-nowrap">
+                      {advert.number_of_employees_expected || "-"}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 whitespace-nowrap">
-                        <Calendar className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                         {advert.interview_stages?.length || 0} stages
                       </div>
                     </TableCell>

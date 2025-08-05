@@ -302,16 +302,14 @@ export default function EditApplicationPage() {
   }
 
   return (
-    <div className="w-full h-full p-6"> {/* Add padding here */}
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8"> {/* Add padding here */}
       {/* Header */}
-      <div className="mb-6"> {/* Add margin bottom */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"> {/* Add margin bottom */}
         <Button variant="outline" size="sm" onClick={handleGoBack}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-      </div>
-
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"> {/* Add margin bottom */}
+        
         <div className="flex items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold">Edit Application</h1>

@@ -29,12 +29,15 @@ export default function EditJobAdvertPage() {
   const [jobAdvert, setJobAdvert] = useState<JobPositionAdvert | null>(null)
   const [jobPosition, setJobPosition] = useState<IJobPosition | null>(null)
   const [formData, setFormData] = useState<JobPositionAdvertFormData>({
-    job_position: 0,
-    job_position_advert_status: "active" as JobAdvertStatus,
-    expiry_date: "",
-    number_of_employees_expected: 1,
-    extra_information: "",
-  })
+  job_position: 0,
+  job_position_advert_status: "active" as JobAdvertStatus,
+  expiry_date: "",
+  number_of_employees_expected: 1,
+  extra_information: "",
+  level: 0, // Provide a default value
+  interviewers: [], // Provide a default value
+});
+
   const [jobPositions, setJobPositions] = useState<IJobPosition[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -97,19 +100,21 @@ export default function EditJobAdvertPage() {
         setJobPosition(fetchedJobPosition)
       }
 
-      // Populate form data with fetched job advert data - FIXED STATUS ISSUE
       const expiryDate = fetchedJobAdvert.expiry_date
         ? new Date(fetchedJobAdvert.expiry_date).toISOString().split('T')[0]
         : ""
 
-      const formDataToSet = {
-        job_position: fetchedJobAdvert.job_position || 0,
-        job_position_advert_status: fetchedJobAdvert.job_position_advert_status || "active", // FIXED: was "status"
-        expiry_date: expiryDate,
-        number_of_employees_expected: fetchedJobAdvert.number_of_employees_expected || 1,
-        extra_information: fetchedJobAdvert.extra_information || "",
-      }
-      setFormData(formDataToSet)
+     const formDataToSet: JobPositionAdvertFormData = {
+        job_position: 0,
+        job_position_advert_status: "active",
+        expiry_date: "",
+        number_of_employees_expected: 1,
+        extra_information: "",
+        level: 0, 
+        interviewers: [] 
+      };
+
+      setFormData(formDataToSet);
 
     } catch (error) {
       toast.error("Failed to load job advert data")
@@ -293,7 +298,7 @@ export default function EditJobAdvertPage() {
       <div className="w-full space-y-6">
 
 
-        <Card className="w-full">
+        <Card className="w-full -ml-6">
           <CardHeader>
             <div className="flex items-center gap-3">
               <div>

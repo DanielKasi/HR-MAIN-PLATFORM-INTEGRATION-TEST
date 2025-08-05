@@ -133,7 +133,7 @@ const AttendancePage = () => {
     }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="w-full">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Attendance</h1>

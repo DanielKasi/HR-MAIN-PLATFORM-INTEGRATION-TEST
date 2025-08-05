@@ -70,7 +70,7 @@ export default function SeparationPoliciesPage() {
   }, []);
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 -ml-2">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Separation Policies</h1>
@@ -84,7 +84,7 @@ export default function SeparationPoliciesPage() {
         </Link>
       </div>
 
-      <Card>
+      <div className="-ml-4 mt-4">
         <CardHeader>
           <CardTitle>Policies ({separationPolicies.length})</CardTitle>
         </CardHeader>
@@ -98,8 +98,9 @@ export default function SeparationPoliciesPage() {
               No policies found.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
+            <div className="overflow-x-auto mt-10 -ml-2">
+            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                <TableHeader className="bg-gray-50/50">
                 <TableRow>
                   <TableHead>Policy Name</TableHead>
                   <TableHead>Separation Type</TableHead>
@@ -160,9 +161,10 @@ export default function SeparationPoliciesPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
-      </Card>
+      </div>
 
       <Dialog
         open={deleteDialog.open}
