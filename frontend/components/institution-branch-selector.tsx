@@ -28,8 +28,6 @@ interface Institution {
 
 export function InstitutionBranchSelector() {
   const [Institutions, setInstitutions] = useState<IUserInstitution[]>([]);
-  // const [selectedInstitution, setSelectedInstitution] = useState<Institution | null>(null)
-  // const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null)
   const [displayName, setDisplayName] = useState("Select Institution");
   const InstitutionsAttached = useSelector(selectAttachedInstitutions);
   const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -84,20 +82,18 @@ export function InstitutionBranchSelector() {
   const handleSelectInstitutionAndBranch = (Institution: IUserInstitution, branch: Branch) => {
     handleInstitutionSelection(Institution);
     handleBranchSelection(branch);
-    // localStorage.setItem("selectedInstitution", JSON.stringify(Institution))
-    // localStorage.setItem("selectedBranch", JSON.stringify(branch))
 
-    // Dispatch event to notify other components
     window.dispatchEvent(new Event("Institution_data_updated"));
   };
 
   return (
+    
     <DropdownMenu>
       <DropdownMenuTrigger className="bg-white border rounded-full px-4 py-2 flex items-center gap-2 w-[200px]">
         <span className="truncate">{displayName}</span>
         <ChevronDown className="h-4 w-4 ml-auto" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-[200px] rounded-xl">
+      <DropdownMenuContent className="w-[200px] rounded-xl z-[150]">
         {InstitutionsAttached.map((Institution) => (
           <div key={Institution.id}>
             {Institution.branches &&

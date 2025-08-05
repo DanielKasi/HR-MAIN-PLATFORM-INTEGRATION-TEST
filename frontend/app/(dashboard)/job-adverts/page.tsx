@@ -179,7 +179,7 @@ export default function JobAdvertsPage() {
 
   const filteredJobAdverts = useMemo(() => {
     if (!Array.isArray(jobAdverts)) {
-      return [];
+      return [];                                    
     }
 
     return jobAdverts.filter((advert) => {

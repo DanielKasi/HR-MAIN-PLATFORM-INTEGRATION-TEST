@@ -552,7 +552,7 @@ export interface User {
 }
 
 export interface EmployeeFormData {
-  user: User;
+  user: Partial<User>;
   id: number;
   email: string;
   phone_number: string;
@@ -582,7 +582,7 @@ export interface EmployeeFormData {
   selected_branches: number[];
 }
 
-export interface EmployeeFormState {
+export interface ICreateEmployeeForm {
   tin: string
   nssf_no: string
   fullname: string;
@@ -609,7 +609,6 @@ export interface EmployeeFormState {
   emergency_contact_relationship: string;
   marital_status: string;
   children_count: number;
-  employee_profile_picture: File | null;
 }
 export interface IRoleResponse {
   id: number
@@ -1799,3 +1798,28 @@ export interface PayslipItem {
   amount: number
   description?: string
 }
+
+export interface ISystemWorkingDay {
+  id: number
+  day_code: string
+  day_name: string
+  level: number
+}
+
+// Institution Working Days interface
+export interface IInstitutionWorkingDays {
+  id: number
+  institution: number
+  days: ISystemWorkingDay[]
+  created_by: number | null
+  created_at: string
+  updated_by: number | null
+  updated_at: string
+}
+
+// Form data for creating/updating institution working days
+export interface IWorkingDaysFormData {
+  days: number[]
+}
+
+

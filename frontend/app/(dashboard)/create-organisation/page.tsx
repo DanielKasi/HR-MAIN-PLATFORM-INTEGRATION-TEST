@@ -7,8 +7,6 @@ import {
   Store,
   Building2,
   Mail,
-  Phone,
-  PhoneCall,
   Badge,
   Check,
   ChevronLeft,
@@ -62,11 +60,6 @@ interface DefaultJobPosition {
   description: string;
 }
 
-interface DefaultDepartment {
-  name: string;
-  description: string;
-  job_positions: DefaultJobPosition[];
-}
 
 interface OrganisationFormData {
   institutionName: string;

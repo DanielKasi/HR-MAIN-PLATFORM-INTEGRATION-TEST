@@ -1,7 +1,7 @@
 import {call, all, takeLatest, put, select, fork} from "redux-saga/effects";
 
 import {ActionWithPayLoad} from "../storeUtils";
-import {toggleSideBarAction} from "../miscellaneous/actions";
+import {clearEmployeeForm, toggleSideBarAction} from "../miscellaneous/actions";
 import {selectSidebarOpened} from "../miscellaneous/selectors";
 
 import {AUTH_ACTION_TYPES} from "./types";
@@ -67,6 +67,7 @@ function* logout() {
   const defaultSideBarAccentColor = "240 4.8% 95.9%";
 
   try {
+    yield put(clearEmployeeForm());
     yield put(logoutSuccess());
     document.documentElement.style.setProperty("--primary", defaultPrimaryColor);
     document.documentElement.style.setProperty("--ring", defaultRingColor);

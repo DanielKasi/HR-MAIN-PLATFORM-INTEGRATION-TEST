@@ -79,6 +79,9 @@ import {
   IBankTypeFormData,
   IBankAccountFormData,
   IBankAccount,
+  IInstitutionWorkingDays,
+  IWorkingDaysFormData,
+  ISystemWorkingDay,
 } from "@/app/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -950,8 +953,8 @@ export const createEmployee = async ({
     formData.append("institutionId", institutionId.toString());
 
     if (employeeData.user) {
-      formData.append("user.fullname", employeeData.user.fullname);
-      formData.append("user.email", employeeData.user.email);
+      formData.append("user.fullname", employeeData.user.fullname|| "");
+      formData.append("user.email", employeeData.user.email|| "");
     }
 
     Object.entries(employeeData).forEach(([key, value]) => {
@@ -1420,7 +1423,6 @@ export const getDisciplineTypes = async ({
     // Return the results array instead of the entire response
     return data.results;
   } catch (error) {
-    // console.error("Failed to fetch discipline types:", error);
     throw error;
   }
 };
@@ -3648,3 +3650,51 @@ export const payrollAPI = {
   },
 }
 
+
+
+export const institutionAPI = {
+  getWorkingDays: async () => {
+    try {
+      const response = await apiRequest.get("/institution/working-days/")
+      return response.data as IInstitutionWorkingDays[]
+    } catch (error) {
+      throw error
+    }
+  },
+
+  createWorkingDays: async (data: IWorkingDaysFormData) => {
+    try {
+      const response = await apiRequest.post("/institution/working-days/", data)
+      return response.data as IInstitutionWorkingDays
+    } catch (error) {
+      throw error
+    }
+  },
+
+  updateWorkingDays: async ({
+    institutionId,
+    data,
+  }: {
+    institutionId: number
+    data: IWorkingDaysFormData
+  })=> {
+    try {
+      const response = await apiRequest.patch(`/institution/working-days/${institutionId}/`, data)
+      return response.data as IInstitutionWorkingDays
+    } catch (error) {
+      throw error
+    }
+  },
+}
+
+
+export const systemAPI = {
+  getWorkingDays: async () => {
+    try {
+      const response = await apiRequest.get("/settings/system-days/")
+      return response.data as ISystemWorkingDay[]
+    } catch (error) {
+      throw error
+    }
+  },
+}
