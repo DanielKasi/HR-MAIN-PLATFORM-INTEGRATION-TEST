@@ -2098,7 +2098,6 @@ export const getDeductionTypes = async (
     // Return the results array instead of the entire response
     return data.results;
   } catch (error) {
-    // console.error("Failed to get deduction types:", error);
     throw error;
   }
 };
@@ -2119,7 +2118,7 @@ export const updateDeductionType = async ({
 }: {
   id: number;
   deductionTypeData: Partial<IDeductionTypeFormData>;
-}): Promise<IDeductionType | null> => {
+}) => {
   try {
     const formData = new FormData();
     Object.entries(deductionTypeData).forEach(([key, value]) => {
@@ -2131,7 +2130,6 @@ export const updateDeductionType = async ({
     const response = await apiRequest.patch(`payroll/deduction-types/${id}/`, formData);
     return response.data as IDeductionType;
   } catch (error) {
-    // console.error("Failed to update deduction type:", error);
     throw error;
   }
 };
@@ -2176,7 +2174,7 @@ export const createEmployeeAllowance = async ({
 
 export const getEmployeeAllowances = async (
   institutionId: number,
-): Promise<IEmployeeAllowance[] | null> => {
+) => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/employee-allowances/`);
     return response.data.results as IEmployeeAllowance[];
@@ -2309,7 +2307,7 @@ export const createEmployeeDeduction = async ({
 
 export const getEmployeeDeductions = async (
   institutionId: number,
-): Promise<IEmployeeDeduction[] | null> => {
+) => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/employee-deductions/`);
     return response.data.results as IEmployeeDeduction[];
@@ -3617,6 +3615,7 @@ export const payrollAPI = {
     throw error;
   }
   },
+
   getPayslipsByPayrollPeriod: async ({payrollId, params}: {payrollId:number|string, params?: {
     employee?: number;
     payroll_period?: number;

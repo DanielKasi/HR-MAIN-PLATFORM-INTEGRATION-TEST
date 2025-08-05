@@ -58,6 +58,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {BulkUploadEmployeesDialog} from "@/components/dialogs/bulk-upload-employees-dialog";
+import { TableSkeleton } from "@/components/common/table-skeleton";
 
 // Union type to handle both data structures
 type EmployeeData = IEmployee | EmployeeFormData;
@@ -115,6 +116,7 @@ interface EmployeeTableProps {
   isBulkUploadDialogOpen: boolean;
   setIsBulkUploadDialogOpen: (open: boolean) => void;
   loadEmployees: () => void;
+  loading: boolean; 
 }
 
 function EmployeeTable({
@@ -123,6 +125,7 @@ function EmployeeTable({
   isBulkUploadDialogOpen,
   setIsBulkUploadDialogOpen,
   loadEmployees,
+  loading, 
 }: EmployeeTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
@@ -130,7 +133,7 @@ function EmployeeTable({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const router = useRouter();
-
+ 
   const handleBack = () => {
     router.back();
   };
@@ -204,6 +207,33 @@ function EmployeeTable({
     setStatusFilter("all");
     setCurrentPage(1);
   };
+
+  
+    if (loading) {
+      return (
+        <div className="p-2 space-y-6">
+          <Card className="h-[calc(100vh-2rem)] shadow-lg">
+            <CardHeader className="border-b">
+              <div className="flex justify-between gap-8 items-center">
+                <div className="flex items-center justify-start gap-4">
+                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="space-y-2">
+                    <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </CardHeader>
+            <TableSkeleton rows={10} columns={8} />
+          </Card>
+        </div>
+      )
+    }
 
   return (
     <Card>
@@ -508,6 +538,7 @@ export default function EmployeesPage() {
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);
 
+
   // function to load Employees
   useEffect(() => {
     loadEmployees();
@@ -574,6 +605,7 @@ export default function EmployeesPage() {
           employees={employees}
           onDelete={handleDelete}
           loadEmployees={loadEmployees}
+           loading={loading}
         />
       </div>
     </div>

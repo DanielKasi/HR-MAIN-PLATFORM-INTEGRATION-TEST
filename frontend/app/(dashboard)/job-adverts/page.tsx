@@ -60,6 +60,7 @@ import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/app/types/types.utils";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import RichTextDisplay from "@/components/common/rich-text-display";
+import { TableSkeleton } from "@/components/common/table-skeleton";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -144,9 +145,9 @@ export default function JobAdvertsPage() {
         }
         setError("");
 
-        const response = await getJobPositionAdverts({
-          institutionId: selectedInstitution.id,
-        });
+       const response: PaginatedResponse<JobPositionAdvert> = await getJobPositionAdverts({
+        institutionId: selectedInstitution.id,
+      });
 
         let advertsArray: JobPositionAdvert[] = [];
         let pagination: { count: number; next: string | null; previous: string | null } = {
@@ -309,6 +310,34 @@ export default function JobAdvertsPage() {
     return <div>Loading...</div>;
   }
 
+
+  if (isLoading) {
+    return (
+      <div className="p-2 space-y-6">
+        <Card className="h-[calc(100vh-2rem)] shadow-lg">
+          <CardHeader className="border-b">
+            <div className="flex justify-between gap-8 items-center">
+              <div className="flex items-center justify-start gap-4">
+                <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="space-y-2">
+                  <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+          </CardHeader>
+          <TableSkeleton rows={10} columns={8} />
+        </Card>
+      </div>
+    )
+  }
+  
+
   return (
     <div className="w-full h-full p-6 space-y-6">
       {/* Header */}
@@ -464,16 +493,6 @@ export default function JobAdvertsPage() {
               ? "No job adverts match your filter criteria."
               : "Get started by creating your first job opening."}
           </p>
-          {searchTerm || statusFilter !== "all" || dateRange.from || dateRange.to ? (
-            <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
-              Clear Filters
-            </Button>
-          ) : (
-            <Button onClick={handleCreateJobAdvert} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Create First Job Opening
-            </Button>
-          )}
         </Card>
       ) : (
         <Card className="rounded-md border">

@@ -51,90 +51,16 @@ import {
   getAllowanceTypes,
   createAllowanceType,
 } from "@/lib/utils"
-import { IEmployeeAllowance, IEmployeeAllowanceFormData, IAllowanceType } from "@/app/types/types.utils"
+import { IEmployeeAllowance, IEmployeeAllowanceFormData, IAllowanceType, IEmployee } from "@/app/types/types.utils"
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors"
 import { IUserInstitution } from "@/app/types"
 import { useSelector } from "react-redux"
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"
 import { formatCurrency } from "@/lib/helpers"
+import { TableSkeleton } from "@/components/common/table-skeleton"
+import { Card, CardHeader } from "@/components/ui/card"
 
 
-interface ApiEmployee {
-  id: number
-  user: {
-    id: number
-    email: string
-    fullname: string
-    is_active: boolean
-  }
-  email: string
-  phone_number: string
-  position: {
-    id: number
-    name: string
-    department_id: number
-  }
-  department: {
-    id: number
-    name: string
-    institution_id: number
-  }
-  date_of_birth: string
-  date_of_joining: string
-  address: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
-  experience: number
-  qualifications: string
-  skills: string
-  emergency_contact_name: string
-  emergency_contact_phone: string
-  emergency_contact_relationship: string
-  marital_status: string
-  children_count: number
-  employee_profile_picture: string
-}
-
-interface ApiAllowanceType {
-  id: number
-  institution: {
-    id: number
-    institution_name: string
-  }
-  name: string
-  description: string
-  is_taxable: boolean
-  is_active: boolean
-  created_at: string
-}
-
-interface ApiEmployeeAllowance {
-  id: number
-  employee: ApiEmployee
-  allowance_type: ApiAllowanceType
-  calculation_method: "fixed" | "percentage"
-  amount: string
-  percentage: string
-  is_active: boolean
-  effective_from: string
-  effective_to: string | null
-  created_at: string
-}
-
-
-interface Employee {
-  id: string
-  name: string
-  email: string
-  employee_id?: string
-  salary?: number
-  user?: {
-    fullname: string
-    email: string
-  }
-  department?: string
-}
 
 
 interface SimpleAllowanceType {
@@ -145,7 +71,7 @@ interface SimpleAllowanceType {
 
 interface DisplayEmployeeAllowance {
   id: number
-  employee: Employee
+  employee: IEmployee
   allowance_type: SimpleAllowanceType
   calculation_method: "fixed" | "percentage"
   amount: string
@@ -171,8 +97,8 @@ interface ValidationResult {
 }
 
 export default function EmployeeAllowanceComponent() {
-  const [allowances, setAllowances] = useState<DisplayEmployeeAllowance[]>([])
-  const [employees, setEmployees] = useState<Employee[]>([])
+  const [allowances, setAllowances] = useState<IEmployeeAllowance[]>([])
+  const [employees, setEmployees] = useState<IEmployee[]>([])
   const [allowanceTypes, setAllowanceTypes] = useState<SimpleAllowanceType[]>([])
   const [saving, setSaving] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -182,6 +108,7 @@ export default function EmployeeAllowanceComponent() {
   const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all")
   const [validationErrors, setValidationErrors] = useState<ValidationResult>({})
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
+  const [ isLoading, setIsLoading] = useState(true)
 
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
@@ -251,7 +178,11 @@ export default function EmployeeAllowanceComponent() {
   }, [selectedInstitution?.id])
 
   useEffect(() => {
-    const fetchEmployees = async () => {
+
+    fetchEmployees()
+  }, [selectedInstitution]);
+
+      const fetchEmployees = async () => {
       if (!selectedInstitution?.id) {
         return
       }
@@ -259,39 +190,15 @@ export default function EmployeeAllowanceComponent() {
       setIsLoadingEmployees(true)
       try {
         const fetchedEmployees = await getAllEmployees({ institutionId: selectedInstitution.id })
-
-        if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
-          const formattedEmployees: Employee[] = fetchedEmployees.map((emp: any) => {
-            return {
-              id: emp.id?.toString() || emp.employee_id?.toString() || '',
-              name: emp.user?.fullname || emp.fullname || emp.name || emp.email || 'Unknown Employee',
-              email: emp.user?.email || emp.email || '',
-              employee_id: emp.employee_id || emp.id?.toString() || '',
-              salary: emp.salary || emp.basic_salary || 0,
-              user: emp.user || null,
-              department: emp.department?.name || emp.department || ''
-            }
-          }).filter(emp => emp.id && emp.id !== "0")
-
-          setEmployees(formattedEmployees)
-
-          if (formattedEmployees.length === 0) {
-            toast.error("No employees found for this institution")
-          }
-        } else {
-          setEmployees([])
-          toast.error("Invalid employee data received")
-        }
-      } catch (error) {
+          setEmployees(fetchedEmployees)
+      } catch (error:any) {
         setEmployees([])
-        toast.error("Failed to load employees")
+        toast.error(error?.message || error?.detail ||  "Failed to load employees")
       } finally {
         setIsLoadingEmployees(false)
+        setIsLoading(false)
       }
     }
-
-    fetchEmployees()
-  }, [selectedInstitution])
 
   useEffect(() => {
     const fetchAllowances = async () => {
@@ -301,13 +208,8 @@ export default function EmployeeAllowanceComponent() {
 
       try {
         const allowancesData = await getEmployeeAllowances(selectedInstitution.id)
+          setAllowances(allowancesData)
 
-        if (allowancesData && Array.isArray(allowancesData)) {
-          const displayAllowances = allowancesData.map(convertToDisplayAllowance)
-          setAllowances(displayAllowances)
-        } else {
-          setAllowances([])
-        }
       } catch (error) {
         setAllowances([])
         toast.error("Failed to load allowances")
@@ -315,7 +217,7 @@ export default function EmployeeAllowanceComponent() {
     }
 
     fetchAllowances()
-  }, [selectedInstitution?.id, employees])
+  }, [selectedInstitution])
 
 
   useEffect(() => {
@@ -347,44 +249,41 @@ export default function EmployeeAllowanceComponent() {
   }, [formData, isDialogOpen])
 
 
-  const convertToDisplayAllowance = (apiAllowance: any): DisplayEmployeeAllowance => {
-    return {
-      id: apiAllowance.id,
-      employee: {
-        id: apiAllowance.employee.id.toString(),
-        name: apiAllowance.employee.user.fullname,
-        email: apiAllowance.employee.user.email,
-        employee_id: apiAllowance.employee.id.toString(),
-        salary: 0,
-        user: {
-          fullname: apiAllowance.employee.user.fullname,
-          email: apiAllowance.employee.user.email
-        }
-      },
-      allowance_type: {
-        id: apiAllowance.allowance_type.id,
-        name: apiAllowance.allowance_type.name
-      },
-      calculation_method: apiAllowance.calculation_method,
-      amount: apiAllowance.amount,
-      percentage: apiAllowance.percentage,
-      is_active: apiAllowance.is_active,
-      effective_from: apiAllowance.effective_from,
-      effective_to: apiAllowance.effective_to,
-      created_at: apiAllowance.created_at
-    }
-  }
+  // const convertToDisplayAllowance = (apiAllowance: any): DisplayEmployeeAllowance => {
+  //   return {
+  //     id: apiAllowance.id,
+  //     employee: {
+  //       id: apiAllowance.employee.id.toString(),
+  //       name: apiAllowance.employee.user.fullname,
+  //       email: apiAllowance.employee.user.email,
+  //       employee_id: apiAllowance.employee.id.toString(),
+  //       salary: 0,
+  //       user: {
+  //         fullname: apiAllowance.employee.user.fullname,
+  //         email: apiAllowance.employee.user.email
+  //       }
+  //     },
+  //     allowance_type: {
+  //       id: apiAllowance.allowance_type.id,
+  //       name: apiAllowance.allowance_type.name
+  //     },
+  //     calculation_method: apiAllowance.calculation_method,
+  //     amount: apiAllowance.amount,
+  //     percentage: apiAllowance.percentage,
+  //     is_active: apiAllowance.is_active,
+  //     effective_from: apiAllowance.effective_from,
+  //     effective_to: apiAllowance.effective_to,
+  //     created_at: apiAllowance.created_at
+  //   }
+  // }
   const getCalculatedAmount = (allowance: DisplayEmployeeAllowance): number => {
     if (allowance.calculation_method === "percentage" && allowance.employee.salary) {
-      return (allowance.employee.salary * parseFloat(allowance.percentage)) / 100
+      return (Number(allowance.employee.salary|| 0)* parseFloat(allowance.percentage)) / 100
     }
     return parseFloat(allowance.amount) || 0
   }
 
-  const getSelectedEmployee = () => {
-    if (!formData.employee) return null
-    return employees.find(emp => emp.id === formData.employee)
-  }
+
 
   const handleCreateAllowanceType = async () => {
     if (!newAllowanceTypeForm.name || !newAllowanceTypeForm.description) {
@@ -486,7 +385,7 @@ export default function EmployeeAllowanceComponent() {
           employeeAllowanceData: formattedData
         })
         if (updatedAllowance) {
-          const displayAllowance = convertToDisplayAllowance(updatedAllowance)
+          const displayAllowance = updatedAllowance
           setAllowances(prev => prev.map(a => a.id === editingAllowance.id ? displayAllowance : a))
           toast.success("Allowance updated successfully")
         }
@@ -496,7 +395,7 @@ export default function EmployeeAllowanceComponent() {
           employeeAllowanceData: formattedData
         })
         if (newAllowance) {
-          const displayAllowance = convertToDisplayAllowance(newAllowance)
+          const displayAllowance = newAllowance
           setAllowances(prev => [...prev, displayAllowance])
           toast.success("Allowance created successfully")
         }
@@ -515,7 +414,7 @@ export default function EmployeeAllowanceComponent() {
   const handleEdit = (allowance: DisplayEmployeeAllowance) => {
     setEditingAllowance(allowance)
     setFormData({
-      employee: allowance.employee.id,
+      employee: allowance.employee.id.toString(),
       allowance_type: allowance.allowance_type.id.toString(),
       calculation_method: allowance.calculation_method,
       amount: allowance.amount,
@@ -564,7 +463,7 @@ export default function EmployeeAllowanceComponent() {
   const filteredAllowances = allowances.filter((allowance) => {
     // Search filter
     const matchesSearch =
-      allowance.employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      allowance.employee.user?.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
       allowance.allowance_type.name.toLowerCase().includes(searchTerm.toLowerCase())
 
     // Status filter
@@ -600,7 +499,7 @@ export default function EmployeeAllowanceComponent() {
         "Effective To",
       ],
       ...filteredAllowances.map((allowance) => [
-        allowance.employee.name,
+        allowance.employee.user?.fullname||"",
         allowance.allowance_type.name,
         allowance.calculation_method,
         allowance.amount,
@@ -626,7 +525,7 @@ export default function EmployeeAllowanceComponent() {
   const exportToExcel = () => {
     try {
       const excelData = filteredAllowances.map((allowance) => ({
-        "Employee Name": allowance.employee.name,
+        "Employee Name": allowance.employee.user?.fullname||"",
         "Employee Email": allowance.employee.email,
         "Allowance Type": allowance.allowance_type.name,
         "Calculation Method": allowance.calculation_method === "fixed" ? "Fixed Amount" : "Percentage",
@@ -711,6 +610,33 @@ export default function EmployeeAllowanceComponent() {
       </div>
     )
   }
+
+
+    if (isLoading) {
+      return (
+        <div className="p-2 space-y-6">
+          <Card className="h-[calc(100vh-2rem)] shadow-lg">
+            <CardHeader className="border-b">
+              <div className="flex justify-between gap-8 items-center">
+                <div className="flex items-center justify-start gap-4">
+                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="space-y-2">
+                    <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </CardHeader>
+            <TableSkeleton rows={10} columns={8} />
+          </Card>
+        </div>
+      )
+    }
 
   return (
     <div>
@@ -1328,7 +1254,7 @@ export default function EmployeeAllowanceComponent() {
                   <TableRow key={allowance.id} className="hover:bg-gray-50 transition-colors">
                     <TableCell>
                       <div>
-                        <div className="font-medium text-gray-900">{allowance.employee.name}</div>
+                        <div className="font-medium text-gray-900">{allowance.employee.user?.fullname}</div>
                         <div className="text-sm text-gray-500">{allowance.employee.email}</div>
 
                       </div>

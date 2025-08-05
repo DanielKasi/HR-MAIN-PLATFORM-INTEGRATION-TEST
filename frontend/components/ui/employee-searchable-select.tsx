@@ -1,5 +1,6 @@
 "use client"
 
+import { IEmployee } from "@/app/types/types.utils"
 import { SearchableSelect } from "../../components/searchable-select"
 import { User } from "lucide-react"
 
@@ -17,7 +18,7 @@ export interface Employee {
 }
 
 export interface EmployeeSearchableSelectProps {
-  employees: Employee[]
+  employees: IEmployee[]
   value: (string | number)[]
   onValueChange: (value: (string | number)[]) => void
   disabled?: boolean
@@ -44,19 +45,11 @@ export const EmployeeSearchableSelect = ({
   multiple=false
 }: EmployeeSearchableSelectProps) => {
   
-  const getEmployeeName = (employee: Employee): string => {
-    if (employee.user?.fullname) return employee.user.fullname
-    if (employee.name) return employee.name
-    return employee.user?.email || employee.email || "Unknown Employee"
-  }
 
-  const getEmployeeEmail = (employee: Employee): string => {
-    return employee.user?.email || employee.email || ""
-  }
+
 
   const employeeItems = employees.map((employee) => {
-    const name = getEmployeeName(employee)
-    const email = getEmployeeEmail(employee)
+
     const details = []
 
 
@@ -64,15 +57,15 @@ export const EmployeeSearchableSelect = ({
       details.push(employee.department)
     }
 
-    let label = name
+    let label = employee.user?.fullname || ""
     if (details.length > 0) {
-      label += ` (${details.join(" • ")})`
+       label += ` (${details.join(" • ")})`
     }
 
     return {
       id: employee.id,
       label: label,
-      value: `${name} ${email} ${employee.department || ""}`.toLowerCase(),
+      value: `${employee.user?.fullname} ${employee.email} ${employee.department || ""}`.toLowerCase(),
     }
   })
 
@@ -97,7 +90,7 @@ export const EmployeeSearchableSelect = ({
     const selectedNames = selectedItems
       .map((id) => {
         const emp = employees.find((e) => e.id.toString() === id.toString())
-        return emp ? getEmployeeName(emp) : null
+        return emp ? emp.user?.fullname : null
       })
       .filter(Boolean)
       .join(", ")

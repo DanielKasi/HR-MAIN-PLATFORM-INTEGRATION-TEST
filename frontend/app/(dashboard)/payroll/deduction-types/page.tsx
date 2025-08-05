@@ -18,7 +18,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -52,6 +52,7 @@ import { IDeductionTypeFormData, IDeductionType, IInstitution } from "@/app/type
 import { createDeductionType, getDeductionTypes, updateDeductionType, deleteDeductionType } from "@/lib/utils";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
 import { IUserInstitution } from "@/app/types";
+import { TableSkeleton } from "@/components/common/table-skeleton";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -317,23 +318,32 @@ const DeductionTypesComponent = () => {
 
   const totalPages = Math.ceil(filteredDeductionTypes.length / pageSize);
 
-  if (isLoading && !selectedInstitution?.id) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4 text-center">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
-            <Settings className="w-6 h-6 text-orange-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-gray-800">Loading Institution Data</h3>
-            <p className="text-gray-600">Please wait while we set up your workspace...</p>
-          </div>
+ 
+    if (isLoading) {
+      return (
+        <div className="p-2 space-y-6">
+          <Card className="h-[calc(100vh-2rem)] shadow-lg">
+            <CardHeader className="border-b">
+              <div className="flex justify-between gap-8 items-center">
+                <div className="flex items-center justify-start gap-4">
+                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="space-y-2">
+                    <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </CardHeader>
+            <TableSkeleton rows={10} columns={8} />
+          </Card>
         </div>
-      </div>
-    );
-  }
-
+      )
+    }
   return (
     <div className="w-full h-full p-6 space-y-6">
       {/* Header */}

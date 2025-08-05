@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 
 import {Button} from "@/components/ui/button";
-import {Card, CardContent} from "@/components/ui/card";
+import {Card, CardContent, CardHeader} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {Badge} from "@/components/ui/badge";
 import {
@@ -58,6 +58,7 @@ import {toast} from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import {formatCurrency} from "@/lib/helpers";
 import {useDocumentTitle} from "@/hooks/use-document-title";
+import { TableSkeleton } from "@/components/common/table-skeleton";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -140,6 +141,7 @@ export default function InterviewsPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, interviewerFilter, jobPositionFilter, dateRange]);
+ 
   const fetchInterviews = async (showRefreshLoader = false) => {
     if (!selectedInstitution) return;
 
@@ -171,6 +173,7 @@ export default function InterviewsPage() {
   const handleRefresh = () => {
     fetchInterviews(true);
   };
+  
 
   // Enhanced filtering logic
   const filteredInterviews = useMemo(() => {
@@ -601,26 +604,33 @@ export default function InterviewsPage() {
         </div>
       )}
 
+      
+
       {/* Interviews Table */}
       <Card>
-        {isLoading ? (
-          <div className="p-6">
-            <div className="space-y-4">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                  <Skeleton className="h-10 w-10 rounded-full" />
-                  <div className="space-y-2 flex-1">
-                    <Skeleton className="h-4 w-[200px]" />
-                    <Skeleton className="h-4 w-[150px]" />
-                  </div>
-                  <Skeleton className="h-6 w-[80px]" />
-                  <Skeleton className="h-4 w-[120px]" />
-                  <Skeleton className="h-8 w-8" />
-                </div>
-              ))}
+       {isLoading ? (
+  <div className="p-2 space-y-6">
+    <Card className="h-[calc(100vh-2rem)] shadow-lg">
+      <CardHeader className="border-b">
+        <div className="flex justify-between gap-8 items-center">
+          <div className="flex items-center justify-start gap-4">
+            <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+            <div className="space-y-2">
+              <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
             </div>
           </div>
-        ) : filteredInterviews.length === 0 ? (
+          <div className="flex gap-2">
+            <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+      </CardHeader>
+      <TableSkeleton rows={10} columns={6} />
+    </Card>
+  </div>
+)  : filteredInterviews.length === 0 ? (
           <div className="p-12 text-center">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">No interviews found</h3>
