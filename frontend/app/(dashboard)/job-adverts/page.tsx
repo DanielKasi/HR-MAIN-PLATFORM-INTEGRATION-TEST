@@ -3,24 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import {
-  Megaphone,
-  Plus,
-  MoreVertical,
-  Edit,
-  Trash2,
-  RefreshCw,
-  Eye,
-  Calendar,
-  Users,
-  Briefcase,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Search,
-  Filter,
-} from "lucide-react";
+import { Megaphone, Plus, MoreVertical, Edit, Trash2, RefreshCw, Eye, Calendar, Users, Briefcase, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Filter } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -339,36 +322,39 @@ export default function JobAdvertsPage() {
   
 
   return (
-    <div className="w-full h-full p-6 space-y-6">
+    <div className="w-full h-full p-2 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Job Openings</h1>
-          <p className="text-muted-foreground">
-            Manage job openings for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          <Button onClick={handleCreateJobAdvert} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Create Job Opening
-          </Button>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold">Job Openings</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Manage job openings for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex items-center justify-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+            <Button onClick={handleCreateJobAdvert} className="flex items-center justify-center gap-2">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Create Job Opening</span>
+              <span className="sm:hidden">Create</span>
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-4">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Search job openings..."
@@ -377,9 +363,9 @@ export default function JobAdvertsPage() {
             className="pl-10"
           />
         </div>
-        <div className="flex gap-2 min-w-80">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full px-6">
+            <SelectTrigger className="w-full sm:w-[200px]">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4" />
                 <SelectValue placeholder="Filter by status" />
@@ -393,29 +379,34 @@ export default function JobAdvertsPage() {
               <SelectItem value="closed">Closed</SelectItem>
             </SelectContent>
           </Select>
-          <Input
-            type="date"
-            placeholder="From date"
-            value={dateRange.from || ""}
-            onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
-            className="w-[200px]"
-          />
-          <Input
-            type="date"
-            placeholder="To date"
-            value={dateRange.to || ""}
-            onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
-            className="w-[200px]"
-          />
+          <div className="flex gap-2">
+            <Input
+              type="date"
+              placeholder="From date"
+              value={dateRange.from || ""}
+              onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
+              className="flex-1 sm:w-[150px]"
+            />
+            <Input
+              type="date"
+              placeholder="To date"
+              value={dateRange.to || ""}
+              onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
+              className="flex-1 sm:w-[150px]"
+            />
+          </div>
         </div>
       </div>
 
       {/* Rows per Page Selector */}
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        <div className="text-xs sm:text-sm text-muted-foreground">
+          {!isLoading && `${paginationInfo.count} total openings`}
+        </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rows per page:</span>
+          <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">Rows per page:</span>
           <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[70px] h-8">
+            <SelectTrigger className="w-[60px] sm:w-[70px] h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -431,28 +422,28 @@ export default function JobAdvertsPage() {
 
       {/* Stats */}
       {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-blue-600">{paginationInfo.count}</div>
+            <CardContent className="p-3 sm:p-4">
+              <div className="text-lg sm:text-2xl font-bold text-blue-600">{paginationInfo.count}</div>
               <p className="text-xs text-muted-foreground">Total Openings</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">{publishedAdverts.length}</div>
+            <CardContent className="p-3 sm:p-4">
+              <div className="text-lg sm:text-2xl font-bold text-green-600">{publishedAdverts.length}</div>
               <p className="text-xs text-muted-foreground">Published</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-gray-600">{draftAdverts.length}</div>
+            <CardContent className="p-3 sm:p-4">
+              <div className="text-lg sm:text-2xl font-bold text-gray-600">{draftAdverts.length}</div>
               <p className="text-xs text-muted-foreground">Drafts</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-red-600">{expiredAdverts.length}</div>
+            <CardContent className="p-3 sm:p-4">
+              <div className="text-lg sm:text-2xl font-bold text-red-600">{expiredAdverts.length}</div>
               <p className="text-xs text-muted-foreground">Expired</p>
             </CardContent>
           </Card>
@@ -495,142 +486,145 @@ export default function JobAdvertsPage() {
           </p>
         </Card>
       ) : (
-        <Card className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Job Position</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Published Date</TableHead>
-                <TableHead>Expiry Date</TableHead>
-                <TableHead>Employees Required</TableHead>
-                <TableHead>Interview Stages</TableHead>
-                <TableHead>Additional Info</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredJobAdverts.map((advert) => (
-                <TableRow key={advert.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`h-8 w-8 rounded-full ${advert.job_position_advert_status === "active"
-                          ? "bg-green-50"
-                          : advert.job_position_advert_status === "expired"
-                            ? "bg-red-50"
-                            : "bg-gray-50"
-                          } flex items-center justify-center`}
-                      >
-                        <Megaphone
-                          className={`h-4 w-4 ${advert.job_position_advert_status === "active"
-                            ? "text-green-600"
+        <div className="rounded-md border overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table className="min-w-[800px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[200px]">Job Position</TableHead>
+                  <TableHead className="min-w-[100px]">Status</TableHead>
+                  <TableHead className="min-w-[120px]">Published Date</TableHead>
+                  <TableHead className="min-w-[120px]">Expiry Date</TableHead>
+                  <TableHead className="min-w-[140px]">Employees Required</TableHead>
+                  <TableHead className="min-w-[130px]">Interview Stages</TableHead>
+                  <TableHead className="min-w-[200px]">Additional Info</TableHead>
+                  <TableHead className="text-right min-w-[100px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredJobAdverts.map((advert) => (
+                  <TableRow key={advert.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`h-8 w-8 rounded-full flex-shrink-0 ${advert.job_position_advert_status === "active"
+                            ? "bg-green-50"
                             : advert.job_position_advert_status === "expired"
-                              ? "text-red-600"
-                              : "text-gray-600"
-                            }`}
-                        />
+                              ? "bg-red-50"
+                              : "bg-gray-50"
+                            } flex items-center justify-center`}
+                        >
+                          <Megaphone
+                            className={`h-4 w-4 ${advert.job_position_advert_status === "active"
+                              ? "text-green-600"
+                              : advert.job_position_advert_status === "expired"
+                                ? "text-red-600"
+                                : "text-gray-600"
+                              }`}
+                          />
+                        </div>
+                        <span className="truncate">{advert.job_position_details?.name || "N/A"}</span>
                       </div>
-                      <span>{advert.job_position_details?.name || "N/A"}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusVariant(advert.job_position_advert_status)}>
-                      {advert.job_position_advert_status.toUpperCase()}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{formatDate(advert.published_date)}</TableCell>
-                  <TableCell>
-                    <span className={`${isExpired(advert.expiry_date) ? "text-red-600 font-medium" : ""}`}>
-                      {formatDate(advert.expiry_date)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-3 w-3 text-muted-foreground" />
-                      {advert.number_of_employees_expected || "-"}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-3 w-3 text-muted-foreground" />
-                      {advert.interview_stages?.length || 0} stages
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-xs truncate text-sm text-muted-foreground">
-                      <RichTextDisplay htmlContent={advert.extra_information || "-"} />
-
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_JOB_ADVERTS}>
-                          <DropdownMenuItem onClick={() => handleViewJobAdvert(advert.id)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                        </ProtectedComponent>
-                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_JOB_ADVERTS}>
-                          <DropdownMenuItem onClick={() => handleEditJobAdvert(advert.id)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                        </ProtectedComponent>
-                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_JOB_ADVERTS}>
-                          <Dialog
-                            open={closingAdvertId === advert.id}
-                            onOpenChange={(open) => setClosingAdvertId(open ? advert.id : null)}
-                          >
-                            <DialogTrigger asChild>
-                              <DropdownMenuItem
-                                onSelect={(e) => e.preventDefault()}
-                                className="text-destructive"
-                                disabled={isClosing}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Close
-                              </DropdownMenuItem>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Are you sure you want to close this job opening?</DialogTitle>
-                                <DialogDescription>
-                                  Closing this job advert will change its status to "closed" and prevent further applications. This action cannot be undone.
-                                </DialogDescription>
-                              </DialogHeader>
-                              <DialogFooter>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setClosingAdvertId(null)}
-                                >
-                                  Cancel
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  onClick={() => handleCloseJobAdvert(advert.id)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusVariant(advert.job_position_advert_status)} className="whitespace-nowrap">
+                        {advert.job_position_advert_status.toUpperCase()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">{formatDate(advert.published_date)}</TableCell>
+                    <TableCell>
+                      <span className={`whitespace-nowrap ${isExpired(advert.expiry_date) ? "text-red-600 font-medium" : ""}`}>
+                        {formatDate(advert.expiry_date)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <Users className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                        {advert.number_of_employees_expected || "-"}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <Calendar className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                        {advert.interview_stages?.length || 0} stages
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-[200px] truncate text-sm text-muted-foreground">
+                        <RichTextDisplay htmlContent={advert.extra_information || "-"} />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_JOB_ADVERTS}>
+                            <DropdownMenuItem onClick={() => handleViewJobAdvert(advert.id)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                          </ProtectedComponent>
+                          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_JOB_ADVERTS}>
+                            <DropdownMenuItem onClick={() => handleEditJobAdvert(advert.id)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                          </ProtectedComponent>
+                          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_JOB_ADVERTS}>
+                            <Dialog
+                              open={closingAdvertId === advert.id}
+                              onOpenChange={(open) => setClosingAdvertId(open ? advert.id : null)}
+                            >
+                              <DialogTrigger asChild>
+                                <DropdownMenuItem
+                                  onSelect={(e) => e.preventDefault()}
+                                  className="text-destructive"
                                   disabled={isClosing}
                                 >
-                                  {isClosing ? "Closing..." : "Close Job Opening"}
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                        </ProtectedComponent>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Close
+                                </DropdownMenuItem>
+                              </DialogTrigger>
+                              <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                  <DialogTitle>Are you sure you want to close this job opening?</DialogTitle>
+                                  <DialogDescription>
+                                    Closing this job advert will change its status to "closed" and prevent further applications. This action cannot be undone.
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <DialogFooter className="flex-col sm:flex-row gap-2">
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => setClosingAdvertId(null)}
+                                    className="w-full sm:w-auto"
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    onClick={() => handleCloseJobAdvert(advert.id)}
+                                    disabled={isClosing}
+                                    className="w-full sm:w-auto"
+                                  >
+                                    {isClosing ? "Closing..." : "Close Job Opening"}
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                          </ProtectedComponent>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       )}
 
       {/* Clear Filters Button */}
@@ -644,67 +638,78 @@ export default function JobAdvertsPage() {
 
       {/* Results Summary */}
       {!isLoading && (
-        <div className="text-sm text-muted-foreground">
+        <div className="text-xs sm:text-sm text-muted-foreground px-2 sm:px-0">
           Showing {filteredJobAdverts.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to{" "}
           {Math.min(currentPage * pageSize, filteredJobAdverts.length)} of {filteredJobAdverts.length} job openings
-          {(searchTerm || statusFilter !== "all" || dateRange.from || dateRange.to) && ` (filtered from ${paginationInfo.count} total)`}
+          {(searchTerm || statusFilter !== "all" || dateRange.from || dateRange.to) && (
+            <span className="block sm:inline">
+              {" "}(filtered from {paginationInfo.count} total)
+            </span>
+          )}
         </div>
       )}
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronsLeft className="h-4 w-4" />
-            First
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </Button>
-          <Select
-            value={currentPage.toString()}
-            onValueChange={(value) => handlePageChange(parseInt(value))}
-          >
-            <SelectTrigger className="w-[70px] h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <SelectItem key={page} value={page.toString()}>
-                  {page}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(totalPages)}
-            disabled={currentPage === totalPages}
-          >
-            Last
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 sm:px-6 py-4 border-t">
+          <div className="text-xs sm:text-sm text-muted-foreground order-2 sm:order-1">
+            Page {currentPage} of {totalPages}
+          </div>
+          <div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(1)}
+              disabled={currentPage === 1}
+              className="hidden sm:flex"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+              First
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Previous</span>
+            </Button>
+            <Select
+              value={currentPage.toString()}
+              onValueChange={(value) => handlePageChange(parseInt(value))}
+            >
+              <SelectTrigger className="w-[60px] sm:w-[70px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <SelectItem key={page} value={page.toString()}>
+                    {page}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(totalPages)}
+              disabled={currentPage === totalPages}
+              className="hidden sm:flex"
+            >
+              Last
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
     </div>

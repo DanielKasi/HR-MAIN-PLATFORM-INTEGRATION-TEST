@@ -117,7 +117,7 @@ export default function PayrollPeriods() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const selectedInstitution = useSelector(selectSelectedInstitution);
-  const [ isLoading, setIsLoading] = useState(true);
+  const [ isLoading, setIsLoading] = useState(false);
 
 
   // Fetch payroll periods
@@ -128,6 +128,7 @@ export default function PayrollPeriods() {
     }
 
     try {
+      setIsLoading(true);
       setIsRefreshing(true);
       const periodsData = await getPayrollPeriods(selectedInstitution.id);
       if (periodsData && Array.isArray(periodsData)) {
@@ -142,6 +143,7 @@ export default function PayrollPeriods() {
       toast.error(error.message || "Failed to load payroll periods");
     } finally {
       setIsRefreshing(false);
+      setIsLoading(false);
     }
   }, [selectedInstitution?.id]);
 
@@ -325,7 +327,7 @@ export default function PayrollPeriods() {
       toast.error(error.message || "An error occurred while saving the payroll period");
     } finally {
       setSaving(false);
-      setIsLoading(false);
+      
     }
   };
 
