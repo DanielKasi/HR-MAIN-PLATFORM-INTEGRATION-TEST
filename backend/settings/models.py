@@ -2,6 +2,7 @@ from django.db import models
 from institution.models import Institution
 from slugify import slugify
 
+
 class SystemConfiguration(models.Model):
     name = models.CharField(max_length=50)
     code = models.CharField(max_length=50)
@@ -13,11 +14,24 @@ class SystemConfiguration(models.Model):
     def save(self, *args, **kwargs):
         # Auto-generate code from name
         if not self.code:
-            self.code = slugify(self.name).replace('-', '_')
+            self.code = slugify(self.name).replace("-", "_")
             # Ensure code uniqueness
             base_code = self.code
             counter = 1
-            while SystemConfiguration.objects.filter(code=self.code).exclude(pk=self.pk).exists():
+            while (
+                SystemConfiguration.objects.filter(code=self.code)
+                .exclude(pk=self.pk)
+                .exists()
+            ):
                 self.code = f"{base_code}_{counter}"
                 counter += 1
-        super().save(*args, **kwargs)    
+        super().save(*args, **kwargs)
+
+
+class SystemDay(models.Model):
+    day_code = models.CharField(max_length=10, unique=True)
+    day_name = models.CharField(max_length=50)
+    level = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.day_name

@@ -11,8 +11,10 @@ from institution.models import (
     InstitutionBankType,
     InstitutionBankAccount,
     Branch,
+    InstitutionWorkingDays,
 )
 from employee.models import Employee
+from settings.models import SystemDay
 
 
 class Command(BaseCommand):
@@ -25,6 +27,7 @@ class Command(BaseCommand):
         self.sync_systems()
         self.sync_discipline_types()
         self.sync_workflows()
+        self.create_default_system_days()
         self.create_default_bank_info()
 
     def sync_permissions(self):
@@ -280,6 +283,44 @@ class Command(BaseCommand):
         )
         self.stdout.write(self.style.SUCCESS("\n🎉 Workflows synced successfully!"))
 
+    # Create default system days
+    # This method creates default system days if they do not already exist.
+    def create_default_system_days(self):
+        self.stdout.write(
+            self.style.MIGRATE_HEADING("\n⏳ Creating default system days...\n")
+        )
+
+        default_days = [
+            {"day_code": "MON", "day_name": "Monday", "level": 1},
+            {"day_code": "TUE", "day_name": "Tuesday", "level": 2},
+            {"day_code": "WED", "day_name": "Wednesday", "level": 3},
+            {"day_code": "THU", "day_name": "Thursday", "level": 4},
+            {"day_code": "FRI", "day_name": "Friday", "level": 5},
+            {"day_code": "SAT", "day_name": "Saturday", "level": 6},
+            {"day_code": "SUN", "day_name": "Sunday", "level": 7},
+        ]
+
+        for day_data in default_days:
+            day_code = day_data["day_code"]
+
+            if SystemDay.objects.filter(day_code=day_code).exists():
+                self.stdout.write(
+                    self.style.NOTICE(
+                        f"  ♻️  System day '{day_data['day_name']}' already exists, skipping."
+                    )
+                )
+            else:
+                SystemDay.objects.create(
+                    day_code=day_code,
+                    day_name=day_data["day_name"],
+                    level=day_data["level"],
+                )
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"  ✅ Created system day: {day_data['day_name']}"
+                    )
+                )
+
     # To be deleted
     def create_default_bank_info(self):
         default_bank_data = {
@@ -350,4 +391,21 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(
                     f"  └─ Default bank account already exists for {institution.institution_name}"
+                )
+
+            self.stdout.write(
+                f"\n\nProcessing Working Days for {institution.institution_name}"
+            )
+
+            working_days, created = InstitutionWorkingDays.objects.get_or_create(
+                institution=institution
+            )
+            if created:
+                working_days.days.set(SystemDay.objects.all())
+                self.stdout.write(
+                    f"   └─  Created default working days for {institution.institution_name}"
+                )
+            else:
+                self.stdout.write(
+                    f"   └─  Default working days already exist for {institution.institution_name}"
                 )

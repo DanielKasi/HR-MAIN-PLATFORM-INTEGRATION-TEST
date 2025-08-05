@@ -22,6 +22,7 @@ from .models import (
     UserBranch,
     InstitutionBankAccount,
     InstitutionBankType,
+    InstitutionWorkingDays,
 )
 from users.serializers import ProfileSerializer
 from .serializers import (
@@ -34,6 +35,7 @@ from .serializers import (
     UserBranchSerializer,
     InstitutionBankTypeSerializer,
     InstitutionBankAccountSerializer,
+    InstitutionWorkingDaysSerializer,
 )
 from django.shortcuts import get_object_or_404
 from .utils import generate_compliant_password
@@ -406,6 +408,76 @@ class InstitutionBankAccountDetailView(APIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except InstitutionBankAccount.DoesNotExist:
             return Response({"detail": "Bank account not found."}, status=404)
+
+
+class InstitutionWorkingDaysListAPIView(APIView):
+    @extend_schema(
+        responses={200: InstitutionWorkingDaysSerializer(many=True)},
+        description="Retrieve all working days for an institution.",
+        summary="Get all working days",
+        tags=["Working Days Management"],
+    )
+    def get(self, request):
+        user = request.user.profile if request.user.is_authenticated else None
+
+        try:
+            institution = Institution.objects.get(id=user.institution_id)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=404)
+
+        working_days = InstitutionWorkingDays.objects.filter(institution=institution)
+
+        serializer = InstitutionWorkingDaysSerializer(working_days, many=True)
+
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=InstitutionWorkingDaysSerializer,
+        responses={201: InstitutionWorkingDaysSerializer},
+        description="Create a new working days configuration for an institution.",
+        summary="Create working days",
+        tags=["Working Days Management"],
+    )
+    def post(self, request):
+        serializer = InstitutionWorkingDaysSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            working_days = serializer.save()
+            return Response(
+                InstitutionWorkingDaysSerializer(working_days).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class InstitutionWorkingDaysDetailView(APIView):
+    @extend_schema(
+        request=InstitutionWorkingDaysSerializer,
+        responses={200: InstitutionWorkingDaysSerializer},
+        description="Update existing working days configuration for an institution.",
+        summary="Update working days",
+        tags=["Working Days Management"],
+    )
+    def patch(self, request, pk):
+        try:
+            working_days = InstitutionWorkingDays.objects.get(id=pk)
+        except InstitutionWorkingDays.DoesNotExist:
+            return Response(
+                {"detail": "Working days configuration not found."}, status=404
+            )
+
+        serializer = InstitutionWorkingDaysSerializer(
+            working_days, data=request.data, partial=True, context={"request": request}
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class BranchListAPIView(APIView):

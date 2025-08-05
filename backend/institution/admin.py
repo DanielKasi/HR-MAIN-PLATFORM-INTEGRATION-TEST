@@ -6,6 +6,7 @@ from .models import (
     Department,
     InstitutionBankType,
     InstitutionBankAccount,
+    InstitutionWorkingDays,
 )
 
 
@@ -29,3 +30,4 @@ admin.site.register(UserBranch)
 admin.site.register(Department)
 admin.site.register(InstitutionBankType)
 admin.site.register(InstitutionBankAccount)
+admin.site.register(InstitutionWorkingDays)
