@@ -109,7 +109,7 @@ export function InfiniteScrollSelect<T>({
       )}
 
       {/* Items List */}
-      <ScrollArea className="h-64 border rounded-lg" ref={scrollAreaRef}>
+      <ScrollArea className="h-48 border rounded-lg" ref={scrollAreaRef}>
         <div className="p-2">
           {items.length === 0 && !loading ? (
             <div className="text-center py-8 text-gray-500">

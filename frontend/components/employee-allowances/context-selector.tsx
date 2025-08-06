@@ -253,7 +253,7 @@ export function ContextSelector({
           )}
 
           <InfiniteScrollSelect
-            items={contextData}
+            items={contextData.filter(item => !selectedItems.some(selectedItem => selectedItem.id === item.id))}
             loading={loading}
             hasMore={hasMore}
             onLoadMore={handleLoadMore}
@@ -265,7 +265,7 @@ export function ContextSelector({
             getItemDescription={(item) => item.description || ""}
             placeholder={`Search ${getContextLabel(selectedContext).toLowerCase()}...`}
             searchPlaceholder={`Search ${getContextLabel(selectedContext).toLowerCase()}...`}
-            emptyMessage={`No ${getContextLabel(selectedContext).toLowerCase()} found`}
+            emptyMessage={`No ${selectedItems.length ? "more":""} ${getContextLabel(selectedContext).toLowerCase()} found`}
             // className="h-48"
           />
           

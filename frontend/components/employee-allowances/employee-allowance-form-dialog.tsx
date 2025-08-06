@@ -292,7 +292,7 @@ export function EmployeeAllowanceFormDialog({
             Configure allowance details, target group, and calculation method.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-1 gap-6 py-4 max-h-[75vh] overflow-y-auto">
+        <div className="grid grid-cols-1 gap-6 py-4 max-h-[70vh] overflow-y-auto">
           {/* Context Selector */}
           <div className="space-y-4">
             <ContextSelector
