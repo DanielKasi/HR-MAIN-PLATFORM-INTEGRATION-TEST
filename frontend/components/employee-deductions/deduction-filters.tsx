@@ -25,7 +25,7 @@ export function DeductionFilters({
   onClearFilters,
 }: DeductionFiltersProps) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6 mx-2">
+    <div className="bg-white p-4 mb-6 mx-2">
       <div className="space-y-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
