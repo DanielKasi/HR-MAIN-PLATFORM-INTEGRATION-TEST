@@ -1169,29 +1169,27 @@ export default function ApplicationsPage() {
     
 
   return (
-    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Job Applications</h1>
-          <p className="text-muted-foreground">
-            Manage and track all job applications for {selectedBranch.branch_name} -{" "}
-            {selectedInstitution.institution_name}
-          </p>
-        </div>
-        <Button
-          onClick={() => {
-            setIsCreateDialogOpen(true);
-          }}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Create Application
-        </Button>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 w-full h-full bg-white p-3 sm:p-4 lg:p-8 gap-4 rounded-lg">
+     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col">
+        <h1 className="text-lg sm:text-2xl md:text-3xl font-bold whitespace-nowrap">
+          Job Applications
+        </h1>
+        <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-xs sm:max-w-none">
+          Manage and track all job applications for {selectedBranch.branch_name} -
+        </p>
       </div>
+      <Button onClick={() => setIsCreateDialogOpen(true)} className="flex items-center sm:mt-15 lg:mt-0">
+        <Plus className="mr-2 h-4 w-4" />
+        Create Application
+      </Button>
+    </div>
+
 
       {/* Enhanced Filter Section */}
       <div className="space-y-4">
         {/* Main Filters Row */}
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center mt-8">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center mt-6">
           <div className="relative flex-1 lg:flex-[0.7]">
              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input

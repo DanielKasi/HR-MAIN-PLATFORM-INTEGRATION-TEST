@@ -231,8 +231,9 @@ class PayrollProcessor:
             )
 
             if created or not payslip.is_paid:
+                PayslipItem.generate_payslip_items(payslip)
                 payslip.calculate_totals()
-                PayrollProcessor.generate_payslip_items(payslip)
+                # PayrollProcessor.generate_payslip_items(payslip)
                 created_payslips.append(payslip)
 
         if created_payslips:
@@ -241,66 +242,66 @@ class PayrollProcessor:
 
         return created_payslips
 
-    @staticmethod
-    def generate_payslip_items(payslip):
-        """
-        Generate detailed payslip items for allowances and deductions
-        """
-        # Clear existing items
-        payslip.items.all().delete()
+    # @staticmethod
+    # def generate_payslip_items(payslip):
+    #     """
+    #     Generate detailed payslip items for allowances and deductions
+    #     """
+    #     # Clear existing items
+    #     payslip.items.all().delete()
 
-        items_to_create = []
+    #     items_to_create = []
 
-        # Add allowances
-        for allowance in payslip.employee.allowances.filter(is_active=True):
-            if allowance.effective_from <= payslip.payroll_period.end_date and (
-                not allowance.effective_to
-                or allowance.effective_to >= payslip.payroll_period.start_date
-            ):
+    #     # Add allowances
+    #     for allowance in payslip.employee.allowances.filter(is_active=True):
+    #         if allowance.effective_from <= payslip.payroll_period.end_date and (
+    #             not allowance.effective_to
+    #             or allowance.effective_to >= payslip.payroll_period.start_date
+    #         ):
 
-                amount = allowance.get_calculated_amount()
-                items_to_create.append(
-                    PayslipItem(
-                        payslip=payslip,
-                        item_type="allowance",
-                        name=allowance.allowance_type.name,
-                        amount=amount,
-                        description=f"{allowance.calculation_method}: {allowance.amount if allowance.calculation_method == 'fixed' else f'{allowance.percentage}%'}",
-                    )
-                )
+    #             amount = allowance.get_calculated_amount()
+    #             items_to_create.append(
+    #                 PayslipItem(
+    #                     payslip=payslip,
+    #                     item_type="allowance",
+    #                     name=allowance.allowance_type.name,
+    #                     amount=amount,
+    #                     description=f"{allowance.calculation_method}: {allowance.amount if allowance.calculation_method == 'fixed' else f'{allowance.percentage}%'}",
+    #                 )
+    #             )
 
-        # Add deductions
-        for deduction in payslip.employee.deductions.filter(is_active=True):
-            if deduction.effective_from <= payslip.payroll_period.end_date and (
-                not deduction.effective_to
-                or deduction.effective_to >= payslip.payroll_period.start_date
-            ):
+    #     # Add deductions
+    #     for deduction in payslip.employee.deductions.filter(is_active=True):
+    #         if deduction.effective_from <= payslip.payroll_period.end_date and (
+    #             not deduction.effective_to
+    #             or deduction.effective_to >= payslip.payroll_period.start_date
+    #         ):
 
-                amount = deduction.get_calculated_amount()
-                items_to_create.append(
-                    PayslipItem(
-                        payslip=payslip,
-                        item_type="deduction",
-                        name=deduction.deduction_type.name,
-                        amount=amount,
-                        description=f"{deduction.calculation_method}: {deduction.amount if deduction.calculation_method == 'fixed' else f'{deduction.percentage}%'}",
-                    )
-                )
+    #             amount = deduction.get_calculated_amount()
+    #             items_to_create.append(
+    #                 PayslipItem(
+    #                     payslip=payslip,
+    #                     item_type="deduction",
+    #                     name=deduction.deduction_type.name,
+    #                     amount=amount,
+    #                     description=f"{deduction.calculation_method}: {deduction.amount if deduction.calculation_method == 'fixed' else f'{deduction.percentage}%'}",
+    #                 )
+    #             )
 
-        # Add overtime if applicable
-        # if payslip.overtime_amount > 0:
-        #     items_to_create.append(
-        #         PayslipItem(
-        #             payslip=payslip,
-        #             item_type='overtime',
-        #             name='Overtime Pay',
-        #             amount=payslip.overtime_amount,
-        #             description=f"{payslip.overtime_hours} hours @ {payslip.overtime_rate} per hour"
-        #         )
-        #     )
+    #     # Add overtime if applicable
+    #     # if payslip.overtime_amount > 0:
+    #     #     items_to_create.append(
+    #     #         PayslipItem(
+    #     #             payslip=payslip,
+    #     #             item_type='overtime',
+    #     #             name='Overtime Pay',
+    #     #             amount=payslip.overtime_amount,
+    #     #             description=f"{payslip.overtime_hours} hours @ {payslip.overtime_rate} per hour"
+    #     #         )
+    #     #     )
 
-        # Bulk create items
-        PayslipItem.objects.bulk_create(items_to_create)
+    #     # Bulk create items
+    #     PayslipItem.objects.bulk_create(items_to_create)
 
     @staticmethod
     def setup_default_payroll_types_for_institution(institution):
