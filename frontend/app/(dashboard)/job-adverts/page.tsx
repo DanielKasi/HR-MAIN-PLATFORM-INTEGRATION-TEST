@@ -384,7 +384,7 @@ export default function JobAdvertsPage() {
 
 
         {/* Search and Filters */}
-          <div className="flex flex-col lg:flex-row gap-20 items-start lg:items-center mt-8">
+          <div className="flex flex-col lg:flex-row gap-20 items-start lg:items-center mt-20">
 
             <div className="relative flex-1 lg:flex-[0.4]">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />

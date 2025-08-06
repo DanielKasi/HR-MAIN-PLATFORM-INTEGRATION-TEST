@@ -482,8 +482,8 @@ export default function WorkTypeManagement() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
-            <div className="relative flex-1">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-12">
+            <div className="relative w-[36rem]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search work types..."
@@ -492,15 +492,12 @@ export default function WorkTypeManagement() {
                 className="pl-10"
               />
             </div>
-            <div className="flex items-center gap-4">
-              <Button onClick={handleCreate} size="sm" className="w-full sm:w-auto">
-                <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+             <div className="ml-auto">
+              <Button onClick={handleCreate} className="w-full sm:w-auto text-sm">
+                <Plus className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Add Work Type</span>
                 <span className="sm:hidden">Add Type</span>
               </Button>
-              <div className="text-sm text-muted-foreground whitespace-nowrap">
-                {filteredTypes.length} type{filteredTypes.length !== 1 ? "s" : ""}
-              </div>
             </div>
           </div>
 
@@ -514,7 +511,7 @@ export default function WorkTypeManagement() {
                   </div>
                 </div>
               ) : (
-                <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0 -ml-4">
+                <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0 mt-12">
                   <TableHeader className="bg-gray-50/50">
                     <TableRow>
                       <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm lg:text-base">

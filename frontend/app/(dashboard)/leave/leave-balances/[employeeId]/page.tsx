@@ -196,7 +196,7 @@ export default function EmployeeLeaveBalanceDetails() {
 
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
        
       <div className="flex items-center justify-between">
         <Button
@@ -215,7 +215,7 @@ export default function EmployeeLeaveBalanceDetails() {
         </div>
       </div>
 
-      <Card>
+      <Card className="mt-6">
         <CardHeader>
           <CardTitle className="text-gray-900 flex items-center gap-2">
             <User className="w-5 h-5" />
@@ -253,7 +253,7 @@ export default function EmployeeLeaveBalanceDetails() {
         </CardContent>
       </Card>
 
-      <Card>
+      <div className="mt-8">
         <CardHeader className="border-b">
           <CardTitle className="text-orange-900 flex items-center gap-2">
             <Calendar className="w-5 h-5" />
@@ -326,7 +326,7 @@ export default function EmployeeLeaveBalanceDetails() {
             </div>
           )}
         </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }

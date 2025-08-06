@@ -4,7 +4,7 @@
 import type {Branch} from "@/app/types";
 
 import {useEffect, useState} from "react";
-import {Edit, MapPin, Plus, Search, Trash, Loader2, Eye} from "lucide-react";
+import {Edit, MapPin, Plus, Search, Trash, Loader2, Eye, MoreVertical} from "lucide-react";
 import {toast} from "sonner";
 import {useDispatch, useSelector} from "react-redux";
 
@@ -21,6 +21,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {Label} from "@/components/ui/label";
 import {Badge} from "@/components/ui/badge";
 import {ScrollArea} from "@/components/ui/scroll-area";
@@ -257,146 +263,12 @@ export default function BranchesPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Branches</h1>
           <p className="text-muted-foreground">Manage your business locations</p>
         </div>
-        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_ADD_BRANCH}>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Branch
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
-              <DialogHeader>
-                <DialogTitle>Add New Branch</DialogTitle>
-                <DialogDescription>Create a new branch record.</DialogDescription>
-              </DialogHeader>
-              <ScrollArea className="flex-1 pr-4">
-                <div className="grid gap-4 py-4">
-                  {[
-                    "branch_name",
-                    "branch_phone_number",
-                    "branch_email",
-                  ].map((field) => (
-                    <div key={field} className="grid grid-cols-4 items-center gap-4">
-                      <Label className="text-right" htmlFor={field}>
-                        {field
-                          .split("_")
-                          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                          .join(" ")}
-                      </Label>
-                      <Input
-                        className="col-span-3"
-                        id={field}
-                        value={(newBranch as any)[field]}
-                        onChange={(e) =>
-                          setNewBranch({
-                            ...newBranch,
-                            [field]: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  ))}
-                  
-                  {/* Opening Time */}
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label className="text-right" htmlFor="branch_opening_time">
-                      Opening Time
-                    </Label>
-                    <Input
-                      className="col-span-3"
-                      id="branch_opening_time"
-                      type="time"
-                      value={newBranch.branch_opening_time}
-                      onChange={(e) =>
-                        setNewBranch({
-                          ...newBranch,
-                          branch_opening_time: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  
-                  {/* Closing Time */}
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label className="text-right" htmlFor="branch_closing_time">
-                      Closing Time
-                    </Label>
-                    <Input
-                      className="col-span-3"
-                      id="branch_closing_time"
-                      type="time"
-                      value={newBranch.branch_closing_time}
-                      onChange={(e) =>
-                        setNewBranch({
-                          ...newBranch,
-                          branch_closing_time: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  
-                  <div key="branch_location" className="grid grid-cols-4 items-start gap-4">
-                    <Label className="text-right pt-2" htmlFor="branch_location">
-                      Location
-                    </Label>
-                    <div className="col-span-3 flex flex-col gap-2">
-                      <LocationAutocomplete
-                        placeholder="Search for a location..."
-                        value={newBranch.branch_location}
-                        onChange={(location) =>
-                          setNewBranch((prev) => ({
-                            ...prev,
-                            branch_location: location,
-                          }))
-                        }
-                        onCoordinatesChange={(lat, lon) =>
-                          setNewBranch((prev) => ({
-                            ...prev,
-                            branch_latitude: lat,
-                            branch_longitude: lon,
-                          }))
-                        }
-                      />
-                      {newBranch.branch_location && (
-                        <div className="text-sm text-muted-foreground break-words border rounded-md p-2 bg-muted/30">
-                          {newBranch.branch_location}
-                        </div>
-                      )}
-                      <Button
-                        className="self-start mt-1 flex items-center"
-                        disabled={gettingCurrentLocation}
-                        size="sm"
-                        type="button"
-                        variant="outline"
-                        onClick={getCurrentLocation}
-                      >
-                        {gettingCurrentLocation ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <MapPin className="mr-2 h-4 w-4" />
-                        )}
-                        Get Current Location
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </ScrollArea>
-              <DialogFooter className="pt-4">
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleAddBranch}>Save Branch</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </ProtectedComponent>
       </div>
 
       {errorMessage && (
@@ -405,31 +277,163 @@ export default function BranchesPage() {
         </div>
       )}
 
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle>Branch Management</CardTitle>
-          <CardDescription>Manage your organisation branches</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-1 items-center gap-2">
-              <div className="relative flex-1 max-w-md">
+      <div>
+        <CardContent className="p-0">
+          {/* Search bar and Add Branch button on same line */}
+          <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between mt-12">
+            <div className="flex flex-1 items-center gap-4">
+              <div className="relative flex-1 max-w-2xl">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   className="w-full pl-8"
-                  placeholder="Search branches..."
+                  placeholder="Search branches by name or location..."
                   type="search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Badge className="ml-2" variant="outline">
+              <Badge variant="outline">
                 {filteredBranches.length} {filteredBranches.length === 1 ? "branch" : "branches"}
               </Badge>
             </div>
+            
+            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_ADD_BRANCH}>
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="flex-shrink-0">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Branch
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
+                  <DialogHeader>
+                    <DialogTitle>Add New Branch</DialogTitle>
+                    <DialogDescription>Create a new branch record.</DialogDescription>
+                  </DialogHeader>
+                  <ScrollArea className="flex-1 pr-4">
+                    <div className="grid gap-4 py-4">
+                      {[
+                        "branch_name",
+                        "branch_phone_number",
+                        "branch_email",
+                      ].map((field) => (
+                        <div key={field} className="grid grid-cols-4 items-center gap-4">
+                          <Label className="text-right" htmlFor={field}>
+                            {field
+                              .split("_")
+                              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                              .join(" ")}
+                          </Label>
+                          <Input
+                            className="col-span-3"
+                            id={field}
+                            value={(newBranch as any)[field] || ""}
+                            onChange={(e) =>
+                              setNewBranch({
+                                ...newBranch,
+                                [field]: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      ))}
+                      
+                      {/* Opening Time */}
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label className="text-right" htmlFor="branch_opening_time">
+                          Opening Time
+                        </Label>
+                        <Input
+                          className="col-span-3"
+                          id="branch_opening_time"
+                          type="time"
+                          value={newBranch.branch_opening_time || ""}
+                          onChange={(e) =>
+                            setNewBranch({
+                              ...newBranch,
+                              branch_opening_time: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      
+                      {/* Closing Time */}
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label className="text-right" htmlFor="branch_closing_time">
+                          Closing Time
+                        </Label>
+                        <Input
+                          className="col-span-3"
+                          id="branch_closing_time"
+                          type="time"
+                          value={newBranch.branch_closing_time || ""}
+                          onChange={(e) =>
+                            setNewBranch({
+                              ...newBranch,
+                              branch_closing_time: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      
+                      <div key="branch_location" className="grid grid-cols-4 items-start gap-4">
+                        <Label className="text-right pt-2" htmlFor="branch_location">
+                          Location
+                        </Label>
+                        <div className="col-span-3 flex flex-col gap-2">
+                          <LocationAutocomplete
+                            placeholder="Search for a location..."
+                            value={newBranch.branch_location || ""}
+                            onChange={(location) =>
+                              setNewBranch((prev) => ({
+                                ...prev,
+                                branch_location: location,
+                              }))
+                            }
+                            onCoordinatesChange={(lat, lon) =>
+                              setNewBranch((prev) => ({
+                                ...prev,
+                                branch_latitude: lat,
+                                branch_longitude: lon,
+                              }))
+                            }
+                          />
+                          {newBranch.branch_location && (
+                            <div className="text-sm text-muted-foreground break-words border rounded-md p-2 bg-muted/30">
+                              {newBranch.branch_location}
+                            </div>
+                          )}
+                          <Button
+                            className="self-start mt-1 flex items-center"
+                            disabled={gettingCurrentLocation}
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                            onClick={getCurrentLocation}
+                          >
+                            {gettingCurrentLocation ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <MapPin className="mr-2 h-4 w-4" />
+                            )}
+                            Get Current Location
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </ScrollArea>
+                  <DialogFooter className="pt-4">
+                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddBranch}>Save Branch</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </ProtectedComponent>
           </div>
 
-          <div className="rounded-md border overflow-hidden">
+          <div className="overflow-hidden mt-12">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
@@ -444,7 +448,7 @@ export default function BranchesPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell className="h-24 text-center" colSpan={7}>
+                    <TableCell className="h-24 text-center" colSpan={6}>
                       <div className="flex items-center justify-center">
                         <Loader2 className="h-6 w-6 animate-spin mr-2" />
                         <span>Loading branches...</span>
@@ -453,7 +457,7 @@ export default function BranchesPage() {
                   </TableRow>
                 ) : filteredBranches.length === 0 ? (
                   <TableRow>
-                    <TableCell className="h-24 text-center" colSpan={7}>
+                    <TableCell className="h-24 text-center" colSpan={6}>
                       {searchQuery ? (
                         <div className="flex flex-col items-center justify-center text-muted-foreground">
                           <Search className="h-8 w-8 mb-2" />
@@ -499,47 +503,47 @@ export default function BranchesPage() {
                       <TableCell>
                         Opens: {branch.branch_opening_time}, Closes: {branch.branch_closing_time}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2 opacity-70 group-hover:opacity-100">
-                          {/* <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
-                            <Button
-                              className="h-8 w-8"
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => {
-                                router.push(`/branches/${branch.id}`);
-                              }}
-                            >
-                              <Eye className="h-4 w-4" />
-                              <span className="sr-only">View</span>
+                      <TableCell className="text-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <MoreVertical className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
                             </Button>
-                          </ProtectedComponent> */}
-                          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
-                            <Button
-                              className="h-8 w-8"
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => {
-                                setEditBranch(branch);
-                                setIsEditDialogOpen(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                              <span className="sr-only">Edit</span>
-                            </Button>
-                          </ProtectedComponent>
-                          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_BRANCH}>
-                            <Button
-                              className="h-8 w-8 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => handleDeleteBranch(branch.id)}
-                            >
-                              <Trash className="h-4 w-4" />
-                              <span className="sr-only">Delete</span>
-                            </Button>
-                          </ProtectedComponent>
-                        </div>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {/* <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  router.push(`/branches/${branch.id}`);
+                                }}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </DropdownMenuItem>
+                            </ProtectedComponent> */}
+                            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setEditBranch(branch);
+                                  setIsEditDialogOpen(true);
+                                }}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Branch
+                              </DropdownMenuItem>
+                            </ProtectedComponent>
+                            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_BRANCH}>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteBranch(branch.id)}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <Trash className="mr-2 h-4 w-4" />
+                                Delete Branch
+                              </DropdownMenuItem>
+                            </ProtectedComponent>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))
@@ -548,7 +552,7 @@ export default function BranchesPage() {
             </Table>
           </div>
         </CardContent>
-      </Card>
+      </div>
 
       {/* Edit Branch Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -575,7 +579,7 @@ export default function BranchesPage() {
                     <Input
                       className="col-span-3"
                       id={`edit-${field}`}
-                      value={(editBranch as any)[field]}
+                      value={(editBranch as any)[field] || ""}
                       onChange={(e) =>
                         setEditBranch({
                           ...editBranch,
@@ -595,7 +599,7 @@ export default function BranchesPage() {
                     className="col-span-3"
                     id="edit-branch_opening_time"
                     type="time"
-                    value={editBranch.branch_opening_time}
+                    value={editBranch.branch_opening_time || ""}
                     onChange={(e) =>
                       setEditBranch({
                         ...editBranch,
@@ -614,7 +618,7 @@ export default function BranchesPage() {
                     className="col-span-3"
                     id="edit-branch_closing_time"
                     type="time"
-                    value={editBranch.branch_closing_time}
+                    value={editBranch.branch_closing_time || ""}
                     onChange={(e) =>
                       setEditBranch({
                         ...editBranch,

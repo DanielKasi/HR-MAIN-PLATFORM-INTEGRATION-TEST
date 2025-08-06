@@ -759,71 +759,76 @@ export default function LeaveBalanceComponent() {
 
 
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mt-8">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search by name, employee code, or leave type..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex gap-2 min-w-80">
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-full px-6">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <SelectValue placeholder="Filter by leave type" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Leave Types</SelectItem>
-              {uniqueLeaveTypes.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={filterYear} onValueChange={setFilterYear}>
-            <SelectTrigger className="w-full px-6">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <SelectValue placeholder="Filter by year" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Years</SelectItem>
-              {availableYears.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+<div className="flex flex-wrap items-center justify-between gap-2 mt-12">
+  {/* Search Bar */}
+  <div className="relative w-full sm:w-[450px]">
+    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+    <Input
+      placeholder="Search by name, employee code, or leave type..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="pl-10 h-10 text-sm"
+    />
+  </div>
 
-      {/* Rows per Page Selector */}
-      <div className="flex justify-end">
+  {/* Filters + Rows per Page */}
+  <div className="flex flex-wrap justify-center items-center gap-4 mx-auto">
+    {/* Leave Type Filter */}
+    <Select value={filterType} onValueChange={setFilterType}>
+      <SelectTrigger className="w-[180px] h-10 text-sm px-4">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rows per page:</span>
-          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[70px] h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZES.map((size) => (
-                <SelectItem key={size} value={size.toString()}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Filter className="h-4 w-4" />
+          <SelectValue placeholder="Leave type" />
         </div>
-      </div>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All Leave Types</SelectItem>
+        {uniqueLeaveTypes.map((type) => (
+          <SelectItem key={type} value={type}>
+            {type}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
 
+    {/* Year Filter */}
+    <Select value={filterYear} onValueChange={setFilterYear}>
+      <SelectTrigger className="w-[140px] h-10 text-sm px-4">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4" />
+          <SelectValue placeholder="Year" />
+        </div>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All Years</SelectItem>
+        {availableYears.map((year) => (
+          <SelectItem key={year} value={year.toString()}>
+            {year}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+
+    {/* Rows per Page */}
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-muted-foreground">Rows per page:</span>
+      <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+        <SelectTrigger className="w-[70px] h-8 text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {PAGE_SIZES.map((size) => (
+            <SelectItem key={size} value={size.toString()}>
+              {size}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+</div>
+ 
+    
     
       {/* Leave Balances Table */}
       {isLoading ? (

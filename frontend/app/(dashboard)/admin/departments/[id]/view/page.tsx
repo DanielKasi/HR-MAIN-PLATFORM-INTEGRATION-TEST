@@ -384,19 +384,19 @@ export default function DepartmentDetailView() {
   }
 
   return (
-    <div className="w-full h-full p-6 space-y-6">
-      {/* Header */}
-      <Button
-        variant="ghost"
-        onClick={() => router.push("/admin/departments")}
-        className="flex items-center gap-2 text-muted-foreground hover:text-foreground rounded-full aspect-square"
-      >
-        <ArrowLeft className="h-4 w-4" />
-      </Button>
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
           <div className="h-6 w-px bg-border" />
           <div className="flex items-center gap-3">
+                {/* Header */}
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/admin/departments")}
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground rounded-full aspect-square"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
               <Building2 className="h-5 w-5 text-primary" />
             </div>
@@ -430,16 +430,9 @@ export default function DepartmentDetailView() {
         </div>
       </div>
 
-      {/* Debug Info */}
-      {debugInfo && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>{debugInfo}</AlertDescription>
-        </Alert>
-      )}
 
       {/* Department Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-12">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -493,7 +486,7 @@ export default function DepartmentDetailView() {
         setSearchTerm("")
         setStatusFilter("all")
       }} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
+        <TabsList className="grid w-full grid-cols-4 lg:w-[500px] mt-12">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="employees">Employees</TabsTrigger>
           <TabsTrigger value="positions">Job Positions/Titles</TabsTrigger>

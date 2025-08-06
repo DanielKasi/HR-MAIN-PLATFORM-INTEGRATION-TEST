@@ -439,7 +439,7 @@ export default function PayrollPeriods() {
     }
 
   return (
-    <div className="w-full h-full p-6 space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -602,64 +602,8 @@ export default function PayrollPeriods() {
         </div>
       </div>
 
- 
-
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search by period name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20"
-          />
-        </div>
-        <div className="flex gap-2 min-w-80">
-          <Select
-            value={filterStatus}
-            onValueChange={(value: string) => {
-              if (value === "all" || value === "processed" || value === "pending") {
-                setFilterStatus(value);
-              }
-            }}
-          >
-            <SelectTrigger className="w-full px-6 h-12 rounded-xl">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <SelectValue placeholder="Filter by status" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="processed">Processed</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Rows per Page Selector */}
-      <div className="flex justify-end">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rows per page:</span>
-          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[70px] h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZES.map((size) => (
-                <SelectItem key={size} value={size.toString()}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-12">
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-blue-600">{totalPeriods}</div>
@@ -686,6 +630,66 @@ export default function PayrollPeriods() {
         </Card>
       </div>
 
+      {/* Search and Filters */}
+    <div className="flex flex-col sm:flex-row gap-6 mt-12 items-center">
+  {/* Search */}
+  <div className="relative w-full sm:w-[36rem]">
+    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+    <Input
+      placeholder="Search by period name..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="pl-10 h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20"
+    />
+  </div>
+
+  {/* Filters Group */}
+  <div className="flex flex-col sm:flex-row gap-4 sm:ml-20">
+    {/* Filter by Status */}
+    <Select
+      value={filterStatus}
+      onValueChange={(value: string) => {
+        if (value === "all" || value === "processed" || value === "pending") {
+          setFilterStatus(value);
+        }
+      }}
+    >
+      <SelectTrigger className="w-[14rem] px-6 h-12 rounded-xl">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4" />
+          <SelectValue placeholder="Filter by status" />
+        </div>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All Status</SelectItem>
+        <SelectItem value="processed">Processed</SelectItem>
+        <SelectItem value="pending">Pending</SelectItem>
+      </SelectContent>
+    </Select>
+
+    {/* Rows per Page Selector */}
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-muted-foreground">Rows per page:</span>
+      <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+        <SelectTrigger className="w-[70px] h-12">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {PAGE_SIZES.map((size) => (
+            <SelectItem key={size} value={size.toString()}>
+              {size}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+</div>
+
+
+  
+    
+
       {/* Payroll Periods Table */}
       {isRefreshing ? (
         <div className="space-y-4">
@@ -694,7 +698,7 @@ export default function PayrollPeriods() {
           ))}
         </div>
       ) : filteredPeriods.length === 0 ? (
-        <Card className="p-12 text-center">
+        <div className="p-12 text-center">
           <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No payroll periods found</h3>
           <p className="text-muted-foreground mb-4">
@@ -702,11 +706,11 @@ export default function PayrollPeriods() {
               ? "No payroll periods match your filter criteria."
               : "Get started by creating your first payroll period."}
           </p>
-        </Card>
+        </div>
       ) : (
-        <Card className="rounded-lg border overflow-hidden">
-          <Table>
-            <TableHeader className="bg-gray-50/80 sticky top-0 z-10">
+         <div className="overflow-x-auto mt-10">
+            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+              <TableHeader className="bg-gray-50/50">
               <TableRow className="border-b-2 border-gray-200">
                 <TableHead className="font-semibold text-gray-700 py-4">Period Name</TableHead>
                 <TableHead className="font-semibold text-gray-700">
@@ -852,7 +856,7 @@ export default function PayrollPeriods() {
               ))}
             </TableBody>
           </Table>
-        </Card>
+        </div>
       )}
 
       {/* Clear Filters Button */}

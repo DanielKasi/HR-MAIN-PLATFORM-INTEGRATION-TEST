@@ -642,83 +642,64 @@ const LeaveTypesComponent = () => {
 
 
       {/* Search and Filters */}
-      <div className="flex flex-col lg:flex-row gap-4 mt-8">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search leave types..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 text-sm sm:text-base"
-          />
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:min-w-80">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full px-4 sm:px-6 text-sm sm:text-base">
-              <div className="flex items-center gap-2">
-                <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
-                <SelectValue placeholder="Filter by status" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-sm sm:text-base">
-                All Statuses
-              </SelectItem>
-              <SelectItem value="active" className="text-sm sm:text-base">
-                Active
-              </SelectItem>
-              <SelectItem value="inactive" className="text-sm sm:text-base">
-                Inactive
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-full px-4 sm:px-6 text-sm sm:text-base">
-              <div className="flex items-center gap-2">
-                <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
-                <SelectValue placeholder="Filter by category" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-sm sm:text-base">
-                All Categories
-              </SelectItem>
-              {LEAVE_CATEGORIES.map((category) => (
-                <SelectItem key={category.value} value={category.value} className="text-sm sm:text-base">
-                  {category.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+<div className="flex flex-col lg:flex-row gap-20 mt-12 items-center ">
+  {/* Search bar with limited width */}
+  <div className="relative flex-shrink-0 max-w-md w-full">
+    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+    <Input
+      placeholder="Search leave types..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="pl-10 text-sm sm:text-base"
+    />
+  </div>
 
-      {/* Rows per Page Selector */}
-      <div className="flex justify-between items-center">
-        <div className="text-xs sm:text-sm text-muted-foreground">
-          {(searchTerm || statusFilter !== "all" || categoryFilter !== "all") && (
-            <Button variant="outline" onClick={clearFilters} className="text-xs sm:text-sm bg-transparent">
-              Clear Filters
-            </Button>
-          )}
-        </div>
+  {/* Filters side-by-side, close to search */}
+  <div className="flex gap-2 flex-shrink-0 ml-14">
+    <Select value={statusFilter} onValueChange={setStatusFilter}>
+      <SelectTrigger className="w-40 px-4 sm:px-6 text-sm sm:text-base">
         <div className="flex items-center gap-2">
-          <span className="text-xs sm:text-sm text-muted-foreground">Rows per page:</span>
-          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[60px] sm:w-[70px] h-7 sm:h-8 text-xs sm:text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZES.map((size) => (
-                <SelectItem key={size} value={size.toString()} className="text-xs sm:text-sm">
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
+          <SelectValue placeholder="Filter by status" />
         </div>
-      </div>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all" className="text-sm sm:text-base">
+          All Statuses
+        </SelectItem>
+        <SelectItem value="active" className="text-sm sm:text-base">
+          Active
+        </SelectItem>
+        <SelectItem value="inactive" className="text-sm sm:text-base">
+          Inactive
+        </SelectItem>
+      </SelectContent>
+    </Select>
 
+    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+      <SelectTrigger className="w-40 px-4 sm:px-6 text-sm sm:text-base">
+        <div className="flex items-center gap-2">
+          <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
+          <SelectValue placeholder="Filter by category" />
+        </div>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all" className="text-sm sm:text-base">
+          All Categories
+        </SelectItem>
+        {LEAVE_CATEGORIES.map((category) => (
+          <SelectItem key={category.value} value={category.value} className="text-sm sm:text-base">
+            {category.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+</div>
+
+{/* Rows per Page Selector remains below or wherever you want */}
+
+     
    
       {/* Leave Types Table */}
       {isLoading ? (

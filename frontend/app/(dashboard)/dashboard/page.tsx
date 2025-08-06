@@ -554,8 +554,8 @@ const WorkforceOverview = ({
   }, [filteredEmployees]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 ">
+      <div className="bg-white rounded-xl p-2 md:p-6 shadow-sm border border-gray-100">
         <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
           <BarChart3 className="h-5 w-5" />
           Employee Distribution by Department
@@ -1104,8 +1104,8 @@ export default function HRDashboard() {
 
           {isMounted && (
             <>
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-3xl font-bold tracking-tight text-gray-900">HR Dashboard</h1>
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
+                <h1 className="text-xl lg:text-xl font-bold tracking-tight text-gray-900">HR Dashboard</h1>
 
                 <div className="flex items-center gap-4">
                   <Select onValueChange={handleDepartmentChange} value={selectedDepartment}>
