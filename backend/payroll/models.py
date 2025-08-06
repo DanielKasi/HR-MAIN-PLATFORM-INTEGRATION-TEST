@@ -54,70 +54,6 @@ class BaseModel(models.Model):
         super().clean()
 
 
-class RecurrenceMixin:
-    """
-    Shared recurrence logic for both allowances and deductions.
-    """
-
-    def get_recurrence_count(self, payroll_period):
-        """
-        Calculate the number of times this item (allowance or deduction) will recur
-        in the given payroll period.
-        """
-        if not self.is_recurring:
-            return 1  # Means it is a one-time allowance or deduction
-
-        recurrence_count = 0
-        start_date = payroll_period.start_date
-        end_date = payroll_period.end_date
-
-        # Employee or Institution's Working days
-        if self.employee.custom_working_days.exists():
-            working_days = self.employee.custom_working_days.first().days.all()
-        else:
-            institution = self.employee.department.institution
-            working_days = institution.working_days.first().days.all()
-
-        # Daily recurrence
-        if self.frequency == "DAILY":
-            current_date = start_date
-            while current_date <= end_date:
-                if current_date.weekday() in [day.day_of_week for day in working_days]:
-                    recurrence_count += 1
-                current_date += timedelta(days=1)
-
-        # Weekly recurrence
-        elif self.frequency == "WEEKLY":
-            current_date = start_date
-            delta = timedelta(weeks=1)
-            while current_date <= end_date:
-                recurrence_count += 1
-                current_date += delta
-
-        # Monthly recurrence
-        elif self.frequency == "MONTHLY":
-            current_date = start_date
-            while current_date <= end_date:
-                recurrence_count += 1
-                current_date += relativedelta(months=1)
-
-        # Quarterly recurrence
-        elif self.frequency == "QUARTERLY":
-            current_date = start_date
-            while current_date <= end_date:
-                recurrence_count += 1
-                current_date += relativedelta(months=3)
-
-        # Yearly recurrence
-        elif self.frequency == "YEARLY":
-            current_date = start_date
-            while current_date <= end_date:
-                recurrence_count += 1
-                current_date += relativedelta(years=1)
-
-        return recurrence_count
-
-
 class AllowanceType(BaseModel):
     """
     Define types of allowances (Housing, Transport, Medical, etc.)
@@ -157,7 +93,7 @@ class DeductionType(BaseModel):
         ordering = ["name"]
 
 
-class EmployeeAllowance(RecurrenceMixin, models.Model):
+class EmployeeAllowance(models.Model):
     """
     Employee-specific allowances (can vary by employee)
     """
@@ -212,8 +148,79 @@ class EmployeeAllowance(RecurrenceMixin, models.Model):
     class Meta:
         unique_together = ["employee", "allowance_type"]
 
+    def get_recurrence_count(self, payroll_period):
+        """
+        Calculate the number of times this item (allowance or deduction) will recur
+        in the given payroll period.
+        """
+        if not self.allowance_type.is_recurring:
+            return 1  # Means it is a one-time allowance or deduction
 
-class EmployeeDeduction(RecurrenceMixin, models.Model):
+        recurrence_count = 0
+        start_date = payroll_period.start_date
+        end_date = payroll_period.end_date
+
+        if hasattr(self.employee, "custom_working_days"):
+            working_days = self.employee.custom_working_days.days.all()
+        else:
+            institution = self.employee.department.institution
+            working_days = institution.working_days.days.all()
+
+        # Daily recurrence
+        if self.allowance_type.frequency == "DAILY":
+            current_date = start_date
+            while current_date <= end_date:
+
+                DAY_NAME_TO_WEEKDAY_INDEX = {
+                    "Monday": 0,
+                    "Tuesday": 1,
+                    "Wednesday": 2,
+                    "Thursday": 3,
+                    "Friday": 4,
+                    "Saturday": 5,
+                    "Sunday": 6,
+                }
+
+                if current_date.weekday() in [
+                    DAY_NAME_TO_WEEKDAY_INDEX[day.day_name] for day in working_days
+                ]:
+
+                    recurrence_count += 1
+                current_date += timedelta(days=1)
+
+        # Weekly recurrence
+        elif self.allowance_type.frequency == "WEEKLY":
+            current_date = start_date
+            delta = timedelta(weeks=1)
+            while current_date <= end_date:
+                recurrence_count += 1
+                current_date += delta
+
+        # Monthly recurrence
+        elif self.allowance_type.frequency == "MONTHLY":
+            current_date = start_date
+            while current_date <= end_date:
+                recurrence_count += 1
+                current_date += relativedelta(months=1)
+
+        # Quarterly recurrence
+        elif self.allowance_type.frequency == "QUARTERLY":
+            current_date = start_date
+            while current_date <= end_date:
+                recurrence_count += 1
+                current_date += relativedelta(months=3)
+
+        # Yearly recurrence
+        elif self.allowance_type.frequency == "YEARLY":
+            current_date = start_date
+            while current_date <= end_date:
+                recurrence_count += 1
+                current_date += relativedelta(years=1)
+
+        return recurrence_count
+
+
+class EmployeeDeduction(models.Model):
     """
     Employee-specific deductions
     """
@@ -266,6 +273,76 @@ class EmployeeDeduction(RecurrenceMixin, models.Model):
 
     class Meta:
         unique_together = ["employee", "deduction_type"]
+
+    def get_recurrence_count(self, payroll_period):
+        """
+        Calculate the number of times this item (allowance or deduction) will recur
+        in the given payroll period.
+        """
+        if not self.deduction_type.is_recurring:
+            return 1  # Means it is a one-time allowance or deduction
+
+        recurrence_count = 0
+        start_date = payroll_period.start_date
+        end_date = payroll_period.end_date
+
+        if hasattr(self.employee, "custom_working_days"):
+            working_days = self.employee.custom_working_days.days.all()
+        else:
+            institution = self.employee.department.institution
+            working_days = institution.working_days.days.all()
+
+        # Daily recurrence
+        if self.allowance_type.frequency == "DAILY":
+            current_date = start_date
+            while current_date <= end_date:
+                DAY_NAME_TO_WEEKDAY_INDEX = {
+                    "Monday": 0,
+                    "Tuesday": 1,
+                    "Wednesday": 2,
+                    "Thursday": 3,
+                    "Friday": 4,
+                    "Saturday": 5,
+                    "Sunday": 6,
+                }
+
+                if current_date.weekday() in [
+                    DAY_NAME_TO_WEEKDAY_INDEX[day.day_name] for day in working_days
+                ]:
+
+                    recurrence_count += 1
+                current_date += timedelta(days=1)
+
+        # Weekly recurrence
+        elif self.allowance_type.frequency == "WEEKLY":
+            current_date = start_date
+            delta = timedelta(weeks=1)
+            while current_date <= end_date:
+                recurrence_count += 1
+                current_date += delta
+
+        # Monthly recurrence
+        elif self.allowance_type.frequency == "MONTHLY":
+            current_date = start_date
+            while current_date <= end_date:
+                recurrence_count += 1
+                current_date += relativedelta(months=1)
+
+        # Quarterly recurrence
+        elif self.allowance_type.frequency == "QUARTERLY":
+            current_date = start_date
+            while current_date <= end_date:
+                recurrence_count += 1
+                current_date += relativedelta(months=3)
+
+        # Yearly recurrence
+        elif self.allowance_type.frequency == "YEARLY":
+            current_date = start_date
+            while current_date <= end_date:
+                recurrence_count += 1
+                current_date += relativedelta(years=1)
+
+        return recurrence_count
 
 
 class PayrollPeriod(models.Model):

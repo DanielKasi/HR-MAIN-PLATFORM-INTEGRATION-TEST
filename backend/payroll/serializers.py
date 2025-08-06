@@ -197,9 +197,6 @@ class EmployeeAllowanceSerializer(EmployeeRelatedSerializer):
         method = data.get("calculation_method")
 
         if method == "percentage":
-            # employees = data["employees"]
-            # percentage = data.get("percentage", 0)
-
             return None
 
         elif method == "fixed":
