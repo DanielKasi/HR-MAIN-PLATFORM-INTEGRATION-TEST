@@ -596,7 +596,6 @@ const LeaveTypesComponent = () => {
                   <Button
                     onClick={handleAddLeaveType}
                     disabled={isSubmitting}
-                    className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-xs sm:text-sm"
                   >
                     {isSubmitting ? (
                       <>
@@ -1055,8 +1054,7 @@ const LeaveTypesComponent = () => {
               <Button
                 onClick={handleUpdateLeaveType}
                 disabled={isSubmitting}
-                className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-xs sm:text-sm"
-              >
+                >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />

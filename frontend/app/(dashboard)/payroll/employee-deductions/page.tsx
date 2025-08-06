@@ -227,15 +227,14 @@ export default function EmployeeDeductionsRefactored() {
               disabled={filteredDeductions.length === 0}
             />
 
-            <CreateDeductionTypeDialog
+            {/* <CreateDeductionTypeDialog
               onSuccess={handleDeductionTypeCreated}
               disabled={!selectedInstitution?.id}
               isEmbedded={true}
-            />
+            /> */}
 
             <Button
               onClick={openNewDeductionDialog}
-              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2.5"
               disabled={!selectedInstitution?.id}
             >
               <Plus className="mr-2 h-4 w-4" />

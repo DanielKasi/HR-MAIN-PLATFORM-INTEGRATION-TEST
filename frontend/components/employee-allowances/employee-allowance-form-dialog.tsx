@@ -263,7 +263,7 @@ export function EmployeeAllowanceFormDialog({
 
       onOpenChange(false);
     } catch (error: any) {
-      toast.error(error.message || "An error occurred while saving the allowance");
+      toast.error(error?.message || error?.detail || "An error occurred while saving the allowance");
     } finally {
       setSaving(false);
     }
@@ -546,7 +546,6 @@ export function EmployeeAllowanceFormDialog({
           </Button>
           <Button
             onClick={handleSubmit}
-            className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
             disabled={saving || !allowanceTypes.length || hasValidationErrors()}
           >
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
