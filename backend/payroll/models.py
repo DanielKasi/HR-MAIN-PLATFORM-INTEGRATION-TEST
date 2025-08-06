@@ -293,7 +293,7 @@ class EmployeeDeduction(models.Model):
             working_days = institution.working_days.days.all()
 
         # Daily recurrence
-        if self.allowance_type.frequency == "DAILY":
+        if self.deduction_type.frequency == "DAILY":
             current_date = start_date
             while current_date <= end_date:
                 DAY_NAME_TO_WEEKDAY_INDEX = {
@@ -314,7 +314,7 @@ class EmployeeDeduction(models.Model):
                 current_date += timedelta(days=1)
 
         # Weekly recurrence
-        elif self.allowance_type.frequency == "WEEKLY":
+        elif self.deduction_type.frequency == "WEEKLY":
             current_date = start_date
             delta = timedelta(weeks=1)
             while current_date <= end_date:
@@ -322,21 +322,21 @@ class EmployeeDeduction(models.Model):
                 current_date += delta
 
         # Monthly recurrence
-        elif self.allowance_type.frequency == "MONTHLY":
+        elif self.deduction_type.frequency == "MONTHLY":
             current_date = start_date
             while current_date <= end_date:
                 recurrence_count += 1
                 current_date += relativedelta(months=1)
 
         # Quarterly recurrence
-        elif self.allowance_type.frequency == "QUARTERLY":
+        elif self.deduction_type.frequency == "QUARTERLY":
             current_date = start_date
             while current_date <= end_date:
                 recurrence_count += 1
                 current_date += relativedelta(months=3)
 
         # Yearly recurrence
-        elif self.allowance_type.frequency == "YEARLY":
+        elif self.deduction_type.frequency == "YEARLY":
             current_date = start_date
             while current_date <= end_date:
                 recurrence_count += 1
@@ -482,11 +482,12 @@ class PayslipItem(models.Model):
                 not allowance.effective_to
                 or allowance.effective_to >= payslip.payroll_period.start_date
             ):
-                amount = allowance.get_calculated_amount()
                 recurrence_count = allowance.get_recurrence_count(
                     payslip.payroll_period
                 )
-                amount *= recurrence_count
+
+                amount = allowance.get_calculated_amount() * recurrence_count
+
                 items_to_create.append(
                     PayslipItem(
                         payslip=payslip,
@@ -502,11 +503,12 @@ class PayslipItem(models.Model):
                 not deduction.effective_to
                 or deduction.effective_to >= payslip.payroll_period.start_date
             ):
-                amount = deduction.get_calculated_amount()
                 recurrence_count = deduction.get_recurrence_count(
                     payslip.payroll_period
                 )
-                amount *= recurrence_count
+
+                amount = deduction.get_calculated_amount() * recurrence_count
+
                 items_to_create.append(
                     PayslipItem(
                         payslip=payslip,
