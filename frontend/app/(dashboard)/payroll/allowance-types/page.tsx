@@ -109,108 +109,10 @@ const AllowanceTypesComponent = () => {
     setEditingAllowanceType(null)
   }
 
-<<<<<<< Updated upstream
   const handleDeleteSuccess = (deletedId: number) => {
     setAllowanceTypes(allowanceTypes.filter((allowanceType) => allowanceType.id !== deletedId))
     setDeletingAllowanceType(null)
   }
-=======
-    setIsSubmitting(true);
-    try {
-      const allowanceTypeData: IAllowanceTypeFormData = {
-        name: formData.name,
-        description: formData.description,
-        is_taxable: formData.is_taxable,
-        is_active: formData.is_active,
-      };
-
-      const newAllowanceType = await createAllowanceType({
-        institutionId: selectedInstitution.id,
-        allowanceTypeData,
-      });
-
-      if (newAllowanceType) {
-        setAllowanceTypes([newAllowanceType, ...allowanceTypes]);
-        clearFilters()
-        toast.success("Allowance type created successfully");
-        resetFormData();
-        setIsAddDialogOpen(false);
-      } else {
-        toast.error("Failed to create allowance type");
-      }
-    } catch (error: any) {
-      console.error("Error creating allowance type:", error);
-      toast.error(error.message || "An error occurred while creating the allowance type");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleUpdateAllowanceType = async () => {
-    if (!editingAllowanceType) return;
-
-    if (!formData.name || !formData.description) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const allowanceTypeData: Partial<IAllowanceTypeFormData> = {
-        name: formData.name,
-        description: formData.description,
-        is_taxable: formData.is_taxable,
-        is_active: formData.is_active,
-      };
-
-      const updatedAllowanceType = await updateAllowanceType({
-        id: editingAllowanceType.id,
-        allowanceTypeData,
-      });
-
-      if (updatedAllowanceType) {
-        const updatedAllowanceTypes = allowanceTypes.map((allowanceType) =>
-          allowanceType.id === editingAllowanceType.id ? updatedAllowanceType : allowanceType
-        );
-        setAllowanceTypes(updatedAllowanceTypes);
-        clearFilters()
-        toast.success("Allowance type updated successfully");
-        resetFormData();
-        setIsEditDialogOpen(false);
-        setEditingAllowanceType(null);
-      } else {
-        toast.error("Failed to update allowance type");
-      }
-    } catch (error: any) {
-      toast.error(error.message || "An error occurred while updating the allowance type");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteAllowanceType = async () => {
-    if (!deletingAllowanceType) return;
-
-    setIsSubmitting(true);
-    try {
-      const success = await deleteAllowanceType(deletingAllowanceType.id);
-
-      if (success) {
-        setAllowanceTypes(allowanceTypes.filter((allowanceType) => allowanceType.id !== deletingAllowanceType.id));
-        toast.success("Allowance type deleted successfully");
-        setIsDeleteDialogOpen(false);
-        setDeletingAllowanceType(null);
-      } else {
-        toast.error("Failed to delete allowance type");
-      }
-    } catch (error: any) {
-      console.error("Error deleting allowance type:", error);
-      toast.error(error.message || "An error occurred while deleting the allowance type");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
->>>>>>> Stashed changes
 
   const handleEditAllowanceType = (allowanceType: IAllowanceType) => {
     setEditingAllowanceType(allowanceType)
