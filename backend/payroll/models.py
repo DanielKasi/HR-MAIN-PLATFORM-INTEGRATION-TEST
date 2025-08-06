@@ -180,6 +180,7 @@ class EmployeeAllowance(RecurrenceMixin, models.Model):
         decimal_places=2,
         default=0.00,
         validators=[MinValueValidator(0), MaxValueValidator(100)],
+        null=True,
     )
     is_active = models.BooleanField(default=True)
     effective_from = models.DateField(default=timezone.now)
@@ -235,6 +236,7 @@ class EmployeeDeduction(RecurrenceMixin, models.Model):
         decimal_places=2,
         default=0.00,
         validators=[MinValueValidator(0), MaxValueValidator(100)],
+        null=True,
     )
     is_active = models.BooleanField(default=True)
     effective_from = models.DateField(default=timezone.now)

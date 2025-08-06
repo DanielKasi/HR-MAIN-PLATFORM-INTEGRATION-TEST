@@ -44,6 +44,20 @@ class DeductionTypeSerializer(BaseModelSerializer):
 class EmployeeRelatedSerializer(serializers.ModelSerializer):
     calculated_amount = serializers.SerializerMethodField()
 
+    amount = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        allow_null=True,
+    )
+
+    percentage = serializers.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        required=False,
+        allow_null=True,
+    )
+
     target_employees = serializers.ListField(
         child=serializers.IntegerField(), write_only=True, required=False
     )
@@ -67,6 +81,11 @@ class EmployeeRelatedSerializer(serializers.ModelSerializer):
             "This method should be implemented in the child serializer."
         )
 
+    def get_calculated_amount_from_data(self, data):
+        raise NotImplementedError(
+            "This method should be implemented in the child serializer."
+        )
+
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         rep["employee"] = EmployeeSerializer(instance.employee).data
@@ -74,17 +93,29 @@ class EmployeeRelatedSerializer(serializers.ModelSerializer):
         return rep
 
     def validate(self, data):
-        if (
-            data.get("calculation_method") == "percentage"
-            and data.get("percentage") <= 0
-        ):
-            raise serializers.ValidationError(
-                "Percentage must be greater than 0 for percentage-based calculation."
-            )
-        if data.get("calculation_method") == "fixed" and data.get("amount") <= 0:
-            raise serializers.ValidationError(
-                "Amount must be greater than 0 for fixed calculation."
-            )
+        # if (
+        #     data.get("calculation_method") == "percentage"
+        #     and data.get("percentage") <= 0
+        # ):
+        #     raise serializers.ValidationError(
+        #         "Percentage must be greater than 0 for percentage-based calculation."
+        #     )
+        # if data.get("calculation_method") == "fixed" and data.get("amount") <= 0:
+        #     raise serializers.ValidationError(
+        #         "Amount must be greater than 0 for fixed calculation."
+        #     )
+
+        if data.get("calculation_method") == "percentage":
+            if not data.get("percentage") or data.get("percentage") <= 0:
+                raise serializers.ValidationError(
+                    {"percentage": "Percentage must be greater than 0."}
+                )
+
+        if data.get("calculation_method") == "fixed":
+            if not data.get("amount") or data.get("amount") <= 0:
+                raise serializers.ValidationError(
+                    {"amount": "Amount must be greater than 0."}
+                )
 
         departments = data.get("target_departments", [])
         positions = data.get("target_job_positions", [])
@@ -105,11 +136,9 @@ class EmployeeRelatedSerializer(serializers.ModelSerializer):
         return data
 
     def filter_employees(self, departments, positions, target_employees):
-        user = (
-            self.context.get("request").user.profile
-            if self.context.get("request")
-            else None
-        )
+        request = self.context.get("request")
+        user = request.user.profile if request else None
+
         employees = Employee.objects.filter(department__institution=user.institution)
 
         if departments:
@@ -124,7 +153,7 @@ class EmployeeRelatedSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         employees = validated_data["employees"]
-        calculated_amount = self.get_calculated_amount(validated_data)
+        calculated_amount = self.get_calculated_amount_from_data(validated_data)
         allowance_type = validated_data.get("allowance_type", None)
 
         with transaction.atomic():
@@ -164,13 +193,36 @@ class EmployeeAllowanceSerializer(EmployeeRelatedSerializer):
     def get_calculated_amount(self, obj):
         return obj.get_calculated_amount()
 
+    def get_calculated_amount_from_data(self, data):
+        method = data.get("calculation_method")
+
+        if method == "percentage":
+            # employees = data["employees"]
+            # percentage = data.get("percentage", 0)
+
+            return None
+
+        elif method == "fixed":
+            return data.get("amount")
+
+        return 0
+
     def create_instance(
         self, employee, allowance_type, calculated_amount, validated_data
     ):
+        method = validated_data.get("calculation_method")
+
+        if method == "percentage":
+            salary = employee.salary or 0
+            percentage = validated_data.get("percentage", 0)
+            calculated_amount = (
+                (salary * percentage) / 100 if percentage > 0 and salary > 0 else 0
+            )
+
         return EmployeeAllowance(
             employee=employee,
             allowance_type=allowance_type,
-            calculation_method=validated_data.get("calculation_method"),
+            calculation_method=method,
             amount=calculated_amount,
             percentage=validated_data.get("percentage"),
             effective_from=validated_data.get("effective_from"),
@@ -198,13 +250,33 @@ class EmployeeDeductionSerializer(EmployeeRelatedSerializer):
     def get_calculated_amount(self, obj):
         return obj.get_calculated_amount()
 
+    def get_calculated_amount_from_data(self, data):
+        method = data.get("calculation_method")
+
+        if method == "percentage":
+            return None
+
+        elif method == "fixed":
+            return data.get("amount")
+
+        return 0
+
     def create_instance(
-        self, employee, allowance_type, calculated_amount, validated_data
+        self, employee, deduction_type, calculated_amount, validated_data
     ):
+        method = validated_data.get("calculation_method")
+
+        if method == "percentage":
+            salary = employee.salary or 0
+            percentage = validated_data.get("percentage", 0)
+            calculated_amount = (
+                (salary * percentage) / 100 if percentage > 0 and salary > 0 else 0
+            )
+
         return EmployeeDeduction(
             employee=employee,
-            deduction_type=validated_data.get("deduction_type"),
-            calculation_method=validated_data.get("calculation_method"),
+            deduction_type=deduction_type,
+            calculation_method=method,
             amount=calculated_amount,
             percentage=validated_data.get("percentage"),
             effective_from=validated_data.get("effective_from"),
