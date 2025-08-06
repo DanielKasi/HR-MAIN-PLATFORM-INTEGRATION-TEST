@@ -240,7 +240,7 @@ export function EmployeeDeductionFormDialog({
 
       onOpenChange(false)
     } catch (error: any) {
-      toast.error(error.message || "An error occurred while saving the deduction")
+      toast.error(error?.message || error?.detail || "An error occurred while saving the deduction")
     } finally {
       setSaving(false)
     }

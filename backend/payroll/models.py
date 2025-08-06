@@ -387,6 +387,12 @@ class Payslip(models.Model):
     total_deductions = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00
     )
+    taxable_allowances = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00
+    )
+    non_taxable_allowances = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00
+    )
     gross_salary = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     net_salary = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     days_worked = models.PositiveIntegerField(default=30)  # or working days in period
@@ -414,6 +420,25 @@ class Payslip(models.Model):
         """Calculate all payslip totals"""
 
         total_objs = self.items.filter(item_type__in=["allowance", "deduction"])
+        # Calculate total allowances
+        total_allowances = 0
+        taxable_allowances = 0
+        non_taxable_allowances = 0
+        for allowance in self.employee.allowances.filter(is_active=True):
+            if allowance.effective_from <= self.payroll_period.end_date and (
+                not allowance.effective_to
+                or allowance.effective_to >= self.payroll_period.start_date
+            ):
+                recurrence_count = allowance.get_recurrence_count(self.payroll_period)
+                total_allowances += allowance.get_calculated_amount() * recurrence_count
+                if allowance.allowance_type.is_taxable:
+                    taxable_allowances += allowance.get_calculated_amount() * recurrence_count
+                else:
+                    non_taxable_allowances += allowance.get_calculated_amount() * recurrence_count
+        self.total_allowances = total_allowances
+        self.taxable_allowances = taxable_allowances
+        self.non_taxable_allowances = non_taxable_allowances
+
 
         if total_objs.exists():
             total_allowances = (
@@ -431,10 +456,11 @@ class Payslip(models.Model):
             self.total_allowances = total_allowances
             self.total_deductions = total_deductions
 
-            self.gross_salary = self.basic_salary + self.total_allowances
-            self.net_salary = self.gross_salary - self.total_deductions
+            self.gross_salary = self.basic_salary + self.taxable_allowances
+            self.net_salary = self.basic_salary - self.total_deductions + self.taxable_allowances
 
             self.save()
+        
 
     class Meta:
         unique_together = ["employee", "payroll_period"]
