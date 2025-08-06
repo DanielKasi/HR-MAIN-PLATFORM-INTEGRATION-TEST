@@ -213,19 +213,11 @@ function EmployeeTable({
   }
 
   return (
-    <Card className="overflow-hidden">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 -ml-14">
       <CardHeader className="space-y-4">
         <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <span className="text-lg sm:text-xl">Employees ({filteredEmployees.length} employees)</span>
+          <span className="text-lg sm:text-xl -mt-10">Employees</span>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Add Employee</span>
-                <span className="sm:hidden">Add</span>
-                <ChevronDown className="h-4 w-4 ml-2" />
-              </Button>
-            </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => router.push("/employees/add-employee")}>
                 <UserPlus className="w-4 h-4 mr-2" />
@@ -249,20 +241,20 @@ function EmployeeTable({
         </CardTitle>
 
         {/* Responsive Filters */}
-        <div className="flex flex-col gap-4">
+       <div className="flex flex-col lg:flex-row gap-20 items-start lg:items-center mt-9">
           {/* Search Bar - Full width on all screens */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search employees, departments, positions, or emails..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 text-sm"
-            />
-          </div>
+          <div className="relative flex-1 lg:flex-[0.8]">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search employees, departments, positions, or emails..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 text-sm"
+              />
+            </div>
 
           {/* Filter Controls - Responsive layout */}
-          <div className="flex flex-col sm:flex-row gap-3">
+           <div className="flex flex-col sm:flex-row gap-3 flex-1 lg:flex-[0.7]">
             <div className="flex flex-col sm:flex-row gap-3 flex-1">
               <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                 <SelectTrigger className="w-full sm:w-[160px] lg:w-[180px] text-xs sm:text-sm">
@@ -300,6 +292,16 @@ function EmployeeTable({
               </Button>
             )}
           </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Add Employee</span>
+                <span className="sm:hidden">Add</span>
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+          </DropdownMenu>
         </div>
       </CardHeader>
 
@@ -342,10 +344,10 @@ function EmployeeTable({
           <>
             {/* Responsive Table Container */}
             <div className="overflow-x-auto">
-              <div className="min-w-[700px]">
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
+              <div className="min-w-[800px]">
+                <div className="overflow-x-auto mt-6">
+                  <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                    <TableHeader className="bg-gray-50/50">
                       <TableRow>
                         <TableHead className="text-xs sm:text-sm">Name</TableHead>
                         <TableHead className="text-xs sm:text-sm">Department</TableHead>
@@ -512,7 +514,7 @@ function EmployeeTable({
           </>
         )}
       </CardContent>
-    </Card>
+    </div>
   )
 }
 
@@ -576,14 +578,8 @@ export default function InterviewsPage() {
   }
 
   return (
-    <div className="w-full h-full p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="w-full">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-2 py-4 sm:py-8">
-            <h1 className="text-xl sm:text-2xl font-bold">Employees</h1>
-          </div>
-        </div>
-
         <EmployeeTable
           isBulkUploadDialogOpen={isBulkUploadDialogOpen}
           setIsBulkUploadDialogOpen={setIsBulkUploadDialogOpen}

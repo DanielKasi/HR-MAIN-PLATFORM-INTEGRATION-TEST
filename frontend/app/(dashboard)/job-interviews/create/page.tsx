@@ -522,7 +522,7 @@ export default function CreateInterviewPage() {
     <div className="w-full h-full p-6">
       <div className="w-full mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 -ml-6">
           <Button
             variant="ghost"
             size="sm"
@@ -533,7 +533,7 @@ export default function CreateInterviewPage() {
           </Button>
         </div>
 
-        <Card className="w-full">
+        <Card className="w-full -ml-5">
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">

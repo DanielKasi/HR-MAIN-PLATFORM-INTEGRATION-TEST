@@ -1169,7 +1169,7 @@ export default function ApplicationsPage() {
     
 
   return (
-    <div className="w-full py-8 space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Job Applications</h1>
@@ -1191,9 +1191,9 @@ export default function ApplicationsPage() {
       {/* Enhanced Filter Section */}
       <div className="space-y-4">
         {/* Main Filters Row */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center mt-8">
+          <div className="relative flex-1 lg:flex-[0.7]">
+             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search by name, email, or phone..."
               value={searchTerm}
@@ -1201,6 +1201,7 @@ export default function ApplicationsPage() {
               className="pl-10"
             />
           </div>
+        <div className="flex flex-col sm:flex-row gap-5 flex-1 lg:flex-[0.5]">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Filter by status" />
@@ -1227,10 +1228,10 @@ export default function ApplicationsPage() {
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </div> 
 
-        {/* Date Filter Row */}
-        <div className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-lg border">
+           {/* Date Filter Row */}
+        <div className="flex flex-col sm:flex-row gap-4 p-4 ">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium text-gray-700">Date Filter:</span>
@@ -1288,7 +1289,10 @@ export default function ApplicationsPage() {
               Clear Dates
             </Button>
           )}
+        </div> 
         </div>
+
+     
 
         {/* Active Filters Indicator */}
         {(searchTerm ||
@@ -1428,8 +1432,8 @@ export default function ApplicationsPage() {
         </Alert>
       )}
 
-      <Card>
-        <CardHeader>
+      <Card className="mt-6 h-full">
+          <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             Applications ({safeFilteredApplications.length})
@@ -1461,8 +1465,8 @@ export default function ApplicationsPage() {
               )}
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
+            <div>
+              <Table className="min-w-full">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">

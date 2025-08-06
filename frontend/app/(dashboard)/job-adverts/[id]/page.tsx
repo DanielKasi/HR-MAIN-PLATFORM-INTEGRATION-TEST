@@ -262,7 +262,7 @@ export default function JobAdvertDetailsPage() {
         </div>
 
         {/* Main Details Card */}
-        <Card>
+        <Card className="-ml-4">
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>

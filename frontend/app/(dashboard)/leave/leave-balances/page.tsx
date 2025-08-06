@@ -530,7 +530,7 @@ export default function LeaveBalanceComponent() {
     }
 
   return (
-    <div className="w-full h-full p-6 space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -727,8 +727,39 @@ export default function LeaveBalanceComponent() {
         </div>
       </div>
 
+        {/* Stats Cards */}
+      {!isLoading && (
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-8">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-blue-600">{totalEmployees}</div>
+              <p className="text-xs text-muted-foreground">Total Employees</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-green-600">{totalLeaveTypes}</div>
+              <p className="text-xs text-muted-foreground">Leave Types</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-yellow-600">{lowBalanceEmployees}</div>
+              <p className="text-xs text-muted-foreground">Low Balances</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-red-600">{overusedBalanceEmployees}</div>
+              <p className="text-xs text-muted-foreground">Overused Balances</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-4 mt-8">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
@@ -793,36 +824,7 @@ export default function LeaveBalanceComponent() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-blue-600">{totalEmployees}</div>
-              <p className="text-xs text-muted-foreground">Total Employees</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">{totalLeaveTypes}</div>
-              <p className="text-xs text-muted-foreground">Leave Types</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-yellow-600">{lowBalanceEmployees}</div>
-              <p className="text-xs text-muted-foreground">Low Balances</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-red-600">{overusedBalanceEmployees}</div>
-              <p className="text-xs text-muted-foreground">Overused Balances</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
+    
       {/* Leave Balances Table */}
       {isLoading ? (
         <div className="space-y-4">
@@ -831,7 +833,7 @@ export default function LeaveBalanceComponent() {
           ))}
         </div>
       ) : groupedEmployees.length === 0 ? (
-        <Card className="p-12 text-center">
+        <div className="p-12 text-center">
           <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No leave balances found</h3>
           <p className="text-muted-foreground mb-4">
@@ -851,10 +853,10 @@ export default function LeaveBalanceComponent() {
               </Button>
             </ProtectedComponent>
           )}
-        </Card>
+        </div>
       ) : (
-        <Card className="rounded-md border">
-          <Table>
+        <div className="overflow-x-auto mt-10">
+         <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
             <TableHeader>
               <TableRow>
                 <TableHead>Employee</TableHead>
@@ -957,7 +959,7 @@ export default function LeaveBalanceComponent() {
               ))}
             </TableBody>
           </Table>
-        </Card>
+        </div>
       )}
 
 

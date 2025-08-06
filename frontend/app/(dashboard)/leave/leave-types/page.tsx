@@ -406,7 +406,7 @@ const LeaveTypesComponent = () => {
   }
 
   return (
-    <div className="w-full h-full p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -614,8 +614,35 @@ const LeaveTypesComponent = () => {
         </div>
       </div>
 
+         {/* Stats */}
+      {!isLoading && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-8">
+          <Card>
+            <CardContent className="p-3 sm:p-4">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">{leaveTypes.length}</div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Total Leave Types</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-3 sm:p-4">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">{activeLeaveTypes.length}</div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-3 sm:p-4">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-600">
+                {carryForwardLeaveTypes.length}
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Carry Forward Allowed</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+
       {/* Search and Filters */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col lg:flex-row gap-4 mt-8">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
@@ -692,32 +719,7 @@ const LeaveTypesComponent = () => {
         </div>
       </div>
 
-      {/* Stats */}
-      {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-          <Card>
-            <CardContent className="p-3 sm:p-4">
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">{leaveTypes.length}</div>
-              <p className="text-xs sm:text-sm text-muted-foreground">Total Leave Types</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-3 sm:p-4">
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">{activeLeaveTypes.length}</div>
-              <p className="text-xs sm:text-sm text-muted-foreground">Active</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-3 sm:p-4">
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-600">
-                {carryForwardLeaveTypes.length}
-              </div>
-              <p className="text-xs sm:text-sm text-muted-foreground">Carry Forward Allowed</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
+   
       {/* Leave Types Table */}
       {isLoading ? (
         <div className="space-y-4">
@@ -726,7 +728,7 @@ const LeaveTypesComponent = () => {
           ))}
         </div>
       ) : filteredLeaveTypes.length === 0 ? (
-        <Card className="p-8 sm:p-12 text-center">
+        <div className="p-8 sm:p-12 text-center">
           <Settings className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-base sm:text-lg font-semibold mb-2">No leave types found</h3>
           <p className="text-sm sm:text-base text-muted-foreground mb-4">
@@ -734,13 +736,11 @@ const LeaveTypesComponent = () => {
               ? "No leave types match your filter criteria."
               : "Get started by creating your first leave type."}
           </p>
-        </Card>
+        </div>
       ) : (
-        <Card className="rounded-md border overflow-hidden">
-          <div className="overflow-x-auto">
-            <div className="min-w-[800px]">
-              <Table>
-                <TableHeader>
+        <div className="overflow-x-auto mt-10">
+            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+              <TableHeader className="bg-gray-50/50">
                   <TableRow>
                     <TableHead className="text-xs sm:text-sm">Name</TableHead>
                     <TableHead className="text-xs sm:text-sm">Category</TableHead>
@@ -758,17 +758,7 @@ const LeaveTypesComponent = () => {
                     <TableRow key={leaveType.id}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2 sm:gap-3">
-                          <div
-                            className={`h-6 w-6 sm:h-8 sm:w-8 rounded-full ${
-                              leaveType.is_active ? "bg-green-50" : "bg-gray-50"
-                            } flex items-center justify-center`}
-                          >
-                            <Settings
-                              className={`h-3 w-3 sm:h-4 sm:w-4 ${
-                                leaveType.is_active ? "text-green-600" : "text-gray-600"
-                              }`}
-                            />
-                          </div>
+                          
                           <span className="text-xs sm:text-sm">{leaveType.name}</span>
                         </div>
                       </TableCell>
@@ -831,8 +821,8 @@ const LeaveTypesComponent = () => {
                 </TableBody>
               </Table>
             </div>
-          </div>
-        </Card>
+
+
       )}
 
       {/* Results Summary */}

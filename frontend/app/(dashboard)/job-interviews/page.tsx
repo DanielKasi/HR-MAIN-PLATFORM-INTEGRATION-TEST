@@ -393,7 +393,7 @@ export default function InterviewsPage() {
   }
 
   return (
-    <div className="w-full h-full p-2 space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -446,7 +446,7 @@ export default function InterviewsPage() {
 
       {/* Stats */}
       {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-10">
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">{interviews.length}</div>
@@ -490,7 +490,7 @@ export default function InterviewsPage() {
       )}
 
       {/* Search and Filters */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col lg:flex-row gap-4 mt-10 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
@@ -579,7 +579,7 @@ export default function InterviewsPage() {
               dateRange.to) &&
               ` (filtered from ${interviews.length} total)`}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-6">
             <span>Rows per page:</span>
             <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
               <SelectTrigger className="w-[70px] h-8">
@@ -607,9 +607,9 @@ export default function InterviewsPage() {
       
 
       {/* Interviews Table */}
-      <Card>
+      <div>
        {isLoading ? (
-  <div className="p-2 space-y-6">
+  <div className="p-2 space-y-6 mt-8">
     <Card className="h-[calc(100vh-2rem)] shadow-lg">
       <CardHeader className="border-b">
         <div className="flex justify-between gap-8 items-center">
@@ -660,8 +660,9 @@ export default function InterviewsPage() {
           </div>
         ) : (
           <>
-            <Table>
-              <TableHeader>
+           <div className="overflow-x-auto mt-8 -ml-16">
+            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+              <TableHeader className="bg-gray-50/50">
                 <TableRow>
                   <TableHead className="w-[50px]"></TableHead>
                   <TableHead>Applicant</TableHead>
@@ -709,11 +710,6 @@ export default function InterviewsPage() {
                             );
                           }}
                         >
-                          {expandedApplicants.includes(applicantName) ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
                         </Button>
                       </TableCell>
                       <TableCell>
@@ -832,6 +828,7 @@ export default function InterviewsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
@@ -898,7 +895,7 @@ export default function InterviewsPage() {
             )}
           </>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

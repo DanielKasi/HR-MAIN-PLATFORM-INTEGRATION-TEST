@@ -1905,14 +1905,15 @@ const handleIndividualOnboard = async (candidate: InterviewCandidate | Interview
 
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
-      <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
+           <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <div>
+            
             <h1 className="text-3xl font-bold text-gray-900">Job-Specific Interview Pipeline</h1>
             <p className="text-gray-600">
               Manage interview stages and candidates for specific job position/titles 
@@ -1922,7 +1923,7 @@ const handleIndividualOnboard = async (candidate: InterviewCandidate | Interview
       </div>
 
       {/* Job Position/ Title  Selector */}
-      <Card>
+      <Card className="mt-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
@@ -2110,7 +2111,7 @@ const handleIndividualOnboard = async (candidate: InterviewCandidate | Interview
       ) : (
         <>
           {/* Summary Stats for Selected Job */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -2192,7 +2193,7 @@ const handleIndividualOnboard = async (candidate: InterviewCandidate | Interview
                         setSelectedCandidates([])
                         setSearchTerm('')
                       }}>
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center justify-between mb-4 mt-8">
                           <TabsList className="grid w-fit grid-cols-2">
                             <TabsTrigger value="current" className="flex items-center gap-2">
                               <Briefcase className="h-4 w-4" />

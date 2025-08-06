@@ -243,11 +243,11 @@ export default function DisciplinaryActionsTable({
     }
 
   return (
-    <div className="w-full p-2 sm:p-4 lg:p-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="mb-6">
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900">Disciplinary Actions</h1>
       </div>
-      <Card >
+      <div >
         <CardHeader className="p-3 sm:p-4 lg:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div>
@@ -305,9 +305,9 @@ export default function DisciplinaryActionsTable({
           </div>
           <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-6">
           <div className="inline-block min-w-full px-3 sm:px-4 lg:px-6">
-            <div className="rounded-md border">
-            <Table>
-              <TableHeader>
+            <div className="overflow-x-auto mt-10 -ml-4">
+              <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                <TableHeader className="bg-gray-50/50">
                 <TableRow>
                   <TableHead className="font-semibold w-48">Employee</TableHead>
                   <TableHead className="font-semibold w-56">Type & Severity</TableHead>
@@ -455,7 +455,7 @@ export default function DisciplinaryActionsTable({
             </div>
           )}
         </CardContent>
-      </Card>
+      </div>
       {selectedAction && (
         <Dialog open={!!selectedAction} onOpenChange={() => setSelectedAction(null)}>
           <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">

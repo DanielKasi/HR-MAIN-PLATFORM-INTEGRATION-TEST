@@ -469,28 +469,21 @@ export default function WorkTypeManagement() {
   }
 
   return (
-    <div className="w-full h-full p-2 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 lg:space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white -ml-4 rounded-lg py-8">
       {/* Work Types List */}
-      <Card className="w-full bg-white shadow-sm border border-gray-200">
-        <CardHeader className="p-3 sm:p-4 lg:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="w-full bg-white">
+        <div className="mb-6">
+          <div className="mb-6">
             <div>
-              <CardTitle className="text-lg sm:text-xl lg:text-2xl">Work Types</CardTitle>
-              <CardDescription className="text-sm sm:text-base">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold">Work Types</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">
                 Manage different work types of employees in your organization
-              </CardDescription>
+              </p>
             </div>
-            <Button onClick={handleCreate} size="sm" className="w-full sm:w-auto">
-              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-              <span className="hidden sm:inline">Add Work Type</span>
-              <span className="sm:hidden">Add Type</span>
-            </Button>
           </div>
-        </CardHeader>
 
-        <CardContent className="p-3 sm:p-4 lg:p-6">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-4 sm:mb-6">
-            <div className="relative flex-1 max-w-full sm:max-w-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search work types..."
@@ -499,144 +492,143 @@ export default function WorkTypeManagement() {
                 className="pl-10"
               />
             </div>
-            <Badge
-              variant="secondary"
-              className="bg-orange-100 text-orange-800 border-orange-200"
-            >
-              {filteredTypes.length} type{filteredTypes.length !== 1 ? "s" : ""}
-            </Badge>
+            <div className="flex items-center gap-4">
+              <Button onClick={handleCreate} size="sm" className="w-full sm:w-auto">
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                <span className="hidden sm:inline">Add Work Type</span>
+                <span className="sm:hidden">Add Type</span>
+              </Button>
+              <div className="text-sm text-muted-foreground whitespace-nowrap">
+                {filteredTypes.length} type{filteredTypes.length !== 1 ? "s" : ""}
+              </div>
+            </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <div className="min-w-[600px]">
-                {loading ? (
-                  <div className="flex items-center justify-center h-64">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
-                      <span className="text-gray-600 text-xs sm:text-sm lg:text-base">Loading work types...</span>
-                    </div>
+          <div className="overflow-x-auto">
+            <div className="min-w-[600px]">
+              {loading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
+                    <span className="text-gray-600 text-xs sm:text-sm lg:text-base">Loading work types...</span>
                   </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-gray-50 border-b border-gray-200">
-                        <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm lg:text-base">
-                          Name
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm lg:text-base">
-                          Description
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 w-[80px] sm:w-[100px] text-center text-xs sm:text-sm lg:text-base">
-                          Actions
-                        </TableHead>
+                </div>
+              ) : (
+                <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0 -ml-4">
+                  <TableHeader className="bg-gray-50/50">
+                    <TableRow>
+                      <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm lg:text-base">
+                        Name
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm lg:text-base">
+                        Description
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 w-[80px] sm:w-[100px] text-center text-xs sm:text-sm lg:text-base">
+                        Actions
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedTypes.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-8 sm:py-12 text-gray-500 bg-white">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                              <Search className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
+                            </div>
+                            <span className="text-xs sm:text-sm lg:text-base">
+                              {searchTerm ? "No work types found matching your search." : "No work types found."}
+                            </span>
+                            {!searchTerm && (
+                              <Button
+                                onClick={handleCreate}
+                                variant="outline"
+                                size="sm"
+                                className="mt-2 border-orange-300 text-orange-700 hover:bg-orange-50 bg-transparent text-xs sm:text-sm lg:text-base"
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add your first work type
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginatedTypes.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-center py-8 sm:py-12 text-gray-500 bg-white">
-                            <div className="flex flex-col items-center gap-2">
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2">
-                                <Search className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
-                              </div>
-                              <span className="text-xs sm:text-sm lg:text-base">
-                                {searchTerm ? "No work types found matching your search." : "No work types found."}
-                              </span>
-                              {!searchTerm && (
-                                <Button
-                                  onClick={handleCreate}
-                                  variant="outline"
-                                  size="sm"
-                                  className="mt-2 border-orange-300 text-orange-700 hover:bg-orange-50 bg-transparent text-xs sm:text-sm lg:text-base"
-                                >
-                                  <Plus className="h-4 w-4 mr-2" />
-                                  Add your first work type
-                                </Button>
+                    ) : (
+                      paginatedTypes.map((type, index) => (
+                        <TableRow
+                          key={type.id}
+                          className="bg-white hover:bg-gray-50 transition-colors duration-150"
+                        >
+                          <TableCell className="py-3 sm:py-4 px-4 sm:px-6">
+                            <div className="font-medium text-gray-900 text-xs sm:text-sm lg:text-base">
+                              {type.name}
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3 sm:py-4 px-4 sm:px-6 max-w-xs sm:max-w-md">
+                            <div className="text-gray-700 leading-relaxed text-xs sm:text-sm lg:text-base">
+                              {type.description ? (
+                                <span className="line-clamp-2">{type.description}</span>
+                              ) : (
+                                <span className="text-gray-400 italic">No description provided</span>
                               )}
                             </div>
                           </TableCell>
-                        </TableRow>
-                      ) : (
-                        paginatedTypes.map((type, index) => (
-                          <TableRow
-                            key={type.id}
-                            className={`
-                      bg-white hover:bg-gray-50 transition-colors duration-150 border-b border-gray-100 last:border-b-0
-                      ${(startIndex + index) % 2 === 0 ? "bg-white" : "bg-gray-50/30"}
-                    `}
-                          >
-                            <TableCell className="py-3 sm:py-4 px-4 sm:px-6">
-                              <div className="font-medium text-gray-900 text-xs sm:text-sm lg:text-base">
-                                {type.name}
-                              </div>
-                            </TableCell>
-                            <TableCell className="py-3 sm:py-4 px-4 sm:px-6 max-w-xs sm:max-w-md">
-                              <div className="text-gray-700 leading-relaxed text-xs sm:text-sm lg:text-base">
-                                {type.description ? (
-                                  <span className="line-clamp-2">{type.description}</span>
-                                ) : (
-                                  <span className="text-gray-400 italic">No description provided</span>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="py-3 sm:py-4 px-4 sm:px-6 text-center">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-gray-100 rounded-full"
-                                    disabled={workTypeToDelete?.id === type.id}
-                                  >
-                                    {workTypeToDelete?.id === type.id ? (
-                                      <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin text-gray-600" />
-                                    ) : (
-                                      <MoreVertical className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
-                                    )}
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                  align="end"
-                                  className="w-40 sm:w-48 bg-white border border-gray-200 shadow-lg"
+                          <TableCell className="py-3 sm:py-4 px-4 sm:px-6 text-center">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-gray-100 rounded-full"
+                                  disabled={workTypeToDelete?.id === type.id}
                                 >
-                                  <DropdownMenuItem
-                                    onClick={() => handleView(type)}
-                                    className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm lg:text-base"
-                                  >
-                                    <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
-                                    View details
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleEdit(type)}
-                                    className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm lg:text-base"
-                                  >
-                                    <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
-                                    Edit work type
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => setWorkTypeToDelete(type)}
-                                    className="flex items-center px-2 sm:px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer text-xs sm:text-sm lg:text-base"
-                                  >
-                                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-red-500" />
-                                    Delete work type
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                )}
-              </div>
+                                  {workTypeToDelete?.id === type.id ? (
+                                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin text-gray-600" />
+                                  ) : (
+                                    <MoreVertical className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
+                                  )}
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                className="w-40 sm:w-48 bg-white border border-gray-200 shadow-lg"
+                              >
+                                <DropdownMenuItem
+                                  onClick={() => handleView(type)}
+                                  className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm lg:text-base"
+                                >
+                                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
+                                  View details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleEdit(type)}
+                                  className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm lg:text-base"
+                                >
+                                  <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
+                                  Edit work type
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => setWorkTypeToDelete(type)}
+                                  className="flex items-center px-2 sm:px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer text-xs sm:text-sm lg:text-base"
+                                >
+                                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-red-500" />
+                                  Delete work type
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </div>
           </div>
 
           {/* Responsive Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-200 gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between py-4 gap-4">
               <div className="flex items-center gap-2 text-xs sm:text-sm lg:text-base text-gray-600 order-2 sm:order-1">
                 <span>
                   Showing {startIndex + 1} to {Math.min(endIndex, filteredTypes.length)} of {filteredTypes.length}{" "}
@@ -700,8 +692,8 @@ export default function WorkTypeManagement() {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Form Modal */}
       <WorkTypeModal

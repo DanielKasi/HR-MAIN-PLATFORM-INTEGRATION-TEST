@@ -605,7 +605,7 @@ const LeavePolicyComponent = () => {
     }
 
   return (
-    <div className="w-full h-full p-6 space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -782,8 +782,39 @@ const LeavePolicyComponent = () => {
         </div>
       </div>
 
+         {/* Stats Cards */}
+      {!isLoading && (
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-8">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-blue-600">{policies.length}</div>
+              <p className="text-xs text-muted-foreground">Total Policies</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-green-600">{activePolicies.length}</div>
+              <p className="text-xs text-muted-foreground">Active</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-orange-600">{managerApprovalPolicies.length}</div>
+              <p className="text-xs text-muted-foreground">Manager Approval</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-red-600">{hrApprovalPolicies.length}</div>
+              <p className="text-xs text-muted-foreground">HR Approval</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-4 mt-8">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
@@ -848,36 +879,7 @@ const LeavePolicyComponent = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-blue-600">{policies.length}</div>
-              <p className="text-xs text-muted-foreground">Total Policies</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">{activePolicies.length}</div>
-              <p className="text-xs text-muted-foreground">Active</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-orange-600">{managerApprovalPolicies.length}</div>
-              <p className="text-xs text-muted-foreground">Manager Approval</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-red-600">{hrApprovalPolicies.length}</div>
-              <p className="text-xs text-muted-foreground">HR Approval</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
+   
       {/* Leave Policies Table */}
       {isLoading ? (
         <div className="space-y-4">
@@ -886,7 +888,7 @@ const LeavePolicyComponent = () => {
           ))}
         </div>
       ) : filteredPolicies.length === 0 ? (
-        <Card className="p-12 text-center">
+        <div className="p-12 text-center">
           <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No leave policies found</h3>
           <p className="text-muted-foreground mb-4">
@@ -894,10 +896,10 @@ const LeavePolicyComponent = () => {
               ? "No leave policies match your filter criteria."
               : "Get started by creating your first leave policy."}
           </p>
-        </Card>
+        </div>
       ) : (
-        <Card className="rounded-md border">
-          <Table>
+        <div className="overflow-x-auto mt-10">
+            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -1012,7 +1014,7 @@ const LeavePolicyComponent = () => {
               ))}
             </TableBody>
           </Table>
-        </Card>
+        </div>
       )}
 
       {/* Clear Filters Button */}

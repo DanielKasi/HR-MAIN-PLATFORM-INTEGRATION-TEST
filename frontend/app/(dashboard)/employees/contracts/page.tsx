@@ -169,7 +169,7 @@ export default function ContractsPage() {
     }
 
   return (
-    <div className="w-full p-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Contract Management</h1>
         <p className="text-muted-foreground mt-2">

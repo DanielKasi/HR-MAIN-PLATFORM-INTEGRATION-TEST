@@ -598,7 +598,7 @@ export default function OnboardPage() {
   }
 
   return (
-    <div className="w-full h-full p-2 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="w-full sm:w-auto">
@@ -705,37 +705,37 @@ export default function OnboardPage() {
       )}
 
       {/* Search and Filters */}
-      <div className="flex flex-col gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search onboarding records by name, email, or position..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 text-sm sm:text-base"
-          />
-        </div>
-        <div className="w-full sm:w-auto">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              {ONBOARDING_STAGES.map((stage) => (
-                <SelectItem key={stage.value} value={stage.value}>
-                  {stage.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="flex flex-col sm:flex-row gap-20 items-start sm:items-center mt-8">
+          <div className="relative flex-1 sm:flex-[0.9]">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search onboarding records by name, email, or position..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 text-sm sm:text-base"
+            />
+          </div>
+          <div className="w-full sm:w-auto">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[200px] gap-6" >
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {ONBOARDING_STAGES.map((stage) => (
+                  <SelectItem key={stage.value} value={stage.value}>
+                    {stage.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
       </div>
 
       {/* Stats */}
       {!isLoading && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4 mt-10">
           <Card className="p-3 sm:p-4">
             <CardContent className="p-0">
               <div className="text-xl sm:text-2xl font-bold">{stats.total}</div>
@@ -784,7 +784,7 @@ export default function OnboardPage() {
       )}
 
       {/* Onboarding Table */}
-      <Card>
+      <div>
         {isLoading ? (
           <div className="p-6">
             <div className="space-y-4">
@@ -815,9 +815,9 @@ export default function OnboardPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table className="min-w-[800px]">
-              <TableHeader>
+          <div className="overflow-x-auto mt-10">
+            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+              <TableHeader className="bg-gray-50/50">
                 <TableRow>
                   <TableHead className="w-[60px] sm:w-[80px]">
                     <SmartSelectAllDropdown />
@@ -1025,7 +1025,7 @@ export default function OnboardPage() {
             </Table>
           </div>
         )}
-      </Card>
+      </div>
 
       {/* Update Dialog */}
       <Dialog
