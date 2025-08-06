@@ -406,43 +406,35 @@ class Payslip(models.Model):
 
         super().save(*args, **kwargs)
 
-        if is_new:
-            PayslipItem.generate_payslip_items(self)
+        # if is_new:
+        #     PayslipItem.generate_payslip_items(self)
+        # self.calculate_totals()
 
     def calculate_totals(self):
         """Calculate all payslip totals"""
-        self.basic_salary = self.employee.salary or 0
 
-        # Calculate total allowances
-        total_allowances = 0
-        for allowance in self.employee.allowances.filter(is_active=True):
-            if allowance.effective_from <= self.payroll_period.end_date and (
-                not allowance.effective_to
-                or allowance.effective_to >= self.payroll_period.start_date
-            ):
-                recurrence_count = allowance.get_recurrence_count(self.payroll_period)
-                total_allowances += allowance.get_calculated_amount() * recurrence_count
-        self.total_allowances = total_allowances
+        total_objs = self.items.filter(item_type__in=["allowance", "deduction"])
 
-        # Calculate total deductions
-        total_deductions = 0
-        for deduction in self.employee.deductions.filter(is_active=True):
-            if deduction.effective_from <= self.payroll_period.end_date and (
-                not deduction.effective_to
-                or deduction.effective_to >= self.payroll_period.start_date
-            ):
-                recurrence_count = deduction.get_recurrence_count(self.payroll_period)
-                total_deductions += deduction.get_calculated_amount() * recurrence_count
-        self.total_deductions = total_deductions
+        if total_objs.exists():
+            total_allowances = (
+                total_objs.filter(item_type="allowance").aggregate(
+                    total=models.Sum("amount")
+                )["total"]
+                or 0.00
+            )
+            total_deductions = (
+                total_objs.filter(item_type="deduction").aggregate(
+                    total=models.Sum("amount")
+                )["total"]
+                or 0.00
+            )
+            self.total_allowances = total_allowances
+            self.total_deductions = total_deductions
 
-        # Calculate overtime
-        # self.overtime_amount = self.overtime_hours * self.overtime_rate
+            self.gross_salary = self.basic_salary + self.total_allowances
+            self.net_salary = self.gross_salary - self.total_deductions
 
-        # Calculate gross and net salary
-        self.gross_salary = self.basic_salary + self.total_allowances
-        self.net_salary = self.gross_salary - self.total_deductions
-
-        self.save()
+            self.save()
 
     class Meta:
         unique_together = ["employee", "payroll_period"]
@@ -486,15 +478,15 @@ class PayslipItem(models.Model):
                     payslip.payroll_period
                 )
 
-                amount = allowance.get_calculated_amount() * recurrence_count
+                new_amount = allowance.get_calculated_amount() * recurrence_count
 
                 items_to_create.append(
                     PayslipItem(
                         payslip=payslip,
                         item_type="allowance",
                         name=allowance.allowance_type.name,
-                        amount=amount,
-                        description=f"{allowance.calculation_method}: {allowance.amount if allowance.calculation_method == 'fixed' else f'{allowance.percentage}%'}",
+                        amount=new_amount,
+                        description=f"{allowance.calculation_method}: {allowance.amount if allowance.calculation_method == f'fixed' else f'{allowance.percentage}%'} x{recurrence_count} times",
                     )
                 )
 
@@ -507,15 +499,15 @@ class PayslipItem(models.Model):
                     payslip.payroll_period
                 )
 
-                amount = deduction.get_calculated_amount() * recurrence_count
+                new_amount = deduction.get_calculated_amount() * recurrence_count
 
                 items_to_create.append(
                     PayslipItem(
                         payslip=payslip,
                         item_type="deduction",
                         name=deduction.deduction_type.name,
-                        amount=amount,
-                        description=f"{deduction.calculation_method}: {deduction.amount if deduction.calculation_method == 'fixed' else f'{deduction.percentage}%'}",
+                        amount=new_amount,
+                        description=f"{deduction.calculation_method}: {deduction.amount if deduction.calculation_method == 'fixed' else f'{deduction.percentage}%'} x{recurrence_count} times",
                     )
                 )
 
@@ -527,5 +519,9 @@ class PayslipItem(models.Model):
         #         amount=payslip.overtime_amount,
         #         description=f"{payslip.overtime_hours} hours @ {payslip.overtime_rate} per hour"
         #     ))
+
+        # for item in items_to_create:
+        #     print(f"\n\n\n\Item: {item}")
+        #     print(f"\n\n\n\nAmount: {item.amount}")
 
         PayslipItem.objects.bulk_create(items_to_create)
