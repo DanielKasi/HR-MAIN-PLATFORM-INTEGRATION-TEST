@@ -93,18 +93,6 @@ class EmployeeRelatedSerializer(serializers.ModelSerializer):
         return rep
 
     def validate(self, data):
-        # if (
-        #     data.get("calculation_method") == "percentage"
-        #     and data.get("percentage") <= 0
-        # ):
-        #     raise serializers.ValidationError(
-        #         "Percentage must be greater than 0 for percentage-based calculation."
-        #     )
-        # if data.get("calculation_method") == "fixed" and data.get("amount") <= 0:
-        #     raise serializers.ValidationError(
-        #         "Amount must be greater than 0 for fixed calculation."
-        #     )
-
         if data.get("calculation_method") == "percentage":
             if not data.get("percentage") or data.get("percentage") <= 0:
                 raise serializers.ValidationError(
@@ -154,13 +142,19 @@ class EmployeeRelatedSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         employees = validated_data["employees"]
         calculated_amount = self.get_calculated_amount_from_data(validated_data)
-        allowance_type = validated_data.get("allowance_type", None)
+
+        # allowance_type = validated_data.get("allowance_type", None)
+
+        type_key = (
+            "allowance_type" if "allowance_type" in validated_data else "deduction_type"
+        )
+        type_value = validated_data.get(type_key, None)
 
         with transaction.atomic():
             employee_instances = []
             for employee in employees:
                 employee_instance = self.create_instance(
-                    employee, allowance_type, calculated_amount, validated_data
+                    employee, type_value, calculated_amount, validated_data
                 )
                 employee_instances.append(employee_instance)
 
