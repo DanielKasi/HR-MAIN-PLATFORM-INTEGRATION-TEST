@@ -466,8 +466,7 @@ export default function PayrollPeriods() {
               <DialogTrigger asChild>
                 <Button
                   onClick={resetForm}
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 flex items-center gap-2"
-                >
+                 >
                   <Plus className="h-4 w-4" />
                   Add Period
                 </Button>

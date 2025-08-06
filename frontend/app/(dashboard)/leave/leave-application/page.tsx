@@ -852,7 +852,6 @@ const LeaveApplicationComponent = () => {
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
                   <Button
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2.5"
                     disabled={!selectedInstitution?.id}
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -997,7 +996,6 @@ const LeaveApplicationComponent = () => {
                     )}
                   </div>
                   <Button
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
                     onClick={handleAddApplication}
                     disabled={
                       isSubmitting ||
@@ -1516,7 +1514,6 @@ const LeaveApplicationComponent = () => {
                 )}
             </div>
             <Button
-              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
               onClick={handleUpdateApplication}
               disabled={
                 isSubmitting ||

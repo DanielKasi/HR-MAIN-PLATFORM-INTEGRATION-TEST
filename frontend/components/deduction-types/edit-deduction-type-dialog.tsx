@@ -242,7 +242,6 @@ export function EditDeductionTypeDialog({
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
           >
             {isSubmitting ? (
               <>

@@ -213,7 +213,7 @@ function EmployeeTable({
   }
 
   return (
-    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 -ml-14">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <CardHeader className="space-y-4">
         <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <span className="text-2xl font-bold">Employees</span>
@@ -284,7 +284,7 @@ function EmployeeTable({
           <div className="flex-shrink-0 lg:flex-[0.2]">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto">
+                <Button className=" w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Add Employee</span>
                   <span className="sm:hidden">Add</span>
