@@ -148,7 +148,7 @@ export default function CreateApprovalStep() {
         </div>
       </div>
 
-      <Card>
+      <div>
         <CardHeader>
           <CardTitle>Approval Step Details</CardTitle>
           <CardDescription>Configure the new approval step parameters</CardDescription>
@@ -337,7 +337,7 @@ export default function CreateApprovalStep() {
             </form>
           )}
         </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }

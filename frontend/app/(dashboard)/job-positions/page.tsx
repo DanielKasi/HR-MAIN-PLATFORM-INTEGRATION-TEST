@@ -197,70 +197,20 @@ export default function JobPositionsPage() {
   }
 
   return (
-    <div className="w-full h-full p-6 space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Job Positions / Titles</h1>
           <p className="text-muted-foreground">
             Manage job positions / titles for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          <Button onClick={handleCreateJobPosition} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Create Job Position / Title
-          </Button>
-        </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1 ">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search job position/titles ..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex gap-2 min-w-80">
-          <Select
-            value={selectedSalaryRange}
-            onValueChange={setSelectedSalaryRange}
-          >
-            <SelectTrigger className="w-full px-6">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <SelectValue placeholder="Filter by salary" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Salary Ranges</SelectItem>
-              {salaryRanges.map((range) => (
-                <SelectItem className="!text-xs" key={range.id} value={range.id}>
-                  {range.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Stats */}
+       {/* Stats */}
       {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 mt-10">
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">{jobPositions.length}</div>
@@ -294,9 +244,48 @@ export default function JobPositionsPage() {
         </div>
       )}
 
+      {/* Search and Filters */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center mb-6 mt-8">
+        <div className="flex flex-1 items-center gap-4">
+          <div className="relative flex-1 max-w-lg">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search job position/titles ..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select
+            value={selectedSalaryRange}
+            onValueChange={setSelectedSalaryRange}
+          >
+            <SelectTrigger className="w-[280px]">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <SelectValue placeholder="Filter by salary" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Salary Ranges</SelectItem>
+              {salaryRanges.map((range) => (
+                <SelectItem className="!text-xs" key={range.id} value={range.id}>
+                  {range.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <Button onClick={handleCreateJobPosition} className="flex items-center gap-2 flex-shrink-0">
+          <Plus className="h-4 w-4" />
+          Create Job Position / Title
+        </Button>
+      </div>
+
       {/* Error Message */}
       {error && (
-        <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+        <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 mb-6">
           {error}
         </div>
       )}
@@ -330,15 +319,38 @@ export default function JobPositionsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Job Positions/Titles Grid */}
+      {/* Job Positions/Titles Table */}
       {isLoading ? (
-        <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="w-full h-12 bg-muted/10 rounded-md animate-pulse" />
-          ))}
+        <div className="overflow-x-auto ">
+          <Table className="min-w-[800px] mt-10">
+            <TableHeader>
+              <TableRow className="border-b">
+                <TableHead>Name</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Salary</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Reports To</TableHead>
+                <TableHead>Templates</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...Array(5)].map((_, i) => (
+                <TableRow key={i} className="border-b">
+                  <TableCell><Skeleton className="h-6 w-3/4" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-1/2" /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       ) : filteredJobPositions.length === 0 ? (
-        <Card className="p-12 text-center">
+        <div className="p-12 text-center">
           <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No job positions / titles found</h3>
           <p className="text-muted-foreground mb-4">
@@ -346,12 +358,18 @@ export default function JobPositionsPage() {
               ? "No job positions/titles match your search criteria."
               : "Get started by creating your first job position."}
           </p>
-        </Card>
+          {!searchTerm && (
+            <Button onClick={handleCreateJobPosition} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Create First Job Position
+            </Button>
+          )}
+        </div>
       ) : (
-        <Card className="rounded-md border">
-          <Table>
+        <div className="overflow-x-auto">
+          <Table className="min-w-[800px]">
             <TableHeader>
-              <TableRow>
+              <TableRow className="border-b bg-muted/30">
                 <TableHead>Name</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Salary</TableHead>
@@ -363,18 +381,9 @@ export default function JobPositionsPage() {
             </TableHeader>
             <TableBody>
               {filteredJobPositions.map((position) => (
-                <TableRow key={position.id}>
+                <TableRow key={position.id} className="hover:bg-muted/50 transition-colors border-b">
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
-                      <div className={`h-8 w-8 rounded-full ${position.job_position_status === "active"
-                          ? "bg-green-50"
-                          : "bg-red-50"
-                        } flex items-center justify-center`}>
-                        <Briefcase className={`h-4 w-4 ${position.job_position_status === "active"
-                            ? "text-green-600"
-                            : "text-red-600"
-                          }`} />
-                      </div>
                       <span>{position.name}</span>
                     </div>
                   </TableCell>
@@ -443,7 +452,7 @@ export default function JobPositionsPage() {
               ))}
             </TableBody>
           </Table>
-        </Card>
+        </div>
       )}
     </div>
   )
