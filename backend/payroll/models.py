@@ -507,7 +507,7 @@ class PayslipItem(models.Model):
                         item_type="deduction",
                         name=deduction.deduction_type.name,
                         amount=new_amount,
-                        description=f"{deduction.calculation_method}: {deduction.amount if deduction.calculation_method == 'fixed' else f'{deduction.percentage}%'} x{recurrence_count}",
+                        description=f"{deduction.calculation_method}: {deduction.amount if deduction.calculation_method == 'fixed' else f'{deduction.percentage}%'} x{recurrence_count} times",
                     )
                 )
 
