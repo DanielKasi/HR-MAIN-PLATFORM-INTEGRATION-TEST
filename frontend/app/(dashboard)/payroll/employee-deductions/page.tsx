@@ -861,7 +861,7 @@ export default function EmployeeDeductionComponent() {
 
   return (
     <div>
-      <div className="w-full px-2 py-8">
+      <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
         {/* Header Section */}
         <div className="mb-8 px-2">
           <div className="flex items-center justify-between mb-4">
@@ -2034,10 +2034,10 @@ export default function EmployeeDeductionComponent() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 px-2">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 px-2 pt-12">
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
+                <div className="p-2 bg-red-100 rounded-lg ">
                   <Users className="h-5 w-5 text-red-600" />
                 </div>
                 <div className="ml-3">
@@ -2092,61 +2092,65 @@ export default function EmployeeDeductionComponent() {
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6 mx-2">
-          <div className="space-y-4">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by employee name or deduction type..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 focus:ring-red-500 focus:border-red-500"
-              />
-            </div>
+<div className="bg-white p-4 mb-6 mx-2">
+  <div className="flex flex-col md:flex-row md:items-center md:justify-start gap-20">
+    
+    {/* Search Bar */}
+    <div className="relative w-full md:w-[35rem]">
+      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Input
+        placeholder="Search by employee name or deduction type..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="pl-10 focus:ring-red-500 focus:border-red-500"
+      />
+    </div>
 
-            {/* Filter Row */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Select
-                value={statusFilter}
-                onValueChange={(value: "all" | "active" | "inactive") => setStatusFilter(value)}
-              >
-                <SelectTrigger className="focus:ring-red-500 focus:border-red-500">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select
-                value={methodFilter}
-                onValueChange={(value: "all" | "fixed" | "percentage") => setMethodFilter(value)}
-              >
-                <SelectTrigger className="focus:ring-red-500 focus:border-red-500">
-                  <SelectValue placeholder="Method" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Methods</SelectItem>
-                  <SelectItem value="fixed">Fixed Amount</SelectItem>
-                  <SelectItem value="percentage">Percentage</SelectItem>
-                </SelectContent>
-              </Select>
-              <div></div> {/* Empty div for spacing */}
-              <Button
-                onClick={clearAllFilters}
-                variant="outline"
-                className="border-orange-200 text-red-700 hover:bg-red-50 bg-transparent"
-              >
-                Clear Filters
-              </Button>
-            </div>
-          </div>
-        </div>
+    {/* Filter Row */}
+    <div className="flex flex-wrap items-center gap-2 ml-2">
+      <Select
+        value={statusFilter}
+        onValueChange={(value: "all" | "active" | "inactive") => setStatusFilter(value)}
+      >
+        <SelectTrigger className="focus:ring-red-500 focus:border-red-500 w-36">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Status</SelectItem>
+          <SelectItem value="active">Active</SelectItem>
+          <SelectItem value="inactive">Inactive</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={methodFilter}
+        onValueChange={(value: "all" | "fixed" | "percentage") => setMethodFilter(value)}
+      >
+        <SelectTrigger className="focus:ring-red-500 focus:border-red-500 w-36">
+          <SelectValue placeholder="Method" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Methods</SelectItem>
+          <SelectItem value="fixed">Fixed Amount</SelectItem>
+          <SelectItem value="percentage">Percentage</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Button
+        onClick={clearAllFilters}
+        variant="outline"
+        className="border-orange-200 text-red-700 hover:bg-red-50 bg-transparent"
+      >
+        Clear Filters
+      </Button>
+    </div>
+  </div>
+</div>
+
+
 
         {/* Results Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mx-2">
+        <div className="bg-white overflow-hidden mx-2">
           <div className="p-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900">
               Current Deductions

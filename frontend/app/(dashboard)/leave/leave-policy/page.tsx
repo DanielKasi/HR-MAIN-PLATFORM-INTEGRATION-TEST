@@ -813,72 +813,77 @@ const LeavePolicyComponent = () => {
       )}
 
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mt-8">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search leave policies..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex gap-2 min-w-80">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full px-6">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <SelectValue placeholder="Filter by status" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-full px-6">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <SelectValue placeholder="Filter by category" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {leaveTypes
-                .map((type) => type.category)
-                .filter((value, index, self) => self.indexOf(value) === index)
-                .map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category.charAt(0).toUpperCase() + category.slice(1).replace("_", " ")}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-12">
+  {/* Left: Search Bar */}
+  <div className="relative sm:w-[450px]">
+    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+    <Input
+      placeholder="Search leave policies..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="pl-10 h-10 text-sm w-full"
+    />
+  </div>
 
-      {/* Rows per Page Selector */}
-      <div className="flex justify-end">
+  {/* Center: Filters and Rows Per Page */}
+  <div className="flex flex-wrap justify-center items-center gap-4 sm:ml-auto sm:mr-auto">
+    {/* Status Filter */}
+    <Select value={statusFilter} onValueChange={setStatusFilter}>
+      <SelectTrigger className="w-[160px] h-10 text-sm px-4">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rows per page:</span>
-          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[70px] h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZES.map((size) => (
-                <SelectItem key={size} value={size.toString()}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Filter className="h-4 w-4" />
+          <SelectValue placeholder="Status" />
         </div>
-      </div>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All Statuses</SelectItem>
+        <SelectItem value="active">Active</SelectItem>
+        <SelectItem value="inactive">Inactive</SelectItem>
+      </SelectContent>
+    </Select>
 
+    {/* Category Filter */}
+    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+      <SelectTrigger className="w-[180px] h-10 text-sm px-4">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4" />
+          <SelectValue placeholder="Category" />
+        </div>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All Categories</SelectItem>
+        {leaveTypes
+          .map((type) => type.category)
+          .filter((value, index, self) => self.indexOf(value) === index)
+          .map((category) => (
+            <SelectItem key={category} value={category}>
+              {category.charAt(0).toUpperCase() + category.slice(1).replace("_", " ")}
+            </SelectItem>
+          ))}
+      </SelectContent>
+    </Select>
+
+    {/* Rows per Page */}
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-muted-foreground">Rows per page:</span>
+      <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+        <SelectTrigger className="w-[70px] h-8 text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {PAGE_SIZES.map((size) => (
+            <SelectItem key={size} value={size.toString()}>
+              {size}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+</div>
+
+
+   
    
       {/* Leave Policies Table */}
       {isLoading ? (
