@@ -17,6 +17,7 @@ from .views import (
     EmployeeContractDetailAPIView,
     EmployeeContractListAPIView,
     EmployeeContractApprovalAPIView,
+    EmployeeWorkingDaysDetailAPIView,
 )
 
 urlpatterns = [
@@ -31,6 +32,11 @@ urlpatterns = [
         "<int:employee_id>/update/",
         EmployeeUpdateAPIView.as_view(),
         name="update-employee",
+    ),
+    path(
+        "<int:employee_id>/working-days/",
+        EmployeeWorkingDaysDetailAPIView.as_view(),
+        name="employee-working-days",
     ),
     path(
         "template/", EmployeeTemplateDownloadAPIView.as_view(), name="employee-template"

@@ -216,18 +216,7 @@ export default function PayslipItems() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Back Button - moved above everything */}
-      <div className="flex items-center">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.back()}
-          className="flex items-center gap-2 rounded-full aspect-square"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-      </div>
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
 
       {/* Header with Employee Info */}
       <div className="flex items-center justify-between">
@@ -255,16 +244,27 @@ export default function PayslipItems() {
               </div>
             </div>
           ) : (
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Payslip Items</h1>
+           <div>
+              <div className="flex items-center gap-3 mb-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.back()}
+                  className="flex items-center gap-2 rounded-full aspect-square"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <h1 className="text-2xl font-bold text-gray-900">Payslip Items</h1>
+              </div>
               <p className="text-gray-600">No payslip information available</p>
             </div>
+
           )}
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
         <Card className="bg-white border">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -374,7 +374,7 @@ export default function PayslipItems() {
       )}
 
       {/* Items Table */}
-      <Card>
+      <div className="mt-8">
         <CardHeader>
           <div>
             <CardTitle>Payslip Items Breakdown</CardTitle>
@@ -385,7 +385,7 @@ export default function PayslipItems() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          <div>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -459,7 +459,7 @@ export default function PayslipItems() {
             </div>
           )}
         </CardContent>
-      </Card>
+      </div>
     </div>
   )
 }

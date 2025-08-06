@@ -152,53 +152,20 @@ export default function DepartmentsPage() {
   }
 
   return (
-    <div className="w-full h-full p-6 space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Departments</h1>
           <p className="text-muted-foreground">
             Manage departments for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="flex items-center gap-2 bg-transparent"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          <Button onClick={handleCreateDepartment} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Create Department
-          </Button>
-        </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search departments..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Button variant="outline" className="flex items-center gap-2 bg-transparent">
-          <Filter className="h-4 w-4" />
-          Filter
-        </Button>
-      </div>
-
-      {/* Stats */}
+       {/* Stats */}
       {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 mt-12">
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">{departments.length}</div>
@@ -220,41 +187,67 @@ export default function DepartmentsPage() {
         </div>
       )}
 
+      {/* Search and Create Department Button on Same Line */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center mb-6 mt-8">
+        <div className="flex flex-1 items-center gap-4">
+          <div className="relative flex-1 max-w-lg">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search departments..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button variant="outline" className="flex items-center gap-2 bg-transparent">
+            <Filter className="h-4 w-4" />
+            Filter
+          </Button>
+        </div>
+        
+        <Button onClick={handleCreateDepartment} className="flex items-center gap-2 flex-shrink-0">
+          <Plus className="h-4 w-4" />
+          Create Department
+        </Button>
+      </div>
+
       {/* Error Message */}
       {error && (
-        <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+        <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 mb-6">
           {error}
         </div>
       )}
 
       {/* Departments Table */}
       {isLoading ? (
-        <Table className="rounded-md border bg-gray-50">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {[...Array(5)].map((_, i) => (
-              <TableRow key={i}>
-                <TableCell>
-                  <Skeleton className="h-6 w-3/4" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-6 w-full" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-6 w-1/2" />
-                </TableCell>
+        <div className="overflow-x-auto mt-12">
+          <Table className="min-w-[800px]">
+            <TableHeader>
+              <TableRow className="border-b">
+                <TableHead>Name</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {[...Array(5)].map((_, i) => (
+                <TableRow key={i} className="border-b">
+                  <TableCell>
+                    <Skeleton className="h-6 w-3/4" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-6 w-full" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-6 w-1/2" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       ) : filteredDepartments.length === 0 ? (
-        <Card className="p-12 text-center">
+        <div className="p-12 text-center">
           <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No departments found</h3>
           <p className="text-muted-foreground mb-4">
@@ -268,13 +261,12 @@ export default function DepartmentsPage() {
               Create First Department
             </Button>
           )}
-        </Card>
+        </div>
       ) : (
-        <Card className="border rounded-md bg-white shadow-sm">
-          <Table>
+        <div className="overflow-x-auto">
+          <Table className="min-w-[800px]">
             <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-[50px]"></TableHead>
+              <TableRow className="border-b bg-muted/30">
                 <TableHead className="font-semibold">Name</TableHead>
                 <TableHead className="font-semibold">Description</TableHead>
                 <TableHead className="w-[100px] text-right">Actions</TableHead>
@@ -284,25 +276,16 @@ export default function DepartmentsPage() {
               {filteredDepartments.map((department, index) => (
                 <TableRow
                   key={department.id}
-                  className={`
-                    hover:bg-muted/50 transition-colors
-                    ${index % 2 === 0 ? 'bg-white' : 'bg-muted/5'}
-                  `}
+                  className="hover:bg-muted/50 transition-colors border-b"
                 >
-                  <TableCell>
-                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center ring-1 ring-primary/20">
-                      <Building2 className="h-4 w-4 text-primary" />
-                    </div>
-                  </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-medium text-sm">{department.name}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-
                     <RichTextDisplay
-                      className={"text-sm" + !department.description ? 'text-muted-foreground italic' : ''}
+                      className={`text-sm ${!department.description ? 'text-muted-foreground italic' : ''}`}
                       htmlContent={department.description || "No description"}
                     />
                   </TableCell>
@@ -352,7 +335,7 @@ export default function DepartmentsPage() {
               ))}
             </TableBody>
           </Table>
-        </Card>
+        </div>
       )}
 
       {/* Delete Confirmation Modal */}

@@ -7,6 +7,7 @@ import apiRequest from "./apiRequest";
 import { IMarketPlaceOrder, IPaginatedResponse, IPermission, IUser, Permission, Role } from "@/app/types";
 import { store } from "@/store";
 import { toast } from "sonner";
+import { ICountry } from "@/app/types/types.utils";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -386,7 +387,7 @@ export const countryAPI = {
   getAll: async () => {
     const response = await fetch("https://restcountries.com/v3.1/all?fields=name,cca2,currencies,idd");
     if (!response.ok) throw new Error("Failed to fetch countries");
-    return await response.json();
+    return await response.json() as ICountry[];
   },
 };
 

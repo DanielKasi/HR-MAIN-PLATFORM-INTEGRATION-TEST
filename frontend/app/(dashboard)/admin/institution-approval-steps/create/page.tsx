@@ -138,7 +138,7 @@ export default function CreateApprovalStep() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" className="rounded-full aspect-square" onClick={() => router.push("/admin")}>
@@ -148,7 +148,7 @@ export default function CreateApprovalStep() {
         </div>
       </div>
 
-      <Card>
+      <div>
         <CardHeader>
           <CardTitle>Approval Step Details</CardTitle>
           <CardDescription>Configure the new approval step parameters</CardDescription>
@@ -337,7 +337,7 @@ export default function CreateApprovalStep() {
             </form>
           )}
         </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }

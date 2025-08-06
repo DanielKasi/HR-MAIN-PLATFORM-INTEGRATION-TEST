@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Branch, ICustomerProfile, IUser, Permission, Role, UserProfile } from ".";
+import { Branch, ICustomerProfile, IUser, IUserInstitution, Permission, Role, UserProfile } from ".";
 
 export enum CUSTOM_CODES {
   BLOCKED_BY_ADMIN = "BLOCKED_BY_ADMIN",
@@ -7,6 +7,12 @@ export enum CUSTOM_CODES {
   ADMIN_CREATED_UNVERIFIED = "ADMIN_CREATED_UNVERIFIED",
   INVALID_CREDENTIALS = "INVALID_CREDENTIALS",
   OTHER = "OTHER",
+}
+export enum ALLOWANCE_FREQUENCIES {
+  DAILY="DAILY",
+  WEEKLY="WEEKLY",
+  MONTHLY="MONTHLY",
+  QUARTERLY="QUARTERLY"
 }
 
 export enum PURCHASE_ORDER_STATUS {
@@ -206,7 +212,14 @@ export enum PERMISSION_CODES {
 }
 
 
+export type ContextType = 'employee' | 'department' | 'job_position'
+export type CalculationMethod = 'fixed' | 'percentage'
 
+export interface ContextItem {
+  id: number
+  name: string
+  description?: string
+}
 
 
 
@@ -256,7 +269,7 @@ export interface IDepartment {
   name: string;
   description?: string | null;
   institution: number; // ForeignKey as ID
-  institution_details?: IInstitution | null; // Embedded serializer
+  institution_details?: IUserInstitution | null; // Embedded serializer
   job_positions?: { id: number; name: string; description: string; department_id: number }[];
 }
 
@@ -419,6 +432,7 @@ export type JobAdvertStatus = "expired" | "active" | "archived" | "closed" | "in
 export type JobAdvertTypes = "internal" | "external";
 
 export interface JobPositionAdvert {
+  data: any;
   job_position_details: any;
   id: number;
   job_position: number; // Foreign key to JobPosition
@@ -434,6 +448,8 @@ export interface JobPositionAdvert {
 
 // For creating/updating job adverts
 export interface JobPositionAdvertFormData {
+  level: number;
+  interviewers: any;
   job_position: number;
   job_position_advert_status?: JobAdvertStatus;
   expiry_date: string; // ISO datetime string
@@ -456,11 +472,7 @@ export interface IEmployee {
     name: string;
     department_id: number;
   };
-  department: {
-    id: number;
-    name: string;
-    institution_id: number;
-  };
+  department: IDepartment;
   date_of_birth: string;
   date_of_joining: string;
   address: string;
@@ -553,7 +565,7 @@ export interface User {
 }
 
 export interface EmployeeFormData {
-  user: User;
+  user: Partial<User>;
   id: number;
   email: string;
   phone_number: string;
@@ -583,7 +595,7 @@ export interface EmployeeFormData {
   selected_branches: number[];
 }
 
-export interface EmployeeFormState {
+export interface ICreateEmployeeForm {
   tin: string
   nssf_no: string
   fullname: string;
@@ -610,7 +622,6 @@ export interface EmployeeFormState {
   emergency_contact_relationship: string;
   marital_status: string;
   children_count: number;
-  employee_profile_picture: File | null;
 }
 export interface IRoleResponse {
   id: number
@@ -1312,12 +1323,16 @@ export interface ILeaveRequestFilters {
   duration_type?: DurationType;
 }
 
+export type IAllowanceFrequency = "DAILY"| "WEEKLY"| "MONTHLY" | "QUARTERLY" | "YEARLY"
 
 
 export interface IAllowanceType {
   id: number;
   name: string;
+  institution:IUserInstitution,
   description: string;
+  is_recurring:boolean,
+  frequency?:IAllowanceFrequency|null,
   is_taxable: boolean;
   is_active: boolean;
   created_at: string;
@@ -1326,17 +1341,22 @@ export interface IAllowanceType {
 export interface IAllowanceTypeFormData {
   name: string;
   description: string;
+  is_recurring:boolean,
+  frequency?:IAllowanceFrequency|null,
   is_taxable: boolean;
   is_active: boolean;
+  
 }
 
 
 export interface IDeductionType {
   id: number;
-  institution: number;
+  institution: IUserInstitution;
   name: string;
   description: string;
   is_mandatory: boolean;
+  is_recurring:boolean,
+  frequency?:IAllowanceFrequency|null,
   is_active: boolean;
   created_at: string;
 }
@@ -1344,6 +1364,8 @@ export interface IDeductionType {
 export interface IDeductionTypeFormData {
   name: string;
   description: string;
+  is_recurring:boolean,
+  frequency?:IAllowanceFrequency|null,
   is_mandatory: boolean;
   is_active: boolean;
 }
@@ -1351,8 +1373,8 @@ export interface IDeductionTypeFormData {
 
 export interface IEmployeeAllowance {
   id: number;
-  employee: number;
-  allowance_type: number;
+  employee: IEmployee;
+  allowance_type: IAllowanceType;
   calculation_method: "fixed" | "percentage";
   amount: string;
   percentage: string;
@@ -1361,6 +1383,8 @@ export interface IEmployeeAllowance {
   effective_to: string | null;
   created_at: string;
 }
+
+
 
 export interface IEmployeeAllowanceFormData {
   employee: number;
@@ -1376,8 +1400,8 @@ export interface IEmployeeAllowanceFormData {
 
 export interface IEmployeeDeduction {
   id: number;
-  employee: number;
-  deduction_type: number;
+  employee: IEmployee;
+  deduction_type: IDeductionType;
   calculation_method: "fixed" | "percentage";
   amount: string;
   percentage: string;
@@ -1800,3 +1824,28 @@ export interface PayslipItem {
   amount: number
   description?: string
 }
+
+export interface ISystemWorkingDay {
+  id: number
+  day_code: string
+  day_name: string
+  level: number
+}
+
+// Institution Working Days interface
+export interface IInstitutionWorkingDays {
+  id: number
+  institution: number
+  days: ISystemWorkingDay[]
+  created_by: number | null
+  created_at: string
+  updated_by: number | null
+  updated_at: string
+}
+
+// Form data for creating/updating institution working days
+export interface IWorkingDaysFormData {
+  days: number[]
+}
+
+

@@ -79,6 +79,9 @@ import {
   IBankTypeFormData,
   IBankAccountFormData,
   IBankAccount,
+  IInstitutionWorkingDays,
+  IWorkingDaysFormData,
+  ISystemWorkingDay,
 } from "@/app/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -256,6 +259,16 @@ export const getDepartments = async ({ institutionId }: { institutionId: number 
   }
 };
 
+export const getJobPositions = async ({ institutionId }: { institutionId: number }) => {
+  try {
+    const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`);
+    const data = response.data as PaginatedResponse<IJobPosition>;
+    return data.results;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const getDefaultData = async (): Promise<IDepartment[] | null> => {
   try {
     const response = await apiRequest.get("institution/default-data/");
@@ -266,15 +279,7 @@ export const getDefaultData = async (): Promise<IDepartment[] | null> => {
   }
 };
 
-export const getJobPositions = async ({ institutionId }: { institutionId: number }) => {
-  try {
-    const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`);
-    const data = response.data as PaginatedResponse<IJobPosition>;
-    return data.results;
-  } catch (error) {
-    throw error;
-  }
-};
+
 
 export const getJobPosition = async ({ jobPositionId }: { jobPositionId: number }) => {
   try {
@@ -930,8 +935,6 @@ export const getAllEmployees = async ({ institutionId }: { institutionId: number
     const endpoint = `employee/${institutionId}/employee/`;
     const response = await apiRequest.get(endpoint);
     const data = response.data as PaginatedResponse<IEmployee>;
-
-    // Return the results array instead of the entire response
     return data.results;
   } catch (error) {
     throw error;
@@ -950,8 +953,8 @@ export const createEmployee = async ({
     formData.append("institutionId", institutionId.toString());
 
     if (employeeData.user) {
-      formData.append("user.fullname", employeeData.user.fullname);
-      formData.append("user.email", employeeData.user.email);
+      formData.append("user.fullname", employeeData.user.fullname|| "");
+      formData.append("user.email", employeeData.user.email|| "");
     }
 
     Object.entries(employeeData).forEach(([key, value]) => {
@@ -1420,7 +1423,6 @@ export const getDisciplineTypes = async ({
     // Return the results array instead of the entire response
     return data.results;
   } catch (error) {
-    // console.error("Failed to fetch discipline types:", error);
     throw error;
   }
 };
@@ -1936,7 +1938,7 @@ export const createAllowanceType = async ({
 
 export const getAllowanceTypes = async (
   institutionId: number,
-): Promise<IAllowanceType[] | null> => {
+)=> {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/allowance-types/`);
     const data = response.data as PaginatedResponse<IAllowanceType>;
@@ -2090,7 +2092,7 @@ export const createDeductionType = async ({
 
 export const getDeductionTypes = async (
   institutionId: number,
-): Promise<IDeductionType[] | null> => {
+) => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/deduction-types/`);
     const data = response.data as PaginatedResponse<IDeductionType>;
@@ -2098,7 +2100,6 @@ export const getDeductionTypes = async (
     // Return the results array instead of the entire response
     return data.results;
   } catch (error) {
-    // console.error("Failed to get deduction types:", error);
     throw error;
   }
 };
@@ -2119,7 +2120,7 @@ export const updateDeductionType = async ({
 }: {
   id: number;
   deductionTypeData: Partial<IDeductionTypeFormData>;
-}): Promise<IDeductionType | null> => {
+}) => {
   try {
     const formData = new FormData();
     Object.entries(deductionTypeData).forEach(([key, value]) => {
@@ -2131,7 +2132,6 @@ export const updateDeductionType = async ({
     const response = await apiRequest.patch(`payroll/deduction-types/${id}/`, formData);
     return response.data as IDeductionType;
   } catch (error) {
-    // console.error("Failed to update deduction type:", error);
     throw error;
   }
 };
@@ -2151,20 +2151,14 @@ export const createEmployeeAllowance = async ({
   employeeAllowanceData,
 }: {
   institutionId: number;
-  employeeAllowanceData: IEmployeeAllowanceFormData;
+  employeeAllowanceData: Partial<IEmployeeAllowanceFormData>;
 }): Promise<IEmployeeAllowance | null> => {
   try {
-    const formData = new FormData();
 
-    Object.entries(employeeAllowanceData).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        formData.append(key, value.toString());
-      }
-    });
 
     const response = await apiRequest.post(
       `payroll/${institutionId}/employee-allowances/`,
-      formData,
+      employeeAllowanceData,
     );
 
     return response.data as IEmployeeAllowance;
@@ -2176,7 +2170,7 @@ export const createEmployeeAllowance = async ({
 
 export const getEmployeeAllowances = async (
   institutionId: number,
-): Promise<IEmployeeAllowance[] | null> => {
+) => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/employee-allowances/`);
     return response.data.results as IEmployeeAllowance[];
@@ -2284,20 +2278,12 @@ export const createEmployeeDeduction = async ({
   employeeDeductionData,
 }: {
   institutionId: number;
-  employeeDeductionData: IEmployeeDeductionFormData;
-}): Promise<IEmployeeDeduction | null> => {
+  employeeDeductionData: Partial<IEmployeeDeductionFormData>;
+})=> {
   try {
-    const formData = new FormData();
-
-    Object.entries(employeeDeductionData).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        formData.append(key, value.toString());
-      }
-    });
-
     const response = await apiRequest.post(
       `payroll/${institutionId}/employee-deductions/`,
-      formData,
+      employeeDeductionData,
     );
 
     return response.data as IEmployeeDeduction;
@@ -2309,7 +2295,7 @@ export const createEmployeeDeduction = async ({
 
 export const getEmployeeDeductions = async (
   institutionId: number,
-): Promise<IEmployeeDeduction[] | null> => {
+) => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/employee-deductions/`);
     return response.data.results as IEmployeeDeduction[];
@@ -3617,6 +3603,7 @@ export const payrollAPI = {
     throw error;
   }
   },
+
   getPayslipsByPayrollPeriod: async ({payrollId, params}: {payrollId:number|string, params?: {
     employee?: number;
     payroll_period?: number;
@@ -3649,3 +3636,51 @@ export const payrollAPI = {
   },
 }
 
+
+
+export const institutionAPI = {
+  getWorkingDays: async () => {
+    try {
+      const response = await apiRequest.get("/institution/working-days/")
+      return response.data as IInstitutionWorkingDays[]
+    } catch (error) {
+      throw error
+    }
+  },
+
+  createWorkingDays: async (data: IWorkingDaysFormData) => {
+    try {
+      const response = await apiRequest.post("/institution/working-days/", data)
+      return response.data as IInstitutionWorkingDays
+    } catch (error) {
+      throw error
+    }
+  },
+
+  updateWorkingDays: async ({
+    workingDaysId,
+    data,
+  }: {
+    workingDaysId: number|string,
+    data: IWorkingDaysFormData
+  })=> {
+    try {
+      const response = await apiRequest.patch(`/institution/working-days/${workingDaysId}/`, data)
+      return response.data as IInstitutionWorkingDays
+    } catch (error) {
+      throw error
+    }
+  },
+}
+
+
+export const systemAPI = {
+  getWorkingDays: async () => {
+    try {
+      const response = await apiRequest.get("/settings/system-days/")
+      return response.data as ISystemWorkingDay[]
+    } catch (error) {
+      throw error
+    }
+  },
+}

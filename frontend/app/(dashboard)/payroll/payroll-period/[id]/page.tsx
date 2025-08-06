@@ -18,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { TableSkeleton } from "@/components/common/table-skeleton"
-import { InfiniteScrollSelect } from "@/components/ui/infinite-scroll-select"
+import { InfiniteScrollSelect } from "@/components/infinite-scroll-select"
 import {
   Plus,
   CheckCircle,
@@ -34,6 +34,7 @@ import {
   ArrowLeft,
   Edit,
   CreditCard,
+  Search,
 } from "lucide-react"
 import { toast } from "sonner"
 import { useSelector } from "react-redux"
@@ -479,19 +480,19 @@ export default function PayrollPeriodDetails() {
       const totalDeductions = Number(editFormData.total_deductions || 0)
       const daysWorked = Number(editFormData.days_worked || 0)
 
-      // Match the exact types expected by IPayslipFormData
+
       const updatedData = {
-        basic_salary: basicSalary.toString(), // string
-        total_allowances: totalAllowances.toString(), // string
-        total_deductions: totalDeductions.toString(), // string
-        days_worked: daysWorked, // number (keep as number)
-        gross_salary: (basicSalary + totalAllowances).toString(), // string
-        net_salary: (basicSalary + totalAllowances - totalDeductions).toString(), // string
+        basic_salary: basicSalary.toString(), 
+        total_allowances: totalAllowances.toString(), 
+        total_deductions: totalDeductions.toString(), 
+        days_worked: daysWorked,
+        gross_salary: (basicSalary + totalAllowances).toString(),
+        net_salary: (basicSalary + totalAllowances - totalDeductions).toString(), 
       }
 
       const updatedPayslip = await updatePayslip({
         id: editingPayslip.id,
-        payslipData: updatedData, // Now matches IPayslipFormData types
+        payslipData: updatedData, 
       })
       setPayslips((prev) => [...prev.map((slip) => (slip.id === updatedPayslip.id ? updatedPayslip : slip))])
 
@@ -536,7 +537,7 @@ export default function PayrollPeriodDetails() {
     }
   }
 
-  // Show skeleton loading state
+
   if (isLoading) {
     return (
       <div className="p-2 space-y-6">
@@ -566,9 +567,9 @@ export default function PayrollPeriodDetails() {
   const startIndex = (currentPage - 1) * itemsPerPage
 
   return (
-    <div className="p-2 space-y-6">
-      <Card className="h-[calc(100vh-2rem)] shadow-lg">
-        <CardHeader className="border-b">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
+      <div>
+        <CardHeader>
           <div className="flex justify-between gap-8 items-center">
             <div className="flex items-center justify-start gap-4">
               <Button
@@ -585,242 +586,71 @@ export default function PayrollPeriodDetails() {
                 </CardDescription>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Dialog open={bulkPaymentModalOpen} onOpenChange={setBulkPaymentModalOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    className="bg-green-600 hover:bg-green-700 shadow-md"
-                    disabled={!selectedInstitution || displayedPayslips.filter((p) => !p.is_paid).length === 0}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Bulk Payments
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Process Payments in Bulk</DialogTitle>
-                    <DialogDescription>
-                      Select a department to mark all unpaid payslips as paid for this period
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label htmlFor="department" className="text-sm font-medium text-gray-700">
-                          Department
-                        </label>
-                        <Select
-                          value={selectedDepartment}
-                          onValueChange={setSelectedDepartment}
-                          disabled={bulkProcessing}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select department" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Departments</SelectItem>
-                            {departments.map((dept, idx) => (
-                              <SelectItem key={idx} value={dept.toString()}>
-                                {dept.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {selectedDepartment && (
-                        <div className="bg-green-50 p-4 rounded-lg">
-                          <h4 className="font-semibold text-green-900 mb-2">
-                            {getUnpaidPayslipsByDepartment(selectedDepartment).length} unpaid payslips found
-                          </h4>
-                          <div className="text-sm text-green-800">
-                            {selectedDepartment === "all"
-                              ? "This will process payments for all unpaid payslips in this period."
-                              : `This will process payments for all unpaid payslips in ${selectedDepartment} department.`}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setBulkPaymentModalOpen(false)
-                          setSelectedDepartment("all")
-                        }}
-                        disabled={bulkProcessing}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={handleBulkMarkAsPaid}
-                        className="bg-green-600 hover:bg-green-700"
-                        disabled={
-                          bulkProcessing ||
-                          !selectedDepartment ||
-                          getUnpaidPayslipsByDepartment(selectedDepartment).length === 0
-                        }
-                      >
-                        {bulkProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Process {getUnpaidPayslipsByDepartment(selectedDepartment).length} Payments
-                      </Button>
-                    </DialogFooter>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <Button
-                onClick={handleGeneratePayslips}
-                className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400"
-                disabled={ payrollPeriod.is_processed || !selectedInstitution || !payrollPeriodId}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Generate Payslips
-              </Button>
-
-              {/* Updated Download Button with Modal */}
-              <Dialog open={downloadModalOpen} onOpenChange={setDownloadModalOpen}>
-                <DialogTrigger asChild>
-                  <Button className="shadow-md" disabled={!selectedInstitution?.id}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                      <CreditCard className="h-5 w-5" />
-                      Select Payment Account
-                    </DialogTitle>
-                    <DialogDescription>
-                      Choose the bank account from which payslips will be generated for {payrollPeriod.name}
-                    </DialogDescription>
-                  </DialogHeader>
-
-                  <div className="py-4">
-                    <InfiniteScrollSelect
-                      items={bankAccounts}
-                      loading={bankAccountsLoading}
-                      hasMore={bankAccountsHasMore}
-                      onLoadMore={handleLoadMoreBankAccounts}
-                      onSearch={handleBankAccountSearch}
-                      onSelect={setSelectedBankAccount}
-                      selectedItem={selectedBankAccount}
-                      getItemId={(account) => account.id}
-                      getItemLabel={(account) => account.account_name || account.account_number}
-                      getItemDescription={(account) => `${account.account_name} • ${account.account_number}`}
-                      placeholder="Select a bank account..."
-                      searchPlaceholder="Search bank accounts..."
-                      emptyMessage="No bank accounts found"
-                    />
-                  </div>
-
-                  <DialogFooter>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setDownloadModalOpen(false)
-                        setSelectedBankAccount(null)
-                      }}
-                      disabled={isDownloading}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleDownloadPayroll}
-                      disabled={!selectedBankAccount || isDownloading}
-                    >
-                      {isDownloading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Downloading...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="mr-2 h-4 w-4" />
-                          Download Payroll
-                        </>
-                      )}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
           </div>
         </CardHeader>
+        
+        {/* Search and Filters */}<div className="flex items-center justify-between mt-10">
+  {/* Search bar */}
+  <div className="relative flex-1 max-w-xl">
+    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+    <Input
+      placeholder="Search by employee name or email..."
+      value={searchTerm}
+      onChange={(e) => {
+        setSearchTerm(e.target.value)
+        resetPagination()
+      }}
+      className="pl-10 h-12 w-full"
+    />
+  </div>
 
-        <div className="px-6 py-4 border-b">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Search by employee name or email..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value)
-                  resetPagination()
-                }}
-                className="max-w-sm"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Select
-                value={filterStatus}
-                onValueChange={(value: "all" | "paid" | "unpaid") => {
-                  setFilterStatus(value)
-                  resetPagination()
-                }}
-              >
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="unpaid">Unpaid</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select
-                value={itemsPerPage.toString()}
-                onValueChange={(value: string) => handleItemsPerPageChange(Number.parseInt(value))}
-              >
-                <SelectTrigger className="w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5</SelectItem>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
+  {/* Buttons container */}
+  <div className="flex gap-2 ml-6">
+    {/* Bulk Payments dialog/button */}
+    <Dialog open={bulkPaymentModalOpen} onOpenChange={setBulkPaymentModalOpen}>
+      <DialogTrigger asChild>
+        <Button
+          className="bg-green-600 hover:bg-green-700 shadow-md"
+          disabled={!selectedInstitution || displayedPayslips.filter((p) => !p.is_paid).length === 0}
+        >
+          <CheckCircle className="w-4 h-4 mr-2" />
+          Bulk Payments
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        {/* Dialog contents here */}
+      </DialogContent>
+    </Dialog>
+
+    {/* Generate Payslips button */}
+    <Button
+      onClick={handleGeneratePayslips}
+      className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400"
+      disabled={payrollPeriod.is_processed || !selectedInstitution || !payrollPeriodId}
+    >
+      <Plus className="w-4 h-4 mr-2" />
+      Generate Payslips
+    </Button>
+
+    {/* Download dialog/button */}
+    <Dialog open={downloadModalOpen} onOpenChange={setDownloadModalOpen}>
+      <DialogTrigger asChild>
+        <Button className="shadow-md" disabled={!selectedInstitution?.id}>
+          <Download className="w-4 h-4 mr-2" />
+          Download
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        {/* Dialog contents here */}
+      </DialogContent>
+    </Dialog>
+  </div>
+</div>
+
+                      
 
         {/* Results Table */}
         <div className="bg-white rounded-lg shadow-sm  overflow-hidden mx-2">
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Payslips for {payrollPeriod.name}
-                  <span className="text-sm font-normal text-gray-500 ml-2">({totalItems} total records)</span>
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  Showing {totalItems > 0 ? startIndex + 1 : 0} to {startIndex + displayedPayslips.length} of{" "}
-                  {totalItems} records
-                </p>
-              </div>
-              {totalItems > 0 && (
-                <div className="text-sm text-gray-500">
-                  Page {currentPage} of {totalPages}
-                </div>
-              )}
-            </div>
-          </div>
-
           {displayedPayslips.length === 0 ? (
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-gray-400" />
@@ -846,8 +676,9 @@ export default function PayrollPeriodDetails() {
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
+          <div className="overflow-x-auto mt-10">
+            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+              <TableHeader className="bg-gray-50/50">
                   <TableRow className="bg-gray-50">
                     <TableHead className="font-semibold text-gray-700 py-4">
                       <div className="flex items-center gap-2">
@@ -1164,6 +995,7 @@ export default function PayrollPeriodDetails() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white">
                   <div className="flex items-center text-sm text-gray-700">
@@ -1222,7 +1054,7 @@ export default function PayrollPeriodDetails() {
             </>
           )}
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

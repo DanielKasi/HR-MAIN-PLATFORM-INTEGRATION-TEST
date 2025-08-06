@@ -1,42 +1,58 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import { useRouter, useParams } from "next/navigation"
-import { useSelector } from "react-redux"
-import { Users, ArrowLeft, Check, Loader2, User, Building } from "lucide-react"
+import type React from "react";
+import {useState, useEffect} from "react";
+import {useRouter, useParams} from "next/navigation";
+import {useSelector} from "react-redux";
+import {Users, ArrowLeft, Check, Loader2, User, Building} from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Textarea} from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {Badge} from "@/components/ui/badge";
+import {Skeleton} from "@/components/ui/skeleton";
 
-import { selectSelectedInstitution, selectSelectedBranch, selectUser } from "@/store/auth/selectors"
-import { updateInterview, getInterviewById, getJobApplications, getInterviewStages } from "@/lib/utils"
-import type { IInterviewFormData, IInterview, JobApplication, IInterviewStage } from "@/app/types/types.utils"
-import { toast } from "sonner"
+import {selectSelectedInstitution, selectSelectedBranch, selectUser} from "@/store/auth/selectors";
+import {
+  updateInterview,
+  getInterviewById,
+  getJobApplications,
+  getInterviewStages,
+} from "@/lib/utils";
+import type {
+  IInterviewFormData,
+  IInterview,
+  JobApplication,
+  IInterviewStage,
+} from "@/app/types/types.utils";
+import {toast} from "sonner";
 
 export default function EditInterviewPage() {
-  const [interview, setInterview] = useState<IInterview | null>(null)
+  const [interview, setInterview] = useState<IInterview | null>(null);
 
-  const [jobApplications, setJobApplications] = useState<JobApplication[]>([])
-  const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([])
-  const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null)
-  const [selectedStage, setSelectedStage] = useState<IInterviewStage | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [errors, setErrors] = useState<Partial<Record<keyof IInterviewFormData, string>>>({})
+  const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
+  const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([]);
+  const [selectedApplication, setSelectedApplication] = useState<JobApplication | null>(null);
+  const [selectedStage, setSelectedStage] = useState<IInterviewStage | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<keyof IInterviewFormData, string>>>({});
   const userData = useSelector(selectUser);
-  const router = useRouter()
-  const params = useParams()
-  const interviewId = Number.parseInt(params.id as string)
+  const router = useRouter();
+  const params = useParams();
+  const interviewId = Number.parseInt(params.id as string);
 
-  const selectedInstitution = useSelector(selectSelectedInstitution)
-  const selectedBranch = useSelector(selectSelectedBranch)
+  const selectedInstitution = useSelector(selectSelectedInstitution);
+  const selectedBranch = useSelector(selectSelectedBranch);
 
   const [formData, setFormData] = useState<IInterviewFormData>({
     job_position_application: 0,
@@ -49,60 +65,60 @@ export default function EditInterviewPage() {
     interview_time: "",
     interview_type: "in_person",
     created_by: userData?.id || 0,
-  })
+  });
 
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
-      router.push("/dashboard")
-      return
+      router.push("/dashboard");
+      return;
     }
 
     if (isNaN(interviewId)) {
-      toast.error("Invalid interview ID")
-      router.push("/job-interviews")
-      return
+      toast.error("Invalid interview ID");
+      router.push("/job-interviews");
+      return;
     }
 
-    fetchInitialData()
-  }, [selectedInstitution, selectedBranch, interviewId, router])
+    fetchInitialData();
+  }, [selectedInstitution, selectedBranch, interviewId, router]);
 
   const fetchInitialData = async () => {
-    if (!selectedInstitution) return
+    if (!selectedInstitution) return;
 
     try {
-      setIsLoading(true)
+      setIsLoading(true);
 
       // Fetch interview details
-      const fetchedInterview = await getInterviewById({ interviewId })
+      const fetchedInterview = await getInterviewById({interviewId});
 
       if (!fetchedInterview) {
-        toast.error("Interview not found")
-        router.push("/job-interviews")
-        return
+        toast.error("Interview not found");
+        router.push("/job-interviews");
+        return;
       }
 
-      setInterview(fetchedInterview)
+      setInterview(fetchedInterview);
 
       // Fetch applications and stages in parallel
       const [fetchedApplications, fetchedStages] = await Promise.all([
-        getJobApplications({ institutionId: selectedInstitution.id }),
-        getInterviewStages({ institutionId: selectedInstitution.id }),
-      ])
+        getJobApplications({institutionId: selectedInstitution.id}),
+        getInterviewStages({institutionId: selectedInstitution.id}),
+      ]);
 
       if (fetchedApplications) {
-
-
-        setJobApplications(fetchedApplications.results || [])
+        setJobApplications(fetchedApplications.results || []);
         const currentApplication = (fetchedApplications.results || []).find(
           (app) => app.id === fetchedInterview.job_position_application,
-        )
-        setSelectedApplication(currentApplication || null)
+        );
+        setSelectedApplication(currentApplication || null);
       }
 
       if (fetchedStages) {
-        setInterviewStages(fetchedStages)
-        const currentStage = fetchedStages.find((stage) => stage.id === fetchedInterview.interview_stage)
-        setSelectedStage(currentStage || null)
+        setInterviewStages(fetchedStages);
+        const currentStage = fetchedStages.find(
+          (stage) => stage.id === fetchedInterview.interview_stage,
+        );
+        setSelectedStage(currentStage || null);
       }
 
       // Pre-populate form data
@@ -117,92 +133,92 @@ export default function EditInterviewPage() {
         interview_time: fetchedInterview.interview_time || "",
         interview_type: fetchedInterview.interview_type || "in_person",
         created_by: userData?.id || 0,
-      })
+      });
     } catch (error) {
-      console.error("Error fetching initial data:", error)
-      toast.error("Failed to load interview data")
-      router.push("/job-interviews")
+      console.error("Error fetching initial data:", error);
+      toast.error("Failed to load interview data");
+      router.push("/job-interviews");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const updateFormData = (field: keyof IInterviewFormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    setFormData((prev) => ({...prev, [field]: value}));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }))
+      setErrors((prev) => ({...prev, [field]: undefined}));
     }
 
     // Update selected application when job_position_application changes
     if (field === "job_position_application") {
-      const application = jobApplications.find((app) => app.id === Number(value))
-      setSelectedApplication(application || null)
+      const application = jobApplications.find((app) => app.id === Number(value));
+      setSelectedApplication(application || null);
     }
 
     // Update selected stage when interview_stage changes
     if (field === "interview_stage") {
-      const stage = interviewStages.find((stage) => stage.id === Number(value))
-      setSelectedStage(stage || null)
+      const stage = interviewStages.find((stage) => stage.id === Number(value));
+      setSelectedStage(stage || null);
     }
-  }
+  };
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<Record<keyof IInterviewFormData, string>> = {}
+    const newErrors: Partial<Record<keyof IInterviewFormData, string>> = {};
 
     // Application validation
     if (!formData.job_position_application || formData.job_position_application === 0) {
-      newErrors.job_position_application = "Please select a job application"
+      newErrors.job_position_application = "Please select a job application";
     }
 
     // Interview stage validation
     if (!formData.interview_stage || formData.interview_stage === 0) {
-      newErrors.interview_stage = "Please select an interview stage"
+      newErrors.interview_stage = "Please select an interview stage";
     }
 
     // Interview date validation
     if (!formData.interview_date) {
-      newErrors.interview_date = "Interview date and time is required"
+      newErrors.interview_date = "Interview date and time is required";
     } else {
-      const interviewDate = new Date(formData.interview_date)
-      const now = new Date()
+      const interviewDate = new Date(formData.interview_date);
+      const now = new Date();
       // Only validate future date for scheduled interviews
       if (formData.status === "scheduled" && interviewDate <= now) {
-        newErrors.interview_date = "Scheduled interview date must be in the future"
+        newErrors.interview_date = "Scheduled interview date must be in the future";
       }
     }
 
     // Rating validation (if provided)
     if (formData.rating !== undefined && formData.rating !== null) {
-      const rating = Number(formData.rating)
+      const rating = Number(formData.rating);
       if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
-        newErrors.rating = "Rating must be a whole number between 1 and 10"
+        newErrors.rating = "Rating must be a whole number between 1 and 10";
       }
     }
 
     // Feedback validation (optional length constraint)
     if (formData.feedback && formData.feedback.length > 1000) {
-      newErrors.feedback = "Feedback cannot exceed 1000 characters"
+      newErrors.feedback = "Feedback cannot exceed 1000 characters";
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!selectedInstitution || !selectedBranch || !interview) {
-      toast.error("Missing required information")
-      return
+      toast.error("Missing required information");
+      return;
     }
 
     if (!validateForm()) {
-      toast.error("Please fix the form errors before submitting")
-      return
+      toast.error("Please fix the form errors before submitting");
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
       const updateData: Partial<IInterviewFormData> = {
@@ -214,34 +230,34 @@ export default function EditInterviewPage() {
         rating: formData.rating || undefined,
         location: formData.location,
         interview_time: formData.interview_time,
-        interview_type: formData.interview_type
-      }
+        interview_type: formData.interview_type,
+      };
 
       const updatedInterview = await updateInterview({
         interviewId,
         interviewData: updateData,
-      })
+      });
 
       if (updatedInterview) {
-        toast.success("Interview updated successfully!")
-        router.push(`/job-interviews/${interviewId}`)
+        toast.success("Interview updated successfully!");
+        router.push(`/job-interviews/${interviewId}`);
       } else {
-        toast.error("Failed to update interview. Please try again.")
+        toast.error("Failed to update interview. Please try again.");
       }
     } catch (error) {
-      console.error("Error updating interview:", error)
-      toast.error("Failed to update interview. Please try again.")
+      console.error("Error updating interview:", error);
+      toast.error("Failed to update interview. Please try again.");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleBack = () => {
-    router.back()
-  }
+    router.back();
+  };
 
   if (!selectedInstitution || !selectedBranch) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
   if (isLoading) {
@@ -278,29 +294,32 @@ export default function EditInterviewPage() {
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="w-full h-full p-6">
       <div className="w-full space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </div>
 
         <Card className="w-full">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Users className="h-5 w-5 text-primary" />
-              </div>
               <div>
-                <CardTitle className="text-xl">Edit Interview</CardTitle>
+                <div className="flex items-center justify-start">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleBack}
+                    className="flex items-center gap-2 rounded-full aspect-square"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  <CardTitle className="text-xl">Edit Interview</CardTitle>
+                </div>
                 <p className="text-sm text-muted-foreground">
-                  Update interview details for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                {selectedBranch.branch_name} -{" "}
+                  {selectedInstitution.institution_name}
                 </p>
               </div>
             </div>
@@ -337,13 +356,14 @@ export default function EditInterviewPage() {
                   </div>
                 </div>
               )}
-
               {/* Selected Application Info */}
               selectedApplication
               {/* Selected Stage Info */}
               {selectedStage && (
                 <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                  <h4 className="font-medium text-sm mb-2 text-green-800">Selected Interview Stage</h4>
+                  <h4 className="font-medium text-sm mb-2 text-green-800">
+                    Selected Interview Stage
+                  </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-green-700">
                     <div>
                       <p>
@@ -356,16 +376,17 @@ export default function EditInterviewPage() {
                     <div>
                       <p>
                         <span className="font-medium">Interviewer:</span>
-                        {selectedStage.interviewers_details?.[0]?.first_name} {selectedStage.interviewers_details?.[0]?.last_name}
+                        {selectedStage.interviewers_details?.[0]?.first_name}{" "}
+                        {selectedStage.interviewers_details?.[0]?.last_name}
                       </p>
                       <p>
-                        <span className="font-medium">Email:</span> {selectedStage.interviewers_details?.[0]?.email}
+                        <span className="font-medium">Email:</span>{" "}
+                        {selectedStage.interviewers_details?.[0]?.email}
                       </p>
                     </div>
                   </div>
                 </div>
               )}
-
               {/* Form Fields - Responsive Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Job Application */}
@@ -375,9 +396,13 @@ export default function EditInterviewPage() {
                   </Label>
                   <Select
                     value={formData.job_position_application.toString()}
-                    onValueChange={(value) => updateFormData("job_position_application", Number(value))}
+                    onValueChange={(value) =>
+                      updateFormData("job_position_application", Number(value))
+                    }
                   >
-                    <SelectTrigger className={errors.job_position_application ? "border-destructive" : ""}>
+                    <SelectTrigger
+                      className={errors.job_position_application ? "border-destructive" : ""}
+                    >
                       <SelectValue placeholder="Select a job application" />
                     </SelectTrigger>
                     <SelectContent>
@@ -398,5 +423,5 @@ export default function EditInterviewPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

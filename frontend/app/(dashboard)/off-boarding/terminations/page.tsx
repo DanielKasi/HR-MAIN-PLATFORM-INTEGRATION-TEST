@@ -124,7 +124,7 @@ export default function TerminationInitiationsPage() {
   }
 
   return (
-    <div className="w-full p-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Termination Initiations</h1>
@@ -136,11 +136,11 @@ export default function TerminationInitiationsPage() {
         </Button>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+      <div>
+        <CardContent className="p-0 -ml-3">
+          <div className="overflow-x-auto mt-10">
+            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+              <TableHeader className="bg-gray-50/50">
                 <TableRow>
                   <TableHead>Employee</TableHead>
                   <TableHead>Last Working Day</TableHead>
@@ -256,7 +256,7 @@ export default function TerminationInitiationsPage() {
             </div>
           )}
         </CardContent>
-      </Card>
+      </div>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>

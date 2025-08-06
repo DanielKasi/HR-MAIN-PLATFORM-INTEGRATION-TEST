@@ -38,201 +38,208 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
 
     def _extract_file_content(self, file, template_type):
         """
-        Extract formatted content from uploaded PDF or Word file as HTML.
-        Returns HTML string to preserve bold, paragraphs, numbering, etc.
+        Extract formatted content from uploaded PDF or Word file as HTML, preserving styles.
         """
         try:
             if template_type == "pdf":
                 doc = fitz.open(stream=file.read(), filetype="pdf")
                 html_content = ""
                 for page in doc:
-                    page_html = page.get_text("html")
-                    html_content += page_html + "\n"
+                    # Use 'dict' format to get detailed text blocks with styling
+                    blocks = page.get_text("dict")["blocks"]
+                    for block in blocks:
+                        if block["type"] == 0:  # Text block
+                            for line in block.get("lines", []):
+                                line_html = ""
+                                for span in line.get("spans", []):
+                                    text = span["text"].strip()
+                                    if not text:
+                                        continue
+                                    # Extract font size and styling
+                                    font_size = span.get("size", 12)
+                                    flags = span.get("flags", 0)
+                                    is_bold = flags & 2 != 0
+                                    is_italic = flags & 1 != 0
+                                    # Build HTML with inline styles
+                                    style = f"font-size: {font_size}px;"
+                                    if is_bold:
+                                        style += "font-weight: bold;"
+                                    if is_italic:
+                                        style += "font-style: italic;"
+                                    line_html += f'<span style="{style}">{text}</span>'
+                                # Check if line is centered (approximate using bounding box)
+                                bbox = line.get("bbox", [0, 0, page.rect.width, 0])
+                                page_width = page.rect.width
+                                if abs(bbox[0] + bbox[2] - page_width) < page_width * 0.1:
+                                    line_html = f'<p style="text-align: center;">{line_html}</p>'
+                                else:
+                                    line_html = f'<p>{line_html}</p>'
+                                html_content += line_html + "\n"
                 doc.close()
                 print("Raw PDF HTML content:", html_content)
-                html_content = self._clean_html(html_content)
-                return html_content
+                return self._clean_html(html_content)
 
             elif template_type == "word":
-                result = mammoth.convert_to_html(file)
+                # Use mammoth with style mapping to preserve formatting
+                style_map = """
+                    p[style-name='Title'] => h1
+                    p[style-name='Heading 1'] => h1
+                    p[style-name='Heading 2'] => h2
+                    p[style-name='Heading 3'] => h3
+                    p[style-name='Normal'] => p
+                    p[style*='center'] => p:text-center
+                    b => strong
+                    i => em
+                """
+                result = mammoth.convert_to_html(file, style_map=style_map)
                 html_content = result.value
                 if result.messages:
-                    print("Mammoth warnings:", result.messages)
+                    print("Mammoth conversion warnings:", result.messages)
                 print("Raw Word HTML content:", html_content)
-                html_content = self._clean_html(html_content)
-                return html_content
+                return self._clean_html(html_content)
 
             else:
                 raise serializers.ValidationError(f"Unsupported template type: {template_type}")
 
         except Exception as e:
+            print("Error reading file:", str(e))
             raise serializers.ValidationError(f"Error reading file: {str(e)}")
 
     def _clean_html(self, html_content):
         """
-        Clean and normalize HTML content, removing images and ensuring CKEditor compatibility.
+        Clean HTML content for CKEditor compatibility, preserving formatting and styles.
         """
         if not html_content:
-            return ""
+            return "<p></p>"
 
         print("Raw HTML before cleaning:", html_content)
         # Parse HTML with BeautifulSoup
         soup = BeautifulSoup(html_content, "html.parser")
-        # Remove all <img> tags
-        for img in soup.find_all("img"):
-            img.decompose()
-        # Convert back to string, preserving paragraph structure
-        html_content = str(soup)
 
-        # Replace <p> and <br> tags with newlines, but keep single newlines
-        html_content = re.sub(r"</p>\s*<p>", "\n", html_content)
-        html_content = re.sub(r"<br\s*/>", "\n", html_content)
-        # Remove HTML tags, keeping content
-        soup = BeautifulSoup(html_content, "html.parser")
-        text_content = soup.get_text()
-        # Normalize newlines, but avoid collapsing multiple newlines
-        text_content = re.sub(r"\n\s*\n+", "\n", text_content.strip())
-        # Wrap plain text in <p> tags if not already structured
-        if not html_content.startswith("<"):
-            html_content = f"<p>{text_content}</p>"
-        else:
-            html_content = text_content
+        # Remove unwanted tags (e.g., images, scripts, styles)
+        for tag in soup(["img", "script", "style", "meta", "link"]):
+            tag.decompose()
 
-        print("Cleaned HTML content:", html_content)
-        return html_content
+        # Preserve allowed tags and attributes
+        allowed_tags = [
+            "p", "h1", "h2", "h3", "h4", "h5", "h6", "span", "div",
+            "strong", "em", "b", "i", "u", "ul", "ol", "li", "br"
+        ]
+        allowed_attributes = ["style", "class"]
+
+        # Process tags to keep only allowed ones and attributes
+        for tag in soup.find_all(True):
+            if tag.name not in allowed_tags:
+                tag.unwrap()
+            else:
+                # Filter attributes
+                attrs = dict(tag.attrs)
+                tag.attrs.clear()
+                for attr in allowed_attributes:
+                    if attr in attrs:
+                        tag[attr] = attrs[attr]
+                # Normalize style attributes
+                if "style" in tag.attrs:
+                    styles = tag["style"].split(";")
+                    valid_styles = [
+                        s for s in styles
+                        if s.strip() and any(prop in s for prop in [
+                            "font-size", "text-align", "font-weight",
+                            "font-style", "text-decoration", "margin", "padding"
+                        ])
+                    ]
+                    tag["style"] = ";".join(valid_styles) if valid_styles else None
+
+        # Ensure content is wrapped in a valid root element
+        if not soup.find(["p", "div", "h1", "h2", "h3", "ul", "ol"]):
+            soup = BeautifulSoup(f"<p>{soup.get_text()}</p>", "html.parser")
+
+        # Map mammoth's custom classes to inline styles
+        for tag in soup.find_all(class_="text-center"):
+            tag["style"] = (tag.get("style", "") + ";text-align: center;").lstrip(";")
+            tag["class"] = [c for c in tag.get("class", []) if c != "text-center"]
+
+        # Convert to string, ensuring clean output
+        cleaned_html = str(soup).strip()
+        print("Cleaned HTML content:", cleaned_html)
+        return cleaned_html if cleaned_html else "<p></p>"
 
     def _extract_placeholders(self, content):
         """
-        Extract placeholders from HTML content, handling various formats and apostrophes.
+        Extract placeholders from HTML content, handling various formats and underscores.
         """
         if not content:
             return []
 
-        placeholders = []
-        print("Raw content before BeautifulSoup:", content)
+        placeholders = set()
+        print("Raw content for placeholder extraction:", content)
+
         # Parse HTML with BeautifulSoup
         soup = BeautifulSoup(content, "html.parser")
+        text_content = soup.get_text(separator=" ", strip=True)
 
-        # Extract text from each <p> tag to preserve line boundaries
-        lines = []
-        for p in soup.find_all("p"):
-            text = p.get_text(separator=" ").strip()
-            if text:
-                lines.append(text)
-        print("Lines from <p> tags:", lines)
-
-        # Merge lines that belong together (e.g., labels with underscores)
-        merged_lines = []
-        temp_line = ""
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-            # If the line contains underscores, merge with previous non-empty line
-            if re.search(r"_{10,}", line):
-                if temp_line:
-                    merged_lines.append(temp_line + " " + line)
-                    temp_line = ""
-                else:
-                    merged_lines.append(line)
-            # If the line ends with a colon or is a likely label, hold it
-            elif line.endswith(":") or re.match(r"[\w\s\'-:]+$", line):
-                if temp_line:
-                    temp_line += " " + line
-                else:
-                    temp_line = line
-            else:
-                if temp_line:
-                    merged_lines.append(temp_line)
-                    temp_line = ""
-                merged_lines.append(line)
-        if temp_line:
-            merged_lines.append(temp_line)
-        print("Merged lines:", merged_lines)
-
-        # Define placeholder patterns, supporting single-word placeholders
+        # Define placeholder patterns
         placeholder_patterns = [
             r"\{\{[\w\s\'-]+\}\}",  # {{variable_name}} or {{Employee's Name}}
-            r"<<[\w\s\'-]+>>",  # <<variable_name>> or <<Employee's Name>>
+            r"<<[\w\s\'-]+>>",      # <<variable_name>> or <<Employee's Name>>
             r"\[\[[\w\s\'-]+\]\]",  # [[variable_name]] or [[Employee's Name]]
-            r"\[[\w\s\'-]*\w+\]",  # [variable_name] or [Parent]
-            r"_{10,}",  # ___________________
+            r"\[[\w\s\'-]*\w+\]",   # [variable_name] or [Parent]
+            r"_{10,}"               # ___________________
         ]
 
-        # Combine patterns into a single regex for the entire content
-        text_content = "\n".join(merged_lines)
+        # Extract placeholders from text content
         combined_pattern = "|".join(f"({pattern})" for pattern in placeholder_patterns)
-        all_matches = re.findall(combined_pattern, text_content)
-        # Flatten matches
-        matches = [match for group in all_matches for match in group if match]
-        print("All matched placeholders:", matches)
+        matches = re.findall(combined_pattern, text_content)
+        matches = [match for group in matches for match in group if match]
+        print("Matched placeholders:", matches)
 
-        # Handle underscore placeholders
-        for line in merged_lines:
-            line_stripped = line.strip()
-            print("Processing line:", line_stripped)
-            # Match text before underscores, requiring at least one word
-            match = re.search(r"([\w\s\'-]+)\s*:?\s*_{10,}", line_stripped, re.IGNORECASE)
-            print(f"Regex match for '{line_stripped}':", match.groups() if match else None)
+        # Process underscore placeholders
+        for tag in soup.find_all(["p", "div", "li", "span"]):
+            line = tag.get_text(separator=" ", strip=True)
+            if not line:
+                continue
+            # Match text before underscores (e.g., "Name: ________")
+            match = re.search(r"([\w\s\'-]+)\s*:?\s*_{10,}", line, re.IGNORECASE)
             if match:
                 phrase = match.group(1).strip()
-                print("Found underscore placeholder phrase:", phrase)
-                placeholder_name = (
-                    "{{" + re.sub(r"\s+", "_", phrase.replace("'", "")) + "}}"
-                )
-                if placeholder_name not in placeholders:
-                    placeholders.append(placeholder_name)
-                    print("Added underscore placeholder:", placeholder_name)
+                placeholder_name = "{{" + re.sub(r"\s+", "_", phrase.replace("'", "")) + "}}"
+                placeholders.add(placeholder_name)
+                print("Added underscore placeholder:", placeholder_name)
 
-        # Handle special cases, but avoid overriding underscore placeholders
+        # Handle special cases
         special_cases = ["initials", "signature", "days", "state"]
-        for line in merged_lines:
-            line_lower = line.strip().lower()
-            for special in special_cases:
-                # Only add special case if not part of an underscore placeholder
-                if special in line_lower and f"{{{{{special}}}}}" not in placeholders:
-                    underscore_match = re.search(r"([\w\s\'-]+)\s*:?\s*_{10,}", line_lower, re.IGNORECASE)
-                    if underscore_match and special in underscore_match.group(1).lower():
-                        print(f"Skipping special case '{special}' as it's part of underscore placeholder")
-                        continue
-                    placeholders.append(f"{{{{{special}}}}}")
-                    print("Added special case placeholder:", f"{{{{{special}}}}}")
+        for special in special_cases:
+            if special.lower() in text_content.lower():
+                placeholder_name = f"{{{{{special}}}}}"
+                placeholders.add(placeholder_name)
+                print("Added special case placeholder:", placeholder_name)
 
-        # Handle other placeholder formats
+        # Process other placeholder formats
         for match in matches:
             if not re.match(r"_{10,}", match):
                 cleaned_name = re.sub(r"[\{\}<>\[\]]+", "", match).strip()
-                normalized_name = (
-                    "{{" + re.sub(r"\s+", "_", cleaned_name.replace("'", "")) + "}}"
-                )
-                if normalized_name not in placeholders:
-                    placeholders.append(normalized_name)
-                    print("Added normalized placeholder:", normalized_name)
+                normalized_name = "{{" + re.sub(r"\s+", "_", cleaned_name.replace("'", "")) + "}}"
+                placeholders.add(normalized_name)
+                print("Added normalized placeholder:", normalized_name)
 
-        print("Final placeholders:", placeholders)
-        return list(set(placeholders))
+        print("Final placeholders:", list(placeholders))
+        return list(placeholders)
 
     def validate(self, data):
-        template_type = data.get(
-            "template_type", self.instance.template_type if self.instance else None
-        )
+        template_type = data.get("template_type", self.instance.template_type if self.instance else None)
         file = data.get("file")
         content = data.get("content")
 
         if template_type in ("pdf", "word"):
             if not file and not self.instance:
-                raise serializers.ValidationError(
-                    "File is required for PDF or Word Document templates."
-                )
+                raise serializers.ValidationError("File is required for PDF or Word Document templates.")
             if file:
                 if template_type == "pdf" and not file.name.endswith(".pdf"):
                     raise serializers.ValidationError("File must be a PDF.")
                 if template_type == "word" and not file.name.endswith((".docx", ".doc")):
                     raise serializers.ValidationError("File must be a Word document.")
         elif template_type == "text" and not content and not self.instance:
-            raise serializers.ValidationError(
-                "Content is required for Rich Text templates."
-            )
+            raise serializers.ValidationError("Content is required for Rich Text templates.")
 
         return data
 
@@ -244,39 +251,27 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
         if template_type in ("pdf", "word") and file:
             validated_data["content"] = self._extract_file_content(file, template_type)
         else:
-            validated_data["content"] = content or ""
+            validated_data["content"] = content or "<p></p>"
 
-        validated_data["placeholders"] = self._extract_placeholders(
-            validated_data["content"]
-        )
-
+        validated_data["placeholders"] = self._extract_placeholders(validated_data["content"])
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         """
-        Update the DocumentTemplate instance, ensuring content and placeholders are extracted
-        when a new file is uploaded or content is provided.
+        Update the DocumentTemplate instance, ensuring content and placeholders are extracted.
         """
         template_type = validated_data.get("template_type", instance.template_type)
         file = validated_data.get("file")
-        content = data.get("content")
+        content = validated_data.get("content")
 
-        # Handle content update
         if template_type in ("pdf", "word") and file:
-            # New file uploaded: extract content from the file
             validated_data["content"] = self._extract_file_content(file, template_type)
         elif template_type == "text" and content is not None:
-            # Text template with new content provided: use provided content
             validated_data["content"] = content
         else:
-            # No new file or content: preserve existing content
             validated_data["content"] = instance.content
 
-        # Extract placeholders from the updated content
-        validated_data["placeholders"] = self._extract_placeholders(
-            validated_data["content"]
-        )
-
+        validated_data["placeholders"] = self._extract_placeholders(validated_data["content"])
         return super().update(instance, validated_data)
 
 

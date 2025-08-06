@@ -7,8 +7,6 @@ import {
   Store,
   Building2,
   Mail,
-  Phone,
-  PhoneCall,
   Badge,
   Check,
   ChevronLeft,
@@ -62,11 +60,6 @@ interface DefaultJobPosition {
   description: string;
 }
 
-interface DefaultDepartment {
-  name: string;
-  description: string;
-  job_positions: DefaultJobPosition[];
-}
 
 interface OrganisationFormData {
   institutionName: string;
@@ -484,7 +477,7 @@ export default function CreateOrganisationWizard() {
             <PhoneNumberInput
               label="Primary Phone Number"
               required
-              value={firstPhone.phoneNumber}
+              value={firstPhone.phoneNumber || ""}
               country={firstPhone.country}
               onChange={setFirstPhone}
             />
@@ -492,7 +485,7 @@ export default function CreateOrganisationWizard() {
             <PhoneNumberInput
               label="Secondary Phone Number (Optional)"
               required={false}
-              value={secondPhone.phoneNumber}
+              value={secondPhone.phoneNumber || ""}
               country={secondPhone.country}
               onChange={setSecondPhone}
             />

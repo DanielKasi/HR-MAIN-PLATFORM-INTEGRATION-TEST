@@ -31,6 +31,7 @@ import {
   BookAIcon,
   Landmark,
   CreditCard,
+  LampDesk,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import ProtectedComponent from "@/components/ProtectedComponent";
@@ -170,15 +171,7 @@ export default function AdminPage() {
               <h2 className="text-lg font-semibold mb-6">Organization Management</h2>
               <Separator className="my-6" />
               <div className="flex flex-col items-start justify-center gap-6">
-                <div className="space-y-4">
-                  <Link
-                    href="#"
-                    className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
-                  >
-                    <Cog className="w-5 h-5 text-gray-500" />
-                    <span>Organization Settings</span>
-                  </Link>
-                </div>
+
                 <div className="">
                   <Link
                     href="/branches"
@@ -237,6 +230,16 @@ export default function AdminPage() {
                   >
                     <CreditCard className="w-5 h-5 text-gray-500" />
                     <span>Bank Accounts</span>
+                  </Link>
+
+                </div>
+                <div className="">
+                  <Link
+                    href="/admin/working-days"
+                    className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+                  >
+                    <LampDesk className="w-5 h-5 text-gray-500" />
+                    <span>Working days</span>
                   </Link>
 
                 </div>

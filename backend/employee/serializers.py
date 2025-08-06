@@ -29,8 +29,9 @@ from io import BytesIO
 from django.core.files.base import ContentFile
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
-
-
+from settings.serializers import SystemDaySerializer
+from settings.models import SystemDay
+from .models import EmployeeWorkingDays
 
 
 class EmployeeTypeSerializer(serializers.ModelSerializer):
@@ -54,6 +55,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
     selected_branches = serializers.ListField(
         child=serializers.IntegerField(), write_only=True, required=False
     )
+    employee_working_days = serializers.SerializerMethodField()
 
     class Meta:
         model = Employee
@@ -171,7 +173,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             try:
                 from .models import (
                     UserRole,
-                )  # Import UserRole model here to avoid circular import issues
+                )
 
                 user_roles = UserRole.objects.filter(user=obj.user).select_related(
                     "role"
@@ -204,23 +206,87 @@ class EmployeeSerializer(serializers.ModelSerializer):
             }
         return None
 
+    def get_employee_working_days(self, obj):
+        try:
+            working_days = EmployeeWorkingDays.objects.get(employee=obj)
+            return EmployeeWorkingDaysSerializer(working_days).data
+        except EmployeeWorkingDays.DoesNotExist:
+            return None
+
     def to_representation(self, instance):
         """Override to include department and position names in the main fields"""
         data = super().to_representation(instance)
 
-        # Replace department ID with department object containing name
         if data["department_details"]:
             data["department"] = data["department_details"]
 
-        # Replace position ID with position object containing name
         if data["position_details"]:
             data["position"] = data["position_details"]
 
-        # Remove the separate detail fields from final output
         data.pop("department_details", None)
         data.pop("position_details", None)
 
         return data
+
+
+class EmployeeWorkingDaysSerializer(serializers.ModelSerializer):
+    days = serializers.PrimaryKeyRelatedField(
+        queryset=SystemDay.objects.all(),
+        many=True,
+    )
+
+    class Meta:
+        model = EmployeeWorkingDays
+        fields = "__all__"
+        read_only_fields = ["id", "employee"]
+
+    def validate(self, data):
+        selected_days = data.get("days")
+        instance = self.instance
+        employee = data.get("employee") or (instance.employee if instance else None)
+
+        if (
+            not employee
+            or not employee.department
+            or not employee.department.institution
+        ):
+            raise serializers.ValidationError(
+                "Employee must belong to a department and institution."
+            )
+
+        institution = employee.department.institution
+
+        if not hasattr(institution, "working_days"):
+            raise serializers.ValidationError(
+                "Institution does not have working days defined."
+            )
+
+        allowed_days = institution.working_days.days.all()
+
+        for day in selected_days:
+            if day not in allowed_days:
+                raise serializers.ValidationError(
+                    f"{day.day_name} is not a valid working day for this institution."
+                )
+
+        return data
+
+    def update(self, instance, validated_data):
+        days = validated_data.pop("days", None)
+
+        if days is not None:
+            instance.days.set(days)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep["days"] = SystemDaySerializer(instance.days.all(), many=True).data
+        return rep
 
 
 class EmployeeAttendanceSerializer(serializers.ModelSerializer):
@@ -257,7 +323,6 @@ class EmployeeActivationSerializer(serializers.Serializer):
     date_of_joining = serializers.DateField(required=False, allow_null=True)
 
 
-
 def validate_pdf(file):
     """Validate that the file is a valid PDF."""
     print(f"Validating PDF: {file.name}")
@@ -272,9 +337,7 @@ def validate_pdf(file):
     return file
 
 
-
 class EmployeeContractSerializer(serializers.ModelSerializer):
-
 
     applicant = serializers.PrimaryKeyRelatedField(
         queryset=JobAdvertApplication.objects.all(), required=False, allow_null=True
@@ -290,7 +353,6 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
         validators=[FileExtensionValidator(allowed_extensions=["pdf"]), validate_pdf],
         required=False,
     )
-
 
     class Meta:
         model = EmployeeContract
@@ -341,7 +403,6 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
-
         # Save the instance to persist signed_contract
         instance.save()
 
@@ -354,7 +415,6 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         from recruitment.serializers import JobAdvertApplicationSerializer
-
 
         rep = super().to_representation(instance)
         rep["applicant"] = (

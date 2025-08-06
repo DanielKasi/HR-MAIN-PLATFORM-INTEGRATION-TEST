@@ -9,27 +9,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { CheckCircle, AlertCircle, Search, Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, ChevronLeft, ChevronRight, MoreVertical } from "lucide-react"
+  AlertCircle,
+  Search,
+  Plus,
+  Edit,
+  Trash2,
+  Loader2,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  MoreVertical,
+} from "lucide-react"
 import { toast } from "sonner"
 
 // Import your API functions and types
 import { getWorkTypes, updateWorkType, deleteWorkType, createWorkType } from "@/lib/utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import type { IWorkType, IWorkTypeFormData } from "@/app/types/types.utils"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
+import { TableSkeleton } from "@/components/common/table-skeleton"
 
 interface WorkTypeModalProps {
   isOpen: boolean
@@ -40,7 +43,7 @@ interface WorkTypeModalProps {
   existingTypes: IWorkType[]
 }
 
-// Employee Type Form Modal Component
+// Work Type Form Modal Component
 function WorkTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting, existingTypes }: WorkTypeModalProps) {
   const [formData, setFormData] = useState<IWorkTypeFormData>({
     name: "",
@@ -80,23 +83,19 @@ function WorkTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting, exi
     }
 
     const duplicateName = existingTypes.find(
-      (type) =>
-        type.name.toLowerCase() === formData.name?.toLowerCase() &&
-        type.id !== editingType?.id
+      (type) => type.name.toLowerCase() === formData.name?.toLowerCase() && type.id !== editingType?.id,
     )
     if (duplicateName) {
-      newErrors.name = "An work type with this name already exists"
+      newErrors.name = "A work type with this name already exists"
     }
 
     // Check for duplicate codes (excluding current editing item)
     if (formData.code?.trim()) {
       const duplicateCode = existingTypes.find(
-        (type) =>
-          type.code?.toLowerCase() === formData.code?.toLowerCase() &&
-          type.id !== editingType?.id
+        (type) => type.code?.toLowerCase() === formData.code?.toLowerCase() && type.id !== editingType?.id,
       )
       if (duplicateCode) {
-        newErrors.code = "An work type with this code already exists"
+        newErrors.code = "A work type with this code already exists"
       }
     }
 
@@ -129,20 +128,20 @@ function WorkTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting, exi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] mx-4 sm:mx-0 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editingType ? "Edit Work Type" : "Create Work Type"}</DialogTitle>
-          <DialogDescription>
-            {editingType
-              ? "Update the work type information below."
-              : "Add a new work type to your organization."}
+          <DialogTitle className="text-lg sm:text-xl">
+            {editingType ? "Edit Work Type" : "Create Work Type"}
+          </DialogTitle>
+          <DialogDescription className="text-sm sm:text-base">
+            {editingType ? "Update the work type information below." : "Add a new work type to your organization."}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-2">
-              <Label htmlFor="name">
+              <Label htmlFor="name" className="text-sm sm:text-base">
                 Name <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -150,42 +149,52 @@ function WorkTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting, exi
                 value={formData.name || ""}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 maxLength={100}
-                className={errors.name ? "border-red-500" : ""}
+                className={`text-sm sm:text-base ${errors.name ? "border-red-500" : ""}`}
+                placeholder="e.g., Remote, On-site, Hybrid"
               />
+              {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="code">Code</Label>
+              <Label htmlFor="code" className="text-sm sm:text-base">
+                Code
+              </Label>
               <Input
                 id="code"
                 value={formData.code || ""}
                 onChange={(e) => handleInputChange("code", e.target.value.toUpperCase())}
                 maxLength={10}
-                className={errors.code ? "border-red-500" : ""}
+                className={`text-sm sm:text-base ${errors.code ? "border-red-500" : ""}`}
+                placeholder="e.g., RMT, ONS"
               />
+              {errors.code && <p className="text-xs text-red-500">{errors.code}</p>}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description" className="text-sm sm:text-base">
+              Description
+            </Label>
             <Textarea
               id="description"
               value={formData.description || ""}
               onChange={(e) => handleInputChange("description", e.target.value)}
               placeholder="Describe this work type..."
-              className="min-h-[100px] resize-none"
+              className="min-h-[80px] sm:min-h-[100px] resize-none text-sm sm:text-base"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-4 pt-4">
-
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 sm:gap-4 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="w-full sm:w-auto text-sm bg-transparent"
+            >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-            >
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto text-sm">
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {isSubmitting ? "Saving..." : editingType ? "Update Work Type" : "Create Work Type"}
             </Button>
@@ -196,7 +205,7 @@ function WorkTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting, exi
   )
 }
 
-// Employee Type Details Modal
+// Work Type Details Modal
 interface WorkTypeDetailsModalProps {
   isOpen: boolean
   onClose: () => void
@@ -208,23 +217,21 @@ function WorkTypeDetailsModal({ isOpen, onClose, employeeType }: WorkTypeDetails
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] mx-4 sm:mx-0 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5" />
+          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
             Work Type Details
           </DialogTitle>
-          <DialogDescription>
-            View the details of this work type
-          </DialogDescription>
+          <DialogDescription className="text-sm sm:text-base">View the details of this work type</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-6">
+        <div className="space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:gap-6">
             <div className="space-y-2">
               <Label className="text-sm font-medium text-gray-700">Name</Label>
               <div className="p-3 bg-gray-50 rounded-md border">
-                <span className="font-medium">{employeeType.name}</span>
+                <span className="font-medium text-sm sm:text-base">{employeeType.name}</span>
               </div>
             </div>
 
@@ -232,22 +239,25 @@ function WorkTypeDetailsModal({ isOpen, onClose, employeeType }: WorkTypeDetails
               <Label className="text-sm font-medium text-gray-700">Code</Label>
               <div className="p-3 bg-gray-50 rounded-md border">
                 {employeeType.code ? (
-                  <Badge variant="outline" className="border-orange-200 bg-orange-50 text-orange-700">
+                  <Badge
+                    variant="outline"
+                    className="border-orange-200 bg-orange-50 text-orange-700 text-xs sm:text-sm"
+                  >
                     {employeeType.code}
                   </Badge>
                 ) : (
-                  <span className="text-gray-400 italic">No code assigned</span>
+                  <span className="text-gray-400 italic text-sm">No code assigned</span>
                 )}
               </div>
             </div>
 
             <div className="space-y-2">
               <Label className="text-sm font-medium text-gray-700">Description</Label>
-              <div className="p-3 bg-gray-50 rounded-md border min-h-[80px]">
+              <div className="p-3 bg-gray-50 rounded-md border min-h-[60px] sm:min-h-[80px]">
                 {employeeType.description ? (
-                  <span className="text-gray-700">{employeeType.description}</span>
+                  <span className="text-gray-700 text-sm sm:text-base">{employeeType.description}</span>
                 ) : (
-                  <span className="text-gray-400 italic">No description provided</span>
+                  <span className="text-gray-400 italic text-sm">No description provided</span>
                 )}
               </div>
             </div>
@@ -255,7 +265,9 @@ function WorkTypeDetailsModal({ isOpen, onClose, employeeType }: WorkTypeDetails
         </div>
 
         <div className="flex justify-end pt-4">
-          <Button onClick={onClose}>Close</Button>
+          <Button onClick={onClose} className="text-sm">
+            Close
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -268,7 +280,7 @@ export default function WorkTypeManagement() {
   const [workTypes, setWorkTypes] = useState<IWorkType[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [loading, setLoading] = useState(true)
-  const [workTypeToDelete, setWorkTypeToDelete] = useState<IWorkType | null>(null);
+  const [workTypeToDelete, setWorkTypeToDelete] = useState<IWorkType | null>(null)
   const [isDeleting, setIsDeleting] = useState<boolean>(false)
 
   // Pagination states
@@ -301,8 +313,7 @@ export default function WorkTypeManagement() {
     setCurrentPage(1)
   }
 
-
-  // Fetch employee types on component mount
+  // Fetch work types on component mount
   useEffect(() => {
     if (selectedInstitution?.id) {
       fetchWorkTypes()
@@ -358,12 +369,8 @@ export default function WorkTypeManagement() {
             return updated
           })
 
-          setTimeout(() => {
-          }, 100)
-
           toast.success("Work type created successfully!")
         } else {
-
           setSearchTerm("")
           setCurrentPage(1)
           await fetchWorkTypes()
@@ -371,7 +378,7 @@ export default function WorkTypeManagement() {
         }
       }
     } catch (error) {
-      toast.error(`Failed to ${editingType ? 'update' : 'create'} work type`)
+      toast.error(`Failed to ${editingType ? "update" : "create"} work type`)
       throw error
     } finally {
       setIsSubmitting(false)
@@ -409,7 +416,7 @@ export default function WorkTypeManagement() {
     } catch (error) {
       toast.error("Failed to delete work type")
     } finally {
-      setIsDeleting(false);
+      setIsDeleting(false)
       setWorkTypeToDelete(null)
     }
   }
@@ -426,194 +433,229 @@ export default function WorkTypeManagement() {
 
   if (!selectedInstitution) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64 p-4">
         <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">Please select an institution to manage work types.</p>
+          <AlertCircle className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600 text-xs sm:text-sm lg:text-base">
+            Please select an institution to manage work types.
+          </p>
         </div>
       </div>
     )
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Employee Types List */}
-      <Card className="w-full bg-white shadow-sm border border-gray-200">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Work Types</CardTitle>
-              <CardDescription>Manage different work types of employees in your organization</CardDescription>
+  if (loading) {
+    return (
+      <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+        <Card className="h-[calc(100vh-2rem)] shadow-lg">
+          <CardHeader className="border-b p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-8 items-start sm:items-center">
+              <div className="flex items-center justify-start gap-4">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="space-y-2">
+                  <div className="h-5 sm:h-6 bg-gray-200 rounded w-48 sm:w-64 animate-pulse"></div>
+                  <div className="h-3 sm:h-4 bg-gray-200 rounded w-32 sm:w-48 animate-pulse"></div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <div className="h-8 w-24 sm:h-10 sm:w-32 bg-gray-200 rounded animate-pulse"></div>
+              </div>
             </div>
-            <Button onClick={handleCreate} >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Work Type
-            </Button>
-          </div>
-        </CardHeader>
+          </CardHeader>
+          <TableSkeleton rows={10} columns={3} />
+        </Card>
+      </div>
+    )
+  }
 
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative flex-1 max-w-sm">
+  return (
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white -ml-4 rounded-lg py-8">
+      {/* Work Types List */}
+      <div className="w-full bg-white">
+        <div className="mb-6">
+          <div className="mb-6">
+            <div>
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold">Work Types</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">
+                Manage different work types of employees in your organization
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-12">
+            <div className="relative w-[36rem]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                placeholder="Search work types..."
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-200">
-              {filteredTypes.length} type{filteredTypes.length !== 1 ? "s" : ""}
-              {/* {totalPages > 1 && (
-                <span className="ml-1">
-                  • Page {currentPage} of {totalPages}
-                </span>
-              )} */}
-            </Badge>
+             <div className="ml-auto">
+              <Button onClick={handleCreate} className="w-full sm:w-auto text-sm">
+                <Plus className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Add Work Type</span>
+                <span className="sm:hidden">Add Type</span>
+              </Button>
+            </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-            {loading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
-                  <span className="text-gray-600">Loading work types...</span>
+          <div className="overflow-x-auto">
+            <div className="min-w-[600px]">
+              {loading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
+                    <span className="text-gray-600 text-xs sm:text-sm lg:text-base">Loading work types...</span>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50 border-b border-gray-200">
-                    <TableHead className="font-semibold text-gray-900 py-4 px-6">Name</TableHead>
-                    <TableHead className="font-semibold text-gray-900 py-4 px-6">Description</TableHead>
-                    <TableHead className="font-semibold text-gray-900 py-4 px-6 w-[100px] text-center">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedTypes.length === 0 ? (
+              ) : (
+                <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0 mt-12">
+                  <TableHeader className="bg-gray-50/50">
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-12 text-gray-500 bg-white">
-                        <div className="flex flex-col items-center gap-2">
-                          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2">
-                            <Search className="h-6 w-6 text-gray-400" />
-                          </div>
-                          {searchTerm ? "No work types found matching your search." : "No work types found."}
-                          {!searchTerm && (
-                            <Button
-                              onClick={handleCreate}
-                              variant="outline"
-                              size="sm"
-                              className="mt-2 border-orange-300 text-orange-700 hover:bg-orange-50 bg-transparent"
-                            >
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add your first work type
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
+                      <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm lg:text-base">
+                        Name
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm lg:text-base">
+                        Description
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 w-[80px] sm:w-[100px] text-center text-xs sm:text-sm lg:text-base">
+                        Actions
+                      </TableHead>
                     </TableRow>
-                  ) : (
-                    paginatedTypes.map((type, index) => (
-                      <TableRow
-                        key={type.id}
-                        className={`
-                          bg-white hover:bg-gray-50 transition-colors duration-150 border-b border-gray-100 last:border-b-0
-                          ${(startIndex + index) % 2 === 0 ? "bg-white" : "bg-gray-50/30"}
-                        `}
-                      >
-                        <TableCell className="py-4 px-6">
-                          <div className="font-medium text-gray-900">{type.name}</div>
-                        </TableCell>
-                        <TableCell className="py-4 px-6 max-w-md">
-                          <div className="text-gray-700 leading-relaxed">
-                            {type.description ? (
-                              <span className="line-clamp-2">{type.description}</span>
-                            ) : (
-                              <span className="text-gray-400 italic">No description provided</span>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedTypes.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-8 sm:py-12 text-gray-500 bg-white">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                              <Search className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
+                            </div>
+                            <span className="text-xs sm:text-sm lg:text-base">
+                              {searchTerm ? "No work types found matching your search." : "No work types found."}
+                            </span>
+                            {!searchTerm && (
+                              <Button
+                                onClick={handleCreate}
+                                variant="outline"
+                                size="sm"
+                                className="mt-2 border-orange-300 text-orange-700 hover:bg-orange-50 bg-transparent text-xs sm:text-sm lg:text-base"
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add your first work type
+                              </Button>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="py-4 px-6 text-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
-                                disabled={workTypeToDelete?.id === type.id}
-                              >
-                                {workTypeToDelete?.id === type.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
-                                ) : (
-                                  <MoreVertical className="h-4 w-4 text-gray-600" />
-                                )}
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48 bg-white border border-gray-200 shadow-lg">
-                              <DropdownMenuItem
-                                onClick={() => handleView(type)}
-                                className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
-                              >
-                                <Eye className="h-4 w-4 mr-3 text-gray-500" />
-                                View details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleEdit(type)}
-                                className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
-                              >
-                                <Edit className="h-4 w-4 mr-3 text-gray-500" />
-                                Edit work type
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => setWorkTypeToDelete(type)}
-                                className="flex items-center px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
-                              >
-                                <Trash2 className="h-4 w-4 mr-3 text-red-500" />
-                                Delete work type
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            )}
+                    ) : (
+                      paginatedTypes.map((type, index) => (
+                        <TableRow
+                          key={type.id}
+                          className="bg-white hover:bg-gray-50 transition-colors duration-150"
+                        >
+                          <TableCell className="py-3 sm:py-4 px-4 sm:px-6">
+                            <div className="font-medium text-gray-900 text-xs sm:text-sm lg:text-base">
+                              {type.name}
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3 sm:py-4 px-4 sm:px-6 max-w-xs sm:max-w-md">
+                            <div className="text-gray-700 leading-relaxed text-xs sm:text-sm lg:text-base">
+                              {type.description ? (
+                                <span className="line-clamp-2">{type.description}</span>
+                              ) : (
+                                <span className="text-gray-400 italic">No description provided</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3 sm:py-4 px-4 sm:px-6 text-center">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-gray-100 rounded-full"
+                                  disabled={workTypeToDelete?.id === type.id}
+                                >
+                                  {workTypeToDelete?.id === type.id ? (
+                                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin text-gray-600" />
+                                  ) : (
+                                    <MoreVertical className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
+                                  )}
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                className="w-40 sm:w-48 bg-white border border-gray-200 shadow-lg"
+                              >
+                                <DropdownMenuItem
+                                  onClick={() => handleView(type)}
+                                  className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm lg:text-base"
+                                >
+                                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
+                                  View details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleEdit(type)}
+                                  className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm lg:text-base"
+                                >
+                                  <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
+                                  Edit work type
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => setWorkTypeToDelete(type)}
+                                  className="flex items-center px-2 sm:px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer text-xs sm:text-sm lg:text-base"
+                                >
+                                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-red-500" />
+                                  Delete work type
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
           </div>
 
-          {/* Pagination Controls */}
+          {/* Responsive Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row items-center justify-between py-4 gap-4">
+              <div className="flex items-center gap-2 text-xs sm:text-sm lg:text-base text-gray-600 order-2 sm:order-1">
                 <span>
-                  Showing {startIndex + 1} to {Math.min(endIndex, filteredTypes.length)} of {filteredTypes.length} results
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredTypes.length)} of {filteredTypes.length}{" "}
+                  results
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2 overflow-x-auto">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1 text-xs px-2 sm:px-3"
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
+                  <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Previous</span>
                 </Button>
 
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNumber;
+                    let pageNumber
                     if (totalPages <= 5) {
-                      pageNumber = i + 1;
+                      pageNumber = i + 1
                     } else if (currentPage <= 3) {
-                      pageNumber = i + 1;
+                      pageNumber = i + 1
                     } else if (currentPage >= totalPages - 2) {
-                      pageNumber = totalPages - 4 + i;
+                      pageNumber = totalPages - 4 + i
                     } else {
-                      pageNumber = currentPage - 2 + i;
+                      pageNumber = currentPage - 2 + i
                     }
 
                     return (
@@ -622,32 +664,33 @@ export default function WorkTypeManagement() {
                         variant={currentPage === pageNumber ? "default" : "outline"}
                         size="sm"
                         onClick={() => setCurrentPage(pageNumber)}
-                        className={`w-8 h-8 p-0 ${currentPage === pageNumber
-                          ? "bg-orange-600 hover:bg-orange-700 text-white"
-                          : "hover:bg-gray-50"
-                          }`}
+                        className={`w-6 h-6 sm:w-8 sm:h-8 p-0 text-xs ${
+                          currentPage === pageNumber
+                            ? "bg-orange-600 hover:bg-orange-700 text-white"
+                            : "hover:bg-gray-50"
+                        }`}
                       >
                         {pageNumber}
                       </Button>
-                    );
+                    )
                   })}
                 </div>
 
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1 text-xs px-2 sm:px-3"
                 >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Form Modal */}
       <WorkTypeModal
@@ -660,12 +703,8 @@ export default function WorkTypeManagement() {
       />
 
       {/* Details Modal */}
-      <WorkTypeDetailsModal
-        isOpen={showDetailsModal}
-        onClose={handleCloseDetailsModal}
-        employeeType={viewingType}
-      />
-      {workTypeToDelete &&
+      <WorkTypeDetailsModal isOpen={showDetailsModal} onClose={handleCloseDetailsModal} employeeType={viewingType} />
+      {workTypeToDelete && (
         <DeleteConfirmationDialog
           description="Are you sure you want to delete this work type? This action cannot be undone."
           isDeleting={isDeleting}
@@ -673,10 +712,11 @@ export default function WorkTypeManagement() {
           title={`Delete ${workTypeToDelete.name}`}
           onConfirm={() => handleDelete(workTypeToDelete)}
           onClose={() => {
-            setWorkTypeToDelete(null);
+            setWorkTypeToDelete(null)
             setIsDeleting(false)
-          }} />
-      }
+          }}
+        />
+      )}
     </div>
   )
 }

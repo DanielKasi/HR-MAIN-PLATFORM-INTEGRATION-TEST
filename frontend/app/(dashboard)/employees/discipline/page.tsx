@@ -40,6 +40,7 @@ import { getDisciplinaryActions, deleteDisciplinaryAction } from "@/lib/utils"
 import { transformDisciplinaryActionData, PERMISSION_CODES } from "@/app/types/types.utils"
 import { toast } from "sonner"
 import ProtectedComponent from "@/components/ProtectedComponent"
+import { TableSkeleton } from "@/components/common/table-skeleton"
 
 interface DisciplinaryAction {
   id: string
@@ -214,69 +215,104 @@ export default function DisciplinaryActionsTable({
     )
   }
 
+
+    if (isLoading) {
+      return (
+        <div className="p-2 space-y-6">
+          <Card className="h-[calc(100vh-2rem)] shadow-lg">
+            <CardHeader className="border-b">
+              <div className="flex justify-between gap-8 items-center">
+                <div className="flex items-center justify-start gap-4">
+                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="space-y-2">
+                    <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </CardHeader>
+            <TableSkeleton rows={10} columns={8} />
+          </Card>
+        </div>
+      )
+    }
+
   return (
-    <div className="w-full">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Disciplinary Actions</h1>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900">Disciplinary Actions</h1>
+           <CardDescription className="text-sm sm:text-base">Complete overview of disciplinary actions across all departments</CardDescription>
       </div>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>All Disciplinary Actions ({disciplinaryActions.length})</CardTitle>
-              <CardDescription>Complete overview of disciplinary actions across all departments</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-                Refresh
-              </Button>
-              <Button onClick={handleAddNewAction} className="bg-green-600 hover:bg-green-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Add New Action
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
+      <div >
         <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by employee or discipline type..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+          <div>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 mt-12 flex-wrap -ml-8">
+
+              {/* Left Side: Search + Filters */}
+              <div className="flex flex-col sm:flex-row gap-4 flex-wrap items-start">
+                <div className="relative w-[36rem]">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by employee or discipline type..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
+                <div className="flex items-center gap-4 flex-wrap sm:ml-4">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-48">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="dismissed">Dismissed</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={severityFilter} onValueChange={setSeverityFilter}>
+                    <SelectTrigger className="w-full sm:w-48">
+                      <SelectValue placeholder="Filter by severity" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Severities</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="critical">Critical</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Right Side: Add Button */}
+              <div className="flex justify-end items-end">
+                <Button onClick={handleAddNewAction} className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Add New Action</span>
+                  <span className="sm:hidden">Add New</span>
+                </Button>
+              </div>
+
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="dismissed">Dismissed</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={severityFilter} onValueChange={setSeverityFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by severity" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Severities</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
+        </CardContent>
+        </div>
+
+          <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-6">
+          <div className="inline-block min-w-full px-3 sm:px-4 lg:px-6">
+            <div className="overflow-x-auto mt-10 -ml-4">
+              <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                <TableHeader className="bg-gray-50/50">
                 <TableRow>
                   <TableHead className="font-semibold w-48">Employee</TableHead>
                   <TableHead className="font-semibold w-56">Type & Severity</TableHead>
@@ -372,6 +408,8 @@ export default function DisciplinaryActionsTable({
                 ))}
               </TableBody>
             </Table>
+            </div>
+            </div>
           </div>
           <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
             setIsDeleteDialogOpen(open)
@@ -422,7 +460,7 @@ export default function DisciplinaryActionsTable({
             </div>
           )}
         </CardContent>
-      </Card>
+      </div>
       {selectedAction && (
         <Dialog open={!!selectedAction} onOpenChange={() => setSelectedAction(null)}>
           <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">

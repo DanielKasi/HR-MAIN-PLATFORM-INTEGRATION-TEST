@@ -98,7 +98,7 @@ export const WebSocketProvider: React.FC<{children: React.ReactNode}> = ({childr
       return;
     }
 
-    const socket = new WebSocket(`${WS_URL}/api/ws/notifications/?token=${token}`);
+    const socket = new WebSocket(`${WS_URL}/ws/notifications/?token=${token}`);
 
     socketRef.current = socket;
 

@@ -29,8 +29,10 @@ export default function CountrySelect({
     useEffect(() => {
         if (!propCountries) {
             countryAPI.getAll()
-                .then((data) => setCountries(data))
+                .then((data) => {setCountries(data)})
                 .catch(() => setCountries([]))
+        }else{
+            setCountries(propCountries)
         }
     }, [propCountries])
 
@@ -112,7 +114,11 @@ export default function CountrySelect({
                                         }`}
                                 >
                                     <span className="text-lg">{getFlag(country.cca2)}</span>
-                                    <span className="font-medium text-sm">{country.name.common}</span>
+                                    {!compact ? 
+                                <span className="font-medium text-sm">{country.name.common}</span>:
+                                <></>    
+                                }
+                                
                                     <span className="ml-auto text-xs text-gray-400">{country.cca2}</span>
                                 </button>
                             ))

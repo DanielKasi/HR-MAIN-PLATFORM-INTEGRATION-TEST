@@ -8,6 +8,8 @@ import {selectSelectedInstitution} from "@/store/auth/selectors";
 
 import {IAttendance, IEmployee} from "@/app/types/types.utils";
 import {toast} from "sonner";
+import { TableSkeleton } from "@/components/common/table-skeleton";
+import { Card, CardHeader } from "@/components/ui/card";
 
 const AttendancePage = () => {
   const [search, setSearch] = useState("");
@@ -103,8 +105,35 @@ const AttendancePage = () => {
     );
   }
 
+
+    if (loading) {
+      return (
+        <div className="p-2 space-y-6">
+          <Card className="h-[calc(100vh-2rem)] shadow-lg">
+            <CardHeader className="border-b">
+              <div className="flex justify-between gap-8 items-center">
+                <div className="flex items-center justify-start gap-4">
+                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="space-y-2">
+                    <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </CardHeader>
+            <TableSkeleton rows={10} columns={8} />
+          </Card>
+        </div>
+      )
+    }
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="w-full">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Attendance</h1>

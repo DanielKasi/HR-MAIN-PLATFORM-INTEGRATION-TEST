@@ -1,11 +1,11 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {useState, useEffect} from "react";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
 import PhoneNumberInput from "@/components/phone-number-input";
 import CountrySelect from "@/components/common/country-select";
 import {
@@ -15,9 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {Checkbox} from "@/components/ui/checkbox";
+import {Separator} from "@/components/ui/separator";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -27,12 +27,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Upload, User, X, Loader2, Plus } from "lucide-react";
+import {Textarea} from "@/components/ui/textarea";
+import {Upload, User, X, Loader2, Plus} from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
+import {useRouter} from "next/navigation";
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution, selectAttachedInstitutions} from "@/store/auth/selectors";
 import {
   createEmployee,
   getPositions,
@@ -42,11 +42,11 @@ import {
   getWorkTypes,
   getEmployeeTypes,
 } from "@/lib/utils";
-import { useBranches } from "@/hooks/use-branches";
-import { MultiSelectBranches } from "@/components/multi-select-branches";
+import {useBranches} from "@/hooks/use-branches";
+import {MultiSelectBranches} from "@/components/multi-select-branches";
 import type {
   EmployeeFormData,
-  EmployeeFormState,
+  ICreateEmployeeForm,
   IDepartment,
   IJobPosition,
   IWorkType,
@@ -55,40 +55,44 @@ import type {
   IEmployeeTypeFormData,
   ICountry,
 } from "@/app/types/types.utils";
-import type { IUserInstitution } from "@/app/types";
-import { toast } from "sonner";
+import type {IUserInstitution} from "@/app/types";
+import {toast} from "sonner";
+import {selectEmployeeCreationForm} from "@/store/miscellaneous/selectors";
+import {useDispatch} from "react-redux";
+import {clearEmployeeForm, saveEmployeeForm} from "@/store/miscellaneous/actions";
 
 const maritalStatusOptions = [
-  { value: "single", label: "Single" },
-  { value: "married", label: "Married" },
-  { value: "divorced", label: "Divorced" },
-  { value: "widowed", label: "Widowed" },
+  {value: "single", label: "Single"},
+  {value: "married", label: "Married"},
+  {value: "divorced", label: "Divorced"},
+  {value: "widowed", label: "Widowed"},
 ];
 
 const steps = [
-  { id: 1, title: "Personal Information" },
-  { id: 2, title: "Work Information" },
-  { id: 3, title: "Financial Information" },
+  {id: 1, title: "Personal Information"},
+  {id: 2, title: "Work Information"},
+  {id: 3, title: "Financial Information"},
 ];
 
 export default function AddEmployeeForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const router = useRouter();
   const selectedInstitution = useSelector(selectSelectedInstitution);
-  const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
+  const currentEmployeeCreationForm = useSelector(selectEmployeeCreationForm);
 
   // const [institutionId, setInstitutionId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
 
-  const { branches, loading: branchesLoading, error: branchesError } = useBranches();
+  const {branches, loading: branchesLoading, error: branchesError} = useBranches();
 
   const [positions, setPositions] = useState<IJobPosition[]>([]);
   const [departments, setDepartments] = useState<IDepartment[]>([]);
   const [workTypes, setWorkTypes] = useState<IWorkType[]>([]);
   const [employeeTypes, setEmployeeTypes] = useState<IEmployeeType[]>([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [employeeProfilePicture, setEmployeeProfilePicture] = useState<File | null>(null);
 
   const [isWorkTypeModalOpen, setIsWorkTypeModalOpen] = useState(false);
   const [isEmployeeTypeModalOpen, setIsEmployeeTypeModalOpen] = useState(false);
@@ -107,7 +111,7 @@ export default function AddEmployeeForm() {
     code: "",
   });
 
-  const [formData, setFormData] = useState<EmployeeFormState>({
+  const [formData, setFormData] = useState<ICreateEmployeeForm>({
     fullname: "",
     email: "",
     phone_number: "",
@@ -134,7 +138,6 @@ export default function AddEmployeeForm() {
     emergency_contact_relationship: "",
     marital_status: "single",
     children_count: 0,
-    employee_profile_picture: null,
   });
 
   const [previewUrl, setPreviewUrl] = useState<string>("");
@@ -147,7 +150,7 @@ export default function AddEmployeeForm() {
     countryCode: string;
     phoneNumber: string;
     isValid: boolean;
-  }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
+  }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
 
   // Add state for emergency contact phone input
   const [emergencyPhoneInput, setEmergencyPhoneInput] = useState<{
@@ -155,7 +158,9 @@ export default function AddEmployeeForm() {
     countryCode: string;
     phoneNumber: string;
     isValid: boolean;
-  }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
+  }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
+
+  const dispatch = useDispatch();
 
   const showErrorToast = (message: string) => {
     toast.error(message);
@@ -170,17 +175,21 @@ export default function AddEmployeeForm() {
   }, [selectedInstitution]);
 
   useEffect(() => {
+    if (currentEmployeeCreationForm) {
+      setFormData((prev) => ({...prev, ...currentEmployeeCreationForm}));
+    };
+
+    
+  }, [currentEmployeeCreationForm]);
+
+  useEffect(() => {
     if (formData.position) {
-      const position = positions.find((p) => p.id === formData.position);
-      if (position) {
-        setFormData((prev) => ({ ...prev, department: position.department || 0 }));
-      }
     }
   }, [formData.position]);
 
   useEffect(() => {
-    setFormData(prev => ({ ...prev, selected_branches: branches.map(br => br.id) }))
-  }, [branches])
+    setFormData((prev) => ({...prev, selected_branches: branches.map((br) => br.id)}));
+  }, [branches]);
 
   const loadDropdownData = async () => {
     if (!selectedInstitution) return;
@@ -188,10 +197,10 @@ export default function AddEmployeeForm() {
     setLoadingData(true);
     try {
       const [positionsData, departmentsData, workTypesData, employeeTypesData] = await Promise.all([
-        getPositions({ institutionId: selectedInstitution.id }),
-        getDepartments({ institutionId: selectedInstitution.id }),
-        getWorkTypes({ institutionId: selectedInstitution.id }),
-        getEmployeeTypes({ institutionId: selectedInstitution.id }),
+        getPositions({institutionId: selectedInstitution.id}),
+        getDepartments({institutionId: selectedInstitution.id}),
+        getWorkTypes({institutionId: selectedInstitution.id}),
+        getEmployeeTypes({institutionId: selectedInstitution.id}),
       ]);
 
       setPositions(Array.isArray(positionsData) ? positionsData : []);
@@ -209,11 +218,37 @@ export default function AddEmployeeForm() {
     }
   };
 
+  const handleSaveLocalEmployeeCreateForm = (formValue: ICreateEmployeeForm) => {
+    dispatch(saveEmployeeForm(formValue));
+  };
+
+  const handleClearLocalEmployeeCreateForm = () => {
+    dispatch(clearEmployeeForm());
+  };
+
   const handleInputChange = (
-    field: keyof EmployeeFormState,
+    field: keyof ICreateEmployeeForm,
     value: string | boolean | File | null | number | number[],
   ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (field == "position") {
+      const position = positions.find((p) => p.id === value);
+      if (position) {
+        handleSaveLocalEmployeeCreateForm({
+          ...currentEmployeeCreationForm,
+          position: position.id,
+          department: position.department || 0,
+        } as ICreateEmployeeForm);
+      }
+    } else {
+      handleSaveLocalEmployeeCreateForm({
+        ...currentEmployeeCreationForm,
+        [field]: value,
+      } as ICreateEmployeeForm);
+    }
+  };
+
+  const handleProflePictureChange = (value: File | null) => {
+    setEmployeeProfilePicture(value);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -243,7 +278,7 @@ export default function AddEmployeeForm() {
     }
 
     try {
-      handleInputChange("employee_profile_picture", file);
+      handleProflePictureChange(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
       setUploadError(null);
@@ -263,7 +298,7 @@ export default function AddEmployeeForm() {
       URL.revokeObjectURL(previewUrl);
     }
     setPreviewUrl("");
-    handleInputChange("employee_profile_picture", null);
+    handleProflePictureChange(null);
     setUploadError(null);
     setUploadSuccess(null);
 
@@ -300,8 +335,8 @@ export default function AddEmployeeForm() {
 
       if (newWorkType) {
         setWorkTypes((prev) => [...prev, newWorkType]);
-        setFormData((prev) => ({ ...prev, work_type: newWorkType.id }));
-        setWorkTypeFormData({ name: "", description: "", code: "" });
+        setFormData((prev) => ({...prev, work_type: newWorkType.id}));
+        setWorkTypeFormData({name: "", description: "", code: ""});
         setIsWorkTypeModalOpen(false);
         showSuccessToast("Work type added successfully");
       } else {
@@ -337,8 +372,8 @@ export default function AddEmployeeForm() {
 
       if (newEmployeeType) {
         setEmployeeTypes((prev) => [...prev, newEmployeeType]);
-        setFormData((prev) => ({ ...prev, employee_type: newEmployeeType.id }));
-        setEmployeeTypeFormData({ name: "", description: "", code: "" });
+        setFormData((prev) => ({...prev, employee_type: newEmployeeType.id}));
+        setEmployeeTypeFormData({name: "", description: "", code: ""});
         setIsEmployeeTypeModalOpen(false);
         showSuccessToast("Employee type name added successfully");
       } else {
@@ -360,8 +395,8 @@ export default function AddEmployeeForm() {
 
     for (const field of requiredFields) {
       if (
-        !formData[field as keyof EmployeeFormState] ||
-        formData[field as keyof EmployeeFormState] === 0
+        !formData[field as keyof ICreateEmployeeForm] ||
+        formData[field as keyof ICreateEmployeeForm] === 0
       ) {
         setSubmitError(`Please fill in the ${field.replace("_", " ")} field`);
         return false;
@@ -384,7 +419,7 @@ export default function AddEmployeeForm() {
       case 1: // Personal Information
         const personalRequiredFields = ["fullname", "email"];
         for (const field of personalRequiredFields) {
-          if (!formData[field as keyof EmployeeFormState]) {
+          if (!formData[field as keyof ICreateEmployeeForm]) {
             setSubmitError(`Please fill in the ${field.replace("_", " ")} field`);
             return false;
           }
@@ -401,7 +436,7 @@ export default function AddEmployeeForm() {
       case 2: // Work Information
         const workRequiredFields = ["position", "department", "date_of_joining"];
         for (const field of workRequiredFields) {
-          const value = formData[field as keyof EmployeeFormState];
+          const value = formData[field as keyof ICreateEmployeeForm];
           if (!value || value === 0) {
             setSubmitError(`Please fill in the ${field.replace("_", " ")} field`);
             return false;
@@ -424,7 +459,7 @@ export default function AddEmployeeForm() {
       case 1: // Personal Information
         const personalRequiredFields = ["fullname", "email"];
         for (const field of personalRequiredFields) {
-          if (!formData[field as keyof EmployeeFormState]) {
+          if (!formData[field as keyof ICreateEmployeeForm]) {
             return false;
           }
         }
@@ -438,7 +473,7 @@ export default function AddEmployeeForm() {
       case 2: // Work Information
         const workRequiredFields = ["position", "department", "date_of_joining"];
         for (const field of workRequiredFields) {
-          const value = formData[field as keyof EmployeeFormState];
+          const value = formData[field as keyof ICreateEmployeeForm];
           if (!value || value === 0) {
             return false;
           }
@@ -456,8 +491,6 @@ export default function AddEmployeeForm() {
 
   const nextStep = async () => {
     setIsValidating(true);
-
-    // Small delay to show the validation is happening
     await new Promise((resolve) => setTimeout(resolve, 300));
 
     if (validateCurrentStep() && currentStep < steps.length) {
@@ -519,48 +552,24 @@ export default function AddEmployeeForm() {
         emergency_contact_relationship: formData.emergency_contact_relationship,
         marital_status: formData.marital_status,
         children_count: formData.children_count,
-        employee_profile_picture: formData.employee_profile_picture,
+        employee_profile_picture: employeeProfilePicture,
         selected_branches: formData.selected_branches,
       };
 
-      const result = await createEmployee({
+      await createEmployee({
         institutionId: selectedInstitution.id,
         employeeData: dataToSubmit,
       });
 
-      if (result && result.id) {
-        // Attach selected branches to the employee if any are selected
-        if (formData.selected_branches.length > 0) {
-          try {
-            await Promise.all(
-              formData.selected_branches.map((branchId) =>
-                // attachEmployeeBranch({
-                //   employeeId: result.id,
-                //   branchId: branchId,
-                //   institutionId: institutionId,
-                // }),
-                Promise.resolve(),
-              ),
-            );
-          } catch (branchError) {
-            // Still show success for employee creation, but log the branch attachment error
-            toast.warning(
-              "Employee created successfully, but some branches could not be attached.",
-            );
-          }
-        }
-
-        router.push("/employees/employee-list");
-        showSuccessToast("Employee created successfully");
-      } else {
-        setSubmitError("Failed to create employee. Please try again.");
-      }
+      handleClearLocalEmployeeCreateForm();
+      router.push("/employees/employee-list");
+      showSuccessToast("Employee created successfully");
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
           ? error.message
           : "An unknown error occurred while creating the employee.";
-      console.log("\n\n\n The error : ", error)
+      
       showErrorToast(errorMessage);
       setSubmitError(errorMessage);
     } finally {
@@ -570,18 +579,18 @@ export default function AddEmployeeForm() {
 
   // Sync main phone and country to formData
   useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
+    handleSaveLocalEmployeeCreateForm(({
+      ...currentEmployeeCreationForm,
       phone_number:
         phoneInput.countryCode && phoneInput.phoneNumber
-          ? `${phoneInput.countryCode}${phoneInput.phoneNumber}`
-          : "",
-      country: selectedCountry?.name?.common || "",
+          ? `${phoneInput.phoneNumber}`
+          : currentEmployeeCreationForm?.phone_number,
+      country: selectedCountry?.name?.common || currentEmployeeCreationForm?.country,
       emergency_contact_phone:
         emergencyPhoneInput.countryCode && emergencyPhoneInput.phoneNumber
-          ? `${emergencyPhoneInput.countryCode}${emergencyPhoneInput.phoneNumber}`
-          : "",
-    }));
+          ? `${emergencyPhoneInput.phoneNumber}`
+          : currentEmployeeCreationForm?.emergency_contact_phone,
+    } as ICreateEmployeeForm));
   }, [phoneInput, selectedCountry, emergencyPhoneInput]);
 
   const renderStep = () => {
@@ -619,7 +628,7 @@ export default function AddEmployeeForm() {
                 <div className="space-y-2">
                   <PhoneNumberInput
                     label="Phone Number"
-                    value={formData.phone_number}
+                    value={formData.phone_number|| ""}
                     country={phoneInput.country}
                     onChange={setPhoneInput}
                   />
@@ -711,7 +720,7 @@ export default function AddEmployeeForm() {
               <h4 className="text-md font-medium text-gray-700 border-b pb-2">
                 Emergency Contact Information
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2  gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="emergencyContactName">Contact Name</Label>
                   <Input
@@ -724,7 +733,7 @@ export default function AddEmployeeForm() {
                 <div className="space-y-2">
                   <PhoneNumberInput
                     label="Contact Phone"
-                    value={formData.emergency_contact_phone}
+                    value={formData.emergency_contact_phone || ""}
                     country={emergencyPhoneInput.country}
                     onChange={setEmergencyPhoneInput}
                   />
@@ -849,7 +858,7 @@ export default function AddEmployeeForm() {
                             id="workTypeName"
                             value={workTypeFormData.name}
                             onChange={(e) =>
-                              setWorkTypeFormData((prev) => ({ ...prev, name: e.target.value }))
+                              setWorkTypeFormData((prev) => ({...prev, name: e.target.value}))
                             }
                             placeholder="Enter work type name"
                           />
@@ -860,7 +869,7 @@ export default function AddEmployeeForm() {
                             id="workTypeCode"
                             value={workTypeFormData.code}
                             onChange={(e) =>
-                              setWorkTypeFormData((prev) => ({ ...prev, code: e.target.value }))
+                              setWorkTypeFormData((prev) => ({...prev, code: e.target.value}))
                             }
                             placeholder="Enter work type code (optional)"
                             maxLength={10}
@@ -888,7 +897,7 @@ export default function AddEmployeeForm() {
                           variant="outline"
                           onClick={() => {
                             setIsWorkTypeModalOpen(false);
-                            setWorkTypeFormData({ name: "", description: "", code: "" });
+                            setWorkTypeFormData({name: "", description: "", code: ""});
                           }}
                           disabled={isAddingWorkType}
                         >
@@ -965,7 +974,7 @@ export default function AddEmployeeForm() {
                             id="employeeTypeName"
                             value={employeeTypeFormData.name}
                             onChange={(e) =>
-                              setEmployeeTypeFormData((prev) => ({ ...prev, name: e.target.value }))
+                              setEmployeeTypeFormData((prev) => ({...prev, name: e.target.value}))
                             }
                             placeholder="Enter employee type name"
                           />
@@ -976,7 +985,7 @@ export default function AddEmployeeForm() {
                             id="employeeTypeCode"
                             value={employeeTypeFormData.code}
                             onChange={(e) =>
-                              setEmployeeTypeFormData((prev) => ({ ...prev, code: e.target.value }))
+                              setEmployeeTypeFormData((prev) => ({...prev, code: e.target.value}))
                             }
                             placeholder="Enter employee type code (optional)"
                             maxLength={10}
@@ -1004,7 +1013,7 @@ export default function AddEmployeeForm() {
                           variant="outline"
                           onClick={() => {
                             setIsEmployeeTypeModalOpen(false);
-                            setEmployeeTypeFormData({ name: "", description: "", code: "" });
+                            setEmployeeTypeFormData({name: "", description: "", code: ""});
                           }}
                           disabled={isAddingEmployeeType}
                         >
@@ -1158,16 +1167,18 @@ export default function AddEmployeeForm() {
               {steps.map((step, index) => (
                 <div key={step.id} className="flex items-center">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= step.id
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                      currentStep >= step.id
                         ? "bg-orange-600 text-white"
                         : "bg-gray-200 text-gray-600"
-                      }`}
+                    }`}
                   >
                     {step.id}
                   </div>
                   <span
-                    className={`ml-2 text-sm ${currentStep >= step.id ? "text-orange-600 font-medium" : "text-gray-500"
-                      }`}
+                    className={`ml-2 text-sm ${
+                      currentStep >= step.id ? "text-orange-600 font-medium" : "text-gray-500"
+                    }`}
                   >
                     {step.title}
                   </span>
@@ -1188,7 +1199,7 @@ export default function AddEmployeeForm() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-8 w-full">
               {/* Profile Picture Upload */}
               <div className="flex flex-col items-center space-y-4">
                 <div className="relative">

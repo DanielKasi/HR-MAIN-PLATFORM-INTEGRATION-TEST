@@ -24,7 +24,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -60,6 +60,7 @@ import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/a
 import { PERMISSION_CODES } from "@/app/types/types.utils";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { IUserInstitution } from "@/app/types";
+import { TableSkeleton } from "@/components/common/table-skeleton";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -576,8 +577,35 @@ const LeavePolicyComponent = () => {
     );
   }
 
+
+    if (isLoading) {
+      return (
+        <div className="p-2 space-y-6">
+          <Card className="h-[calc(100vh-2rem)] shadow-lg">
+            <CardHeader className="border-b">
+              <div className="flex justify-between gap-8 items-center">
+                <div className="flex items-center justify-start gap-4">
+                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="space-y-2">
+                    <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </CardHeader>
+            <TableSkeleton rows={10} columns={8} />
+          </Card>
+        </div>
+      )
+    }
+
   return (
-    <div className="w-full h-full p-6 space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -736,7 +764,7 @@ const LeavePolicyComponent = () => {
                   <Button
                     onClick={handleAddPolicy}
                     disabled={isSubmitting}
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                    
                   >
                     {isSubmitting ? (
                       <>
@@ -754,75 +782,9 @@ const LeavePolicyComponent = () => {
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search leave policies..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex gap-2 min-w-80">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full px-6">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <SelectValue placeholder="Filter by status" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-full px-6">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <SelectValue placeholder="Filter by category" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {leaveTypes
-                .map((type) => type.category)
-                .filter((value, index, self) => self.indexOf(value) === index)
-                .map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category.charAt(0).toUpperCase() + category.slice(1).replace("_", " ")}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Rows per Page Selector */}
-      <div className="flex justify-end">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rows per page:</span>
-          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[70px] h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZES.map((size) => (
-                <SelectItem key={size} value={size.toString()}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
+         {/* Stats Cards */}
       {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-8">
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-blue-600">{policies.length}</div>
@@ -850,6 +812,79 @@ const LeavePolicyComponent = () => {
         </div>
       )}
 
+
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-12">
+  {/* Left: Search Bar */}
+  <div className="relative sm:w-[450px]">
+    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+    <Input
+      placeholder="Search leave policies..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="pl-10 h-10 text-sm w-full"
+    />
+  </div>
+
+  {/* Center: Filters and Rows Per Page */}
+  <div className="flex flex-wrap justify-center items-center gap-4 sm:ml-auto sm:mr-auto">
+    {/* Status Filter */}
+    <Select value={statusFilter} onValueChange={setStatusFilter}>
+      <SelectTrigger className="w-[160px] h-10 text-sm px-4">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4" />
+          <SelectValue placeholder="Status" />
+        </div>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All Statuses</SelectItem>
+        <SelectItem value="active">Active</SelectItem>
+        <SelectItem value="inactive">Inactive</SelectItem>
+      </SelectContent>
+    </Select>
+
+    {/* Category Filter */}
+    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+      <SelectTrigger className="w-[180px] h-10 text-sm px-4">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4" />
+          <SelectValue placeholder="Category" />
+        </div>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All Categories</SelectItem>
+        {leaveTypes
+          .map((type) => type.category)
+          .filter((value, index, self) => self.indexOf(value) === index)
+          .map((category) => (
+            <SelectItem key={category} value={category}>
+              {category.charAt(0).toUpperCase() + category.slice(1).replace("_", " ")}
+            </SelectItem>
+          ))}
+      </SelectContent>
+    </Select>
+
+    {/* Rows per Page */}
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-muted-foreground">Rows per page:</span>
+      <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+        <SelectTrigger className="w-[70px] h-8 text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {PAGE_SIZES.map((size) => (
+            <SelectItem key={size} value={size.toString()}>
+              {size}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+</div>
+
+
+   
+   
       {/* Leave Policies Table */}
       {isLoading ? (
         <div className="space-y-4">
@@ -858,7 +893,7 @@ const LeavePolicyComponent = () => {
           ))}
         </div>
       ) : filteredPolicies.length === 0 ? (
-        <Card className="p-12 text-center">
+        <div className="p-12 text-center">
           <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No leave policies found</h3>
           <p className="text-muted-foreground mb-4">
@@ -866,10 +901,10 @@ const LeavePolicyComponent = () => {
               ? "No leave policies match your filter criteria."
               : "Get started by creating your first leave policy."}
           </p>
-        </Card>
+        </div>
       ) : (
-        <Card className="rounded-md border">
-          <Table>
+        <div className="overflow-x-auto mt-10">
+            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -984,7 +1019,7 @@ const LeavePolicyComponent = () => {
               ))}
             </TableBody>
           </Table>
-        </Card>
+        </div>
       )}
 
       {/* Clear Filters Button */}
@@ -1205,8 +1240,7 @@ const LeavePolicyComponent = () => {
               <Button
                 onClick={handleUpdatePolicy}
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
-              >
+                >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />

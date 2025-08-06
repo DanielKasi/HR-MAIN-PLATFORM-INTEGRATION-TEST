@@ -226,7 +226,7 @@ export default function JobAdvertDetailsPage() {
   const expired = isExpired(jobAdvert.expiry_date)
 
   return (
-    <div className="w-full h-full p-6">
+    <div className="grid grid-cols-1 p-1 sm:grid-cols-2 sm:p-2 lg:grid-cols-1 lg:p-8 w-full h-full">
       <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -239,22 +239,23 @@ export default function JobAdvertDetailsPage() {
                 variant="outline"
                 onClick={handleCloseAdvert}
                 disabled={isClosing}
-                className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50 px-2 py-1 text-sm sm:px-3 sm:py-2"
               >
                 {isClosing ? (
                   <>
                     <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    Closing...
+                    <span className="hidden sm:inline">Closing...</span>
                   </>
                 ) : (
                   <>
                     <X className="h-4 w-4" />
-                    Close Job Opening
+                    <span className="hidden sm:inline">Close Job Opening</span>
                   </>
                 )}
               </Button>
+
             )}
-            <Button onClick={handleEdit} className="flex items-center gap-2">
+            <Button onClick={handleEdit} className="flex items-center gap-2 px-3 py-2 text-sm">
               <Edit className="h-4 w-4" />
               Edit Job Opening
             </Button>
@@ -262,31 +263,37 @@ export default function JobAdvertDetailsPage() {
         </div>
 
         {/* Main Details Card */}
-        <Card>
+        <Card className="-ml-4">
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
-                <div className="flex items-center gap-3">
-                  <CardTitle className="text-2xl">{jobPosition?.name || "Job Opening "}</CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleViewApplications}
-                    className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
-                  >
-                    <User className="h-4 w-4" />
-                    {applicationsCount} Applications
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleViewInterviewStages}
-                    className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
-                  >
-                    <User className="h-4 w-4" />
-                    {interviewStagesCount} Interview Stages
-                  </Button>
-                </div>
+             <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+                <CardTitle className="text-2xl">{jobPosition?.name || "Job Opening"}</CardTitle>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleViewApplications}
+                  className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50 px-2 py-1 text-sm sm:px-3 sm:py-2"
+                  title={`${applicationsCount} Applications`}
+                >
+                  <User className="h-4 w-4" />
+                  <span className="hidden sm:inline">{applicationsCount} Applications</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleViewInterviewStages}
+                  className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50 px-2 py-1 text-sm sm:px-3 sm:py-2"
+                  title={`${interviewStagesCount} Interview Stages`}
+                >
+                  <User className="h-4 w-4" />
+                  <span className="hidden sm:inline">{interviewStagesCount} Interview Stages</span>
+                </Button>
+              </div>
+
+              
                 <div className="flex items-center gap-2 mt-2">
                   <Badge className={`${getStatusColor(jobAdvert.job_position_advert_status)}`}>{jobAdvert.job_position_advert_status.toUpperCase()}</Badge>
                   {expired && <Badge variant="destructive">EXPIRED</Badge>}
