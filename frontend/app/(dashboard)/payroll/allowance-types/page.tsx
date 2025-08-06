@@ -109,10 +109,108 @@ const AllowanceTypesComponent = () => {
     setEditingAllowanceType(null)
   }
 
+<<<<<<< Updated upstream
   const handleDeleteSuccess = (deletedId: number) => {
     setAllowanceTypes(allowanceTypes.filter((allowanceType) => allowanceType.id !== deletedId))
     setDeletingAllowanceType(null)
   }
+=======
+    setIsSubmitting(true);
+    try {
+      const allowanceTypeData: IAllowanceTypeFormData = {
+        name: formData.name,
+        description: formData.description,
+        is_taxable: formData.is_taxable,
+        is_active: formData.is_active,
+      };
+
+      const newAllowanceType = await createAllowanceType({
+        institutionId: selectedInstitution.id,
+        allowanceTypeData,
+      });
+
+      if (newAllowanceType) {
+        setAllowanceTypes([newAllowanceType, ...allowanceTypes]);
+        clearFilters()
+        toast.success("Allowance type created successfully");
+        resetFormData();
+        setIsAddDialogOpen(false);
+      } else {
+        toast.error("Failed to create allowance type");
+      }
+    } catch (error: any) {
+      console.error("Error creating allowance type:", error);
+      toast.error(error.message || "An error occurred while creating the allowance type");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateAllowanceType = async () => {
+    if (!editingAllowanceType) return;
+
+    if (!formData.name || !formData.description) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const allowanceTypeData: Partial<IAllowanceTypeFormData> = {
+        name: formData.name,
+        description: formData.description,
+        is_taxable: formData.is_taxable,
+        is_active: formData.is_active,
+      };
+
+      const updatedAllowanceType = await updateAllowanceType({
+        id: editingAllowanceType.id,
+        allowanceTypeData,
+      });
+
+      if (updatedAllowanceType) {
+        const updatedAllowanceTypes = allowanceTypes.map((allowanceType) =>
+          allowanceType.id === editingAllowanceType.id ? updatedAllowanceType : allowanceType
+        );
+        setAllowanceTypes(updatedAllowanceTypes);
+        clearFilters()
+        toast.success("Allowance type updated successfully");
+        resetFormData();
+        setIsEditDialogOpen(false);
+        setEditingAllowanceType(null);
+      } else {
+        toast.error("Failed to update allowance type");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred while updating the allowance type");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteAllowanceType = async () => {
+    if (!deletingAllowanceType) return;
+
+    setIsSubmitting(true);
+    try {
+      const success = await deleteAllowanceType(deletingAllowanceType.id);
+
+      if (success) {
+        setAllowanceTypes(allowanceTypes.filter((allowanceType) => allowanceType.id !== deletingAllowanceType.id));
+        toast.success("Allowance type deleted successfully");
+        setIsDeleteDialogOpen(false);
+        setDeletingAllowanceType(null);
+      } else {
+        toast.error("Failed to delete allowance type");
+      }
+    } catch (error: any) {
+      console.error("Error deleting allowance type:", error);
+      toast.error(error.message || "An error occurred while deleting the allowance type");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+>>>>>>> Stashed changes
 
   const handleEditAllowanceType = (allowanceType: IAllowanceType) => {
     setEditingAllowanceType(allowanceType)
@@ -231,7 +329,7 @@ const AllowanceTypesComponent = () => {
   }
 
   return (
-    <div className="w-full h-full p-6 space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -259,9 +357,35 @@ const AllowanceTypesComponent = () => {
         </div>
       </div>
 
+
+         {/* Stats */}
+      {!isLoading && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-12">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-blue-600">{allowanceTypes.length}</div>
+              <p className="text-xs text-muted-foreground">Total Allowance Types</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-green-600">{activeAllowanceTypes.length}</div>
+              <p className="text-xs text-muted-foreground">Active</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-red-600">{taxableAllowanceTypes.length}</div>
+              <p className="text-xs text-muted-foreground">Taxable</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
+      <div className="flex flex-col sm:flex-row gap-20 mt-12">
+        <div className="relative w-[32rem]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Search allowance types..."
@@ -285,51 +409,30 @@ const AllowanceTypesComponent = () => {
             </SelectContent>
           </Select>
         </div>
+
+             {/* Rows per Page Selector */}
+            <div className="flex justify-end">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Rows per page:</span>
+                <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                  <SelectTrigger className="w-[70px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZES.map((size) => (
+                      <SelectItem key={size} value={size.toString()}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
       </div>
 
-      {/* Rows per Page Selector */}
-      <div className="flex justify-end">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rows per page:</span>
-          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[70px] h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZES.map((size) => (
-                <SelectItem key={size} value={size.toString()}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Stats */}
-      {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-blue-600">{allowanceTypes.length}</div>
-              <p className="text-xs text-muted-foreground">Total Allowance Types</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">{activeAllowanceTypes.length}</div>
-              <p className="text-xs text-muted-foreground">Active</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-red-600">{taxableAllowanceTypes.length}</div>
-              <p className="text-xs text-muted-foreground">Taxable</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
+ 
+   
       {/* Allowance Types Table */}
       {isLoading ? (
         <div className="space-y-4">
@@ -338,7 +441,7 @@ const AllowanceTypesComponent = () => {
           ))}
         </div>
       ) : filteredAllowanceTypes.length === 0 ? (
-        <Card className="p-12 text-center">
+        <div className="p-12 text-center">
           <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No allowance types found</h3>
           <p className="text-muted-foreground mb-4">
@@ -346,11 +449,11 @@ const AllowanceTypesComponent = () => {
               ? "No allowance types match your filter criteria."
               : "Get started by creating your first allowance type."}
           </p>
-        </Card>
+        </div>
       ) : (
-        <Card className="rounded-md border">
-          <Table>
-            <TableHeader>
+           <div className="overflow-x-auto mt-10">
+            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+              <TableHeader className="bg-gray-50/50">
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Status</TableHead>
@@ -366,17 +469,6 @@ const AllowanceTypesComponent = () => {
                 <TableRow key={allowanceType.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
-                      <div
-                        className={`h-8 w-8 rounded-full ${
-                          allowanceType.is_active ? "bg-green-50" : "bg-gray-50"
-                        } flex items-center justify-center`}
-                      >
-                        <Settings
-                          className={`h-4 w-4 ${
-                            allowanceType.is_active ? "text-green-600" : "text-gray-600"
-                          }`}
-                        />
-                      </div>
                       <span>{allowanceType.name}</span>
                     </div>
                   </TableCell>
@@ -435,7 +527,7 @@ const AllowanceTypesComponent = () => {
               ))}
             </TableBody>
           </Table>
-        </Card>
+        </div>
       )}
 
       {/* Clear Filters Button */}

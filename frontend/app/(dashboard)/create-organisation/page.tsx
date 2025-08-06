@@ -477,7 +477,7 @@ export default function CreateOrganisationWizard() {
             <PhoneNumberInput
               label="Primary Phone Number"
               required
-              value={firstPhone.phoneNumber}
+              value={firstPhone.phoneNumber || ""}
               country={firstPhone.country}
               onChange={setFirstPhone}
             />
@@ -485,7 +485,7 @@ export default function CreateOrganisationWizard() {
             <PhoneNumberInput
               label="Secondary Phone Number (Optional)"
               required={false}
-              value={secondPhone.phoneNumber}
+              value={secondPhone.phoneNumber || ""}
               country={secondPhone.country}
               onChange={setSecondPhone}
             />

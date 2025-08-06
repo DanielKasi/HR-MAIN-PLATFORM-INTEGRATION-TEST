@@ -608,16 +608,6 @@ export default function OnboardPage() {
             {selectedInstitution.institution_name}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="flex items-center gap-2 w-full sm:w-auto bg-transparent"
-        >
-          <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-          <span className="sm:inline">Refresh</span>
-        </Button>
       </div>
 
       {/* Bulk Actions Bar */}

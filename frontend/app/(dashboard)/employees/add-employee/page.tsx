@@ -628,7 +628,7 @@ export default function AddEmployeeForm() {
                 <div className="space-y-2">
                   <PhoneNumberInput
                     label="Phone Number"
-                    value={formData.phone_number}
+                    value={formData.phone_number|| ""}
                     country={phoneInput.country}
                     onChange={setPhoneInput}
                   />
@@ -733,7 +733,7 @@ export default function AddEmployeeForm() {
                 <div className="space-y-2">
                   <PhoneNumberInput
                     label="Contact Phone"
-                    value={formData.emergency_contact_phone}
+                    value={formData.emergency_contact_phone || ""}
                     country={emergencyPhoneInput.country}
                     onChange={setEmergencyPhoneInput}
                   />

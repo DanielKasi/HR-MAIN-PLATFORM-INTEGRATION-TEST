@@ -345,7 +345,7 @@ const DeductionTypesComponent = () => {
       )
     }
   return (
-    <div className="w-full h-full p-6 space-y-6">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -476,56 +476,9 @@ const DeductionTypesComponent = () => {
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search deduction types..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex gap-2 min-w-80">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full px-6">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <SelectValue placeholder="Filter by status" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Rows per Page Selector */}
-      <div className="flex justify-end">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rows per page:</span>
-          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[70px] h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZES.map((size) => (
-                <SelectItem key={size} value={size.toString()}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Stats */}
+           {/* Stats */}
       {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-12">
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-blue-600">{deductionTypes.length}</div>
@@ -547,6 +500,62 @@ const DeductionTypesComponent = () => {
         </div>
       )}
 
+
+      {/* Search and Filters */}
+<div className="flex flex-col sm:flex-row items-start sm:items-center gap-20 pt-12">
+
+  
+  {/* Search Bar */}
+  <div className="relative w-[32rem]">
+    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+    <Input
+      placeholder="Search deduction types..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="pl-10"
+    />
+  </div>
+
+  {/* Filters Group (Status Filter + Rows per Page side by side) */}
+  <div className="flex items-center gap-10 min-w-[20rem] pl-20">
+    
+    {/* Status Filter */}
+    <Select value={statusFilter} onValueChange={setStatusFilter}>
+      <SelectTrigger className="w-full px-6">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-12" />
+          <SelectValue placeholder="Filter by status" />
+        </div>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All Statuses</SelectItem>
+        <SelectItem value="active">Active</SelectItem>
+        <SelectItem value="inactive">Inactive</SelectItem>
+      </SelectContent>
+    </Select>
+
+    {/* Rows per Page Selector */}
+      <div className="flex items-center gap-2 whitespace-nowrap">
+      <span className="text-sm text-muted-foreground whitespace-nowrap">Rows per page:</span>
+      <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+        <SelectTrigger className="w-[70px] h-8">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {PAGE_SIZES.map((size) => (
+            <SelectItem key={size} value={size.toString()}>
+              {size}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+
+
+  </div>
+</div>
+
+ 
       {/* Deduction Types Table */}
       {isLoading ? (
         <div className="space-y-4">
@@ -555,7 +564,7 @@ const DeductionTypesComponent = () => {
           ))}
         </div>
       ) : filteredDeductionTypes.length === 0 ? (
-        <Card className="p-12 text-center">
+        <div className="p-12 text-center">
           <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No deduction types found</h3>
           <p className="text-muted-foreground mb-4">
@@ -563,11 +572,11 @@ const DeductionTypesComponent = () => {
               ? "No deduction types match your filter criteria."
               : "Get started by creating your first deduction type."}
           </p>
-        </Card>
+        </div>
       ) : (
-        <Card className="rounded-md border">
-          <Table>
-            <TableHeader>
+        <div className="overflow-x-auto mt-10">
+            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+              <TableHeader className="bg-gray-50/50">
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Status</TableHead>
@@ -582,17 +591,6 @@ const DeductionTypesComponent = () => {
                 <TableRow key={deductionType.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
-                      <div
-                        className={`h-8 w-8 rounded-full ${
-                          deductionType.is_active ? "bg-green-50" : "bg-gray-50"
-                        } flex items-center justify-center`}
-                      >
-                        <Settings
-                          className={`h-4 w-4 ${
-                            deductionType.is_active ? "text-green-600" : "text-gray-600"
-                          }`}
-                        />
-                      </div>
                       <span>{deductionType.name}</span>
                     </div>
                   </TableCell>
@@ -641,7 +639,7 @@ const DeductionTypesComponent = () => {
               ))}
             </TableBody>
           </Table>
-        </Card>
+        </div>
       )}
 
       {/* Clear Filters Button */}

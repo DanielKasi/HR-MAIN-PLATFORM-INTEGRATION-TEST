@@ -1015,7 +1015,7 @@ const LeaveApplicationComponent = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 px-2">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 px-2 mt-10">
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <div className="flex items-center">
                 <div className="p-2 bg-orange-100 rounded-lg">
@@ -1070,8 +1070,8 @@ const LeaveApplicationComponent = () => {
         </div>
 
         {/* Applications Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <Table>
+         <div className="overflow-x-auto mt-10">
+            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
             <TableHeader>
               <TableRow className="bg-gray-50">
                 <TableHead className="font-semibold text-gray-900">Employee</TableHead>
