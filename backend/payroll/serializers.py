@@ -180,6 +180,11 @@ class EmployeeAllowanceSerializer(EmployeeRelatedSerializer):
     def bulk_create(self, employee_instances):
         EmployeeAllowance.objects.bulk_create(employee_instances)
 
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep["allowance_type"] = AllowanceTypeSerializer(instance.allowance_type).data
+        return rep
+
 
 class EmployeeDeductionSerializer(EmployeeRelatedSerializer):
     deduction_type = serializers.PrimaryKeyRelatedField(
@@ -208,6 +213,11 @@ class EmployeeDeductionSerializer(EmployeeRelatedSerializer):
 
     def bulk_create(self, employee_instances):
         EmployeeDeduction.objects.bulk_create(employee_instances)
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep["deduction_type"] = DeductionTypeSerializer(instance.deduction_type).data
+        return rep
 
 
 class PayrollPeriodSerializer(serializers.ModelSerializer):

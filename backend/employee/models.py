@@ -270,8 +270,8 @@ class Employee(models.Model):
         if should_initialize:
             self.sync_leave_balances()
 
-        if is_new_employee and self.is_active:
-            self.sync_employee_working_days()
+        # if is_new_employee and self.is_active:
+        #     self.sync_employee_working_days()
 
     def sync_employee_working_days(self):
         department = self.department
