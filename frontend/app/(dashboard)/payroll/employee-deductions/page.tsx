@@ -210,7 +210,7 @@ export default function EmployeeDeductionsRefactored() {
   }
 
   return (
-    <div className="w-full px-2 py-8">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header Section */}
       <div className="mb-8 px-2">
         <div className="flex items-center justify-between mb-4">
