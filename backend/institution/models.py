@@ -186,6 +186,17 @@ class Institution(models.Model):
                     paying_bank_account=bank_account,
                 )
 
+                self._create_institution_working_days()
+
+    def _create_institution_working_days(self):
+        from settings.models import SystemDay
+
+        working_days, created = InstitutionWorkingDays.objects.get_or_create(
+            institution=self
+        )
+        if created:
+            working_days.days.set(SystemDay.objects.all())
+
     def _create_calendar_for_institution(self):
         from calendar2.models import Calendar
 
