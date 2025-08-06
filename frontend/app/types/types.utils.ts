@@ -212,7 +212,14 @@ export enum PERMISSION_CODES {
 }
 
 
+export type ContextType = 'employee' | 'department' | 'job_position'
+export type CalculationMethod = 'fixed' | 'percentage'
 
+export interface ContextItem {
+  id: number
+  name: string
+  description?: string
+}
 
 
 
@@ -1344,10 +1351,12 @@ export interface IAllowanceTypeFormData {
 
 export interface IDeductionType {
   id: number;
-  institution: number;
+  institution: IUserInstitution;
   name: string;
   description: string;
   is_mandatory: boolean;
+  is_recurring:boolean,
+  frequency?:IAllowanceFrequency|null,
   is_active: boolean;
   created_at: string;
 }
@@ -1355,6 +1364,8 @@ export interface IDeductionType {
 export interface IDeductionTypeFormData {
   name: string;
   description: string;
+  is_recurring:boolean,
+  frequency?:IAllowanceFrequency|null,
   is_mandatory: boolean;
   is_active: boolean;
 }

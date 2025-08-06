@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { InfiniteScrollSelect } from "@/components/infinite-scroll-select"
 import { getDepartments, getJobPositions, getAllEmployees } from "@/lib/utils"
 import type { IDepartment, IJobPosition, IEmployee } from "@/app/types/types.utils"
+import { useSelector } from "react-redux"
+import { selectSelectedInstitution } from "@/store/auth/selectors"
 
 type ContextType = 'employee' | 'department' | 'job_position'
 
@@ -17,7 +19,6 @@ interface ContextItem {
 }
 
 interface ContextSelectorProps {
-  institutionId: number
   selectedContext: ContextType | ""
   onContextChange: (context: ContextType | "") => void
   selectedItems: ContextItem[]
@@ -26,14 +27,14 @@ interface ContextSelectorProps {
 }
 
 export function ContextSelector({
-  institutionId,
   selectedContext,
   onContextChange,
   selectedItems,
   onItemsChange,
   disabled = false,
 }: ContextSelectorProps) {
-  const [contextData, setContextData] = useState<ContextItem[]>([])
+  const [contextData, setContextData] = useState<ContextItem[]>([]);
+  const currentInstitution = useSelector(selectSelectedInstitution);
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [page, setPage] = useState(1)
@@ -49,10 +50,10 @@ export function ContextSelector({
       onItemsChange([])
       fetchContextData(1, "", true)
     }
-  }, [selectedContext, institutionId])
+  }, [selectedContext, currentInstitution])
 
   const fetchContextData = async (pageNum: number, search: string = "", reset: boolean = false) => {
-    if (!selectedContext || !institutionId) return
+    if (!selectedContext || !currentInstitution) return
 
     setLoading(true)
     try {
@@ -60,7 +61,7 @@ export function ContextSelector({
 
       switch (selectedContext) {
         case 'employee':
-          const employees = await getAllEmployees({ institutionId })
+          const employees = await getAllEmployees({ institutionId:currentInstitution.id })
           data = employees.map((emp: IEmployee) => ({
             id: emp.id,
             name: emp.user?.fullname || emp.email,
@@ -69,7 +70,7 @@ export function ContextSelector({
           break
 
         case 'department':
-          const departments = await getDepartments({ institutionId })
+          const departments = await getDepartments({ institutionId:currentInstitution.id })
           data = departments.map((dept: IDepartment) => ({
             id: dept.id,
             name: dept.name,
@@ -78,7 +79,7 @@ export function ContextSelector({
           break
 
         case 'job_position':
-          const positions = await getJobPositions({ institutionId })
+          const positions = await getJobPositions({ institutionId:currentInstitution.id })
           data = positions.map((pos: IJobPosition) => ({
             id: pos.id,
             name: pos.name,
@@ -104,8 +105,6 @@ export function ContextSelector({
         setContextData(prev => [...prev, ...data])
       }
 
-      // For now, we'll assume no pagination since the APIs don't seem to support it
-      // You can modify this if your APIs support pagination
       setHasMore(false)
       setPage(pageNum)
     } catch (error) {

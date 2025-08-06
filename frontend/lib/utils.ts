@@ -2092,7 +2092,7 @@ export const createDeductionType = async ({
 
 export const getDeductionTypes = async (
   institutionId: number,
-): Promise<IDeductionType[] | null> => {
+) => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/deduction-types/`);
     const data = response.data as PaginatedResponse<IDeductionType>;
@@ -2278,20 +2278,12 @@ export const createEmployeeDeduction = async ({
   employeeDeductionData,
 }: {
   institutionId: number;
-  employeeDeductionData: IEmployeeDeductionFormData;
-}): Promise<IEmployeeDeduction | null> => {
+  employeeDeductionData: Partial<IEmployeeDeductionFormData>;
+})=> {
   try {
-    const formData = new FormData();
-
-    Object.entries(employeeDeductionData).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        formData.append(key, value.toString());
-      }
-    });
-
     const response = await apiRequest.post(
       `payroll/${institutionId}/employee-deductions/`,
-      formData,
+      employeeDeductionData,
     );
 
     return response.data as IEmployeeDeduction;
