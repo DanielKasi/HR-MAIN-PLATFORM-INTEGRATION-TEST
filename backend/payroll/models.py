@@ -486,7 +486,7 @@ class PayslipItem(models.Model):
                         item_type="allowance",
                         name=allowance.allowance_type.name,
                         amount=new_amount,
-                        description=f"{allowance.calculation_method}: {allowance.amount if allowance.calculation_method == f'fixed' else f'{allowance.percentage}%'} x{recurrence_count}",
+                        description=f"{allowance.calculation_method}: {allowance.amount if allowance.calculation_method == f'fixed' else f'{allowance.percentage}%'} x{recurrence_count} times",
                     )
                 )
 
