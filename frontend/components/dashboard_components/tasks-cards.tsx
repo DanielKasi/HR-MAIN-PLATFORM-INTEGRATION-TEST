@@ -32,7 +32,7 @@ export function TasksCards({branchId}: {branchId: string | null}) {
   };
 
   return (
-    <div className="grid grid-cols-4 lg:grid-cols-5 gap-4 my-6 py-4 cursor-pointer">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 my-6 py-4 cursor-pointer">
       <div className="bg-primary/10 rounded-2xl py-3 px-4 flex justify-between items-center" onClick={() => viewTasks("incoming")}>
         <div className="flex items-center">
           <span className="text-xl font-bold text-primary mr-2">1</span>
