@@ -19,17 +19,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner"
 import { IAllowanceTypeFormData, ALLOWANCE_FREQUENCIES } from "@/app/types/types.utils"
 import { createAllowanceType } from "@/lib/utils"
+import { Checkbox } from "../ui/checkbox"
 
 interface CreateAllowanceTypeDialogProps {
   institutionId: number
   onSuccess: (newAllowanceType: any) => void
-  disabled?: boolean
+  disabled?: boolean,
+  isEmbeded?:boolean
 }
 
 export function CreateAllowanceTypeDialog({
   institutionId,
   onSuccess,
   disabled = false,
+  isEmbeded = false,
 }: CreateAllowanceTypeDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -107,8 +110,9 @@ export function CreateAllowanceTypeDialog({
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant={"outline"} className="flex items-center gap-2" disabled={disabled}>
+        <Button variant={isEmbeded ? "outline":"default"} className="flex items-center gap-2" disabled={disabled}>
           <Plus className="h-4 w-4" />
+          {!isEmbeded ? "Create Allowance Type":""}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[650px] rounded-2xl border-0 shadow-2xl">
@@ -202,14 +206,13 @@ export function CreateAllowanceTypeDialog({
             <h4 className="text-sm font-semibold text-gray-800 mb-3">Configuration Options</h4>
             <div className="flex flex-col sm:flex-row sm:items-center gap-6">
               <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="is_taxable"
                   checked={formData.is_taxable}
-                  onChange={(e) =>
+                  onCheckedChange={(checked) =>
                     setFormData({
                       ...formData,
-                      is_taxable: e.target.checked,
+                      is_taxable: !!checked.valueOf(),
                     })
                   }
                   disabled={isSubmitting}
@@ -220,14 +223,13 @@ export function CreateAllowanceTypeDialog({
                 </Label>
               </div>
               <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="is_active"
                   checked={formData.is_active}
-                  onChange={(e) =>
+                  onCheckedChange={(checked) =>
                     setFormData({
                       ...formData,
-                      is_active: e.target.checked,
+                      is_active: !!checked.valueOf(),
                     })
                   }
                   disabled={isSubmitting}
