@@ -4,9 +4,121 @@ from decimal import Decimal
 from datetime import datetime
 from employee.models import Employee
 from django.utils import timezone
+from datetime import timedelta
+from dateutil.relativedelta import relativedelta
+from django.utils import timezone
 
 
-class AllowanceType(models.Model):
+class BaseModel(models.Model):
+    FREQUENCY_CHOICES = [
+        ("DAILY", "Daily"),
+        ("WEEKLY", "Weekly"),
+        ("MONTHLY", "Monthly"),
+        ("QUARTERLY", "Quarterly"),
+        ("YEARLY", "Yearly"),
+    ]
+
+    is_recurring = models.BooleanField(default=False)
+
+    frequency = models.CharField(
+        max_length=10,
+        choices=FREQUENCY_CHOICES,
+        help_text="Frequency of the allowance/deduction",
+        blank=True,
+        null=True,
+    )
+    name = models.CharField(max_length=100)
+
+    description = models.TextField(
+        blank=True,
+        null=True,
+    )
+
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+        ordering = ["-created_at"]
+
+    def clean(self):
+        if self.is_recurring and not self.frequency:
+            raise ValueError("Frequency must be set if the Item is recurring.")
+
+        if not self.is_recurring and self.frequency:
+            raise ValueError(
+                "Frequency should not be set if the Item is not recurring."
+            )
+
+        super().clean()
+
+
+class RecurrenceMixin:
+    """
+    Shared recurrence logic for both allowances and deductions.
+    """
+
+    def get_recurrence_count(self, payroll_period):
+        """
+        Calculate the number of times this item (allowance or deduction) will recur
+        in the given payroll period.
+        """
+        if not self.is_recurring:
+            return 1  # Means it is a one-time allowance or deduction
+
+        recurrence_count = 0
+        start_date = payroll_period.start_date
+        end_date = payroll_period.end_date
+
+        # Employee or Institution's Working days
+        if self.employee.custom_working_days.exists():
+            working_days = self.employee.custom_working_days.first().days.all()
+        else:
+            institution = self.employee.department.institution
+            working_days = institution.working_days.first().days.all()
+
+        # Daily recurrence
+        if self.frequency == "DAILY":
+            current_date = start_date
+            while current_date <= end_date:
+                if current_date.weekday() in [day.day_of_week for day in working_days]:
+                    recurrence_count += 1
+                current_date += timedelta(days=1)
+
+        # Weekly recurrence
+        elif self.frequency == "WEEKLY":
+            current_date = start_date
+            delta = timedelta(weeks=1)
+            while current_date <= end_date:
+                recurrence_count += 1
+                current_date += delta
+
+        # Monthly recurrence
+        elif self.frequency == "MONTHLY":
+            current_date = start_date
+            while current_date <= end_date:
+                recurrence_count += 1
+                current_date += relativedelta(months=1)
+
+        # Quarterly recurrence
+        elif self.frequency == "QUARTERLY":
+            current_date = start_date
+            while current_date <= end_date:
+                recurrence_count += 1
+                current_date += relativedelta(months=3)
+
+        # Yearly recurrence
+        elif self.frequency == "YEARLY":
+            current_date = start_date
+            while current_date <= end_date:
+                recurrence_count += 1
+                current_date += relativedelta(years=1)
+
+        return recurrence_count
+
+
+class AllowanceType(BaseModel):
     """
     Define types of allowances (Housing, Transport, Medical, etc.)
 
@@ -17,11 +129,7 @@ class AllowanceType(models.Model):
         on_delete=models.CASCADE,
         related_name="allowance_types",
     )
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True, null=True)
     is_taxable = models.BooleanField(default=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
@@ -30,7 +138,7 @@ class AllowanceType(models.Model):
         ordering = ["name"]
 
 
-class DeductionType(models.Model):
+class DeductionType(BaseModel):
     """
     Define types of deductions (Tax, NSSF, Health Insurance, etc.)
     """
@@ -40,11 +148,7 @@ class DeductionType(models.Model):
         on_delete=models.CASCADE,
         related_name="deduction_types",
     )
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True, null=True)
     is_mandatory = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
@@ -53,7 +157,7 @@ class DeductionType(models.Model):
         ordering = ["name"]
 
 
-class EmployeeAllowance(models.Model):
+class EmployeeAllowance(RecurrenceMixin, models.Model):
     """
     Employee-specific allowances (can vary by employee)
     """
@@ -108,7 +212,7 @@ class EmployeeAllowance(models.Model):
         unique_together = ["employee", "allowance_type"]
 
 
-class EmployeeDeduction(models.Model):
+class EmployeeDeduction(RecurrenceMixin, models.Model):
     """
     Employee-specific deductions
     """
@@ -237,7 +341,8 @@ class Payslip(models.Model):
                 not allowance.effective_to
                 or allowance.effective_to >= self.payroll_period.start_date
             ):
-                total_allowances += allowance.get_calculated_amount()
+                recurrence_count = allowance.get_recurrence_count(self.payroll_period)
+                total_allowances += allowance.get_calculated_amount() * recurrence_count
         self.total_allowances = total_allowances
 
         # Calculate total deductions
@@ -247,7 +352,8 @@ class Payslip(models.Model):
                 not deduction.effective_to
                 or deduction.effective_to >= self.payroll_period.start_date
             ):
-                total_deductions += deduction.get_calculated_amount()
+                recurrence_count = deduction.get_recurrence_count(self.payroll_period)
+                total_deductions += deduction.get_calculated_amount() * recurrence_count
         self.total_deductions = total_deductions
 
         # Calculate overtime
@@ -298,6 +404,10 @@ class PayslipItem(models.Model):
                 or allowance.effective_to >= payslip.payroll_period.start_date
             ):
                 amount = allowance.get_calculated_amount()
+                recurrence_count = allowance.get_recurrence_count(
+                    payslip.payroll_period
+                )
+                amount *= recurrence_count
                 items_to_create.append(
                     PayslipItem(
                         payslip=payslip,
@@ -314,6 +424,10 @@ class PayslipItem(models.Model):
                 or deduction.effective_to >= payslip.payroll_period.start_date
             ):
                 amount = deduction.get_calculated_amount()
+                recurrence_count = deduction.get_recurrence_count(
+                    payslip.payroll_period
+                )
+                amount *= recurrence_count
                 items_to_create.append(
                     PayslipItem(
                         payslip=payslip,

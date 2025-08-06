@@ -14,30 +14,29 @@ from institution.models import Institution
 from institution.serializers import InstitutionSerializer
 
 
-class AllowanceTypeSerializer(serializers.ModelSerializer):
+class BaseModelSerializer(serializers.ModelSerializer):
     institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
 
     class Meta:
+        model = None
+        fields = "__all__"
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep["institution"] = InstitutionSerializer(instance.institution).data
+        return rep
+
+
+class AllowanceTypeSerializer(BaseModelSerializer):
+    class Meta(BaseModelSerializer.Meta):
         model = AllowanceType
-        fields = "__all__"
-
-    def to_representation(self, instance):
-        rep = super().to_representation(instance)
-        rep["institution"] = InstitutionSerializer(instance.institution).data
-        return rep
+        fields = BaseModelSerializer.Meta.fields
 
 
-class DeductionTypeSerializer(serializers.ModelSerializer):
-    institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
-
-    class Meta:
+class DeductionTypeSerializer(BaseModelSerializer):
+    class Meta(BaseModelSerializer.Meta):
         model = DeductionType
-        fields = "__all__"
-
-    def to_representation(self, instance):
-        rep = super().to_representation(instance)
-        rep["institution"] = InstitutionSerializer(instance.institution).data
-        return rep
+        fields = BaseModelSerializer.Meta.fields
 
 
 class EmployeeAllowanceSerializer(serializers.ModelSerializer):
