@@ -10,8 +10,10 @@ from .models import (
     PayslipItem,
 )
 from employee.models import Employee
-from institution.models import Institution
+from institution.models import Institution, Department
+from recruitment.models import JobPosition
 from institution.serializers import InstitutionSerializer
+from django.db import transaction
 
 
 class BaseModelSerializer(serializers.ModelSerializer):
@@ -39,24 +41,35 @@ class DeductionTypeSerializer(BaseModelSerializer):
         fields = BaseModelSerializer.Meta.fields
 
 
-class EmployeeAllowanceSerializer(serializers.ModelSerializer):
+class EmployeeRelatedSerializer(serializers.ModelSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
-    allowance_type = serializers.PrimaryKeyRelatedField(
-        queryset=AllowanceType.objects.all()
-    )
     calculated_amount = serializers.SerializerMethodField()
 
+    target_employees = serializers.ListField(
+        child=serializers.IntegerField(), write_only=True, required=False
+    )
+    target_departments = serializers.ListField(
+        child=serializers.PrimaryKeyRelatedField(queryset=Department.objects.all()),
+        write_only=True,
+        required=False,
+    )
+    target_job_positions = serializers.ListField(
+        child=serializers.PrimaryKeyRelatedField(queryset=JobPosition.objects.all()),
+        write_only=True,
+        required=False,
+    )
+
     class Meta:
-        model = EmployeeAllowance
         fields = "__all__"
 
     def get_calculated_amount(self, obj):
-        return obj.get_calculated_amount()
+        raise NotImplementedError(
+            "This method should be implemented in the child serializer."
+        )
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         rep["employee"] = EmployeeSerializer(instance.employee).data
-        rep["allowance_type"] = AllowanceTypeSerializer(instance.allowance_type).data
         rep["calculated_amount"] = self.get_calculated_amount(instance)
         return rep
 
@@ -72,53 +85,129 @@ class EmployeeAllowanceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Amount must be greater than 0 for fixed calculation."
             )
+
+        departments = data.get("target_departments", [])
+        positions = data.get("target_job_positions", [])
+        target_employees = data.get("target_employees", [])
+
+        if not any([departments, positions, target_employees]):
+            raise serializers.ValidationError(
+                "At least one of target_departments, target_job_positions, or target_employees must be provided."
+            )
+
+        employees = self.filter_employees(departments, positions, target_employees)
+        if not employees.exists():
+            raise serializers.ValidationError(
+                "No employees found matching the provided criteria."
+            )
+
+        data["employees"] = employees
         return data
 
+    def filter_employees(self, departments, positions, target_employees):
+        user = (
+            self.context.get("request").user.profile
+            if self.context.get("request")
+            else None
+        )
+        employees = Employee.objects.filter(department__institution=user.institution)
 
-class EmployeeDeductionSerializer(serializers.ModelSerializer):
-    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
+        if departments:
+            employees = employees.filter(department__in=departments)
+        if positions:
+            employees = employees.filter(position__in=positions)
+        if target_employees:
+            employees = employees.filter(id__in=target_employees)
+
+        return employees
+
+    @transaction.atomic
+    def create(self, validated_data):
+        employees = validated_data["employees"]
+        calculated_amount = self.get_calculated_amount(validated_data)
+        allowance_type = validated_data.get("allowance_type", None)
+
+        with transaction.atomic():
+            employee_instances = []
+            for employee in employees:
+                employee_instance = self.create_instance(
+                    employee, allowance_type, calculated_amount, validated_data
+                )
+                employee_instances.append(employee_instance)
+
+            self.bulk_create(employee_instances)
+
+        return employee_instances[0] if employee_instances else None
+
+    def create_instance(
+        self, employee, allowance_type, calculated_amount, validated_data
+    ):
+        raise NotImplementedError(
+            "This method should be implemented in the child serializer."
+        )
+
+    def bulk_create(self, employee_instances):
+        raise NotImplementedError(
+            "This method should be implemented in the child serializer."
+        )
+
+
+class EmployeeAllowanceSerializer(EmployeeRelatedSerializer):
+    allowance_type = serializers.PrimaryKeyRelatedField(
+        queryset=AllowanceType.objects.all()
+    )
+
+    class Meta(EmployeeRelatedSerializer.Meta):
+        model = EmployeeAllowance
+        fields = "__all__"
+
+    def get_calculated_amount(self, obj):
+        return obj.get_calculated_amount()
+
+    def create_instance(
+        self, employee, allowance_type, calculated_amount, validated_data
+    ):
+        return EmployeeAllowance(
+            employee=employee,
+            allowance_type=allowance_type,
+            calculation_method=validated_data.get("calculation_method"),
+            amount=calculated_amount,
+            percentage=validated_data.get("percentage"),
+            effective_from=validated_data.get("effective_from"),
+            effective_to=validated_data.get("effective_to"),
+        )
+
+    def bulk_create(self, employee_instances):
+        EmployeeAllowance.objects.bulk_create(employee_instances)
+
+
+class EmployeeDeductionSerializer(EmployeeRelatedSerializer):
     deduction_type = serializers.PrimaryKeyRelatedField(
         queryset=DeductionType.objects.all()
     )
-    calculated_amount = serializers.SerializerMethodField()
 
-    class Meta:
+    class Meta(EmployeeRelatedSerializer.Meta):
         model = EmployeeDeduction
         fields = "__all__"
 
     def get_calculated_amount(self, obj):
         return obj.get_calculated_amount()
 
-    def to_representation(self, instance):
-        rep = super().to_representation(instance)
-        rep["employee"] = EmployeeSerializer(instance.employee).data
-        rep["deduction_type"] = DeductionTypeSerializer(instance.deduction_type).data
-        rep["calculated_amount"] = self.get_calculated_amount(instance)
-        return rep
+    def create_instance(
+        self, employee, allowance_type, calculated_amount, validated_data
+    ):
+        return EmployeeDeduction(
+            employee=employee,
+            deduction_type=validated_data.get("deduction_type"),
+            calculation_method=validated_data.get("calculation_method"),
+            amount=calculated_amount,
+            percentage=validated_data.get("percentage"),
+            effective_from=validated_data.get("effective_from"),
+            effective_to=validated_data.get("effective_to"),
+        )
 
-    def validate(self, data):
-        """Validate percentage and amount based on calculation method"""
-        calculation_method = data.get("calculation_method")
-        percentage = data.get("percentage")
-        amount = data.get("amount")
-        employee = data.get("employee")
-
-        if calculation_method == "percentage":
-            if not employee.salary or employee.salary <= 0:
-                raise serializers.ValidationError(
-                    "Employee salary must be greater than 0 for percentage-based deduction."
-                )
-            if percentage <= 0:
-                raise serializers.ValidationError(
-                    "Percentage must be greater than 0 for percentage-based deduction."
-                )
-        elif calculation_method == "fixed":
-            if amount <= 0:
-                raise serializers.ValidationError(
-                    "Amount must be greater than 0 for fixed deduction."
-                )
-
-        return data
+    def bulk_create(self, employee_instances):
+        EmployeeDeduction.objects.bulk_create(employee_instances)
 
 
 class PayrollPeriodSerializer(serializers.ModelSerializer):
