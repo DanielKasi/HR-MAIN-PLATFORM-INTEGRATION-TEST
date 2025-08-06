@@ -124,7 +124,7 @@ export default function InstitutionWorkingDays() {
       if (institutionWorkingDays) {
         // Update existing working days
         updatedWorkingDays = await institutionAPI.updateWorkingDays({
-          institutionId: selectedInstitution.id,
+          workingDaysId: institutionWorkingDays.id,
           data: formData,
         })
         toast.success("Working days updated successfully")

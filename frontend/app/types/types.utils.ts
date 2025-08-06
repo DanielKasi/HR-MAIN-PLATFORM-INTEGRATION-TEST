@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Branch, ICustomerProfile, IUser, Permission, Role, UserProfile } from ".";
+import { Branch, ICustomerProfile, IUser, IUserInstitution, Permission, Role, UserProfile } from ".";
 
 export enum CUSTOM_CODES {
   BLOCKED_BY_ADMIN = "BLOCKED_BY_ADMIN",
@@ -7,6 +7,12 @@ export enum CUSTOM_CODES {
   ADMIN_CREATED_UNVERIFIED = "ADMIN_CREATED_UNVERIFIED",
   INVALID_CREDENTIALS = "INVALID_CREDENTIALS",
   OTHER = "OTHER",
+}
+export enum ALLOWANCE_FREQUENCIES {
+  DAILY="DAILY",
+  WEEKLY="WEEKLY",
+  MONTHLY="MONTHLY",
+  QUARTERLY="QUARTERLY"
 }
 
 export enum PURCHASE_ORDER_STATUS {
@@ -256,7 +262,7 @@ export interface IDepartment {
   name: string;
   description?: string | null;
   institution: number; // ForeignKey as ID
-  institution_details?: IInstitution | null; // Embedded serializer
+  institution_details?: IUserInstitution | null; // Embedded serializer
   job_positions?: { id: number; name: string; description: string; department_id: number }[];
 }
 
@@ -1310,12 +1316,16 @@ export interface ILeaveRequestFilters {
   duration_type?: DurationType;
 }
 
+export type IAllowanceFrequency = "DAILY"| "WEEKLY"| "MONTHLY" | "QUARTERLY" | "YEARLY"
 
 
 export interface IAllowanceType {
   id: number;
   name: string;
+  institution:IUserInstitution,
   description: string;
+  is_recurring:boolean,
+  frequency?:IAllowanceFrequency|null,
   is_taxable: boolean;
   is_active: boolean;
   created_at: string;
@@ -1324,8 +1334,11 @@ export interface IAllowanceType {
 export interface IAllowanceTypeFormData {
   name: string;
   description: string;
+  is_recurring:boolean,
+  frequency?:IAllowanceFrequency|null,
   is_taxable: boolean;
   is_active: boolean;
+  
 }
 
 
@@ -1359,6 +1372,8 @@ export interface IEmployeeAllowance {
   effective_to: string | null;
   created_at: string;
 }
+
+
 
 export interface IEmployeeAllowanceFormData {
   employee: number;
