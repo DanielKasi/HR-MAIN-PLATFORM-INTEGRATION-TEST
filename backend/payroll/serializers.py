@@ -42,7 +42,6 @@ class DeductionTypeSerializer(BaseModelSerializer):
 
 
 class EmployeeRelatedSerializer(serializers.ModelSerializer):
-    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
     calculated_amount = serializers.SerializerMethodField()
 
     target_employees = serializers.ListField(
@@ -61,6 +60,7 @@ class EmployeeRelatedSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = "__all__"
+        read_only_fields = ["employee"]
 
     def get_calculated_amount(self, obj):
         raise NotImplementedError(

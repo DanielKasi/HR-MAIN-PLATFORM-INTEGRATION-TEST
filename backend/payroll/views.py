@@ -144,7 +144,7 @@ class EmployeeAllowanceAPIView(APIView):
         summary="Create a new employee allowance",
     )
     def post(self, request, institution_id):
-        serializer = EmployeeAllowanceSerializer(data=request.data)
+        serializer = EmployeeAllowanceSerializer(data=request.data, context=request)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)

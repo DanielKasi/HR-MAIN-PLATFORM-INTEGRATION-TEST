@@ -259,6 +259,16 @@ export const getDepartments = async ({ institutionId }: { institutionId: number 
   }
 };
 
+export const getJobPositions = async ({ institutionId }: { institutionId: number }) => {
+  try {
+    const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`);
+    const data = response.data as PaginatedResponse<IJobPosition>;
+    return data.results;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const getDefaultData = async (): Promise<IDepartment[] | null> => {
   try {
     const response = await apiRequest.get("institution/default-data/");
@@ -269,15 +279,7 @@ export const getDefaultData = async (): Promise<IDepartment[] | null> => {
   }
 };
 
-export const getJobPositions = async ({ institutionId }: { institutionId: number }) => {
-  try {
-    const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`);
-    const data = response.data as PaginatedResponse<IJobPosition>;
-    return data.results;
-  } catch (error) {
-    throw error;
-  }
-};
+
 
 export const getJobPosition = async ({ jobPositionId }: { jobPositionId: number }) => {
   try {
@@ -933,8 +935,6 @@ export const getAllEmployees = async ({ institutionId }: { institutionId: number
     const endpoint = `employee/${institutionId}/employee/`;
     const response = await apiRequest.get(endpoint);
     const data = response.data as PaginatedResponse<IEmployee>;
-
-    // Return the results array instead of the entire response
     return data.results;
   } catch (error) {
     throw error;
@@ -1938,7 +1938,7 @@ export const createAllowanceType = async ({
 
 export const getAllowanceTypes = async (
   institutionId: number,
-): Promise<IAllowanceType[] | null> => {
+)=> {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/allowance-types/`);
     const data = response.data as PaginatedResponse<IAllowanceType>;
@@ -2151,20 +2151,14 @@ export const createEmployeeAllowance = async ({
   employeeAllowanceData,
 }: {
   institutionId: number;
-  employeeAllowanceData: IEmployeeAllowanceFormData;
+  employeeAllowanceData: Partial<IEmployeeAllowanceFormData>;
 }): Promise<IEmployeeAllowance | null> => {
   try {
-    const formData = new FormData();
 
-    Object.entries(employeeAllowanceData).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        formData.append(key, value.toString());
-      }
-    });
 
     const response = await apiRequest.post(
       `payroll/${institutionId}/employee-allowances/`,
-      formData,
+      employeeAllowanceData,
     );
 
     return response.data as IEmployeeAllowance;
@@ -3672,14 +3666,14 @@ export const institutionAPI = {
   },
 
   updateWorkingDays: async ({
-    institutionId,
+    workingDaysId,
     data,
   }: {
-    institutionId: number
+    workingDaysId: number|string,
     data: IWorkingDaysFormData
   })=> {
     try {
-      const response = await apiRequest.patch(`/institution/working-days/${institutionId}/`, data)
+      const response = await apiRequest.patch(`/institution/working-days/${workingDaysId}/`, data)
       return response.data as IInstitutionWorkingDays
     } catch (error) {
       throw error

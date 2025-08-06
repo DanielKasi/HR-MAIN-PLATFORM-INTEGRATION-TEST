@@ -18,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { TableSkeleton } from "@/components/common/table-skeleton"
-import { InfiniteScrollSelect } from "@/components/ui/infinite-scroll-select"
+import { InfiniteScrollSelect } from "@/components/infinite-scroll-select"
 import {
   Plus,
   CheckCircle,

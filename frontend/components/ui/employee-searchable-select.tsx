@@ -57,15 +57,10 @@ export const EmployeeSearchableSelect = ({
       details.push(employee.department)
     }
 
-    let label = employee.user?.fullname || ""
-    if (details.length > 0) {
-       label += ` (${details.join(" • ")})`
-    }
-
     return {
       id: employee.id,
-      label: label,
-      value: `${employee.user?.fullname} ${employee.email} ${employee.department || ""}`.toLowerCase(),
+      label: `${employee.user?.fullname || ""} - (${employee.department.name || ""})`,
+      value: `${employee.user?.fullname} ${employee.email} ${employee.department.name || ""}`.toLowerCase(),
     }
   })
 
