@@ -144,7 +144,9 @@ class EmployeeAllowanceAPIView(APIView):
         summary="Create a new employee allowance",
     )
     def post(self, request, institution_id):
-        serializer = EmployeeAllowanceSerializer(data=request.data, context=request)
+        serializer = EmployeeAllowanceSerializer(
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -170,7 +172,7 @@ class EmployeeAllowanceDetailAPIView(APIView):
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeAllowance, pk=pk)
         serializer = EmployeeAllowanceSerializer(
-            instance, data=request.data, partial=True
+            instance, data=request.data, partial=True, context={"request": request}
         )
         if serializer.is_valid():
             serializer.save()
@@ -269,7 +271,9 @@ class EmployeeDeductionAPIView(APIView):
         summary="Create a new employee deduction",
     )
     def post(self, request, institution_id):
-        serializer = EmployeeDeductionSerializer(data=request.data)
+        serializer = EmployeeDeductionSerializer(
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -295,7 +299,7 @@ class EmployeeDeductionDetailAPIView(APIView):
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeDeduction, pk=pk)
         serializer = EmployeeDeductionSerializer(
-            instance, data=request.data, partial=True
+            instance, data=request.data, partial=True, context={"request": request}
         )
         if serializer.is_valid():
             serializer.save()
