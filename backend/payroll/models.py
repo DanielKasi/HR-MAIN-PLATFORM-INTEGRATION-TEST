@@ -364,7 +364,7 @@ class EmployeeTax(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.employee} - {self.institution_tax.name}"
+        return f"{self.employee} - {self.institution_tax.tax_name}"
 
     class Meta:
         unique_together = ["employee", "institution_tax"]
@@ -380,6 +380,10 @@ class EmployeeTax(models.Model):
             salary_from__lte=employee_salary, salary_to__gte=employee_salary
         ).order_by("salary_from")
 
+        print(
+            f"\n\nrules checked: {rules.count()} for employee salary: {employee_salary}"
+        )
+
         return rules.first()
 
     def get_tax_amount(self):
@@ -393,7 +397,21 @@ class EmployeeTax(models.Model):
         if rule.tax_rule_fixed_amount is not None:
             return rule.tax_rule_fixed_amount
         if rule.tax_rule_percentage is not None:
+            print(f"\n\n")
+            print(
+                f"Calculating tax for employee {self.employee} with salary {self.employee.salary}"
+            )
+            print(
+                f"Using rule: {rule.tax_rule_name} with percentage {rule.tax_rule_percentage}"
+            )
+            print(
+                f"Tax amount: {(self.employee.salary * rule.tax_rule_percentage) / 100}"
+            )
             return (self.employee.salary * rule.tax_rule_percentage) / 100
+
+        print(
+            f"Warning: No valid tax rule found for employee {self.employee} with salary {self.employee.salary}"
+        )
 
         return Decimal(0.00)
 
@@ -545,6 +563,30 @@ class Payslip(models.Model):
 
         self.gross_salary = gross
         self.net_salary = net
+
+        print("\n\n\nPayslip Totals:")
+        print(f"Employee: {self.employee}")
+        print(f"Payroll Period: {self.payroll_period}")
+        print(f"Gross Salary: {self.gross_salary}")
+        print(f"Net Salary: {self.net_salary}")
+        print(f"Total Allowances: {self.total_allowances}")
+        print(f"Total Deductions: {self.total_deductions}")
+        print(
+            (
+                (
+                    (
+                        (
+                            (
+                                (self.total_allowances + self.basic_salary)
+                                - self.total_deductions
+                            )
+                            - tax_total
+                        )
+                        + non_taxable_allowances
+                    )
+                )
+            )
+        )
 
         self.save()
 

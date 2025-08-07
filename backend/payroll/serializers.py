@@ -304,7 +304,7 @@ class EmployeeTaxSerializer(serializers.ModelSerializer):
         model = EmployeeTax
         fields = "__all__"
 
-        read_only_fields = ["id", "created_at"]
+        read_only_fields = ["id", "created_at", "employee"]
 
     def validate(self, data):
         departments = data.get("target_departments", [])

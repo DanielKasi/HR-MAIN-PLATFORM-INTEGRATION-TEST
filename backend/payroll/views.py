@@ -14,6 +14,7 @@ from .models import (
     PayrollPeriod,
     Payslip,
     PayslipItem,
+    EmployeeTax,
 )
 from .serializers import (
     EmployeeAllowanceSerializer,
@@ -32,6 +33,7 @@ from datetime import datetime
 from django.http import HttpResponse
 from django.utils.encoding import escape_uri_path
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+from institution.models import Institution
 
 
 class ExportEFTExcelView(APIView):
@@ -449,6 +451,7 @@ class EmployeeTaxListAPIView(APIView):
     @extend_schema(
         summary="List employee taxes for a specific institution",
         responses=EmployeeTaxSerializer(many=True),
+        tags=["Employee Taxes MGT"],
     )
     def get(self, request):
         user = request.user.profile
@@ -479,6 +482,7 @@ class EmployeeTaxListAPIView(APIView):
         request=EmployeeTaxSerializer,
         responses=EmployeeTaxSerializer,
         summary="Create a new employee tax",
+        tags=["Employee Taxes MGT"],
     )
     def post(self, request):
         serializer = EmployeeTaxSerializer(
@@ -493,7 +497,9 @@ class EmployeeTaxListAPIView(APIView):
 class EmployeeTaxDetailAPIView(APIView):
 
     @extend_schema(
-        responses=EmployeeTaxSerializer, summary="Retrieve an employee tax by ID"
+        responses=EmployeeTaxSerializer,
+        summary="Retrieve an employee tax by ID",
+        tags=["Employee Taxes MGT"],
     )
     def get(self, request, pk):
         instance = get_object_or_404(EmployeeTax, pk=pk)
@@ -504,6 +510,7 @@ class EmployeeTaxDetailAPIView(APIView):
         request=EmployeeTaxSerializer,
         responses=EmployeeTaxSerializer,
         summary="Update an employee tax (partial)",
+        tags=["Employee Taxes MGT"],
     )
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeTax, pk=pk)
