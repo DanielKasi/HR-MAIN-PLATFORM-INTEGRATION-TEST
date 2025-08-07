@@ -384,7 +384,7 @@ class InstitutionTax(models.Model):
         verbose_name = "Institution Tax"
 
 
-class IstitutionTaxRule(models.Model):
+class InstitutionTaxRule(models.Model):
     institution_tax = models.ForeignKey(
         InstitutionTax, related_name="rules", on_delete=models.CASCADE
     )
