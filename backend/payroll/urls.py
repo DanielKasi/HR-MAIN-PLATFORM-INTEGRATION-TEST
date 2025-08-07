@@ -54,4 +54,14 @@ urlpatterns = [
         name="payslipitem-list",
     ),
     path("export/", ExportEFTExcelView.as_view(), name="export2excel"),
+    path(
+        "employee-taxes/",
+        EmployeeTaxListAPIView.as_view(),
+        name="employee-tax-list-create",
+    ),
+    path(
+        "employee-taxes/<int:pk>/",
+        EmployeeTaxDetailAPIView.as_view(),
+        name="employee-tax-detail",
+    ),
 ]

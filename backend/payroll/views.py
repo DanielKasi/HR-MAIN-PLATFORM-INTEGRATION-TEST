@@ -24,6 +24,7 @@ from .serializers import (
     PayslipSerializer,
     PayslipItemSerializer,
     PayslipGenerationInputSerializer,
+    EmployeeTaxSerializer,
 )
 from employee.models import Employee
 from .utils import PayrollProcessor, generate_eft_excel
@@ -439,6 +440,84 @@ class DeductionTypeDetailAPIView(APIView):
     @extend_schema(summary="Delete a deduction type")
     def delete(self, request, pk):
         instance = get_object_or_404(DeductionType, pk=pk)
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class EmployeeTaxListAPIView(APIView):
+
+    @extend_schema(
+        summary="List employee taxes for a specific institution",
+        responses=EmployeeTaxSerializer(many=True),
+    )
+    def get(self, request):
+        user = request.user.profile
+
+        if not user:
+            return Response(
+                {"error": "User profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        institution_id = user.institution_id
+
+        try:
+            institution = Institution.objects.get(id=institution_id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"error": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        employee_taxes = EmployeeTax.objects.filter(
+            employee__department__institution_id=institution_id
+        ).order_by("-created_at")
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(employee_taxes, request)
+        serializer = EmployeeTaxSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    @extend_schema(
+        request=EmployeeTaxSerializer,
+        responses=EmployeeTaxSerializer,
+        summary="Create a new employee tax",
+    )
+    def post(self, request):
+        serializer = EmployeeTaxSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EmployeeTaxDetailAPIView(APIView):
+
+    @extend_schema(
+        responses=EmployeeTaxSerializer, summary="Retrieve an employee tax by ID"
+    )
+    def get(self, request, pk):
+        instance = get_object_or_404(EmployeeTax, pk=pk)
+        serializer = EmployeeTaxSerializer(instance)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=EmployeeTaxSerializer,
+        responses=EmployeeTaxSerializer,
+        summary="Update an employee tax (partial)",
+    )
+    def patch(self, request, pk):
+        instance = get_object_or_404(EmployeeTax, pk=pk)
+        serializer = EmployeeTaxSerializer(
+            instance, data=request.data, partial=True, context={"request": request}
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(summary="Delete an employee tax")
+    def delete(self, request, pk):
+        instance = get_object_or_404(EmployeeTax, pk=pk)
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

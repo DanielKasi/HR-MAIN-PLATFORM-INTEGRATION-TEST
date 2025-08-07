@@ -8,6 +8,7 @@ from .models import (
     PayrollPeriod,
     Payslip,
     PayslipItem,
+    EmployeeTax,
 )
 from employee.models import Employee
 from institution.models import Institution, Department
@@ -281,6 +282,80 @@ class EmployeeDeductionSerializer(EmployeeRelatedSerializer):
         rep = super().to_representation(instance)
         rep["deduction_type"] = DeductionTypeSerializer(instance.deduction_type).data
         return rep
+
+
+class EmployeeTaxSerializer(serializers.ModelSerializer):
+
+    target_employees = serializers.ListField(
+        child=serializers.IntegerField(), write_only=True, required=False
+    )
+    target_departments = serializers.ListField(
+        child=serializers.PrimaryKeyRelatedField(queryset=Department.objects.all()),
+        write_only=True,
+        required=False,
+    )
+    target_job_positions = serializers.ListField(
+        child=serializers.PrimaryKeyRelatedField(queryset=JobPosition.objects.all()),
+        write_only=True,
+        required=False,
+    )
+
+    class Meta:
+        model = EmployeeTax
+        fields = "__all__"
+
+        read_only_fields = ["id", "created_at"]
+
+    def validate(self, data):
+        departments = data.get("target_departments", [])
+        positions = data.get("target_job_positions", [])
+        target_employees = data.get("target_employees", [])
+
+        if not any([departments, positions, target_employees]):
+            raise serializers.ValidationError(
+                "At least one of target_departments, target_job_positions, or target_employees must be provided."
+            )
+
+        employees = self.filter_employees(departments, positions, target_employees)
+        if not employees.exists():
+            raise serializers.ValidationError(
+                "No employees found matching the provided criteria."
+            )
+        data["employees"] = employees
+        return data
+
+    def filter_employees(self, departments, positions, target_employees):
+        request = self.context.get("request")
+        user = request.user.profile if request else None
+
+        employees = Employee.objects.filter(department__institution=user.institution)
+
+        if departments:
+            employees = employees.filter(department__in=departments)
+        if positions:
+            employees = employees.filter(position__in=positions)
+        if target_employees:
+            employees = employees.filter(id__in=target_employees)
+
+        return employees
+
+    @transaction.atomic
+    def create(self, validated_data):
+        employees = validated_data["employees"]
+
+        employee_tax_instances = []
+        for employee in employees:
+            employee_tax_instance = EmployeeTax(
+                employee=employee,
+                institution_tax=validated_data.get("institution_tax"),
+                effective_from=validated_data.get("effective_from"),
+                effective_to=validated_data.get("effective_to"),
+            )
+            employee_tax_instances.append(employee_tax_instance)
+
+        EmployeeTax.objects.bulk_create(employee_tax_instances)
+
+        return employee_tax_instances[0] if employee_tax_instances else None
 
 
 class PayrollPeriodSerializer(serializers.ModelSerializer):
