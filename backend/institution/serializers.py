@@ -375,6 +375,7 @@ class InstitutionTaxSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Institution not found.")
 
         validated_data["institution"] = institution
+        validated_data["created_by"] = request.user
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
@@ -414,7 +415,6 @@ class InstitutionTaxRuleSerializer(serializers.ModelSerializer):
 
         read_only_fields = [
             "id",
-            "institution_tax",
             "created_by",
             "created_at",
             "updated_by",
@@ -424,6 +424,19 @@ class InstitutionTaxRuleSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         tax_rule_percentage = attrs.get("tax_rule_percentage")
         tax_rule_fixed_amount = attrs.get("tax_rule_fixed_amount")
+
+        instance = getattr(self, "instance", None)
+        if instance:
+            tax_rule_percentage = (
+                tax_rule_percentage
+                if tax_rule_percentage is not None
+                else getattr(instance, "tax_rule_percentage", None)
+            )
+            tax_rule_fixed_amount = (
+                tax_rule_fixed_amount
+                if tax_rule_fixed_amount is not None
+                else getattr(instance, "tax_rule_fixed_amount", None)
+            )
 
         if not tax_rule_percentage and not tax_rule_fixed_amount:
             raise serializers.ValidationError(

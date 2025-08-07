@@ -23,6 +23,8 @@ from .models import (
     InstitutionBankAccount,
     InstitutionBankType,
     InstitutionWorkingDays,
+    InstitutionTax,
+    InstitutionTaxRule,
 )
 from users.serializers import ProfileSerializer
 from .serializers import (
@@ -593,7 +595,7 @@ class InstitutionTaxRuleListAPIView(APIView):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=404)
 
-        tax_rules = IstitutionTaxRule.objects.filter(
+        tax_rules = InstitutionTaxRule.objects.filter(
             institution_tax__institution=institution
         )
 
@@ -632,10 +634,10 @@ class InstitutionTaxRuleDetailView(APIView):
     )
     def get(self, request, tax_rule_id):
         try:
-            tax_rule = IstitutionTaxRule.objects.get(id=tax_rule_id)
+            tax_rule = InstitutionTaxRule.objects.get(id=tax_rule_id)
             serializer = InstitutionTaxRuleSerializer(tax_rule)
             return Response(serializer.data)
-        except IstitutionTaxRule.DoesNotExist:
+        except InstitutionTaxRule.DoesNotExist:
             return Response({"detail": "Tax rule not found."}, status=404)
 
     @extend_schema(
@@ -647,8 +649,8 @@ class InstitutionTaxRuleDetailView(APIView):
     )
     def patch(self, request, tax_rule_id):
         try:
-            tax_rule = IstitutionTaxRule.objects.get(id=tax_rule_id)
-        except IstitutionTaxRule.DoesNotExist:
+            tax_rule = InstitutionTaxRule.objects.get(id=tax_rule_id)
+        except InstitutionTaxRule.DoesNotExist:
             return Response({"detail": "Tax rule not found."}, status=404)
 
         serializer = InstitutionTaxRuleSerializer(
@@ -669,10 +671,10 @@ class InstitutionTaxRuleDetailView(APIView):
     )
     def delete(self, request, tax_rule_id):
         try:
-            tax_rule = IstitutionTaxRule.objects.get(id=tax_rule_id)
+            tax_rule = InstitutionTaxRule.objects.get(id=tax_rule_id)
             tax_rule.delete()
             return Response(status=204)
-        except IstitutionTaxRule.DoesNotExist:
+        except InstitutionTaxRule.DoesNotExist:
             return Response({"detail": "Tax rule not found."}, status=404)
 
 
