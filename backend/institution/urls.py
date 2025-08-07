@@ -21,6 +21,10 @@ from .views import (
     InstitutionBankAccountDetailView,
     InstitutionWorkingDaysListAPIView,
     InstitutionWorkingDaysDetailView,
+    InstitutionTaxListAPIView,
+    InstitutionTaxDetailView,
+    InstitutionTaxRuleDetailView,
+    InstitutionTaxRuleListAPIView,
 )
 
 urlpatterns = [
@@ -55,6 +59,26 @@ urlpatterns = [
         "working-days/<int:pk>/",
         InstitutionWorkingDaysDetailView.as_view(),
         name="working-days-detail",
+    ),
+    path(
+        "tax/",
+        InstitutionTaxListAPIView.as_view(),
+        name="institution-tax-list",
+    ),
+    path(
+        "tax/<int:tax_id>/",
+        InstitutionTaxDetailView.as_view(),
+        name="institution-tax-detail",
+    ),
+    path(
+        "tax-rule/",
+        InstitutionTaxRuleListAPIView.as_view(),
+        name="institution-tax-rule-list",
+    ),
+    path(
+        "tax-rule/<int:tax_rule_id>/",
+        InstitutionTaxRuleDetailView.as_view(),
+        name="institution-tax-rule-detail",
     ),
     path("branch/", BranchListAPIView.as_view(), name="branch-management"),
     path(
