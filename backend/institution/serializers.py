@@ -11,6 +11,8 @@ from .models import (
     InstitutionBankType,
     InstitutionWorkingDays,
     InstitutionBankAccount,
+    InstitutionTax,
+    InstitutionTaxRule,
 )
 import os
 from django.db import transaction
@@ -19,6 +21,7 @@ import logging
 from django.utils import timezone
 from settings.serializers import SystemDaySerializer
 from settings.models import SystemDay
+
 
 logger = logging.getLogger(__name__)
 
@@ -283,14 +286,10 @@ class InstitutionWorkingDaysSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context.get("request")
-        user = (
-            request.user.profile if request and request.user.is_authenticated else None
-        )
+        user = request.user.profile if request.user else None
 
         if not user:
-            raise serializers.ValidationError(
-                "User must be authenticated to create working days."
-            )
+            raise serializers.ValidationError("User has not profile")
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
@@ -337,6 +336,147 @@ class InstitutionWorkingDaysSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         rep["days"] = SystemDaySerializer(instance.days, many=True).data
         return rep
+
+
+class InstitutionTaxSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = InstitutionTax
+        fields = [
+            "id",
+            "institution",
+            "tax_name",
+            "tax_status",
+            "created_by",
+            "created_at",
+            "updated_by",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "institution",
+            "created_by",
+            "created_at",
+            "updated_by",
+            "updated_at",
+        ]
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+
+        user = request.user.profile if request.user else None
+
+        if not user:
+            raise serializers.ValidationError("User has no profile.")
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            raise serializers.ValidationError("Institution not found.")
+
+        validated_data["institution"] = institution
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        request = self.context.get("request")
+        user = request.user.profile if request.user else None
+
+        if not user:
+            raise serializers.ValidationError("User has no profile.")
+
+        instance.updated_by = request.user
+
+        instance.tax_name = validated_data.get("tax_name", instance.tax_name)
+        instance.tax_status = validated_data.get("tax_status", instance.tax_status)
+
+        instance.save()
+        return instance
+
+
+class InstitutionTaxRuleSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = InstitutionTaxRule
+        fields = [
+            "id",
+            "institution_tax",
+            "tax_rule_name",
+            "tax_rule_description",
+            "tax_rule_percentage",
+            "tax_rule_fixed_amount",
+            "salary_from",
+            "salary_to",
+            "created_by",
+            "created_at",
+            "updated_by",
+            "updated_at",
+        ]
+
+        read_only_fields = [
+            "id",
+            "institution_tax",
+            "created_by",
+            "created_at",
+            "updated_by",
+            "updated_at",
+        ]
+
+    def validate(self, attrs):
+        tax_rule_percentage = attrs.get("tax_rule_percentage")
+        tax_rule_fixed_amount = attrs.get("tax_rule_fixed_amount")
+
+        if not tax_rule_percentage and not tax_rule_fixed_amount:
+            raise serializers.ValidationError(
+                "Either tax_rule_percentage or tax_rule_fixed_amount must be provided."
+            )
+
+        if tax_rule_percentage and tax_rule_fixed_amount:
+            raise serializers.ValidationError(
+                "Only one of tax_rule_percentage or tax_rule_fixed_amount can be provided."
+            )
+
+        return attrs
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        user = request.user.profile if request.user else None
+
+        if not user:
+            raise serializers.ValidationError("User has no profile.")
+
+        institution_tax = validated_data.get("institution_tax")
+        if not institution_tax:
+            raise serializers.ValidationError("Institution tax is required.")
+
+        validated_data["created_by"] = request.user
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        request = self.context.get("request")
+        user = request.user.profile if request.user else None
+
+        if not user:
+            raise serializers.ValidationError("User has no profile.")
+
+        instance.updated_by = request.user
+
+        instance.tax_rule_name = validated_data.get(
+            "tax_rule_name", instance.tax_rule_name
+        )
+        instance.tax_rule_description = validated_data.get(
+            "tax_rule_description", instance.tax_rule_description
+        )
+        instance.tax_rule_percentage = validated_data.get(
+            "tax_rule_percentage", instance.tax_rule_percentage
+        )
+        instance.tax_rule_fixed_amount = validated_data.get(
+            "tax_rule_fixed_amount", instance.tax_rule_fixed_amount
+        )
+        instance.salary_from = validated_data.get("salary_from", instance.salary_from)
+        instance.salary_to = validated_data.get("salary_to", instance.salary_to)
+
+        instance.save()
+        return instance
 
 
 class BranchSerializer(serializers.ModelSerializer):
