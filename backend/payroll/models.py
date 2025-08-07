@@ -7,6 +7,7 @@ from django.utils import timezone
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
+from institution.models import Institution
 
 
 class BaseModel(models.Model):
@@ -351,7 +352,7 @@ class PayrollPeriod(models.Model):
     """
 
     institution = models.ForeignKey(
-        "institution.Institution",
+        Institution,
         on_delete=models.CASCADE,
         related_name="payroll_periods",
     )
@@ -367,6 +368,41 @@ class PayrollPeriod(models.Model):
 
     class Meta:
         ordering = ["-start_date"]
+
+
+class TaxType(models.Model):
+    """Defines a general type of tax, linked directly to an institution
+    e.g, PAYE - Uganda or NSSF
+    """
+
+    institution = models.ForeignKey(
+        'institution.Institution',
+        on_delete=models.CASCADE,
+        related_name='tax_types',
+        help_text='The institution this tax type belongs to.'
+    )
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    update_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.institution.institution_name})"
+    
+    class Meta:
+        unique_together = ['institution', 'name']
+        ordering = ['name']
+    
+class TaxRuleCalculationChoices(models.TextChoices):
+    ('fixed_percentage', 'Fixed_Percentage'),
+    ('tiered_brackets', 'Tiered_Brackets')
+
+
+class TaxRule(models.Model):
+    """Defines a tax rule linked to a specific TypeTax
+    """
+    
 
 
 class Payslip(models.Model):
