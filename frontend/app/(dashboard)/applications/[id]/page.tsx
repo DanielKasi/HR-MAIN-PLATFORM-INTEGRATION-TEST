@@ -52,7 +52,7 @@ import {Avatar, AvatarFallback} from "@/components/ui/avatar";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {Plus, Check} from "lucide-react";
 import {createInterviewStage} from "@/lib/utils";
-import type {IInterviewStageFormData} from "@/app/types/types.utils";
+import type {IInterviewStageFormData} from "@/types/types.utils";
 import {EmployeeSearchableSelect} from "@/components/ui/employee-searchable-select";
 
 import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
@@ -68,7 +68,7 @@ import type {
   IInterviewStage,
   IEmployee,
   IInterviewFormData,
-} from "@/app/types/types.utils";
+} from "@/types/types.utils";
 import {toast} from "sonner";
 import {downloadFile} from "@/lib/helpers";
 import {selectUser} from "@/store/auth/selectors";

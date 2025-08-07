@@ -63,7 +63,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getOnBoardings, updateOnBoarding } from "@/lib/utils"
-import type { IOnBoarding, IOnBoardingFormData } from "@/app/types/types.utils"
+import type { IOnBoarding, IOnBoardingFormData } from "@/types/types.utils"
 import { toast } from "sonner"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 

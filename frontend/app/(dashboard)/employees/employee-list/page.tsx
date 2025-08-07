@@ -33,7 +33,7 @@ import {
 import { getAllEmployees } from "@/lib/utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { type EmployeeFormData, type IEmployee, PERMISSION_CODES } from "@/app/types/types.utils"
+import { type EmployeeFormData, type IEmployee, PERMISSION_CODES } from "@/types/types.utils"
 import Link from "next/link"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 

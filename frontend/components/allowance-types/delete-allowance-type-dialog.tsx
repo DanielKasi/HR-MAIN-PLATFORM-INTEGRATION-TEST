@@ -12,7 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { toast } from "sonner"
-import type { IAllowanceType } from "@/app/types/types.utils"
+import type { IAllowanceType } from "@/types/types.utils"
 import { deleteAllowanceType } from "@/lib/utils"
 
 interface DeleteAllowanceTypeDialogProps {

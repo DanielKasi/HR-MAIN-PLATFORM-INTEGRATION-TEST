@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { deleteDeductionType } from "@/lib/utils"
-import type { IDeductionType } from "@/app/types/types.utils"
+import type { IDeductionType } from "@/types/types.utils"
 
 interface DeleteDeductionTypeDialogProps {
   isOpen: boolean

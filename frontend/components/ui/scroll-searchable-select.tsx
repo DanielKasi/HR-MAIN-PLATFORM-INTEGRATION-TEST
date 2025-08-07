@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"
 import { Check, ChevronsUpDown, Loader2, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { IPaginatedResponse } from "@/app/types/types.utils"
+import { IPaginatedResponse } from "@/types/types.utils"
 
 interface SearchableSelectInfiniteProps<T> {
     value?: string | number

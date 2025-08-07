@@ -1849,3 +1849,50 @@ export interface IWorkingDaysFormData {
 }
 
 
+// Tax interfaces matching backend models
+export interface ITax {
+  id: number;
+  institution: number;
+  tax_name: string;
+  tax_status: boolean;
+  created_by: number;
+  created_at: string;
+  updated_by: number;
+  updated_at: string;
+}
+
+export interface ITaxFormData {
+  tax_name: string;
+  tax_status: boolean;
+}
+
+export interface ITaxRule {
+  id: number;
+  institution_tax: number;
+  tax_rule_name: string;
+  tax_rule_description?: string;
+  tax_rule_percentage?: number;
+  tax_rule_fixed_amount?: number;
+  salary_from?: number;
+  salary_to?: number;
+  created_by: number;
+  created_at: string;
+  updated_by: number;
+  updated_at: string;
+}
+
+export interface ITaxRuleFormData {
+  institution_tax: number;
+  tax_rule_name: string;
+  tax_rule_description?: string;
+  tax_rule_percentage?: number;
+  tax_rule_fixed_amount?: number;
+  salary_from?: number;
+  salary_to?: number;
+}
+
+// Legacy interfaces for backward compatibility
+export interface Itax extends ITax {}
+export interface ItaxRules extends ITaxRule {}
+
+

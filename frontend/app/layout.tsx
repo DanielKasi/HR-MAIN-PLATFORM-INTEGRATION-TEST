@@ -13,7 +13,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { WebSocketProvider } from "@/lib/WebSocketProvider";
 import { cn } from "@/lib/utils";
 
-// const outfit = Outfit({subsets: ["latin"], weight:['100', '200', '300', '400', '500', '600', '700', '800', '900']});
+// const Outfit = Outfit({subsets: ["latin"], weight:['100', '200', '300', '400', '500', '600', '700', '800', '900']});
 const font = Outfit({ subsets: ["latin"] });
 
 

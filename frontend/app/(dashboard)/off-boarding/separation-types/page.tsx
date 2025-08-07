@@ -47,7 +47,7 @@ import * as z from "zod";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {cn, OffboardingStagesAPI, SeparationPolicyTypesAPI} from "@/lib/utils";
-import {ISeparationType, IOffboardingStage, SeparationCategory} from "@/app/types/types.utils";
+import {ISeparationType, IOffboardingStage, SeparationCategory} from "@/types/types.utils";
 
 const SEPARATION_CATEGORIES = [
   {value: "resignation", label: "Resignation"},

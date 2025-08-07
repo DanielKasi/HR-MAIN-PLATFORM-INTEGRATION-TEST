@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import type { ISystemWorkingDay } from "@/app/types/types.utils"
+import type { ISystemWorkingDay } from "@/types/types.utils"
 
 interface DaySelectionCardProps {
   day: ISystemWorkingDay

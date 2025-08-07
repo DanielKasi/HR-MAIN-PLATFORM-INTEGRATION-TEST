@@ -73,7 +73,7 @@ import type {
   JobApplicationFormData,
   JobPositionAdvert,
   PaginatedResponse,
-} from "@/app/types/types.utils";
+} from "@/types/types.utils";
 import { selectUser, selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import {
   DropdownMenu,
@@ -85,7 +85,7 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { PERMISSION_CODES } from "@/types/types.utils";
 import {
   createInterviewStage,
   getInterviewStages,
@@ -97,7 +97,7 @@ import type {
   IEmployee,
   IInterviewFormData,
   IInterviewStageFormData,
-} from "@/app/types/types.utils";
+} from "@/types/types.utils";
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 

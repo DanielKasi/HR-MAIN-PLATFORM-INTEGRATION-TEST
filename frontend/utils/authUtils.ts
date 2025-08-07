@@ -1,4 +1,4 @@
-import {IPermission, IUser, IUserInstitution, Permission} from "@/app/types";
+import {IPermission, IUser, IUserInstitution, Permission} from "@/types";
 import apiRequest from "@/lib/apiRequest";
 import {getInstitutionById} from "@/lib/helpers";
 import {store} from "@/store";

@@ -13,7 +13,7 @@ import { Search, Plus, Edit, Trash2, Loader2, Eye, ChevronLeft, ChevronRight, Mo
 import { toast } from "sonner"
 import { bankTypesAPI } from "@/lib/utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
-import type { IBankType, IBankTypeFormData } from "@/app/types/types.utils"
+import type { IBankType, IBankTypeFormData } from "@/types/types.utils"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 import { BankTypeModal } from "@/components/bank-types/create-bank-type-modal"
 import { BankTypeDetailsModal } from "@/components/bank-types/bank-types-details-modal"

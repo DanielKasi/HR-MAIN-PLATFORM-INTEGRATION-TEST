@@ -37,7 +37,7 @@ import {
   MoreVertical,
 } from "lucide-react"
 import { getDisciplinaryActions, deleteDisciplinaryAction } from "@/lib/utils"
-import { transformDisciplinaryActionData, PERMISSION_CODES } from "@/app/types/types.utils"
+import { transformDisciplinaryActionData, PERMISSION_CODES } from "@/types/types.utils"
 import { toast } from "sonner"
 import ProtectedComponent from "@/components/ProtectedComponent"
 import { TableSkeleton } from "@/components/common/table-skeleton"

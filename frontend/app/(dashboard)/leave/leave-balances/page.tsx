@@ -65,9 +65,9 @@ import {
   getLeaveTypes,
 } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { ILeaveBalance, IEmployee, ILeaveType } from "@/app/types/types.utils";
+import { ILeaveBalance, IEmployee, ILeaveType } from "@/types/types.utils";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { PERMISSION_CODES } from "@/types/types.utils";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 
 // Pagination constants

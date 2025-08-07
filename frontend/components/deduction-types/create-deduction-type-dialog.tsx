@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
 import { createDeductionType } from "@/lib/utils"
-import { ALLOWANCE_FREQUENCIES, IAllowanceFrequency, IDeductionTypeFormData } from "@/app/types/types.utils"
+import { ALLOWANCE_FREQUENCIES, IAllowanceFrequency, IDeductionTypeFormData } from "@/types/types.utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 

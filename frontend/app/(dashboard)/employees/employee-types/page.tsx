@@ -30,7 +30,7 @@ import { toast } from "sonner"
 // Import your API functions and types
 import { getEmployeeTypes, createEmployeeType, updateEmployeeType, deleteEmployeeType } from "@/lib/utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
-import type { IEmployeeType, IEmployeeTypeFormData } from "@/app/types/types.utils"
+import type { IEmployeeType, IEmployeeTypeFormData } from "@/types/types.utils"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 

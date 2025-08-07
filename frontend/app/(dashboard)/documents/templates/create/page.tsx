@@ -20,7 +20,7 @@ import {ArrowLeft, Upload, FileText, File, Plus, X, Loader2} from "lucide-react"
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {getDocumentTypes, createDocumentTemplate} from "@/lib/utils";
-import {IDocumentTemplateFormData, IDocumentType} from "@/app/types/types.utils";
+import {IDocumentTemplateFormData, IDocumentType} from "@/types/types.utils";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {RichEditorField} from "@/components/common/rich-editor";

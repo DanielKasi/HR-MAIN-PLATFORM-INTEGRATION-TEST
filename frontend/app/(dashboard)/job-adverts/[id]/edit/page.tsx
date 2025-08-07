@@ -20,7 +20,7 @@ import type {
   IJobPosition,
   JobAdvertStatus,
   JobPositionAdvert,
-} from "@/app/types/types.utils"
+} from "@/types/types.utils"
 import { toast } from "sonner"
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 import { RichEditorField } from "@/components/common/rich-editor"

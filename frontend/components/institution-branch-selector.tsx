@@ -18,7 +18,7 @@ import {
   selectSelectedInstitution,
 } from "@/store/auth/selectors";
 import {setSelectedBranch, setSelectedInstitution} from "@/store/auth/actions";
-import {Branch, IUserInstitution} from "@/app/types";
+import {Branch, IUserInstitution} from "@/types";
 
 interface Institution {
   id: number;

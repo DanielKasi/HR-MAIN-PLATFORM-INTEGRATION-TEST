@@ -1,6 +1,6 @@
 import axios, {InternalAxiosRequestConfig} from "axios";
 
-import {CustomApiRequestError} from "@/app/types/types.utils";
+import {CustomApiRequestError} from "@/types/types.utils";
 import {store} from "@/store";
 import {logoutStart, setAccessToken, setRefreshToken} from "@/store/auth/actions";
 import {LoginResponse} from "@/utils/authUtils";

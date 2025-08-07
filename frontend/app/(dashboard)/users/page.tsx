@@ -1,6 +1,6 @@
 "use client";
 
-import type { UserProfile } from "@/app/types";
+import type { UserProfile } from "@/types";
 
 import { useEffect, useState } from "react";
 import { Search, ChevronDown, Eye, Trash2, ArrowLeft, Plus } from "lucide-react";
@@ -24,7 +24,7 @@ import {
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { PageSizeSelector } from "@/components/ui/page-size-selector";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { PERMISSION_CODES } from "@/types/types.utils";
 import { handleApiError } from "@/lib/apiErrorHandler";
 
 export default function StaffPage() {

@@ -55,7 +55,7 @@ import {
   Building2
 } from "lucide-react"
 import { toast } from "sonner"
-import type { IInterviewStage, IInterviewStageFormData, IEmployee, IInterview } from "@/app/types/types.utils"
+import type { IInterviewStage, IInterviewStageFormData, IEmployee, IInterview } from "@/types/types.utils"
 import { createInterviewStage, fetchEmployees, getInterviews, getInterviewStages, updateInterview, createInterview, bulkCreateOnBoarding } from "@/lib/utils"
 import { selectUser, selectSelectedInstitution } from "@/store/auth/selectors"
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"

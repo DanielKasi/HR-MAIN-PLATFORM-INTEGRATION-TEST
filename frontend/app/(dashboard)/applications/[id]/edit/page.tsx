@@ -29,7 +29,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 
 import { selectSelectedInstitution, selectSelectedBranch, selectUser } from "@/store/auth/selectors"
 import { getJobApplicationById, updateJobApplication, getJobPositionAdverts } from "@/lib/utils"
-import type { JobApplication, JobApplicationFormData, JobPositionAdvert } from "@/app/types/types.utils"
+import type { JobApplication, JobApplicationFormData, JobPositionAdvert } from "@/types/types.utils"
 import { toast } from "sonner"
 import { useDocumentTitle } from "@/hooks/use-document-title"
 

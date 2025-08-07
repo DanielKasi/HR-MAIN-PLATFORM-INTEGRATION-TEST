@@ -8,8 +8,8 @@ import Image from "next/image"
 import { useSelector, useDispatch } from "react-redux"
 import { Icon } from "@iconify/react"
 
-import type { IUserInstitution } from "../types"
-import { PERMISSION_CODES } from "../types/types.utils"
+import type { IUserInstitution } from "../../types"
+import { PERMISSION_CODES } from "../../types/types.utils"
 import { selectAttachedInstitutions } from "@/store/auth/selectors"
 import { Button } from "@/components/ui/button"
 import {
@@ -257,7 +257,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { title: "Deduction Types", href: "/payroll/deduction-types" },
         { title: "Employee Allowance", href: "/payroll/employee-allowance" },
         { title: "Employee Deductions", href: "/payroll/employee-deductions" },
+        { title: "Employee Tax", href: "/payroll/employee-tax" },
         { title: "Payroll Period", href: "/payroll/payroll-period" },
+        { title: "Taxes", href: "/payroll/taxes" },
       ],
     },
   ]

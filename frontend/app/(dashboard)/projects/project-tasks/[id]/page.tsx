@@ -2,7 +2,7 @@
 
 import {useEffect, useState} from "react";
 import {useParams} from "next/navigation";
-import type {UserProfile} from "@/app/types";
+import type {UserProfile} from "@/types";
 import {apiGet} from "@/lib/apiRequest";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";

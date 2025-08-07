@@ -1,6 +1,6 @@
 "use client";
 
-import type {Branch} from "@/app/types";
+import type {Branch} from "@/types";
 
 import {useState, useEffect} from "react";
 import {Plus} from "lucide-react";

@@ -37,10 +37,10 @@ import {
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { getJobPositionAdverts, updateJobPositionAdvert } from "@/lib/utils";
-import type { JobPositionAdvert, JobAdvertStatus, PaginatedResponse } from "@/app/types/types.utils";
+import type { JobPositionAdvert, JobAdvertStatus, PaginatedResponse } from "@/types/types.utils";
 import { toast } from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { PERMISSION_CODES } from "@/types/types.utils";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import RichTextDisplay from "@/components/common/rich-text-display";
 import { TableSkeleton } from "@/components/common/table-skeleton";

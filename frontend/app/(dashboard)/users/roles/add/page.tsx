@@ -1,6 +1,6 @@
 "use client";
 import type React from "react";
-import type {IPermission, Permission} from "@//app/types";
+import type {IPermission, Permission} from "@/types";
 
 import {useState, useEffect} from "react";
 import {useRouter} from "next/navigation";

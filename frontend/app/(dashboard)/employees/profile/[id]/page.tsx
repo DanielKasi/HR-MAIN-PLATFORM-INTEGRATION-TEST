@@ -23,7 +23,7 @@ import {
   CustomTabsTrigger,
   CustomTabsContent,
 } from "@/components/employee/custom-tabs";
-import type { IAttendance } from "@/app/types/types.utils";
+import type { IAttendance } from "@/types/types.utils";
 
 import { DocumentGenerationDialog } from "@/components/document-generation-dialog";
 import {
@@ -50,7 +50,7 @@ import {
 import Link from "next/link";
 import { AttendanceAPI, getEmployeeById } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import type { IEmployee } from "@/app/types/types.utils";
+import type { IEmployee } from "@/types/types.utils";
 import { toast } from "sonner";
 
 const formatDate = (dateString: string) => {

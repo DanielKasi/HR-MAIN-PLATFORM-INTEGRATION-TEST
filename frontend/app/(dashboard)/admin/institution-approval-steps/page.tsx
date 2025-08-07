@@ -1,5 +1,5 @@
 "use client";
-import type { ApprovalStep } from "@/app/types";
+import type { ApprovalStep } from "@/types";
 
 import {
   Search,

@@ -17,8 +17,8 @@ import { createDisciplinaryAction, createDisciplineType, getDisciplineTypes, get
 import { toast } from "sonner";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
-import { IUserInstitution } from "@/app/types";
-import { DisciplineTypeForm, DisciplinaryActionForm } from "@/app/types/types.utils";
+import { IUserInstitution } from "@/types";
+import { DisciplineTypeForm, DisciplinaryActionForm } from "@/types/types.utils";
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select";
 
 

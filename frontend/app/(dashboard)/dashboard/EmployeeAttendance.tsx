@@ -4,7 +4,7 @@ import {Card, CardHeader, CardTitle, CardContent} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {Badge} from "@/components/ui/badge";
 import {Search, X, Clock} from "lucide-react";
-import { IAttendance, IEmployee } from "@/app/types/types.utils"
+import { IAttendance, IEmployee } from "@/types/types.utils"
 import { toast } from "sonner";
 import Link from "next/link";
 import {CheckInModal} from "@/components/checkin-modal";

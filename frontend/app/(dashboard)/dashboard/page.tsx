@@ -52,12 +52,12 @@ import {
   getLeavePolicies,
   getDepartments,
 } from "@/lib/utils";
-import {IUserInstitution, USER_GENDER} from "@/app/types";
+import {IUserInstitution, USER_GENDER} from "@/types";
 import {SimpleCalendarWidget} from "@/components/calendar-widget";
 import { TasksCards } from "@/components/dashboard_components/tasks-cards";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
-import { IDepartment, IEmployee, IInterview, ILeaveRequest, JobPositionAdvert } from "@/app/types/types.utils";
+import { IDepartment, IEmployee, IInterview, ILeaveRequest, JobPositionAdvert } from "@/types/types.utils";
 
 
 // Interface for leave applications

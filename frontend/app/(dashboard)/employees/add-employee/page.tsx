@@ -54,8 +54,8 @@ import type {
   IWorkTypeFormData,
   IEmployeeTypeFormData,
   ICountry,
-} from "@/app/types/types.utils";
-import type {IUserInstitution} from "@/app/types";
+} from "@/types/types.utils";
+import type {IUserInstitution} from "@/types";
 import {toast} from "sonner";
 import {selectEmployeeCreationForm} from "@/store/miscellaneous/selectors";
 import {useDispatch} from "react-redux";
