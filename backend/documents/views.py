@@ -342,30 +342,42 @@ class BaseDocumentView(APIView):
             if v is not None
         }
 
+        # Define placeholder patterns to match all formats
         placeholder_patterns = [
-            r"\{\{[\w\s\'-]+\}\}",  # {{variable_name}} or {{Employee's Name}}
-            r"<<[\w\s\'-]+>>",  # <<variable_name>> or <<Employee's Name>>
-            r"\[\[[\w\s\'-]+\]\]",  # [[variable_name]] or [[Employee's Name]]
-            r"\[[\w\s\'-]*\w+\]",  # [variable_name] or [Parent]
-            r"([\w\s\'-]+?)\s*:?\s*_{10,}",  # Phrase: __________
+            r"\{\{[\w\s\'-]+\}\}",         # {{variable_name}} or {{Employee's Name}}
+            r"\{[\w\s\'-]+\}",            # {variable_name} or {Employee's Name}
+            r"\[\[[\w\s\'-]+\]\]",        # [[variable_name]] or [[Employee's Name]]
+            r"\[[\w\s\'-]*\w+\]",         # [variable_name] or [Parent]
+            r"<<[\w\s\'-]+>>",            # <<variable_name>> or <<Employee's Name>>
+            r"<[\w\s\'-]+>",              # <variable_name> or <Employee's Name>
+            r"([\w\s\'-]+?)\s*:?\s*_{10,}" # Phrase: __________
         ]
         combined_pattern = "|".join(f"({pattern})" for pattern in placeholder_patterns)
-        all_matches = re.findall(combined_pattern, content)
+        all_matches = re.findall(combined_pattern, preview, re.IGNORECASE)
 
+        # Process each match
         for match_tuple in all_matches:
             match = next(m for m in match_tuple if m)
-            if re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match):
-                phrase = re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match).group(1).strip()
+            if re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match, re.IGNORECASE):
+                # Handle underscore placeholders (e.g., "Name: ________")
+                phrase = re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match, re.IGNORECASE).group(1).strip()
                 normalized_key = re.sub(r"\s+", "_", phrase.replace("'", "")).lower()
                 value = normalized_values.get(normalized_key, "__________")
                 replacement = f"{phrase}: {value}"
                 preview = re.sub(re.escape(match), replacement, preview, count=1)
             else:
+                # Handle other placeholder formats
                 normalized = self._normalize_placeholder(match)
                 normalized_key = normalized.strip("{}").lower()
                 value = normalized_values.get(normalized_key, match)
-                preview = preview.replace(match, str(value))
+                # Escape < and > for HTML content to prevent tag confusion
+                if match.startswith("<") and match.endswith(">"):
+                    escaped_match = match.replace("<", "&lt;").replace(">", "&gt;")
+                    preview = preview.replace(match, str(value))
+                else:
+                    preview = preview.replace(match, str(value))
 
+        # Handle special case placeholders (e.g., "initials: __________")
         special_keys = ["initials", "signature", "days", "state"]
         for key in special_keys:
             if key in normalized_values:
