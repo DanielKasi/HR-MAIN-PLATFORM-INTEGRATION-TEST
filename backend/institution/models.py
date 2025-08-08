@@ -74,6 +74,10 @@ class Institution(models.Model):
         null=True,
         blank=True,
     )
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Designates whether the institution should be active or in active'
+    )
 
     class Meta:
         unique_together = ("institution_owner", "institution_name")
@@ -291,6 +295,10 @@ class InstitutionBankType(models.Model):
         null=True,
         blank=True,
     )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Designates whether the institution bank type should be treated active or in active. "
+    )
 
     def __str__(self):
         return f"Type: {self.bank_fullname} FOR {self.institution.institution_name}"
@@ -318,6 +326,10 @@ class InstitutionBankAccount(models.Model):
         on_delete=models.CASCADE,
         null=True,
         blank=True,
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Designates whether institution bank account should be treated as active or in active."
     )
 
     class Meta:
@@ -383,6 +395,10 @@ class InstitutionTax(models.Model):
         null=True,
         blank=True,
     )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Designates whether institution type should be treated as active or in active."
+    )
 
     def __str__(self):
         return self.tax_name
@@ -428,6 +444,10 @@ class InstitutionTaxRule(models.Model):
         null=True,
         blank=True,
     )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Designates whether institution tax rule should be treated as active or in active"
+    )
 
     def __str__(self):
         return self.tax_rule_name
@@ -462,6 +482,10 @@ class Branch(models.Model):
         on_delete=models.CASCADE,
         null=True,
         blank=True,
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Designates whether the branch should be treated as active or in active."
     )
 
     def save(self, *args, **kwargs):
@@ -506,6 +530,10 @@ class UserBranch(models.Model):
         on_delete=models.CASCADE,
         null=True,
         blank=True,
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Designates whether user branch should be treated as active or in active."
     )
 
     class Meta:
@@ -569,6 +597,10 @@ class Department(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Designates whether department should be treated as active or in active."
     )
 
     def __str__(self):

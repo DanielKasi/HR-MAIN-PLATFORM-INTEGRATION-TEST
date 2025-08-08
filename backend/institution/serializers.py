@@ -99,6 +99,7 @@ class InstitutionSerializer(serializers.ModelSerializer):
             "document_files",
             "document_titles",
             "branches",
+            "is_active"
         ]
 
     def create(self, validated_data):
@@ -182,6 +183,7 @@ class InstitutionBankTypeSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_by",
             "updated_at",
+            "is_active"
         ]
 
         read_only_fields = [
@@ -232,6 +234,7 @@ class InstitutionBankAccountSerializer(serializers.ModelSerializer):
             "created_by",
             "updated_by",
             "paid_branches",
+            "is_active"
         ]
         read_only_fields = [
             "id",
@@ -351,6 +354,7 @@ class InstitutionTaxSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_by",
             "updated_at",
+            "is_active"
         ]
         read_only_fields = [
             "id",
@@ -411,6 +415,7 @@ class InstitutionTaxRuleSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_by",
             "updated_at",
+            "is_active"
         ]
 
         read_only_fields = [
@@ -514,6 +519,7 @@ class BranchSerializer(serializers.ModelSerializer):
             "branch_email",
             "branch_opening_time",
             "branch_closing_time",
+            "is_active"
         ]
 
     def get_institution_logo(self, obj):
@@ -574,6 +580,7 @@ class UserBranchSerializer(serializers.ModelSerializer):
             "is_default",
             "user_details",
             "branch_details",
+            "is_active"
         ]
 
     def create(self, validated_data):
