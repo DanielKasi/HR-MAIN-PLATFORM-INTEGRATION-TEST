@@ -362,6 +362,7 @@ class EmployeeTax(models.Model):
     effective_to = models.DateField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.employee} - {self.institution_tax.tax_name}"
@@ -432,6 +433,7 @@ class PayrollPeriod(models.Model):
     pay_date = models.DateField()
     is_processed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -468,6 +470,7 @@ class Payslip(models.Model):
     paid_date = models.DateField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.employee} - {self.payroll_period.name}"
