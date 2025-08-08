@@ -351,16 +351,6 @@ class PayrollProcessor:
         # Default deductions
         default_deductions = [
             {
-                "name": "Income Tax",
-                "description": "Monthly income tax (PAYE)",
-                "is_mandatory": True,
-            },
-            {
-                "name": "NSSF",
-                "description": "National Social Security Fund contribution",
-                "is_mandatory": True,
-            },
-            {
                 "name": "Health Insurance",
                 "description": "Monthly health insurance premium",
                 "is_mandatory": False,
@@ -373,11 +363,6 @@ class PayrollProcessor:
             {
                 "name": "Union Dues",
                 "description": "Monthly union membership fees",
-                "is_mandatory": False,
-            },
-            {
-                "name": "Professional Tax",
-                "description": "Professional body membership fees",
                 "is_mandatory": False,
             },
             {

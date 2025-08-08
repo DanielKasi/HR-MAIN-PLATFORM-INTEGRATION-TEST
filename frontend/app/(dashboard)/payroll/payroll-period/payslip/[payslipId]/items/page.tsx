@@ -10,7 +10,7 @@ import {Button} from "@/components/ui/button";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {toast} from "sonner";
 
-import {getPayslipItems} from "@/lib/utils";
+import {getPayslip, getPayslipItems} from "@/lib/utils";
 import {IPayslip, IPayslipItem} from "@/types/types.utils";
 
 
@@ -38,8 +38,9 @@ export default function PayslipItems() {
     try {
       setError(null);
       const response = await getPayslipItems(parseInt(payslipId));
+      const payslipData = await getPayslip(payslipId  as unknown as number)
       setItems(response);
-      setPayslipInfo(response[0].payslip);
+      setPayslipInfo(response[0]?.payslip);
     } catch (error: any) {
       setError(error.message || "Failed to load payslip items");
       toast.error("Failed to load payslip items");
