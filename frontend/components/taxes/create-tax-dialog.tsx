@@ -126,13 +126,11 @@ export function CreateTaxDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
-            Cancel
-          </Button>
+      
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="bg-orange-500 hover:bg-orange-600"
+            className="bg-primary rounded-full w-full"
           >
             {isSubmitting ? (
               <>

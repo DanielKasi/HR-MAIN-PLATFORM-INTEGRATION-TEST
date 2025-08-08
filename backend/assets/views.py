@@ -28,6 +28,8 @@ from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_view
+from users.models import Profile
+
 
 
 class AssetCategoryListCreateView(APIView):
@@ -164,7 +166,14 @@ class AssetListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def post(self, request):
-        serializer = AssetSerializer(data=request.data, context={"request": request})
+        data = request.data.copy()
+        
+
+        user_profile = get_object_or_404(Profile, user=request.user)
+        data["created_by"] = user_profile.id
+
+        print(f"data {data}")
+        serializer = AssetSerializer(data=data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)

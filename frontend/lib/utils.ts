@@ -87,6 +87,11 @@ import {
   ITaxFormData,
   ITaxRule,
   ITaxRuleFormData,
+  IAssetCategory,
+  IAssetCategoryFormData,
+  IAsset,
+  IAssetFormData,
+  IAssetHistory,
 } from "@/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -3832,5 +3837,111 @@ export const taxAPI = {
 
 
 }
+
+// Asset Category API functions
+export const assetCategoriesAPI = {
+  getAll: async (): Promise<IAssetCategory[]> => {
+    try {
+      const response = await apiRequest.get("/assets/asset-categories/");
+      return response.data.results || response.data;
+    } catch (error) {
+      console.error("Error fetching asset categories:", error);
+      throw error;
+    }
+  },
+
+  getById: async (id: number): Promise<IAssetCategory> => {
+    try {
+      const response = await apiRequest.get(`/assets/asset-categories/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching asset category:", error);
+      throw error;
+    }
+  },
+
+  create: async (data: IAssetCategoryFormData): Promise<IAssetCategory> => {
+    try {
+      const response = await apiRequest.post("/assets/asset-categories/", data);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating asset category:", error);
+      throw error;
+    }
+  },
+
+  update: async (id: number, data: Partial<IAssetCategoryFormData>): Promise<IAssetCategory> => {
+    try {
+      const response = await apiRequest.patch(`/assets/asset-categories/${id}/`, data);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating asset category:", error);
+      throw error;
+    }
+  },
+
+  delete: async (id: number): Promise<boolean> => {
+    try {
+      const response = await apiRequest.delete(`/assets/asset-categories/${id}/`);
+      return response.status === 204;
+    } catch (error) {
+      console.error("Error deleting asset category:", error);
+      throw error;
+    }
+  },
+};
+
+// Asset API functions
+export const assetsAPI = {
+  getAll: async (): Promise<IAsset[]> => {
+    try {
+      const response = await apiRequest.get("/assets/");
+      return response.data.results || response.data;
+    } catch (error) {
+      console.error("Error fetching assets:", error);
+      throw error;
+    }
+  },
+
+  getById: async (id: number): Promise<IAsset> => {
+    try {
+      const response = await apiRequest.get(`/assets/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching asset:", error);
+      throw error;
+    }
+  },
+
+  create: async (data: IAssetFormData): Promise<IAsset> => {
+    try {
+      const response = await apiRequest.post("/assets/", data);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating asset:", error);
+      throw error;
+    }
+  },
+
+  update: async (id: number, data: Partial<IAssetFormData>): Promise<IAsset> => {
+    try {
+      const response = await apiRequest.patch(`/assets/${id}/`, data);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating asset:", error);
+      throw error;
+    }
+  },
+
+  delete: async (id: number): Promise<boolean> => {
+    try {
+      const response = await apiRequest.delete(`/assets/${id}/`);
+      return response.status === 204;
+    } catch (error) {
+      console.error("Error deleting asset:", error);
+      throw error;
+    }
+  },
+};
 
 

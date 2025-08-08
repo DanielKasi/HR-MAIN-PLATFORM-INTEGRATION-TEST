@@ -262,6 +262,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { title: "Taxes", href: "/payroll/taxes" },
       ],
     },
+    {
+      title: "Assets",
+      href: "#1",
+      icon: <Icon icon="hugeicons:laptop" className="!w-6 !h-6" width="28" height="28" />,
+      submenu: [
+        { title: "Asset Categories", href: "/assests/asset-categories" },
+        { title: "Assets", href: "/assests/assets" },
+        { title: "Asset Requests", href: "/assests/asset-requests" },
+        { title: "Asset Allocations", href: "/assests/asset-allocations" },
+        { title: "Asset Returns", href: "/assests/asset-returns" },
+        { title: "Asset History", href: "/assests/asset-history" },
+      ],
+      requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
+    },
   ]
 
   const updateThemeColors = (hexColor: string) => {

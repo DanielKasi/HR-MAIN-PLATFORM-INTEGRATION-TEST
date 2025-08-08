@@ -49,6 +49,7 @@ class AssetHistorySerializer(serializers.ModelSerializer):
 class AssetSerializer(serializers.ModelSerializer):
     asset_histories = AssetHistorySerializer(many=True, read_only=True)
     current_holder = serializers.PrimaryKeyRelatedField(read_only=True)
+    
 
     class Meta:
         model = Asset
@@ -94,11 +95,15 @@ class AssetSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-        rep["current_holder"] = EmployeeSerializer(instance.current_holder).data
+        if instance.current_holder:
+            rep["current_holder"] = EmployeeSerializer(instance.current_holder).data
+        else:
+            rep["current_holder"] = None
         return rep
 
 
 class AssetRequestSerializer(serializers.ModelSerializer):
+    asset = AssetSerializer(read_only=True)
 
     class Meta:
         model = AssetRequest
@@ -174,6 +179,8 @@ class AssetRequestSerializer(serializers.ModelSerializer):
 
 
 class AssetAllocationSerializer(serializers.ModelSerializer):
+    asset = AssetSerializer(read_only=True)
+
     class Meta:
         model = AssetAllocation
         fields = [
@@ -223,6 +230,8 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
 
 
 class AssetReturnSerializer(serializers.ModelSerializer):
+    asset = AssetSerializer(read_only=True)
+
     class Meta:
         model = AssetReturn
         fields = "__all__"

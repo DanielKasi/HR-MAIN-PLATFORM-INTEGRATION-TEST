@@ -243,6 +243,16 @@ export default function AdminPage() {
                   </Link>
 
                 </div>
+                <div className="">
+                  <Link
+                    href="/admin/taxes"
+                    className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+                  >
+                    <Mail className="w-5 h-5 text-gray-500" />
+                    <span>Taxes</span>
+                  </Link>
+
+                </div>
               </div>
             </div>
 
