@@ -87,6 +87,7 @@ import {
   ITaxFormData,
   ITaxRule,
   ITaxRuleFormData,
+  IEmployeeTaxFormData,
 } from "@/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -3583,7 +3584,6 @@ export const taxesAPI = {
   getAll: async (): Promise<ITax[]> => {
     try {
       const response = await apiRequest.get('/institution/tax/');
-      console.log("Tax response",response)
       return response.data as ITax[];
     } catch (error) {
       throw error;
@@ -3815,22 +3815,43 @@ export const taxAPI = {
     }catch (error) {
       throw error
     }
-  
   },
 
   getAll: async () => {
     try {
-
       const response = await apiRequest.get("/institution/tax")
       return response.data as Itax[]
     }catch (error) {
 
     }
-  }
+  },
 
+  getAllEmployeeTaxes: async ({}) => {
+      const response = await apiRequest.get("/payroll/employee-taxes")
+      return response.data as IPaginatedResponse<Itax>
+  },
+
+  createEmployeeTaxes: async ({data}:{data:IEmployeeTaxFormData}) => {
+      const response = await apiRequest.post("/payroll/employee-taxes/", data)
+      return response.data as Itax
+  },
+  getEmployeeTax: async ({taxId}:{taxId:number|string}) => {
+      const response = await apiRequest.get(`/payroll/employee-taxes/${taxId}`)
+      return response.data as Itax
+  },
+  updateEmployeeTax: async ({data, taxId}:{data:Partial<IEmployeeTaxFormData>, taxId:number|string}) => {
+      const response = await apiRequest.patch(`/payroll/employee-taxes/${taxId}`, data)
+      return response.data as Itax
+  },
   
-
-
+  deleteEmployeeTax: async (taxId: number): Promise<boolean> => {
+    try {
+      const response = await apiRequest.delete(`/payroll/employee-taxes/${taxId}`)
+      return response.status === 204
+    } catch (error) {
+      throw error
+    }
+  },
 }
 
 

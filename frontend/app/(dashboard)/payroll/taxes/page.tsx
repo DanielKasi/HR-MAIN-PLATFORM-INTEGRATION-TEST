@@ -61,58 +61,7 @@ const formatDate = (dateString: string) => {
 };
 
 // Mock data for demonstration - replace with actual API calls
-const mockTaxes: ITax[] = [
-  {
-    id: 1,
-    institution: 1,
-    tax_name: "Income Tax",
-    tax_status: true,
-    created_by: 1,
-    created_at: "2024-01-15T10:30:00Z",
-    updated_by: 1,
-    updated_at: "2024-01-15T10:30:00Z",
-  },
-  {
-    id: 2,
-    institution: 1,
-    tax_name: "VAT",
-    tax_status: true,
-    created_by: 1,
-    created_at: "2024-01-10T14:20:00Z",
-    updated_by: 1,
-    updated_at: "2024-01-10T14:20:00Z",
-  },
-  {
-    id: 3,
-    institution: 1,
-    tax_name: "Corporate Tax",
-    tax_status: false,
-    created_by: 1,
-    created_at: "2024-01-05T09:15:00Z",
-    updated_by: 1,
-    updated_at: "2024-01-05T09:15:00Z",
-  },
-  {
-    id: 4,
-    institution: 1,
-    tax_name: "Property Tax",
-    tax_status: true,
-    created_by: 1,
-    created_at: "2024-01-20T11:45:00Z",
-    updated_by: 1,
-    updated_at: "2024-01-20T11:45:00Z",
-  },
-  {
-    id: 5,
-    institution: 1,
-    tax_name: "Excise Duty",
-    tax_status: true,
-    created_by: 1,
-    created_at: "2024-01-25T16:30:00Z",
-    updated_by: 1,
-    updated_at: "2024-01-25T16:30:00Z",
-  },
-];
+
 
 const TaxesComponent = () => {
   const router = useRouter();
@@ -155,7 +104,7 @@ const TaxesComponent = () => {
         setIsRefreshing(false);
       }
     },
-    [selectedInstitution?.id],
+    [selectedInstitution],
   );
 
   useEffect(() => {
@@ -165,7 +114,6 @@ const TaxesComponent = () => {
   const handleCreateSuccess = (newTax: ITax) => {
     setTaxes([newTax, ...taxes]);
     clearFilters();
-    toast.success("Tax created successfully");
   };
 
   const handleUpdateSuccess = (updatedTax: ITax) => {
