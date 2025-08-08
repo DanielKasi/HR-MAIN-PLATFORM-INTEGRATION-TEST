@@ -38,6 +38,10 @@ class EmployeeType(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Designates whether this EmployeeType should be treated as active or in active'
+    )
 
     def __str__(self):
         return self.name
@@ -50,6 +54,10 @@ class WorkType(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Designates whether this WorkType should be treated as active or in active.'
+    )
 
     def __str__(self):
         return self.name
@@ -511,6 +519,10 @@ class EmployeeAttendance(models.Model):
     )
     overtime_hours = models.DecimalField(
         max_digits=5, decimal_places=2, default=0.00, null=True, blank=True
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Designates whether this EmployeeAttendance should be treated as active or in active.'
     )
 
     def __str__(self):

@@ -1294,7 +1294,8 @@ class EmployeeAttendanceDetailAPIView(APIView):
     )
     def delete(self, request, pk):
         record = self.get_object(pk)
-        record.delete()
+        record.is_active = False
+        record.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1354,7 +1355,8 @@ class EmployeeTypeDetailAPIView(APIView):
     @extend_schema(description="Delete an employee type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.delete()
+        obj.is_active = False
+        obj.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1412,7 +1414,8 @@ class WorkTypeDetailAPIView(APIView):
     @extend_schema(description="Delete a work type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.delete()
+        obj.is_active = False
+        obj.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1471,7 +1474,8 @@ class EmployeeTypeDetailAPIView(APIView):
     @extend_schema(description="Delete an employee type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.delete()
+        obj.is_active = False
+        obj.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1528,7 +1532,8 @@ class WorkTypeDetailAPIView(APIView):
     @extend_schema(description="Delete a work type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.delete()
+        obj.is_active = False
+        obj.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1600,7 +1605,8 @@ class EmployeeContractDetailAPIView(APIView):
     )
     def delete(self, request, pk):
         contract = self.get_object(pk)
-        contract.delete()
+        contract.is_active = False
+        contract.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
