@@ -111,6 +111,7 @@ class AssetRequestSerializer(serializers.ModelSerializer):
             "notes",
             "created_at",
             "updated_at",
+            "is_active"
         ]
 
         read_only_fields = [

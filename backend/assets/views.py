@@ -121,7 +121,9 @@ class AssetCategoryDetailView(APIView):
     )
     def delete(self, request, pk):
         category = get_object_or_404(AssetCategory, pk=pk)
-        category.delete()
+        # Soft delete: change the status to in active instead of deleting the record.
+        category.is_active = False
+        category.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
@@ -239,7 +241,8 @@ class AssetDetailView(APIView):
     )
     def delete(self, request, pk):
         asset = get_object_or_404(Asset, pk=pk)
-        asset.delete()
+        asset.is_active = False
+        asset.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
@@ -356,7 +359,8 @@ class AssetRequestDetailView(APIView):
     )
     def delete(self, request, pk):
         asset_request = get_object_or_404(AssetRequest, pk=pk)
-        asset_request.delete()
+        asset_request.is_active = False
+        asset_request.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
@@ -464,7 +468,8 @@ class AssetAllocationDetailView(APIView):
     )
     def delete(self, request, pk):
         asset_allocation = get_object_or_404(AssetAllocation, pk=pk)
-        asset_allocation.delete()
+        asset_allocation.is_active = False
+        asset_allocation.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
@@ -568,7 +573,8 @@ class AssetReturnDetailView(APIView):
     )
     def delete(self, request, pk):
         asset_return = get_object_or_404(AssetReturn, pk=pk)
-        asset_return.delete()
+        asset_return.is_active = False
+        asset_return.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
