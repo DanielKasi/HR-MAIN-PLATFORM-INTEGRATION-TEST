@@ -227,11 +227,6 @@ export default function EmployeeDeductionsRefactored() {
               disabled={filteredDeductions.length === 0}
             />
 
-            {/* <CreateDeductionTypeDialog
-              onSuccess={handleDeductionTypeCreated}
-              disabled={!selectedInstitution?.id}
-              isEmbedded={true}
-            /> */}
 
             <Button
               onClick={openNewDeductionDialog}

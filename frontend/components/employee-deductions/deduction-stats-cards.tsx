@@ -47,7 +47,7 @@ export function DeductionStatsCards({ deductions, getCalculatedAmount }: Deducti
           <div className="ml-3">
             <p className="text-sm font-medium text-gray-600">Total Monthly Cost</p>
             <p className="text-2xl font-bold text-blue-600">
-              ${totalMonthlyCost.toLocaleString()}
+              UGX {totalMonthlyCost.toLocaleString()}
             </p>
           </div>
         </div>

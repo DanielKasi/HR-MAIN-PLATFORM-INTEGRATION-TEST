@@ -443,15 +443,8 @@ export default function PayrollPeriodDetails() {
     return () => clearTimeout(timeoutId)
   }, [searchTerm, currentPage, itemsPerPage])
 
-  if (!selectedInstitution || !payrollPeriodId) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <span className="ml-2">No institution or payroll period selected...</span>
-      </div>
-    )
-  }
 
-  if (!payrollPeriod) {
+  if (!payrollPeriod && !isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <span className="ml-2">Payroll period not found.</span>
@@ -569,7 +562,7 @@ export default function PayrollPeriodDetails() {
   return (
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div>
-        <CardHeader>
+        <CardHeader className="p-0">
           <div className="flex justify-between gap-8 items-center">
             <div className="flex items-center justify-start gap-4">
               <Button
@@ -580,10 +573,14 @@ export default function PayrollPeriodDetails() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
+                {
+                  payrollPeriod && <>
                 <CardTitle className="text-2xl font-bold text-gray-900">Payslips for {payrollPeriod.name}</CardTitle>
                 <CardDescription className="text-gray-600">
                   Manage payslips for {formatDate(payrollPeriod.start_date)} - {formatDate(payrollPeriod.end_date)}
                 </CardDescription>
+                  </>
+                }
               </div>
             </div>
           </div>
@@ -608,29 +605,98 @@ export default function PayrollPeriodDetails() {
   <div className="flex gap-2 ml-6">
     {/* Bulk Payments dialog/button */}
     <Dialog open={bulkPaymentModalOpen} onOpenChange={setBulkPaymentModalOpen}>
-      <DialogTrigger asChild>
-        <Button
-          className="bg-green-600 hover:bg-green-700 shadow-md"
-          disabled={!selectedInstitution || displayedPayslips.filter((p) => !p.is_paid).length === 0}
-        >
-          <CheckCircle className="w-4 h-4 mr-2" />
-          Bulk Payments
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl">
-        {/* Dialog contents here */}
-      </DialogContent>
-    </Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    className="bg-green-600 hover:bg-green-700 shadow-md"
+                    disabled={!selectedInstitution || displayedPayslips.filter((p) => !p.is_paid).length === 0}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Bulk Payments
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Process Payments in Bulk</DialogTitle>
+                    <DialogDescription>
+                      Select a department to mark all unpaid payslips as paid for this period
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label htmlFor="department" className="text-sm font-medium text-gray-700">
+                          Department
+                        </label>
+                        <Select
+                          value={selectedDepartment}
+                          onValueChange={setSelectedDepartment}
+                          disabled={bulkProcessing}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select department" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Departments</SelectItem>
+                            {departments.map((dept, idx) => (
+                              <SelectItem key={idx} value={dept.id.toString()}>
+                                {dept.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {selectedDepartment && (
+                        <div className="bg-green-50 p-4 rounded-lg">
+                          <h4 className="font-semibold text-green-900 mb-2">
+                            {getUnpaidPayslipsByDepartment(selectedDepartment).length} unpaid payslips found
+                          </h4>
+                          <div className="text-sm text-green-800">
+                            {selectedDepartment === "all"
+                              ? "This will process payments for all unpaid payslips in this period."
+                              : `This will process payments for all unpaid payslips in ${departments.find(dept => dept.id.toString() === selectedDepartment)?.name || ""}.`}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setBulkPaymentModalOpen(false)
+                          setSelectedDepartment("all")
+                        }}
+                        disabled={bulkProcessing}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleBulkMarkAsPaid}
+                        className="bg-green-600 hover:bg-green-700"
+                        disabled={
+                          bulkProcessing ||
+                          !selectedDepartment ||
+                          getUnpaidPayslipsByDepartment(selectedDepartment).length === 0
+                        }
+                      >
+                        {bulkProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Process {getUnpaidPayslipsByDepartment(selectedDepartment).length} Payments
+                      </Button>
+                    </DialogFooter>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
 
     {/* Generate Payslips button */}
-    <Button
+    {payrollPeriod && <Button
       onClick={handleGeneratePayslips}
       className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400"
       disabled={payrollPeriod.is_processed || !selectedInstitution || !payrollPeriodId}
     >
       <Plus className="w-4 h-4 mr-2" />
       Generate Payslips
-    </Button>
+    </Button>}
 
     {/* Download dialog/button */}
     <Dialog open={downloadModalOpen} onOpenChange={setDownloadModalOpen}>
