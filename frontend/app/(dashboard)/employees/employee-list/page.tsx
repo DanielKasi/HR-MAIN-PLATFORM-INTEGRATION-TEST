@@ -221,7 +221,7 @@ function EmployeeTable({
             isOpen={isBulkUploadDialogOpen}
             onClose={() => setIsBulkUploadDialogOpen(false)}
             onUploadSuccess={() => {
-              loadEmployees()
+              loadEmployees();
               setIsBulkUploadDialogOpen(false)
             }}
           />
@@ -333,12 +333,7 @@ function EmployeeTable({
                 Clear Filters
               </Button>
             ) : (
-              <Link href="/employees/add-employee">
-                <Button className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700">
-                  <Plus className="h-4 w-4" />
-                  Add First Employee
-                </Button>
-              </Link>
+              <></>
             )}
           </div>
         ) : (

@@ -745,7 +745,7 @@ export default function CreateOrganisationWizard() {
                 </p>
               </div>
             ) : (
-              <div className="w-full space-y-3">
+              <div className="w-full space-y-3 max-h-[60svh] lg:max-h-[50svh] overflow-y-auto">
                 {filteredDepartments.map((dept, deptIndex) => (
                   <div key={dept.name} className="w-full border rounded-lg p-4 space-y-3 bg-card">
                     <div className="flex items-center justify-between">
