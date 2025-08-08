@@ -243,7 +243,8 @@ class EmployeeCreateAPIView(APIView):
         if file_extension not in ["csv", "xlsx"]:
             return Response(
                 {
-                    "detail": "Invalid file format. Only CSV or Excel files are supported."
+                    "detail": "Invalid file format. Only CSV or Excel files are supported.",
+                    "created_count": 0,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -262,7 +263,8 @@ class EmployeeCreateAPIView(APIView):
             if missing_columns:
                 return Response(
                     {
-                        "detail": f"Missing required columns: {', '.join(missing_columns)}"
+                        "detail": f"Missing required columns: {', '.join(missing_columns)}",
+                        "created_count": 0,
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
@@ -320,7 +322,8 @@ class EmployeeCreateAPIView(APIView):
                             print(f"Missing {field}s: {missing}")
                             return Response(
                                 {
-                                    "detail": f"The following {field}s do not exist: {', '.join(missing)}"
+                                    "detail": f"The following {field}s do not exist: {', '.join(missing)}",
+                                    "created_count":0,
                                 },
                                 status=status.HTTP_400_BAD_REQUEST,
                             )
@@ -338,6 +341,7 @@ class EmployeeCreateAPIView(APIView):
                 return Response(
                     {
                         "detail": "Duplicate email addresses found in the uploaded file",
+                        "created_count":0,
                         "errors": [
                             {
                                 "row": idx + 2,
@@ -361,6 +365,7 @@ class EmployeeCreateAPIView(APIView):
                 return Response(
                     {
                         "detail": "Some email addresses already exist in the database",
+                        "created_count":0,
                         "errors": [
                             {
                                 "row": idx + 2,
@@ -378,6 +383,7 @@ class EmployeeCreateAPIView(APIView):
             batch_size = 50
             employees = []
             errors = []
+            created_count = 0
 
             print(f"Starting batch processing with batch size {batch_size}")
             for start_idx in range(0, len(df), batch_size):
@@ -514,6 +520,7 @@ class EmployeeCreateAPIView(APIView):
                         created_employees = Employee.objects.bulk_create(employee_objects)
                         print(f"Created {len(created_employees)} employees")
                         employees.extend(created_employees)
+                        created_count += len(created_employees)
                     except Exception as e:
                         print(f"Error bulk creating employees: {str(e)}")
                         errors.append(
@@ -545,7 +552,7 @@ class EmployeeCreateAPIView(APIView):
             if errors:
                 print(f"Bulk upload errors: {errors}")
                 return Response(
-                    {"detail": "Some employees could not be created", "errors": errors},
+                    {"detail": "Some employees could not be created", "created_count":created_count, "errors": errors},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -553,14 +560,18 @@ class EmployeeCreateAPIView(APIView):
                 f"Total upload time: {(datetime.now() - start_time).total_seconds()} seconds"
             )
             return Response(
-                EmployeeSerializer(employees, many=True).data,
+                {
+                    "detail": "Employees created successfully",
+                    "created_count": created_count,
+                    "data": EmployeeSerializer(employees, many=True).data,
+                },
                 status=status.HTTP_201_CREATED,
             )
 
         except Exception as e:
             print(f"Error processing file: {str(e)}")
             return Response(
-                {"detail": f"Error processing file: {str(e)}"},
+                {"detail": f"Error processing file: {str(e)}", "created_count":created_count,},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
