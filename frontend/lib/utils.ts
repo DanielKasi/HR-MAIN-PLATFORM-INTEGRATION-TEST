@@ -2968,7 +2968,7 @@ export const getPaidPayslips = async (institutionId: number): Promise<IPayslip[]
   return getPayslips(institutionId, { is_paid: true });
 };
 
-export const getPayslipItems = async (payslipId: number): Promise<IPayslipItem[] | null> => {
+export const getPayslipItems = async (payslipId: number)=> {
   try {
     const response = await apiRequest.get(`payroll/payslips/${payslipId}/items/`);
     const data = response.data as PaginatedResponse<IPayslipItem>;

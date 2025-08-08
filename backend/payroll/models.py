@@ -458,6 +458,12 @@ class Payslip(models.Model):
     total_deductions = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00
     )
+    taxable_allowances = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00
+    )
+    non_taxable_allowances = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00
+    )
     gross_salary = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     net_salary = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     days_worked = models.PositiveIntegerField(default=30)  # or working days in period

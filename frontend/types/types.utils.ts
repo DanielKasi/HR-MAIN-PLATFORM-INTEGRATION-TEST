@@ -502,12 +502,15 @@ export interface IEmployee {
   roles: Role[];
 }
 
+
 export interface IPayslip {
   id: number;
   employee: IEmployee;
   payroll_period: IPayrollPeriod;
   basic_salary: string;
   total_allowances: string;
+  taxable_allowances: string;
+  non_taxable_allowances:string;
   total_deductions: string;
   gross_salary: string;
   net_salary: string;
@@ -1460,21 +1463,7 @@ export interface IPayslipFormData {
 
 export interface IPayslipItem {
   id: number;
-  payslip: {
-    id: number;
-    employee: any;
-    payroll_period: any;
-    basic_salary: string;
-    total_allowances: string;
-    total_deductions: string;
-    gross_salary: string;
-    net_salary: string;
-    days_worked: number;
-    is_paid: boolean;
-    paid_date: string | null;
-    created_at: string;
-    updated_at: string;
-  };
+  payslip:IPayslip;
   item_type: 'allowance' | 'deduction' | 'overtime';
   name: string;
   amount: string;

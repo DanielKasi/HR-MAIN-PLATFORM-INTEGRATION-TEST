@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { format } from "date-fns"
-import { Edit, Trash2, MoreVertical, Users } from 'lucide-react'
-import { Button } from "@/components/ui/button"
+import {format} from "date-fns";
+import {Edit, Trash2, MoreVertical, Users} from "lucide-react";
+import {Button} from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,14 +12,17 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import type { IEmployeeDeduction } from "@/types/types.utils"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
+import { DialogFooter, DialogHeader } from "../ui/dialog";
+import { useState } from "react";
 
 interface DeductionTableProps {
-  deductions: IEmployeeDeduction[]
-  totalDeductions: number
-  getCalculatedAmount: (deduction: IEmployeeDeduction) => number
-  onEdit: (deduction: IEmployeeDeduction) => void
-  onDelete: (id: number) => void
-  onClearFilters: () => void
+  deductions: IEmployeeDeduction[];
+  totalDeductions: number;
+  getCalculatedAmount: (deduction: IEmployeeDeduction) => number;
+  onEdit: (deduction: IEmployeeDeduction) => void;
+  onDelete: (id: number) => void;
+  onClearFilters: () => void;
 }
 
 export function DeductionTable({
@@ -31,8 +34,11 @@ export function DeductionTable({
   onClearFilters,
 }: DeductionTableProps) {
   const getCategoryColor = () => {
-    return "bg-red-50 text-red-700 border-red-200"
-  }
+    return "bg-red-50 text-red-700 border-red-200";
+  };
+
+  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deductionToDelete, setDeductionToDelete] = useState<IEmployeeDeduction | null>(null);
 
   if (deductions.length === 0) {
     return (
@@ -63,7 +69,7 @@ export function DeductionTable({
           )}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -97,7 +103,9 @@ export function DeductionTable({
             <TableRow key={deduction.id} className="hover:bg-gray-50 transition-colors">
               <TableCell>
                 <div>
-                  <div className="font-medium text-gray-900">{deduction.employee.user?.fullname}</div>
+                <div className="font-medium text-gray-900">
+                    {deduction.employee.user?.fullname}
+                  </div>
                   <div className="text-sm text-gray-500">{deduction.employee.email}</div>
                 </div>
               </TableCell>
@@ -113,7 +121,7 @@ export function DeductionTable({
               </TableCell>
               <TableCell>
                 <span className="text-lg font-semibold text-red-600">
-                  ${getCalculatedAmount(deduction).toLocaleString()}
+                  UGX {getCalculatedAmount(deduction).toLocaleString()}
                 </span>
               </TableCell>
               <TableCell>
@@ -150,17 +158,18 @@ export function DeductionTable({
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuItem
                       onClick={() => onEdit(deduction)}
-                      className="cursor-pointer hover:bg-red-50 focus:bg-red-50"
                     >
                       <Edit className="h-4 w-4 mr-2 text-red-600" />
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => onDelete(deduction.id)}
-                      className="cursor-pointer hover:bg-red-50 focus:bg-red-50 text-red-600"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
+                    onClick={() => {
+                          setDeleteDialogOpen(true);
+                          setDeductionToDelete(deduction);
+                        }} >
+                      
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -169,6 +178,38 @@ export function DeductionTable({
           ))}
         </TableBody>
       </Table>
+
+      {deductionToDelete && (
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Deduction</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this deduction? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  onDelete(deductionToDelete.id);
+                  setDeleteDialogOpen(false);
+                }}
+              >
+                Confirm
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setDeleteDialogOpen(false);
+                }}
+              >
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
-  )
+  );
 }
