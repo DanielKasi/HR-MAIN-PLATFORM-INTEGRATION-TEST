@@ -72,7 +72,7 @@ import {
   ChevronRight
 } from "lucide-react"
 import { toast } from "sonner"
-import type { JobPositionAdvert, IInterviewStage, IInterviewStageFormData, IEmployee, IInterview, IInterviewFormData } from "@/app/types/types.utils"
+import type { JobPositionAdvert, IInterviewStage, IInterviewStageFormData, IEmployee, IInterview, IInterviewFormData } from "@/types/types.utils"
 import { getJobPositionAdvertById, createInterviewStage, fetchEmployees, getInterviews, updateInterview, createInterview, bulkCreateOnBoarding, getOnBoardings } from "@/lib/utils"
 import { selectUser, selectSelectedInstitution } from "@/store/auth/selectors"
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select"

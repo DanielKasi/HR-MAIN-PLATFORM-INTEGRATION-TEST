@@ -11,7 +11,7 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/c
 import {toast} from "sonner";
 
 import {getPayslipItems} from "@/lib/utils";
-import {IPayslip, IPayslipItem} from "@/app/types/types.utils";
+import {IPayslip, IPayslipItem} from "@/types/types.utils";
 
 
 

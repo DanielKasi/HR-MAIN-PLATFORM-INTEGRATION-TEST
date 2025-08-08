@@ -21,7 +21,7 @@ import {Separator} from "@/components/ui/separator";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {Badge} from "@/components/ui/badge";
 import Link from "next/link";
-import type {ISeparationType} from "@/app/types/types.utils";
+import type {ISeparationType} from "@/types/types.utils";
 import apiRequest from "@/lib/apiRequest";
 
 interface SeparationPolicy {

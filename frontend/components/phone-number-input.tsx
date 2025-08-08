@@ -5,7 +5,7 @@ import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {toast} from "sonner";
 import CountrySelect from "@/components/common/country-select";
-import type {ICountry} from "@/app/types/types.utils";
+import type {ICountry} from "@/types/types.utils";
 
 interface PhoneNumberInputProps {
   label?: string;

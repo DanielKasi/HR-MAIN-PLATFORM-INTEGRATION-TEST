@@ -1,6 +1,6 @@
 "use client"
 
-import { IEmployeeAllowance } from '@/app/types/types.utils'
+import { IEmployeeAllowance } from '@/types/types.utils'
 import { Users, CoinsIcon as Coins2, CalendarPlus2Icon as CalendarIcon2, Percent } from 'lucide-react'
 
 interface AllowanceStatsCardsProps {

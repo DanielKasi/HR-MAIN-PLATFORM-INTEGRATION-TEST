@@ -39,7 +39,7 @@ import {
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {Check, ChevronsUpDown} from "lucide-react";
 import {cn} from "@/lib/utils";
-import type {UserProfile} from "@/app/types";
+import type {UserProfile} from "@/types";
 
 interface IProject {
   id: number;

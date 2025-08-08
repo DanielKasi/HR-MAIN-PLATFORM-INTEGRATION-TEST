@@ -23,6 +23,8 @@ from .models import (
     InstitutionBankAccount,
     InstitutionBankType,
     InstitutionWorkingDays,
+    InstitutionTax,
+    InstitutionTaxRule,
 )
 from users.serializers import ProfileSerializer
 from .serializers import (
@@ -36,6 +38,8 @@ from .serializers import (
     InstitutionBankTypeSerializer,
     InstitutionBankAccountSerializer,
     InstitutionWorkingDaysSerializer,
+    InstitutionTaxSerializer,
+    InstitutionTaxRuleSerializer,
 )
 from django.shortcuts import get_object_or_404
 from .utils import generate_compliant_password
@@ -478,6 +482,200 @@ class InstitutionWorkingDaysDetailView(APIView):
         return Response(
             {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class InstitutionTaxListAPIView(APIView):
+    @extend_schema(
+        responses={200: InstitutionTaxSerializer(many=True)},
+        description="Retrieve all tax configurations for an institution.",
+        summary="Get all tax configurations",
+        tags=["Tax Management"],
+    )
+    def get(self, request):
+        user = request.user.profile if request.user.is_authenticated else None
+
+        try:
+            institution = Institution.objects.get(id=user.institution_id)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=404)
+
+        taxes = InstitutionTax.objects.filter(institution=institution)
+
+        serializer = InstitutionTaxSerializer(taxes, many=True)
+
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=InstitutionTaxSerializer,
+        responses={201: InstitutionTaxSerializer},
+        description="Create a new tax configuration for an institution.",
+        summary="Create tax configuration",
+        tags=["Tax Management"],
+    )
+    def post(self, request):
+        serializer = InstitutionTaxSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            tax = serializer.save()
+            return Response(
+                InstitutionTaxSerializer(tax).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class InstitutionTaxDetailView(APIView):
+    @extend_schema(
+        responses={200: InstitutionTaxSerializer},
+        description="Retrieve a tax configuration for an institution.",
+        summary="Get a tax configuration",
+        tags=["Tax Management"],
+    )
+    def get(self, request, tax_id):
+        try:
+            tax = InstitutionTax.objects.get(id=tax_id)
+            serializer = InstitutionTaxSerializer(tax)
+            return Response(serializer.data)
+        except InstitutionTax.DoesNotExist:
+            return Response({"detail": "Tax configuration not found."}, status=404)
+
+    @extend_schema(
+        request=InstitutionTaxSerializer,
+        responses={200: InstitutionTaxSerializer},
+        description="Update an existing tax configuration for an institution.",
+        summary="Update tax configuration",
+        tags=["Tax Management"],
+    )
+    def patch(self, request, tax_id):
+        try:
+            tax = InstitutionTax.objects.get(id=tax_id)
+        except InstitutionTax.DoesNotExist:
+            return Response({"detail": "Tax configuration not found."}, status=404)
+
+        serializer = InstitutionTaxSerializer(
+            tax, data=request.data, partial=True, context={"request": request}
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    @extend_schema(
+        responses={204: None},
+        description="Delete an existing tax configuration for an institution.",
+        summary="Delete a tax configuration",
+        tags=["Tax Management"],
+    )
+    def delete(self, request, tax_id):
+        try:
+            tax = InstitutionTax.objects.get(id=tax_id)
+            tax.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except InstitutionTax.DoesNotExist:
+            return Response({"detail": "Tax configuration not found."}, status=404)
+
+
+class InstitutionTaxRuleListAPIView(APIView):
+    @extend_schema(
+        responses={200: InstitutionTaxRuleSerializer(many=True)},
+        description="Retrieve all tax rules for an institution.",
+        summary="Get all tax rules",
+        tags=["Tax Rule Management"],
+    )
+    def get(self, request):
+        user = request.user.profile if request.user.is_authenticated else None
+
+        try:
+            institution = Institution.objects.get(id=user.institution_id)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=404)
+
+        tax_rules = InstitutionTaxRule.objects.filter(
+            institution_tax__institution=institution
+        )
+
+        serializer = InstitutionTaxRuleSerializer(tax_rules, many=True)
+
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=InstitutionTaxRuleSerializer,
+        responses={201: InstitutionTaxRuleSerializer},
+        description="Create a new tax rule for an institution.",
+        summary="Create tax rule",
+        tags=["Tax Rule Management"],
+    )
+    def post(self, request):
+        serializer = InstitutionTaxRuleSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            tax_rule = serializer.save()
+            return Response(
+                InstitutionTaxRuleSerializer(tax_rule).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class InstitutionTaxRuleDetailView(APIView):
+    @extend_schema(
+        responses={200: InstitutionTaxRuleSerializer},
+        description="Retrieve a tax rule for an institution.",
+        summary="Get a tax rule",
+        tags=["Tax Rule Management"],
+    )
+    def get(self, request, tax_rule_id):
+        try:
+            tax_rule = InstitutionTaxRule.objects.get(id=tax_rule_id)
+            serializer = InstitutionTaxRuleSerializer(tax_rule)
+            return Response(serializer.data)
+        except InstitutionTaxRule.DoesNotExist:
+            return Response({"detail": "Tax rule not found."}, status=404)
+
+    @extend_schema(
+        request=InstitutionTaxRuleSerializer,
+        responses={200: InstitutionTaxRuleSerializer},
+        description="Update an existing tax rule for an institution.",
+        summary="Update tax rule",
+        tags=["Tax Rule Management"],
+    )
+    def patch(self, request, tax_rule_id):
+        try:
+            tax_rule = InstitutionTaxRule.objects.get(id=tax_rule_id)
+        except InstitutionTaxRule.DoesNotExist:
+            return Response({"detail": "Tax rule not found."}, status=404)
+
+        serializer = InstitutionTaxRuleSerializer(
+            tax_rule, data=request.data, partial=True, context={"request": request}
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    @extend_schema(
+        responses={204: None},
+        description="Delete an existing tax rule for an institution.",
+        summary="Delete a tax rule",
+        tags=["Tax Rule Management"],
+    )
+    def delete(self, request, tax_rule_id):
+        try:
+            tax_rule = InstitutionTaxRule.objects.get(id=tax_rule_id)
+            tax_rule.delete()
+            return Response(status=204)
+        except InstitutionTaxRule.DoesNotExist:
+            return Response({"detail": "Tax rule not found."}, status=404)
 
 
 class BranchListAPIView(APIView):

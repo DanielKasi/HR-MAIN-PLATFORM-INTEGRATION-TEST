@@ -14,11 +14,11 @@ import { Loader2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { updateDisciplinaryAction, createDisciplineType, getDisciplineTypes, getAllEmployees, getDisciplinaryActionById } from "@/lib/utils";
-import type { DisciplinaryActionForm, DisciplineTypeForm } from "@/app/types/types.utils";
+import type { DisciplinaryActionForm, DisciplineTypeForm } from "@/types/types.utils";
 import { toast } from "sonner";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
-import { IUserInstitution } from "@/app/types";
+import { IUserInstitution } from "@/types";
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select";
 
 interface DisciplineType {

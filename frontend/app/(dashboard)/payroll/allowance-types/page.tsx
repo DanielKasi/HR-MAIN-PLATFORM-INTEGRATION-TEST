@@ -16,7 +16,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import type { IAllowanceType } from "@/app/types/types.utils"
+import type { IAllowanceType } from "@/types/types.utils"
 import { getAllowanceTypes } from "@/lib/utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { TableSkeleton } from "@/components/common/table-skeleton"

@@ -1,6 +1,6 @@
 "use client";
 
-import type {IUser} from "@/app/types";
+import type {IUser} from "@/types";
 
 import {useEffect, useState} from "react";
 import {useParams, useRouter} from "next/navigation";

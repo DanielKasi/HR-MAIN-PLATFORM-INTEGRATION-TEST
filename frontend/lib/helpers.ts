@@ -4,10 +4,10 @@ import { format } from "date-fns";
 
 import apiRequest from "./apiRequest";
 
-import { IMarketPlaceOrder, IPaginatedResponse, IPermission, IUser, Permission, Role } from "@/app/types";
+import { IMarketPlaceOrder, IPaginatedResponse, IPermission, IUser, Permission, Role } from "@/types";
 import { store } from "@/store";
 import { toast } from "sonner";
-import { ICountry } from "@/app/types/types.utils";
+import { ICountry } from "@/types/types.utils";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

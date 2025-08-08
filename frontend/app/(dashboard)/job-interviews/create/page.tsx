@@ -31,7 +31,7 @@ import {
   fetchEmployees,
   getInterviews,
 } from "@/lib/utils"
-import type { JobApplication, IInterviewStage, IInterview, IInterviewFormData, IEmployee } from "@/app/types/types.utils"
+import type { JobApplication, IInterviewStage, IInterview, IInterviewFormData, IEmployee } from "@/types/types.utils"
 import { toast } from "sonner"
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 import { LocationAutocomplete } from "@/components/location-autocomplete";

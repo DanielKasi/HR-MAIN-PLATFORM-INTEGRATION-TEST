@@ -21,7 +21,7 @@ import { createEmployeeDeduction, updateEmployeeDeduction } from "@/lib/utils"
 import { formatCurrency } from "@/lib/helpers"
 import { CreateDeductionTypeDialog } from "@/components/deduction-types/create-deduction-type-dialog"
 import { ContextSelector } from "../employee-allowances/context-selector"
-import type { IEmployeeDeduction, IDeductionType, IEmployeeDeductionFormData, ContextType, ContextItem } from "@/app/types/types.utils"
+import type { IEmployeeDeduction, IDeductionType, IEmployeeDeductionFormData, ContextType, ContextItem } from "@/types/types.utils"
 
 
 interface ILocalEmployeeDeduction extends IEmployeeDeduction {
@@ -269,7 +269,7 @@ export function EmployeeDeductionFormDialog({
             Configure deduction details, target group, and calculation method.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-1 gap-6 py-4 max-h-[75vh] overflow-y-auto">
+        <div className="grid grid-cols-1 gap-6 py-4 max-h-[70vh] overflow-y-auto">
           <div className="space-y-4">
             <ContextSelector
               selectedContext={selectedContext}

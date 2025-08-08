@@ -33,7 +33,7 @@ import type {
   IInterview,
   JobApplication,
   IInterviewStage,
-} from "@/app/types/types.utils";
+} from "@/types/types.utils";
 import {toast} from "sonner";
 
 export default function EditInterviewPage() {

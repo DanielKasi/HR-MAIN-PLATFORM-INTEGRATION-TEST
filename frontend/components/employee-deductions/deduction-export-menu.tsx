@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { format } from "date-fns"
 import { toast } from "sonner"
-import type { IEmployeeDeduction } from "@/app/types/types.utils"
+import type { IEmployeeDeduction } from "@/types/types.utils"
 
 interface DeductionExportMenuProps {
   deductions: IEmployeeDeduction[]

@@ -1,6 +1,6 @@
 
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import { IPayslip } from '@/app/types/types.utils';
+import { IPayslip } from '@/types/types.utils';
 import { getCUrrentInstitution } from '@/lib/helpers';
 
 const styles = StyleSheet.create({

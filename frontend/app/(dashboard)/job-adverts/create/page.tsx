@@ -30,7 +30,7 @@ import type {
   IEmployee,
   IInterviewStage,
   IInterviewStageFormData,
-} from "@/app/types/types.utils"
+} from "@/types/types.utils"
 import { toast } from "sonner"
 import { useDocumentTitle } from "@/hooks/use-document-title"
 import { TableSkeleton } from "@/components/common/table-skeleton"

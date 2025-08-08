@@ -3,7 +3,7 @@ import {Action} from "redux";
 import {ActionWithPayLoad, createAction} from "../storeUtils";
 
 import {MISC_ACTION_TYPES} from "./types";
-import { ICreateEmployeeForm } from "@/app/types/types.utils";
+import { ICreateEmployeeForm } from "@/types/types.utils";
 
 type ToggleSideBar = Action<MISC_ACTION_TYPES.TOGGLE_SIDEBAR>;
 type OpenSideBar = Action<MISC_ACTION_TYPES.OPEN_SIDE_BAR>

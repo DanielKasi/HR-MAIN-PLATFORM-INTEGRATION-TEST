@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Loader2 } from "lucide-react"
-import type { IBankAccount, IBankAccountFormData } from "@/app/types/types.utils"
+import type { IBankAccount, IBankAccountFormData } from "@/types/types.utils"
 import { BankTypeSelect } from "../bank-types/bank-types-select"
 
 

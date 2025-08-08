@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getJobPositionAdvertById, getJobPosition, updateJobPositionAdvert } from "@/lib/utils"
-import type { JobPositionAdvert, IJobPosition, JobAdvertStatus } from "@/app/types/types.utils"
+import type { JobPositionAdvert, IJobPosition, JobAdvertStatus } from "@/types/types.utils"
 import { toast } from "sonner"
 import { formatCurrency } from "@/lib/helpers"
 import RichTextDisplay from "@/components/common/rich-text-display"

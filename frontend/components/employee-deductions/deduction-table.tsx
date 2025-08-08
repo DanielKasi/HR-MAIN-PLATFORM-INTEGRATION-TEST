@@ -8,19 +8,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Badge} from "@/components/ui/badge";
-import type {IEmployeeDeduction} from "@/app/types/types.utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
-import {useState} from "react";
+} from "@/components/ui/dropdown-menu"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import type { IEmployeeDeduction } from "@/types/types.utils"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
+import { DialogFooter, DialogHeader } from "../ui/dialog";
+import { useState } from "react";
 
 interface DeductionTableProps {
   deductions: IEmployeeDeduction[];

@@ -1,4 +1,4 @@
-import { IAttendance, IAttendanceFormData, PaginatedResponse } from "@/app/types/types.utils";
+import { IAttendance, IAttendanceFormData, PaginatedResponse } from "@/types/types.utils";
 import apiRequest from "./apiRequest";
-import { IPaginatedResponse } from "@/app/types";
+import { IPaginatedResponse } from "@/types";
 

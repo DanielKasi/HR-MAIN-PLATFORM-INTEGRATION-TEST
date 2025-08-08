@@ -19,7 +19,7 @@ import {Badge} from "@/components/ui/badge";
 import {Input} from "@/components/ui/input";
 import {toast} from "sonner";
 import {cn} from "@/lib/utils";
-import {IContract} from "@/app/types/types.utils";
+import {IContract} from "@/types/types.utils";
 import {getContracts, updateContract, approveContract} from "@/lib/utils";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";

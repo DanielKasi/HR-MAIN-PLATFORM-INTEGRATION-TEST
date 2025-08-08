@@ -18,7 +18,7 @@ import {
   IDepartment,
   IEmployee,
   IEmployeeDeduction,
-} from "@/app/types/types.utils"
+} from "@/types/types.utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { CreateDeductionTypeDialog } from "@/components/deduction-types/create-deduction-type-dialog"

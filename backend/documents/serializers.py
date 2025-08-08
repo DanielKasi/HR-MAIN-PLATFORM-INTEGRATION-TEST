@@ -45,7 +45,6 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
                 doc = fitz.open(stream=file.read(), filetype="pdf")
                 html_content = ""
                 for page in doc:
-                    # Use 'dict' format to get detailed text blocks with styling
                     blocks = page.get_text("dict")["blocks"]
                     for block in blocks:
                         if block["type"] == 0:  # Text block
@@ -55,19 +54,16 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
                                     text = span["text"].strip()
                                     if not text:
                                         continue
-                                    # Extract font size and styling
                                     font_size = span.get("size", 12)
                                     flags = span.get("flags", 0)
                                     is_bold = flags & 2 != 0
                                     is_italic = flags & 1 != 0
-                                    # Build HTML with inline styles
                                     style = f"font-size: {font_size}px;"
                                     if is_bold:
                                         style += "font-weight: bold;"
                                     if is_italic:
                                         style += "font-style: italic;"
                                     line_html += f'<span style="{style}">{text}</span>'
-                                # Check if line is centered (approximate using bounding box)
                                 bbox = line.get("bbox", [0, 0, page.rect.width, 0])
                                 page_width = page.rect.width
                                 if abs(bbox[0] + bbox[2] - page_width) < page_width * 0.1:
@@ -80,7 +76,6 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
                 return self._clean_html(html_content)
 
             elif template_type == "word":
-                # Use mammoth with style mapping to preserve formatting
                 style_map = """
                     p[style-name='Title'] => h1
                     p[style-name='Heading 1'] => h1
@@ -113,32 +108,26 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
             return "<p></p>"
 
         print("Raw HTML before cleaning:", html_content)
-        # Parse HTML with BeautifulSoup
         soup = BeautifulSoup(html_content, "html.parser")
 
-        # Remove unwanted tags (e.g., images, scripts, styles)
         for tag in soup(["img", "script", "style", "meta", "link"]):
             tag.decompose()
 
-        # Preserve allowed tags and attributes
         allowed_tags = [
             "p", "h1", "h2", "h3", "h4", "h5", "h6", "span", "div",
             "strong", "em", "b", "i", "u", "ul", "ol", "li", "br"
         ]
         allowed_attributes = ["style", "class"]
 
-        # Process tags to keep only allowed ones and attributes
         for tag in soup.find_all(True):
             if tag.name not in allowed_tags:
                 tag.unwrap()
             else:
-                # Filter attributes
                 attrs = dict(tag.attrs)
                 tag.attrs.clear()
                 for attr in allowed_attributes:
                     if attr in attrs:
                         tag[attr] = attrs[attr]
-                # Normalize style attributes
                 if "style" in tag.attrs:
                     styles = tag["style"].split(";")
                     valid_styles = [
@@ -150,23 +139,21 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
                     ]
                     tag["style"] = ";".join(valid_styles) if valid_styles else None
 
-        # Ensure content is wrapped in a valid root element
         if not soup.find(["p", "div", "h1", "h2", "h3", "ul", "ol"]):
             soup = BeautifulSoup(f"<p>{soup.get_text()}</p>", "html.parser")
 
-        # Map mammoth's custom classes to inline styles
         for tag in soup.find_all(class_="text-center"):
             tag["style"] = (tag.get("style", "") + ";text-align: center;").lstrip(";")
             tag["class"] = [c for c in tag.get("class", []) if c != "text-center"]
 
-        # Convert to string, ensuring clean output
         cleaned_html = str(soup).strip()
         print("Cleaned HTML content:", cleaned_html)
         return cleaned_html if cleaned_html else "<p></p>"
 
     def _extract_placeholders(self, content):
         """
-        Extract placeholders from HTML content, handling various formats and underscores.
+        Extract placeholders from HTML content in various formats: {}, {{}}, [], [[]], <>, <<>>.
+        Handles multiple formats in the same document and normalizes to {{}} format.
         """
         if not content:
             return []
@@ -180,16 +167,18 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
 
         # Define placeholder patterns
         placeholder_patterns = [
-            r"\{\{[\w\s\'-]+\}\}",  # {{variable_name}} or {{Employee's Name}}
-            r"<<[\w\s\'-]+>>",      # <<variable_name>> or <<Employee's Name>>
-            r"\[\[[\w\s\'-]+\]\]",  # [[variable_name]] or [[Employee's Name]]
-            r"\[[\w\s\'-]*\w+\]",   # [variable_name] or [Parent]
-            r"_{10,}"               # ___________________
+            r"\{\{[\w\s\'-]+\}\}",         # {{variable_name}} or {{Employee's Name}}
+            r"\{[\w\s\'-]+\}",            # {variable_name} or {Employee's Name}
+            r"\[\[[\w\s\'-]+\]\]",        # [[variable_name]] or [[Employee's Name]]
+            r"\[[\w\s\'-]*\w+\]",         # [variable_name] or [Parent]
+            r"<<[\w\s\'-]+>>",            # <<variable_name>> or <<Employee's Name>>
+            r"<[\w\s\'-]+>",              # <variable_name> or <Employee's Name>
+            r"_{10,}"                     # ___________________
         ]
 
         # Extract placeholders from text content
         combined_pattern = "|".join(f"({pattern})" for pattern in placeholder_patterns)
-        matches = re.findall(combined_pattern, text_content)
+        matches = re.findall(combined_pattern, text_content, re.IGNORECASE)
         matches = [match for group in matches for match in group if match]
         print("Matched placeholders:", matches)
 
@@ -217,10 +206,12 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
         # Process other placeholder formats
         for match in matches:
             if not re.match(r"_{10,}", match):
+                # Remove delimiters and normalize
                 cleaned_name = re.sub(r"[\{\}<>\[\]]+", "", match).strip()
-                normalized_name = "{{" + re.sub(r"\s+", "_", cleaned_name.replace("'", "")) + "}}"
-                placeholders.add(normalized_name)
-                print("Added normalized placeholder:", normalized_name)
+                if cleaned_name:
+                    normalized_name = "{{" + re.sub(r"\s+", "_", cleaned_name.replace("'", "")) + "}}"
+                    placeholders.add(normalized_name)
+                    print("Added normalized placeholder:", normalized_name)
 
         print("Final placeholders:", list(placeholders))
         return list(placeholders)

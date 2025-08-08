@@ -1,5 +1,5 @@
 "use client";
-import type { Role } from "@/app/types";
+import type { Role } from "@/types";
 
 import { Search, Plus, Pen, Eye, Trash2, ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -24,7 +24,7 @@ import apiRequest, { apiDelete } from "@/lib/apiRequest";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { PageSizeSelector } from "@/components/ui/page-size-selector";
 import ProtectedPage from "@/components/ProtectedPage";
-import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { PERMISSION_CODES } from "@/types/types.utils";
 import { handleApiError } from "@/lib/apiErrorHandler";
 
 export default function RolesPage() {

@@ -48,11 +48,11 @@ import {
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { deleteJobPosition, getJobPositions } from "@/lib/utils"
-import type { IJobPosition } from "@/app/types/types.utils"
+import type { IJobPosition } from "@/types/types.utils"
 import { toast } from "sonner"
 import { formatCurrency } from "@/lib/helpers"
 import ProtectedComponent from "@/components/ProtectedComponent"
-import { PERMISSION_CODES } from "@/app/types/types.utils"
+import { PERMISSION_CODES } from "@/types/types.utils"
 import { useDocumentTitle } from "@/hooks/use-document-title"
 
 export default function JobPositionsPage() {

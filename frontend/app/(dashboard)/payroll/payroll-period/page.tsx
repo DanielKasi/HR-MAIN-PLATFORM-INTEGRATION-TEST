@@ -78,10 +78,10 @@ import {
   getPayslips,
   createBulkPayslips
 } from "@/lib/utils";
-import { IPayrollPeriod, IPayrollPeriodFormData, IEmployee, IPayslip, } from "@/app/types/types.utils";
+import { IPayrollPeriod, IPayrollPeriodFormData, IEmployee, IPayslip, } from "@/types/types.utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { PERMISSION_CODES } from "@/types/types.utils";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 
 // Pagination constants

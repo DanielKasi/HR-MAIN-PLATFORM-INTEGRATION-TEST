@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {ISeparationPolicy} from "@/app/types/types.utils";
+import {ISeparationPolicy} from "@/types/types.utils";
 import apiRequest from "@/lib/apiRequest";
 import {
   DropdownMenu,

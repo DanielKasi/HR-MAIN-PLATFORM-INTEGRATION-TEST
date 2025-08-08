@@ -28,7 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 import { getOnBoardingById } from "@/lib/utils"
-import type { IOnBoarding } from "@/app/types/types.utils"
+import type { IOnBoarding } from "@/types/types.utils"
 import { toast } from "sonner"
 import { DocumentGenerationDialog } from "@/components/document-generation-dialog"
 
