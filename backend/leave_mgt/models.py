@@ -164,6 +164,10 @@ class LeaveBalance(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Designates whether leave balance should be treated as active or in active"
+    )
 
     class Meta:
         db_table = "leave_balances"
@@ -235,6 +239,10 @@ class LeaveApplication(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Designates whether leave application should be treated as active or in active."
+    )
 
     class Meta:
         db_table = "leave_applications"
