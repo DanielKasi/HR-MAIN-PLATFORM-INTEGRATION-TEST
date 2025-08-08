@@ -99,17 +99,26 @@ class AssetSerializer(serializers.ModelSerializer):
             rep["current_holder"] = EmployeeSerializer(instance.current_holder).data
         else:
             rep["current_holder"] = None
+        
+        # Include category object instead of just ID
+        if instance.category:
+            rep["category"] = AssetCategorySerializer(instance.category).data
+        else:
+            rep["category"] = None
+            
         return rep
 
 
 class AssetRequestSerializer(serializers.ModelSerializer):
     asset = AssetSerializer(read_only=True)
+    asset_id = serializers.IntegerField(write_only=True, required=True)
 
     class Meta:
         model = AssetRequest
         fields = [
             "id",
             "asset",
+            "asset_id",
             "requester",
             "request_reference_code",
             "asset_request_status",
@@ -139,9 +148,19 @@ class AssetRequestSerializer(serializers.ModelSerializer):
 
         institution = user.institution
 
-        validated_data["requester"] = user
+        # Get the asset_id and remove it from validated_data
+        asset_id = validated_data.pop("asset_id")
+        
+        # Get the asset object
+        try:
+            asset = Asset.objects.get(id=asset_id)
+        except Asset.DoesNotExist:
+            raise serializers.ValidationError("Asset not found.")
 
-        if institution != validated_data["asset"].institution:
+        validated_data["requester"] = user
+        validated_data["asset"] = asset
+
+        if institution != asset.institution:
             raise serializers.ValidationError(
                 "Asset does not belong to the user's institution."
             )
@@ -180,14 +199,20 @@ class AssetRequestSerializer(serializers.ModelSerializer):
 
 class AssetAllocationSerializer(serializers.ModelSerializer):
     asset = AssetSerializer(read_only=True)
+    asset_id = serializers.IntegerField(write_only=True, required=True)
+    allocated_to_id = serializers.IntegerField(write_only=True, required=True)
+    responding_to_request_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = AssetAllocation
         fields = [
             "id",
             "asset",
+            "asset_id",
             "allocated_to",
+            "allocated_to_id",
             "responding_to_request",
+            "responding_to_request_id",
             "allocated_by",
             "allocation_status",
             "alloc_code",
@@ -195,8 +220,75 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "alloc_code",
+            "allocated_by",
+        ]
 
     def create(self, validated_data):
+        request = self.context.get("request")
+        user = request.user.profile if request and hasattr(request, "user") else None
+
+        if not user:
+            raise serializers.ValidationError("User institution is required.")
+
+        institution = user.institution
+
+        # Get the asset_id and remove it from validated_data
+        asset_id = validated_data.pop("asset_id")
+        
+        # Get the allocated_to_id and remove it from validated_data
+        allocated_to_id = validated_data.pop("allocated_to_id")
+        
+        # Get the responding_to_request_id and remove it from validated_data
+        responding_to_request_id = validated_data.pop("responding_to_request_id", None)
+
+        # Get the asset object
+        try:
+            asset = Asset.objects.get(id=asset_id)
+        except Asset.DoesNotExist:
+            raise serializers.ValidationError("Asset not found.")
+
+        # Get the allocated_to employee object
+        try:
+            allocated_to = Employee.objects.get(id=allocated_to_id)
+        except Employee.DoesNotExist:
+            raise serializers.ValidationError("Employee not found.")
+
+        # Get the responding_to_request object if provided
+        responding_to_request = None
+        if responding_to_request_id:
+            try:
+                responding_to_request = AssetRequest.objects.get(id=responding_to_request_id)
+            except AssetRequest.DoesNotExist:
+                raise serializers.ValidationError("Asset request not found.")
+
+        # Validate institution ownership
+        if institution != asset.institution:
+            raise serializers.ValidationError(
+                "Asset does not belong to the user's institution."
+            )
+
+        if institution != allocated_to.institution:
+            raise serializers.ValidationError(
+                "Employee does not belong to the user's institution."
+            )
+
+        if responding_to_request and institution != responding_to_request.asset.institution:
+            raise serializers.ValidationError(
+                "Asset request does not belong to the user's institution."
+            )
+
+        # Set the allocation data
+        validated_data["asset"] = asset
+        validated_data["allocated_to"] = allocated_to
+        validated_data["allocated_by"] = user
+        if responding_to_request:
+            validated_data["responding_to_request"] = responding_to_request
+
         asset_allocation = AssetAllocation.objects.create(**validated_data)
 
         institution = asset_allocation.asset.institution

@@ -291,6 +291,7 @@ class AssetRequestListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def post(self, request):
+        print(f"request {request.data}")
         serializer = AssetRequestSerializer(
             data=request.data, context={"request": request}
         )

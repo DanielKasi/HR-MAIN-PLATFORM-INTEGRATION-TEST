@@ -1858,6 +1858,9 @@ export interface ITaxFormData {
 export interface ITaxRule {
   id: number;
   institution_tax: number;
+  calculation_type: string;
+  percentage: string;
+  fixed_amount: number;
   tax_rule_name: string;
   tax_rule_description?: string;
   tax_rule_percentage?: number;
@@ -1905,7 +1908,7 @@ export interface IAsset {
   asset_name: string;
   batch_number: string;
   serial_number: string;
-  category: number| IAssetCategory;
+  category: IAssetCategory | null;
   description: string | null;
   status: "available" | "allocated" | "maintenance" | "decommissioned";
   is_active: boolean;
@@ -1936,6 +1939,42 @@ export interface IAssetHistory {
   notes: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface IAssetRequest {
+  id: number;
+  asset: IAsset;
+  requester: any; // Employee details
+  request_reference_code: string;
+  asset_request_status: "pending" | "approved" | "rejected" | "cancelled";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetRequestFormData {
+  asset_id: number;
+  notes?: string;
+}
+
+export interface IAssetAllocation {
+  id: number;
+  asset: IAsset;
+  allocated_to: any; // Employee details
+  allocated_by: any; // Employee details
+  responding_to_request?: IAssetRequest | null;
+  allocation_status: "pending" | "allocated" | "rejected" | "cancelled";
+  alloc_code: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetAllocationFormData {
+  asset_id: number;
+  allocated_to_id: number;
+  responding_to_request_id?: number;
+  allocation_status?: "pending" | "allocated" | "rejected" | "cancelled";
 }
 
 

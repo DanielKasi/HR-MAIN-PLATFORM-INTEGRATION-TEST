@@ -38,6 +38,7 @@ import { DeleteTaxRuleDialog } from "@/components/tax-rules/delete-tax-rule-dial
 import { taxesAPI, taxRulesAPI } from "@/lib/utils";
 import type { ITax, ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
+import { formatCurrency } from "@/lib/helpers";
 
 // Use backend types
 export type { ITax, ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
@@ -60,12 +61,7 @@ const formatDate = (dateString: string) => {
   });
 };
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount);
-};
+
 
 
 

@@ -259,7 +259,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { title: "Employee Deductions", href: "/payroll/employee-deductions" },
         { title: "Employee Tax", href: "/payroll/employee-tax" },
         { title: "Payroll Period", href: "/payroll/payroll-period" },
-        { title: "Taxes", href: "/payroll/taxes" },
       ],
     },
     {

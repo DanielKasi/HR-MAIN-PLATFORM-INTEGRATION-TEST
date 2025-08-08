@@ -151,14 +151,14 @@ const AssetsComponent = () => {
   };
 
   const handleViewAssetDetails = (asset: IAsset) => {
-    // Navigate to asset detail page (if needed)
-    // router.push(`/assests/assets/${asset.id}/detail`);
-    toast.info("Asset detail view not implemented yet");
+    router.push(`/assests/assets/${asset.id}`);
   };
 
   // Get unique categories for filter
   const uniqueCategories = useMemo(() => {
-    const categories = assets.map(asset => asset.category?.category_name || 'Unknown');
+    const categories = assets.map(asset => 
+      asset.category?.category_name || 'Unknown'
+    );
     return [...new Set(categories)].filter(Boolean);
   }, [assets]);
 
@@ -321,7 +321,9 @@ const AssetsComponent = () => {
                           </TableCell>
                           <TableCell className="font-medium">{asset.asset_name}</TableCell>
                           <TableCell className="font-mono text-sm">{asset.serial_number}</TableCell>
-                          <TableCell>{asset.category.category_name || 'Unknown'}</TableCell>
+                          <TableCell>
+                            {asset.category?.category_name || 'Unknown'}
+                          </TableCell>
                           <TableCell>
                             <Badge className={getStatusColor(asset.status)}>
                               {getStatusDisplay(asset.status)}
@@ -381,7 +383,7 @@ const AssetsComponent = () => {
                               Serial: {asset.serial_number}
                             </p>
                             <p className="text-sm text-gray-600">
-                              Category: {asset.category_details?.category_name || 'Unknown'}
+                              Category: {asset.category?.category_name || 'Unknown'}
                             </p>
                             <div className="flex items-center gap-2">
                               <Badge className={getStatusColor(asset.status)}>
@@ -522,4 +524,5 @@ const AssetsComponent = () => {
   );
 };
 
-export default AssetsComponent; 
+export default AssetsComponent;
+

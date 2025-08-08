@@ -6,19 +6,23 @@ import {
   MoreVertical, 
   Edit, 
   Trash2, 
-  RefreshCw, 
   Search, 
-  Filter, 
   ChevronLeft, 
   ChevronRight, 
   ChevronsLeft, 
   ChevronsRight, 
   Plus,
-  Settings,
-  Eye
+  Eye,
+  Package,
+  User,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  FileText,
+  Users
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -32,26 +36,61 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
-import { CreateTaxDialog } from "@/components/taxes/create-tax-dialog";
-import { EditTaxDialog } from "@/components/taxes/edit-tax-dialog";
-import { DeleteTaxDialog } from "@/components/taxes/delete-tax-dialog";
+import { CreateAssetAllocationDialog } from "@/components/asset-allocations/create-asset-allocation-dialog";
+import { EditAssetAllocationDialog } from "@/components/asset-allocations/edit-asset-allocation-dialog";
+import { DeleteAssetAllocationDialog } from "@/components/asset-allocations/delete-asset-allocation-dialog";
 import { useRouter } from "next/navigation";
-import { taxesAPI } from "@/lib/utils";
-import type { ITax, ITaxFormData } from "@/types/types.utils";
+import { assetsAPI } from "@/lib/utils";
+import type { IAssetAllocation } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
-import { formatCurrency } from "@/lib/helpers";
-
-// Use backend types
-export type { ITax, ITaxFormData } from "@/types/types.utils";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 10;
 
 const getStatusColor = (status: string) => {
-  return status === "active"
-    ? "bg-green-100 text-green-800 border-green-200"
-    : "bg-gray-100 text-gray-800 border-gray-200";
+  switch (status) {
+    case "pending":
+      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "allocated":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "rejected":
+      return "bg-red-100 text-red-800 border-red-200";
+    case "cancelled":
+      return "bg-gray-100 text-gray-800 border-gray-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
+  }
+};
+
+const getStatusDisplay = (status: string) => {
+  switch (status) {
+    case "pending":
+      return "Pending";
+    case "allocated":
+      return "Allocated";
+    case "rejected":
+      return "Rejected";
+    case "cancelled":
+      return "Cancelled";
+    default:
+      return status;
+  }
+};
+
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case "pending":
+      return <Clock className="h-4 w-4 text-yellow-500" />;
+    case "allocated":
+      return <CheckCircle className="h-4 w-4 text-green-500" />;
+    case "rejected":
+      return <XCircle className="h-4 w-4 text-red-500" />;
+    case "cancelled":
+      return <AlertCircle className="h-4 w-4 text-gray-500" />;
+    default:
+      return <Clock className="h-4 w-4 text-gray-500" />;
+  }
 };
 
 const formatDate = (dateString: string) => {
@@ -62,16 +101,15 @@ const formatDate = (dateString: string) => {
   });
 };
 
-
-
-const TaxesComponent = () => {
+const AssetAllocationsComponent = () => {
   const router = useRouter();
   const isMobile = useMobile();
-  const [taxes, setTaxes] = useState<ITax[]>([]);
+  const [assetAllocations, setAssetAllocations] = useState<IAssetAllocation[]>([]);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editingTax, setEditingTax] = useState<ITax | null>(null);
-  const [deletingTax, setDeletingTax] = useState<ITax | null>(null);
+  const [editingAllocation, setEditingAllocation] = useState<IAssetAllocation | null>(null);
+  const [deletingAllocation, setDeletingAllocation] = useState<IAssetAllocation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -80,99 +118,91 @@ const TaxesComponent = () => {
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  // Fetch taxes from API
-  const fetchTaxes = useCallback(
-    async (showRefreshLoader = false) => {
-      if (!selectedInstitution?.id) return;
-
-      try {
-      
-        
-        // Use actual API call
-        const data = await taxesAPI.getAll();
-        console.log("data", data)
-        setTaxes(data);
-      } catch (error) {
-        console.warn("Error fetching taxes:", error);
-        toast.error("Failed to load taxes");
-        setTaxes([]);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [selectedInstitution?.id],
-  );
+  // Fetch asset allocations from API
+  const fetchAssetAllocations = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await assetsAPI.getAssetAllocations();
+      setAssetAllocations(response || []);
+    } catch (error) {
+      console.warn("Error fetching asset allocations:", error);
+      toast.error("Failed to load asset allocations");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchTaxes();
-  }, [fetchTaxes]);
+    fetchAssetAllocations();
+  }, [fetchAssetAllocations]);
 
-  const handleCreateSuccess = (newTax: ITax) => {
-    setTaxes([newTax, ...taxes]);
-    clearFilters();
-    toast.success("Tax created successfully");
+  const handleCreateSuccess = (newAllocation: IAssetAllocation) => {
+    setAssetAllocations(prev => [newAllocation, ...prev]);
+    setIsCreateDialogOpen(false);
+    toast.success("Asset allocation created successfully");
   };
 
-  const handleUpdateSuccess = (updatedTax: ITax) => {
-    setTaxes(taxes.map(tax => tax.id === updatedTax.id ? updatedTax : tax));
+  const handleUpdateSuccess = (updatedAllocation: IAssetAllocation) => {
+    setAssetAllocations(prev => 
+      prev.map(allocation => 
+        allocation.id === updatedAllocation.id ? updatedAllocation : allocation
+      )
+    );
     setIsEditDialogOpen(false);
-    setEditingTax(null);
-    toast.success("Tax updated successfully");
+    setEditingAllocation(null);
+    toast.success("Asset allocation updated successfully");
   };
 
   const handleDeleteSuccess = (deletedId: number) => {
-    setTaxes(taxes.filter(tax => tax.id !== deletedId));
+    setAssetAllocations(prev => prev.filter(allocation => allocation.id !== deletedId));
     setIsDeleteDialogOpen(false);
-    setDeletingTax(null);
-    toast.success("Tax deleted successfully");
+    setDeletingAllocation(null);
+    toast.success("Asset allocation deleted successfully");
   };
 
-  const handleEditTax = (tax: ITax) => {
-    setEditingTax(tax);
+  const handleEditAllocation = (allocation: IAssetAllocation) => {
+    setEditingAllocation(allocation);
     setIsEditDialogOpen(true);
   };
 
-  const handleDeleteTax = (tax: ITax) => {
-    setDeletingTax(tax);
+  const handleDeleteAllocation = (allocation: IAssetAllocation) => {
+    setDeletingAllocation(allocation);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleViewTaxDetails = (tax: ITax) => {
-    router.push(`/admin/taxes/${tax.id}/detail`);
-  };
-
-  const handleRefresh = () => {
-    fetchTaxes(true);
+  const handleViewAllocationDetails = (allocation: IAssetAllocation) => {
+    router.push(`/assests/asset-allocations/${allocation.id}`);
   };
 
   // Filtered and paginated data
-  const filteredTaxes = useMemo(() => {
-    let filtered = taxes;
+  const filteredAllocations = useMemo(() => {
+    let filtered = assetAllocations;
 
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(tax =>
-        tax.tax_name.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(allocation =>
+        allocation.asset?.asset_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        allocation.alloc_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        allocation.allocated_to?.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        allocation.allocated_by?.fullname?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Apply status filter
     if (statusFilter !== "all") {
-      filtered = filtered.filter(tax => 
-        statusFilter === "active" ? tax.tax_status : !tax.tax_status
-      );
+      filtered = filtered.filter(allocation => allocation.allocation_status === statusFilter);
     }
 
     return filtered;
-  }, [taxes, searchTerm, statusFilter]);
+  }, [assetAllocations, searchTerm, statusFilter]);
 
-  const paginatedTaxes = useMemo(() => {
+  const paginatedAllocations = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    return filteredTaxes.slice(startIndex, endIndex);
-  }, [filteredTaxes, currentPage, pageSize]);
+    return filteredAllocations.slice(startIndex, endIndex);
+  }, [filteredAllocations, currentPage, pageSize]);
 
-  const totalPages = Math.ceil(filteredTaxes.length / pageSize);
+  const totalPages = Math.ceil(filteredAllocations.length / pageSize);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -194,24 +224,31 @@ const TaxesComponent = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      
-
-      {/* Header and Filters */}
       <div className="bg-white rounded-lg border shadow-sm">
-        <div className="p-6 border-gray-200">
+        <div className="p-6 ">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Taxes</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Asset Allocations</h1>
+            
             </div>
+            <Button
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="bg-primary text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Allocation
+            </Button>
           </div>
         </div>
-        <div className="p-6 border-gray-200">
+
+        {/* Filters */}
+        <div className="p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search taxes..."
+                  placeholder="Search allocations..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -223,32 +260,41 @@ const TaxesComponent = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="allocated">Allocated</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
-              {hasFilters && (
-                <Button variant="outline" onClick={clearFilters} size="sm">
-                  Clear Filters
-                </Button>
-              )}
+              <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                <SelectTrigger className="w-full sm:w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZES.map((size) => (
+                    <SelectItem key={size} value={size.toString()}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex items-center gap-2">
-              <CreateTaxDialog
-                institutionId={selectedInstitution?.id || 0}
-                onSuccess={handleCreateSuccess}
-                disabled={!selectedInstitution?.id}
-              />
-            </div>
+            {hasFilters && (
+              <Button variant="outline" onClick={clearFilters} size="sm">
+                Clear Filters
+              </Button>
+            )}
           </div>
         </div>
+
+        {/* Content */}
         <div className="p-6">
           {isLoading ? (
             <TableSkeleton />
           ) : (
             <>
               {/* Desktop Table */}
-              <div className="hidden sm:block rounded-md">
+              <div className="hidden sm:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -258,35 +304,52 @@ const TaxesComponent = () => {
                           className="rounded border-gray-300"
                         />
                       </TableHead>
-                      <TableHead>Name</TableHead>
+                      <TableHead>Allocation Code</TableHead>
+                      <TableHead>Asset</TableHead>
+                      <TableHead>Allocated To</TableHead>
+                      <TableHead>Allocated By</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead className="w-12">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedTaxes.length === 0 ? (
+                    {paginatedAllocations.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                          {hasFilters ? "No taxes found matching your filters" : "No taxes found"}
+                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                          {hasFilters ? "No allocations found matching your filters" : "No asset allocations found"}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      paginatedTaxes.map((tax) => (
-                        <TableRow key={tax.id}>
+                      paginatedAllocations.map((allocation) => (
+                        <TableRow key={allocation.id}>
                           <TableCell>
                             <input
                               type="checkbox"
                               className="rounded border-gray-300"
                             />
                           </TableCell>
-                          <TableCell className="font-medium">{tax.tax_name}</TableCell>
-                          <TableCell>
-                            <Badge className={getStatusColor(tax.tax_status ? "active" : "inactive")}>
-                              {tax.tax_status ? "Active" : "Inactive"}
-                            </Badge>
+                          <TableCell className="font-mono text-sm">
+                            {allocation.alloc_code}
                           </TableCell>
-                          <TableCell>{formatDate(tax.created_at)}</TableCell>
+                          <TableCell className="font-medium">
+                            {allocation.asset?.asset_name || 'Unknown Asset'}
+                          </TableCell>
+                          <TableCell>
+                            {allocation.allocated_to?.fullname || 'Unknown User'}
+                          </TableCell>
+                          <TableCell>
+                            {allocation.allocated_by?.fullname || 'Unknown User'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              {getStatusIcon(allocation.allocation_status)}
+                              <Badge className={getStatusColor(allocation.allocation_status)}>
+                                {getStatusDisplay(allocation.allocation_status)}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>{formatDate(allocation.created_at)}</TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -295,16 +358,16 @@ const TaxesComponent = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleViewTaxDetails(tax)}>
+                                <DropdownMenuItem onClick={() => handleViewAllocationDetails(allocation)}>
                                   <Eye className="h-4 w-4 mr-2" />
                                   View Details
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditTax(tax)}>
+                                <DropdownMenuItem onClick={() => handleEditAllocation(allocation)}>
                                   <Edit className="h-4 w-4 mr-2" />
                                   Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
-                                  onClick={() => handleDeleteTax(tax)}
+                                  onClick={() => handleDeleteAllocation(allocation)}
                                   className="text-red-600"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
@@ -322,23 +385,42 @@ const TaxesComponent = () => {
 
               {/* Mobile Cards */}
               <div className="sm:hidden space-y-3">
-                {paginatedTaxes.length === 0 ? (
+                {paginatedAllocations.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    {hasFilters ? "No taxes found matching your filters" : "No taxes found"}
+                    {hasFilters ? "No allocations found matching your filters" : "No asset allocations found"}
                   </div>
                 ) : (
-                  paginatedTaxes.map((tax) => (
-                    <div key={tax.id} className="bg-gray-50 rounded-lg p-4 border">
+                  paginatedAllocations.map((allocation) => (
+                    <div key={allocation.id} className="bg-gray-50 rounded-lg p-4 border">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 mb-1">{tax.tax_name}</h3>
                           <div className="flex items-center gap-2 mb-2">
-                            <Badge className={getStatusColor(tax.tax_status ? "active" : "inactive")}>
-                              {tax.tax_status ? "Active" : "Inactive"}
-                            </Badge>
-                            <span className="text-sm text-gray-500">
-                              Created: {formatDate(tax.created_at)}
-                            </span>
+                            <Users className="h-4 w-4 text-gray-500" />
+                            <h3 className="font-semibold text-gray-900">
+                              {allocation.asset?.asset_name || 'Unknown Asset'}
+                            </h3>
+                          </div>
+                          <div className="space-y-1 mb-2">
+                            <p className="text-sm text-gray-600 font-mono">
+                              Code: {allocation.alloc_code}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              To: {allocation.allocated_to?.fullname || 'Unknown User'}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              By: {allocation.allocated_by?.fullname || 'Unknown User'}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center space-x-2">
+                                {getStatusIcon(allocation.allocation_status)}
+                                <Badge className={getStatusColor(allocation.allocation_status)}>
+                                  {getStatusDisplay(allocation.allocation_status)}
+                                </Badge>
+                              </div>
+                              <span className="text-sm text-gray-500">
+                                Created: {formatDate(allocation.created_at)}
+                              </span>
+                            </div>
                           </div>
                         </div>
                         <DropdownMenu>
@@ -348,16 +430,16 @@ const TaxesComponent = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewTaxDetails(tax)}>
+                            <DropdownMenuItem onClick={() => handleViewAllocationDetails(allocation)}>
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditTax(tax)}>
+                            <DropdownMenuItem onClick={() => handleEditAllocation(allocation)}>
                               <Edit className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem 
-                              onClick={() => handleDeleteTax(tax)}
+                              onClick={() => handleDeleteAllocation(allocation)}
                               className="text-red-600"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
@@ -372,15 +454,14 @@ const TaxesComponent = () => {
               </div>
 
               {/* Pagination */}
-              {filteredTaxes.length > 0 && (
+              {filteredAllocations.length > 0 && (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
                   <div className="text-sm text-gray-700">
                     Showing {((currentPage - 1) * pageSize) + 1} to{" "}
-                    {Math.min(currentPage * pageSize, filteredTaxes.length)} of{" "}
-                    {filteredTaxes.length} taxes
+                    {Math.min(currentPage * pageSize, filteredAllocations.length)} of{" "}
+                    {filteredAllocations.length} allocations
                   </div>
                   <div className="flex items-center gap-4">
-                    
                     <div className="flex items-center gap-1">
                       <Button
                         variant="outline"
@@ -438,25 +519,31 @@ const TaxesComponent = () => {
       </div>
 
       {/* Dialogs */}
-      {editingTax && (
-        <EditTaxDialog
-          tax={editingTax}
+      <CreateAssetAllocationDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        onSuccess={handleCreateSuccess}
+      />
+
+      {editingAllocation && (
+        <EditAssetAllocationDialog
+          allocation={editingAllocation}
           isOpen={isEditDialogOpen}
           onClose={() => {
             setIsEditDialogOpen(false);
-            setEditingTax(null);
+            setEditingAllocation(null);
           }}
           onSuccess={handleUpdateSuccess}
         />
       )}
 
-      {deletingTax && (
-        <DeleteTaxDialog
-          tax={deletingTax}
+      {deletingAllocation && (
+        <DeleteAssetAllocationDialog
+          allocation={deletingAllocation}
           isOpen={isDeleteDialogOpen}
           onClose={() => {
             setIsDeleteDialogOpen(false);
-            setDeletingTax(null);
+            setDeletingAllocation(null);
           }}
           onSuccess={handleDeleteSuccess}
         />
@@ -465,4 +552,4 @@ const TaxesComponent = () => {
   );
 };
 
-export default TaxesComponent; 
+export default AssetAllocationsComponent;

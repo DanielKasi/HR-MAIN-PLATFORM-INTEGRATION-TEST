@@ -92,6 +92,10 @@ import {
   IAsset,
   IAssetFormData,
   IAssetHistory,
+  IAssetRequest,
+  IAssetRequestFormData,
+  IAssetAllocation,
+  IAssetAllocationFormData,
 } from "@/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -3939,6 +3943,108 @@ export const assetsAPI = {
       return response.status === 204;
     } catch (error) {
       console.error("Error deleting asset:", error);
+      throw error;
+    }
+  },
+
+  // Asset Request API methods
+  getAssetRequests: async (): Promise<IAssetRequest[]> => {
+    try {
+      const response = await apiRequest.get("/assets/asset-requests/");
+      return response.data.results || response.data;
+    } catch (error) {
+      console.error("Error fetching asset requests:", error);
+      throw error;
+    }
+  },
+
+  getAssetRequestById: async (id: number): Promise<IAssetRequest> => {
+    try {
+      const response = await apiRequest.get(`/assets/asset-requests/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching asset request:", error);
+      throw error;
+    }
+  },
+
+  createAssetRequest: async (data: IAssetRequestFormData): Promise<IAssetRequest> => {
+    try {
+      const response = await apiRequest.post("/assets/asset-requests/", data);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating asset request:", error);
+      throw error;
+    }
+  },
+
+  updateAssetRequest: async (id: number, data: Partial<IAssetRequestFormData>): Promise<IAssetRequest> => {
+    try {
+      const response = await apiRequest.patch(`/assets/asset-requests/${id}/`, data);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating asset request:", error);
+      throw error;
+    }
+  },
+
+  deleteAssetRequest: async (id: number): Promise<boolean> => {
+    try {
+      const response = await apiRequest.delete(`/assets/asset-requests/${id}/`);
+      return response.status === 204;
+    } catch (error) {
+      console.error("Error deleting asset request:", error);
+      throw error;
+    }
+  },
+
+  // Asset Allocation API methods
+  getAssetAllocations: async (): Promise<IAssetAllocation[]> => {
+    try {
+      const response = await apiRequest.get("/assets/asset-allocations/");
+      return response.data.results || response.data;
+    } catch (error) {
+      console.error("Error fetching asset allocations:", error);
+      throw error;
+    }
+  },
+
+  getAssetAllocationById: async (id: number): Promise<IAssetAllocation> => {
+    try {
+      const response = await apiRequest.get(`/assets/asset-allocations/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching asset allocation:", error);
+      throw error;
+    }
+  },
+
+  createAssetAllocation: async (data: IAssetAllocationFormData): Promise<IAssetAllocation> => {
+    try {
+      const response = await apiRequest.post("/assets/asset-allocations/", data);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating asset allocation:", error);
+      throw error;
+    }
+  },
+
+  updateAssetAllocation: async (id: number, data: Partial<IAssetAllocationFormData>): Promise<IAssetAllocation> => {
+    try {
+      const response = await apiRequest.patch(`/assets/asset-allocations/${id}/`, data);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating asset allocation:", error);
+      throw error;
+    }
+  },
+
+  deleteAssetAllocation: async (id: number): Promise<boolean> => {
+    try {
+      const response = await apiRequest.delete(`/assets/asset-allocations/${id}/`);
+      return response.status === 204;
+    } catch (error) {
+      console.error("Error deleting asset allocation:", error);
       throw error;
     }
   },
