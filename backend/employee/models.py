@@ -168,9 +168,9 @@ class Employee(models.Model):
                 existing = existing.exclude(pk=self.pk)
             if existing.exists():
                 raise ValidationError(
-                    {
-                        "phone_number": "An employee with this phone number already exists."
-                    }
+                    
+                        "An employee with this phone number already exists."
+                    
                 )
 
         # ✅ Validate minimum age of 18 years
@@ -185,17 +185,11 @@ class Employee(models.Model):
                 )
             )
             if age < 18:
-                raise ValidationError(
-                    {
-                        "date_of_birth": f"Employee must be at least 18 years old. Current age: {age} years."
-                    }
-                )
+                raise ValidationError(f"Employee must be at least 18 years old. Current age: {age} years.")
 
-        # 🚫 Prevent future date of birth
+        # Prevent future date of birth
         if self.date_of_birth and self.date_of_birth > date.today():
-            raise ValidationError(
-                {"date_of_birth": "Date of birth cannot be in the future."}
-            )
+            raise ValidationError("Date of birth cannot be in the future.")
 
     @property
     def age(self):
@@ -409,15 +403,32 @@ class Employee(models.Model):
         import random
 
         def generate_compliant_password(length=12):
-            characters = string.ascii_letters + string.digits + string.punctuation
-            password = "".join(random.choice(characters) for _ in range(length))
-            return password
+            lowercase = string.ascii_lowercase
+            uppercase = string.ascii_uppercase
+            digits = string.digits
+            special = string.punctuation
+
+        password = [
+            random.choice(lowercase),
+            random.choice(uppercase),
+            random.choice(digits),
+            random.choice(special)
+        ]
+
+        all_characters = lowercase + uppercase + digits + special
+        for _ in range(length - 4):
+            password.append(random.choice(all_characters))
+
+        random.shuffle(password)
+        return "".join(password) 
 
         random_password = generate_compliant_password()
         self.user.set_password(random_password)
         self.user.is_password_verified = False
         self.user.save()
         return random_password
+   
+    
 
     def create_password_token_and_send_link(self, request):
         """Create token and send password link to user."""
