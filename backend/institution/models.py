@@ -359,6 +359,80 @@ class InstitutionWorkingDays(models.Model):
         return f"Working Days for {self.institution.institution_name}"
 
 
+class InstitutionTax(models.Model):
+    institution = models.ForeignKey(
+        Institution, on_delete=models.CASCADE, related_name="taxes"
+    )
+    tax_name = models.CharField(max_length=100, blank=False)
+    tax_status = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    created_by = models.ForeignKey(
+        "users.CustomUser",
+        on_delete=models.CASCADE,
+        related_name="created_taxes",
+        null=True,
+        blank=True,
+    )
+    updated_by = models.ForeignKey(
+        "users.CustomUser",
+        on_delete=models.CASCADE,
+        related_name="updated_taxes",
+        null=True,
+        blank=True,
+    )
+
+    def __str__(self):
+        return self.tax_name
+
+    class Meta:
+        verbose_name_plural = "Institution Taxes"
+        verbose_name = "Institution Tax"
+
+
+class InstitutionTaxRule(models.Model):
+    institution_tax = models.ForeignKey(
+        InstitutionTax, related_name="rules", on_delete=models.CASCADE
+    )
+    tax_rule_name = models.CharField(max_length=100, blank=False)
+    tax_rule_description = models.TextField(blank=True, null=True)
+    tax_rule_percentage = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True
+    )
+    tax_rule_fixed_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
+    salary_from = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
+    salary_to = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    updated_by = models.ForeignKey(
+        "users.CustomUser",
+        related_name="updated_tax_rules",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    created_by = models.ForeignKey(
+        "users.CustomUser",
+        related_name="created_tax_rules",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+
+    def __str__(self):
+        return self.tax_rule_name
+
+
 class Branch(models.Model):
     institution = models.ForeignKey(
         Institution, related_name="branches", on_delete=models.CASCADE

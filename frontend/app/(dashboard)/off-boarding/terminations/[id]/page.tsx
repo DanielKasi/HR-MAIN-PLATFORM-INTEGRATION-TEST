@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { ArrowLeft, FileText } from "lucide-react"
 import { TerminationInitiationsAPI } from "@/lib/utils"
-import { ITermination } from "@/app/types/types.utils"
+import { ITermination } from "@/types/types.utils"
 
 const STATUS_STYLES = {
   submitted: "bg-blue-100 text-blue-800 hover:bg-blue-200",

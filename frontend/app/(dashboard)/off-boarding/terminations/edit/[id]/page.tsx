@@ -20,7 +20,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { TerminationInitiationsAPI } from "@/lib/utils"
-import { ITermination } from "@/app/types/types.utils"
+import { ITermination } from "@/types/types.utils"
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ["application/pdf", "image/png", "image/jpeg"];

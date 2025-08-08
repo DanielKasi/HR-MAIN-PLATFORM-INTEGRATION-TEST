@@ -55,7 +55,7 @@ import {
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getDepartments, getAllEmployees, getOnBoardings, getJobPositions } from "@/lib/utils"
-import type { IDepartment, IOnBoarding, IJobPosition, IEmployee } from "@/app/types/types.utils"
+import type { IDepartment, IOnBoarding, IJobPosition, IEmployee } from "@/types/types.utils"
 import { toast } from "sonner"
 import RichTextDisplay from "@/components/common/rich-text-display"
 

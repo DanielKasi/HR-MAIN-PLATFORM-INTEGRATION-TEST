@@ -1,7 +1,7 @@
 "use client";
 
 import {useState, useEffect} from "react";
-import {Branch} from "@/app/types";
+import {Branch} from "@/types";
 import {apiGet} from "@/lib/apiRequest";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";

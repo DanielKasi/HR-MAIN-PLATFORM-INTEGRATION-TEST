@@ -47,7 +47,7 @@ import {
   getPayrollPeriod,
   getDepartments,
 } from "@/lib/utils"
-import type { IDepartment, IPayrollPeriod, IPayslip, IBankAccount } from "@/app/types/types.utils"
+import type { IDepartment, IPayrollPeriod, IPayslip, IBankAccount } from "@/types/types.utils"
 import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors"
 import {
   DropdownMenu,

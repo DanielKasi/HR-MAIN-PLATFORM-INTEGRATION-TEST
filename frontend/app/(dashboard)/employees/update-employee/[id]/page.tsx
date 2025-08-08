@@ -45,8 +45,8 @@ import type {
   IEmployeeTypeFormData,
   ICountry,
   IEmployee,
-} from "@/app/types/types.utils";
-import type { IUserInstitution, Role , Branch} from "@/app/types";
+} from "@/types/types.utils";
+import type { IUserInstitution, Role , Branch} from "@/types";
 import { toast } from "sonner";
 import { getFileUrl, formatCurrency } from "@/lib/helpers";
 

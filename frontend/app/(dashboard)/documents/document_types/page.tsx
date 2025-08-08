@@ -30,11 +30,11 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Plus, Edit, Trash2, FileText } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { IDocumentType, IDocumentTypeFormData } from "@/app/types/types.utils"
+import { IDocumentType, IDocumentTypeFormData } from "@/types/types.utils"
 import { createDocumentType, getDocumentTypes, updateDocumentType, deleteDocumentType } from "@/lib/utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
-import { PERMISSION_CODES } from "@/app/types/types.utils"
+import { PERMISSION_CODES } from "@/types/types.utils"
 import ProtectedComponent from "@/components/ProtectedComponent"
 
 export default function DocumentTypesPage() {

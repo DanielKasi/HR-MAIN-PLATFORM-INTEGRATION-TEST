@@ -54,12 +54,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ILeavePolicyResponse, ILeavePolicyFormData, ILeaveType, IInstitution } from "@/app/types/types.utils";
+import { ILeavePolicyResponse, ILeavePolicyFormData, ILeaveType, IInstitution } from "@/types/types.utils";
 import { createLeavePolicy, getLeavePolicies, updateLeavePolicy, deleteLeavePolicy, getLeaveTypes } from "@/lib/utils";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
-import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { PERMISSION_CODES } from "@/types/types.utils";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { IUserInstitution } from "@/app/types";
+import { IUserInstitution } from "@/types";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 
 // Pagination constants

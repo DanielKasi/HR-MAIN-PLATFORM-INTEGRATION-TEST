@@ -1,4 +1,4 @@
-import type {IDocumentTemplate, IGeneratedDocumentTemplate} from "@/app/types/types.utils";
+import type {IDocumentTemplate, IGeneratedDocumentTemplate} from "@/types/types.utils";
 import apiRequest from "./apiRequest";
 
 export interface DocumentGenerationResponse {
@@ -10,7 +10,7 @@ export interface DocumentPreviewResponse {
   preview: string;
 }
 
-import {IPaginatedResponse} from "@/app/types";
+import {IPaginatedResponse} from "@/types";
 
 export const getDocumentTemplates = async ({
   institutionId,

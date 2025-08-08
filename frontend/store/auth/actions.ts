@@ -3,8 +3,8 @@ import {ActionWithPayLoad, Action, createAction} from "../storeUtils";
 import {AUTH_ACTION_TYPES} from "./types";
 import {AuthError} from "./reducer";
 
-import {ITill, StoredColorData} from "@/app/types";
-import {Branch, IPermission, IUser, IUserInstitution} from "@/app/types";
+import {ITill, StoredColorData} from "@/types";
+import {Branch, IPermission, IUser, IUserInstitution} from "@/types";
 import {getAuthError} from "@/utils/errorUtils";
 
 type UpdateThemeAction = ActionWithPayLoad<AUTH_ACTION_TYPES.UPDATE_THEME, StoredColorData>;

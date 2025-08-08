@@ -29,7 +29,7 @@ import type {
   IDepartment,
   IJobPosition,
   CreateJobPositionData,
-} from "@/app/types/types.utils";
+} from "@/types/types.utils";
 import { toast } from "sonner";
 import RichTextDisplay from "@/components/common/rich-text-display";
 import { RichEditorField } from "@/components/common/rich-editor";

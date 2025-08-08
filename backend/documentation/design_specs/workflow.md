@@ -16,7 +16,7 @@ Here's the appropriate **Markdown table documentation** that explains the **mode
 
 | Column  | Description                                                             |
 | ------- | ----------------------------------------------------------------------- |
-| `code`  | Unique identifier for the workflow category (e.g. `leave_request`). |
+| `code`  | Unique identifier for the workflow category (e.g. `leave_request`). |,
 | `label` | Human-readable name for the category (e.g. "Leave Request Workflows").        |
 
 ---

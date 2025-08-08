@@ -1,6 +1,6 @@
 "use client";
 
-import type {Branch, ITill} from "@/app/types";
+import type {Branch, ITill} from "@/types";
 
 import {useEffect, useState} from "react";
 import {useParams, useRouter} from "next/navigation";
@@ -40,7 +40,7 @@ import {Separator} from "@/components/ui/separator";
 import apiRequest from "@/lib/apiRequest";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import {LocationAutocomplete} from "@/components/location-autocomplete";
-import {PERMISSION_CODES} from "@/app/types/types.utils";
+import {PERMISSION_CODES} from "@/types/types.utils";
 import {fetchUpToDateInstitution} from "@/store/auth/actions";
 
 export default function BranchDetailPage() {

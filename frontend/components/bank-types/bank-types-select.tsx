@@ -3,7 +3,7 @@
 import { Label } from "@/components/ui/label"
 import { SearchableSelectInfinite } from "@/components/ui/scroll-searchable-select"
 import { bankTypesAPI } from "@/lib/utils"
-import type { IBankType } from "@/app/types/types.utils"
+import type { IBankType } from "@/types/types.utils"
 
 interface BankTypeSelectProps {
     value?: string | number

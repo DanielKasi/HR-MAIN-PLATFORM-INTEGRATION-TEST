@@ -1,4 +1,4 @@
-import { IBankType } from "@/app/types/types.utils"
+import { IBankType } from "@/types/types.utils"
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog"
 import { Label } from "../ui/label"
 import { Button } from "../ui/button"

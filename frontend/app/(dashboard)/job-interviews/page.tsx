@@ -52,8 +52,8 @@ import {
 
 import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
 import {getInterviews, bulkCreateOnBoarding} from "@/lib/utils";
-import type {IInterview} from "@/app/types/types.utils";
-import {PERMISSION_CODES} from "@/app/types/types.utils";
+import type {IInterview} from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/types/types.utils";
 import {toast} from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import {formatCurrency} from "@/lib/helpers";
@@ -393,7 +393,8 @@ export default function InterviewsPage() {
   }
 
   return (
-    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
+    <div className="flex flex-col w-full h-auto p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg">
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

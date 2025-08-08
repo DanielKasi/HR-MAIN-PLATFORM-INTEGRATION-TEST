@@ -82,11 +82,16 @@ import {
   IInstitutionWorkingDays,
   IWorkingDaysFormData,
   ISystemWorkingDay,
-} from "@/app/types/types.utils";
+  Itax,
+  ITax,
+  ITaxFormData,
+  ITaxRule,
+  ITaxRuleFormData,
+} from "@/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
-import { IEmployee } from "@/app/types/types.utils";
-import { IPaginatedResponse, Role } from "@/app/types";
+import { IEmployee } from "@/types/types.utils";
+import { IPaginatedResponse, Role } from "@/types";
 import { AxiosError, AxiosRequestConfig } from "axios";
 import { toast } from "sonner";
 
@@ -2885,7 +2890,7 @@ export const getPayslips = async (
   }
 };
 
-export const getPayslip = async (id: number): Promise<IPayslip | null> => {
+export const getPayslip = async (id: number)=> {
   try {
     const response = await apiRequest.get(`payroll/payslips/${id}/`);
     return response.data as IPayslip;
@@ -3572,6 +3577,122 @@ export const bankAccountsAPI = {
 }
 
 
+// Tax API functions
+export const taxesAPI = {
+  // Get all taxes for the institution
+  getAll: async (): Promise<ITax[]> => {
+    try {
+      const response = await apiRequest.get('/institution/tax/');
+      console.log("Tax response",response)
+      return response.data as ITax[];
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get a specific tax by ID
+  getById: async (taxId: number): Promise<ITax> => {
+    try {
+      const response = await apiRequest.get(`/institution/tax/${taxId}/`);
+      return response.data as ITax;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Create a new tax
+  create: async (data: ITaxFormData): Promise<ITax> => {
+    try {
+      const response = await apiRequest.post('/institution/tax/', data);
+      return response.data as ITax;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Update a tax
+  update: async (taxId: number, data: Partial<ITaxFormData>): Promise<ITax> => {
+    try {
+      const response = await apiRequest.patch(`/institution/tax/${taxId}/`, data);
+      return response.data as ITax;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Delete a tax
+  delete: async (taxId: number): Promise<void> => {
+    try {
+      await apiRequest.delete(`/institution/tax/${taxId}/`);
+    } catch (error) {
+      throw error;
+    }
+  },
+};
+
+// Tax Rule API functions
+export const taxRulesAPI = {
+  // Get all tax rules for the institution
+  getAll: async (): Promise<ITaxRule[]> => {
+    try {
+      const response = await apiRequest.get('/institution/tax-rule/');
+      return response.data as ITaxRule[];
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get tax rules for a specific tax
+  getByTaxId: async (taxId: number): Promise<ITaxRule[]> => {
+    try {
+      const allRules = await apiRequest.get('/institution/tax-rule/');
+      const rules = allRules.data as ITaxRule[];
+      return rules.filter(rule => rule.institution_tax === taxId);
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get a specific tax rule by ID
+  getById: async (taxRuleId: number): Promise<ITaxRule> => {
+    try {
+      const response = await apiRequest.get(`/institution/tax-rule/${taxRuleId}/`);
+      return response.data as ITaxRule;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Create a new tax rule
+  create: async (data: ITaxRuleFormData): Promise<ITaxRule> => {
+    try {
+      const response = await apiRequest.post('/institution/tax-rule/', data);
+      return response.data as ITaxRule;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Update a tax rule
+  update: async (taxRuleId: number, data: Partial<ITaxRuleFormData>): Promise<ITaxRule> => {
+    try {
+      const response = await apiRequest.patch(`/institution/tax-rule/${taxRuleId}/`, data);
+      return response.data as ITaxRule;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Delete a tax rule
+  delete: async (taxRuleId: number): Promise<void> => {
+    try {
+      await apiRequest.delete(`/institution/tax-rule/${taxRuleId}/`);
+    } catch (error) {
+      throw error;
+    }
+  },
+};
+
 export const payrollAPI = {
   getPayslipsByInstitution: async ({institutionId, params}: {institutionId:number|string, params?: {
     employee?: number;
@@ -3684,3 +3805,32 @@ export const systemAPI = {
     }
   },
 }
+
+
+export const taxAPI = {
+  create: async (data: Itax) => {
+    try {
+      const response = await apiRequest.post("/institution/tax", data)
+      return response.data as Itax
+    }catch (error) {
+      throw error
+    }
+  
+  },
+
+  getAll: async () => {
+    try {
+
+      const response = await apiRequest.get("/institution/tax")
+      return response.data as Itax[]
+    }catch (error) {
+
+    }
+  }
+
+  
+
+
+}
+
+

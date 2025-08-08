@@ -21,7 +21,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getDepartments, getJobPositions, getJobPosition, updateJobPosition } from "@/lib/utils"
-import type { JobPositionFormData, IDepartment, IJobPosition, CreateJobPositionData, IEmployee } from "@/app/types/types.utils"
+import type { JobPositionFormData, IDepartment, IJobPosition, CreateJobPositionData, IEmployee } from "@/types/types.utils"
 import { toast } from "sonner"
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 import { apiGet } from "@/lib/apiRequest"

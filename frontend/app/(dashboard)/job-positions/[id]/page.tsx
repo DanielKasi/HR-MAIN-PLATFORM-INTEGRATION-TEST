@@ -36,7 +36,7 @@ import { Input } from "@/components/ui/input";
 
 import { selectSelectedInstitution, selectSelectedBranch, selectUser } from "@/store/auth/selectors";
 import { getJobPosition } from "@/lib/utils";
-import type { IJobPosition } from "@/app/types/types.utils";
+import type { IJobPosition } from "@/types/types.utils";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/helpers";
 import RichTextDisplay from "@/components/common/rich-text-display";

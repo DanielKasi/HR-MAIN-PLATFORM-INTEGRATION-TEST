@@ -1,6 +1,6 @@
 "use client"
 
-import { IEmployee } from "@/app/types/types.utils"
+import { IEmployee } from "@/types/types.utils"
 import { SearchableSelect } from "../../components/searchable-select"
 import { User } from "lucide-react"
 

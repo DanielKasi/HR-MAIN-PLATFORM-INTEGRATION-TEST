@@ -6,7 +6,7 @@ import type {
   Role,
   UserProfile,
   WorkflowAction,
-} from "@/app/types";
+} from "@/types";
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";

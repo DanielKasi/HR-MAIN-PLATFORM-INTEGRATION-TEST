@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { IEmployeeAllowance } from "@/app/types/types.utils"
+import { IEmployeeAllowance } from "@/types/types.utils"
 
 
 interface AllowanceTableProps {

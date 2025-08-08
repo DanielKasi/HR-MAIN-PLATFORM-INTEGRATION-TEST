@@ -13,7 +13,7 @@ import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 
 import { institutionAPI, systemAPI } from "@/lib/utils"
-import type { ISystemWorkingDay, IInstitutionWorkingDays, IWorkingDaysFormData } from "@/app/types/types.utils"
+import type { ISystemWorkingDay, IInstitutionWorkingDays, IWorkingDaysFormData } from "@/types/types.utils"
 
 export default function InstitutionWorkingDays() {
   const [systemWorkingDays, setSystemWorkingDays] = useState<ISystemWorkingDay[]>([])

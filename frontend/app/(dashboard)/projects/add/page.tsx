@@ -31,7 +31,7 @@ import {
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {Check, ChevronsUpDown} from "lucide-react";
 import {cn} from "@/lib/utils";
-import {UserProfile} from "@/app/types";
+import {UserProfile} from "@/types";
 
 export default function AddProjectPage() {
   const router = useRouter();

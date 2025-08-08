@@ -1,8 +1,8 @@
 import {useEffect, useState} from "react";
 import {useSelector} from "react-redux";
 
-import {IPermission, Role} from "@/app/types";
-import {PERMISSION_CODES} from "@/app/types/types.utils";
+import {IPermission, Role} from "@/types";
+import {PERMISSION_CODES} from "@/types/types.utils";
 import {selectSelectedInstitution, selectTemporaryPermissions, selectUser} from "@/store/auth/selectors";
 
 export function usePermission(permissionCode: PERMISSION_CODES) {

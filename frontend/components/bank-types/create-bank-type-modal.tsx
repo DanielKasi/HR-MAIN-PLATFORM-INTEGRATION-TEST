@@ -1,4 +1,4 @@
-import { IBankType, IBankTypeFormData } from "@/app/types/types.utils"
+import { IBankType, IBankTypeFormData } from "@/types/types.utils"
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog"
 import { Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"

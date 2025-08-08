@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/table"
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getDepartments, deleteDepartment } from "@/lib/utils"
-import { type IDepartment, PERMISSION_CODES } from "@/app/types/types.utils"
+import { type IDepartment, PERMISSION_CODES } from "@/types/types.utils"
 import { toast } from "sonner"
 import ProtectedComponent from "@/components/ProtectedComponent"
 import { useDocumentTitle } from "@/hooks/use-document-title"

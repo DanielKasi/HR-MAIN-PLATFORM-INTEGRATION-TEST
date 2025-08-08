@@ -16,14 +16,14 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import type { IDeductionType } from "@/app/types/types.utils"
+import type { IDeductionType } from "@/types/types.utils"
 import { getDeductionTypes } from "@/lib/utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { CreateDeductionTypeDialog } from "@/components/deduction-types/create-deduction-type-dialog"
 import { EditDeductionTypeDialog } from "@/components/deduction-types/edit-deduction-type-dialog"
 import { DeleteDeductionTypeDialog } from "@/components/deduction-types/delete-deduction-type-dialog"
-import { ALLOWANCE_FREQUENCIES } from "@/app/types/types.utils"
+import { ALLOWANCE_FREQUENCIES } from "@/types/types.utils"
 
 const PAGE_SIZES = [10, 25, 50, 100]
 const DEFAULT_PAGE_SIZE = 10

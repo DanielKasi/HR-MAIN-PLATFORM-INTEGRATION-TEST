@@ -20,7 +20,7 @@ import { Plus, Search, MoreVertical, Edit, Download, Trash2, FileText, File, Loa
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { getDocumentTemplates, deleteDocumentTemplate } from "@/lib/utils"
-import { IDocumentTemplate } from "@/app/types/types.utils"
+import { IDocumentTemplate } from "@/types/types.utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import RichTextDisplay from "@/components/common/rich-text-display"

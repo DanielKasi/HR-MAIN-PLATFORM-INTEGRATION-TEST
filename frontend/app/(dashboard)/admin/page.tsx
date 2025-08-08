@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { fetchAndSetData, fetchInstitutionBranchesFromAPI } from "@/lib/helpers";
 import { useEffect, useState } from "react";
-import type { Branch } from "@/app/types";
+import type { Branch } from "@/types";
 import { Icon } from "@iconify/react"
 
 import {
@@ -36,7 +36,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
-import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { PERMISSION_CODES } from "@/types/types.utils";
 
 export default function AdminPage() {
   const [branches, setBranches] = useState<Branch[]>([]);

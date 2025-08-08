@@ -21,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea"
 
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { createDepartment } from "@/lib/utils"
-import { DepartmentFormData } from "@/app/types/types.utils"
+import { DepartmentFormData } from "@/types/types.utils"
 import { toast } from "sonner"
 import { RichEditorField } from "../common/rich-editor"
 

@@ -25,7 +25,7 @@ import {
   LoginResponse,
   loginWithEmailAndPassword,
 } from "@/utils/authUtils";
-import {IUser, IUserInstitution} from "@/app/types";
+import {IUser, IUserInstitution} from "@/types";
 // import { IUserInstitution } from "@/app/types";
 // import { selectAttachedInstitutions } from "./selectors";
 

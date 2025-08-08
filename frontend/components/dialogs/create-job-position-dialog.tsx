@@ -28,7 +28,7 @@ import {
 
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { getDepartments, createJobPosition } from "@/lib/utils"
-import type { JobPositionFormData, IDepartment, CreateJobPositionData } from "@/app/types/types.utils"
+import type { JobPositionFormData, IDepartment, CreateJobPositionData } from "@/types/types.utils"
 import { toast } from "sonner"
 import { CreateDepartmentDialog } from "./create-department-dialog"
 import { RichEditorField } from "../common/rich-editor"

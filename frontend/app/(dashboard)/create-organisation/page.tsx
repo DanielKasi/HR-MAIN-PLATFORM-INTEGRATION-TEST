@@ -44,8 +44,8 @@ import { LocationAutocomplete } from "@/components/location-autocomplete";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@radix-ui/react-progress";
 import PhoneNumberInput from "@/components/phone-number-input";
-import type { ICountry } from "@/app/types/types.utils";
-import type { IDepartment } from "@/app/types/types.utils";
+import type { ICountry } from "@/types/types.utils";
+import type { IDepartment } from "@/types/types.utils";
 import { getDefaultData } from "@/lib/utils";
 
 interface DocumentFile {
