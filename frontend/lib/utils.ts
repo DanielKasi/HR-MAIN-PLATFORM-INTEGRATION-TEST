@@ -2890,7 +2890,7 @@ export const getPayslips = async (
   }
 };
 
-export const getPayslip = async (id: number): Promise<IPayslip | null> => {
+export const getPayslip = async (id: number)=> {
   try {
     const response = await apiRequest.get(`payroll/payslips/${id}/`);
     return response.data as IPayslip;
