@@ -13,7 +13,7 @@ from .models import (
 from employee.models import Employee
 from institution.models import Institution, Department
 from recruitment.models import JobPosition
-from institution.serializers import InstitutionSerializer
+from institution.serializers import InstitutionSerializer, InstitutionTaxSerializer
 from django.db import transaction
 
 
@@ -305,6 +305,12 @@ class EmployeeTaxSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
         read_only_fields = ["id", "created_at", "employee"]
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep["employee"] = EmployeeSerializer(instance.employee).data
+        rep["institution_tax"] = InstitutionTaxSerializer(instance.institution_tax).dat
+        return rep        
 
     def validate(self, data):
         departments = data.get("target_departments", [])

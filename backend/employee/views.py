@@ -235,7 +235,7 @@ class EmployeeCreateAPIView(APIView):
     def handle_bulk_upload(self, request):
         """Handle bulk employee creation from uploaded CSV/Excel file."""
         start_time = datetime.now()
-        logger.debug(f"Starting bulk upload at {start_time}")
+        print(f"Starting bulk upload at {start_time}")
 
         file = request.FILES["file"]
         file_extension = file.name.split(".")[-1].lower()
@@ -254,8 +254,8 @@ class EmployeeCreateAPIView(APIView):
             else:
                 df = pd.read_excel(file)
 
-            logger.debug(f"Excel/CSV columns: {df.columns.tolist()}")
-            logger.debug(f"Excel/CSV row count: {len(df)}")
+            print(f"Excel/CSV columns: {df.columns.tolist()}")
+            print(f"Excel/CSV row count: {len(df)}")
 
             required_columns = ["user.fullname", "user.email"]
             missing_columns = [col for col in required_columns if col not in df.columns]
@@ -288,34 +288,36 @@ class EmployeeCreateAPIView(APIView):
             }
 
             # Cache foreign key mappings
-            logger.debug("Fetching foreign key mappings")
+            print("Fetching foreign key mappings")
             field_mappings = {
                 "position": JobPosition,
                 "department": Department,
                 "work_type": WorkType,
                 "employee_type": EmployeeType,
-                "payroll_branch": Branch,  # Added for payroll_branch
+                "payroll_branch": Branch,
             }
             mappings = {}
+            instance_mappings = {}  # Store model instances
             for field, model in field_mappings.items():
                 if field in df.columns:
                     names = df[field].dropna().str.strip().unique()
                     if names.size > 0:
-                        existing = model.objects.filter(name__in=names).values(
-                            "name", "id"
-                        )
-                        logger.debug(
-                            f"Database {field} values: {[item['name'] for item in existing]}"
+                        existing = model.objects.filter(name__in=names)
+                        print(
+                            f"Database {field} values: {[item.name for item in existing]}"
                         )
                         mappings[field] = {
-                            item["name"].lower(): item["id"] for item in existing
+                            item.name.lower(): item.id for item in existing
+                        }
+                        instance_mappings[field] = {
+                            item.name.lower(): item for item in existing
                         }
                         input_names = [str(name).strip().lower() for name in names]
                         missing = [
                             name for name in input_names if name not in mappings[field]
                         ]
                         if missing:
-                            logger.error(f"Missing {field}s: {missing}")
+                            print(f"Missing {field}s: {missing}")
                             return Response(
                                 {
                                     "detail": f"The following {field}s do not exist: {', '.join(missing)}"
@@ -323,22 +325,72 @@ class EmployeeCreateAPIView(APIView):
                                 status=status.HTTP_400_BAD_REQUEST,
                             )
 
+            # Check for duplicate emails in the input file and existing database
+            print("Checking for duplicate emails")
+            emails = df["user.email"].str.strip().dropna().tolist()
+            duplicate_emails_in_file = [
+                email for email, count in pd.Series(emails).value_counts().items() if count > 1
+            ]
+            if duplicate_emails_in_file:
+                duplicate_rows = df[df["user.email"].isin(duplicate_emails_in_file)][
+                    ["user.email"]
+                ].index.tolist()
+                return Response(
+                    {
+                        "detail": "Duplicate email addresses found in the uploaded file",
+                        "errors": [
+                            {
+                                "row": idx + 2,
+                                "errors": {
+                                    "user.email": f"Email '{df.loc[idx, 'user.email']}' is duplicated in the file"
+                                },
+                            }
+                            for idx in duplicate_rows
+                        ],
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            existing_emails = CustomUser.objects.filter(
+                email__in=emails
+            ).values_list("email", flat=True)
+            if existing_emails:
+                duplicate_rows = df[df["user.email"].isin(existing_emails)][
+                    ["user.email"]
+                ].index.tolist()
+                return Response(
+                    {
+                        "detail": "Some email addresses already exist in the database",
+                        "errors": [
+                            {
+                                "row": idx + 2,
+                                "errors": {
+                                    "user.email": f"Email '{df.loc[idx, 'user.email']}' already exists"
+                                },
+                            }
+                            for idx in duplicate_rows
+                        ],
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             # Process employees in batches
-            batch_size = 50  # Adjust based on your server's capacity
+            batch_size = 50
             employees = []
-            user_objects = []
-            employee_objects = []
             errors = []
 
-            logger.debug(f"Starting batch processing with batch size {batch_size}")
+            print(f"Starting batch processing with batch size {batch_size}")
             for start_idx in range(0, len(df), batch_size):
                 batch = df[start_idx : start_idx + batch_size]
                 batch_start_time = datetime.now()
-                logger.debug(
+                print(
                     f"Processing batch {start_idx//batch_size + 1} (rows {start_idx + 1} to {start_idx + len(batch)})"
                 )
 
                 with transaction.atomic():
+                    user_objects = []
+                    employee_data_list = []
+
                     for index, row in batch.iterrows():
                         employee_data = {}
                         user_data = {
@@ -361,7 +413,7 @@ class EmployeeCreateAPIView(APIView):
                                 else:
                                     value = str(value).strip()
                                     if column in field_mappings and value:
-                                        mapping = mappings.get(column, {})
+                                        mapping = instance_mappings.get(column, {})
                                         employee_data[column] = mapping.get(
                                             value.lower()
                                         )
@@ -428,43 +480,42 @@ class EmployeeCreateAPIView(APIView):
 
                         if not errors:
                             user_objects.append(CustomUser(**user_data))
-                            employee_data["user"] = (
-                                len(user_objects) - 1
-                            )  # Temporary index for linking
+                            employee_data["user"] = len(user_objects) - 1  # Temporary index
                             employee_data["created_at"] = datetime.now()
                             employee_data["updated_at"] = datetime.now()
-                            employee_objects.append(employee_data)
+                            employee_data_list.append(employee_data)
 
                     if errors:
-                        logger.error(f"Batch errors: {errors}")
+                        print(f"Batch errors: {errors}")
                         continue
 
                     # Bulk create users
                     try:
-                        logger.debug(f"Creating {len(user_objects)} users")
+                        print(f"Creating {len(user_objects)} users")
                         created_users = CustomUser.objects.bulk_create(user_objects)
-                        logger.debug(f"Created {len(created_users)} users")
+                        print(f"Created {len(created_users)} users")
                     except Exception as e:
-                        logger.error(f"Error bulk creating users: {str(e)}")
+                        print(f"Error bulk creating users: {str(e)}")
                         errors.append(
                             {"non_field_errors": f"Error creating users: {str(e)}"}
                         )
                         continue
 
-                    # Update employee objects with actual user IDs
-                    for idx, employee_data in enumerate(employee_objects):
-                        employee_data["user"] = created_users[employee_data["user"]].id
+                    # Create Employee instances with actual CustomUser objects
+                    employee_objects = []
+                    for employee_data in employee_data_list:
+                        user_index = employee_data.pop("user")  # Remove temporary index
+                        employee_data["user"] = created_users[user_index]  # Assign CustomUser instance
+                        employee_objects.append(Employee(**employee_data))
 
                     # Bulk create employees
                     try:
-                        logger.debug(f"Creating {len(employee_objects)} employees")
-                        created_employees = Employee.objects.bulk_create(
-                            [Employee(**data) for data in employee_objects]
-                        )
-                        logger.debug(f"Created {len(created_employees)} employees")
+                        print(f"Creating {len(employee_objects)} employees")
+                        created_employees = Employee.objects.bulk_create(employee_objects)
+                        print(f"Created {len(created_employees)} employees")
                         employees.extend(created_employees)
                     except Exception as e:
-                        logger.error(f"Error bulk creating employees: {str(e)}")
+                        print(f"Error bulk creating employees: {str(e)}")
                         errors.append(
                             {"non_field_errors": f"Error creating employees: {str(e)}"}
                         )
@@ -475,30 +526,30 @@ class EmployeeCreateAPIView(APIView):
                         try:
                             employee.setup_employee_password(request)
                         except Exception as e:
-                            logger.error(
+                            print(
                                 f"Error sending password email for employee {employee.user.email}: {str(e)}"
                             )
                             errors.append(
                                 {
-                                    "row": start_idx + idx + 2,
+                                    "row": start_idx + index + 2,
                                     "errors": {
                                         "non_field_errors": f"Error sending password email: {str(e)}"
                                     },
                                 }
                             )
 
-                logger.debug(
-                    f"Batch {start_idx//batch_size + 1} completed in {(datetime.now() - batch_start_time).total_seconds()} seconds"
-                )
+                    print(
+                        f"Batch {start_idx//batch_size + 1} completed in {(datetime.now() - batch_start_time).total_seconds()} seconds"
+                    )
 
             if errors:
-                logger.error(f"Bulk upload errors: {errors}")
+                print(f"Bulk upload errors: {errors}")
                 return Response(
                     {"detail": "Some employees could not be created", "errors": errors},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            logger.debug(
+            print(
                 f"Total upload time: {(datetime.now() - start_time).total_seconds()} seconds"
             )
             return Response(
@@ -507,7 +558,7 @@ class EmployeeCreateAPIView(APIView):
             )
 
         except Exception as e:
-            logger.error(f"Error processing file: {str(e)}")
+            print(f"Error processing file: {str(e)}")
             return Response(
                 {"detail": f"Error processing file: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
