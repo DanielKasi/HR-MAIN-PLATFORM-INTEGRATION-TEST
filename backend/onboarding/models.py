@@ -285,6 +285,10 @@ class ResignationRequest(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Designates whether resignation request should be treated as active or in active. "
+    )
 
     def __str__(self):
         return f"Resignation Request - {self.separation.employee.user.fullname} ({self.request_status})"
@@ -358,6 +362,10 @@ class TerminationInitiation(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Designates whether termination of institution should be treated as active or in active."
+    )
 
     def __str__(self):
         return f"Termination Initiation - {self.separation.employee.user.fullname} ({self.initiation_status})"

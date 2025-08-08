@@ -201,6 +201,7 @@ class ResignationRequestSerializer(serializers.ModelSerializer):
             "request_status",
             "created_at",
             "updated_at",
+            "is_active"
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
 
@@ -476,6 +477,7 @@ class TerminationInitiationSerializer(serializers.ModelSerializer):
             "initiation_status",
             "created_at",
             "updated_at",
+            "is_active"
         ]
         read_only_fields = ["id", "created_at", "updated_at", "separation"]
 
