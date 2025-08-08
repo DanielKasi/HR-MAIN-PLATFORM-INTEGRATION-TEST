@@ -5,7 +5,7 @@ import {Check, ChevronDown, X, Loader2} from "lucide-react";
 import {Label} from "@/components/ui/label";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
-import {Branch} from "@/app/types";
+import {Branch} from "@/types";
 
 interface MultiSelectBranchesProps {
   branches: Branch[];

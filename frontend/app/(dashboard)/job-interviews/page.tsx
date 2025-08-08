@@ -52,8 +52,8 @@ import {
 
 import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
 import {getInterviews, bulkCreateOnBoarding} from "@/lib/utils";
-import type {IInterview} from "@/app/types/types.utils";
-import {PERMISSION_CODES} from "@/app/types/types.utils";
+import type {IInterview} from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/types/types.utils";
 import {toast} from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import {formatCurrency} from "@/lib/helpers";

@@ -346,6 +346,76 @@ class EmployeeDeduction(models.Model):
         return recurrence_count
 
 
+class EmployeeTax(models.Model):
+    """
+    Employee-specific tax details
+    """
+
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name="taxes"
+    )
+    institution_tax = models.ForeignKey(
+        "institution.InstitutionTax", on_delete=models.CASCADE
+    )
+
+    effective_from = models.DateField(default=timezone.now)
+    effective_to = models.DateField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.employee} - {self.institution_tax.tax_name}"
+
+    class Meta:
+        unique_together = ["employee", "institution_tax"]
+
+    def rule_fit_employee_salary(self):
+
+        employee_salary = self.employee.salary
+
+        if not employee_salary or employee_salary <= 0:
+            return None
+
+        rules = self.institution_tax.rules.filter(
+            salary_from__lte=employee_salary, salary_to__gte=employee_salary
+        ).order_by("salary_from")
+
+        print(
+            f"\n\nrules checked: {rules.count()} for employee salary: {employee_salary}"
+        )
+
+        return rules.first()
+
+    def get_tax_amount(self):
+        """
+        Calculate the tax amount based on the employee's salary and the tax rules.
+        """
+        rule = self.rule_fit_employee_salary()
+        if not rule:
+            return Decimal(0.00)
+
+        if rule.tax_rule_fixed_amount is not None:
+            return rule.tax_rule_fixed_amount
+        if rule.tax_rule_percentage is not None:
+            print(f"\n\n")
+            print(
+                f"Calculating tax for employee {self.employee} with salary {self.employee.salary}"
+            )
+            print(
+                f"Using rule: {rule.tax_rule_name} with percentage {rule.tax_rule_percentage}"
+            )
+            print(
+                f"Tax amount: {(self.employee.salary * rule.tax_rule_percentage) / 100}"
+            )
+            return (self.employee.salary * rule.tax_rule_percentage) / 100
+
+        print(
+            f"Warning: No valid tax rule found for employee {self.employee} with salary {self.employee.salary}"
+        )
+
+        return Decimal(0.00)
+
+
 class PayrollPeriod(models.Model):
     """
     Define payroll periods (Monthly, Bi-weekly, etc.)
@@ -368,40 +438,6 @@ class PayrollPeriod(models.Model):
 
     class Meta:
         ordering = ["-start_date"]
-
-
-# class TaxType(models.Model):
-#     """Defines a general type of tax, linked directly to an institution
-#     e.g, PAYE - Uganda or NSSF
-#     """
-
-#     institution = models.ForeignKey(
-#         'institution.Institution',
-#         on_delete=models.CASCADE,
-#         related_name='tax_types',
-#         help_text='The institution this tax type belongs to.'
-#     )
-#     name = models.CharField(max_length=100)
-#     description = models.TextField(blank=True, null=True)
-#     is_active = models.BooleanField(default=True)
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     update_at = models.DateTimeField(auto_now=True)
-
-#     def __str__(self):
-#         return f"{self.name} ({self.institution.institution_name})"
-
-#     class Meta:
-#         unique_together = ['institution', 'name']
-#         ordering = ['name']
-
-# class TaxRuleCalculationChoices(models.TextChoices):
-#     ('fixed_percentage', 'Fixed_Percentage'),
-#     ('tiered_brackets', 'Tiered_Brackets')
-
-
-# class TaxRule(models.Model):
-#     """Defines a tax rule linked to a specific TypeTax
-#     """
 
 
 class Payslip(models.Model):
@@ -441,35 +477,118 @@ class Payslip(models.Model):
 
         super().save(*args, **kwargs)
 
-        # if is_new:
-        #     PayslipItem.generate_payslip_items(self)
-        # self.calculate_totals()
+    # def calculate_totals(self):
+    #     """Calculate all payslip totals"""
+
+    #     total_objs = self.items.filter(item_type__in=["allowance", "deduction"])
+
+    #     if total_objs.exists():
+    #         total_allowances = (
+    #             total_objs.filter(item_type="allowance").aggregate(
+    #                 total=models.Sum("amount")
+    #             )["total"]
+    #             or 0.00
+    #         )
+    #         total_deductions = (
+    #             total_objs.filter(item_type="deduction").aggregate(
+    #                 total=models.Sum("amount")
+    #             )["total"]
+    #             or 0.00
+    #         )
+    #         self.total_allowances = total_allowances
+    #         self.total_deductions = total_deductions
+
+    #         self.gross_salary = self.basic_salary + self.total_allowances
+    #         self.net_salary = self.gross_salary - self.total_deductions
+
+    #         self.save()
 
     def calculate_totals(self):
-        """Calculate all payslip totals"""
+        # First get taxable allowances total (with recurrence)
+        taxable_allowances = 0
+        non_taxable_allowances = 0
 
-        total_objs = self.items.filter(item_type__in=["allowance", "deduction"])
-
-        if total_objs.exists():
-            total_allowances = (
-                total_objs.filter(item_type="allowance").aggregate(
-                    total=models.Sum("amount")
-                )["total"]
-                or 0.00
+        # Filter all allowances for this employee active in period
+        allowances = (
+            self.employee.allowances.filter(is_active=True)
+            .filter(
+                effective_from__lte=self.payroll_period.end_date,
             )
-            total_deductions = (
-                total_objs.filter(item_type="deduction").aggregate(
-                    total=models.Sum("amount")
-                )["total"]
-                or 0.00
+            .filter(
+                models.Q(effective_to__gte=self.payroll_period.start_date)
+                | models.Q(effective_to__isnull=True)
             )
-            self.total_allowances = total_allowances
-            self.total_deductions = total_deductions
+        )
 
-            self.gross_salary = self.basic_salary + self.total_allowances
-            self.net_salary = self.gross_salary - self.total_deductions
+        for allowance in allowances:
+            recurrence = allowance.get_recurrence_count(self.payroll_period)
+            amount = allowance.get_calculated_amount() * recurrence
 
-            self.save()
+            if allowance.allowance_type.is_taxable:
+                taxable_allowances += amount
+            else:
+                non_taxable_allowances += amount
+
+        # Now get total deductions excluding tax (for clarity)
+        deductions = 0
+        for deduction in (
+            self.employee.deductions.filter(is_active=True)
+            .filter(
+                effective_from__lte=self.payroll_period.end_date,
+            )
+            .filter(
+                models.Q(effective_to__gte=self.payroll_period.start_date)
+                | models.Q(effective_to__isnull=True)
+            )
+        ):
+            recurrence = deduction.get_recurrence_count(self.payroll_period)
+            deductions += deduction.get_calculated_amount() * recurrence
+
+        # Calculate tax from EmployeeTax model (already no recurrence)
+        tax_total = 0
+        for tax in self.employee.taxes.all():
+            if tax.effective_from <= self.payroll_period.end_date and (
+                not tax.effective_to
+                or tax.effective_to >= self.payroll_period.start_date
+            ):
+                tax_total += tax.get_tax_amount()
+
+        self.total_allowances = taxable_allowances + non_taxable_allowances
+        self.total_deductions = deductions + tax_total
+
+        self.basic_salary = self.basic_salary or self.employee.salary or 0
+
+        gross = self.basic_salary + taxable_allowances
+        net = gross - tax_total + non_taxable_allowances - deductions
+
+        self.gross_salary = gross
+        self.net_salary = net
+
+        print("\n\n\nPayslip Totals:")
+        print(f"Employee: {self.employee}")
+        print(f"Payroll Period: {self.payroll_period}")
+        print(f"Gross Salary: {self.gross_salary}")
+        print(f"Net Salary: {self.net_salary}")
+        print(f"Total Allowances: {self.total_allowances}")
+        print(f"Total Deductions: {self.total_deductions}")
+        print(
+            (
+                (
+                    (
+                        (
+                            (
+                                (self.total_allowances + self.basic_salary)
+                                - self.total_deductions
+                            )
+                            - tax_total
+                        )
+                        + non_taxable_allowances
+                    )
+                )
+            )
+        )
+
+        self.save()
 
     class Meta:
         unique_together = ["employee", "payroll_period"]
@@ -545,6 +664,33 @@ class PayslipItem(models.Model):
                         description=f"{deduction.calculation_method}: {deduction.amount if deduction.calculation_method == 'fixed' else f'{deduction.percentage}%'} x{recurrence_count} times",
                     )
                 )
+
+        # --- Statutory Tax (from EmployeeTax) ---
+        for tax in payslip.employee.taxes.all():
+            if tax.effective_from <= payslip.payroll_period.end_date and (
+                not tax.effective_to
+                or tax.effective_to >= payslip.payroll_period.start_date
+            ):
+                tax_amount = tax.get_tax_amount()
+
+                if tax_amount > 0:
+                    rule = tax.rule_fit_employee_salary()
+
+                    description = f"Tax: {tax.institution_tax.tax_name}"
+                    if rule:
+                        description += f" | Rule: {rule.tax_rule_name}"
+                        if rule.tax_rule_description:
+                            description += f" - {rule.tax_rule_description}"
+
+                    items_to_create.append(
+                        PayslipItem(
+                            payslip=payslip,
+                            item_type="deduction",
+                            name=tax.institution_tax.tax_name,
+                            amount=tax_amount,
+                            description=description,
+                        )
+                    )
 
         # if payslip.overtime_amount > 0:
         #     items_to_create.append(PayslipItem(

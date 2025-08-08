@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getDepartment, updateDepartment } from "@/lib/utils"
-import { IDepartment, DepartmentFormData } from "@/app/types/types.utils"
+import { IDepartment, DepartmentFormData } from "@/types/types.utils"
 import { toast } from "sonner"
 
 export default function EditDepartmentPage() {

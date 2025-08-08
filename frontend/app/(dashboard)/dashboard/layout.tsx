@@ -1,4 +1,4 @@
-import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { PERMISSION_CODES } from "@/types/types.utils";
 import ProtectedPage from "@/components/ProtectedPage";
 
 export default function DashboardLayout({children}: {children: React.ReactNode}) {

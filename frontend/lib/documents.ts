@@ -1,4 +1,4 @@
-import { IDocumentTemplate, IGeneratedDocumentTemplate, DocumentGenerationContext } from "@/app/types/types.utils";
+import { IDocumentTemplate, IGeneratedDocumentTemplate, DocumentGenerationContext } from "@/types/types.utils";
 
 export const getDocumentTemplates = async ({
   institutionId,

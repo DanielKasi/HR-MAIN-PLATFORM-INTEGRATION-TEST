@@ -14,7 +14,7 @@ import { ArrowLeft, Upload, FileText, File, Plus, X, Loader2 } from "lucide-reac
 import Link from "next/link"
 import { useRouter, useParams } from "next/navigation"
 import { getDocumentTemplates, getDocumentTypes, updateDocumentTemplate } from "@/lib/utils"
-import { IDocumentType, IDocumentTemplate, IDocumentTemplateFormData } from "@/app/types/types.utils"
+import { IDocumentType, IDocumentTemplate, IDocumentTemplateFormData } from "@/types/types.utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 

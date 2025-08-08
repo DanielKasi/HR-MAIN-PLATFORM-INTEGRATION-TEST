@@ -69,9 +69,9 @@ import {
   Employee,
   ILeaveBalance,
   IEmployee,
-} from "@/app/types/types.utils";
+} from "@/types/types.utils";
 import {selectSelectedInstitution, selectAttachedInstitutions} from "@/store/auth/selectors";
-import {IUserInstitution} from "@/app/types";
+import {IUserInstitution} from "@/types";
 import {useSelector} from "react-redux";
 import {EmployeeSearchableSelect} from "@/components/ui/employee-searchable-select";
 import {handleDownload, getFileUrl, getFileName} from "@/lib/helpers";

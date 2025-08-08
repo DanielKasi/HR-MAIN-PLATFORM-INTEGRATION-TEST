@@ -1,7 +1,7 @@
 // Update newBranch institution when selectedInstitution changes
  "use client";
 
-import type {Branch} from "@/app/types";
+import type {Branch} from "@/types";
 
 import {useEffect, useState} from "react";
 import {Edit, MapPin, Plus, Search, Trash, Loader2, Eye, MoreVertical} from "lucide-react";
@@ -33,7 +33,7 @@ import {ScrollArea} from "@/components/ui/scroll-area";
 import apiRequest from "@/lib/apiRequest";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import {LocationAutocomplete} from "@/components/location-autocomplete";
-import {PERMISSION_CODES} from "@/app/types/types.utils";
+import {PERMISSION_CODES} from "@/types/types.utils";
 import {fetchUpToDateInstitution} from "@/store/auth/actions";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {useRouter} from "next/navigation";

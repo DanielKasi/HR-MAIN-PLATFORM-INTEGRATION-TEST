@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import type { IEmployeeDeduction } from "@/app/types/types.utils"
+import type { IEmployeeDeduction } from "@/types/types.utils"
 
 interface DeductionTableProps {
   deductions: IEmployeeDeduction[]

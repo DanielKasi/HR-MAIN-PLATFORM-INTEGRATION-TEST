@@ -32,7 +32,7 @@ import {
   getDocumentPreview,
   sendDocuments,
 } from "@/lib/document-utils";
-import {IDocumentTemplate, IGeneratedDocumentTemplate} from "@/app/types/types.utils";
+import {IDocumentTemplate, IGeneratedDocumentTemplate} from "@/types/types.utils";
 
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";

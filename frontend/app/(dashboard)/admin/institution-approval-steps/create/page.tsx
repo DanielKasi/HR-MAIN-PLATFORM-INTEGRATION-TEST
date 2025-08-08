@@ -1,6 +1,6 @@
 "use client";
 import type React from "react";
-import type { Role, UserProfile, WorkflowAction } from "@/app/types";
+import type { Role, UserProfile, WorkflowAction } from "@/types";
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";

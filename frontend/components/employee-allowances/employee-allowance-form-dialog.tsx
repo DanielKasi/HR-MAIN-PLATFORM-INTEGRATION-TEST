@@ -30,7 +30,7 @@ import type {
   IDepartment,
   IJobPosition,
   IEmployeeAllowance,
-} from "@/app/types/types.utils";
+} from "@/types/types.utils";
 import {createEmployeeAllowance, updateEmployeeAllowance} from "@/lib/utils";
 import {formatCurrency} from "@/lib/helpers";
 import {CreateAllowanceTypeDialog} from "@/components/allowance-types/create-allowance-type-dialog";

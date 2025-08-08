@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
-import { IEmployeeAllowance } from '@/app/types/types.utils'
+import { IEmployeeAllowance } from '@/types/types.utils'
 
 
 interface AllowanceExportMenuProps {

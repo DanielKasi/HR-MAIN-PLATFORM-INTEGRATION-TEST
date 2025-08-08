@@ -47,7 +47,7 @@ import * as z from "zod"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { cn, OffboardingStagesAPI } from "@/lib/utils"
-import { IOffboardingStage } from "@/app/types/types.utils"
+import { IOffboardingStage } from "@/types/types.utils"
 
 
 const formSchema = z.object({

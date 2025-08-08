@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { IAllowanceTypeFormData, IAllowanceType, ALLOWANCE_FREQUENCIES } from "@/app/types/types.utils"
+import { IAllowanceTypeFormData, IAllowanceType, ALLOWANCE_FREQUENCIES } from "@/types/types.utils"
 import { updateAllowanceType } from "@/lib/utils"
 
 interface EditAllowanceTypeDialogProps {

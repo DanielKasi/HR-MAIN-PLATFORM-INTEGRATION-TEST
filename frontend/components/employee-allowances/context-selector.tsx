@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { InfiniteScrollSelect } from "@/components/infinite-scroll-select"
 import { getDepartments, getJobPositions, getAllEmployees } from "@/lib/utils"
-import type { IDepartment, IJobPosition, IEmployee } from "@/app/types/types.utils"
+import type { IDepartment, IJobPosition, IEmployee } from "@/types/types.utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 

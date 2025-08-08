@@ -21,7 +21,7 @@ import { createEmployeeDeduction, updateEmployeeDeduction } from "@/lib/utils"
 import { formatCurrency } from "@/lib/helpers"
 import { CreateDeductionTypeDialog } from "@/components/deduction-types/create-deduction-type-dialog"
 import { ContextSelector } from "../employee-allowances/context-selector"
-import type { IEmployeeDeduction, IDeductionType, IEmployeeDeductionFormData, ContextType, ContextItem } from "@/app/types/types.utils"
+import type { IEmployeeDeduction, IDeductionType, IEmployeeDeductionFormData, ContextType, ContextItem } from "@/types/types.utils"
 
 
 interface ILocalEmployeeDeduction extends IEmployeeDeduction {

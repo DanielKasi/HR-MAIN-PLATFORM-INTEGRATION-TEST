@@ -1,6 +1,6 @@
 "use client";
 import type React from "react";
-import type { Permission, RoleDetail } from "@/app/types";
+import type { Permission, RoleDetail } from "@/types";
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiGet, apiPatch } from "@/lib/apiRequest";
 import { handleApiError } from "@/lib/apiErrorHandler";
-import { PaginatedResponse } from "@/app/types/types.utils";
+import { PaginatedResponse } from "@/types/types.utils";
 
 interface PermissionsByCategory {
   [categoryId: number]: {

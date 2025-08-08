@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Search, Edit, Trash2, Loader2, Eye, MoreVertical } from "lucide-react"
-import type { IBankAccount } from "@/app/types/types.utils"
+import type { IBankAccount } from "@/types/types.utils"
 
 interface BankAccountsTableProps {
     bankAccounts: IBankAccount[]

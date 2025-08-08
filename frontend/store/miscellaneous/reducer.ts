@@ -1,4 +1,4 @@
-import {ICreateEmployeeForm} from "@/app/types/types.utils";
+import {ICreateEmployeeForm} from "@/types/types.utils";
 import {MiscAction} from "./actions";
 import {MISC_ACTION_TYPES} from "./types";
 

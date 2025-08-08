@@ -28,7 +28,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Link from "next/link";
-import type {ISeparationType, ISeparationPolicy} from "@/app/types/types.utils";
+import type {ISeparationType, ISeparationPolicy} from "@/types/types.utils";
 import apiRequest from "@/lib/apiRequest";
 
 interface SeparationTypeDetails extends ISeparationType {

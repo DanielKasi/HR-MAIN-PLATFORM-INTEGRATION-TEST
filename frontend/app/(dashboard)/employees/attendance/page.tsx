@@ -6,7 +6,7 @@ import {AttendanceAPI, getAllEmployees} from "@/lib/utils";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 
-import {IAttendance, IEmployee} from "@/app/types/types.utils";
+import {IAttendance, IEmployee} from "@/types/types.utils";
 import {toast} from "sonner";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { Card, CardHeader } from "@/components/ui/card";

@@ -370,10 +370,18 @@ class InstitutionTax(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     created_by = models.ForeignKey(
-        "users.CustomUser", on_delete=models.CASCADE, related_name="created_taxes"
+        "users.CustomUser",
+        on_delete=models.CASCADE,
+        related_name="created_taxes",
+        null=True,
+        blank=True,
     )
     updated_by = models.ForeignKey(
-        "users.CustomUser", on_delete=models.CASCADE, related_name="updated_taxes"
+        "users.CustomUser",
+        on_delete=models.CASCADE,
+        related_name="updated_taxes",
+        null=True,
+        blank=True,
     )
 
     def __str__(self):

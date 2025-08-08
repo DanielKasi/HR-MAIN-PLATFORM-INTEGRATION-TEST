@@ -12,7 +12,7 @@ import { User, Calendar, Edit, ArrowLeft, Trash2 } from "lucide-react";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { getAllLeaveBalances, updateLeaveBalance, createLeaveBalance, deleteLeaveBalance } from "@/lib/utils";
 import { getAllEmployees, getLeaveTypes } from "@/lib/utils";
-import { IEmployee, ILeaveBalance, ILeaveType } from "@/app/types/types.utils";
+import { IEmployee, ILeaveBalance, ILeaveType } from "@/types/types.utils";
 import { toast } from "sonner";
 
 const years = [2023, 2024, 2025, 2026];

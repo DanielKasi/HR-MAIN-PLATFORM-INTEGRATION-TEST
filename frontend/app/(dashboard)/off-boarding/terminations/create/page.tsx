@@ -29,7 +29,7 @@ import * as z from "zod"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { getAllEmployees, TerminationInitiationsAPI } from "@/lib/utils"
-import { IEmployee } from "@/app/types/types.utils"
+import { IEmployee } from "@/types/types.utils"
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ["application/pdf", "image/png", "image/jpeg"];

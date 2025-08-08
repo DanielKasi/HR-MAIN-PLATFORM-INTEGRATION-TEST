@@ -9,7 +9,7 @@ import { GENDER_CHOICES, LEAVE_CATEGORIES } from "@/app/constants";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import ProtectedComponent from "../ProtectedComponent";
-import { PERMISSION_CODES } from "@/app/types/types.utils";
+import { PERMISSION_CODES } from "@/types/types.utils";
 
 interface CreateLeaveTypeDialogProps {
   isOpen: boolean;

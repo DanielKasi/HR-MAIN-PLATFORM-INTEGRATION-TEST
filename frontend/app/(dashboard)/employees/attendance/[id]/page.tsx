@@ -10,7 +10,7 @@ import { ArrowLeft, Search, Filter, Upload, CalendarDays, Clock, User } from "lu
 import { AttendanceAPI, getEmployeeById } from "@/lib/utils";
 
 import Link from "next/link";
-import { IAttendance, IEmployee } from "@/app/types/types.utils";
+import { IAttendance, IEmployee } from "@/types/types.utils";
 
 
 

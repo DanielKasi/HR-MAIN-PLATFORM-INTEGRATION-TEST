@@ -1,6 +1,6 @@
 "use client";
 
-import type {Role, IUser} from "@/app/types";
+import type {Role, IUser} from "@/types";
 
 import {useState, useEffect} from "react";
 import {PencilLine} from "lucide-react";

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { IInstitutionWorkingDays } from "@/app/types/types.utils"
+import type { IInstitutionWorkingDays } from "@/types/types.utils"
 
 interface CurrentWorkingDaysDisplayProps {
   workingDays: IInstitutionWorkingDays | null

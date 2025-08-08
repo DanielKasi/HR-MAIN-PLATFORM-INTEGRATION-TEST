@@ -1,7 +1,7 @@
 "use client"
 
 import { Users, Coins, Calendar, Percent } from 'lucide-react'
-import type { IEmployeeDeduction } from "@/app/types/types.utils"
+import type { IEmployeeDeduction } from "@/types/types.utils"
 
 interface DeductionStatsCardsProps {
   deductions: IEmployeeDeduction[]

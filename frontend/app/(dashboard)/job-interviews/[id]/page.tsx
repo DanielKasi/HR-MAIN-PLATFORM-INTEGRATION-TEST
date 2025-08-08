@@ -36,7 +36,7 @@ import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 
 import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
 import {getInterviewById} from "@/lib/utils";
-import type {IInterview} from "@/app/types/types.utils";
+import type {IInterview} from "@/types/types.utils";
 import {toast} from "sonner";
 
 export default function InterviewViewPage() {
