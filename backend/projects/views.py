@@ -119,7 +119,8 @@ class ProjectDetailView(APIView):
     )
     def delete(self, request, project_id):
         project = get_object_or_404(Project, id=project_id)
-        project.delete()
+        project.is_active = False
+        project.save()
         return Response(
             {"detail": "Project deleted successfully."},
             status=status.HTTP_204_NO_CONTENT,
@@ -233,7 +234,8 @@ class TaskDetailView(APIView):
     )
     def delete(self, request, task_id):
         task = get_object_or_404(Task, id=task_id)
-        task.delete()
+        task.is_active = False
+        task.save()
         return Response(
             {"detail": "Task deleted successfully."},
             status=status.HTTP_204_NO_CONTENT,
