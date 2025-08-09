@@ -110,7 +110,8 @@ class JobPositionDetailAPI(APIView):
     def delete(self, request, job_position_id):
         try:
             job_position = JobPosition.objects.get(id=job_position_id)
-            job_position.delete()
+            job_position.is_active = False
+            job_position.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except JobPosition.DoesNotExist:
             return Response(
