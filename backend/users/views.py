@@ -194,7 +194,8 @@ class UserDetailAPIView(APIView):
         if user_id:
             try:
                 user = CustomUser.objects.get(id=user_id)
-                user.delete()
+                user.is_active = False
+                user.save()
                 return Response(
                     {"message": "User deleted successfully"},
                     status=status.HTTP_204_NO_CONTENT,
@@ -659,7 +660,9 @@ class RoleDetailAPIView(APIView):
         tags=["User Management"],
     )
     def delete(self, request, role_id):
-        get_object_or_404(Role, pk=role_id).delete()
+        role = get_object_or_404(Role, pk=role_id)
+        role.is_active = False
+        role.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -733,7 +736,9 @@ class PermissionCategoryDetailAPIView(APIView):
         tags=["User Management"],
     )
     def delete(self, request, permission_category_id):
-        get_object_or_404(PermissionCategory, pk=permission_category_id).delete()
+        permission_category = get_object_or_404(PermissionCategory, pk=permission_category_id)
+        permission_category.is_active = False
+        permission_category.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -804,7 +809,9 @@ class PermissionDetailAPIView(APIView):
         tags=["User Management"],
     )
     def delete(self, request, permission_id):
-        get_object_or_404(Permission, pk=permission_id).delete()
+        permission = get_object_or_404(Permission, pk=permission_id)
+        permission.is_active = False
+        permission.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
