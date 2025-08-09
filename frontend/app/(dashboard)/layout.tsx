@@ -259,8 +259,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { title: "Employee Deductions", href: "/payroll/employee-deductions" },
         { title: "Employee Tax", href: "/payroll/employee-tax" },
         { title: "Payroll Period", href: "/payroll/payroll-period" },
-        { title: "Taxes", href: "/payroll/taxes" },
       ],
+    },
+    {
+      title: "Assets",
+      href: "#1",
+      icon: <Icon icon="hugeicons:laptop" className="!w-6 !h-6" width="28" height="28" />,
+      submenu: [
+        { title: "Asset Categories", href: "/assests/asset-categories" },
+        { title: "Assets", href: "/assests/assets" },
+        { title: "Asset Requests", href: "/assests/asset-requests" },
+        { title: "Asset Allocations", href: "/assests/asset-allocations" },
+      ],
+      requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
     },
   ]
 

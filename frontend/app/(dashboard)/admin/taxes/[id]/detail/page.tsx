@@ -37,6 +37,8 @@ import { EditTaxRuleDialog } from "@/components/tax-rules/edit-tax-rule-dialog";
 import { DeleteTaxRuleDialog } from "@/components/tax-rules/delete-tax-rule-dialog";
 import { taxesAPI, taxRulesAPI } from "@/lib/utils";
 import type { ITax, ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
+import { useMobile } from "@/hooks/use-mobile";
+import { formatCurrency } from "@/lib/helpers";
 
 // Use backend types
 export type { ITax, ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
@@ -59,70 +61,15 @@ const formatDate = (dateString: string) => {
   });
 };
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount);
-};
 
-// Mock data for demonstration
-const mockTax: ITax = {
-  id: 1,
-  institution: 1,
-  tax_name: "Income Tax",
-  tax_status: true,
-  created_by: 1,
-  created_at: "2024-01-15T10:30:00Z",
-  updated_by: 1,
-  updated_at: "2024-01-15T10:30:00Z",
-};
 
-const mockTaxRules: ITaxRule[] = [
-  {
-    id: 1,
-    institution_tax: 1,
-    tax_rule_name: "Basic Rate",
-    tax_rule_description: "Basic income tax rate",
-    tax_rule_percentage: 10,
-    salary_from: 0,
-    salary_to: 50000,
-    created_by: 1,
-    created_at: "2024-01-15T10:30:00Z",
-    updated_by: 1,
-    updated_at: "2024-01-15T10:30:00Z",
-  },
-  {
-    id: 2,
-    institution_tax: 1,
-    tax_rule_name: "Higher Rate",
-    tax_rule_description: "Higher income tax rate",
-    tax_rule_percentage: 15,
-    salary_from: 50001,
-    salary_to: 100000,
-    created_by: 1,
-    created_at: "2024-01-15T10:30:00Z",
-    updated_by: 1,
-    updated_at: "2024-01-15T10:30:00Z",
-  },
-  {
-    id: 3,
-    institution_tax: 1,
-    tax_rule_name: "Fixed Rate",
-    tax_rule_description: "Fixed tax amount for high earners",
-    tax_rule_fixed_amount: 5000,
-    salary_from: 100001,
-    salary_to: 200000,
-    created_by: 1,
-    created_at: "2024-01-15T10:30:00Z",
-    updated_by: 1,
-    updated_at: "2024-01-15T10:30:00Z",
-  },
-];
+
+
 
 const TaxDetailComponent = () => {
   const params = useParams();
   const router = useRouter();
+  const isMobile = useMobile();
   const taxId = params.id as string;
   
   const [tax, setTax] = useState<ITax | null>(null);
@@ -212,7 +159,7 @@ const TaxDetailComponent = () => {
   };
 
   const handleBack = () => {
-    router.push("/payroll/taxes");
+    router.push("/admin/taxes");
   };
 
   // Filtered and paginated data
@@ -326,7 +273,7 @@ const TaxDetailComponent = () => {
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -357,7 +304,8 @@ const TaxDetailComponent = () => {
             <TableSkeleton />
           ) : (
             <>
-              <div className="rounded-md">
+              {/* Desktop Table */}
+              <div className="hidden sm:block rounded-md">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -424,6 +372,64 @@ const TaxDetailComponent = () => {
                     )}
                   </TableBody>
                 </Table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="sm:hidden space-y-3">
+                {paginatedTaxRules.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    {hasFilters ? "No tax rules found matching your filters" : "No tax rules found"}
+                  </div>
+                ) : (
+                  paginatedTaxRules.map((rule) => (
+                    <div key={rule.id} className="bg-gray-50 rounded-lg p-4 border">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900 mb-1">{rule.tax_rule_name}</h3>
+                          <div className="space-y-1 mb-2">
+                            <div className="text-sm text-gray-600">
+                              <span className="font-medium">Rate/Amount:</span>{" "}
+                              {rule.tax_rule_percentage 
+                                ? `${rule.tax_rule_percentage}%`
+                                : formatCurrency(rule.tax_rule_fixed_amount || 0)
+                              }
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              <span className="font-medium">Salary Range:</span>{" "}
+                              {formatCurrency(rule.salary_from || 0)} - {formatCurrency(rule.salary_to || 0)}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              <span className="font-medium">Created:</span> {formatDate(rule.created_at)}
+                            </div>
+                          </div>
+                          <Badge className="bg-green-100 text-green-800 border-green-200">
+                            Active
+                          </Badge>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditTaxRule(rule)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteTaxRule(rule)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
               {/* Pagination */}
