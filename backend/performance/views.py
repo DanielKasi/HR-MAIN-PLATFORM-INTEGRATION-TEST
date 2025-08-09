@@ -64,5 +64,6 @@ class PerformancePolicyDetailAPIView(APIView):
     @extend_schema(summary="Delete a performance policy")
     def delete(self, request, pk):
         instance = get_object_or_404(PerformancePolicy, pk=pk)
-        instance.delete()
+        instance.is_active = False
+        instance.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
