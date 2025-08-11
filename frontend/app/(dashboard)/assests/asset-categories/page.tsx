@@ -6,19 +6,15 @@ import {
   MoreVertical, 
   Edit, 
   Trash2, 
-  RefreshCw, 
   Search, 
-  Filter, 
   ChevronLeft, 
   ChevronRight, 
   ChevronsLeft, 
   ChevronsRight, 
   Plus,
-  Settings,
   Eye
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -32,22 +28,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
-import { CreateTaxDialog } from "@/components/taxes/create-tax-dialog";
-import { EditTaxDialog } from "@/components/taxes/edit-tax-dialog";
-import { DeleteTaxDialog } from "@/components/taxes/delete-tax-dialog";
+import { CreateAssetCategoryDialog } from "@/components/asset-categories/create-asset-category-dialog";
+import { EditAssetCategoryDialog } from "@/components/asset-categories/edit-asset-category-dialog";
+import { DeleteAssetCategoryDialog } from "@/components/asset-categories/delete-asset-category-dialog";
 import { useRouter } from "next/navigation";
-import { taxesAPI } from "@/lib/utils";
-import type { ITax, ITaxFormData } from "@/types/types.utils";
-
-// Use backend types
-export type { ITax, ITaxFormData } from "@/types/types.utils";
+import { assetCategoriesAPI } from "@/lib/utils";
+import type { IAssetCategory } from "@/types/types.utils";
+import { useMobile } from "@/hooks/use-mobile";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 10;
 
-const getStatusColor = (status: string) => {
-  return status === "active"
+const getStatusColor = (status: boolean) => {
+  return status
     ? "bg-green-100 text-green-800 border-green-200"
     : "bg-gray-100 text-gray-800 border-gray-200";
 };
@@ -60,69 +54,15 @@ const formatDate = (dateString: string) => {
   });
 };
 
-// Mock data for demonstration - replace with actual API calls
-const mockTaxes: ITax[] = [
-  {
-    id: 1,
-    institution: 1,
-    tax_name: "Income Tax",
-    tax_status: true,
-    created_by: 1,
-    created_at: "2024-01-15T10:30:00Z",
-    updated_by: 1,
-    updated_at: "2024-01-15T10:30:00Z",
-  },
-  {
-    id: 2,
-    institution: 1,
-    tax_name: "VAT",
-    tax_status: true,
-    created_by: 1,
-    created_at: "2024-01-10T14:20:00Z",
-    updated_by: 1,
-    updated_at: "2024-01-10T14:20:00Z",
-  },
-  {
-    id: 3,
-    institution: 1,
-    tax_name: "Corporate Tax",
-    tax_status: false,
-    created_by: 1,
-    created_at: "2024-01-05T09:15:00Z",
-    updated_by: 1,
-    updated_at: "2024-01-05T09:15:00Z",
-  },
-  {
-    id: 4,
-    institution: 1,
-    tax_name: "Property Tax",
-    tax_status: true,
-    created_by: 1,
-    created_at: "2024-01-20T11:45:00Z",
-    updated_by: 1,
-    updated_at: "2024-01-20T11:45:00Z",
-  },
-  {
-    id: 5,
-    institution: 1,
-    tax_name: "Excise Duty",
-    tax_status: true,
-    created_by: 1,
-    created_at: "2024-01-25T16:30:00Z",
-    updated_by: 1,
-    updated_at: "2024-01-25T16:30:00Z",
-  },
-];
-
-const TaxesComponent = () => {
+const AssetCategoriesComponent = () => {
   const router = useRouter();
-  const [taxes, setTaxes] = useState<ITax[]>([]);
+  const isMobile = useMobile();
+  const [assetCategories, setAssetCategories] = useState<IAssetCategory[]>([]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editingTax, setEditingTax] = useState<ITax | null>(null);
-  const [deletingTax, setDeletingTax] = useState<ITax | null>(null);
+  const [editingAssetCategory, setEditingAssetCategory] = useState<IAssetCategory | null>(null);
+  const [deletingAssetCategory, setDeletingAssetCategory] = useState<IAssetCategory | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -130,104 +70,94 @@ const TaxesComponent = () => {
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  // Fetch taxes from API
-  const fetchTaxes = useCallback(
-    async (showRefreshLoader = false) => {
-      if (!selectedInstitution?.id) return;
+  // Fetch asset categories from API
+  const fetchAssetCategories = useCallback(async () => {
+    if (!selectedInstitution?.id) return;
 
-      try {
-        if (showRefreshLoader) {
-          setIsRefreshing(true);
-        } else {
-          setIsLoading(true);
-        }
-        
-        // Use actual API call
-        const data = await taxesAPI.getAll();
-        console.log("data", data)
-        setTaxes(data);
-      } catch (error) {
-        console.warn("Error fetching taxes:", error);
-        toast.error("Failed to load taxes");
-        setTaxes([]);
-      } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
-      }
-    },
-    [selectedInstitution?.id],
-  );
+    try {
+      setIsLoading(true);
+      const data = await assetCategoriesAPI.getAll();
+      setAssetCategories(data);
+    } catch (error) {
+      console.warn("Error fetching asset categories:", error);
+      toast.error("Failed to load asset categories");
+      setAssetCategories([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedInstitution?.id]);
 
   useEffect(() => {
-    fetchTaxes();
-  }, [fetchTaxes]);
+    fetchAssetCategories();
+  }, [fetchAssetCategories]);
 
-  const handleCreateSuccess = (newTax: ITax) => {
-    setTaxes([newTax, ...taxes]);
+  const handleCreateSuccess = (newAssetCategory: IAssetCategory) => {
+    setAssetCategories([newAssetCategory, ...assetCategories]);
     clearFilters();
-    toast.success("Tax created successfully");
+    toast.success("Asset category created successfully");
   };
 
-  const handleUpdateSuccess = (updatedTax: ITax) => {
-    setTaxes(taxes.map(tax => tax.id === updatedTax.id ? updatedTax : tax));
+  const handleUpdateSuccess = (updatedAssetCategory: IAssetCategory) => {
+    setAssetCategories(assetCategories.map(category => 
+      category.id === updatedAssetCategory.id ? updatedAssetCategory : category
+    ));
     setIsEditDialogOpen(false);
-    setEditingTax(null);
-    toast.success("Tax updated successfully");
+    setEditingAssetCategory(null);
+    toast.success("Asset category updated successfully");
   };
 
   const handleDeleteSuccess = (deletedId: number) => {
-    setTaxes(taxes.filter(tax => tax.id !== deletedId));
+    setAssetCategories(assetCategories.filter(category => category.id !== deletedId));
     setIsDeleteDialogOpen(false);
-    setDeletingTax(null);
-    toast.success("Tax deleted successfully");
+    setDeletingAssetCategory(null);
+    toast.success("Asset category deleted successfully");
   };
 
-  const handleEditTax = (tax: ITax) => {
-    setEditingTax(tax);
+  const handleEditAssetCategory = (assetCategory: IAssetCategory) => {
+    setEditingAssetCategory(assetCategory);
     setIsEditDialogOpen(true);
   };
 
-  const handleDeleteTax = (tax: ITax) => {
-    setDeletingTax(tax);
+  const handleDeleteAssetCategory = (assetCategory: IAssetCategory) => {
+    setDeletingAssetCategory(assetCategory);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleViewTaxDetails = (tax: ITax) => {
-    router.push(`/payroll/taxes/${tax.id}/detail`);
-  };
-
-  const handleRefresh = () => {
-    fetchTaxes(true);
+  const handleViewAssetCategoryDetails = (assetCategory: IAssetCategory) => {
+    // Navigate to asset category detail page (if needed)
+    // router.push(`/assests/asset-categories/${assetCategory.id}/detail`);
+    toast.info("Asset category detail view not implemented yet");
   };
 
   // Filtered and paginated data
-  const filteredTaxes = useMemo(() => {
-    let filtered = taxes;
+  const filteredAssetCategories = useMemo(() => {
+    let filtered = assetCategories;
 
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(tax =>
-        tax.tax_name.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(category =>
+        category.category_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (category.category_description?.toLowerCase() || '').includes(searchTerm.toLowerCase())
       );
     }
 
     // Apply status filter
     if (statusFilter !== "all") {
-      filtered = filtered.filter(tax => 
-        statusFilter === "active" ? tax.tax_status : !tax.tax_status
+      filtered = filtered.filter(category => 
+        statusFilter === "active" ? category.is_active : !category.is_active
       );
     }
 
     return filtered;
-  }, [taxes, searchTerm, statusFilter]);
+  }, [assetCategories, searchTerm, statusFilter]);
 
-  const paginatedTaxes = useMemo(() => {
+  const paginatedAssetCategories = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    return filteredTaxes.slice(startIndex, endIndex);
-  }, [filteredTaxes, currentPage, pageSize]);
+    return filteredAssetCategories.slice(startIndex, endIndex);
+  }, [filteredAssetCategories, currentPage, pageSize]);
 
-  const totalPages = Math.ceil(filteredTaxes.length / pageSize);
+  const totalPages = Math.ceil(filteredAssetCategories.length / pageSize);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -248,15 +178,12 @@ const TaxesComponent = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      
-
       {/* Header and Filters */}
       <div className="bg-white rounded-lg border shadow-sm">
         <div className="p-6 border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Taxes</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Asset Categories</h1>
             </div>
           </div>
         </div>
@@ -266,14 +193,14 @@ const TaxesComponent = () => {
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search taxes..."
+                  placeholder="Search asset categories..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -289,8 +216,7 @@ const TaxesComponent = () => {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <CreateTaxDialog
-                institutionId={selectedInstitution?.id || 0}
+              <CreateAssetCategoryDialog
                 onSuccess={handleCreateSuccess}
                 disabled={!selectedInstitution?.id}
               />
@@ -302,8 +228,8 @@ const TaxesComponent = () => {
             <TableSkeleton />
           ) : (
             <>
-              {/* Table */}
-              <div className="rounded-md">
+              {/* Desktop Table */}
+              <div className="hidden sm:block rounded-md">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -313,35 +239,39 @@ const TaxesComponent = () => {
                           className="rounded border-gray-300"
                         />
                       </TableHead>
-                      <TableHead>Name</TableHead>
+                      <TableHead>Category Name</TableHead>
+                      <TableHead>Description</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead className="w-12">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedTaxes.length === 0 ? (
+                    {paginatedAssetCategories.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                          {hasFilters ? "No taxes found matching your filters" : "No taxes found"}
+                          {hasFilters ? "No asset categories found matching your filters" : "No asset categories found"}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      paginatedTaxes.map((tax) => (
-                        <TableRow key={tax.id}>
+                      paginatedAssetCategories.map((category) => (
+                        <TableRow key={category.id}>
                           <TableCell>
                             <input
                               type="checkbox"
                               className="rounded border-gray-300"
                             />
                           </TableCell>
-                          <TableCell className="font-medium">{tax.tax_name}</TableCell>
+                          <TableCell className="font-medium">{category.category_name}</TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {category.category_description || "No description"}
+                          </TableCell>
                           <TableCell>
-                            <Badge className={getStatusColor(tax.tax_status ? "active" : "inactive")}>
-                              {tax.tax_status ? "Active" : "Inactive"}
+                            <Badge className={getStatusColor(category.is_active)}>
+                              {category.is_active ? "Active" : "Inactive"}
                             </Badge>
                           </TableCell>
-                          <TableCell>{formatDate(tax.created_at)}</TableCell>
+                          <TableCell>{formatDate(category.created_at)}</TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -350,16 +280,16 @@ const TaxesComponent = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleViewTaxDetails(tax)}>
+                                <DropdownMenuItem onClick={() => handleViewAssetCategoryDetails(category)}>
                                   <Eye className="h-4 w-4 mr-2" />
                                   View Details
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditTax(tax)}>
+                                <DropdownMenuItem onClick={() => handleEditAssetCategory(category)}>
                                   <Edit className="h-4 w-4 mr-2" />
                                   Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
-                                  onClick={() => handleDeleteTax(tax)}
+                                  onClick={() => handleDeleteAssetCategory(category)}
                                   className="text-red-600"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
@@ -375,30 +305,72 @@ const TaxesComponent = () => {
                 </Table>
               </div>
 
+              {/* Mobile Cards */}
+              <div className="sm:hidden space-y-3">
+                {paginatedAssetCategories.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    {hasFilters ? "No asset categories found matching your filters" : "No asset categories found"}
+                  </div>
+                ) : (
+                  paginatedAssetCategories.map((category) => (
+                    <div key={category.id} className="bg-gray-50 rounded-lg p-4 border">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900 mb-1">{category.category_name}</h3>
+                          <div className="space-y-1 mb-2">
+                            <p className="text-sm text-gray-600">
+                              {category.category_description || "No description"}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <Badge className={getStatusColor(category.is_active)}>
+                                {category.is_active ? "Active" : "Inactive"}
+                              </Badge>
+                              <span className="text-sm text-gray-500">
+                                Created: {formatDate(category.created_at)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleViewAssetCategoryDetails(category)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditAssetCategory(category)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteAssetCategory(category)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
               {/* Pagination */}
-              {filteredTaxes.length > 0 && (
+              {filteredAssetCategories.length > 0 && (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
                   <div className="text-sm text-gray-700">
                     Showing {((currentPage - 1) * pageSize) + 1} to{" "}
-                    {Math.min(currentPage * pageSize, filteredTaxes.length)} of{" "}
-                    {filteredTaxes.length} taxes
+                    {Math.min(currentPage * pageSize, filteredAssetCategories.length)} of{" "}
+                    {filteredAssetCategories.length} asset categories
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-700">Show:</span>
-                      <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-                        <SelectTrigger className="w-20">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PAGE_SIZES.map((size) => (
-                            <SelectItem key={size} value={size.toString()}>
-                              {size}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    
                     <div className="flex items-center gap-1">
                       <Button
                         variant="outline"
@@ -456,25 +428,25 @@ const TaxesComponent = () => {
       </div>
 
       {/* Dialogs */}
-      {editingTax && (
-        <EditTaxDialog
-          tax={editingTax}
+      {editingAssetCategory && (
+        <EditAssetCategoryDialog
+          assetCategory={editingAssetCategory}
           isOpen={isEditDialogOpen}
           onClose={() => {
             setIsEditDialogOpen(false);
-            setEditingTax(null);
+            setEditingAssetCategory(null);
           }}
           onSuccess={handleUpdateSuccess}
         />
       )}
 
-      {deletingTax && (
-        <DeleteTaxDialog
-          tax={deletingTax}
+      {deletingAssetCategory && (
+        <DeleteAssetCategoryDialog
+          assetCategory={deletingAssetCategory}
           isOpen={isDeleteDialogOpen}
           onClose={() => {
             setIsDeleteDialogOpen(false);
-            setDeletingTax(null);
+            setDeletingAssetCategory(null);
           }}
           onSuccess={handleDeleteSuccess}
         />
@@ -483,4 +455,4 @@ const TaxesComponent = () => {
   );
 };
 
-export default TaxesComponent; 
+export default AssetCategoriesComponent;

@@ -19,7 +19,8 @@ from .models import (
     AssetHistory,
 )
 from utilities.pagination import CustomPageNumberPagination
-from rest_framework.views import APIView, status
+from rest_framework.views import APIView
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from institution.models import Institution
@@ -28,6 +29,9 @@ from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_view
+from users.models import Profile, CustomUser, UserRole
+from django.contrib.contenttypes.models import ContentType
+from workflows.models import ApprovalTask, InstitutionApprovalStepApprovorRole, InstitutionApprovalStepApprovorUser
 
 
 class AssetCategoryListCreateView(APIView):
@@ -164,7 +168,14 @@ class AssetListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def post(self, request):
-        serializer = AssetSerializer(data=request.data, context={"request": request})
+        data = request.data.copy()
+        
+
+        user_profile = get_object_or_404(Profile, user=request.user)
+        data["created_by"] = user_profile.id
+
+        print(f"data {data}")
+        serializer = AssetSerializer(data=data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -282,6 +293,7 @@ class AssetRequestListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def post(self, request):
+        print(f"request {request.data}")
         serializer = AssetRequestSerializer(
             data=request.data, context={"request": request}
         )
@@ -382,6 +394,121 @@ class AssetRequestDetailView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
 
+    @extend_schema(
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["approve", "reject"]},
+                    "comment": {"type": "string", "required": False},
+                },
+                "required": ["action"],
+            }
+        },
+        responses={
+            200: OpenApiResponse(
+                response=AssetRequestWorkflowSerializer,
+                description="Asset request approval action completed successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+            403: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="User not authorized to approve this request.",
+            ),
+        },
+        tags=["Asset Mgt"],
+    )
+    def post(self, request, pk):
+        """Handle approval/rejection of asset request tasks"""
+        asset_request = get_object_or_404(AssetRequest, pk=pk)
+        action = request.data.get("action")
+        comment = request.data.get("comment", "")
+
+        if action not in ["approve", "reject"]:
+            return Response(
+                {"error": "Invalid action. Must be 'approve' or 'reject'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get the current user's approval tasks for this request
+        content_type = ContentType.objects.get_for_model(AssetRequest)
+        pending_tasks = ApprovalTask.objects.filter(
+            content_type=content_type,
+            object_id=asset_request.id,
+            status="pending"
+        ).order_by("step__level")
+
+        if not pending_tasks.exists():
+            return Response(
+                {"error": "No pending approval tasks found for this request"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        current_task = pending_tasks.first()
+        user = request.user
+        user_roles = user.user_roles.values_list("role_id", flat=True)
+
+        # Check if user can approve this task
+        step_role_ids = set(
+            InstitutionApprovalStepApprovorRole.objects.filter(
+                step=current_task.step
+            ).values_list("approver_role_id", flat=True)
+        )
+        approver_user_ids = set(
+            InstitutionApprovalStepApprovorUser.objects.filter(
+                step=current_task.step
+            ).values_list("approver_user__user__id", flat=True)
+        )
+
+        matching_role = next((x for x in step_role_ids if x in user_roles), None)
+
+        if (
+            matching_role is None
+            and not request.user.id in approver_user_ids
+            and request.user.id != current_task.step.institution.institution_owner.id
+        ):
+            return Response(
+                {"error": "You are not authorized to approve this request"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Update the current task
+        current_task.status = "completed" if action == "approve" else "rejected"
+        current_task.comment = comment
+        current_task.approved_by = user.profile
+        current_task.save()
+
+        # If approved, check if there are more steps or if workflow is complete
+        if action == "approve":
+            # Check if there are more pending tasks
+            remaining_tasks = ApprovalTask.objects.filter(
+                content_type=content_type,
+                object_id=asset_request.id,
+                status__in=["not_started", "pending"]
+            ).exclude(id=current_task.id)
+
+            if remaining_tasks.exists():
+                # Activate the next task
+                next_task = remaining_tasks.order_by("step__level").first()
+                next_task.status = "pending"
+                next_task.save()
+            else:
+                # All tasks completed, finish the workflow
+                try:
+                    asset_request.finish_workflow()
+                except Exception as e:
+                    return Response(
+                        {"error": f"Error finishing workflow: {str(e)}"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+        # Return updated request with workflow information
+        serializer = AssetRequestWorkflowSerializer(asset_request)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class AssetAllocationListCreateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -401,7 +528,8 @@ class AssetAllocationListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def post(self, request):
-        serializer = AssetAllocationSerializer(data=request.data)
+        print(f"request {request.data}")
+        serializer = AssetAllocationSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -489,6 +617,121 @@ class AssetAllocationDetailView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
+
+    @extend_schema(
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["approve", "reject"]},
+                    "comment": {"type": "string", "required": False},
+                },
+                "required": ["action"],
+            }
+        },
+        responses={
+            200: OpenApiResponse(
+                response=AssetAllocationWorkflowSerializer,
+                description="Asset allocation approval action completed successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+            403: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="User not authorized to approve this allocation.",
+            ),
+        },
+        tags=["Asset Mgt"],
+    )
+    def post(self, request, pk):
+        """Handle approval/rejection of asset allocation tasks"""
+        asset_allocation = get_object_or_404(AssetAllocation, pk=pk)
+        action = request.data.get("action")
+        comment = request.data.get("comment", "")
+
+        if action not in ["approve", "reject"]:
+            return Response(
+                {"error": "Invalid action. Must be 'approve' or 'reject'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get the current user's approval tasks for this allocation
+        content_type = ContentType.objects.get_for_model(AssetAllocation)
+        pending_tasks = ApprovalTask.objects.filter(
+            content_type=content_type,
+            object_id=asset_allocation.id,
+            status="pending"
+        ).order_by("step__level")
+
+        if not pending_tasks.exists():
+            return Response(
+                {"error": "No pending approval tasks found for this allocation"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        current_task = pending_tasks.first()
+        user = request.user
+        user_roles = user.user_roles.values_list("role_id", flat=True)
+
+        # Check if user can approve this task
+        step_role_ids = set(
+            InstitutionApprovalStepApprovorRole.objects.filter(
+                step=current_task.step
+            ).values_list("approver_role_id", flat=True)
+        )
+        approver_user_ids = set(
+            InstitutionApprovalStepApprovorUser.objects.filter(
+                step=current_task.step
+            ).values_list("approver_user__user__id", flat=True)
+        )
+
+        matching_role = next((x for x in step_role_ids if x in user_roles), None)
+
+        if (
+            matching_role is None
+            and not request.user.id in approver_user_ids
+            and request.user.id != current_task.step.institution.institution_owner.id
+        ):
+            return Response(
+                {"error": "You are not authorized to approve this allocation"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Update the current task
+        current_task.status = "completed" if action == "approve" else "rejected"
+        current_task.comment = comment
+        current_task.approved_by = user.profile
+        current_task.save()
+
+        # If approved, check if there are more steps or if workflow is complete
+        if action == "approve":
+            # Check if there are more pending tasks
+            remaining_tasks = ApprovalTask.objects.filter(
+                content_type=content_type,
+                object_id=asset_allocation.id,
+                status__in=["not_started", "pending"]
+            ).exclude(id=current_task.id)
+
+            if remaining_tasks.exists():
+                # Activate the next task
+                next_task = remaining_tasks.order_by("step__level").first()
+                next_task.status = "pending"
+                next_task.save()
+            else:
+                # All tasks completed, finish the workflow
+                try:
+                    asset_allocation.finish_workflow()
+                except Exception as e:
+                    return Response(
+                        {"error": f"Error finishing workflow: {str(e)}"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+        # Return updated allocation with workflow information
+        serializer = AssetAllocationWorkflowSerializer(asset_allocation)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class AssetReturnListCreateView(APIView):
