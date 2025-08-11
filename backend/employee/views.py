@@ -752,7 +752,7 @@ class EmployeeDeleteAPIView(APIView):
             employee = Employee.objects.get(
                 id=employee_id, department__institution_id=institution_id
             )
-            employee.delete()
+            employee.delete() # Custom delete method to handle soft delete
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Employee.DoesNotExist:
             return Response(
@@ -1294,8 +1294,7 @@ class EmployeeAttendanceDetailAPIView(APIView):
     )
     def delete(self, request, pk):
         record = self.get_object(pk)
-        record.is_active = False
-        record.save()
+        record.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1355,8 +1354,7 @@ class EmployeeTypeDetailAPIView(APIView):
     @extend_schema(description="Delete an employee type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.is_active = False
-        obj.save()
+        obj.delete() #Custom delete method that handles soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1414,8 +1412,7 @@ class WorkTypeDetailAPIView(APIView):
     @extend_schema(description="Delete a work type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.is_active = False
-        obj.save()
+        obj.delete() # Custom delete method that handles soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1474,8 +1471,7 @@ class EmployeeTypeDetailAPIView(APIView):
     @extend_schema(description="Delete an employee type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.is_active = False
-        obj.save()
+        obj.delete() #Custom method to handle soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1532,8 +1528,7 @@ class WorkTypeDetailAPIView(APIView):
     @extend_schema(description="Delete a work type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.is_active = False
-        obj.save()
+        obj.delete() #Custom delete method to handle soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1605,8 +1600,7 @@ class EmployeeContractDetailAPIView(APIView):
     )
     def delete(self, request, pk):
         contract = self.get_object(pk)
-        contract.is_active = False
-        contract.save()
+        contract.delete() #Custom delete method to handle soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
