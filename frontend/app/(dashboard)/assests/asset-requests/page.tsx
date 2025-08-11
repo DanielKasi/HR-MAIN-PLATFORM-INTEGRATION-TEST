@@ -117,6 +117,9 @@ const AssetRequestsComponent = () => {
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
+
+  console.log("AssetsRequest", assetRequests)
+
   // Fetch asset requests from API
   const fetchAssetRequests = useCallback(async () => {
     try {
@@ -335,7 +338,7 @@ const AssetRequestsComponent = () => {
                             {request.asset?.asset_name || 'Unknown Asset'}
                           </TableCell>
                           <TableCell>
-                            {request.requester?.fullname || 'Unknown User'}
+                            {request.requester?.user.fullname|| 'Unknown User'}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">

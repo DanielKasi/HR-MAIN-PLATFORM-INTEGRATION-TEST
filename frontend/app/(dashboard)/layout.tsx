@@ -43,7 +43,7 @@ import { hasPermission } from "@/lib/helpers"
 import ProtectedComponent from "@/components/ProtectedComponent"
 import apiRequest from "@/lib/apiRequest"
 import CreateOrganisationWizard from "./create-organisation/page"
-import { selectSidebarOpened } from "@/store/miscellaneous/selectors"
+import { selectSideBarOpened } from "@/store/miscellaneous/selectors"
 import { closeSideBar, openSideBar } from "@/store/miscellaneous/actions"
 import Link from "next/link"
 
@@ -123,7 +123,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const userData = useSelector(selectUser)
   const accessToken = useSelector(selectAccessToken)
   const userIsLoading = useSelector(selectUserLoading)
-  const isSideBarOpen = useSelector(selectSidebarOpened)
+  const isSideBarOpen = useSelector(selectSideBarOpened)
   const dispatch = useDispatch()
   const router = useRouter()
 
@@ -217,8 +217,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       icon: <Icon icon="hugeicons:inbox-upload" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
         { title: "Offboarding Stages", href: "/off-boarding/stages" },
-        { title: "Separation Policy", href: "/off-boarding/separation-policy" },
         { title: "Separation Types", href: "/off-boarding/separation-types" },
+        { title: "Separation Policy", href: "/off-boarding/separation-policy" },   
         { title: "Terminations", href: "/off-boarding/terminations" },
       ],
       requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
@@ -273,6 +273,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ],
       requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
     },
+    {
+      title: "Events & Holidays",
+      href: "#1",
+      icon: <Icon icon="hugeicons:calendar-01" className="!w-6 !h-6" width="28" height="28" />,
+      submenu: [
+        { title: "Calendar", href: "/events-holidays" },
+        { title: "Events", href: "/events-holidays/events" },
+        { title: "Add Event", href: "/events-holidays/events/add" },
+        { title: "Add Holiday", href: "/events-holidays/holidays/add" },
+      ],
+    },
+   
   ]
 
   const updateThemeColors = (hexColor: string) => {

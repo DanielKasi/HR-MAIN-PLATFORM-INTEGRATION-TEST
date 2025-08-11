@@ -13,6 +13,7 @@ from employee.models import Employee
 from django.contrib.contenttypes.models import ContentType
 from employee.serializers import EmployeeSerializer
 from django.db import transaction
+from users.serializers import ProfileSerializer
 
 
 class AssetCategorySerializer(serializers.ModelSerializer):
@@ -134,7 +135,7 @@ class AssetRequestSerializer(serializers.ModelSerializer):
             "updated_at",
             "request_reference_code",
             "asset_request_status",
-            "requester",
+            # "requester",
         ]
 
     @transaction.atomic
@@ -195,6 +196,16 @@ class AssetRequestSerializer(serializers.ModelSerializer):
             asset_request.finish_workflow()
 
         return asset_request
+
+    
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        if instance.requester:
+            rep["requester"] = ProfileSerializer(instance.requester).data
+        else:
+            rep["requester"] = None
+
+        return rep
 
 
 class AssetAllocationSerializer(serializers.ModelSerializer):

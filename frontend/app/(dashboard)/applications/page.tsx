@@ -5,7 +5,7 @@ import { DialogTrigger } from "@/components/ui/dialog";
 import type React from "react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -75,12 +75,14 @@ import type {
   PaginatedResponse,
 } from "@/types/types.utils";
 import { selectUser, selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
+import { selectApplicationForm } from "@/store/miscellaneous/selectors";
+import { saveApplicationForm, clearApplicationForm } from "@/store/miscellaneous/actions";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@radix-ui/react-dropdown-menu";
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
@@ -440,6 +442,8 @@ export default function ApplicationsPage() {
   };
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const selectedBranch = useSelector(selectSelectedBranch);
+  const dispatch = useDispatch();
+  const savedApplicationForm = useSelector(selectApplicationForm);
 
   const [formData, setFormData] = useState<
     Omit<JobApplicationFormData, "resume"> & {
@@ -470,6 +474,31 @@ export default function ApplicationsPage() {
 
   const [jobPositionAdverts, setJobPositionAdverts] = useState<JobPositionAdvert[]>([]);
   const [isLoadingAdverts, setIsLoadingAdverts] = useState(false);
+
+  // Load saved application form data from Redux on component mount
+  useEffect(() => {
+    if (savedApplicationForm) {
+      setFormData({
+        job_position_advert: savedApplicationForm.job_position_advert,
+        applicant_name: savedApplicationForm.applicant_name,
+        applicant_email: savedApplicationForm.applicant_email,
+        applicant_phone: savedApplicationForm.applicant_phone || "",
+        resume: savedApplicationForm.resume,
+        cover_letter: savedApplicationForm.cover_letter ?? undefined,
+        status: savedApplicationForm.status || "new",
+        gender: savedApplicationForm.gender,
+        state: savedApplicationForm.state || "",
+        address: savedApplicationForm.address,
+        address_latitude: savedApplicationForm.address_latitude || "",
+        address_longitude: savedApplicationForm.address_longitude || "",
+        country: savedApplicationForm.country,
+        source: savedApplicationForm.source || "website",
+        recommended_by: savedApplicationForm.recommended_by,
+        application_date: savedApplicationForm.application_date || new Date().toISOString().split("T")[0],
+        created_by: savedApplicationForm.created_by || userData?.id || 0,
+      });
+    }
+  }, [savedApplicationForm, userData]);
 
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
@@ -641,25 +670,67 @@ export default function ApplicationsPage() {
     field: keyof typeof formData,
     value: string | number | File | null,
   ) => {
-    setFormData((prev) => ({
-      ...prev,
+    const updatedFormData = {
+      ...formData,
       [field]: value,
-    }));
+    };
+    setFormData(updatedFormData);
+    
+    // Save to Redux for persistence
+    dispatch(saveApplicationForm(updatedFormData));
   };
 
   const handleFileChange = (field: "resume" | "cover_letter", file: File | null) => {
-    setFormData((prev) => ({
-      ...prev,
+    const updatedFormData = {
+      ...formData,
       [field]: file,
-    }));
+    };
+    setFormData(updatedFormData);
+    
+    // Save to Redux for persistence
+    dispatch(saveApplicationForm(updatedFormData));
   };
 
   const handleAddressCoordinatesChange = (lat: string, lon: string) => {
-    setFormData((prev) => ({
-      ...prev,
+    const updatedFormData = {
+      ...formData,
       address_latitude: lat,
       address_longitude: lon,
-    }));
+    };
+    setFormData(updatedFormData);
+    
+    // Save to Redux for persistence
+    dispatch(saveApplicationForm(updatedFormData));
+  };
+
+  const handleClearForm = () => {
+    const defaultFormData = {
+      job_position_advert: 0,
+      applicant_name: "",
+      applicant_email: "",
+      applicant_phone: "",
+      resume: null,
+      cover_letter: undefined,
+      status: "new" as const,
+      gender: "male" as const,
+      state: "",
+      address: "",
+      address_latitude: "",
+      address_longitude: "",
+      country: "",
+      source: "website" as const,
+      recommended_by: undefined,
+      application_date: new Date().toISOString().split("T")[0],
+      created_by: userData?.id || 0,
+    };
+    
+    setFormData(defaultFormData);
+    setError(null);
+    
+    // Clear from Redux
+    dispatch(clearApplicationForm());
+    
+    toast.success("Form cleared successfully");
   };
 
   const handleViewApplication = (applicationId: number) => {
@@ -798,6 +869,9 @@ export default function ApplicationsPage() {
         });
         clearAllFilters()
         toast.success("Application created successfully!");
+      
+      // Clear the saved form data from Redux on successful submission
+      dispatch(clearApplicationForm());
       } else {
         setError("Failed to create application");
       }
@@ -2157,6 +2231,14 @@ export default function ApplicationsPage() {
           className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-8 shadow-md transition-colors duration-200 text-lg"
         >
           {isSubmitting ? "Creating..." : "Add Application"}
+        </Button>
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={handleClearForm}
+          className="border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold py-3 px-8 transition-colors duration-200 text-lg"
+        >
+          Clear Form
         </Button>
         <Button 
           type="button" 
