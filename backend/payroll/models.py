@@ -35,7 +35,6 @@ class BaseModel(models.Model):
         null=True,
     )
 
-    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -53,9 +52,27 @@ class BaseModel(models.Model):
             )
 
         super().clean()
+    
+
+class UtilityBaseModel(models.Model):
+
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+    
+    def delete(self, *args, **kwargs):
+        """Soft-deletes the record by setting the deleted_at timestamp."""
+        self.deleted_at = timezone.now()
+        self.save()
+    
+    def is_active(self):
+        return self.deleted_at is None
 
 
-class AllowanceType(BaseModel):
+class AllowanceType(BaseModel, UtilityBaseModel):
     """
     Define types of allowances (Housing, Transport, Medical, etc.)
 
@@ -75,7 +92,7 @@ class AllowanceType(BaseModel):
         ordering = ["name"]
 
 
-class DeductionType(BaseModel):
+class DeductionType(BaseModel, UtilityBaseModel):
     """
     Define types of deductions (Tax, NSSF, Health Insurance, etc.)
     """
@@ -94,7 +111,7 @@ class DeductionType(BaseModel):
         ordering = ["name"]
 
 
-class EmployeeAllowance(models.Model):
+class EmployeeAllowance(UtilityBaseModel):
     """
     Employee-specific allowances (can vary by employee)
     """
@@ -119,14 +136,12 @@ class EmployeeAllowance(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(100)],
         null=True,
     )
-    is_active = models.BooleanField(default=True)
     effective_from = models.DateField(default=timezone.now)
     effective_to = models.DateField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.employee} - {self.allowance_type.name}"
-
+    
     def get_calculated_amount(self):
         """Calculate allowance amount based on method"""
         if self.calculation_method == "percentage":
@@ -221,7 +236,7 @@ class EmployeeAllowance(models.Model):
         return recurrence_count
 
 
-class EmployeeDeduction(models.Model):
+class EmployeeDeduction(UtilityBaseModel):
     """
     Employee-specific deductions
     """
@@ -246,10 +261,8 @@ class EmployeeDeduction(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(100)],
         null=True,
     )
-    is_active = models.BooleanField(default=True)
     effective_from = models.DateField(default=timezone.now)
     effective_to = models.DateField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.employee} - {self.deduction_type.name}"
@@ -346,7 +359,7 @@ class EmployeeDeduction(models.Model):
         return recurrence_count
 
 
-class EmployeeTax(models.Model):
+class EmployeeTax(UtilityBaseModel):
     """
     Employee-specific tax details
     """
@@ -360,9 +373,6 @@ class EmployeeTax(models.Model):
 
     effective_from = models.DateField(default=timezone.now)
     effective_to = models.DateField(blank=True, null=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.employee} - {self.institution_tax.tax_name}"
@@ -417,7 +427,7 @@ class EmployeeTax(models.Model):
         return Decimal(0.00)
 
 
-class PayrollPeriod(models.Model):
+class PayrollPeriod(UtilityBaseModel):
     """
     Define payroll periods (Monthly, Bi-weekly, etc.)
     """
@@ -432,8 +442,6 @@ class PayrollPeriod(models.Model):
     end_date = models.DateField()
     pay_date = models.DateField()
     is_processed = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -442,7 +450,7 @@ class PayrollPeriod(models.Model):
         ordering = ["-start_date"]
 
 
-class Payslip(models.Model):
+class Payslip(UtilityBaseModel):
     """
     Individual employee payslip for a specific period
     """
@@ -468,9 +476,6 @@ class Payslip(models.Model):
     # overtime_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     is_paid = models.BooleanField(default=False)
     paid_date = models.DateField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.employee} - {self.payroll_period.name}"

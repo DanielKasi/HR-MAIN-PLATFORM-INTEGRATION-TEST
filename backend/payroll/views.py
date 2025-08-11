@@ -185,8 +185,7 @@ class EmployeeAllowanceDetailAPIView(APIView):
     @extend_schema(summary="Delete an employee allowance")
     def delete(self, request, pk):
         instance = get_object_or_404(EmployeeAllowance, pk=pk)
-        instance.is_active = False
-        instance.save()
+        instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -245,8 +244,7 @@ class PayrollPeriodDetailAPIView(APIView):
     @extend_schema(summary="Delete a payroll period")
     def delete(self, request, pk):
         instance = get_object_or_404(PayrollPeriod, pk=pk)
-        instance.is_active = False
-        instance.save()
+        instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -314,8 +312,7 @@ class EmployeeDeductionDetailAPIView(APIView):
     @extend_schema(summary="Delete an employee deduction")
     def delete(self, request, pk):
         instance = get_object_or_404(EmployeeDeduction, pk=pk)
-        instance.is_active = False
-        instance.save()
+        instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -374,8 +371,7 @@ class AllowanceTypeDetailAPIView(APIView):
     @extend_schema(summary="Delete an allowance type")
     def delete(self, request, pk):
         instance = get_object_or_404(AllowanceType, pk=pk)
-        instance.is_active = False
-        instance.save()
+        instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
@@ -446,8 +442,7 @@ class DeductionTypeDetailAPIView(APIView):
     @extend_schema(summary="Delete a deduction type")
     def delete(self, request, pk):
         instance = get_object_or_404(DeductionType, pk=pk)
-        instance.is_active = False
-        instance.save
+        instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -530,8 +525,7 @@ class EmployeeTaxDetailAPIView(APIView):
     @extend_schema(summary="Delete an employee tax")
     def delete(self, request, pk):
         instance = get_object_or_404(EmployeeTax, pk=pk)
-        instance.is_active = False
-        instance.save()
+        instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -601,8 +595,7 @@ class PayslipDetailAPIView(APIView):
     @extend_schema(summary="Delete a payslip")
     def delete(self, request, pk):
         instance = get_object_or_404(Payslip, pk=pk)
-        instance.is_active = False
-        instance.save()
+        instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
