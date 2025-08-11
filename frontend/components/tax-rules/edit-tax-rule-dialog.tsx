@@ -14,10 +14,11 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { toast } from "sonner";
 import { taxRulesAPI } from "@/lib/utils";
-import type { ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
+import type { ITaxRule } from "@/types/types.utils";
+import { formatCurrency } from "@/lib/helpers";
 
 interface EditTaxRuleDialogProps {
   taxRule: ITaxRule;
@@ -33,29 +34,36 @@ export function EditTaxRuleDialog({
   onSuccess,
 }: EditTaxRuleDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState<ITaxRuleFormData>({
-    calculation_type: "percentage",
-    percentage: undefined,
-    fixed_amount: undefined,
+  const [formData, setFormData] = useState({
+    calculation_type: "percentage" as "percentage" | "fixed",
+    tax_rule_name: "",
+    tax_rule_description: "",
+    tax_rule_percentage: undefined as number | undefined,
+    tax_rule_fixed_amount: undefined as number | undefined,
     salary_from: 0,
     salary_to: 0,
-    is_active: true,
   });
 
   useEffect(() => {
     if (taxRule) {
       setFormData({
-        calculation_type: taxRule.calculation_type,
-        percentage: taxRule.percentage,
-        fixed_amount: taxRule.fixed_amount,
-        salary_from: taxRule.salary_from,
-        salary_to: taxRule.salary_to,
-        is_active: taxRule.is_active,
+        calculation_type: taxRule.calculation_type as "percentage" | "fixed",
+        tax_rule_name: taxRule.tax_rule_name || "",
+        tax_rule_description: taxRule.tax_rule_description || "",
+        tax_rule_percentage: taxRule.tax_rule_percentage,
+        tax_rule_fixed_amount: taxRule.tax_rule_fixed_amount,
+        salary_from: taxRule.salary_from || 0,
+        salary_to: taxRule.salary_to || 0,
       });
     }
   }, [taxRule]);
 
   const handleSubmit = async () => {
+    if (!formData.tax_rule_name.trim()) {
+      toast.error("Please enter a tax rule name");
+      return;
+    }
+
     if (!formData.salary_from || !formData.salary_to) {
       toast.error("Please enter salary range");
       return;
@@ -66,12 +74,12 @@ export function EditTaxRuleDialog({
       return;
     }
 
-    if (formData.calculation_type === "percentage" && (!formData.percentage || formData.percentage <= 0)) {
+    if (formData.calculation_type === "percentage" && (!formData.tax_rule_percentage || formData.tax_rule_percentage <= 0)) {
       toast.error("Please enter a valid percentage");
       return;
     }
 
-    if (formData.calculation_type === "fixed" && (!formData.fixed_amount || formData.fixed_amount <= 0)) {
+    if (formData.calculation_type === "fixed" && (!formData.tax_rule_fixed_amount || formData.tax_rule_fixed_amount <= 0)) {
       toast.error("Please enter a valid fixed amount");
       return;
     }
@@ -84,11 +92,12 @@ export function EditTaxRuleDialog({
       const updatedTaxRule: ITaxRule = {
         ...taxRule,
         calculation_type: formData.calculation_type,
-        percentage: formData.calculation_type === "percentage" ? formData.percentage : undefined,
-        fixed_amount: formData.calculation_type === "fixed" ? formData.fixed_amount : undefined,
+        tax_rule_name: formData.tax_rule_name,
+        tax_rule_description: formData.tax_rule_description,
+        tax_rule_percentage: formData.calculation_type === "percentage" ? formData.tax_rule_percentage : undefined,
+        tax_rule_fixed_amount: formData.calculation_type === "fixed" ? formData.tax_rule_fixed_amount : undefined,
         salary_from: formData.salary_from,
         salary_to: formData.salary_to,
-        is_active: formData.is_active,
         updated_at: new Date().toISOString(),
       };
 
@@ -113,6 +122,36 @@ export function EditTaxRuleDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 gap-6 py-6">
+          <div className="space-y-3">
+            <Label htmlFor="tax_rule_name" className="text-sm text-gray-800">
+              Tax Rule Name *
+            </Label>
+            <Input
+              id="tax_rule_name"
+              type="text"
+              value={formData.tax_rule_name}
+              onChange={(e) => setFormData({ ...formData, tax_rule_name: e.target.value })}
+              placeholder="e.g., Basic Tax Rate"
+              disabled={isSubmitting}
+              className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <Label htmlFor="tax_rule_description" className="text-sm text-gray-800">
+              Description
+            </Label>
+            <Input
+              id="tax_rule_description"
+              type="text"
+              value={formData.tax_rule_description}
+              onChange={(e) => setFormData({ ...formData, tax_rule_description: e.target.value })}
+              placeholder="e.g., Basic tax rate for standard income"
+              disabled={isSubmitting}
+              className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+            />
+          </div>
+
           <div className="space-y-3">
             <Label htmlFor="calculation_type" className="text-sm text-gray-800">
               Calculation Type *
@@ -145,8 +184,8 @@ export function EditTaxRuleDialog({
                   min="0"
                   max="100"
                   step="0.01"
-                  value={formData.percentage || ""}
-                  onChange={(e) => setFormData({ ...formData, percentage: parseFloat(e.target.value) || undefined })}
+                  value={formData.tax_rule_percentage || ""}
+                  onChange={(e) => setFormData({ ...formData, tax_rule_percentage: parseFloat(e.target.value) || undefined })}
                   placeholder="e.g., 10.5"
                   disabled={isSubmitting}
                   className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pr-8"
@@ -166,8 +205,8 @@ export function EditTaxRuleDialog({
                   type="number"
                   min="0"
                   step="0.01"
-                  value={formData.fixed_amount || ""}
-                  onChange={(e) => setFormData({ ...formData, fixed_amount: parseFloat(e.target.value) || undefined })}
+                  value={formData.tax_rule_fixed_amount || ""}
+                  onChange={(e) => setFormData({ ...formData, tax_rule_fixed_amount: parseFloat(e.target.value) || undefined })}
                   placeholder="e.g., 5000.00"
                   disabled={isSubmitting}
                   className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pl-8"
@@ -182,7 +221,7 @@ export function EditTaxRuleDialog({
                 Salary From *
               </Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+              
                 <Input
                   id="salary_from"
                   type="number"
@@ -202,7 +241,7 @@ export function EditTaxRuleDialog({
                 Salary To *
               </Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                
                 <Input
                   id="salary_to"
                   type="number"
@@ -218,23 +257,7 @@ export function EditTaxRuleDialog({
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
-            <Checkbox
-              id="is_active"
-              checked={formData.is_active}
-              onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
-                  is_active: !!checked.valueOf(),
-                })
-              }
-              disabled={isSubmitting}
-              className="w-5 h-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500/20"
-            />
-            <Label htmlFor="is_active" className="text-sm font-medium text-gray-700">
-              Is Active
-            </Label>
-          </div>
+
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>

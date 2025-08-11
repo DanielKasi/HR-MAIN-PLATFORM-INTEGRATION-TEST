@@ -1858,6 +1858,9 @@ export interface ITaxFormData {
 export interface ITaxRule {
   id: number;
   institution_tax: number;
+  calculation_type: string;
+  percentage: string;
+  fixed_amount: number;
   tax_rule_name: string;
   tax_rule_description?: string;
   tax_rule_percentage?: number;
@@ -1883,5 +1886,162 @@ export interface ITaxRuleFormData {
 // Legacy interfaces for backward compatibility
 export interface Itax extends ITax {}
 export interface ItaxRules extends ITaxRule {}
+
+export interface IAssetCategory {
+  id: number;
+  institution: number;
+  category_name: string;
+  category_description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetCategoryFormData {
+  category_name: string;
+  category_description?: string;
+}
+
+export interface IAsset {
+  id: number;
+  institution: number;
+  asset_name: string;
+  batch_number: string;
+  serial_number: string;
+  category: IAssetCategory | null;
+  description: string | null;
+  status: "available" | "allocated" | "maintenance" | "decommissioned";
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by: number;
+  current_holder: number | null;
+  current_holder_details?: any; // Employee details
+  asset_histories?: IAssetHistory[];
+}
+
+export interface IAssetFormData {
+  asset_name: string;
+  serial_number: string;
+  category: number;
+  description?: string;
+  status?: "available" | "allocated" | "maintenance" | "decommissioned";
+}
+
+export interface IAssetHistory {
+  id: number;
+  asset: number;
+  event_type: "allocated" | "returned" | "maintenance" | "decommissioned" | "created" | "reassigned";
+  performed_by: number;
+  performed_by_details?: any;
+  affected_user: number | null;
+  affected_user_details?: any;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetRequest {
+  id: number;
+  asset: IAsset;
+  requester: any; // Employee details
+  request_reference_code: string;
+  asset_request_status: "pending" | "approved" | "rejected" | "cancelled";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetRequestFormData {
+  asset_id: number;
+  notes?: string;
+}
+
+export interface IAssetAllocation {
+  id: number;
+  asset: IAsset;
+  allocated_to: any; // Employee details
+  allocated_by: any; // Employee details
+  responding_to_request?: IAssetRequest | null;
+  allocation_status: "pending" | "allocated" | "rejected" | "cancelled";
+  alloc_code: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetAllocationWorkflow extends IAssetAllocation {
+  workflow_status: string;
+  current_step: number;
+  total_steps: number;
+  approval_tasks: IApprovalTask[];
+}
+
+export interface IApprovalTask {
+  id: number;
+  step: IApprovalStep;
+  status: "not_started" | "pending" | "completed" | "rejected";
+  comment: string | null;
+  approved_by: any | null; // Profile details
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IApprovalStep {
+  id: number;
+  step_name: string;
+  level: number;
+  roles: string[];
+  roles_details: {
+    name: string;
+    id: number;
+  }[];
+  approvers: string[];
+  approvers_details: {
+    id: string;
+    approver_user: {
+      id: number;
+      fullname: string;
+      email: string;
+    };
+  }[];
+  action: string;
+  action_details: {
+    id: number;
+    code: string;
+    label: string;
+    category: {
+      code: string;
+      label: string;
+    };
+  };
+}
+
+export interface IAssetAllocationFormData {
+  asset_id: number;
+  allocated_to_id: number;
+  responding_to_request_id?: number;
+  allocation_status?: "pending" | "allocated" | "rejected" | "cancelled";
+}
+
+export interface IAssetReturn {
+  id: number;
+  asset: IAsset;
+  returned_by: any; // Employee details
+  returned_to: any; // Employee details (usually admin/HR)
+  return_date: string;
+  return_reason: string | null;
+  asset_condition: "good" | "fair" | "poor" | "damaged";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetReturnFormData {
+  asset_id: number;
+  return_reason?: string;
+  asset_condition: "good" | "fair" | "poor" | "damaged";
+  notes?: string;
+}
 
 

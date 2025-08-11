@@ -58,7 +58,7 @@ export function AddBranchForm({userId, onBranchAdded}: AddBranchFormProps) {
   }, [isOpen]);
 
   const handleSubmit = async () => {
-    if (!selectedBranchId) {
+    if (!selectedBranchId || selectedBranchId === "unknown") {
       setError("Please select a branch");
 
       return;
@@ -113,7 +113,7 @@ export function AddBranchForm({userId, onBranchAdded}: AddBranchFormProps) {
               </SelectTrigger>
               <SelectContent>
                 {branches.map((branch) => (
-                  <SelectItem key={branch.id ?? "unknown"} value={(branch.id ?? "").toString()}>
+                  <SelectItem key={branch.id ?? "unknown"} value={branch.id?.toString() ?? "unknown"}>
                     {branch.branch_name}
                   </SelectItem>
                 ))}
