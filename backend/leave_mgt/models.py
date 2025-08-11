@@ -6,7 +6,32 @@ from users.models import CustomUser
 from django.utils import timezone
 
 
-class LeaveType(models.Model):
+class BaseModel(models.Model):
+    # This field tracks the date and time a record was soft-deleted.
+    # A null value means the record is active.
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+    def delete(self, *args, **kwargs):
+        """
+        Soft-deletes the record by setting the deleted_at timestamp.
+        """
+        self.deleted_at = timezone.now()
+        self.save()
+
+    @property
+    def is_active(self):
+        """
+        A convenience property to check if the record is not deleted.
+        """
+        return self.deleted_at is None
+
+
+class LeaveType(BaseModel):
     """Leave types like Annual, Sick, Maternity, etc."""
 
     LEAVE_CATEGORIES = [
@@ -30,15 +55,12 @@ class LeaveType(models.Model):
     max_carry_forward_days = models.PositiveIntegerField(
         default=0, blank=True, null=True
     )
-    is_active = models.BooleanField(default=True)
     requires_document = models.BooleanField(default=False)
     gender_specific = models.CharField(
         max_length=10,
         choices=[("male", "Male"), ("female", "Female"), ("all", "All")],
         default="all",
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "leave_types"
@@ -142,7 +164,7 @@ class LeaveType(models.Model):
         return synced_count
 
 
-class LeaveBalance(models.Model):
+class LeaveBalance(BaseModel):
     """Track leave balances for each employee per leave type per year"""
 
     institution = models.ForeignKey(
@@ -160,13 +182,6 @@ class LeaveBalance(models.Model):
     pending_days = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     carried_forward_days = models.DecimalField(
         max_digits=5, decimal_places=2, default=0
-    )
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(
-        default=True,
-        help_text="Designates whether leave balance should be treated as active or in active"
     )
 
     class Meta:
@@ -187,7 +202,7 @@ class LeaveBalance(models.Model):
         return f"{self.employee.user.fullname} - {self.leave_type.name} ({self.year})"
 
 
-class LeaveApplication(models.Model):
+class LeaveApplication(BaseModel):
     """Leave application requests"""
 
     STATUS_CHOICES = [
@@ -237,13 +252,6 @@ class LeaveApplication(models.Model):
     # TODO change to a file
     handover_notes = models.TextField(blank=True)
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(
-        default=True,
-        help_text="Designates whether leave application should be treated as active or in active."
-    )
-
     class Meta:
         db_table = "leave_applications"
         ordering = ["-created_at"]
@@ -258,7 +266,7 @@ class LeaveApplication(models.Model):
         return f"{self.employee.user.fullname} - {self.leave_type.name} ({self.start_date} to {self.end_date})"
 
 
-class LeavePolicy(models.Model):
+class LeavePolicy(BaseModel):
     """Company leave policies and rules"""
 
     institution = models.ForeignKey(
@@ -274,9 +282,6 @@ class LeavePolicy(models.Model):
     requires_manager_approval = models.BooleanField(default=True)
     requires_hr_approval = models.BooleanField(default=False)
     applicable_after_probation_months = models.PositiveIntegerField(default=0)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "leave_policies"

@@ -77,8 +77,7 @@ class LeaveTypeDetailAPIView(APIView):
     @extend_schema(summary="Delete a leave type", responses={204: None})
     def delete(self, request, pk):
         leave_type = get_object_or_404(LeaveType, pk=pk)
-        leave_type.is_active = False
-        leave_type.save()
+        leave_type.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -154,8 +153,7 @@ class LeaveBalanceDetailAPIView(APIView):
     @extend_schema(summary="Delete a leave balance", responses={204: None})
     def delete(self, request, pk):
         balance = get_object_or_404(LeaveBalance, pk=pk)
-        balance.is_active = False
-        balance.save()
+        balance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -386,7 +384,7 @@ class LeaveApplicationDetailAPIView(APIView):
                 pass
 
             application.is_active = False
-            application.save()
+            application.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -503,8 +501,7 @@ class LeavePolicyDetailAPIView(APIView):
     @extend_schema(summary="Delete a leave policy", responses={204: None})
     def delete(self, request, pk):
         policy = get_object_or_404(LeavePolicy, pk=pk)
-        policy.is_active = False
-        policy.save()
+        policy.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
