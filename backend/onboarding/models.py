@@ -7,6 +7,33 @@ from django.conf import settings
 from django.db import models, transaction
 from io import BytesIO
 from weasyprint import HTML
+from django.db.models import UniqueConstraint, Q
+from django.core.exceptions import ValidationError
+
+
+class BaseModel(models.Model):
+    # This field tracks the date and time a record was soft-deleted.
+    # A null value means the record is active.
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+    def delete(self, *args, **kwargs):
+        """
+        Soft-deletes the record by setting the deleted_at timestamp.
+        """
+        self.deleted_at = timezone.now()
+        self.save()
+
+    @property
+    def is_active(self):
+        """
+        A convenience property to check if the record is not deleted.
+        """
+        return self.deleted_at is None
 
 
 class OnBoarding(models.Model):
@@ -107,7 +134,7 @@ class OnBoarding(models.Model):
             print(f"Error creating employee record: {str(e)}")
 
 
-class OffboardingStage(models.Model):
+class OffboardingStage(BaseModel):
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
@@ -116,10 +143,6 @@ class OffboardingStage(models.Model):
     stage_name = models.CharField(max_length=100, blank=False, null=False)
     stage_description = models.TextField(blank=True, null=True)
 
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     def __str__(self):
         return f"{self.institution.institution_name} - {self.stage_name}"
 
@@ -127,7 +150,7 @@ class OffboardingStage(models.Model):
         unique_together = (("institution", "stage_name"),)
 
 
-class InstitutionEmployeeSeparationTypes(models.Model):
+class InstitutionEmployeeSeparationTypes(BaseModel):
 
     SEPARATION_CATEGORY_CHOICES = [
         ("resignation", "Resignation"),
@@ -155,15 +178,11 @@ class InstitutionEmployeeSeparationTypes(models.Model):
         max_length=30, choices=SEPARATION_CATEGORY_CHOICES, default="other"
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=True)
-
     def __str__(self):
         return f"{self.institution.institution_name} - {self.separation_type}"
 
 
-class InstitutionSeparationPolicy(models.Model):
+class InstitutionSeparationPolicy(BaseModel):
     separation_type = models.ForeignKey(
         InstitutionEmployeeSeparationTypes,
         on_delete=models.CASCADE,
@@ -182,10 +201,7 @@ class InstitutionSeparationPolicy(models.Model):
     require_separation_letter = models.BooleanField(default=False)
     require_all_stages = models.BooleanField(default=False)
 
-    is_active = models.BooleanField(default=True)
     enforce_policy = models.BooleanField(default=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return (
@@ -194,7 +210,13 @@ class InstitutionSeparationPolicy(models.Model):
         )
 
     class Meta:
-        unique_together = (("separation_type", "is_active"),)
+        constraints = [
+            UniqueConstraint(
+                fields=["separation_type"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_separation_policy"
+            )
+        ]
 
 
 class EmployeeSeparation(models.Model):
@@ -253,7 +275,7 @@ class EmployeeSeparation(models.Model):
                 self.employee.user.save()
 
 
-class ResignationRequest(models.Model):
+class ResignationRequest(BaseModel):
     REQUEST_STATUS_CHOICES = [
         ("submitted", "Submitted"),
         ("under_review", "Under Review"),
@@ -281,13 +303,6 @@ class ResignationRequest(models.Model):
         max_length=20,
         choices=REQUEST_STATUS_CHOICES,
         default="submitted",
-    )
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(
-        default=True,
-        help_text="Designates whether resignation request should be treated as active or in active. "
     )
 
     def __str__(self):
@@ -332,7 +347,7 @@ class ResignationRequest(models.Model):
             )
 
 
-class TerminationInitiation(models.Model):
+class TerminationInitiation(BaseModel):
     separation = models.OneToOneField(
         EmployeeSeparation,
         on_delete=models.CASCADE,
@@ -358,13 +373,6 @@ class TerminationInitiation(models.Model):
             ("rejected", "Rejected"),
         ],
         default="submitted",
-    )
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(
-        default=True,
-        help_text="Designates whether termination of institution should be treated as active or in active."
     )
 
     def __str__(self):

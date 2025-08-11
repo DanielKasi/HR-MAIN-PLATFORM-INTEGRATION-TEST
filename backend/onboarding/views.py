@@ -297,8 +297,7 @@ class OffboardingStageDetailView(APIView):
     def delete(self, request, stage_id):
         try:
             stage = OffboardingStage.objects.get(id=stage_id)
-            stage.is_active = False
-            stage.save()
+            stage.delete()
             return Response(status=204)
         except OffboardingStage.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
@@ -393,8 +392,7 @@ class InstitutionEmployeeSeparationTypesDetailView(APIView):
             separation_type = InstitutionEmployeeSeparationTypes.objects.get(
                 id=separation_type_id
             )
-            separation_type.is_active = False
-            separation_type.save()
+            separation_type.delete()
             return Response(status=204)
         except InstitutionEmployeeSeparationTypes.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
@@ -483,7 +481,7 @@ class InstitutionSeparationPolicyDetailView(APIView):
     def delete(self, request, policy_id):
         try:
             policy = InstitutionSeparationPolicy.objects.get(id=policy_id)
-            policy.save()
+            policy.delete()
             return Response(status=204)
         except InstitutionSeparationPolicy.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
@@ -578,8 +576,7 @@ class ResignationRequestDetailView(APIView):
             resignation_request = ResignationRequest.objects.get(
                 id=resignation_request_id
             )
-            resignation_request.is_active = False
-            resignation_request.save()
+            resignation_request.delete()
             return Response(status=204)
         except ResignationRequest.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
@@ -692,8 +689,7 @@ class TerminationInitiationDetailView(APIView):
             termination_initiation = TerminationInitiation.objects.get(
                 id=termination_initiation_id
             )
-            termination_initiation.is_active = False
-            termination_initiation.save()
+            termination_initiation.delete()
             return Response(status=204)
         except TerminationInitiation.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
