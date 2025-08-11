@@ -110,6 +110,9 @@ const AssetRequestDetailPage = () => {
   const [approvalComments, setApprovalComments] = useState<{ [key: number]: string }>({});
   const [showCommentInput, setShowCommentInput] = useState<{ [key: number]: boolean }>({});
 
+
+  console.log("requests", request)
+
   const requestId = params.id as string;
 
   // Fetch request details
@@ -155,7 +158,7 @@ const AssetRequestDetailPage = () => {
     if (!request) return;
     
     try {
-      await assetsAPI.approveAssetRequest(request.id, "approve");
+      await assetsAPI.approveAssetRequest(request.id, "completed");
       await fetchRequestDetails();
       toast.success("Request approved successfully");
     } catch (error: any) {
@@ -169,7 +172,7 @@ const AssetRequestDetailPage = () => {
     if (!request) return;
     
     try {
-      await assetsAPI.approveAssetRequest(request.id, "reject");
+      await assetsAPI.approveAssetRequest(request.id, "rejected");
       await fetchRequestDetails(); // Refresh to get updated status
       toast.success("Request rejected successfully");
     } catch (error: any) {
@@ -179,14 +182,14 @@ const AssetRequestDetailPage = () => {
     }
   };
 
-  const handleApproval = async (taskId: number, action: 'approve' | 'reject') => {
+  const handleApproval = async (taskId: number, action: 'completed' | 'rejected') => {
     if (!request) return;
     
     const comment = approvalComments[taskId] || "";
     
     try {
       setIsApproving(true);
-      await assetsAPI.approveAssetRequest(request.id, action, comment);
+      await assetsAPI.approveAssetRequest(taskId, action, comment);
       
       // Refresh the request details to get updated workflow status
       await fetchRequestDetails();
@@ -394,7 +397,7 @@ const AssetRequestDetailPage = () => {
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-sm text-gray-900">
-                    {request.requester?.fullname || 'Unknown User'}
+                    {request.requester?.user.fullname || 'Unknown User'}
                   </p>
                   {request.requester?.email && (
                     <p className="text-sm text-gray-600 mt-1">{request.requester.email}</p>
@@ -510,7 +513,7 @@ const AssetRequestDetailPage = () => {
                           <div className="ml-4 pt-2 border-t border-gray-200">
                             <div className="flex gap-2">
                               <Button
-                                onClick={() => handleApproval(task.id, 'approve')}
+                                onClick={() => handleApproval(task.id, 'completed')}
                                 disabled={isApproving}
                                 size="sm"
                                 className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs"
@@ -528,7 +531,7 @@ const AssetRequestDetailPage = () => {
                                 )}
                               </Button>
                               <Button
-                                onClick={() => handleApproval(task.id, 'reject')}
+                                onClick={() => handleApproval(task.id, 'rejected')}
                                 disabled={isApproving}
                                 size="sm"
                                 variant="destructive"

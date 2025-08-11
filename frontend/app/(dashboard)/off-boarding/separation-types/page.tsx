@@ -49,6 +49,8 @@ import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {cn, OffboardingStagesAPI, SeparationPolicyTypesAPI} from "@/lib/utils";
 import {ISeparationType, IOffboardingStage, SeparationCategory} from "@/types/types.utils";
 
+import { useRouter, useSearchParams } from "next/navigation";
+
 const SEPARATION_CATEGORIES = [
   {value: "resignation", label: "Resignation"},
   {value: "termination", label: "Termination"},
@@ -66,6 +68,7 @@ const formSchema = z.object({
 });
 
 export default function SeparationPolicyTypesPage() {
+  const router = useRouter();
   const [policyTypes, setPolicyTypes] = useState<ISeparationType[]>([]);
   const [stages, setStages] = useState<IOffboardingStage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,6 +81,12 @@ export default function SeparationPolicyTypesPage() {
   const pageSize = 10;
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const institutionId = selectedInstitution?.id;
+
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
+
+
+  console.log("From query param:", from);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -147,9 +156,14 @@ export default function SeparationPolicyTypesPage() {
           policyTypeData: {...values},
         });
         toast.success("Policy type created successfully");
-        // Go to first page when creating new policy type
-        setCurrentPage(1);
-        fetchPolicyTypes(1);
+        if (from) {
+          // Redirect to the page specified in the "from" query param
+          router.push(from);
+        } else {
+          // Go to first page when creating new policy type
+          setCurrentPage(1);
+          fetchPolicyTypes(1);
+        }
       }
       form.reset();
       setEditingPolicyType(null);
@@ -285,7 +299,7 @@ export default function SeparationPolicyTypesPage() {
                     <FormItem>
                       <FormLabel>Supported Stages</FormLabel>
                       <Select
-                        onValueChange={(value) => {
+                        onValueChange={(value: string) => {
                           const currentValues = field.value || [];
                           const numValue = parseInt(value);
                           const index = currentValues.indexOf(numValue);
@@ -326,7 +340,7 @@ export default function SeparationPolicyTypesPage() {
       {/* Edit Dialog */}
       <Dialog
         open={isEditDialogOpen}
-        onOpenChange={(open) => {
+        onOpenChange={(open: any) => {
           if (!open) {
             setEditingPolicyType(null);
             setIsEditDialogOpen(false);
@@ -398,7 +412,7 @@ export default function SeparationPolicyTypesPage() {
                   <FormItem>
                     <FormLabel>Supported Stages</FormLabel>
                     <Select
-                      onValueChange={(value) => {
+                      onValueChange={(value: string) => {
                         const currentValues = field.value || [];
                         const numValue = parseInt(value);
                         const index = currentValues.indexOf(numValue);
@@ -576,7 +590,7 @@ export default function SeparationPolicyTypesPage() {
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={!!policyTypeToDelete}
-        onOpenChange={(open) => !open && setPolicyTypeToDelete(null)}
+        onOpenChange={(open: any) => !open && setPolicyTypeToDelete(null)}
       >
         <DialogContent>
           <DialogHeader>

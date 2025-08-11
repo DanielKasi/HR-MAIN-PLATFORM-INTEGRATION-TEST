@@ -126,6 +126,8 @@ const AssetDetailPage = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
+  console.log("Asset", asset)
+
   const assetId = params.id as string;
 
   // Fetch asset details
@@ -222,19 +224,7 @@ const AssetDetailPage = () => {
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              {/* Asset Return Button - only show if asset is allocated */}
-              {asset.status === "allocated" && (
-                <AssetReturnDialog
-                  asset={asset}
-                  onReturn={handleAssetReturn}
-                  trigger={
-                    <Button variant="outline" size="sm">
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      Return Asset
-                    </Button>
-                  }
-                />
-              )}
+             
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -335,10 +325,15 @@ const AssetDetailPage = () => {
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3">
                     <p className="text-sm text-gray-900">
-                      {asset.current_holder_details?.fullname || `Employee ID: ${asset.current_holder}`}
+                      {typeof asset.current_holder === 'object' && asset.current_holder.user && typeof asset.current_holder.user === 'object'
+                        ? asset.current_holder.user.fullname
+                        : 'Unknown User'}
                     </p>
-                    {asset.current_holder_details?.email && (
-                      <p className="text-sm text-gray-600 mt-1">{asset.current_holder_details.email}</p>
+                    {typeof asset.current_holder === 'object' &&
+                      asset.current_holder.user &&
+                      typeof asset.current_holder.user === 'object' &&
+                      asset.current_holder.user.email && (
+                        <p className="text-sm text-gray-600 mt-1">{asset.current_holder.user.email}</p>
                     )}
                   </div>
                 </div>
@@ -357,63 +352,7 @@ const AssetDetailPage = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button 
-                onClick={handleEditAsset}
-                className="w-full justify-start"
-                variant="outline"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Asset
-              </Button>
-              {asset.status === "allocated" && (
-                <AssetReturnDialog
-                  asset={asset}
-                  onReturn={handleAssetReturn}
-                  trigger={
-                    <Button 
-                      className="w-full justify-start"
-                      variant="outline"
-                    >
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      Return Asset
-                    </Button>
-                  }
-                />
-              )}
-              <Button 
-                onClick={() => toast.info("Assign asset functionality coming soon")}
-                className="w-full justify-start"
-                variant="outline"
-                disabled={asset.status === "allocated"}
-              >
-                <User className="h-4 w-4 mr-2" />
-                Assign Asset
-              </Button>
-              <Button 
-                onClick={() => toast.info("Maintenance request functionality coming soon")}
-                className="w-full justify-start"
-                variant="outline"
-              >
-                <Wrench className="h-4 w-4 mr-2" />
-                Request Maintenance
-              </Button>
-              <Button 
-                onClick={() => toast.info("Generate report functionality coming soon")}
-                className="w-full justify-start"
-                variant="outline"
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Generate Report
-              </Button>
-            </CardContent>
-          </Card>
-
+        
           {/* Timestamps */}
           <Card>
             <CardHeader>

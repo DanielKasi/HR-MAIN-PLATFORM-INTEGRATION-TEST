@@ -23,6 +23,7 @@ import {Badge} from "@/components/ui/badge";
 import Link from "next/link";
 import type {ISeparationType} from "@/types/types.utils";
 import apiRequest from "@/lib/apiRequest";
+import {Icon} from "@iconify/react";
 
 interface FormData {
   separation_type: string;
@@ -261,39 +262,44 @@ export default function AddSeparationPolicyPage() {
                 {errors.policy_name && <p className="text-sm text-red-500">{errors.policy_name}</p>}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 ">
                 <Label htmlFor="separation_type">Separation Type *</Label>
-                <Select
-                  value={formData.separation_type}
-                  onValueChange={(value) => handleInputChange("separation_type", value)}
-                >
-                  <SelectTrigger className={errors.separation_type ? "border-red-500" : ""}>
-                    <SelectValue placeholder="Select separation type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {separationTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id.toString()}>
-                        <div className="flex items-center gap-2">
-                          <span>{type.separation_type}</span>
-                          <Badge
-                            variant={type.is_active ? "default" : "secondary"}
-                            className="text-xs"
-                          >
-                            {type.category}
-                          </Badge>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.separation_type && (
-                  <p className="text-sm text-red-500">{errors.separation_type}</p>
-                )}
-                {getSelectedSeparationType() && (
-                  <p className="text-sm text-muted-foreground">
-                    {getSelectedSeparationType()?.description}
-                  </p>
-                )}
+                <div className="flex items-center gap-4">
+                  <Select
+                    value={formData.separation_type}
+                    onValueChange={(value: string) => handleInputChange("separation_type", value)}
+                  >
+                    <SelectTrigger className={errors.separation_type ? "border-primary" : ""}>
+                      <SelectValue placeholder="Select separation type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {separationTypes.map((type: ISeparationType) => (
+                        <SelectItem key={type.id} value={type.id.toString()}>
+                          <div className="flex items-center gap-2">
+                            <span>{type.separation_type}</span>
+                            <Badge
+                              variant={type.is_active ? "default" : "secondary"}
+                              className="text-xs"
+                            >
+                              {type.category}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                <button
+                  type="button"
+                  className="text-[16-px] hover:underline border border-gray-300 rounded-md p-2"
+                  onClick={() =>
+                    router.push("/off-boarding/separation-types?from=/off-boarding/separation-policy/add")
+                  }
+                  >
+                  <Icon icon="hugeicons:add-01" className="inline-block mr-1" />
+                </button>
+                
+                </div>
+                
               </div>
             </div>
 
@@ -375,7 +381,7 @@ export default function AddSeparationPolicyPage() {
               </div>
               <Switch
                 checked={formData.require_separation_letter}
-                onCheckedChange={(checked) =>
+                onCheckedChange={(checked: string) =>
                   handleInputChange("require_separation_letter", checked)
                 }
               />
@@ -392,7 +398,7 @@ export default function AddSeparationPolicyPage() {
               </div>
               <Switch
                 checked={formData.require_all_stages}
-                onCheckedChange={(checked) => handleInputChange("require_all_stages", checked)}
+                onCheckedChange={(checked: string) => handleInputChange("require_all_stages", checked)}
               />
             </div>
           </CardContent>
@@ -416,7 +422,7 @@ export default function AddSeparationPolicyPage() {
               </div>
               <Switch
                 checked={formData.is_active}
-                onCheckedChange={(checked) => handleInputChange("is_active", checked)}
+                onCheckedChange={(checked: string) => handleInputChange("is_active", checked)}
               />
             </div>
 
@@ -431,7 +437,7 @@ export default function AddSeparationPolicyPage() {
               </div>
               <Switch
                 checked={formData.enforce_policy}
-                onCheckedChange={(checked) => handleInputChange("enforce_policy", checked)}
+                onCheckedChange={(checked: string) => handleInputChange("enforce_policy", checked)}
               />
             </div>
           </CardContent>

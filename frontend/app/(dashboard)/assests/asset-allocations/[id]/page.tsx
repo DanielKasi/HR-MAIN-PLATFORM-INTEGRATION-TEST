@@ -105,6 +105,8 @@ const AssetAllocationDetailPage = () => {
   const [approvalComments, setApprovalComments] = useState<{ [key: number]: string }>({});
   const [showCommentInput, setShowCommentInput] = useState<{ [key: number]: boolean }>({});
 
+  console.log("Allocations", allocation);
+
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const allocationId = params.id as string;
 
@@ -152,20 +154,16 @@ const AssetAllocationDetailPage = () => {
     }
   };
 
-  const handleViewRequestDetails = () => {
-    if (allocation?.responding_to_request?.id) {
-      router.push(`/assests/asset-requests/${allocation.responding_to_request.id}`);
-    }
-  };
+  
 
-  const handleApproval = async (taskId: number, action: 'approve' | 'reject') => {
+  const handleApproval = async (taskId: number, action: 'completed' | 'rejected') => {
     if (!allocation) return;
     
     const comment = approvalComments[taskId] || "";
     
     try {
       setIsApproving(true);
-      await assetsAPI.approveAssetAllocation(allocation.id, action, comment);
+      await assetsAPI.approveAssetAllocation(taskId, action, comment);
       
       // Refresh the allocation details to get updated workflow status
       await fetchAllocationDetails();
@@ -309,7 +307,7 @@ const AssetAllocationDetailPage = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Allocated To</label>
-                  <p className="text-lg font-medium">{allocation.allocated_to?.fullname}</p>
+                  <p className="text-lg font-medium">{allocation.allocated_to}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Asset</label>
@@ -346,14 +344,7 @@ const AssetAllocationDetailPage = () => {
                   <p className="text-lg">{allocation.allocated_by?.fullname}</p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                onClick={handleViewAssetDetails}
-                className="flex items-center space-x-2"
-              >
-                <Package className="h-4 w-4" />
-                <span>View Asset Details</span>
-              </Button>
+              
             </CardContent>
           </Card>
 
@@ -377,14 +368,7 @@ const AssetAllocationDetailPage = () => {
                     <p className="text-lg">{allocation.responding_to_request.requester?.fullname}</p>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  onClick={handleViewRequestDetails}
-                  className="flex items-center space-x-2"
-                >
-                  <FileText className="h-4 w-4" />
-                  <span>View Request Details</span>
-                </Button>
+                
               </CardContent>
             </Card>
           )}
@@ -495,7 +479,7 @@ const AssetAllocationDetailPage = () => {
                           <div className="ml-4 pt-2 border-t border-gray-200">
                             <div className="flex gap-2">
                               <Button
-                                onClick={() => handleApproval(task.id, 'approve')}
+                                onClick={() => handleApproval(task.id, 'completed')}
                                 disabled={isApproving}
                                 size="sm"
                                 className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs"
@@ -513,7 +497,7 @@ const AssetAllocationDetailPage = () => {
                                 )}
                               </Button>
                               <Button
-                                onClick={() => handleApproval(task.id, 'reject')}
+                                onClick={() => handleApproval(task.id, 'rejected')}
                                 disabled={isApproving}
                                 size="sm"
                                 variant="destructive"
@@ -569,51 +553,7 @@ const AssetAllocationDetailPage = () => {
             </Card>
           )}
 
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5 text-orange-500" />
-                <span>Quick Actions</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                onClick={handleEditAllocation}
-                className="w-full justify-start"
-                variant="outline"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Allocation
-              </Button>
-              <Button
-                onClick={handleViewAssetDetails}
-                className="w-full justify-start"
-                variant="outline"
-              >
-                <Package className="h-4 w-4 mr-2" />
-                View Asset Details
-              </Button>
-              {allocation.responding_to_request && (
-                <Button
-                  onClick={handleViewRequestDetails}
-                  className="w-full justify-start"
-                  variant="outline"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  View Request Details
-                </Button>
-              )}
-              <Button
-                onClick={handleDeleteAllocation}
-                className="w-full justify-start text-red-600 hover:text-red-700"
-                variant="outline"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Allocation
-              </Button>
-            </CardContent>
-          </Card>
+          
 
           {/* Timestamps */}
           <Card>

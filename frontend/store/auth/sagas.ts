@@ -2,7 +2,7 @@ import {call, all, takeLatest, put, select, fork} from "redux-saga/effects";
 
 import {ActionWithPayLoad} from "../storeUtils";
 import {clearEmployeeForm, toggleSideBarAction} from "../miscellaneous/actions";
-import {selectSidebarOpened} from "../miscellaneous/selectors";
+import {selectSideBarOpened} from "../miscellaneous/selectors";
 
 import {AUTH_ACTION_TYPES} from "./types";
 import {
@@ -72,7 +72,7 @@ function* logout() {
     document.documentElement.style.setProperty("--primary", defaultPrimaryColor);
     document.documentElement.style.setProperty("--ring", defaultRingColor);
     document.documentElement.style.setProperty("--sidebar-accent", defaultSideBarAccentColor);
-    const sideBarOpened: boolean = yield select(selectSidebarOpened);
+    const sideBarOpened: boolean = yield select(selectSideBarOpened);
 
     if (!sideBarOpened) {
       yield put(toggleSideBarAction());

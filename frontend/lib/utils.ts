@@ -4049,10 +4049,10 @@ export const assetsAPI = {
     }
   },
 
-  approveAssetAllocation: async (id: number, action: "approve" | "reject", comment?: string): Promise<any> => {
+  approveAssetAllocation: async (id: number, action: "completed" | "rejected", comment?: string): Promise<any> => {
     try {
-      const response = await apiRequest.post(`/assets/asset-allocations/${id}/`, {
-        action,
+      const response = await apiRequest.patch(`workflow/task/${id}/status/`, {
+        status: action,
         comment: comment || ""
       });
       return response.data;
@@ -4063,10 +4063,12 @@ export const assetsAPI = {
   },
 
   // Asset Request Approval API method
-  approveAssetRequest: async (id: number, action: "approve" | "reject", comment?: string): Promise<any> => {
+  approveAssetRequest: async (id: number, new_status: "completed" | "rejected", comment?: string): Promise<any> => {
+  
+  
     try {
-      const response = await apiRequest.post(`/assets/asset-requests/${id}/approval/`, {
-        action,
+      const response = await apiRequest.patch(`workflow/task/${id}/status/`, {
+        status: new_status,
         comment: comment || ""
       });
       return response.data;

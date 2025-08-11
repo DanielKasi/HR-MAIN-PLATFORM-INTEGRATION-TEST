@@ -405,8 +405,8 @@ export interface JobApplicationFormData {
   applicant_name: string
   applicant_email: string
   applicant_phone?: string
-  resume: File
-  cover_letter?: File
+  resume: File | null
+  cover_letter?: File | null
   application_date?: string
   status?: "new" | "reviewed" | "shortlisted" | "rejected" | "passed"
   gender: "male" | "female"
@@ -425,6 +425,12 @@ export interface JobApplicationFormData {
 
 }
 
+// Extended application form data that includes additional fields
+export interface JobApplicationCompleteFormData extends JobApplicationFormData {
+  // Additional form fields
+  address_latitude?: string;
+  address_longitude?: string;
+}
 
 
 export type JobAdvertStatus = "expired" | "active" | "archived" | "closed" | "inactive" | "pending_approval";
@@ -456,6 +462,33 @@ export interface JobPositionAdvertFormData {
   number_of_employees_expected?: number;
   extra_information?: string;
   advert_type?: JobAdvertTypes;
+}
+
+// Extended form data that includes interview stages setup
+export interface JobAdvertCompleteFormData extends JobPositionAdvertFormData {
+  // Interview stages setup data
+  stages: Array<{
+    id: string;
+    name: string;
+    interviewers: Array<{
+      id: string;
+      name: string;
+      role: string;
+    }>;
+    feedbackFields: Array<{
+      id: string;
+      name: string;
+      type: string;
+    }>;
+  }>;
+  newStageName: string;
+  selectedInterviewers: Array<{
+    id: string;
+    name: string;
+    role: string;
+  }>;
+  newFeedbackFieldName: string;
+  newFeedbackFieldType: string;
 }
 
 
@@ -1915,7 +1948,7 @@ export interface IAsset {
   created_at: string;
   updated_at: string;
   created_by: number;
-  current_holder: number | null;
+  current_holder: number | UserProfile;
   current_holder_details?: any; // Employee details
   asset_histories?: IAssetHistory[];
 }
