@@ -10,11 +10,32 @@ from django.db import transaction
 from django.utils import timezone
 from recruitment.models import JobPosition
 import json
+from django.utils import timezone
+from django.db.models import UniqueConstraint, Q
 
 logger = logging.getLogger(__name__)
 
 
-class Institution(models.Model):
+class BaseModel(models.Model):
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+    
+    def delete(self, *args, **kwargs):
+        """Soft deletes a record by setting the deleted_at timestamp"""
+        self.deleted_at = timezone.now()
+        self.save()
+    
+    @property
+    def is_active(self):
+        """Check if the record is not deleted (is active)"""
+        return self.deleted_at is None
+
+
+class Institution(BaseModel):
     APPROVAL_STATUS_CHOICES = [
         ("pending", "Pending Approval"),
         ("approved", "Approved"),
@@ -65,18 +86,12 @@ class Institution(models.Model):
     )
     rejection_reason = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
         "users.CustomUser",
         related_name="created_institutions",
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-    )
-    is_active = models.BooleanField(
-        default=True,
-        help_text='Designates whether the institution should be active or in active'
     )
 
     class Meta:
@@ -271,16 +286,13 @@ class InstitutionDocument(models.Model):
         return 0
 
 
-class InstitutionBankType(models.Model):
+class InstitutionBankType(BaseModel):
     institution = models.ForeignKey(
         Institution, related_name="banks", on_delete=models.CASCADE
     )
     bank_fullname = models.CharField(max_length=255, blank=False, null=False)
     bank_code = models.CharField(max_length=20, blank=False, null=False)
     br_code = models.CharField(max_length=20, blank=False, null=False)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
         "users.CustomUser",
         related_name="created_institution_banks",
@@ -295,24 +307,18 @@ class InstitutionBankType(models.Model):
         null=True,
         blank=True,
     )
-    is_active = models.BooleanField(
-        default=True,
-        help_text="Designates whether the institution bank type should be treated active or in active. "
-    )
 
     def __str__(self):
         return f"Type: {self.bank_fullname} FOR {self.institution.institution_name}"
 
 
-class InstitutionBankAccount(models.Model):
+class InstitutionBankAccount(BaseModel):
     institution_bank = models.ForeignKey(
         InstitutionBankType, related_name="accounts", on_delete=models.CASCADE
     )
     account_name = models.CharField(max_length=255, blank=False, null=False)
     account_number = models.CharField(max_length=50, blank=False, null=False)
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
         "users.CustomUser",
         related_name="created_institution_bank_accounts",
@@ -326,10 +332,6 @@ class InstitutionBankAccount(models.Model):
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-    )
-    is_active = models.BooleanField(
-        default=True,
-        help_text="Designates whether institution bank account should be treated as active or in active."
     )
 
     class Meta:
@@ -371,15 +373,12 @@ class InstitutionWorkingDays(models.Model):
         return f"Working Days for {self.institution.institution_name}"
 
 
-class InstitutionTax(models.Model):
+class InstitutionTax(BaseModel):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, related_name="taxes"
     )
     tax_name = models.CharField(max_length=100, blank=False)
     tax_status = models.BooleanField(default=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     created_by = models.ForeignKey(
         "users.CustomUser",
@@ -395,10 +394,6 @@ class InstitutionTax(models.Model):
         null=True,
         blank=True,
     )
-    is_active = models.BooleanField(
-        default=True,
-        help_text="Designates whether institution type should be treated as active or in active."
-    )
 
     def __str__(self):
         return self.tax_name
@@ -408,7 +403,7 @@ class InstitutionTax(models.Model):
         verbose_name = "Institution Tax"
 
 
-class InstitutionTaxRule(models.Model):
+class InstitutionTaxRule(BaseModel):
     institution_tax = models.ForeignKey(
         InstitutionTax, related_name="rules", on_delete=models.CASCADE
     )
@@ -427,9 +422,6 @@ class InstitutionTaxRule(models.Model):
         max_digits=10, decimal_places=2, blank=True, null=True
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     updated_by = models.ForeignKey(
         "users.CustomUser",
         related_name="updated_tax_rules",
@@ -444,16 +436,12 @@ class InstitutionTaxRule(models.Model):
         null=True,
         blank=True,
     )
-    is_active = models.BooleanField(
-        default=True,
-        help_text="Designates whether institution tax rule should be treated as active or in active"
-    )
 
     def __str__(self):
         return self.tax_rule_name
 
 
-class Branch(models.Model):
+class Branch(BaseModel):
     institution = models.ForeignKey(
         Institution, related_name="branches", on_delete=models.CASCADE
     )
@@ -474,18 +462,12 @@ class Branch(models.Model):
     branch_email = models.EmailField(max_length=255, blank=True, null=True)
     branch_opening_time = models.TimeField(default=time(8, 0, 0))
     branch_closing_time = models.TimeField(default=time(23, 0, 0))
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
         "users.CustomUser",
         related_name="created_branches",
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-    )
-    is_active = models.BooleanField(
-        default=True,
-        help_text="Designates whether the branch should be treated as active or in active."
     )
 
     def save(self, *args, **kwargs):
@@ -531,10 +513,6 @@ class UserBranch(models.Model):
         null=True,
         blank=True,
     )
-    is_active = models.BooleanField(
-        default=True,
-        help_text="Designates whether user branch should be treated as active or in active."
-    )
 
     class Meta:
         unique_together = ["user", "branch"]
@@ -576,7 +554,7 @@ class UserBranch(models.Model):
         return self.user.email + " - " + self.branch.branch_location
 
 
-class Department(models.Model):
+class Department(BaseModel):
     name = models.CharField(max_length=255)
     description = models.TextField()
     institution = models.ForeignKey(
@@ -589,18 +567,12 @@ class Department(models.Model):
     #     null=True,
     #     blank=True,
     # )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
         "users.CustomUser",
         related_name="created_departments",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-    )
-    is_active = models.BooleanField(
-        default=True,
-        help_text="Designates whether department should be treated as active or in active."
     )
 
     def __str__(self):

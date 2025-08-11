@@ -208,8 +208,7 @@ class InstitutionDetailAPIView(APIView):
             institution = Institution.objects.get(id=institution_id)
             if institution.institution_owner != request.user:
                 return Response({"detail": "Access denied."}, status=403)
-            institution.is_active = False
-            institution.save()
+            institution.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=404)
@@ -309,8 +308,7 @@ class InstitutionBankTypeDetailView(APIView):
     def delete(self, request, bank_type_id):
         try:
             bank_type = InstitutionBankType.objects.get(id=bank_type_id)
-            bank_type.is_active = False
-            bank_type.save()
+            bank_type.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except InstitutionBankType.DoesNotExist:
             return Response({"detail": "Bank type not found."}, status=404)
@@ -410,8 +408,7 @@ class InstitutionBankAccountDetailView(APIView):
     def delete(self, request, bank_account_id):
         try:
             bank_account = InstitutionBankAccount.objects.get(id=bank_account_id)
-            bank_account.is_active = False
-            bank_account.save()
+            bank_account.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except InstitutionBankAccount.DoesNotExist:
             return Response({"detail": "Bank account not found."}, status=404)
@@ -577,8 +574,7 @@ class InstitutionTaxDetailView(APIView):
     def delete(self, request, tax_id):
         try:
             tax = InstitutionTax.objects.get(id=tax_id)
-            tax.is_active = False
-            tax.save()
+            tax.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except InstitutionTax.DoesNotExist:
             return Response({"detail": "Tax configuration not found."}, status=404)
@@ -676,8 +672,7 @@ class InstitutionTaxRuleDetailView(APIView):
     def delete(self, request, tax_rule_id):
         try:
             tax_rule = InstitutionTaxRule.objects.get(id=tax_rule_id)
-            tax_rule.is_active = False
-            tax_rule.save()
+            tax_rule.delete()
             return Response(status=204)
         except InstitutionTaxRule.DoesNotExist:
             return Response({"detail": "Tax rule not found."}, status=404)
@@ -788,8 +783,7 @@ class BranchDetailAPIView(APIView):
                 and branch.institution.institution_owner != request.user
             ):
                 return Response({"detail": "Access denied."}, status=403)
-            branch.is_active = False
-            branch.save()
+            branch.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Branch.DoesNotExist:
             return Response({"detail": "Branch not found."}, status=404)
@@ -1095,8 +1089,7 @@ class DepartmentDetailAPIView(APIView):
     def delete(self, request, department_id):
         try:
             department = Department.objects.get(id=department_id)
-            department.is_active = False
-            department.save()
+            department.delete()
             return Response(status=204)
         except Department.DoesNotExist:
             return Response({"detail": "Department not found."}, status=404)
