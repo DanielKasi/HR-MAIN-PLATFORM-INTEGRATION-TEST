@@ -1,15 +1,31 @@
 from django.db import models
 from .utils.history import create_asset_history
 from django.db import transaction
+from django.utils import timezone
+from django.db.models import UniqueConstraint, Q
 
 
 class BaseModel(models.Model):
-    is_active = models.BooleanField(default=True)
+    #is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # The deleted_at field tracks the date and time a record was soft deleted
+    # A null value means the record is active
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         abstract = True
+    
+    def delete(self, *args, **kwargs):
+        """Soft deletes a record by setting the deleted_at timestamp"""
+        self.deleted_at = timezone.now()
+        self.save()
+    
+    @property
+    def is_active(self):
+        """Check if the record is not deleted (is active)"""
+        return self.deleted_at is None
+
 
 
 class AssetCategory(BaseModel):
@@ -23,6 +39,15 @@ class AssetCategory(BaseModel):
 
     def __str__(self):
         return self.category_name
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=["institution", "category_name"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_category_per_institution"
+            )
+        ]
 
 
 class Asset(BaseModel):
@@ -39,7 +64,7 @@ class Asset(BaseModel):
     )
     asset_name = models.CharField(max_length=100, blank=False)
     batch_number = models.CharField(max_length=50, blank=True)
-    serial_number = models.CharField(max_length=50, blank=False, unique=True)
+    serial_number = models.CharField(max_length=50, blank=False)
     category = models.ForeignKey(
         AssetCategory,
         on_delete=models.CASCADE,
@@ -70,6 +95,7 @@ class Asset(BaseModel):
         constraints = [
             models.UniqueConstraint(
                 fields=["institution", "serial_number", "batch_number"],
+                condition=Q(deleted_at__isnull=True),
                 name="unique_asset_serial_batch",
             )
         ]
@@ -115,7 +141,7 @@ class AssetRequest(BaseModel):
         related_name="asset_requests",
     )
 
-    request_reference_code = models.CharField(max_length=100, unique=True)
+    request_reference_code = models.CharField(max_length=100)
 
     asset_request_status = models.CharField(
         max_length=20,
@@ -127,6 +153,15 @@ class AssetRequest(BaseModel):
 
     def __str__(self):
         return f"Request for {self.asset.asset_name} by {self.requester.user.fullname}"
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=["request_reference_code"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_request_reference_code"
+            )
+        ]
 
     def save(self, *args, **kwargs):
         is_new = self._state.adding
@@ -227,10 +262,19 @@ class AssetAllocation(BaseModel):
         default="pending",
     )
 
-    alloc_code = models.CharField(max_length=100, unique=True, blank=True)
+    alloc_code = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
         return f"Allocation of {self.asset.asset_name} to {self.allocated_to.user.fullname}"
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=["alloc_code"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_alloc_code"
+            )
+        ]
 
     def save(self, *args, **kwargs):
         is_new = self._state.adding
