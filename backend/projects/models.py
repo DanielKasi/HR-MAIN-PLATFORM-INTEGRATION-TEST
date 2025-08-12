@@ -1,5 +1,6 @@
 from django.db import models
-
+from django.utils import timezone
+from django.db.models import UniqueConstraint, Q
 
 class BaseModel(models.Model):
     created_by = models.ForeignKey(
@@ -18,9 +19,19 @@ class BaseModel(models.Model):
         blank=True,
         related_name="%(class)s_updated_by",
     )
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         abstract = True
+    
+    def delete(self, *args, **kwargs):
+        """Soft deletes a record by setting the deleted_at timestamp"""
+        self.deleted_at = timezone.now()
+        self.save()
+    
+    @property
+    def is_active(self):
+        return self.deleted_at is None
 
 
 class Project(BaseModel):
@@ -56,7 +67,6 @@ class Project(BaseModel):
         choices=PROJECT_STATUS_CHOICES,
         default="not_started",
     )
-    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"Project: {self.project_name} under ({self.institution})"
@@ -65,7 +75,13 @@ class Project(BaseModel):
         ordering = ["-created_at"]
         verbose_name_plural = "Projects"
         verbose_name = "Project"
-        unique_together = ("institution", "project_name")
+        constraints = [
+            UniqueConstraint(
+                fields=["institution", "project_name"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_project_name_per_institution"
+            )
+        ]
 
 
 class ProjectDocument(BaseModel):
@@ -121,7 +137,6 @@ class Task(BaseModel):
 
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
-    is_active = models.BooleanField(default=True)
 
     task_status = models.CharField(
         max_length=20,
@@ -147,9 +162,15 @@ class Task(BaseModel):
 
     class Meta:
         ordering = ["-created_at"]
-        unique_together = ("project", "task_name")
         verbose_name_plural = "Project Tasks"
         verbose_name = "Project Task"
+        constraints = [
+            UniqueConstraint(
+                fields=["project", "task_name"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_task_name_per_project"
+            )
+        ]
 
 
 class TaskDocument(BaseModel):
