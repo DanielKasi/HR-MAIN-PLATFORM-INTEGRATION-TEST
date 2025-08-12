@@ -17,16 +17,21 @@ from users.serializers import ProfileSerializer
 
 
 class AssetCategorySerializer(serializers.ModelSerializer):
+    total_assets = serializers.IntegerField(read_only=True)
+    total_available_assets = serializers.IntegerField(read_only=True)
+    total_allocated_assets = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = AssetCategory
         fields = "__all__"
-
         read_only_fields = [
             "id",
             "created_at",
             "updated_at",
             "institution",
         ]
+
+
 
     def create(self, validated_data):
         request = self.context.get("request")
@@ -38,7 +43,9 @@ class AssetCategorySerializer(serializers.ModelSerializer):
             validated_data["institution"] = institution
         else:
             raise serializers.ValidationError("User institution is required.")
+
         return super().create(validated_data)
+
 
 
 class AssetHistorySerializer(serializers.ModelSerializer):
