@@ -100,7 +100,7 @@ const TaxesComponent = () => {
         setIsLoading(false);
       }
     },
-    [selectedInstitution?.id],
+    [selectedInstitution],
   );
 
   useEffect(() => {
@@ -110,7 +110,6 @@ const TaxesComponent = () => {
   const handleCreateSuccess = (newTax: ITax) => {
     setTaxes([newTax, ...taxes]);
     clearFilters();
-    toast.success("Tax created successfully");
   };
 
   const handleUpdateSuccess = (updatedTax: ITax) => {

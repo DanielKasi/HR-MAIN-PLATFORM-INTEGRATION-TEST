@@ -248,6 +248,13 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
             "alloc_code",
             "allocated_by",
         ]
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "alloc_code",
+            "allocated_by",
+        ]
 
     def create(self, validated_data):
         request = self.context.get("request")

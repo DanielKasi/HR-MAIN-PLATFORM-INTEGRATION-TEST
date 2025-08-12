@@ -29,6 +29,8 @@ class BaseModel(models.Model):
 
 
 
+
+
 class AssetCategory(BaseModel):
     institution = models.ForeignKey(
         "institution.Institution",
@@ -50,6 +52,44 @@ class AssetCategory(BaseModel):
                 name="unique_active_category_per_institution"
             )
         ]
+
+    def save(self, *args, **kwargs):
+        # Auto-generate a 5-character code only if not already set
+        if not self.code:
+            self.code = self.generate_unique_code()
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def generate_unique_code():
+        """Generates a unique 5-character alphanumeric code."""
+        chars = string.ascii_uppercase + string.digits
+        while True:
+            code = ''.join(random.choices(chars, k=5))
+            if not AssetCategory.objects.filter(code=code).exists():
+                return code
+
+    @property
+    def total_assets(self):
+        """Returns the total number of assets in this category"""
+        return self.assets.count()
+
+    @property
+    def total_available_assets(self):
+        """Returns the total number of available assets in this category"""
+        return self.assets.filter(status='available').count()
+
+    @property
+    def total_allocated_assets(self):
+        """Returns the total number of allocated assets in this category"""
+        return self.assets.filter(status='allocated').count()
+
+    @property
+    def assets_by_status(self):
+        """Returns a dictionary with asset counts by status"""
+        from django.db.models import Count
+        status_counts = self.assets.values('status').annotate(count=Count('id'))
+        return {item['status']: item['count'] for item in status_counts}
+
 
     def save(self, *args, **kwargs):
         # Auto-generate a 5-character code only if not already set

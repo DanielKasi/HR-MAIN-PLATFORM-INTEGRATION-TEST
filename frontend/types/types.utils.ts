@@ -1,5 +1,5 @@
-import { ReactNode } from "react";
-import { Branch, ICustomerProfile, IUser, IUserInstitution, Permission, Role, UserProfile } from ".";
+import {ReactNode} from "react";
+import {Branch, ICustomerProfile, IUser, IUserInstitution, Permission, Role, UserProfile} from ".";
 
 export enum CUSTOM_CODES {
   BLOCKED_BY_ADMIN = "BLOCKED_BY_ADMIN",
@@ -9,10 +9,10 @@ export enum CUSTOM_CODES {
   OTHER = "OTHER",
 }
 export enum ALLOWANCE_FREQUENCIES {
-  DAILY="DAILY",
-  WEEKLY="WEEKLY",
-  MONTHLY="MONTHLY",
-  QUARTERLY="QUARTERLY"
+  DAILY = "DAILY",
+  WEEKLY = "WEEKLY",
+  MONTHLY = "MONTHLY",
+  QUARTERLY = "QUARTERLY",
 }
 
 export enum PURCHASE_ORDER_STATUS {
@@ -208,35 +208,29 @@ export enum PERMISSION_CODES {
   CAN_APPROVE_DOCUMENTS = "can_approve_documents",
   CAN_ARCHIVE_DOCUMENTS = "can_archive_documents",
   CAN_MANAGE_PAYROLL_PERIODS = "CAN_MANAGE_PAYROLL_PERIODS",
-
 }
 
-
-export type ContextType = 'employee' | 'department' | 'job_position'
-export type CalculationMethod = 'fixed' | 'percentage'
+export type ContextType = "employee" | "department" | "job_position";
+export type CalculationMethod = "fixed" | "percentage";
 
 export interface ContextItem {
-  id: number
-  name: string
-  description?: string
+  id: number;
+  name: string;
+  description?: string;
 }
 
-
-
-
 export interface CreateDepartmentData {
-  name: string
-  description: string
-  company_id: number
-  branch_id: number
+  name: string;
+  description: string;
+  company_id: number;
+  branch_id: number;
 }
 
 export interface DepartmentFormData {
-  name: string
-  description: string,
-  institution: number
+  name: string;
+  description: string;
+  institution: number;
 }
-
 
 export interface IInstitution {
   id: number;
@@ -270,7 +264,7 @@ export interface IDepartment {
   description?: string | null;
   institution: number; // ForeignKey as ID
   institution_details?: IUserInstitution | null; // Embedded serializer
-  job_positions?: { id: number; name: string; description: string; department_id: number }[];
+  job_positions?: {id: number; name: string; description: string; department_id: number}[];
 }
 
 export interface PaginatedResponse<T> {
@@ -279,7 +273,6 @@ export interface PaginatedResponse<T> {
   previous: string | null;
   results: T[];
 }
-
 
 // export interface IUser {
 //   id: number;
@@ -292,15 +285,12 @@ export interface PaginatedResponse<T> {
 //   gender: USER_GENDER
 // }
 
-
-
 export interface PaginatedEmployeeResponse {
   count: number;
   next: string | null;
   previous: string | null;
   results: IEmployee[];
 }
-
 
 export interface IReportsToDetails {
   id: number;
@@ -311,23 +301,23 @@ export interface IReportsToDetails {
 
 // Interface for Job Position response
 export interface IJobPositionResponse {
-  id: number
-  name: string
-  description: string
-  department: number
+  id: number;
+  name: string;
+  description: string;
+  department: number;
   department_details: {
-    id: number
-    name: string
-    description: string
-    institution: number
-    institution_details: any
-  }
-  reports_to: number
-  reports_to_details: string
-  contract_template: string
-  offer_letter_template: string
-  salary: string
-  job_adverts: string
+    id: number;
+    name: string;
+    description: string;
+    institution: number;
+    institution_details: any;
+  };
+  reports_to: number;
+  reports_to_details: string;
+  contract_template: string;
+  offer_letter_template: string;
+  salary: string;
+  job_adverts: string;
 }
 
 export interface IJobPosition {
@@ -342,22 +332,19 @@ export interface IJobPosition {
   contract_template?: string | null;
   offer_letter_template?: string | null;
   salary: number | null;
-  employees: IEmployee[],
-  tasks: ITask[],
+  employees: IEmployee[];
+  tasks: ITask[];
   job_position_status: "active" | "inactive";
 }
 
-
-
-
 export interface JobPositionFormData {
-  name: string
-  description: string
-  department: number | null
-  reports_to: number | null
-  job_position_status: "active" | "inactive",
-  offer_letter_template: File | null
-  salary: string
+  name: string;
+  description: string;
+  department: number | null;
+  reports_to: number | null;
+  job_position_status: "active" | "inactive";
+  offer_letter_template: File | null;
+  salary: string;
 }
 
 export interface CreateJobPositionData {
@@ -366,11 +353,10 @@ export interface CreateJobPositionData {
   description?: string;
   department: number;
   reports_to?: number;
-  job_position_status: "active" | "inactive",
+  job_position_status: "active" | "inactive";
   offer_letter_template?: File;
   salary: number;
 }
-
 
 export interface JobApplication {
   scheduled_by: any;
@@ -380,24 +366,27 @@ export interface JobApplication {
   reviewed_by_details: any;
   shortlisted_by_details: any;
   job_position_advert_job_details: {
-    department: string; name: string, description: string, job_posted_date: string
+    department: string;
+    name: string;
+    description: string;
+    job_posted_date: string;
   };
   positions: number;
-  id: number
-  job_position_advert: number
-  applicant_name: string
-  applicant_email: string
-  applicant_phone: string
-  resume: string
-  cover_letter: string
-  application_date: string
-  status: "new" | "reviewed" | "shortlisted" | "rejected" | "passed"
-  gender: "male" | "female"
-  state: string
-  address: string
-  country: string
-  source: "website" | "referral" | "job_board" | "social_media" | "head_hunt" | "other"
-  created_by: number
+  id: number;
+  job_position_advert: number;
+  applicant_name: string;
+  applicant_email: string;
+  applicant_phone: string;
+  resume: string;
+  cover_letter: string;
+  application_date: string;
+  status: "new" | "reviewed" | "shortlisted" | "rejected" | "passed";
+  gender: "male" | "female";
+  state: string;
+  address: string;
+  country: string;
+  source: "website" | "referral" | "job_board" | "social_media" | "head_hunt" | "other";
+  created_by: number;
 }
 
 export interface JobApplicationFormData {
@@ -433,7 +422,14 @@ export interface JobApplicationCompleteFormData extends JobApplicationFormData {
 }
 
 
-export type JobAdvertStatus = "expired" | "active" | "archived" | "closed" | "inactive" | "pending_approval";
+export type JobAdvertStatus =
+  | "expired"
+  | "active"
+  | "archived"
+  | "closed"
+  | "inactive"
+  | "pending_approval";
+
 
 export type JobAdvertTypes = "internal" | "external";
 
@@ -448,7 +444,7 @@ export interface JobPositionAdvert {
   number_of_employees_expected?: number | null;
   extra_information?: string | null;
   applications: JobApplication[];
-  interview_stages: JobApplication[]
+  interview_stages: JobApplication[];
   advert_type: JobAdvertTypes;
 }
 
@@ -535,7 +531,6 @@ export interface IEmployee {
   roles: Role[];
 }
 
-
 export interface IPayslip {
   id: number;
   employee: IEmployee;
@@ -543,7 +538,7 @@ export interface IPayslip {
   basic_salary: string;
   total_allowances: string;
   taxable_allowances: string;
-  non_taxable_allowances:string;
+  non_taxable_allowances: string;
   total_deductions: string;
   gross_salary: string;
   net_salary: string;
@@ -570,10 +565,7 @@ export interface IInterviewStage {
   interviewers: number[];
   interviewers_details?: IEmployee[];
   candidates_count: number;
-
-
 }
-
 
 export interface IInterview {
   updated_at: any;
@@ -587,9 +579,9 @@ export interface IInterview {
   status: string;
   feedback?: string | null;
   rating?: number | null;
-  location: string,
-  interview_time: string,
-  interview_type: string,
+  location: string;
+  interview_time: string;
+  interview_type: string;
 }
 
 export interface User {
@@ -607,16 +599,16 @@ export interface EmployeeFormData {
   phone_number: string;
   position: number;
   department: number;
-  work_type: number;           // Added
-  employee_type: number;       // Added
+  work_type: number; // Added
+  employee_type: number; // Added
   date_of_birth: string;
   date_of_joining: string;
   address: string;
-  country: string;             // Added
+  country: string; // Added
   nin: string;
   tin: string;
-  nssf_no: string;             // Added
-  bank: string;                // Added
+  nssf_no: string; // Added
+  bank: string; // Added
   bank_account_number: string; // Added
   is_active: boolean;
   experience: number;
@@ -632,19 +624,19 @@ export interface EmployeeFormData {
 }
 
 export interface ICreateEmployeeForm {
-  tin: string
-  nssf_no: string
+  tin: string;
+  nssf_no: string;
   fullname: string;
   email: string;
   phone_number: string;
   position: number;
   department: number;
-  work_type: number;           // Added
-  employee_type: number;       // Added
+  work_type: number; // Added
+  employee_type: number; // Added
   date_of_birth: string;
   date_of_joining: string;
   address: string;
-  country: string;             // Added
+  country: string; // Added
   nin: string;
   bank: string;
   bank_account_number: string;
@@ -660,59 +652,58 @@ export interface ICreateEmployeeForm {
   children_count: number;
 }
 export interface IRoleResponse {
-  id: number
-  name: string
-  description: string
-  institution: number
-  permissions_details: string
+  id: number;
+  name: string;
+  description: string;
+  institution: number;
+  permissions_details: string;
 }
 
 // Interface for Department response
 export interface IDepartmentResponse {
-  id: number
-  name: string
-  description: string
-  institution: number
+  id: number;
+  name: string;
+  description: string;
+  institution: number;
   institution_details: {
-    id: number
-    institution_email: string
-    institution_name: string
-    first_phone_number: string
-    second_phone_number: string
-    institution_logo: string
-    institution_owner_id: number
-    theme_color: string
-    location: string
-    latitude: number
-    longitude: number
-    approval_status: string
-    approval_status_display: string
-    approval_date: string
-    documents: any[]
-  }
+    id: number;
+    institution_email: string;
+    institution_name: string;
+    first_phone_number: string;
+    second_phone_number: string;
+    institution_logo: string;
+    institution_owner_id: number;
+    theme_color: string;
+    location: string;
+    latitude: number;
+    longitude: number;
+    approval_status: string;
+    approval_status_display: string;
+    approval_date: string;
+    documents: any[];
+  };
 }
 
 // Interface for Job Position response
 export interface IJobPositionResponse {
-  id: number
-  name: string
-  description: string
-  department: number
+  id: number;
+  name: string;
+  description: string;
+  department: number;
   department_details: {
-    id: number
-    name: string
-    description: string
-    institution: number
-    institution_details: any
-  }
-  reports_to: number
-  reports_to_details: string
-  contract_template: string
-  offer_letter_template: string
-  salary: string
-  job_adverts: string
+    id: number;
+    name: string;
+    description: string;
+    institution: number;
+    institution_details: any;
+  };
+  reports_to: number;
+  reports_to_details: string;
+  contract_template: string;
+  offer_letter_template: string;
+  salary: string;
+  job_adverts: string;
 }
-
 
 export interface IRole {
   id: number;
@@ -734,7 +725,7 @@ export interface IOnBoarding {
   application: number;
   attended: boolean;
   remarks: string | null;
-  status: 'initial' | 'training' | 'issued_contract' | 'declined_offer' | 'accepted_offer';
+  status: "initial" | "training" | "issued_contract" | "declined_offer" | "accepted_offer";
   created_at: string;
   updated_at: string;
 }
@@ -750,7 +741,7 @@ export interface IOnBoardingFormData {
   application?: number;
   attended?: boolean;
   remarks?: string;
-  status?: 'initial' | 'training' | 'issued_contract' | 'declined_offer' | 'accepted_offer';
+  status?: "initial" | "training" | "issued_contract" | "declined_offer" | "accepted_offer";
 }
 
 // Bulk Onboarding Types
@@ -770,13 +761,13 @@ export interface IBulkOnBoardingSummary {
 }
 
 export interface IBulkOnBoardingResponse {
-  created: IOnBoarding[]
-  skipped: any[]
+  created: IOnBoarding[];
+  skipped: any[];
   summary: {
-    created_count: number
-    skipped_count: number
-    total_requested: number
-  }
+    created_count: number;
+    skipped_count: number;
+    total_requested: number;
+  };
 }
 
 export interface IInterviewFormData {
@@ -785,15 +776,12 @@ export interface IInterviewFormData {
   interview_date: string;
   feedback?: string | null;
   rating?: number | null;
-  location: string,
-  interview_time: string,
-  interview_type: string,
+  location: string;
+  interview_time: string;
+  interview_type: string;
   status: string;
   created_by: number;
-
-
 }
-
 
 export interface IWorkTypeFormData {
   name: string;
@@ -900,15 +888,15 @@ export interface DisciplinaryActionRequest {
   notes: string;
 }
 
-
 export interface DisciplinaryActionResponse extends DisciplinaryActionRequest {
-  id: number
-  created_at: string
-  updated_at: string
+  id: number;
+  created_at: string;
+  updated_at: string;
 }
 
-
-export function convertFormToApiRequest(formData: DisciplinaryActionForm): DisciplinaryActionRequest {
+export function convertFormToApiRequest(
+  formData: DisciplinaryActionForm,
+): DisciplinaryActionRequest {
   return {
     discipline_type: parseInt(formData.discipline_type),
     employee: parseInt(formData.employee),
@@ -921,256 +909,258 @@ export function convertFormToApiRequest(formData: DisciplinaryActionForm): Disci
     action_taken: formData.action_taken,
     resolution_date: formData.resolution_date || null,
     follow_up_required: formData.follow_up_required,
-    follow_up_date: formData.follow_up_required && formData.follow_up_date
-      ? formData.follow_up_date
-      : null,
+    follow_up_date:
+      formData.follow_up_required && formData.follow_up_date ? formData.follow_up_date : null,
     notes: formData.notes,
   };
 }
 
-
 export interface DisciplineType {
-  id?: number
-  name: string
-  description: string
-  severity: "low" | "medium" | "high" | "critical"
-  is_active: boolean
-  created_at?: string
+  id?: number;
+  name: string;
+  description: string;
+  severity: "low" | "medium" | "high" | "critical";
+  is_active: boolean;
+  created_at?: string;
 }
 
 export interface DisciplineTypeForm {
-  name: string
-  description: string
-  severity: "low" | "medium" | "high" | "critical"
-  is_active: boolean
+  name: string;
+  description: string;
+  severity: "low" | "medium" | "high" | "critical";
+  is_active: boolean;
 }
 
 export interface DisciplineTypeRequest {
-  name: string
-  description: string
-  severity: "low" | "medium" | "high" | "critical"
-  is_active: boolean
+  name: string;
+  description: string;
+  severity: "low" | "medium" | "high" | "critical";
+  is_active: boolean;
 }
 
 export interface DisciplineTypeResponse extends DisciplineTypeRequest {
-  id: number
-  created_at: string
-  updated_at: string
+  id: number;
+  created_at: string;
+  updated_at: string;
 }
 
-
-export function convertDisciplineTypeFormToApiRequest(formData: DisciplineTypeForm): DisciplineTypeRequest {
+export function convertDisciplineTypeFormToApiRequest(
+  formData: DisciplineTypeForm,
+): DisciplineTypeRequest {
   return {
     name: formData.name,
     description: formData.description,
     severity: formData.severity,
     is_active: formData.is_active,
-  }
+  };
 }
 
 export interface DisciplinaryActionAPIResponse {
-  id: number
+  id: number;
   discipline_type: {
-    id: number
-    name: string
-    description: string
-    severity: "low" | "medium" | "high" | "critical"
-    is_active: boolean
-    created_at: string
-  }
+    id: number;
+    name: string;
+    description: string;
+    severity: "low" | "medium" | "high" | "critical";
+    is_active: boolean;
+    created_at: string;
+  };
   employee: {
-    id: number
+    id: number;
     user: {
-      id: number
-      email: string
-      fullname: string
-      is_active: boolean
-      is_email_verified: boolean
-      is_password_verified: boolean
-      is_staff: boolean
-      roles: any[]
-      branches: any[]
-      permissions: any[]
-    }
-    email: string
-    phone_number: string
+      id: number;
+      email: string;
+      fullname: string;
+      is_active: boolean;
+      is_email_verified: boolean;
+      is_password_verified: boolean;
+      is_staff: boolean;
+      roles: any[];
+      branches: any[];
+      permissions: any[];
+    };
+    email: string;
+    phone_number: string;
     position: {
-      id: number
-      name: string
-      department_id: number
-    }
+      id: number;
+      name: string;
+      department_id: number;
+    };
     department: {
-      id: number
-      name: string
-      institution_id: number
-    }
-    roles: any[]
-    date_of_birth: string | null
-    date_of_joining: string
-    address: string
-    is_active: boolean
-    created_at: string
-    updated_at: string
-    experience: number
-    qualifications: string | null
-    skills: string | null
-    emergency_contact_name: string | null
-    emergency_contact_phone: string | null
-    emergency_contact_relationship: string | null
-    marital_status: string
-    children_count: number
-    employee_profile_picture: string | null
-  }
+      id: number;
+      name: string;
+      institution_id: number;
+    };
+    roles: any[];
+    date_of_birth: string | null;
+    date_of_joining: string;
+    address: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+    experience: number;
+    qualifications: string | null;
+    skills: string | null;
+    emergency_contact_name: string | null;
+    emergency_contact_phone: string | null;
+    emergency_contact_relationship: string | null;
+    marital_status: string;
+    children_count: number;
+    employee_profile_picture: string | null;
+  };
   reported_by: {
-    id: number
+    id: number;
     user: {
-      id: number
-      email: string
-      fullname: string
-      is_active: boolean
-      is_email_verified: boolean
-      is_password_verified: boolean
-      is_staff: boolean
-      roles: any[]
-      branches: any[]
-      permissions: any[]
-    }
-    email: string
-    phone_number: string
+      id: number;
+      email: string;
+      fullname: string;
+      is_active: boolean;
+      is_email_verified: boolean;
+      is_password_verified: boolean;
+      is_staff: boolean;
+      roles: any[];
+      branches: any[];
+      permissions: any[];
+    };
+    email: string;
+    phone_number: string;
     position: {
-      id: number
-      name: string
-      department_id: number
-    }
+      id: number;
+      name: string;
+      department_id: number;
+    };
     department: {
-      id: number
-      name: string
-      institution_id: number
-    }
-    roles: any[]
-    date_of_birth: string | null
-    date_of_joining: string
-    address: string
-    is_active: boolean
-    created_at: string
-    updated_at: string
-    experience: number
-    qualifications: string | null
-    skills: string | null
-    emergency_contact_name: string | null
-    emergency_contact_phone: string | null
-    emergency_contact_relationship: string | null
-    marital_status: string
-    children_count: number
-    employee_profile_picture: string | null
-  }
+      id: number;
+      name: string;
+      institution_id: number;
+    };
+    roles: any[];
+    date_of_birth: string | null;
+    date_of_joining: string;
+    address: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+    experience: number;
+    qualifications: string | null;
+    skills: string | null;
+    emergency_contact_name: string | null;
+    emergency_contact_phone: string | null;
+    emergency_contact_relationship: string | null;
+    marital_status: string;
+    children_count: number;
+    employee_profile_picture: string | null;
+  };
   assigned_to: {
-    id: number
+    id: number;
     user: {
-      id: number
-      email: string
-      fullname: string
-      is_active: boolean
-      is_email_verified: boolean
-      is_password_verified: boolean
-      is_staff: boolean
-      roles: any[]
-      branches: any[]
-      permissions: any[]
-    }
-    email: string
-    phone_number: string
+      id: number;
+      email: string;
+      fullname: string;
+      is_active: boolean;
+      is_email_verified: boolean;
+      is_password_verified: boolean;
+      is_staff: boolean;
+      roles: any[];
+      branches: any[];
+      permissions: any[];
+    };
+    email: string;
+    phone_number: string;
     position: {
-      id: number
-      name: string
-      department_id: number
-    }
+      id: number;
+      name: string;
+      department_id: number;
+    };
     department: {
-      id: number
-      name: string
-      institution_id: number
-    }
-    roles: any[]
-    date_of_birth: string | null
-    date_of_joining: string
-    address: string
-    is_active: boolean
-    created_at: string
-    updated_at: string
-    experience: number
-    qualifications: string | null
-    skills: string | null
-    emergency_contact_name: string | null
-    emergency_contact_phone: string | null
-    emergency_contact_relationship: string | null
-    marital_status: string
-    children_count: number
-    employee_profile_picture: string | null
-  } | null
-  incident_date: string
-  reported_date: string
-  description: string
-  evidence: string
-  status: "pending" | "in_progress" | "completed" | "dismissed"
-  action_taken: string
-  resolution_date: string | null
-  follow_up_required: boolean
-  follow_up_date: string | null
-  created_at: string
-  updated_at: string
-  notes: string
+      id: number;
+      name: string;
+      institution_id: number;
+    };
+    roles: any[];
+    date_of_birth: string | null;
+    date_of_joining: string;
+    address: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+    experience: number;
+    qualifications: string | null;
+    skills: string | null;
+    emergency_contact_name: string | null;
+    emergency_contact_phone: string | null;
+    emergency_contact_relationship: string | null;
+    marital_status: string;
+    children_count: number;
+    employee_profile_picture: string | null;
+  } | null;
+  incident_date: string;
+  reported_date: string;
+  description: string;
+  evidence: string;
+  status: "pending" | "in_progress" | "completed" | "dismissed";
+  action_taken: string;
+  resolution_date: string | null;
+  follow_up_required: boolean;
+  follow_up_date: string | null;
+  created_at: string;
+  updated_at: string;
+  notes: string;
 }
 
-export const transformDisciplinaryActionData = (apiData: DisciplinaryActionAPIResponse[] | null) => {
-  if (!apiData) return []
+export const transformDisciplinaryActionData = (
+  apiData: DisciplinaryActionAPIResponse[] | null,
+) => {
+  if (!apiData) return [];
 
-  return apiData.map(action => {
+  return apiData.map((action) => {
     try {
       return {
         id: action.id.toString(),
-        employee_name: action.employee?.user?.fullname || action.employee?.email || 'Unknown Employee',
-        employee_department: action.employee?.department?.name || 'No Department',
-        discipline_type: action.discipline_type?.name || 'Unknown Type',
-        discipline_severity: action.discipline_type?.severity || 'low',
+        employee_name:
+          action.employee?.user?.fullname || action.employee?.email || "Unknown Employee",
+        employee_department: action.employee?.department?.name || "No Department",
+        discipline_type: action.discipline_type?.name || "Unknown Type",
+        discipline_severity: action.discipline_type?.severity || "low",
         incident_date: action.incident_date,
         reported_date: action.reported_date,
-        description: action.description || '',
-        evidence: action.evidence || '',
-        reported_by: action.reported_by?.user?.fullname || action.reported_by?.email || 'Unknown Reporter',
-        assigned_to: action.assigned_to?.user?.fullname || 'Unassigned',
+        description: action.description || "",
+        evidence: action.evidence || "",
+        reported_by:
+          action.reported_by?.user?.fullname || action.reported_by?.email || "Unknown Reporter",
+        assigned_to: action.assigned_to?.user?.fullname || "Unassigned",
         status: action.status,
-        action_taken: action.action_taken || '',
-        resolution_date: action.resolution_date || '',
+        action_taken: action.action_taken || "",
+        resolution_date: action.resolution_date || "",
         follow_up_required: action.follow_up_required || false,
-        follow_up_date: action.follow_up_date || '',
-        notes: action.notes || '',
-      }
+        follow_up_date: action.follow_up_date || "",
+        notes: action.notes || "",
+      };
     } catch (error) {
-      console.error('Error transforming disciplinary action:', action, error)
+      console.error("Error transforming disciplinary action:", action, error);
       // Return a safe fallback object
       return {
-        id: action.id?.toString() || 'unknown',
-        employee_name: 'Error loading employee',
-        employee_department: 'Unknown',
-        discipline_type: 'Unknown',
-        discipline_severity: 'low' as const,
-        incident_date: action.incident_date || '',
-        reported_date: action.reported_date || '',
-        description: action.description || '',
-        evidence: action.evidence || '',
-        reported_by: 'Unknown',
-        assigned_to: 'Unknown',
-        status: action.status || 'pending',
-        action_taken: action.action_taken || '',
-        resolution_date: action.resolution_date || '',
+        id: action.id?.toString() || "unknown",
+        employee_name: "Error loading employee",
+        employee_department: "Unknown",
+        discipline_type: "Unknown",
+        discipline_severity: "low" as const,
+        incident_date: action.incident_date || "",
+        reported_date: action.reported_date || "",
+        description: action.description || "",
+        evidence: action.evidence || "",
+        reported_by: "Unknown",
+        assigned_to: "Unknown",
+        status: action.status || "pending",
+        action_taken: action.action_taken || "",
+        resolution_date: action.resolution_date || "",
         follow_up_required: false,
-        follow_up_date: '',
-        notes: action.notes || '',
-      }
+        follow_up_date: "",
+        notes: action.notes || "",
+      };
     }
-  })
-}
-
+  });
+};
 
 export interface LeaveType {
   name: string;
@@ -1184,7 +1174,6 @@ export interface LeaveType {
   gender_specific: "male" | "female" | "all" | null;
 }
 
-
 export interface ILeaveTypeFormData {
   name: string;
   category: "annual" | "sick" | "personal" | "maternity" | "paternity" | "emergency" | "unpaid";
@@ -1197,7 +1186,6 @@ export interface ILeaveTypeFormData {
   gender_specific: "male" | "female" | "all" | null;
 }
 
-
 export interface ILeaveType extends LeaveType {
   id: number;
   created_at?: string;
@@ -1206,20 +1194,24 @@ export interface ILeaveType extends LeaveType {
 
 export interface ILeaveBalance {
   id: number;
-  employee: number | {
-    id: number;
-    user: {
-      id: number;
-      fullname?: string;
-      first_name?: string;
-      last_name?: string;
-    };
-    employee_id: string;
-  };
-  leave_type: number | {
-    id: number;
-    name: string;
-  };
+  employee:
+    | number
+    | {
+        id: number;
+        user: {
+          id: number;
+          fullname?: string;
+          first_name?: string;
+          last_name?: string;
+        };
+        employee_id: string;
+      };
+  leave_type:
+    | number
+    | {
+        id: number;
+        name: string;
+      };
   available_days: string | number;
   institution: number;
   year: number;
@@ -1230,7 +1222,6 @@ export interface ILeaveBalance {
   created_at: string;
   updated_at: string;
 }
-
 
 export interface ILeavePolicy {
   id?: number | string;
@@ -1247,8 +1238,6 @@ export interface ILeavePolicy {
   updated_at?: string;
 }
 
-
-
 export interface ILeavePolicyFormData {
   leave_type: number;
   name: string;
@@ -1261,30 +1250,25 @@ export interface ILeavePolicyFormData {
   is_active?: boolean;
 }
 
-
 export interface ILeavePolicyResponse extends ILeavePolicy {
   id: number;
   created_at: string;
   updated_at: string;
 }
 
+export type LeaveRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
 
-export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
-
-
-export type DurationType = 'full_day' | 'half_day' | 'multiple_days';
-
-
+export type DurationType = "full_day" | "half_day" | "multiple_days";
 
 export interface Employee {
-  id: string
-  name: string
-  email: string
-  employee_id?: string
+  id: string;
+  name: string;
+  email: string;
+  employee_id?: string;
   user?: {
-    fullname: string
-    email: string
-  }
+    fullname: string;
+    email: string;
+  };
 }
 
 export interface ILeaveRequest {
@@ -1303,7 +1287,6 @@ export interface ILeaveRequest {
   created_at?: string;
   updated_at?: string;
 }
-
 
 export interface ILeaveRequestFormData {
   employee: number;
@@ -1348,7 +1331,6 @@ export interface ILeaveRequestResponse {
   errors?: Record<string, string[]>;
 }
 
-
 export interface ILeaveRequestFilters {
   employee_id?: number;
   leave_type_id?: number;
@@ -1359,16 +1341,15 @@ export interface ILeaveRequestFilters {
   duration_type?: DurationType;
 }
 
-export type IAllowanceFrequency = "DAILY"| "WEEKLY"| "MONTHLY" | "QUARTERLY" | "YEARLY"
-
+export type IAllowanceFrequency = "DAILY" | "WEEKLY" | "MONTHLY" | "QUARTERLY" | "YEARLY";
 
 export interface IAllowanceType {
   id: number;
   name: string;
-  institution:IUserInstitution,
+  institution: IUserInstitution;
   description: string;
-  is_recurring:boolean,
-  frequency?:IAllowanceFrequency|null,
+  is_recurring: boolean;
+  frequency?: IAllowanceFrequency | null;
   is_taxable: boolean;
   is_active: boolean;
   created_at: string;
@@ -1377,13 +1358,11 @@ export interface IAllowanceType {
 export interface IAllowanceTypeFormData {
   name: string;
   description: string;
-  is_recurring:boolean,
-  frequency?:IAllowanceFrequency|null,
+  is_recurring: boolean;
+  frequency?: IAllowanceFrequency | null;
   is_taxable: boolean;
   is_active: boolean;
-  
 }
-
 
 export interface IDeductionType {
   id: number;
@@ -1391,8 +1370,8 @@ export interface IDeductionType {
   name: string;
   description: string;
   is_mandatory: boolean;
-  is_recurring:boolean,
-  frequency?:IAllowanceFrequency|null,
+  is_recurring: boolean;
+  frequency?: IAllowanceFrequency | null;
   is_active: boolean;
   created_at: string;
 }
@@ -1400,12 +1379,11 @@ export interface IDeductionType {
 export interface IDeductionTypeFormData {
   name: string;
   description: string;
-  is_recurring:boolean,
-  frequency?:IAllowanceFrequency|null,
+  is_recurring: boolean;
+  frequency?: IAllowanceFrequency | null;
   is_mandatory: boolean;
   is_active: boolean;
 }
-
 
 export interface IEmployeeAllowance {
   id: number;
@@ -1420,8 +1398,6 @@ export interface IEmployeeAllowance {
   created_at: string;
 }
 
-
-
 export interface IEmployeeAllowanceFormData {
   employee: number;
   allowance_type: number;
@@ -1432,7 +1408,6 @@ export interface IEmployeeAllowanceFormData {
   effective_from: string;
   effective_to?: string | null;
 }
-
 
 export interface IEmployeeDeduction {
   id: number;
@@ -1458,7 +1433,6 @@ export interface IEmployeeDeductionFormData {
   effective_to?: string | null;
 }
 
-
 export interface IPayrollPeriod {
   id: number;
   name: string;
@@ -1478,9 +1452,6 @@ export interface IPayrollPeriodFormData {
   is_processed?: boolean;
 }
 
-
-
-
 export interface IPayslipFormData {
   employee: number;
   payroll_period: number;
@@ -1496,8 +1467,8 @@ export interface IPayslipFormData {
 
 export interface IPayslipItem {
   id: number;
-  payslip:IPayslip;
-  item_type: 'allowance' | 'deduction' | 'overtime';
+  payslip: IPayslip;
+  item_type: "allowance" | "deduction" | "overtime";
   name: string;
   amount: string;
   description: string;
@@ -1510,7 +1481,7 @@ export interface PaginatedPayslipResponse {
   results: IPayslip[];
 }
 
-export type ContractStatus = 'draft' | 'active' | 'expired' | 'terminated';
+export type ContractStatus = "draft" | "active" | "expired" | "terminated";
 
 export interface IContract {
   id: number;
@@ -1523,7 +1494,7 @@ export interface IContract {
   signed_contract: string | null;
   created_at: string;
   updated_at: string;
-  differences?: string
+  differences?: string;
 }
 
 export interface IContractFormData {
@@ -1551,7 +1522,7 @@ export interface IDocumentTemplate {
   id: number;
   name: string;
   document_type: IDocumentType;
-  template_type: 'pdf' | 'word' | 'text';
+  template_type: "pdf" | "word" | "text";
   file: string | null;
   content: string | null;
   placeholders: string[] | null;
@@ -1559,7 +1530,7 @@ export interface IDocumentTemplate {
   updated_at: string;
 }
 
-export type DocumentGenerationContext = 'employee' | 'leave' | 'onboarding';
+export type DocumentGenerationContext = "employee" | "leave" | "onboarding";
 
 export interface DocumentGenerationRequest {
   context: DocumentGenerationContext;
@@ -1572,7 +1543,7 @@ export interface DocumentGenerationRequest {
 export interface IDocumentTemplateFormData {
   document_type: number;
   name: string;
-  template_type: 'pdf' | 'word' | 'text';
+  template_type: "pdf" | "word" | "text";
   file?: File | null;
   content?: string | null;
   placeholders?: string[] | null;
@@ -1588,22 +1559,20 @@ interface IPlaceholders {
 
 export interface IGeneratedDocumentTemplate {
   id: number;
-  template_id: number
+  template_id: number;
   placeholders: IPlaceholders | null;
 }
 
-
 export interface ICountry {
-  name: { common: string }
-  cca2: string
-  idd?: { root?: string; suffixes?: string[] }
+  name: {common: string};
+  cca2: string;
+  idd?: {root?: string; suffixes?: string[]};
 }
 
 export type ApprovalStepApprover = {
   id: string;
   approver_user: UserProfile;
 };
-
 
 export interface ITask {
   id: string;
@@ -1670,7 +1639,12 @@ export interface ITerminationFormData {
 }
 
 // Separation Policy Types
-export type SeparationCategory = "resignation" | "termination" | "retirement" | "contract_end" | "other";
+export type SeparationCategory =
+  | "resignation"
+  | "termination"
+  | "retirement"
+  | "contract_end"
+  | "other";
 
 export interface ISeparationType {
   id: number;
@@ -1683,8 +1657,6 @@ export interface ISeparationType {
   created_at: string;
   updated_at: string;
 }
-
-
 
 export interface ISeparationTypeFormData {
   separation_type: string;
@@ -1706,7 +1678,7 @@ export interface IOffboardingStage {
 }
 
 export interface IOffboardingStageFormData {
-  institution: number | string,
+  institution: number | string;
   stage_name: string;
   stage_description: string;
   is_active?: boolean;
@@ -1728,10 +1700,9 @@ export interface ISeparationPolicy {
   updated_at: string;
 }
 
-
 export interface IAttendance {
   id: number;
-  employee: IEmployee,
+  employee: IEmployee;
   check_in_time: string;
   check_out_time: string | null;
   check_in_latitude?: number;
@@ -1740,12 +1711,16 @@ export interface IAttendance {
   check_out_longitude?: number;
   status: string;
   date: string;
-  overtime_hours: string
+  overtime_hours: string;
 }
 
 export interface IAttendanceFormData {
   employee: number;
   check_in_time: string;
+  check_in_longitude?:number,
+  check_in_latitude?:number,
+  check_out_longitude?:number,
+  check_out_latitude?:number,
   check_out_time?: string | null;
   status: string;
   date?: string;
@@ -1753,39 +1728,39 @@ export interface IAttendanceFormData {
 }
 
 export interface IBankType {
-  id: number | string,
-  institution: number | string,
-  bank_fullname: string,
-  bank_code: string,
-  br_code: string,
-  created_by: number,
-  created_at: string,
-  updated_by: number,
-  updated_at: string
+  id: number | string;
+  institution: number | string;
+  bank_fullname: string;
+  bank_code: string;
+  br_code: string;
+  created_by: number;
+  created_at: string;
+  updated_by: number;
+  updated_at: string;
 }
 
 export interface IBankTypeFormData {
-  bank_fullname: string,
-  bank_code: string,
-  br_code: string,
+  bank_fullname: string;
+  bank_code: string;
+  br_code: string;
 }
 
 export interface IBankAccount {
-  id: number | string,
-  institution_bank: number | string,
-  account_name: string,
-  account_number: string,
-  created_by: number,
-  created_at: string,
-  updated_by: number,
-  updated_at: string,
-  paid_branches?:Branch[]
+  id: number | string;
+  institution_bank: number | string;
+  account_name: string;
+  account_number: string;
+  created_by: number;
+  created_at: string;
+  updated_by: number;
+  updated_at: string;
+  paid_branches?: Branch[];
 }
 
 export interface IBankAccountFormData {
-  institution_bank: number | string,
-  account_name: string,
-  account_number: string
+  institution_bank: number | string;
+  account_name: string;
+  account_number: string;
 }
 
 export interface IPaginatedResponse<T> {
@@ -1795,87 +1770,85 @@ export interface IPaginatedResponse<T> {
   results: T[];
 }
 
- export interface PayslipItemData {
-  id: number
+export interface PayslipItemData {
+  id: number;
   payslip: {
-    id: number
+    id: number;
     employee: {
-      id: number
+      id: number;
       user: {
-        id: number
-        email: string
-        fullname: string
-        is_active: boolean
-      }
+        id: number;
+        email: string;
+        fullname: string;
+        is_active: boolean;
+      };
       department: {
-        id: number
-        name: string
-        institution_id: number
-      }
+        id: number;
+        name: string;
+        institution_id: number;
+      };
       position: {
-        id: number
-        name: string
-        department_id: number
-      }
-    }
+        id: number;
+        name: string;
+        department_id: number;
+      };
+    };
     payroll_period: {
-      id: number
-      name: string
-      start_date: string
-      end_date: string
-      pay_date: string
-      is_processed: boolean
-      institution: number
-    }
-    basic_salary: string
-    total_allowances: string
-    total_deductions: string
-    gross_salary: string
-    net_salary: string
-    days_worked: number
-    is_paid: boolean
-    paid_date: string | null
-  }
-  item_type: "allowance" | "deduction" | "overtime"
-  name: string
-  amount: string
-  description?: string
+      id: number;
+      name: string;
+      start_date: string;
+      end_date: string;
+      pay_date: string;
+      is_processed: boolean;
+      institution: number;
+    };
+    basic_salary: string;
+    total_allowances: string;
+    total_deductions: string;
+    gross_salary: string;
+    net_salary: string;
+    days_worked: number;
+    is_paid: boolean;
+    paid_date: string | null;
+  };
+  item_type: "allowance" | "deduction" | "overtime";
+  name: string;
+  amount: string;
+  description?: string;
 }
 
 export interface PayslipItem {
-  id: number
-  payslip_id: number
-  item_type: "allowance" | "deduction" | "overtime"
-  name: string
-  amount: number
-  description?: string
+  id: number;
+  payslip_id: number;
+  item_type: "allowance" | "deduction" | "overtime";
+  name: string;
+  amount: number;
+  description?: string;
 }
 
 export interface ISystemWorkingDay {
-  id: number
-  day_code: string
-  day_name: string
-  level: number
+  id: number;
+  day_code: string;
+  day_name: string;
+  level: number;
 }
 
 // Institution Working Days interface
 export interface IInstitutionWorkingDays {
-  id: number
-  institution: number
-  days: ISystemWorkingDay[]
-  created_by: number | null
-  created_at: string
-  updated_by: number | null
-  updated_at: string
+  id: number;
+  institution: number;
+  days: ISystemWorkingDay[];
+  created_by: number | null;
+  created_at: string;
+  updated_by: number | null;
+  updated_at: string;
 }
 
 // Form data for creating/updating institution working days
 export interface IWorkingDaysFormData {
-  days: number[]
+  days: number[];
 }
 
-
-// Tax interfaces matching backend models
 export interface ITax {
   id: number;
   institution: number;
@@ -2079,6 +2052,338 @@ export interface IAssetReturnFormData {
   return_reason?: string;
   asset_condition: "good" | "fair" | "poor" | "damaged";
   notes?: string;
+}
+
+export interface IAssetCategory {
+  id: number;
+  institution: number;
+  category_name: string;
+  category_description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetCategoryFormData {
+  category_name: string;
+  category_description?: string;
+}
+
+export interface IAsset {
+  id: number;
+  institution: number;
+  asset_name: string;
+  batch_number: string;
+  serial_number: string;
+  category: IAssetCategory | null;
+  description: string | null;
+  status: "available" | "allocated" | "maintenance" | "decommissioned";
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by: number;
+  current_holder: number | UserProfile;
+  current_holder_details?: any; // Employee details
+  asset_histories?: IAssetHistory[];
+}
+
+export interface IAssetFormData {
+  asset_name: string;
+  serial_number: string;
+  category: number;
+  description?: string;
+  status?: "available" | "allocated" | "maintenance" | "decommissioned";
+}
+
+export interface IAssetHistory {
+  id: number;
+  asset: number;
+  event_type: "allocated" | "returned" | "maintenance" | "decommissioned" | "created" | "reassigned";
+  performed_by: number;
+  performed_by_details?: any;
+  affected_user: number | null;
+  affected_user_details?: any;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetRequest {
+  id: number;
+  asset: IAsset;
+  requester: any; // Employee details
+  request_reference_code: string;
+  asset_request_status: "pending" | "approved" | "rejected" | "cancelled";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetRequestFormData {
+  asset_id: number;
+  notes?: string;
+}
+
+export interface IAssetAllocation {
+  id: number;
+  asset: IAsset;
+  allocated_to: UserProfile; // Employee details
+  allocated_by: UserProfile; // Employee details
+  responding_to_request?: IAssetRequest | null;
+  allocation_status: "pending" | "allocated" | "rejected" | "cancelled";
+  alloc_code: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetAllocationWorkflow extends IAssetAllocation {
+  workflow_status: string;
+  current_step: number;
+  total_steps: number;
+  approval_tasks: IApprovalTask[];
+}
+
+export interface IApprovalTask {
+  id: number;
+  step: IApprovalStep;
+  status: "not_started" | "pending" | "completed" | "rejected";
+  comment: string | null;
+  approved_by: any | null; // Profile details
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IApprovalStep {
+  id: number;
+  step_name: string;
+  level: number;
+  roles: string[];
+  roles_details: {
+    name: string;
+    id: number;
+  }[];
+  approvers: string[];
+  approvers_details: {
+    id: string;
+    approver_user: {
+      id: number;
+      fullname: string;
+      email: string;
+    };
+  }[];
+  action: string;
+  action_details: {
+    id: number;
+    code: string;
+    label: string;
+    category: {
+      code: string;
+      label: string;
+    };
+  };
+}
+
+export interface IAssetAllocationFormData {
+  asset: number;
+  allocated_to: number;
+  responding_to_request?: number;
+  allocation_status?: "pending" | "allocated" | "rejected" | "cancelled";
+}
+
+export interface IAssetReturn {
+  id: number;
+  asset: IAsset;
+  returned_by: any; // Employee details
+  returned_to: any; // Employee details (usually admin/HR)
+  return_date: string;
+  return_reason: string | null;
+  asset_condition: "good" | "fair" | "poor" | "damaged";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetReturnFormData {
+  asset_id: number;
+  return_reason?: string;
+  asset_condition: "good" | "fair" | "poor" | "damaged";
+  notes?: string;
+}
+
+export interface IEmployeeTax {
+  id: number;
+  effective_from: string;
+  effective_to: string;
+  created_at: string;
+  employee: IEmployee;
+  institution_tax: ITax;
+}
+export interface IAssetCategory {
+  id: number;
+  institution: number;
+  category_name: string;
+  category_description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetCategoryFormData {
+  category_name: string;
+  category_description?: string;
+}
+
+export interface IAsset {
+  id: number;
+  institution: number;
+  asset_name: string;
+  batch_number: string;
+  serial_number: string;
+  category: IAssetCategory | null;
+  description: string | null;
+  status: "available" | "allocated" | "maintenance" | "decommissioned";
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by: number;
+  current_holder: number | UserProfile;
+  current_holder_details?: any; // Employee details
+  asset_histories?: IAssetHistory[];
+}
+
+export interface IAssetFormData {
+  asset_name: string;
+  serial_number: string;
+  category: number;
+  description?: string;
+  status?: "available" | "allocated" | "maintenance" | "decommissioned";
+}
+
+export interface IAssetHistory {
+  id: number;
+  asset: number;
+  event_type: "allocated" | "returned" | "maintenance" | "decommissioned" | "created" | "reassigned";
+  performed_by: number;
+  performed_by_details?: any;
+  affected_user: number | null;
+  affected_user_details?: any;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetRequest {
+  id: number;
+  asset: IAsset;
+  requester: any; // Employee details
+  request_reference_code: string;
+  asset_request_status: "pending" | "approved" | "rejected" | "cancelled";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetRequestFormData {
+  asset_id: number;
+  notes?: string;
+}
+
+export interface IAssetAllocation {
+  id: number;
+  asset: IAsset;
+  allocated_to: UserProfile; // Employee details
+  allocated_by: UserProfile; // Employee details
+  responding_to_request?: IAssetRequest | null;
+  allocation_status: "pending" | "allocated" | "rejected" | "cancelled";
+  alloc_code: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetAllocationWorkflow extends IAssetAllocation {
+  workflow_status: string;
+  current_step: number;
+  total_steps: number;
+  approval_tasks: IApprovalTask[];
+}
+
+export interface IApprovalTask {
+  id: number;
+  step: IApprovalStep;
+  status: "not_started" | "pending" | "completed" | "rejected";
+  comment: string | null;
+  approved_by: any | null; // Profile details
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IApprovalStep {
+  id: number;
+  step_name: string;
+  level: number;
+  roles: string[];
+  roles_details: {
+    name: string;
+    id: number;
+  }[];
+  approvers: string[];
+  approvers_details: {
+    id: string;
+    approver_user: {
+      id: number;
+      fullname: string;
+      email: string;
+    };
+  }[];
+  action: string;
+  action_details: {
+    id: number;
+    code: string;
+    label: string;
+    category: {
+      code: string;
+      label: string;
+    };
+  };
+}
+
+export interface IAssetAllocationFormData {
+  asset: number;
+  allocated_to: number;
+  responding_to_request?: number;
+  allocation_status?: "pending" | "allocated" | "rejected" | "cancelled";
+}
+
+export interface IAssetReturn {
+  id: number;
+  asset: IAsset;
+  returned_by: any; // Employee details
+  returned_to: any; // Employee details (usually admin/HR)
+  return_date: string;
+  return_reason: string | null;
+  asset_condition: "good" | "fair" | "poor" | "damaged";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAssetReturnFormData {
+  asset_id: number;
+  return_reason?: string;
+  asset_condition: "good" | "fair" | "poor" | "damaged";
+  notes?: string;
+}
+
+
+export interface IEmployeeTaxFormData {
+  target_departments?: number[];
+  target_job_positions?: number[];
+  target_employees?: number[];
+  effective_from: string;
+  effective_to: string;
+  institution_tax: number|string;
 }
 
 
