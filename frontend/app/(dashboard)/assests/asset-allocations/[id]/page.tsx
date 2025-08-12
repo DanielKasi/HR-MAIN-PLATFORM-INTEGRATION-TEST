@@ -312,7 +312,7 @@ const AssetAllocationDetailPage = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Allocated To</label>
-                  <p className="text-base md:text-lg font-medium break-words">{allocation.allocated_to}</p>
+                  <p className="text-base md:text-lg font-medium break-words">{allocation.allocated_to?.user.fullname}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Asset</label>
@@ -346,7 +346,7 @@ const AssetAllocationDetailPage = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Allocated By</label>
-                  <p className="text-base md:text-lg break-words">{allocation.allocated_by?.fullname}</p>
+                  <p className="text-base md:text-lg break-words">{allocation.allocated_by?.user.fullname}</p>
                 </div>
               </div>
               

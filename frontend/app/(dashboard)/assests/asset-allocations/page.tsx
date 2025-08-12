@@ -116,6 +116,9 @@ const AssetAllocationsComponent = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
+
+  console.log("AssetAllocationsComponent rendered", assetAllocations);
+
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
   // Fetch asset allocations from API
@@ -183,8 +186,8 @@ const AssetAllocationsComponent = () => {
       filtered = filtered.filter(allocation =>
         allocation.asset?.asset_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         allocation.alloc_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        allocation.allocated_to?.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        allocation.allocated_by?.fullname?.toLowerCase().includes(searchTerm.toLowerCase())
+        allocation.allocated_to?.user.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        allocation.allocated_by?.user.fullname?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -336,10 +339,10 @@ const AssetAllocationsComponent = () => {
                             {allocation.asset?.asset_name || 'Unknown Asset'}
                           </TableCell>
                           <TableCell>
-                            {allocation.allocated_to?.fullname || 'Unknown User'}
+                            {allocation.allocated_to?.user.fullname || 'Unknown User'}
                           </TableCell>
                           <TableCell>
-                            {allocation.allocated_by?.fullname || 'Unknown User'}
+                            {allocation.allocated_by?.user.fullname || 'Unknown User'}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
@@ -405,10 +408,10 @@ const AssetAllocationsComponent = () => {
                               Code: {allocation.alloc_code}
                             </p>
                             <p className="text-sm text-gray-600">
-                              To: {allocation.allocated_to?.fullname || 'Unknown User'}
+                              To: {allocation.allocated_to?.user.fullname || 'Unknown User'}
                             </p>
                             <p className="text-sm text-gray-600">
-                              By: {allocation.allocated_by?.fullname || 'Unknown User'}
+                              By: {allocation.allocated_by?.user.fullname || 'Unknown User'}
                             </p>
                             <div className="flex items-center gap-2">
                               <div className="flex items-center space-x-2">

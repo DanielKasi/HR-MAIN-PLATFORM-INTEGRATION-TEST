@@ -1993,8 +1993,8 @@ export interface IAssetRequestFormData {
 export interface IAssetAllocation {
   id: number;
   asset: IAsset;
-  allocated_to: any; // Employee details
-  allocated_by: any; // Employee details
+  allocated_to: UserProfile; // Employee details
+  allocated_by: UserProfile; // Employee details
   responding_to_request?: IAssetRequest | null;
   allocation_status: "pending" | "allocated" | "rejected" | "cancelled";
   alloc_code: string;
