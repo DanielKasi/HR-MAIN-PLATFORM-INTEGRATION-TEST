@@ -148,6 +148,13 @@ class OffboardingStage(BaseModel):
 
     class Meta:
         unique_together = (("institution", "stage_name"),)
+        constraints = [
+            UniqueConstraint(
+                fields=["institution", "stage_name"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_stage_name_per_institution"
+            )
+        ]
 
 
 class InstitutionEmployeeSeparationTypes(BaseModel):
