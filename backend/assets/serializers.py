@@ -220,7 +220,7 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
             "id",
             "asset",
             "asset_id",
-            # "allocated_to",
+            "allocated_to",
             "allocated_to_id",
             "responding_to_request",
             "responding_to_request_id",
@@ -348,6 +348,30 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
             asset_allocation.finish_workflow()
 
         return asset_allocation
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        if instance.allocated_to:
+            rep["allocated_to"] = ProfileSerializer(instance.allocated_to).data
+        else:
+            rep["allocated_to"] = None
+
+        if instance.allocated_by:
+            rep["allocated_by"] = ProfileSerializer(instance.allocated_by).data
+        else:
+            rep["allocated_by"] = None
+
+        if instance.asset:
+            rep["asset"] = AssetSerializer(instance.asset).data
+        else:
+            rep["asset"] = None
+
+        if instance.responding_to_request:
+            rep["responding_to_request"] = AssetRequestSerializer(instance.responding_to_request).data
+        else:
+            rep["responding_to_request"] = None
+
+        return rep
 
 
 class AssetReturnSerializer(serializers.ModelSerializer):
