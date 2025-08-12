@@ -392,7 +392,7 @@ export default function ShopApprovalStepsPage() {
               <TableHead className="w-10" />
               <TableHead>Action</TableHead>
               <TableHead>Category</TableHead>
-              <TableHead>Code</TableHead>
+         
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -420,7 +420,7 @@ export default function ShopApprovalStepsPage() {
                     </TableCell>
                     <TableCell className="font-medium">{action.label}</TableCell>
                     <TableCell>{action.category.label}</TableCell>
-                    <TableCell>{action.code}</TableCell>
+               
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         {reorderedActions[action.id] && (

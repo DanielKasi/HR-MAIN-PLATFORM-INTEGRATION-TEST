@@ -8,6 +8,7 @@ from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from institution.models import Institution
+from django.db.models import UniqueConstraint, Q
 
 
 class BaseModel(models.Model):
@@ -35,7 +36,6 @@ class BaseModel(models.Model):
         null=True,
     )
 
-    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -53,9 +53,26 @@ class BaseModel(models.Model):
             )
 
         super().clean()
+    
+
+class UtilityBaseModel(models.Model):
+
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        abstract = True
+    
+    def delete(self, *args, **kwargs):
+        """Soft-deletes the record by setting the deleted_at timestamp."""
+        self.deleted_at = timezone.now()
+        self.is_active = False
+        self.save(update_fields=["deleted_at", "is_active"])
 
 
-class AllowanceType(BaseModel):
+class AllowanceType(BaseModel, UtilityBaseModel):
     """
     Define types of allowances (Housing, Transport, Medical, etc.)
 
@@ -75,7 +92,7 @@ class AllowanceType(BaseModel):
         ordering = ["name"]
 
 
-class DeductionType(BaseModel):
+class DeductionType(BaseModel, UtilityBaseModel):
     """
     Define types of deductions (Tax, NSSF, Health Insurance, etc.)
     """
@@ -94,7 +111,7 @@ class DeductionType(BaseModel):
         ordering = ["name"]
 
 
-class EmployeeAllowance(models.Model):
+class EmployeeAllowance(UtilityBaseModel):
     """
     Employee-specific allowances (can vary by employee)
     """
@@ -119,14 +136,12 @@ class EmployeeAllowance(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(100)],
         null=True,
     )
-    is_active = models.BooleanField(default=True)
     effective_from = models.DateField(default=timezone.now)
     effective_to = models.DateField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.employee} - {self.allowance_type.name}"
-
+    
     def get_calculated_amount(self):
         """Calculate allowance amount based on method"""
         if self.calculation_method == "percentage":
@@ -147,7 +162,13 @@ class EmployeeAllowance(models.Model):
         super().save(*args, **kwargs)
 
     class Meta:
-        unique_together = ["employee", "allowance_type"]
+        constraints = [
+            UniqueConstraint(
+                fields=("employee", "allowance_type"),
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_allowance_type_per_employee"
+            )
+        ]
 
     def get_recurrence_count(self, payroll_period):
         """
@@ -221,7 +242,7 @@ class EmployeeAllowance(models.Model):
         return recurrence_count
 
 
-class EmployeeDeduction(models.Model):
+class EmployeeDeduction(UtilityBaseModel):
     """
     Employee-specific deductions
     """
@@ -246,10 +267,8 @@ class EmployeeDeduction(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(100)],
         null=True,
     )
-    is_active = models.BooleanField(default=True)
     effective_from = models.DateField(default=timezone.now)
     effective_to = models.DateField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.employee} - {self.deduction_type.name}"
@@ -273,7 +292,13 @@ class EmployeeDeduction(models.Model):
         super().save(*args, **kwargs)
 
     class Meta:
-        unique_together = ["employee", "deduction_type"]
+        constraints = [
+            UniqueConstraint(
+                fields=("employee", "deduction_type"),
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_deduction_type_per_employee"
+                )
+            ]
 
     def get_recurrence_count(self, payroll_period):
         """
@@ -346,7 +371,7 @@ class EmployeeDeduction(models.Model):
         return recurrence_count
 
 
-class EmployeeTax(models.Model):
+class EmployeeTax(UtilityBaseModel):
     """
     Employee-specific tax details
     """
@@ -361,13 +386,17 @@ class EmployeeTax(models.Model):
     effective_from = models.DateField(default=timezone.now)
     effective_to = models.DateField(blank=True, null=True)
 
-    created_at = models.DateTimeField(auto_now_add=True)
-
     def __str__(self):
         return f"{self.employee} - {self.institution_tax.tax_name}"
 
     class Meta:
-        unique_together = ["employee", "institution_tax"]
+        constraints = [
+            UniqueConstraint(
+                fields=["employee", "institution_tax"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_institution_tax_per_employee"
+                )
+            ]
 
     def rule_fit_employee_salary(self):
 
@@ -416,7 +445,7 @@ class EmployeeTax(models.Model):
         return Decimal(0.00)
 
 
-class PayrollPeriod(models.Model):
+class PayrollPeriod(UtilityBaseModel):
     """
     Define payroll periods (Monthly, Bi-weekly, etc.)
     """
@@ -431,7 +460,6 @@ class PayrollPeriod(models.Model):
     end_date = models.DateField()
     pay_date = models.DateField()
     is_processed = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
@@ -440,7 +468,7 @@ class PayrollPeriod(models.Model):
         ordering = ["-start_date"]
 
 
-class Payslip(models.Model):
+class Payslip(UtilityBaseModel):
     """
     Individual employee payslip for a specific period
     """
@@ -472,8 +500,6 @@ class Payslip(models.Model):
     # overtime_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     is_paid = models.BooleanField(default=False)
     paid_date = models.DateField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.employee} - {self.payroll_period.name}"
@@ -597,8 +623,14 @@ class Payslip(models.Model):
         self.save()
 
     class Meta:
-        unique_together = ["employee", "payroll_period"]
         ordering = ["-payroll_period__start_date"]
+        constraints = [
+            UniqueConstraint(
+                fields=["employee", "payroll_period"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_payroll_period_per_employee"
+            )
+        ]
 
 
 class PayslipItem(models.Model):

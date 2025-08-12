@@ -55,7 +55,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@radix-ui/react-dropdown-menu"
+} from "@/components/ui/dropdown-menu"
 import { formatCurrency } from "@/lib/helpers"
 import { payrollAPI, bankAccountsAPI } from "@/lib/utils"
 
@@ -692,10 +692,14 @@ export default function PayrollPeriodDetails() {
     {payrollPeriod && <Button
       onClick={handleGeneratePayslips}
       className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400"
-      disabled={payrollPeriod.is_processed || !selectedInstitution || !payrollPeriodId}
+      disabled={payrollPeriod.is_processed || !selectedInstitution || !payrollPeriodId || isGenerating}
     >
-      <Plus className="w-4 h-4 mr-2" />
-      Generate Payslips
+      {isGenerating ? (
+        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+      ) : (
+        <Plus className="w-4 h-4 mr-2" />
+      )}
+      {isGenerating ? "Generating..." : "Generate Payslips"}
     </Button>}
 
     {/* Download dialog/button */}
@@ -889,7 +893,7 @@ export default function PayrollPeriodDetails() {
                           </DropdownMenu>
                           <Dialog
                             open={deleteConfirmId === payslip.id}
-                            onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+                            onOpenChange={(open: any) => !open && setDeleteConfirmId(null)}
                           >
                             <DialogContent>
                               <DialogHeader>

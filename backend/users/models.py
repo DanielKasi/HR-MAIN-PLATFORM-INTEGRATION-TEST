@@ -12,6 +12,7 @@ from jsignature.utils import draw_signature
 from jsignature.fields import JSignatureField
 from django import forms
 from jsignature.forms import JSignatureField as JSignatureFormField
+from django.db.models import UniqueConstraint, Q
 
 
 class CustomUserManager(BaseUserManager):
@@ -32,11 +33,26 @@ class CustomUserManager(BaseUserManager):
 class UserType(TextChoices):
     STAFF = "STAFF", "Staff"
 
+class BaseModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
 
-class CustomUser(AbstractBaseUser, PermissionsMixin):
+    class Meta:
+        abstract = True
+    
+    def delete(self, *args, **kwargs):
+        """Soft deletes a record by setting the deleted_at timestamp"""
+        self.deleted_at = timezone.now()
+        self.is_active = False
+        self.save(update_fields=["deleted_at", "is_active"])
+
+    
+class CustomUser(AbstractBaseUser, PermissionsMixin, BaseModel):
     email = models.EmailField(unique=True)
     fullname = models.CharField(max_length=255)
-    is_active = models.BooleanField(default=True)
+    # is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_email_verified = models.BooleanField(default=False)
     is_password_verified = models.BooleanField(default=True)
@@ -52,8 +68,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         default=UserType.STAFF,
     )
     permissions = models.JSONField(default=list)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    # created_at = models.DateTimeField(auto_now_add=True)
+    # updated_at = models.DateTimeField(auto_now=True)
 
     objects = CustomUserManager()
 
@@ -135,33 +151,52 @@ class Profile(models.Model):
         return f"Profile of {self.user.email}"
 
 
-class PermissionCategory(models.Model):
-    permission_category_name = models.CharField(max_length=255, unique=True)
+class PermissionCategory(BaseModel):
+    permission_category_name = models.CharField(max_length=255)
     permission_category_description = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.permission_category_name
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=["permission_category_name"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_permission_category_name"
+            )
+        ]
+        
 
 
 # many to many relationship between roles and permissions
 # Role - RolePermission - Permission
-class Permission(models.Model):
-    permission_code = models.CharField(max_length=255, unique=True)
-    permission_name = models.CharField(max_length=255, unique=True)
+class Permission(BaseModel):
+    permission_code = models.CharField(max_length=255)
+    permission_name = models.CharField(max_length=255)
     permission_description = models.TextField(blank=True, null=True)
     category = models.ForeignKey(
         PermissionCategory, related_name="permissions", on_delete=models.CASCADE
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.permission_name} ({self.category})"
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=["permission_code"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_permission_code"
+            ),
+            UniqueConstraint(
+                fields=["permission_name"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_permission_name"
+            )
+        ]
 
-
-class Role(models.Model):
+class Role(BaseModel):
     name = models.CharField(max_length=255)
     description = models.TextField()
     institution = models.ForeignKey(
@@ -171,11 +206,15 @@ class Role(models.Model):
         null=True,
         blank=True,
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ("name", "institution")
+        constraints = [
+            UniqueConstraint(
+                fields=["name", "institution"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_name_per_institution"
+            )
+        ]
 
     def save(self, *args, **kwargs):
         self.name = self.name.lower()

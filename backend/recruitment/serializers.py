@@ -244,6 +244,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
             "employees",
             "apply_salary_to_employees",
             "job_position_status",
+            "is_active"
         ]
 
     def __init__(self, *args, **kwargs):

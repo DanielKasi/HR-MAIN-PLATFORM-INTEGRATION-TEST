@@ -26,6 +26,7 @@ class InstitutionApprovalStep(models.Model):
     step_name = models.CharField(max_length=255)
     action = models.ForeignKey(WorkflowAction, on_delete=models.CASCADE)
     level = models.PositiveIntegerField(help_text="Lower number = first to approve")
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         unique_together = ("institution", "action", "level")

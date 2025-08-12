@@ -38,7 +38,7 @@ export function BulkUploadEmployeesDialog({
   const [uploadResults, setUploadResults] = useState<{
     created_count: number
     error_count: number
-    created_employees: Array<{
+    created_employees?: Array<{
       id: number
       fullname: string
       email: string
@@ -93,14 +93,10 @@ export function BulkUploadEmployeesDialog({
 
       setUploadResults(results)
 
-      if (results.created_count > 0) {
+
         toast.success(`Successfully created ${results.created_count} employees`)
         onUploadSuccess()
-      }
-
-      if (results.error_count > 0) {
-        toast.warning(`${results.error_count} employees failed to upload`)
-      }
+        handleClose()
     } catch (error: any) {
       toast.error(error.message || "Failed to upload employees")
     } finally {
@@ -169,53 +165,7 @@ export function BulkUploadEmployeesDialog({
             <p className="text-xs text-muted-foreground">Supported formats: CSV (.csv), Excel (.xlsx, .xls)</p>
           </div>
 
-          {/* Upload Results */}
-          {uploadResults && (
-            <div className="space-y-3 p-4 bg-muted rounded-lg">
-              <h4 className="font-medium">Upload Results</h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-green-600 font-medium">Successfully Created:</span>
-                  <span className="ml-2">{uploadResults.created_count} employees</span>
-                </div>
-                <div>
-                  <span className="text-red-600 font-medium">Failed:</span>
-                  <span className="ml-2">{uploadResults.error_count} employees</span>
-                </div>
-              </div>
 
-              {uploadResults.errors && uploadResults.errors.length > 0 && (
-                <div className="space-y-2">
-                  <h5 className="font-medium text-red-600">Errors:</h5>
-                  <div className="max-h-32 overflow-y-auto">
-                    {uploadResults.errors.map((error, index) => (
-                      <p key={index} className="text-xs text-red-600 bg-red-50 p-2 rounded">
-                        {error}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {uploadResults.created_employees.length > 0 && (
-                <div className="space-y-2">
-                  <h5 className="font-medium text-green-600">Successfully Created Employees:</h5>
-                  <div className="max-h-32 overflow-y-auto space-y-1">
-                    {uploadResults.created_employees.slice(0, 5).map((employee) => (
-                      <div key={employee.id} className="text-xs bg-green-50 p-2 rounded">
-                        {employee.fullname} - {employee.email}
-                      </div>
-                    ))}
-                    {uploadResults.created_employees.length > 5 && (
-                      <p className="text-xs text-muted-foreground">
-                        ... and {uploadResults.created_employees.length - 5} more
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         <DialogFooter>

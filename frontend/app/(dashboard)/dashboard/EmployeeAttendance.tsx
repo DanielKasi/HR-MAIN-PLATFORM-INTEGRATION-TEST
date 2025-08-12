@@ -1,17 +1,17 @@
 "use client";
-import React, { useState } from "react";
+import React, {useState} from "react";
 import {Card, CardHeader, CardTitle, CardContent} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {Badge} from "@/components/ui/badge";
 import {Search, X, Clock} from "lucide-react";
-import { IAttendance, IEmployee } from "@/types/types.utils"
-import { toast } from "sonner";
+import {IAttendance, IEmployee} from "@/types/types.utils";
+import {toast} from "sonner";
 import Link from "next/link";
 import {CheckInModal} from "@/components/checkin-modal";
-import { AttendanceAPI } from "@/lib/utils";
-import { CheckOutModal } from "@/components/checkout-modal";
-
-
+import {AttendanceAPI} from "@/lib/utils";
+import {CheckOutModal} from "@/components/checkout-modal";
+import {getCurrentUserLocation} from "@/lib/helpers";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface Stat {
   label: string;
@@ -30,7 +30,6 @@ interface EmployeeAttendanceProps {
   setSelectedDate: (date: string) => void;
 }
 
-
 const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
   employees,
   search,
@@ -44,7 +43,10 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const [checkOutModalOpen, setCheckOutModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<IEmployee | null>(null);
-
+  const [currentUserlocation, setCurrentUserLocation] = useState<GeolocationPosition | null>(null);
+  const [selectedAttendanceRecord, setSelectedAttendanceRecord] = useState<IAttendance | null>(
+    null,
+  );
 
   // Fetch attendance from backend on mount and when employees or selectedDate change
   React.useEffect(() => {
@@ -53,69 +55,89 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
     }
   }, [employees, selectedDate]);
 
-      async function fetchAttendance() {
-      try {
-        const fetchedAttendance = await AttendanceAPI.fetchAttendanceRecords(selectedDate)
-        setAttendance(fetchedAttendance.results);
-      } catch (err:any) {
-        let errorMessage =  err?.message || err?.detail ||  "Failed to fetch attendance records";
-        toast.error(errorMessage)
-      }
+  async function fetchAttendance() {
+    try {
+      const fetchedAttendance = await AttendanceAPI.fetchAttendanceRecords(selectedDate);
+      setAttendance(fetchedAttendance.results);
+    } catch (err: any) {
+      let errorMessage = err?.message || err?.detail || "Failed to fetch attendance records";
+      toast.error(errorMessage);
     }
+  }
 
-  const openCheckInModal = (employee: IEmployee) => {
+  const openCheckInModal = async (employee:IEmployee ) => {
     setSelectedEmployee(employee);
     setCheckInModalOpen(true);
+    await getCurrentUserLocation(handlePositionChange);
   };
 
-  const openCheckOutModal = (employee: IEmployee) => {
-    setSelectedEmployee(employee);
+  const openCheckOutModal = async (attendanceRecord: IAttendance) => {
+    setSelectedEmployee(attendanceRecord.employee);
+    setSelectedAttendanceRecord(attendanceRecord);
     setCheckOutModalOpen(true);
+    await getCurrentUserLocation(handlePositionChange);
+  };
+
+  const handlePositionChange = (position: GeolocationPosition) => {
+    setCurrentUserLocation(position);
   };
 
   const handleCheckIn = async (date: string, checkInTime: string) => {
-    if (!selectedEmployee) return;
-    
+
+    if (!selectedEmployee){return};
+    if (!currentUserlocation) {
+      toast.warning("You need to allow access to your location to be able to proceed !");
+      return;
+    }
     try {
       await AttendanceAPI.createAttendanceRecord({
-          employee: selectedEmployee.id,
-          check_in_time: checkInTime,
-          status: "approved",
-        });
-      
-      fetchAttendance()
-    } catch (error:any) {
+        employee: selectedEmployee.id,
+        check_in_time: checkInTime,
+        check_in_latitude: currentUserlocation.coords.latitude,
+        check_in_longitude: currentUserlocation.coords.longitude,
+        status: "approved",
+      });
+
+      fetchAttendance();
+    } catch (error: any) {
       let errorMessage = error?.detail || error?.message || "Failed to record check-in!";
-      toast.error(errorMessage)
+      toast.error(errorMessage);
     }
   };
 
   const handleCheckOut = async (date: string, checkOutTime: string) => {
-    if (!selectedEmployee) return;
-    const record = attendance.find((r) => r.employee.id === selectedEmployee.id);
+    if (!selectedAttendanceRecord){return};
+    const record = attendance.find((r) => r.id === selectedAttendanceRecord.id);
     const checkInTime = record?.check_in_time || "";
-
+    await getCurrentUserLocation(handlePositionChange);
+    if (!currentUserlocation) {
+      toast.warning("You need to allow access to your location to be able to proceed !");
+      return;
+    }
 
     try {
-      await AttendanceAPI.createAttendanceRecord({
-          employee: selectedEmployee.id,
+      await AttendanceAPI.updateAttendanceRecord({
+        id: selectedAttendanceRecord.id,
+        data: {
+          employee: selectedAttendanceRecord?.employee.id,
           check_in_time: checkInTime,
           check_out_time: checkOutTime,
+          check_out_latitude: currentUserlocation.coords.latitude,
+          check_out_longitude: currentUserlocation.coords.longitude,
           status: "approved",
-        });
-      
+        },
+      });
 
       await fetchAttendance();
-
-    } catch (error:any) {
+    } catch (error: any) {
       let errorMessage = error?.detail || error?.message || "Failed to record check-out!";
-      toast.error(errorMessage)
+      toast.error(errorMessage);
     }
   };
 
   return (
     <>
-      <Card>
+      <div  className="">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span className="mb-2">Attendance ({employees.length})</span>
@@ -161,56 +183,59 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <div className="bg-gray-50 border-b">
-              <div className="grid grid-cols-6 gap-4 p-4 font-medium">
-                <div>Date</div>
-                <div>Name</div>
-                <div>Email</div>
-                <div>Check In</div>
-                <div>Check Out</div>
-              </div>
-            </div>
-            <div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Check In</TableHead>
+                <TableHead>Check Out</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {employees.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No employees found matching your criteria
-                </div>
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    No employees found matching your criteria
+                  </TableCell>
+                </TableRow>
               ) : (
                 employees.map((emp) => {
                   const record = attendance.find((r) => r.employee.id === emp.id);
                   return (
-                    <div
-                      key={emp.id}
-                      className="grid grid-cols-6 gap-4 p-4 border-b hover:bg-gray-50 items-center"
-                    >
-                      <div>{selectedDate}</div>
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-gray-900">
+                    <TableRow key={emp.id} className="hover:bg-gray-50">
+                      <TableCell>{selectedDate}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
                           <Link
                             href={`/employees/attendance/${emp.id}`}
-                            className="hover:underline text-blue-600"
+                            className="font-semibold text-blue-600 hover:underline"
                           >
                             {emp.user?.fullname || ""}
                           </Link>
-                        </span>
-                        <span className="text-xs text-gray-400 font-normal">{emp.department.name}</span>
-                      </div>
-                      <div className="text-sm text-blue-600 underline underline-offset-2">
+                          <span className="text-xs text-gray-400">
+                            {emp.department.name}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
                         {emp.email ? (
                           <a
                             href={`mailto:${emp.email}`}
-                            className="hover:text-blue-800 transition-colors"
+                            className="text-sm text-blue-600 hover:text-blue-800 underline underline-offset-2"
                           >
                             {emp.email}
                           </a>
                         ) : (
                           <span className="text-gray-400">N/A</span>
                         )}
-                      </div>
-                      <div>
+                      </TableCell>
+                      <TableCell>
                         {record?.check_in_time ? (
-                          <Badge className="bg-green-100 text-green-800">{record.check_in_time}</Badge>
+                          <Badge className="bg-green-100 text-green-800">
+                            {record.check_in_time}
+                          </Badge>
                         ) : isToday(selectedDate) ? (
                           <button
                             className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold"
@@ -221,38 +246,42 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
                         ) : (
                           <span className="text-gray-400 text-lg">–</span>
                         )}
-                      </div>
-                      <div>
-                        {record?.check_out_time ? (
-                          <Badge className="bg-purple-100 text-purple-800">{record.check_out_time}</Badge>
-                        ) : isToday(selectedDate) ? (
-                          <button
-                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-semibold"
-                            onClick={() => openCheckOutModal(emp)}
-                            disabled={!record?.check_in_time}
-                            style={{opacity: record?.check_in_time ? 1 : 0.5}}
-                          >
-                            Check Out
-                          </button>
-                        ) : (
-                          <span className="text-gray-400 text-lg">–</span>
-                        )}
-                      </div>
-                    </div>
+                      </TableCell>
+                      <TableCell>
+                        {record ? (
+                          record?.check_out_time ? (
+                            <Badge className="bg-purple-100 text-purple-800">
+                              {record.check_out_time}
+                            </Badge>
+                          ) : isToday(selectedDate) ? (
+                            <button
+                              className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-semibold"
+                              onClick={() => openCheckOutModal(record)}
+                              disabled={!record?.check_in_time}
+                              style={{opacity: record?.check_in_time ? 1 : 0.5}}
+                            >
+                              Check Out
+                            </button>
+                          ) : (
+                            <span className="text-gray-400 text-lg">–</span>
+                          )
+                        ) : null}
+                      </TableCell>
+                    </TableRow>
                   );
                 })
               )}
-            </div>
-          </div>
+            </TableBody>
+          </Table>
         </CardContent>
-      </Card>
+      </div>
 
       {/* Check-in Modal */}
       <CheckInModal
         isOpen={checkInModalOpen}
         onClose={() => setCheckInModalOpen(false)}
         onConfirm={handleCheckIn}
-        employeeName={selectedEmployee?.user?.fullname || ''}
+        employeeName={selectedEmployee?.user?.fullname || ""}
       />
 
       {/* Check-out Modal */}
@@ -260,8 +289,10 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
         isOpen={checkOutModalOpen}
         onClose={() => setCheckOutModalOpen(false)}
         onConfirm={handleCheckOut}
-        employeeName={selectedEmployee?.user?.fullname || ''}
-        checkInTime={attendance.find(r => r.employee.id === selectedEmployee?.id)?.check_in_time || null}
+        employeeName={selectedEmployee?.user?.fullname || ""}
+        checkInTime={
+          attendance.find((r) => r.employee.id === selectedEmployee?.id)?.check_in_time || null
+        }
       />
     </>
   );

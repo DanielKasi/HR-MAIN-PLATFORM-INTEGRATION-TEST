@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { taxRulesAPI } from "@/lib/utils";
 import type { ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
@@ -35,6 +36,7 @@ export function CreateTaxRuleDialog({
 }: CreateTaxRuleDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [calculationType, setCalculationType] = useState<"percentage" | "fixed">("percentage");
   const [formData, setFormData] = useState<ITaxRuleFormData>({
     institution_tax: taxId,
     tax_rule_name: "",
@@ -55,6 +57,17 @@ export function CreateTaxRuleDialog({
       salary_from: 0,
       salary_to: 0,
     });
+    setCalculationType("percentage");
+  };
+
+  const handleCalculationTypeChange = (value: "percentage" | "fixed") => {
+    setCalculationType(value);
+    // Clear the other field when switching types
+    if (value === "percentage") {
+      setFormData({ ...formData, tax_rule_fixed_amount: undefined });
+    } else {
+      setFormData({ ...formData, tax_rule_percentage: undefined });
+    }
   };
 
   const handleSubmit = async () => {
@@ -73,13 +86,13 @@ export function CreateTaxRuleDialog({
       return;
     }
 
-    if (!formData.tax_rule_percentage && !formData.tax_rule_fixed_amount) {
-      toast.error("Please enter either a percentage or fixed amount");
+    if (calculationType === "percentage" && !formData.tax_rule_percentage) {
+      toast.error("Please enter a percentage rate");
       return;
     }
 
-    if (formData.tax_rule_percentage && formData.tax_rule_fixed_amount) {
-      toast.error("Please enter either a percentage or fixed amount, not both");
+    if (calculationType === "fixed" && !formData.tax_rule_fixed_amount) {
+      toast.error("Please enter a fixed amount");
       return;
     }
 
@@ -150,46 +163,74 @@ export function CreateTaxRuleDialog({
             />
           </div>
 
-          <div className="space-y-3">
-            <Label htmlFor="tax_rule_percentage" className="text-sm text-gray-800">
-              Percentage Rate
+          <div className="space-y-4">
+            <Label className="text-sm text-gray-800">
+              Calculation Method *
             </Label>
-            <div className="relative">
-              <Input
-                id="tax_rule_percentage"
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                value={formData.tax_rule_percentage || ""}
-                onChange={(e) => setFormData({ ...formData, tax_rule_percentage: parseFloat(e.target.value) || undefined })}
-                placeholder="e.g., 10.5"
-                disabled={isSubmitting}
-                className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pr-8"
-              />
-              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">%</span>
-            </div>
+            <RadioGroup
+              value={calculationType}
+              onValueChange={handleCalculationTypeChange}
+              className="flex flex-col space-y-3"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="percentage" id="percentage" />
+                <Label htmlFor="percentage" className="text-sm font-medium">
+                  Percentage Rate
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="fixed" id="fixed" />
+                <Label htmlFor="fixed" className="text-sm font-medium">
+                  Fixed Amount
+                </Label>
+              </div>
+            </RadioGroup>
           </div>
 
-          <div className="space-y-3">
-            <Label htmlFor="tax_rule_fixed_amount" className="text-sm text-gray-800">
-              Fixed Amount
-            </Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-              <Input
-                id="tax_rule_fixed_amount"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.tax_rule_fixed_amount || ""}
-                onChange={(e) => setFormData({ ...formData, tax_rule_fixed_amount: parseFloat(e.target.value) || undefined })}
-                placeholder="e.g., 5000.00"
-                disabled={isSubmitting}
-                className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pl-8"
-              />
+          {calculationType === "percentage" && (
+            <div className="space-y-3">
+              <Label htmlFor="tax_rule_percentage" className="text-sm text-gray-800">
+                Percentage Rate *
+              </Label>
+              <div className="relative">
+                <Input
+                  id="tax_rule_percentage"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={formData.tax_rule_percentage || ""}
+                  onChange={(e) => setFormData({ ...formData, tax_rule_percentage: parseFloat(e.target.value) || undefined })}
+                  placeholder="e.g., 10.5"
+                  disabled={isSubmitting}
+                  className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pr-8"
+                />
+                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">%</span>
+              </div>
             </div>
-          </div>
+          )}
+
+          {calculationType === "fixed" && (
+            <div className="space-y-3">
+              <Label htmlFor="tax_rule_fixed_amount" className="text-sm text-gray-800">
+                Fixed Amount *
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                <Input
+                  id="tax_rule_fixed_amount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.tax_rule_fixed_amount || ""}
+                  onChange={(e) => setFormData({ ...formData, tax_rule_fixed_amount: parseFloat(e.target.value) || undefined })}
+                  placeholder="e.g., 5000.00"
+                  disabled={isSubmitting}
+                  className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pl-8"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-3">
@@ -236,13 +277,10 @@ export function CreateTaxRuleDialog({
 
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
-            Cancel
-          </Button>
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="bg-orange-500 hover:bg-orange-600"
+            className="bg-primary rounded-full w-full"
           >
             {isSubmitting ? (
               <>

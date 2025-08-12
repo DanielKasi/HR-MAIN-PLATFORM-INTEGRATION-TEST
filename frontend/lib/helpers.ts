@@ -63,83 +63,6 @@ export const fetchAndSetData = async <T>(
   }
 };
 
-export async function fetchCategoriesFromApi() {
-  try {
-    const response = await apiRequest.get(
-      `product/category/institution/${getDefaultInstitutionId()}`,
-    );
-
-    return response;
-  } catch (error) {
-    console.error("Error fetching categories:", error);
-    throw error;
-  }
-}
-
-export async function fetchProductsFromApi(isApproved?: boolean) {
-  try {
-    let url = "product/";
-
-    if (isApproved !== undefined) {
-      url = `product/?is_approved=${isApproved}`;
-    }
-
-    const response = await apiRequest.get(url);
-
-    return response;
-  } catch (error: any) {
-    console.error("Error fetching products:", error);
-    throw error;
-  }
-}
-
-export async function fetchProductsForSpecificBranchFromApi() {
-  try {
-    const branchId = getCurrentBranchId();
-
-    if (!branchId) {
-      throw new Error("Branch ID not found in local storage");
-    }
-    const response = await apiRequest.get(`/product/branch-product-store/by-branch/${branchId}/`);
-
-    return response;
-  } catch (error) {
-    console.error("Error fetching products for specific branch:", error);
-    throw error;
-  }
-}
-
-export async function fetchAndUpdateProducts(setProducts: (data: any) => void) {
-  try {
-    const branchId = getCurrentBranchId();
-
-    if (!branchId) {
-      throw new Error("Branch ID not found in local storage");
-    }
-
-    // Fetch updated product data from API
-    const response = await apiRequest.get(`/product/branch-product-store/by-branch/${branchId}/`);
-
-    // Update the frontend state with the new product data
-    setProducts(response.data.results);
-  } catch (error) {
-    console.error("Error fetching updated products for the branch:", error);
-    throw error;
-  }
-}
-
-export async function fetchUnitOfMeasuresFromApi() {
-  try {
-    const response = await apiRequest.get(
-      `product/unit-of-measure/?Institution_id=${getDefaultInstitutionId()}`,
-    );
-
-    return response;
-  } catch (error) {
-    console.error("Error fetching unit of measures:", error);
-    throw error;
-  }
-}
 
 export async function fetchInstitutionBranchesFromAPI() {
   try {
@@ -199,50 +122,6 @@ export function formatTransactionDate(dateString: any) {
   }
 }
 
-export function getUserFromLocalStorage(): IUser | null {
-  try {
-    const userData = store.getState().auth.user.value;
-
-    return userData;
-  } catch (error) {
-    console.error("Error getting user from localStorage:", error);
-
-    return null;
-  }
-}
-
-export function getInstitutionLogo(): string | null {
-  try {
-    const selectedInstitution = store.getState().auth.selectedInstitution.value;
-
-    if (selectedInstitution) {
-      return selectedInstitution.institution_logo || null;
-    }
-
-    return null;
-  } catch (error) {
-    console.error("Error getting Institution logo:", error);
-
-    return null;
-  }
-}
-
-export function isInstitutionOwner(): boolean {
-  try {
-    const userData = store.getState().auth.user.value;
-    const selectedInstitution = store.getState().auth.selectedInstitution.value;
-
-    if (!userData || !selectedInstitution) {
-      return false;
-    }
-
-    return userData.id === selectedInstitution.institution_owner_id;
-  } catch (error) {
-    console.error("Error checking if user is Institution owner:", error);
-
-    return false;
-  }
-}
 
 export function hasPermission(permissionCode: string): boolean {
   try {
@@ -391,3 +270,11 @@ export const countryAPI = {
   },
 };
 
+
+export const getCurrentUserLocation = async (callback: (position:GeolocationPosition) =>void) => {
+  if(!navigator.geolocation){
+    toast.warning("Your browser doesn't support geolocation")
+  };
+  navigator.geolocation.getCurrentPosition(callback);
+
+}

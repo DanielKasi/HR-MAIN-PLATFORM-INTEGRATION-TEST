@@ -62,7 +62,9 @@ class ApproveTaskDetailAPIView(APIView):
     )
     # Inside the ApproveTaskDetailAPIView class
     def patch(self, request, task_id):
+        print("request_data", request.data)
         new_status = request.data.get("status", None)
+        print("new_status", new_status)
         task_comment = request.data.get("comment", "")
         if not new_status:
             return Response(
@@ -299,7 +301,8 @@ class InstitutionApprovalStepAPIView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        step.delete()
+        step.is_active = False
+        step.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

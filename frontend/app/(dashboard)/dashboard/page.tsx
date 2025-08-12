@@ -147,7 +147,7 @@ const WelcomeCard = () => {
   const fullName = capitalizeFirstLetter(fullNameRaw);
 
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
+    <div className="bg-gradient-to-r from-primary to-primary/40 rounded-xl p-6 text-white">
       <h2 className="text-2xl font-bold mb-2">
         {greeting},{" "}
         {userData?.gender === USER_GENDER.MALE

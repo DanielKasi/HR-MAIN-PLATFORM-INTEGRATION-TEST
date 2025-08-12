@@ -26,7 +26,6 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({ isOpen, onClose, onC
   if (!isOpen) return null;
 
   const handleConfirm = () => {
-    // Combine date and time to create the check-in time string
     const checkInTime = `${selectedTime}:00`; // Add seconds
     onConfirm(selectedDate, checkInTime);
     onClose();

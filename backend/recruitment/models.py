@@ -9,8 +9,23 @@ from users.models import Profile
 from django.utils import timezone
 from django.db import transaction
 
+class BaseModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
 
-class JobPosition(models.Model):
+    class Meta:
+        abstract = True
+    
+    def delete(self, *args, **kwargs):
+        """Soft deletes a record by setting the deleted_at timestamp"""
+        self.deleted_at = timezone.now()
+        self.is_active = False
+        self.save(update_fields=["deleted_at", "is_active"])
+
+
+class JobPosition(BaseModel):
     JOB_POSITION_STATUS_CHOICES = [
         ("active", "Active"),
         ("inactive", "Inactive"),
@@ -46,7 +61,6 @@ class JobPosition(models.Model):
         choices=JOB_POSITION_STATUS_CHOICES,
         default="inactive",
     )
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.name}"

@@ -29,33 +29,80 @@ import io
 from io import BytesIO
 from difflib import Differ, SequenceMatcher
 import re
+from django.db.models import UniqueConstraint, Q
 
+
+class BaseModel(models.Model):
+    # This field tracks the date and time a record was soft-deleted.
+    # A null value means the record is active.
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        abstract = True
+
+    def delete(self, *args, **kwargs):
+        """
+        Soft-deletes the record by setting the deleted_at timestamp.
+        """
+        self.deleted_at = timezone.now()
+        self.is_active = False
+        self.save(update_fields=["deleted_at", "is_active"])
+
+
+class EmployeeType(BaseModel):
+    name = models.CharField(max_length=100)
+import math
 
 class EmployeeType(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
-    code = models.CharField(max_length=10, unique=True, blank=True, null=True)
-
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    code = models.CharField(max_length=10, blank=True, null=True)
 
     def __str__(self):
         return self.name
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=["name"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_employee_type_name"
+            ),
+            UniqueConstraint(
+                fields=["code"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_employee_type_code"
+            )
+        ]
 
 
-class WorkType(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+class WorkType(BaseModel):
+    name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
-    code = models.CharField(max_length=10, unique=True, blank=True, null=True)
-
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    code = models.CharField(max_length=10, blank=True, null=True)
 
     def __str__(self):
         return self.name
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=["name"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_work_type_name"
+            ),
+            UniqueConstraint(
+                fields=["code"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_work_type_code"
+            )
+        ]
 
 
-class Employee(models.Model):
+class Employee(BaseModel):
     """
     Employee model to store employee details in the system.
     """
@@ -75,6 +122,7 @@ class Employee(models.Model):
     user = models.OneToOneField(
         "users.CustomUser",
         on_delete=models.PROTECT,
+        unique=True,
         blank=True,
         null=True,
         related_name="employees",
@@ -82,7 +130,7 @@ class Employee(models.Model):
     employee_id = models.CharField(
         max_length=10, unique=False, editable=False, blank=True
     )
-    email = models.EmailField(unique=True, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     position = models.ForeignKey(
         "recruitment.JobPosition",
@@ -129,14 +177,11 @@ class Employee(models.Model):
     date_of_joining = models.DateField(default=timezone.now)
     address = models.TextField(blank=True, null=True)
     country = models.CharField(max_length=50, blank=True, null=True)
-    nin = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    nin = models.CharField(max_length=20, blank=True, null=True)
     nssf_no = models.CharField(max_length=20, blank=True, null=True)
     tin = models.CharField(max_length=12, blank=True, null=True)
     bank = models.CharField(max_length=50, blank=True, null=True)
     bank_account_number = models.CharField(max_length=20, blank=True, null=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
     experience = models.PositiveIntegerField(default=0)
     qualifications = models.TextField(blank=True, null=True)
     skills = models.TextField(blank=True, null=True)
@@ -156,6 +201,27 @@ class Employee(models.Model):
 
     def __str__(self):
         return f"{self.user.fullname}  - {self.position}"
+    
+    class Meta:
+        constraints = [
+            # A OneToOneField is essentially a ForeignKey with unique=True
+            # To make it conditional, we use a UniqueConstraint.
+            UniqueConstraint(
+                fields=["user"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_employee_user",
+            ),
+            UniqueConstraint(
+                fields=["email"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_employee_email",
+            ),
+            UniqueConstraint(
+                fields=["nin"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_employee_nin",
+            ),
+        ]
 
     def clean(self):
         """Custom validation for the Employee model"""
@@ -504,13 +570,17 @@ class EmployeeWorkingDays(models.Model):
         return f"{self.employee.user.fullname} - Custom Working Days"
 
 
-class EmployeeAttendance(models.Model):
+class EmployeeAttendance(BaseModel):
     employee = models.ForeignKey(
         Employee, on_delete=models.CASCADE, related_name="attendance_records"
     )
     date = models.DateField(auto_now_add=True)
     check_in_time = models.TimeField(null=True, blank=True)
     check_out_time = models.TimeField(null=True, blank=True)
+    check_in_latitude = models.FloatField(null=True, blank=True)
+    check_in_longitude = models.FloatField(null=True, blank=True)
+    check_out_latitude = models.FloatField(null=True, blank=True)
+    check_out_longitude = models.FloatField(null=True, blank=True)
     status = models.CharField(
         max_length=20,
         choices=[
@@ -546,16 +616,76 @@ class EmployeeAttendance(models.Model):
                 return hours
         return 0.0
 
+    def _haversine_distance(self, lat1,lon1, lat2, lon2):
+        if None in (lat1, lon1, lat2, lon2):
+            return float('inf')
+
+        R = 6371000 # Earth radius in meters
+
+        # Convert to radians
+        lat1_rad = math.radians(lat1)
+        lon1_rad = math.radians(lon1)
+        lat2_rad = math.radians(lat2)
+        lon2_rad = math.radians(lon2)
+
+        dlat = lat2_rad - lat1_rad
+        dlon = lon2_rad - lon1_rad
+
+        a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        return R * c
+
+    def _is_location_valid(self, latitude, longitude):
+        """
+        Check if the given location is within 100 meters of any attached branch.
+        """
+
+        THRESHOLD_METERS = 500
+
+        attached_branches = self.employee.get_all_branches()
+        if not attached_branches.exists():
+            return False
+
+        for branch in attached_branches:
+            if branch.branch_latitude is None or branch.branch_longitude is None:
+                continue
+            distance = self._haversine_distance(
+                latitude, longitude, branch.branch_latitude, branch.branch_longitude
+            )
+            if distance <= THRESHOLD_METERS:
+                return True
+        return False
+
+    def clean(self):
+        super().clean()
+
+        # Validate check-in location if provided
+        if self.check_in_time and (self.check_in_latitude is not None or self.check_in_longitude is not None):
+            if self.check_in_latitude is None or self.check_in_longitude is None:
+                raise ValidationError("Both check-in latitude and longitude must be provided if one is set.")
+            if not self._is_location_valid(self.check_in_latitude, self.check_in_longitude):
+                raise ValidationError("Check-in location does not match any attached branch location.")
+
+        # Validate check-out location if provided
+        if self.check_out_time and (self.check_out_latitude is not None or self.check_out_longitude is not None):
+            if self.check_out_latitude is None or self.check_out_longitude is None:
+                raise ValidationError("Both check-out latitude and longitude must be provided if one is set.")
+            if not self._is_location_valid(self.check_out_latitude, self.check_out_longitude):
+                raise ValidationError("Check-out location does not match any attached branch location.")                    
+
     def save(self, *args, **kwargs):
 
         if self.date is None:
             self.date = datetime.today().date()
 
+        self.full_clean()    
+
         self.overtime_hours = self.calculate_overtime_hours()
         super().save(*args, **kwargs)
 
 
-class EmployeeContract(models.Model):
+class EmployeeContract(BaseModel):
     STATUS_CHOICES = (
         ("MATCHED_NEEDS_REVIEW", "Matched, Needs Review"),
         ("NOT_MATCHED_NEEDS_REVIEW", "Not Matched, Needs Review"),
@@ -576,9 +706,8 @@ class EmployeeContract(models.Model):
         null=True,
         blank=True,
     )
-    is_active = models.BooleanField(default=True)
     contract_reference = models.CharField(
-        max_length=20, unique=True, blank=True, null=True
+        max_length=20, blank=True, null=True
     )
     original_contract = models.FileField(
         upload_to="contracts/original/", blank=True, null=True
@@ -593,11 +722,18 @@ class EmployeeContract(models.Model):
         blank=True,
     )
     differences = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Contract {self.contract_reference} "
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=["contract_reference"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_contract_reference"
+            )
+        ]
 
     def generate_contract_reference(self):
         prefix = "CON"

@@ -659,7 +659,8 @@ class RoleDetailAPIView(APIView):
         tags=["User Management"],
     )
     def delete(self, request, role_id):
-        get_object_or_404(Role, pk=role_id).delete()
+        role = get_object_or_404(Role, pk=role_id)
+        role.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -733,7 +734,8 @@ class PermissionCategoryDetailAPIView(APIView):
         tags=["User Management"],
     )
     def delete(self, request, permission_category_id):
-        get_object_or_404(PermissionCategory, pk=permission_category_id).delete()
+        permission_category = get_object_or_404(PermissionCategory, pk=permission_category_id)
+        permission_category.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -804,7 +806,8 @@ class PermissionDetailAPIView(APIView):
         tags=["User Management"],
     )
     def delete(self, request, permission_id):
-        get_object_or_404(Permission, pk=permission_id).delete()
+        permission = get_object_or_404(Permission, pk=permission_id)
+        permission.delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
