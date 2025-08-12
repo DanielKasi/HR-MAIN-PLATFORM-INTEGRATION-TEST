@@ -30,7 +30,7 @@ from io import BytesIO
 from difflib import Differ, SequenceMatcher
 import re
 from django.db.models import UniqueConstraint, Q
-
+import math
 
 class BaseModel(models.Model):
     # This field tracks the date and time a record was soft-deleted.
@@ -54,10 +54,6 @@ class BaseModel(models.Model):
 
 class EmployeeType(BaseModel):
     name = models.CharField(max_length=100)
-import math
-
-class EmployeeType(models.Model):
-    name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
     code = models.CharField(max_length=10, blank=True, null=True)
 
