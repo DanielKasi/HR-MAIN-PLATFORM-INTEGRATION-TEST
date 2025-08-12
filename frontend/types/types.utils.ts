@@ -1734,6 +1734,10 @@ export interface IAttendance {
   employee: IEmployee,
   check_in_time: string;
   check_out_time: string | null;
+  check_in_latitude?: number;
+  check_in_longitude?: number;
+  check_out_latitude?: number;
+  check_out_longitude?: number;
   status: string;
   date: string;
   overtime_hours: string

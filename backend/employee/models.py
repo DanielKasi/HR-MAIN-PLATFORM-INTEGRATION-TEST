@@ -54,6 +54,10 @@ class BaseModel(models.Model):
 
 class EmployeeType(BaseModel):
     name = models.CharField(max_length=100)
+import math
+
+class EmployeeType(models.Model):
+    name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
     code = models.CharField(max_length=10, blank=True, null=True)
 
@@ -573,6 +577,10 @@ class EmployeeAttendance(BaseModel):
     date = models.DateField(auto_now_add=True)
     check_in_time = models.TimeField(null=True, blank=True)
     check_out_time = models.TimeField(null=True, blank=True)
+    check_in_latitude = models.FloatField(null=True, blank=True)
+    check_in_longitude = models.FloatField(null=True, blank=True)
+    check_out_latitude = models.FloatField(null=True, blank=True)
+    check_out_longitude = models.FloatField(null=True, blank=True)
     status = models.CharField(
         max_length=20,
         choices=[
@@ -608,10 +616,70 @@ class EmployeeAttendance(BaseModel):
                 return hours
         return 0.0
 
+    def _haversine_distance(self, lat1,lon1, lat2, lon2):
+        if None in (lat1, lon1, lat2, lon2):
+            return float('inf')
+
+        R = 6371000 # Earth radius in meters
+
+        # Convert to radians
+        lat1_rad = math.radians(lat1)
+        lon1_rad = math.radians(lon1)
+        lat2_rad = math.radians(lat2)
+        lon2_rad = math.radians(lon2)
+
+        dlat = lat2_rad - lat1_rad
+        dlon = lon2_rad - lon1_rad
+
+        a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        return R * c
+
+    def _is_location_valid(self, latitude, longitude):
+        """
+        Check if the given location is within 100 meters of any attached branch.
+        """
+
+        THRESHOLD_METERS = 500
+
+        attached_branches = self.employee.get_all_branches()
+        if not attached_branches.exists():
+            return False
+
+        for branch in attached_branches:
+            if branch.branch_latitude is None or branch.branch_longitude is None:
+                continue
+            distance = self._haversine_distance(
+                latitude, longitude, branch.branch_latitude, branch.branch_longitude
+            )
+            if distance <= THRESHOLD_METERS:
+                return True
+        return False
+
+    def clean(self):
+        super().clean()
+
+        # Validate check-in location if provided
+        if self.check_in_time and (self.check_in_latitude is not None or self.check_in_longitude is not None):
+            if self.check_in_latitude is None or self.check_in_longitude is None:
+                raise ValidationError("Both check-in latitude and longitude must be provided if one is set.")
+            if not self._is_location_valid(self.check_in_latitude, self.check_in_longitude):
+                raise ValidationError("Check-in location does not match any attached branch location.")
+
+        # Validate check-out location if provided
+        if self.check_out_time and (self.check_out_latitude is not None or self.check_out_longitude is not None):
+            if self.check_out_latitude is None or self.check_out_longitude is None:
+                raise ValidationError("Both check-out latitude and longitude must be provided if one is set.")
+            if not self._is_location_valid(self.check_out_latitude, self.check_out_longitude):
+                raise ValidationError("Check-out location does not match any attached branch location.")                    
+
     def save(self, *args, **kwargs):
 
         if self.date is None:
             self.date = datetime.today().date()
+
+        self.full_clean()    
 
         self.overtime_hours = self.calculate_overtime_hours()
         super().save(*args, **kwargs)
