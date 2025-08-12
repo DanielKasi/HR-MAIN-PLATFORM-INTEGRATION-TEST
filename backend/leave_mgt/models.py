@@ -4,6 +4,7 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 from users.models import CustomUser
 from django.utils import timezone
+from django.db.models import UniqueConstraint, Q
 
 
 class BaseModel(models.Model):
@@ -186,8 +187,14 @@ class LeaveBalance(BaseModel):
 
     class Meta:
         db_table = "leave_balances"
-        unique_together = ["employee", "leave_type", "year"]
         ordering = ["-year", "leave_type__name"]
+        constraints = [
+            UniqueConstraint(
+                fields=["employee", "leave_type", "year"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_leave_type_per_year_per_employee"
+            )
+        ]
 
     @property
     def available_days(self):
