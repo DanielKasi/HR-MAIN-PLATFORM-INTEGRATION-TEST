@@ -1,4 +1,7 @@
+import string
+import random
 from django.db import models
+from django.utils.crypto import get_random_string
 from .utils.history import create_asset_history
 from django.db import transaction
 
@@ -12,6 +15,8 @@ class BaseModel(models.Model):
         abstract = True
 
 
+
+
 class AssetCategory(BaseModel):
     institution = models.ForeignKey(
         "institution.Institution",
@@ -20,9 +25,48 @@ class AssetCategory(BaseModel):
     )
     category_name = models.CharField(max_length=100)
     category_description = models.TextField(blank=True, null=True)
+    code = models.CharField(max_length=5, unique=True, editable=False)
 
     def __str__(self):
         return self.category_name
+
+    def save(self, *args, **kwargs):
+        # Auto-generate a 5-character code only if not already set
+        if not self.code:
+            self.code = self.generate_unique_code()
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def generate_unique_code():
+        """Generates a unique 5-character alphanumeric code."""
+        chars = string.ascii_uppercase + string.digits
+        while True:
+            code = ''.join(random.choices(chars, k=5))
+            if not AssetCategory.objects.filter(code=code).exists():
+                return code
+
+    @property
+    def total_assets(self):
+        """Returns the total number of assets in this category"""
+        return self.assets.count()
+
+    @property
+    def total_available_assets(self):
+        """Returns the total number of available assets in this category"""
+        return self.assets.filter(status='available').count()
+
+    @property
+    def total_allocated_assets(self):
+        """Returns the total number of allocated assets in this category"""
+        return self.assets.filter(status='allocated').count()
+
+    @property
+    def assets_by_status(self):
+        """Returns a dictionary with asset counts by status"""
+        from django.db.models import Count
+        status_counts = self.assets.values('status').annotate(count=Count('id'))
+        return {item['status']: item['count'] for item in status_counts}
+
 
 
 class Asset(BaseModel):
@@ -132,9 +176,8 @@ class AssetRequest(BaseModel):
         is_new = self._state.adding
         super().save(*args, **kwargs)
 
-        if is_new:
-            request_code = f"ASSET-REQ-{self.asset.id:05d}-{self.requester.id:05d}"
-            self.request_reference_code = request_code
+        if is_new and not self.request_reference_code:
+            self.request_reference_code = f"ASSET-REQ-{self.pk:05d}-{self.asset.id:05d}-{self.requester.id:05d}"
             super().save(update_fields=["request_reference_code"])
 
     @transaction.atomic
@@ -237,8 +280,7 @@ class AssetAllocation(BaseModel):
         super().save(*args, **kwargs)
 
         if is_new:
-            alloc_code = f"ALLOC-{self.asset.id:05d}-{self.allocated_to.id:05d}"
-            self.alloc_code = alloc_code
+            self.alloc_code = f"ALLOC-{self.pk:05d}-{self.asset.id:05d}-{self.allocated_to.id:05d}"
             super().save(update_fields=["alloc_code"])
 
         if self.pk and self.allocation_status == "allocated":
