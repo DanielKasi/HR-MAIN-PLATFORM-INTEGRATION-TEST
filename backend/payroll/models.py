@@ -8,6 +8,7 @@ from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from institution.models import Institution
+from django.db.models import UniqueConstraint, Q
 
 
 class BaseModel(models.Model):
@@ -68,6 +69,7 @@ class UtilityBaseModel(models.Model):
         self.deleted_at = timezone.now()
         self.save()
     
+    @property
     def is_active(self):
         return self.deleted_at is None
 
@@ -162,7 +164,13 @@ class EmployeeAllowance(UtilityBaseModel):
         super().save(*args, **kwargs)
 
     class Meta:
-        unique_together = ["employee", "allowance_type"]
+        constraints = [
+            UniqueConstraint(
+                fields=("employee", "allowance_type"),
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_allowance_type_per_employee"
+            )
+        ]
 
     def get_recurrence_count(self, payroll_period):
         """
@@ -286,7 +294,13 @@ class EmployeeDeduction(UtilityBaseModel):
         super().save(*args, **kwargs)
 
     class Meta:
-        unique_together = ["employee", "deduction_type"]
+        constraints = [
+            UniqueConstraint(
+                fields=("employee", "deduction_type"),
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_deduction_type_per_employee"
+                )
+            ]
 
     def get_recurrence_count(self, payroll_period):
         """
@@ -378,7 +392,13 @@ class EmployeeTax(UtilityBaseModel):
         return f"{self.employee} - {self.institution_tax.tax_name}"
 
     class Meta:
-        unique_together = ["employee", "institution_tax"]
+        constraints = [
+            UniqueConstraint(
+                fields=["employee", "institution_tax"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_institution_tax_per_employee"
+                )
+            ]
 
     def rule_fit_employee_salary(self):
 
@@ -599,8 +619,14 @@ class Payslip(UtilityBaseModel):
         self.save()
 
     class Meta:
-        unique_together = ["employee", "payroll_period"]
         ordering = ["-payroll_period__start_date"]
+        constraints = [
+            UniqueConstraint(
+                fields=["employee", "payroll_period"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_payroll_period_per_employee"
+            )
+        ]
 
 
 class PayslipItem(models.Model):
