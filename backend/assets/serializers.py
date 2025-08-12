@@ -216,21 +216,17 @@ class AssetRequestSerializer(serializers.ModelSerializer):
 
 
 class AssetAllocationSerializer(serializers.ModelSerializer):
-    asset = AssetSerializer(read_only=True)
-    asset_id = serializers.IntegerField(write_only=True, required=True)
-    allocated_to_id = serializers.IntegerField(write_only=True, required=True)
-    responding_to_request_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    # asset = serializers.IntegerField(write_only=True, required=True)
+    # allocated_to = serializers.IntegerField(write_only=True, required=True)
+    # responding_to_request = serializers.IntegerField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = AssetAllocation
         fields = [
             "id",
             "asset",
-            "asset_id",
             "allocated_to",
-            "allocated_to_id",
             "responding_to_request",
-            "responding_to_request_id",
             "allocated_by",
             "allocation_status",
             "alloc_code",
@@ -255,23 +251,19 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
 
         institution = user.institution
 
-        # Get the asset_id and remove it from validated_data
-        asset_id = validated_data.pop("asset_id")
-        
-        # Get the allocated_to_id and remove it from validated_data
-        allocated_to_id = validated_data.pop("allocated_to_id")
-        
-        # Get the responding_to_request_id and remove it from validated_data
-        responding_to_request_id = validated_data.pop("responding_to_request_id", None)
 
         # Get the asset object
         try:
+            asset = validated_data.get("asset")
+            asset_id = asset.id
             asset = Asset.objects.get(id=asset_id)
         except Asset.DoesNotExist:
             raise serializers.ValidationError("Asset not found.")
 
         # Get the allocated_to employee object
         try:
+            allocated_to = validated_data.get("allocated_to")
+            allocated_to_id = allocated_to.id
             allocated_to = Employee.objects.get(id=allocated_to_id)
         except Employee.DoesNotExist:
             raise serializers.ValidationError("Employee not found.")
@@ -284,9 +276,9 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
 
         # Get the responding_to_request object if provided
         responding_to_request = None
-        if responding_to_request_id:
+        if responding_to_request:
             try:
-                responding_to_request = AssetRequest.objects.get(id=responding_to_request_id)
+                responding_to_request = AssetRequest.objects.get(id=responding_to_request)
             except AssetRequest.DoesNotExist:
                 raise serializers.ValidationError("Asset request not found.")
 

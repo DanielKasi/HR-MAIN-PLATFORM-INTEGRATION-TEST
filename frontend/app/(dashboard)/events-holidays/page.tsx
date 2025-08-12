@@ -10,6 +10,7 @@ import {apiGet} from "@/lib/apiRequest";
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import Link from "next/link";
 
 interface IEvent {
   id: number;
@@ -249,11 +250,18 @@ export default function EventsCalendarPage() {
             <div className="flex items-center justify-between">
               <h1 className="text-3xl font-bold text-foreground">Events Calendar</h1>
               {/* Add Event Button */}
+            
+            {/* <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Plus className="mr-2 h-4 w-4" />
+              Event
+            </Button> */}
+            <Link href="/events-holidays/events/add" passHref>
             <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
               <Plus className="mr-2 h-4 w-4" />
               Event
             </Button>
-            
+          </Link>
+          
             
             
           </div>

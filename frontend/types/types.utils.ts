@@ -2051,9 +2051,9 @@ export interface IApprovalStep {
 }
 
 export interface IAssetAllocationFormData {
-  asset_id: number;
-  allocated_to_id: number;
-  responding_to_request_id?: number;
+  asset: number;
+  allocated_to: number;
+  responding_to_request?: number;
   allocation_status?: "pending" | "allocated" | "rejected" | "cancelled";
 }
 

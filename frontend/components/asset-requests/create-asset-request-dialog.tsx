@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { X, Package, FileText } from "lucide-react";
+import { Package, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +45,17 @@ export const CreateAssetRequestDialog = ({
     notes: "",
   });
 
+  // Search state
+  const [assetSearchTerm, setAssetSearchTerm] = useState("");
+  const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
+
+  // Filtered assets based on search
+  const filteredAssets = assets.filter((asset) =>
+    asset.asset_name.toLowerCase().includes(assetSearchTerm.toLowerCase()) ||
+    asset.serial_number.toLowerCase().includes(assetSearchTerm.toLowerCase()) ||
+    (asset.category?.category_name || '').toLowerCase().includes(assetSearchTerm.toLowerCase())
+  );
+
   // Fetch available assets
   const fetchAssets = async () => {
     try {
@@ -68,6 +79,8 @@ export const CreateAssetRequestDialog = ({
         asset_id: 0,
         notes: "",
       });
+      // Reset search term when opening
+      setAssetSearchTerm("");
     }
   }, [isOpen]);
 
@@ -117,24 +130,48 @@ export const CreateAssetRequestDialog = ({
             </Label>
             <Select
               value={formData.asset_id.toString()}
-              onValueChange={(value) =>
-                setFormData({ ...formData, asset_id: parseInt(value) })
-              }
+              onValueChange={(value) => {
+                setFormData({ ...formData, asset_id: parseInt(value) });
+                setIsAssetDropdownOpen(false);
+              }}
+              open={isAssetDropdownOpen}
+              onOpenChange={setIsAssetDropdownOpen}
             >
               <SelectTrigger className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20">
                 <SelectValue placeholder="Select an asset" />
               </SelectTrigger>
               <SelectContent>
-                {assets.map((asset) => (
-                  <SelectItem key={asset.id} value={asset.id.toString()}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{asset.asset_name}</span>
-                      <span className="text-sm text-gray-500">
-                        {asset.serial_number} • {asset.category?.category_name || 'Unknown Category'}
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
+                {/* Asset Search Input */}
+                <div className="p-2 border-b border-gray-200">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search assets..."
+                      value={assetSearchTerm}
+                      onChange={(e) => setAssetSearchTerm(e.target.value)}
+                      className="pl-8 h-8 text-sm border-0 focus:ring-0 focus:border-0"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                </div>
+                
+                {/* Asset Options */}
+                {filteredAssets.length > 0 ? (
+                  filteredAssets.map((asset) => (
+                    <SelectItem key={asset.id} value={asset.id.toString()}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{asset.asset_name}</span>
+                        <span className="text-sm text-gray-500">
+                          {asset.serial_number} • {asset.category?.category_name || 'Unknown Category'}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="p-2 text-sm text-gray-500 text-center">
+                    {assetSearchTerm ? "No assets found" : "No available assets found"}
+                  </div>
+                )}
               </SelectContent>
             </Select>
             {assets.length === 0 && (
