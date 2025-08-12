@@ -203,31 +203,30 @@ const AssetDetailPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 p-4 md:p-6">
       {/* Header */}
       <div className="bg-white rounded-lg border shadow-sm">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+        <div className="p-4 md:p-6 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => router.push("/assests/assets")}
-                className="text-gray-600 hover:text-gray-900"
+                className="text-gray-600 hover:text-gray-900 w-fit"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Assets
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{asset.asset_name}</h1>
+                <h1 className="text-xl md:text-2xl font-bold text-gray-900 break-words">{asset.asset_name}</h1>
                 <p className="text-sm text-gray-600">Asset Details</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
-             
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
                     <MoreVertical className="h-4 w-4 mr-2" />
                     Actions
                   </Button>
@@ -251,34 +250,34 @@ const AssetDetailPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
         {/* Main Asset Information */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="xl:col-span-2 space-y-4 md:space-y-6">
           {/* Basic Information */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+            <CardHeader className="pb-3 md:pb-6">
+              <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
                 <Package className="h-5 w-5" />
                 <span>Basic Information</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-500">Asset Name</label>
-                  <p className="text-sm text-gray-900 mt-1">{asset.asset_name}</p>
+                  <p className="text-sm text-gray-900 mt-1 break-words">{asset.asset_name}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Serial Number</label>
-                  <p className="text-sm font-mono text-gray-900 mt-1">{asset.serial_number}</p>
+                  <p className="text-sm font-mono text-gray-900 mt-1 break-all">{asset.serial_number}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Batch Number</label>
-                  <p className="text-sm text-gray-900 mt-1">{asset.batch_number}</p>
+                  <p className="text-sm text-gray-900 mt-1 break-words">{asset.batch_number}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Category</label>
-                  <p className="text-sm text-gray-900 mt-1">
+                  <p className="text-sm text-gray-900 mt-1 break-words">
                     {asset.category?.category_name || 'Unknown'}
                   </p>
                 </div>
@@ -302,7 +301,7 @@ const AssetDetailPage = () => {
               {asset.description && (
                 <div>
                   <label className="text-sm font-medium text-gray-500">Description</label>
-                  <p className="text-sm text-gray-900 mt-1">{asset.description}</p>
+                  <p className="text-sm text-gray-900 mt-1 break-words">{asset.description}</p>
                 </div>
               )}
             </CardContent>
@@ -310,8 +309,8 @@ const AssetDetailPage = () => {
 
           {/* Assignment Information */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+            <CardHeader className="pb-3 md:pb-6">
+              <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
                 <User className="h-5 w-5" />
                 <span>Assignment Information</span>
               </CardTitle>
@@ -320,11 +319,11 @@ const AssetDetailPage = () => {
               {asset.current_holder ? (
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2">
-                    <User className="h-4 w-4 text-gray-500" />
+                    <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
                     <span className="text-sm font-medium text-gray-900">Currently Assigned To:</span>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-sm text-gray-900">
+                    <p className="text-sm text-gray-900 break-words">
                       {typeof asset.current_holder === 'object' && asset.current_holder.user && typeof asset.current_holder.user === 'object'
                         ? asset.current_holder.user.fullname
                         : 'Unknown User'}
@@ -333,7 +332,7 @@ const AssetDetailPage = () => {
                       asset.current_holder.user &&
                       typeof asset.current_holder.user === 'object' &&
                       asset.current_holder.user.email && (
-                        <p className="text-sm text-gray-600 mt-1">{asset.current_holder.user.email}</p>
+                        <p className="text-sm text-gray-600 mt-1 break-all">{asset.current_holder.user.email}</p>
                     )}
                   </div>
                 </div>
@@ -351,26 +350,25 @@ const AssetDetailPage = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
-        
+        <div className="space-y-4 md:space-y-6">
           {/* Timestamps */}
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3 md:pb-6">
               <CardTitle className="text-lg">Timestamps</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-gray-500" />
-                <div>
+                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-900">Created</p>
-                  <p className="text-xs text-gray-600">{formatDate(asset.created_at)}</p>
+                  <p className="text-xs text-gray-600 break-words">{formatDate(asset.created_at)}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-gray-500" />
-                <div>
+                <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-900">Last Updated</p>
-                  <p className="text-xs text-gray-600">{formatDate(asset.updated_at)}</p>
+                  <p className="text-xs text-gray-600 break-words">{formatDate(asset.updated_at)}</p>
                 </div>
               </div>
             </CardContent>

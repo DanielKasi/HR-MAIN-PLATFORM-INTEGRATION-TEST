@@ -135,7 +135,7 @@ class AssetRequestSerializer(serializers.ModelSerializer):
             "updated_at",
             "request_reference_code",
             "asset_request_status",
-            # "requester",
+            "requester",
         ]
 
     @transaction.atomic
