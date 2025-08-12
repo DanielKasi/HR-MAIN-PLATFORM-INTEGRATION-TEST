@@ -11,7 +11,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        mainColor: 'FF3F33',
+        mainColor: '#FF3403',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
@@ -23,7 +23,7 @@ const config: Config = {
           foreground: 'hsl(var(--popover-foreground))'
         },
         primary: {
-          DEFAULT: 'hsl(25, 95%, 53%)', // Changed to orange-500
+          DEFAULT: '#FF3403', // Changed to orange-500
           foreground: 'hsl(0, 0%, 100%)', // White for contrast
           hover: 'hsl(25, 95%, 43%)' // Slightly darker orange for hover
         },

@@ -82,7 +82,7 @@ export function TaxTable({
 
   if (taxes.length === 0) {
     return (
-      <div className="bg-white rounded-lg border shadow-sm">
+      <div className="bg-white rounded-lg ">
         <div className="p-8 text-center">
           <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
             <Calendar className="h-8 w-8 text-gray-400" />
@@ -104,7 +104,7 @@ export function TaxTable({
   }
 
   return (
-    <div className="bg-white rounded-lg border shadow-sm">
+    <div className="bg-white rounded-lg border ">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -149,7 +149,6 @@ export function TaxTable({
                 <TableCell>
                   <div>
                     <p className="font-medium text-gray-900">{tax.institution_tax.tax_name}</p>
-                    <p className="text-sm text-gray-500">Tax ID: {tax.institution_tax.id}</p>
                   </div>
                 </TableCell>
                 <TableCell>

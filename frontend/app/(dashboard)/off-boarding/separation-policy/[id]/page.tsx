@@ -343,10 +343,7 @@ export default function SeparationPolicyDetailsPage() {
               <CardTitle className="text-lg">Quick Overview</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Policy ID</span>
-                <span className="font-mono text-sm">#{policy.id}</span>
-              </div>
+              
 
               <Separator />
 

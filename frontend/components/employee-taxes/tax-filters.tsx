@@ -29,7 +29,7 @@ export function TaxFilters({
   hasActiveFilters,
 }: TaxFiltersProps) {
   return (
-    <div className="bg-white rounded-lg border shadow-sm p-6 mb-6">
+    <div className="bg-white rounded-lg p-6 mb-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
           <div className="relative flex-1 max-w-sm">
