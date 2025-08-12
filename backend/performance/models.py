@@ -1,7 +1,26 @@
 from django.db import models
 from institution.models import Institution
+from django.utils import timezone
 
-class PerformancePolicy(models.Model):
+class BaseModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        abstract = True
+    
+    def delete(self, *args, **kwargs):
+        """Soft-deletes the record by setting the deleted_at timestamp"""
+        self.deleted_at = timezone.now()
+        self.save()
+    
+    @property
+    def is_active(self):
+        return self.deleted_at is None
+
+
+class PerformancePolicy(BaseModel):
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField()
@@ -15,9 +34,6 @@ class PerformancePolicy(models.Model):
         null=True,
         blank=True,
     )
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         ordering = ['-effective_date']
