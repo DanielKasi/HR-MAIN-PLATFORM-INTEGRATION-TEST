@@ -661,8 +661,7 @@ class RoleDetailAPIView(APIView):
     )
     def delete(self, request, role_id):
         role = get_object_or_404(Role, pk=role_id)
-        role.is_active = False
-        role.save()
+        role.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -737,8 +736,7 @@ class PermissionCategoryDetailAPIView(APIView):
     )
     def delete(self, request, permission_category_id):
         permission_category = get_object_or_404(PermissionCategory, pk=permission_category_id)
-        permission_category.is_active = False
-        permission_category.save()
+        permission_category.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -810,8 +808,7 @@ class PermissionDetailAPIView(APIView):
     )
     def delete(self, request, permission_id):
         permission = get_object_or_404(Permission, pk=permission_id)
-        permission.is_active = False
-        permission.save()
+        permission.delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
