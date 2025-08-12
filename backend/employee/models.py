@@ -29,33 +29,76 @@ import io
 from io import BytesIO
 from difflib import Differ, SequenceMatcher
 import re
+from django.db.models import UniqueConstraint, Q
 
 
-class EmployeeType(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True, null=True)
-    code = models.CharField(max_length=10, unique=True, blank=True, null=True)
-
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+class BaseModel(models.Model):
+    # This field tracks the date and time a record was soft-deleted.
+    # A null value means the record is active.
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        abstract = True
+
+    def delete(self, *args, **kwargs):
+        """
+        Soft-deletes the record by setting the deleted_at timestamp.
+        """
+        self.deleted_at = timezone.now()
+        self.is_active = False
+        self.save(update_fields=["deleted_at", "is_active"])
+
+
+class EmployeeType(BaseModel):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    code = models.CharField(max_length=10, blank=True, null=True)
 
     def __str__(self):
         return self.name
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=["name"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_employee_type_name"
+            ),
+            UniqueConstraint(
+                fields=["code"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_employee_type_code"
+            )
+        ]
 
 
-class WorkType(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+class WorkType(BaseModel):
+    name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
-    code = models.CharField(max_length=10, unique=True, blank=True, null=True)
-
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    code = models.CharField(max_length=10, blank=True, null=True)
 
     def __str__(self):
         return self.name
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=["name"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_work_type_name"
+            ),
+            UniqueConstraint(
+                fields=["code"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_work_type_code"
+            )
+        ]
 
 
-class Employee(models.Model):
+class Employee(BaseModel):
     """
     Employee model to store employee details in the system.
     """
@@ -75,6 +118,7 @@ class Employee(models.Model):
     user = models.OneToOneField(
         "users.CustomUser",
         on_delete=models.PROTECT,
+        unique=True,
         blank=True,
         null=True,
         related_name="employees",
@@ -82,7 +126,7 @@ class Employee(models.Model):
     employee_id = models.CharField(
         max_length=10, unique=False, editable=False, blank=True
     )
-    email = models.EmailField(unique=True, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     position = models.ForeignKey(
         "recruitment.JobPosition",
@@ -129,14 +173,11 @@ class Employee(models.Model):
     date_of_joining = models.DateField(default=timezone.now)
     address = models.TextField(blank=True, null=True)
     country = models.CharField(max_length=50, blank=True, null=True)
-    nin = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    nin = models.CharField(max_length=20, blank=True, null=True)
     nssf_no = models.CharField(max_length=20, blank=True, null=True)
     tin = models.CharField(max_length=12, blank=True, null=True)
     bank = models.CharField(max_length=50, blank=True, null=True)
     bank_account_number = models.CharField(max_length=20, blank=True, null=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
     experience = models.PositiveIntegerField(default=0)
     qualifications = models.TextField(blank=True, null=True)
     skills = models.TextField(blank=True, null=True)
@@ -156,6 +197,27 @@ class Employee(models.Model):
 
     def __str__(self):
         return f"{self.user.fullname}  - {self.position}"
+    
+    class Meta:
+        constraints = [
+            # A OneToOneField is essentially a ForeignKey with unique=True
+            # To make it conditional, we use a UniqueConstraint.
+            UniqueConstraint(
+                fields=["user"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_employee_user",
+            ),
+            UniqueConstraint(
+                fields=["email"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_employee_email",
+            ),
+            UniqueConstraint(
+                fields=["nin"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_employee_nin",
+            ),
+        ]
 
     def clean(self):
         """Custom validation for the Employee model"""
@@ -504,7 +566,7 @@ class EmployeeWorkingDays(models.Model):
         return f"{self.employee.user.fullname} - Custom Working Days"
 
 
-class EmployeeAttendance(models.Model):
+class EmployeeAttendance(BaseModel):
     employee = models.ForeignKey(
         Employee, on_delete=models.CASCADE, related_name="attendance_records"
     )
@@ -555,7 +617,7 @@ class EmployeeAttendance(models.Model):
         super().save(*args, **kwargs)
 
 
-class EmployeeContract(models.Model):
+class EmployeeContract(BaseModel):
     STATUS_CHOICES = (
         ("MATCHED_NEEDS_REVIEW", "Matched, Needs Review"),
         ("NOT_MATCHED_NEEDS_REVIEW", "Not Matched, Needs Review"),
@@ -576,9 +638,8 @@ class EmployeeContract(models.Model):
         null=True,
         blank=True,
     )
-    is_active = models.BooleanField(default=True)
     contract_reference = models.CharField(
-        max_length=20, unique=True, blank=True, null=True
+        max_length=20, blank=True, null=True
     )
     original_contract = models.FileField(
         upload_to="contracts/original/", blank=True, null=True
@@ -593,11 +654,18 @@ class EmployeeContract(models.Model):
         blank=True,
     )
     differences = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Contract {self.contract_reference} "
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=["contract_reference"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_contract_reference"
+            )
+        ]
 
     def generate_contract_reference(self):
         prefix = "CON"

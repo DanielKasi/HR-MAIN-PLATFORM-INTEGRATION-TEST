@@ -17,7 +17,7 @@ from utilities.password_validator import validate_password_strength
 class PermissionCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = PermissionCategory
-        fields = ["id", "permission_category_name", "permission_category_description"]
+        fields = ["id", "permission_category_name", "permission_category_description", "is_active"]
 
 
 class PermissionSerializer(serializers.ModelSerializer):
@@ -31,6 +31,7 @@ class PermissionSerializer(serializers.ModelSerializer):
             "permission_code",
             "permission_description",
             "category",
+            "is_active"
         ]
 
 
@@ -49,6 +50,7 @@ class RoleSerializer(serializers.ModelSerializer):
             "permissions",
             "institution",
             "permissions_details",
+            "is_active"
         ]
 
         extra_kwargs = {"institution": {"required": False}}
