@@ -117,7 +117,7 @@ export const EditAssetAllocationDialog = ({
             <Label className="text-sm font-medium text-gray-700">Allocated To</Label>
             <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
               <User className="h-4 w-4 text-gray-500" />
-              <span>{allocation.allocated_to?.fullname}</span>
+              <span>{allocation.allocated_to?.user.fullname}</span>
             </div>
           </div>
 
@@ -126,7 +126,7 @@ export const EditAssetAllocationDialog = ({
             <Label className="text-sm font-medium text-gray-700">Allocated By</Label>
             <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
               <User className="h-4 w-4 text-gray-500" />
-              <span>{allocation.allocated_by?.fullname}</span>
+              <span>{allocation.allocated_by?.user.fullname}</span>
             </div>
           </div>
 
@@ -150,7 +150,7 @@ export const EditAssetAllocationDialog = ({
             </Label>
             <Select
               value={formData.allocation_status || ""}
-              onValueChange={(value) =>
+              onValueChange={(value: string) =>
                 setFormData({ ...formData, allocation_status: value as any })
               }
             >

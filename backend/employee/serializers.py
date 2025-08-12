@@ -366,6 +366,7 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
             "signed_contract",
             "created_at",
             "updated_at",
+            "deleted_at",
             "status",
             "differences",
         ]

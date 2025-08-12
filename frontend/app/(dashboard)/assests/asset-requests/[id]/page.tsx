@@ -110,6 +110,9 @@ const AssetRequestDetailPage = () => {
   const [approvalComments, setApprovalComments] = useState<{ [key: number]: string }>({});
   const [showCommentInput, setShowCommentInput] = useState<{ [key: number]: boolean }>({});
 
+
+  console.log("requests", request)
+
   const requestId = params.id as string;
 
   // Fetch request details
@@ -155,7 +158,7 @@ const AssetRequestDetailPage = () => {
     if (!request) return;
     
     try {
-      await assetsAPI.approveAssetRequest(request.id, "approve");
+      await assetsAPI.approveAssetRequest(request.id, "completed");
       await fetchRequestDetails();
       toast.success("Request approved successfully");
     } catch (error: any) {
@@ -169,7 +172,7 @@ const AssetRequestDetailPage = () => {
     if (!request) return;
     
     try {
-      await assetsAPI.approveAssetRequest(request.id, "reject");
+      await assetsAPI.approveAssetRequest(request.id, "rejected");
       await fetchRequestDetails(); // Refresh to get updated status
       toast.success("Request rejected successfully");
     } catch (error: any) {
@@ -179,14 +182,14 @@ const AssetRequestDetailPage = () => {
     }
   };
 
-  const handleApproval = async (taskId: number, action: 'approve' | 'reject') => {
+  const handleApproval = async (taskId: number, action: 'completed' | 'rejected') => {
     if (!request) return;
     
     const comment = approvalComments[taskId] || "";
     
     try {
       setIsApproving(true);
-      await assetsAPI.approveAssetRequest(request.id, action, comment);
+      await assetsAPI.approveAssetRequest(taskId, action, comment);
       
       // Refresh the request details to get updated workflow status
       await fetchRequestDetails();
@@ -262,30 +265,30 @@ const AssetRequestDetailPage = () => {
   const currentStep = getCurrentStep();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 p-4 md:p-6">
       {/* Header */}
       <div className="bg-white rounded-lg border shadow-sm">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+        <div className="p-4 md:p-6 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => router.push("/assests/asset-requests")}
-                className="text-gray-600 hover:text-gray-900"
+                className="text-gray-600 hover:text-gray-900 w-fit"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Requests
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Asset Request</h1>
-                <p className="text-sm text-gray-600">Reference: {request.request_reference_code}</p>
+                <h1 className="text-xl md:text-2xl font-bold text-gray-900">Asset Request</h1>
+                <p className="text-sm text-gray-600 break-all">Reference: {request.request_reference_code}</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
                     <MoreVertical className="h-4 w-4 mr-2" />
                     Actions
                   </Button>
@@ -321,22 +324,22 @@ const AssetRequestDetailPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
         {/* Main Request Information */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="xl:col-span-2 space-y-4 md:space-y-6">
           {/* Request Information */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+            <CardHeader className="pb-3 md:pb-6">
+              <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
                 <Package className="h-5 w-5" />
                 <span>Request Information</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-500">Reference Code</label>
-                  <p className="text-sm font-mono text-gray-900 mt-1">{request.request_reference_code}</p>
+                  <p className="text-sm font-mono text-gray-900 mt-1 break-all">{request.request_reference_code}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Status</label>
@@ -348,15 +351,15 @@ const AssetRequestDetailPage = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Asset</label>
-                  <p className="text-sm text-gray-900 mt-1">{request.asset.asset_name}</p>
+                  <p className="text-sm text-gray-900 mt-1 break-words">{request.asset.asset_name}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Asset Serial</label>
-                  <p className="text-sm font-mono text-gray-900 mt-1">{request.asset.serial_number}</p>
+                  <p className="text-sm font-mono text-gray-900 mt-1 break-all">{request.asset.serial_number}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Asset Category</label>
-                  <p className="text-sm text-gray-900 mt-1">
+                  <p className="text-sm text-gray-900 mt-1 break-words">
                     {request.asset.category?.category_name || 'Unknown'}
                   </p>
                 </div>
@@ -372,7 +375,7 @@ const AssetRequestDetailPage = () => {
               {request.notes && (
                 <div>
                   <label className="text-sm font-medium text-gray-500">Notes</label>
-                  <p className="text-sm text-gray-900 mt-1">{request.notes}</p>
+                  <p className="text-sm text-gray-900 mt-1 break-words">{request.notes}</p>
                 </div>
               )}
             </CardContent>
@@ -380,8 +383,8 @@ const AssetRequestDetailPage = () => {
 
           {/* Requester Information */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+            <CardHeader className="pb-3 md:pb-6">
+              <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
                 <User className="h-5 w-5" />
                 <span>Requester Information</span>
               </CardTitle>
@@ -389,15 +392,15 @@ const AssetRequestDetailPage = () => {
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
-                  <User className="h-4 w-4 text-gray-500" />
+                  <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
                   <span className="text-sm font-medium text-gray-900">Requested By:</span>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-sm text-gray-900">
-                    {request.requester?.fullname || 'Unknown User'}
+                  <p className="text-sm text-gray-900 break-words">
+                    {request.requester?.user.fullname || 'Unknown User'}
                   </p>
                   {request.requester?.email && (
-                    <p className="text-sm text-gray-600 mt-1">{request.requester.email}</p>
+                    <p className="text-sm text-gray-600 mt-1 break-all">{request.requester.email}</p>
                   )}
                 </div>
               </div>
@@ -406,13 +409,13 @@ const AssetRequestDetailPage = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {/* Approval Workflow */}
           {/* @ts-ignore - tasks property may exist at runtime */}
           {request.tasks && request.tasks.length > 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+              <CardHeader className="pb-3 md:pb-6">
+                <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
                   <CheckCircle className="h-5 w-5 text-green-500" />
                   <span>Approval Workflow</span>
                 </CardTitle>
@@ -438,8 +441,8 @@ const AssetRequestDetailPage = () => {
                   {/* Current Step Indicator */}
                   {currentStep && (
                     <div className="mt-2 flex items-center gap-2 text-xs text-blue-600">
-                      <AlertCircle className="h-3 w-3" />
-                      <span>Waiting for: <strong>{currentStep.step.step_name}</strong></span>
+                      <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                      <span className="break-words">Waiting for: <strong>{currentStep.step.step_name}</strong></span>
                     </div>
                   )}
                 </div>
@@ -477,9 +480,9 @@ const AssetRequestDetailPage = () => {
                         </div>
                         
                         {/* Task Header */}
-                        <div className="flex items-center justify-between mb-1 ml-4">
-                          <span className="text-sm font-medium text-gray-900">{task.step.step_name}</span>
-                          <Badge className={`text-xs ${
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 ml-4 space-y-1 sm:space-y-0">
+                          <span className="text-sm font-medium text-gray-900 break-words">{task.step.step_name}</span>
+                          <Badge className={`text-xs w-fit ${
                             task.status === 'completed' ? 'bg-green-100 text-green-800 border-green-200' :
                             task.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
                             task.status === 'rejected' ? 'bg-red-100 text-red-800 border-red-200' :
@@ -508,9 +511,9 @@ const AssetRequestDetailPage = () => {
                         {/* Approval Actions */}
                         {task.status === 'pending' && (
                           <div className="ml-4 pt-2 border-t border-gray-200">
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2">
                               <Button
-                                onClick={() => handleApproval(task.id, 'approve')}
+                                onClick={() => handleApproval(task.id, 'completed')}
                                 disabled={isApproving}
                                 size="sm"
                                 className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs"
@@ -528,7 +531,7 @@ const AssetRequestDetailPage = () => {
                                 )}
                               </Button>
                               <Button
-                                onClick={() => handleApproval(task.id, 'reject')}
+                                onClick={() => handleApproval(task.id, 'rejected')}
                                 disabled={isApproving}
                                 size="sm"
                                 variant="destructive"
@@ -586,8 +589,8 @@ const AssetRequestDetailPage = () => {
 
           {/* Quick Actions */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+            <CardHeader className="pb-3 md:pb-6">
+              <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
                 <Activity className="h-5 w-5 text-orange-500" />
                 <span>Quick Actions</span>
               </CardTitle>
@@ -634,22 +637,22 @@ const AssetRequestDetailPage = () => {
 
           {/* Timestamps */}
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3 md:pb-6">
               <CardTitle className="text-lg">Timestamps</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-gray-500" />
-                <div>
+                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-900">Created</p>
-                  <p className="text-xs text-gray-600">{formatDate(request.created_at)}</p>
+                  <p className="text-xs text-gray-600 break-words">{formatDate(request.created_at)}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-gray-500" />
-                <div>
+                <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-900">Last Updated</p>
-                  <p className="text-xs text-gray-600">{formatDate(request.updated_at)}</p>
+                  <p className="text-xs text-gray-600 break-words">{formatDate(request.updated_at)}</p>
                 </div>
               </div>
             </CardContent>

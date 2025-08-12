@@ -1,15 +1,34 @@
+import string
+import random
 from django.db import models
+from django.utils.crypto import get_random_string
 from .utils.history import create_asset_history
 from django.db import transaction
+from django.utils import timezone
+from django.db.models import UniqueConstraint, Q
 
 
 class BaseModel(models.Model):
-    is_active = models.BooleanField(default=True)
+    #is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # The deleted_at field tracks the date and time a record was soft deleted
+    # A null value means the record is active
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         abstract = True
+    
+    def delete(self, *args, **kwargs):
+        """Soft deletes a record by setting the deleted_at timestamp"""
+        self.deleted_at = timezone.now()
+        self.is_active = False
+        self.save(update_fields=["deleted_at", "is_active"])
+
+
+
+
 
 
 class AssetCategory(BaseModel):
@@ -20,9 +39,95 @@ class AssetCategory(BaseModel):
     )
     category_name = models.CharField(max_length=100)
     category_description = models.TextField(blank=True, null=True)
+    code = models.CharField(max_length=5, unique=True, editable=False)
 
     def __str__(self):
         return self.category_name
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=["institution", "category_name"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_category_per_institution"
+            )
+        ]
+
+    def save(self, *args, **kwargs):
+        # Auto-generate a 5-character code only if not already set
+        if not self.code:
+            self.code = self.generate_unique_code()
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def generate_unique_code():
+        """Generates a unique 5-character alphanumeric code."""
+        chars = string.ascii_uppercase + string.digits
+        while True:
+            code = ''.join(random.choices(chars, k=5))
+            if not AssetCategory.objects.filter(code=code).exists():
+                return code
+
+    @property
+    def total_assets(self):
+        """Returns the total number of assets in this category"""
+        return self.assets.count()
+
+    @property
+    def total_available_assets(self):
+        """Returns the total number of available assets in this category"""
+        return self.assets.filter(status='available').count()
+
+    @property
+    def total_allocated_assets(self):
+        """Returns the total number of allocated assets in this category"""
+        return self.assets.filter(status='allocated').count()
+
+    @property
+    def assets_by_status(self):
+        """Returns a dictionary with asset counts by status"""
+        from django.db.models import Count
+        status_counts = self.assets.values('status').annotate(count=Count('id'))
+        return {item['status']: item['count'] for item in status_counts}
+
+
+    def save(self, *args, **kwargs):
+        # Auto-generate a 5-character code only if not already set
+        if not self.code:
+            self.code = self.generate_unique_code()
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def generate_unique_code():
+        """Generates a unique 5-character alphanumeric code."""
+        chars = string.ascii_uppercase + string.digits
+        while True:
+            code = ''.join(random.choices(chars, k=5))
+            if not AssetCategory.objects.filter(code=code).exists():
+                return code
+
+    @property
+    def total_assets(self):
+        """Returns the total number of assets in this category"""
+        return self.assets.count()
+
+    @property
+    def total_available_assets(self):
+        """Returns the total number of available assets in this category"""
+        return self.assets.filter(status='available').count()
+
+    @property
+    def total_allocated_assets(self):
+        """Returns the total number of allocated assets in this category"""
+        return self.assets.filter(status='allocated').count()
+
+    @property
+    def assets_by_status(self):
+        """Returns a dictionary with asset counts by status"""
+        from django.db.models import Count
+        status_counts = self.assets.values('status').annotate(count=Count('id'))
+        return {item['status']: item['count'] for item in status_counts}
+
 
 
 class Asset(BaseModel):
@@ -39,7 +144,7 @@ class Asset(BaseModel):
     )
     asset_name = models.CharField(max_length=100, blank=False)
     batch_number = models.CharField(max_length=50, blank=True)
-    serial_number = models.CharField(max_length=50, blank=False, unique=True)
+    serial_number = models.CharField(max_length=50, blank=False)
     category = models.ForeignKey(
         AssetCategory,
         on_delete=models.CASCADE,
@@ -70,6 +175,7 @@ class Asset(BaseModel):
         constraints = [
             models.UniqueConstraint(
                 fields=["institution", "serial_number", "batch_number"],
+                condition=Q(deleted_at__isnull=True),
                 name="unique_asset_serial_batch",
             )
         ]
@@ -115,7 +221,7 @@ class AssetRequest(BaseModel):
         related_name="asset_requests",
     )
 
-    request_reference_code = models.CharField(max_length=100, unique=True)
+    request_reference_code = models.CharField(max_length=100)
 
     asset_request_status = models.CharField(
         max_length=20,
@@ -127,14 +233,22 @@ class AssetRequest(BaseModel):
 
     def __str__(self):
         return f"Request for {self.asset.asset_name} by {self.requester.user.fullname}"
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=["request_reference_code"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_request_reference_code"
+            )
+        ]
 
     def save(self, *args, **kwargs):
         is_new = self._state.adding
         super().save(*args, **kwargs)
 
-        if is_new:
-            request_code = f"ASSET-REQ-{self.asset.id:05d}-{self.requester.id:05d}"
-            self.request_reference_code = request_code
+        if is_new and not self.request_reference_code:
+            self.request_reference_code = f"ASSET-REQ-{self.pk:05d}-{self.asset.id:05d}-{self.requester.id:05d}"
             super().save(update_fields=["request_reference_code"])
 
     @transaction.atomic
@@ -227,18 +341,26 @@ class AssetAllocation(BaseModel):
         default="pending",
     )
 
-    alloc_code = models.CharField(max_length=100, unique=True, blank=True)
+    alloc_code = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
         return f"Allocation of {self.asset.asset_name} to {self.allocated_to.user.fullname}"
+    
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=["alloc_code"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_alloc_code"
+            )
+        ]
 
     def save(self, *args, **kwargs):
         is_new = self._state.adding
         super().save(*args, **kwargs)
 
         if is_new:
-            alloc_code = f"ALLOC-{self.asset.id:05d}-{self.allocated_to.id:05d}"
-            self.alloc_code = alloc_code
+            self.alloc_code = f"ALLOC-{self.pk:05d}-{self.asset.id:05d}-{self.allocated_to.id:05d}"
             super().save(update_fields=["alloc_code"])
 
         if self.pk and self.allocation_status == "allocated":

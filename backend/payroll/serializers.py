@@ -309,7 +309,7 @@ class EmployeeTaxSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         rep["employee"] = EmployeeSerializer(instance.employee).data
-        rep["institution_tax"] = InstitutionTaxSerializer(instance.institution_tax).dat
+        rep["institution_tax"] = InstitutionTaxSerializer(instance.institution_tax).data
         return rep        
 
     def validate(self, data):

@@ -814,7 +814,7 @@ class EmployeeDeleteAPIView(APIView):
             employee = Employee.objects.get(
                 id=employee_id, department__institution_id=institution_id
             )
-            employee.delete()
+            employee.delete() # Custom delete method to handle soft delete
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Employee.DoesNotExist:
             return Response(
@@ -1416,7 +1416,7 @@ class EmployeeTypeDetailAPIView(APIView):
     @extend_schema(description="Delete an employee type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.delete()
+        obj.delete() #Custom delete method that handles soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1474,7 +1474,7 @@ class WorkTypeDetailAPIView(APIView):
     @extend_schema(description="Delete a work type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.delete()
+        obj.delete() # Custom delete method that handles soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1533,7 +1533,7 @@ class EmployeeTypeDetailAPIView(APIView):
     @extend_schema(description="Delete an employee type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.delete()
+        obj.delete() #Custom method to handle soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1590,7 +1590,7 @@ class WorkTypeDetailAPIView(APIView):
     @extend_schema(description="Delete a work type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.delete()
+        obj.delete() #Custom delete method to handle soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1662,7 +1662,7 @@ class EmployeeContractDetailAPIView(APIView):
     )
     def delete(self, request, pk):
         contract = self.get_object(pk)
-        contract.delete()
+        contract.delete() #Custom delete method to handle soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1732,6 +1732,27 @@ class EmployeeContractApprovalAPIView(APIView):
                 contract.employee = employee
                 contract.applicant = None
                 contract.save()
+
+                context = {
+                    "employee_name": contract.applicant.applicant_name,
+                    "position": contract.applicant.job_position_advert.job_position,
+                    "department": contract.applicant.job_position_advert.job_position.department,
+                    "date_of_joining": timezone.now().date(),
+                    "email": contract.applicant.applicant_email,
+                    "phone_number": contract.applicant.applicant_phone,
+                }
+
+                html_message = render_to_string("emails/onboarding_email.html", context)
+                plain_message = render_to_string("emails/onboarding_email.txt", context)
+
+                send_mail(
+                    subject="Welcome to the Team!",
+                    message=plain_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[self.application.applicant_email],
+                    html_message=html_message,
+                    fail_silently=False,
+                )
 
             except ValidationError as e:
                 return Response(

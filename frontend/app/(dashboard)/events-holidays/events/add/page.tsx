@@ -240,7 +240,7 @@ export default function AddEventPage() {
                         <Label className="text-base font-medium">Target Audience *</Label>
                         <Select
                           value={formData.target_audience}
-                          onValueChange={(value) => handleInputChange("target_audience", value)}
+                          onValueChange={(value: string) => handleInputChange("target_audience", value)}
                         >
                           <SelectTrigger className="h-12 text-base border-slate-200 focus:border-blue-500">
                             <SelectValue placeholder="Select target audience" />
@@ -279,7 +279,7 @@ export default function AddEventPage() {
                           <Label className="text-base font-medium">Select Department</Label>
                           <Select
                             value={formData.department}
-                            onValueChange={(value) => handleInputChange("department", value)}
+                            onValueChange={(value: string) => handleInputChange("department", value)}
                           >
                             <SelectTrigger className="h-12 text-base border-slate-200 focus:border-blue-500">
                               <SelectValue placeholder="Choose department" />
@@ -307,7 +307,7 @@ export default function AddEventPage() {
                                 <Checkbox
                                   id={`employee-${employee.id}`}
                                   checked={formData.specific_employees.includes(employee.id)}
-                                  onCheckedChange={(checked) => {
+                                  onCheckedChange={(checked: boolean) => {
                                     if (checked) {
                                       handleInputChange("specific_employees", [
                                         ...formData.specific_employees,
@@ -394,7 +394,7 @@ export default function AddEventPage() {
                         <Label className="text-base font-medium">Event Frequency *</Label>
                         <Select
                           value={formData.frequency}
-                          onValueChange={(value) => handleInputChange("frequency", value)}
+                          onValueChange={(value: string) => handleInputChange("frequency", value)}
                         >
                           <SelectTrigger className="h-12 text-base border-slate-200 focus:border-blue-500">
                             <SelectValue placeholder="Select frequency" />

@@ -8,50 +8,49 @@ import { useSelector } from "react-redux"
 import { Card, CardHeader } from "@/components/ui/card"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import {
-  getEmployeeAllowances,
-  deleteEmployeeAllowance,
+  taxAPI,
   getAllEmployees,
-  getAllowanceTypes,
 } from "@/lib/utils"
-import type { IEmployeeAllowance, IEmployee, IAllowanceType } from "@/types/types.utils"
+import type { IEmployeeTax, IEmployee, ITax } from "@/types/types.utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
-import { EmployeeAllowanceFormDialog } from "@/components/employee-allowances/employee-allowance-form-dialog"
-import { AllowanceStatsCards } from "@/components/employee-allowances/allowance-stats-cards"
-import { AllowanceFilters } from "@/components/employee-allowances/allowance-filters"
-import { AllowanceExportMenu } from "@/components/employee-allowances/allowance-export-menu"
-import { AllowanceTable } from "@/components/employee-allowances/allowance-table"
+import { EmployeeTaxFormDialog } from "@/components/employee-taxes/employee-tax-form-dialog"
+import { TaxStatsCards } from "@/components/employee-taxes/tax-stats-cards"
+import { TaxFilters } from "@/components/employee-taxes/tax-filters"
+import { TaxExportMenu } from "@/components/employee-taxes/tax-export-menu"
+import { TaxTable } from "@/components/employee-taxes/tax-table"
 
 
-export default function EmployeeAllowancesPage() {
-  const [allowances, setAllowances] = useState<IEmployeeAllowance[]>([])
+export default function EmployeeTaxesPage() {
+  const [taxes, setTaxes] = useState<IEmployeeTax[]>([])
   const [employees, setEmployees] = useState<IEmployee[]>([])
-  const [allowanceTypes, setAllowanceTypes] = useState<IAllowanceType[]>([])
+  const [taxTypes, setTaxTypes] = useState<ITax[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingAllowance, setEditingAllowance] = useState<IEmployeeAllowance | null>(null)
+  const [editingTax, setEditingTax] = useState<IEmployeeTax | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
-  const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all")
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "expired" | "upcoming">("all")
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
 
   useEffect(() => {
-    const fetchAllowanceTypes = async () => {
+    const fetchTaxTypes = async () => {
       if (!selectedInstitution?.id) {
         return
       }
 
       try {
-        const types = await getAllowanceTypes(selectedInstitution.id)
-          setAllowanceTypes(types)
+        const types = await taxAPI.getAll()
+        setTaxTypes(types || [])
       } catch (error) {
-        setAllowanceTypes([])
-        toast.error("Failed to load allowance types")
+        setTaxTypes([])
+        toast.error("Failed to load tax types")
       }
     }
 
-    fetchAllowanceTypes()
+    fetchTaxTypes()
   }, [selectedInstitution?.id])
 
   useEffect(() => {
@@ -77,92 +76,91 @@ export default function EmployeeAllowancesPage() {
   }
 
   useEffect(() => {
-    const fetchAllowances = async () => {
+    const fetchTaxes = async () => {
       if (!selectedInstitution) {
         return
       }
 
       try {
-        const allowancesData = await getEmployeeAllowances(selectedInstitution.id)
-        setAllowances(allowancesData)
+        const taxesData = await taxAPI.getAllEmployeeTaxes({})
+        setTaxes((taxesData.results as unknown as IEmployeeTax[]) || [])
       } catch (error) {
-        setAllowances([])
-        toast.error("Failed to load allowances")
+        setTaxes([])
+        toast.error("Failed to load employee taxes")
       }
     }
 
-    fetchAllowances()
+    fetchTaxes()
   }, [selectedInstitution])
 
-  const getCalculatedAmount = (allowance: IEmployeeAllowance): number => {
-    if (allowance.calculation_method === "percentage" && allowance.employee.salary) {
-      return (Number(allowance.employee.salary || 0) * Number.parseFloat(allowance.percentage)) / 100
-    }
-    return Number.parseFloat(allowance.amount) || 0
-  }
-
-  const handleFormSuccess = (allowance: any, isEdit: boolean) => {
+  const handleFormSuccess = (tax: IEmployeeTax, isEdit: boolean) => {
     if (isEdit) {
-      setAllowances(prev => prev.map(a => a.id === allowance.id ? allowance : a))
+      setTaxes(prev => prev.map(t => t.id === tax.id ? tax : t))
     } else {
-      setAllowances(prev => [...prev, allowance])
+      setTaxes(prev => [...prev, tax])
     }
-    setEditingAllowance(null)
+    setEditingTax(null)
   }
 
-  const handleAllowanceTypeCreated = (newType: IAllowanceType) => {
-    setAllowanceTypes(prev => [...prev, newType])
+  const handleTaxTypeCreated = (newType: ITax) => {
+    setTaxTypes(prev => [...prev, newType])
   }
 
-  const handleEdit = (allowance: IEmployeeAllowance) => {
-    setEditingAllowance(allowance)
+  const handleEdit = (tax: IEmployeeTax) => {
+    setEditingTax(tax)
     setIsDialogOpen(true)
   }
 
   const handleDelete = async (id: number) => {
     try {
-      const success = await deleteEmployeeAllowance(id)
+      const success = await taxAPI.deleteEmployeeTax(id)
       if (success) {
-        setAllowances(prev => prev.filter(a => a.id !== id))
-        toast.success("Allowance deleted successfully")
+        setTaxes(prev => prev.filter(t => t.id !== id))
+        toast.success("Employee tax deleted successfully")
       } else {
-        toast.error("Failed to delete allowance")
+        toast.error("Failed to delete employee tax")
       }
     } catch (error: any) {
-      toast.error(error.message || "An error occurred while deleting the allowance")
+      toast.error(error.message || "An error occurred while deleting the employee tax")
     }
   }
 
-  const openNewAllowanceDialog = () => {
-    setEditingAllowance(null)
+  const openNewTaxDialog = () => {
+    setEditingTax(null)
     setIsDialogOpen(true)
   }
 
-  const filteredAllowances = allowances.filter((allowance) => {
+  const filteredTaxes = taxes.filter((tax) => {
     // Search filter
     const matchesSearch =
-      allowance.employee.user?.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      allowance.allowance_type.name.toLowerCase().includes(searchTerm.toLowerCase())
+      tax.employee.user?.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tax.institution_tax.tax_name.toLowerCase().includes(searchTerm.toLowerCase())
 
     // Status filter
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "active" && allowance.is_active) ||
-      (statusFilter === "inactive" && !allowance.is_active)
+    const now = new Date()
+    const effectiveFrom = new Date(tax.effective_from)
+    const effectiveTo = tax.effective_to ? new Date(tax.effective_to) : null
+    
+    let matchesStatus = true
+    if (statusFilter === "active") {
+      matchesStatus = effectiveFrom <= now && (!effectiveTo || effectiveTo >= now)
+    } else if (statusFilter === "inactive") {
+      matchesStatus = effectiveFrom > now
+    } else if (statusFilter === "expired") {
+      matchesStatus = effectiveTo !== null && effectiveTo < now
+    } else if (statusFilter === "upcoming") {
+      matchesStatus = effectiveFrom > now
+    }
 
-    // Method filter
-    const matchesMethod = methodFilter === "all" || allowance.calculation_method === methodFilter
-
-    return matchesSearch && matchesStatus && matchesMethod
+    return matchesSearch && matchesStatus
   })
 
   const clearAllFilters = () => {
     setSearchTerm("")
     setStatusFilter("all")
-    setMethodFilter("all")
   }
 
-  const hasActiveFilters = methodFilter !== "all" || statusFilter !== "all"
+  const hasActiveFilters = statusFilter !== "all"
 
   if (!selectedInstitution || !selectedInstitution.id) {
     return (
@@ -205,64 +203,59 @@ export default function EmployeeAllowancesPage() {
         <div className="mb-8 px-2">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Allowances</h1>
-              <p className="text-gray-600">Manage employee-specific allowances and benefits</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Tax Configurations</h1>
+              <p className="text-gray-600">Manage employee-specific tax configurations and settings</p>
             </div>
             <div className="flex gap-3">
-              <AllowanceExportMenu
-                allowances={filteredAllowances}
-                getCalculatedAmount={getCalculatedAmount}
-                disabled={filteredAllowances.length === 0}
+              <TaxExportMenu
+                taxes={filteredTaxes}
+                disabled={filteredTaxes.length === 0}
               />
 
               <Button
-                onClick={openNewAllowanceDialog}
+                onClick={openNewTaxDialog}
                 disabled={!selectedInstitution.id}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Add Allowance
+                Add Tax Configuration
               </Button>
             </div>
           </div>
 
           {/* Stats Cards */}
-          <AllowanceStatsCards
-            allowances={filteredAllowances}
-            getCalculatedAmount={getCalculatedAmount}
+          <TaxStatsCards
+            taxes={filteredTaxes}
           />
         </div>
 
         {/* Search and Filters */}
-        <AllowanceFilters
+        <TaxFilters
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
-          methodFilter={methodFilter}
-          onMethodFilterChange={setMethodFilter}
           onClearFilters={clearAllFilters}
           hasActiveFilters={hasActiveFilters}
         />
 
         {/* Results Table */}
-        <AllowanceTable
-          allowances={filteredAllowances}
-          totalAllowances={allowances.length}
-          getCalculatedAmount={getCalculatedAmount}
+        <TaxTable
+          taxes={filteredTaxes}
+          totalTaxes={taxes.length}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onClearFilters={clearAllFilters}
         />
 
         {/* Form Dialog */}
-        <EmployeeAllowanceFormDialog
+        <EmployeeTaxFormDialog
           isOpen={isDialogOpen}
           onOpenChange={setIsDialogOpen}
-          editingAllowance={editingAllowance}
-          allowanceTypes={allowanceTypes}
+          editingTax={editingTax}
+          taxes={taxTypes}
           institutionId={selectedInstitution.id}
           onSuccess={handleFormSuccess}
-          onAllowanceTypeCreated={handleAllowanceTypeCreated}
+          onTaxCreated={handleTaxTypeCreated}
         />
       </div>
     </div>

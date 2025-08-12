@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { useSelector } from "react-redux"
+import { useSelector, useDispatch } from "react-redux"
 import { Plus, Trash2, ArrowLeft, CalendarDays, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 
 import { selectSelectedInstitution, selectSelectedBranch, selectUser } from "@/store/auth/selectors"
+import { selectJobAdvertForm } from "@/store/miscellaneous/selectors"
+import { saveJobAdvertForm, clearJobAdvertForm } from "@/store/miscellaneous/actions"
 import {
   getJobPositionAdverts,
   updateJobPositionAdvert,
@@ -25,6 +27,7 @@ import type {
   JobAdvertStatus,
   PaginatedResponse,
   JobPositionAdvertFormData,
+  JobAdvertCompleteFormData,
   IJobPosition,
   JobAdvertTypes,
   IEmployee,
@@ -146,8 +149,50 @@ export default function JobAdvertsPage() {
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const selectedBranch = useSelector(selectSelectedBranch)
+  const dispatch = useDispatch()
+  const savedJobAdvertForm = useSelector(selectJobAdvertForm)
 
   useDocumentTitle("JOB OPENINGS")
+
+  // Load saved form data from Redux on component mount
+  useEffect(() => {
+    if (savedJobAdvertForm) {
+      setFormData({
+        job_position: savedJobAdvertForm.job_position,
+        expiry_date: savedJobAdvertForm.expiry_date,
+        number_of_employees_expected: savedJobAdvertForm.number_of_employees_expected,
+        extra_information: savedJobAdvertForm.extra_information,
+        advert_type: savedJobAdvertForm.advert_type,
+        level: savedJobAdvertForm.level,
+        interviewers: savedJobAdvertForm.interviewers,
+      })
+      
+      // Restore interview stages data
+      if (savedJobAdvertForm.stages) {
+        setStages(savedJobAdvertForm.stages)
+      }
+      if (savedJobAdvertForm.newStageName) {
+        setNewStageName(savedJobAdvertForm.newStageName)
+      }
+      if (savedJobAdvertForm.selectedInterviewers) {
+        setSelectedInterviewers(savedJobAdvertForm.selectedInterviewers)
+      }
+      if (savedJobAdvertForm.newFeedbackFieldName) {
+        setNewFeedbackFieldName(savedJobAdvertForm.newFeedbackFieldName)
+      }
+      if (savedJobAdvertForm.newFeedbackFieldType) {
+        setNewFeedbackFieldType(savedJobAdvertForm.newFeedbackFieldType)
+      }
+    }
+  }, [savedJobAdvertForm])
+
+  // Cleanup: Clear form data when component unmounts (optional - uncomment if you want to clear on navigation)
+  // useEffect(() => {
+  //   return () => {
+  //     // Only clear if user navigates away without submitting
+  //     // This is optional and depends on your UX requirements
+  //   }
+  // }, [])
 
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
@@ -195,11 +240,38 @@ export default function JobAdvertsPage() {
     field: keyof Exclude<JobPositionAdvertFormData, "job_position_advert_status">,
     value: any,
   ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    const updatedFormData = { ...formData, [field]: value }
+    setFormData(updatedFormData)
+    
+    // Save complete form data to Redux including interview stages
+    const completeFormData: JobAdvertCompleteFormData = {
+      ...updatedFormData,
+      stages,
+      newStageName,
+      selectedInterviewers,
+      newFeedbackFieldName,
+      newFeedbackFieldType,
+    }
+    
+    dispatch(saveJobAdvertForm(completeFormData))
+    
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
     }
+  }
+
+  // Function to save complete form data to Redux
+  const saveCompleteFormToRedux = () => {
+    const completeFormData: JobAdvertCompleteFormData = {
+      ...formData,
+      stages,
+      newStageName,
+      selectedInterviewers,
+      newFeedbackFieldName,
+      newFeedbackFieldType,
+    }
+    dispatch(saveJobAdvertForm(completeFormData))
   }
 
   const validateForm = (): boolean => {
@@ -270,6 +342,10 @@ export default function JobAdvertsPage() {
       })
 
       toast.success("Job opening created successfully!")
+      
+      // Clear the saved form data from Redux on successful submission
+      dispatch(clearJobAdvertForm())
+      
       router.push("/job-adverts")
     } catch (error: any) {
       const errorMessage = error?.detail || error?.message || "Failed to create job opening. Please try again."
@@ -281,6 +357,31 @@ export default function JobAdvertsPage() {
 
   const handleBack = () => {
     router.back()
+  }
+
+  const handleClearForm = () => {
+    const defaultFormData: JobPositionAdvertFormData = {
+      job_position: 0,
+      expiry_date: "",
+      number_of_employees_expected: 1,
+      extra_information: "",
+      advert_type: "external" as JobAdvertTypes,
+      level: 0,
+      interviewers: [],
+    }
+    
+    setFormData(defaultFormData)
+    setErrors({})
+    setStages([])
+    setNewStageName("")
+    setSelectedInterviewers([])
+    setNewFeedbackFieldName("")
+    setNewFeedbackFieldType("Number")
+    
+    // Clear from Redux
+    dispatch(clearJobAdvertForm())
+    
+    toast.success("Form cleared successfully")
   }
 
   const handleJobPositionCreated = (newJobPosition: IJobPosition) => {
@@ -360,11 +461,26 @@ export default function JobAdvertsPage() {
           feedbackFields: [],
         }
 
-        setStages([...stages, localStage])
+        const updatedStages = [...stages, localStage]
+        setStages(updatedStages)
         setNewStageName("")
         setSelectedInterviewers([])
 
+        // Save updated stages to Redux before clearing
+        const completeFormData: JobAdvertCompleteFormData = {
+          ...formData,
+          stages: updatedStages,
+          newStageName: "",
+          selectedInterviewers: [],
+          newFeedbackFieldName,
+          newFeedbackFieldType,
+        }
+        dispatch(saveJobAdvertForm(completeFormData))
+
         toast.success("Job opening and interview stage created successfully!")
+
+        // Clear the saved form data from Redux on successful creation
+        dispatch(clearJobAdvertForm())
 
         // Redirect to job adverts since job opening is now created
         setTimeout(() => {
@@ -385,7 +501,20 @@ export default function JobAdvertsPage() {
   }
 
   const handleDeleteStage = (id: string) => {
-    setStages(stages.filter((stage) => stage.id !== id))
+    const updatedStages = stages.filter((stage) => stage.id !== id)
+    setStages(updatedStages)
+    
+    // Save to Redux
+    const completeFormData: JobAdvertCompleteFormData = {
+      ...formData,
+      stages: updatedStages,
+      newStageName,
+      selectedInterviewers,
+      newFeedbackFieldName,
+      newFeedbackFieldType,
+    }
+    dispatch(saveJobAdvertForm(completeFormData))
+    
     toast.success("Interview stage deleted")
   }
 
@@ -426,12 +555,36 @@ export default function JobAdvertsPage() {
         name: employee.user?.fullname || `Employee ${employee.id}`,
         role: employee.user?.user_type || "Staff",
       }
-      setSelectedInterviewers([...selectedInterviewers, interviewer])
+      const updatedSelectedInterviewers = [...selectedInterviewers, interviewer]
+      setSelectedInterviewers(updatedSelectedInterviewers)
+      
+      // Save to Redux
+      const completeFormData: JobAdvertCompleteFormData = {
+        ...formData,
+        stages,
+        newStageName,
+        selectedInterviewers: updatedSelectedInterviewers,
+        newFeedbackFieldName,
+        newFeedbackFieldType,
+      }
+      dispatch(saveJobAdvertForm(completeFormData))
     }
   }
 
   const handleRemoveSelectedInterviewer = (interviewerId: string) => {
-    setSelectedInterviewers(selectedInterviewers.filter((i) => i.id !== interviewerId))
+    const updatedSelectedInterviewers = selectedInterviewers.filter((i) => i.id !== interviewerId)
+    setSelectedInterviewers(updatedSelectedInterviewers)
+    
+    // Save to Redux
+    const completeFormData: JobAdvertCompleteFormData = {
+      ...formData,
+      stages,
+      newStageName,
+      selectedInterviewers: updatedSelectedInterviewers,
+      newFeedbackFieldName,
+      newFeedbackFieldType,
+    }
+    dispatch(saveJobAdvertForm(completeFormData))
   }
 
   const handleCreateStage = async (e: React.FormEvent) => {
@@ -944,12 +1097,23 @@ export default function JobAdvertsPage() {
             </div>
 
             {/* Next Button */}
-            <div className="mt-8 flex justify-start">
+            <div className="mt-8 flex justify-start gap-4">
               <Button
                 className="flex items-center gap-2 px-6 lg:px-8 "
-                onClick={() => setStep(2)}
+                onClick={() => {
+                  // Save current form state before moving to next step
+                  saveCompleteFormToRedux()
+                  setStep(2)
+                }}
               >
                 Next
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 px-6 lg:px-8"
+                onClick={handleClearForm}
+              >
+                Clear Form
               </Button>
             </div>
           </div>
@@ -969,7 +1133,21 @@ export default function JobAdvertsPage() {
                   <Input
                     placeholder="Enter stage name"
                     value={newStageName}
-                    onChange={(e) => setNewStageName(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setNewStageName(value)
+                      
+                      // Save to Redux
+                      const completeFormData: JobAdvertCompleteFormData = {
+                        ...formData,
+                        stages,
+                        newStageName: value,
+                        selectedInterviewers,
+                        newFeedbackFieldName,
+                        newFeedbackFieldType,
+                      }
+                      dispatch(saveJobAdvertForm(completeFormData))
+                    }}
                     className="bg-white border-gray-300 text-xs sm:text-sm"
                   />
                   <div className="flex flex-col gap-2">
@@ -1141,7 +1319,11 @@ export default function JobAdvertsPage() {
             <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-start gap-2 sm:gap-4">
               <Button
                 className="flex items-center gap-2 px-4 sm:px-6 py-2 text-xs sm:text-sm md:text-base"
-                onClick={() => setStep(1)}
+                onClick={() => {
+                  // Save current form state before moving to previous step
+                  saveCompleteFormToRedux()
+                  setStep(1)
+                }}
               >
                 Previous
               </Button>
@@ -1158,6 +1340,13 @@ export default function JobAdvertsPage() {
                 ) : (
                   "Create Job Opening"
                 )}
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 px-4 sm:px-6 py-2 text-xs sm:text-sm md:text-base"
+                onClick={handleClearForm}
+              >
+                Clear Form
               </Button>
             </div>
           </div>

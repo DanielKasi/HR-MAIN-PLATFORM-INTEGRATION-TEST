@@ -125,6 +125,7 @@ class AssetCategoryDetailView(APIView):
     )
     def delete(self, request, pk):
         category = get_object_or_404(AssetCategory, pk=pk)
+        # Custom delete method on the model instance, which handles the soft deletion.
         category.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -250,6 +251,7 @@ class AssetDetailView(APIView):
     )
     def delete(self, request, pk):
         asset = get_object_or_404(Asset, pk=pk)
+        # Custom delete method that handles a soft delete
         asset.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -368,7 +370,7 @@ class AssetRequestDetailView(APIView):
     )
     def delete(self, request, pk):
         asset_request = get_object_or_404(AssetRequest, pk=pk)
-        asset_request.delete()
+        asset_request.delete() # Custom delete that handles a soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
@@ -592,7 +594,7 @@ class AssetAllocationDetailView(APIView):
     )
     def delete(self, request, pk):
         asset_allocation = get_object_or_404(AssetAllocation, pk=pk)
-        asset_allocation.delete()
+        asset_allocation.delete() # Custom delete method to handle soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
@@ -811,7 +813,7 @@ class AssetReturnDetailView(APIView):
     )
     def delete(self, request, pk):
         asset_return = get_object_or_404(AssetReturn, pk=pk)
-        asset_return.delete()
+        asset_return.delete() # Custom delete method to handle soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(

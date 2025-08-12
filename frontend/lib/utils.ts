@@ -87,6 +87,8 @@ import {
   ITaxFormData,
   ITaxRule,
   ITaxRuleFormData,
+
+  IEmployeeTaxFormData,
   IAssetCategory,
   IAssetCategoryFormData,
   IAsset,
@@ -96,6 +98,7 @@ import {
   IAssetRequestFormData,
   IAssetAllocation,
   IAssetAllocationFormData,
+
 } from "@/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -3486,8 +3489,8 @@ export const AttendanceAPI = {
   },
 
   // Update an attendance record by ID
-  updateAttendanceRecord: async (id: number, data: Partial<IAttendanceFormData>) => {
-    const response = await apiRequest.put(`/employee/attendance/${id}/`, data);
+  updateAttendanceRecord: async ({id, data}:{id: number, data: Partial<IAttendanceFormData>}) => {
+    const response = await apiRequest.patch(`/employee/attendance/${id}/`, data);
     return response.data;
   },
 
@@ -3592,7 +3595,6 @@ export const taxesAPI = {
   getAll: async (): Promise<ITax[]> => {
     try {
       const response = await apiRequest.get('/institution/tax/');
-      console.log("Tax response",response)
       return response.data as ITax[];
     } catch (error) {
       throw error;
@@ -3824,18 +3826,43 @@ export const taxAPI = {
     }catch (error) {
       throw error
     }
-  
   },
 
   getAll: async () => {
     try {
-
       const response = await apiRequest.get("/institution/tax")
       return response.data as Itax[]
     }catch (error) {
 
     }
-  }
+  },
+
+  getAllEmployeeTaxes: async ({}) => {
+      const response = await apiRequest.get("/payroll/employee-taxes")
+      return response.data as IPaginatedResponse<Itax>
+  },
+
+  createEmployeeTaxes: async ({data}:{data:IEmployeeTaxFormData}) => {
+      const response = await apiRequest.post("/payroll/employee-taxes/", data)
+      return response.data as Itax
+  },
+  getEmployeeTax: async ({taxId}:{taxId:number|string}) => {
+      const response = await apiRequest.get(`/payroll/employee-taxes/${taxId}`)
+      return response.data as Itax
+  },
+  updateEmployeeTax: async ({data, taxId}:{data:Partial<IEmployeeTaxFormData>, taxId:number|string}) => {
+      const response = await apiRequest.patch(`/payroll/employee-taxes/${taxId}`, data)
+      return response.data as Itax
+  },
+  
+  deleteEmployeeTax: async (taxId: number): Promise<boolean> => {
+    try {
+      const response = await apiRequest.delete(`/payroll/employee-taxes/${taxId}`)
+      return response.status === 204
+    } catch (error) {
+      throw error
+    }
+  },
 
   
 
@@ -4049,10 +4076,10 @@ export const assetsAPI = {
     }
   },
 
-  approveAssetAllocation: async (id: number, action: "approve" | "reject", comment?: string): Promise<any> => {
+  approveAssetAllocation: async (id: number, action: "completed" | "rejected", comment?: string): Promise<any> => {
     try {
-      const response = await apiRequest.post(`/assets/asset-allocations/${id}/`, {
-        action,
+      const response = await apiRequest.patch(`workflow/task/${id}/status/`, {
+        status: action,
         comment: comment || ""
       });
       return response.data;
@@ -4063,10 +4090,12 @@ export const assetsAPI = {
   },
 
   // Asset Request Approval API method
-  approveAssetRequest: async (id: number, action: "approve" | "reject", comment?: string): Promise<any> => {
+  approveAssetRequest: async (id: number, new_status: "completed" | "rejected", comment?: string): Promise<any> => {
+  
+  
     try {
-      const response = await apiRequest.post(`/assets/asset-requests/${id}/approval/`, {
-        action,
+      const response = await apiRequest.patch(`workflow/task/${id}/status/`, {
+        status: new_status,
         comment: comment || ""
       });
       return response.data;

@@ -174,18 +174,35 @@ export default function AddEmployeeForm() {
     loadDropdownData();
   }, [selectedInstitution]);
 
+  // Load saved employee form data from Redux on component mount
   useEffect(() => {
-    if (currentEmployeeCreationForm) {
-      setFormData((prev) => ({...prev, ...currentEmployeeCreationForm}));
-    };
-
-    
-  }, [currentEmployeeCreationForm]);
-
-  useEffect(() => {
-    if (formData.position) {
+    if (currentEmployeeCreationForm && !formData.fullname) {
+      setFormData(currentEmployeeCreationForm);
+      
+      // Initialize phone input states from saved data
+      if (currentEmployeeCreationForm.phone_number) {
+        setPhoneInput(prev => ({
+          ...prev,
+          phoneNumber: currentEmployeeCreationForm.phone_number,
+          countryCode: ""
+        }));
+      }
+      
+      if (currentEmployeeCreationForm.country) {
+        setSelectedCountry({ name: { common: currentEmployeeCreationForm.country } } as ICountry);
+      }
+      
+      if (currentEmployeeCreationForm.emergency_contact_phone) {
+        setEmergencyPhoneInput(prev => ({
+          ...prev,
+          phoneNumber: currentEmployeeCreationForm.emergency_contact_phone,
+          countryCode: ""
+        }));
+      }
     }
-  }, [formData.position]);
+  }, [currentEmployeeCreationForm, formData.fullname]);
+
+
 
   useEffect(() => {
     setFormData((prev) => ({...prev, selected_branches: branches.map((br) => br.id)}));
@@ -223,7 +240,52 @@ export default function AddEmployeeForm() {
   };
 
   const handleClearLocalEmployeeCreateForm = () => {
+    // Clear from Redux
     dispatch(clearEmployeeForm());
+    
+    // Clear local form state
+    setFormData({
+      fullname: "",
+      email: "",
+      phone_number: "",
+      position: 0,
+      department: 0,
+      work_type: 0,
+      employee_type: 0,
+      date_of_birth: "",
+      date_of_joining: new Date().toISOString().split("T")[0],
+      address: "",
+      country: "",
+      nin: "",
+      bank: "",
+      bank_account_number: "",
+      tin: "",
+      nssf_no: "",
+      is_active: true,
+      experience: 0,
+      qualifications: "",
+      skills: "",
+      selected_branches: [],
+      emergency_contact_name: "",
+      emergency_contact_phone: "",
+      emergency_contact_relationship: "",
+      marital_status: "single",
+      children_count: 0,
+    });
+    
+    // Clear profile picture
+    setEmployeeProfilePicture(null);
+    setPreviewUrl("");
+    setUploadError(null);
+    setUploadSuccess(null);
+    
+    // Reset to first step
+    setCurrentStep(1);
+    
+    // Clear any errors
+    setSubmitError(null);
+    
+    toast.success("Form cleared successfully");
   };
 
   const handleInputChange = (
@@ -233,22 +295,31 @@ export default function AddEmployeeForm() {
     if (field == "position") {
       const position = positions.find((p) => p.id === value);
       if (position) {
-        handleSaveLocalEmployeeCreateForm({
-          ...currentEmployeeCreationForm,
+        const updatedFormData = {
+          ...formData,
           position: position.id,
           department: position.department || 0,
-        } as ICreateEmployeeForm);
+        };
+        setFormData(updatedFormData);
+        handleSaveLocalEmployeeCreateForm(updatedFormData);
       }
     } else {
-      handleSaveLocalEmployeeCreateForm({
-        ...currentEmployeeCreationForm,
+      const updatedFormData = {
+        ...formData,
         [field]: value,
-      } as ICreateEmployeeForm);
+      };
+      setFormData(updatedFormData);
+      handleSaveLocalEmployeeCreateForm(updatedFormData);
     }
   };
 
   const handleProflePictureChange = (value: File | null) => {
     setEmployeeProfilePicture(value);
+    
+    // Also save the updated form data to Redux (without the profile picture)
+    const updatedFormData = { ...formData };
+    setFormData(updatedFormData);
+    handleSaveLocalEmployeeCreateForm(updatedFormData);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -306,6 +377,11 @@ export default function AddEmployeeForm() {
     if (fileInput) {
       fileInput.value = "";
     }
+    
+    // Save the updated form data to Redux after removing image
+    const updatedFormData = { ...formData };
+    setFormData(updatedFormData);
+    handleSaveLocalEmployeeCreateForm(updatedFormData);
   };
 
   useEffect(() => {
@@ -494,6 +570,8 @@ export default function AddEmployeeForm() {
     await new Promise((resolve) => setTimeout(resolve, 300));
 
     if (validateCurrentStep() && currentStep < steps.length) {
+      // Save current form data to Redux before moving to next step
+      handleSaveLocalEmployeeCreateForm(formData);
       setCurrentStep(currentStep + 1);
     }
 
@@ -502,6 +580,8 @@ export default function AddEmployeeForm() {
 
   const prevStep = () => {
     if (currentStep > 1) {
+      // Save current form data to Redux before moving to previous step
+      handleSaveLocalEmployeeCreateForm(formData);
       setCurrentStep(currentStep - 1);
     }
   };
@@ -579,19 +659,33 @@ export default function AddEmployeeForm() {
 
   // Sync main phone and country to formData
   useEffect(() => {
-    handleSaveLocalEmployeeCreateForm(({
-      ...currentEmployeeCreationForm,
-      phone_number:
-        phoneInput.countryCode && phoneInput.phoneNumber
-          ? `${phoneInput.phoneNumber}`
-          : currentEmployeeCreationForm?.phone_number,
-      country: selectedCountry?.name?.common || currentEmployeeCreationForm?.country,
-      emergency_contact_phone:
-        emergencyPhoneInput.countryCode && emergencyPhoneInput.phoneNumber
-          ? `${emergencyPhoneInput.phoneNumber}`
-          : currentEmployeeCreationForm?.emergency_contact_phone,
-    } as ICreateEmployeeForm));
-  }, [phoneInput, selectedCountry, emergencyPhoneInput]);
+    // Only update if there are actual changes to prevent infinite loops
+    const newPhoneNumber = phoneInput.countryCode && phoneInput.phoneNumber
+      ? `${phoneInput.phoneNumber}`
+      : formData.phone_number;
+    
+    const newCountry = selectedCountry?.name?.common || formData.country;
+    
+    const newEmergencyPhone = emergencyPhoneInput.countryCode && emergencyPhoneInput.phoneNumber
+      ? `${emergencyPhoneInput.phoneNumber}`
+      : formData.emergency_contact_phone;
+    
+    // Check if any values actually changed
+    if (newPhoneNumber !== formData.phone_number || 
+        newCountry !== formData.country || 
+        newEmergencyPhone !== formData.emergency_contact_phone) {
+      
+      const updatedFormData = {
+        ...formData,
+        phone_number: newPhoneNumber,
+        country: newCountry,
+        emergency_contact_phone: newEmergencyPhone,
+      };
+      
+      setFormData(updatedFormData);
+      handleSaveLocalEmployeeCreateForm(updatedFormData);
+    }
+  }, [phoneInput.countryCode, phoneInput.phoneNumber, selectedCountry?.name?.common, emergencyPhoneInput.countryCode, emergencyPhoneInput.phoneNumber]);
 
   const renderStep = () => {
     switch (currentStep) {
@@ -1260,16 +1354,28 @@ export default function AddEmployeeForm() {
 
               {/* Navigation Buttons */}
               <div className="flex justify-between">
-                <Link href="/employees/employee-list">
+                <div className="flex gap-2">
+                  <Link href="/employees/employee-list">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full sm:w-auto bg-transparent"
+                      disabled={isSubmitting}
+                    >
+                      Cancel
+                    </Button>
+                  </Link>
                   <Button
                     type="button"
                     variant="outline"
+                    onClick={handleClearLocalEmployeeCreateForm}
                     className="w-full sm:w-auto bg-transparent"
                     disabled={isSubmitting}
                   >
-                    Cancel
+                    Clear Form
                   </Button>
-                </Link>
+
+                </div>
 
                 <div className="flex gap-2">
                   {currentStep > 1 && (

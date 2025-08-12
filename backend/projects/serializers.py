@@ -158,6 +158,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "end_date",
             "project_status",
             "project_tasks",
+            "is_active"
         ]
         read_only_fields = [
             "id",
@@ -274,6 +275,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "end_date",
             "priority",
             "task_time_sheet",
+            "is_active"
         ]
         read_only_fields = [
             "id",

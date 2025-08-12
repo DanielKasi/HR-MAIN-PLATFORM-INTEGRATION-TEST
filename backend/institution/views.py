@@ -1106,7 +1106,8 @@ class DepartmentDetailAPIView(APIView):
 def delete_user_branch_by_ids(request, user_id, branch_id):
     try:
         user_branch = UserBranch.objects.get(user_id=user_id, branch_id=branch_id)
-        user_branch.delete()
+        user_branch.is_active = False
+        user_branch.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
     except UserBranch.DoesNotExist:
         return Response(

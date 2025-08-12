@@ -105,6 +105,8 @@ const AssetAllocationDetailPage = () => {
   const [approvalComments, setApprovalComments] = useState<{ [key: number]: string }>({});
   const [showCommentInput, setShowCommentInput] = useState<{ [key: number]: boolean }>({});
 
+  console.log("Allocations", allocation);
+
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const allocationId = params.id as string;
 
@@ -152,20 +154,16 @@ const AssetAllocationDetailPage = () => {
     }
   };
 
-  const handleViewRequestDetails = () => {
-    if (allocation?.responding_to_request?.id) {
-      router.push(`/assests/asset-requests/${allocation.responding_to_request.id}`);
-    }
-  };
+  
 
-  const handleApproval = async (taskId: number, action: 'approve' | 'reject') => {
+  const handleApproval = async (taskId: number, action: 'completed' | 'rejected') => {
     if (!allocation) return;
     
     const comment = approvalComments[taskId] || "";
     
     try {
       setIsApproving(true);
-      await assetsAPI.approveAssetAllocation(allocation.id, action, comment);
+      await assetsAPI.approveAssetAllocation(taskId, action, comment);
       
       // Refresh the allocation details to get updated workflow status
       await fetchAllocationDetails();
@@ -241,62 +239,67 @@ const AssetAllocationDetailPage = () => {
   const currentStep = getCurrentStep();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 p-4 md:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            onClick={() => router.push("/assests/asset-allocations")}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Allocations</span>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Asset Allocation Details</h1>
-            <p className="text-gray-600">Allocation Code: {allocation.alloc_code}</p>
+      <div className="bg-white rounded-lg border shadow-sm">
+        <div className="p-4 md:p-6 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push("/assests/asset-allocations")}
+                className="text-gray-600 hover:text-gray-900 w-fit"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back to Allocations</span>
+              </Button>
+              <div>
+                <h1 className="text-xl md:text-3xl font-bold text-gray-900">Asset Allocation Details</h1>
+                <p className="text-gray-600 break-all">Allocation Code: {allocation.alloc_code}</p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+              <Button
+                variant="outline"
+                onClick={handleEditAllocation}
+                className="flex items-center justify-center space-x-2 w-full sm:w-auto"
+              >
+                <Edit className="h-4 w-4" />
+                <span>Edit Allocation</span>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleDeleteAllocation}
+                className="flex items-center justify-center space-x-2 text-red-600 hover:text-red-700 w-full sm:w-auto"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Delete</span>
+              </Button>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            onClick={handleEditAllocation}
-            className="flex items-center space-x-2"
-          >
-            <Edit className="h-4 w-4" />
-            <span>Edit Allocation</span>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleDeleteAllocation}
-            className="flex items-center space-x-2 text-red-600 hover:text-red-700"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span>Delete</span>
-          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="xl:col-span-2 space-y-4 md:space-y-6">
           {/* Enhanced Approval Workflow */}
           
 
           {/* Basic Information */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+            <CardHeader className="pb-3 md:pb-6">
+              <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
                 <Users className="h-5 w-5 text-orange-500" />
                 <span>Allocation Information</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-500">Allocation Code</label>
-                  <p className="text-lg font-mono">{allocation.alloc_code}</p>
+                  <p className="text-base md:text-lg font-mono break-all">{allocation.alloc_code}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Status</label>
@@ -309,11 +312,11 @@ const AssetAllocationDetailPage = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Allocated To</label>
-                  <p className="text-lg font-medium">{allocation.allocated_to?.fullname}</p>
+                  <p className="text-base md:text-lg font-medium break-words">{allocation.allocated_to?.user.fullname}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Asset</label>
-                  <p className="text-lg">{allocation.asset?.asset_name}</p>
+                  <p className="text-base md:text-lg break-words">{allocation.asset?.asset_name}</p>
                 </div>
               </div>
             </CardContent>
@@ -321,83 +324,69 @@ const AssetAllocationDetailPage = () => {
 
           {/* Asset Information */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+            <CardHeader className="pb-3 md:pb-6">
+              <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
                 <Package className="h-5 w-5 text-blue-500" />
                 <span>Asset Details</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-500">Serial Number</label>
-                  <p className="text-lg font-mono">{allocation.asset?.serial_number}</p>
+                  <p className="text-base md:text-lg font-mono break-all">{allocation.asset?.serial_number}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Category</label>
-                  <p className="text-lg">{allocation.asset?.category?.category_name || "Unknown"}</p>
+                  <p className="text-base md:text-lg break-words">{allocation.asset?.category?.category_name || "Unknown"}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Asset Status</label>
-                  <p className="text-lg">{allocation.asset?.status}</p>
+                  <p className="text-base md:text-lg break-words">{allocation.asset?.status}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Allocated By</label>
-                  <p className="text-lg">{allocation.allocated_by?.fullname}</p>
+                  <p className="text-base md:text-lg break-words">{allocation.allocated_by?.user.fullname}</p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                onClick={handleViewAssetDetails}
-                className="flex items-center space-x-2"
-              >
-                <Package className="h-4 w-4" />
-                <span>View Asset Details</span>
-              </Button>
+              
             </CardContent>
           </Card>
 
           {/* Related Request Information */}
           {allocation.responding_to_request && (
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+              <CardHeader className="pb-3 md:pb-6">
+                <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
                   <FileText className="h-5 w-5 text-purple-500" />
                   <span>Related Request</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-500">Request Code</label>
-                    <p className="text-lg font-mono">{allocation.responding_to_request.request_reference_code}</p>
+                    <p className="text-base md:text-lg font-mono break-all">{allocation.responding_to_request.request_reference_code}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Requester</label>
-                    <p className="text-lg">{allocation.responding_to_request.requester?.fullname}</p>
+                    <p className="text-base md:text-lg break-words">{allocation.responding_to_request.requester?.fullname}</p>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  onClick={handleViewRequestDetails}
-                  className="flex items-center space-x-2"
-                >
-                  <FileText className="h-4 w-4" />
-                  <span>View Request Details</span>
-                </Button>
+                
               </CardContent>
             </Card>
           )}
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {/* Approval Workflow */}
           {/* @ts-ignore - tasks property may exist at runtime */}
           {allocation.tasks && allocation.tasks.length > 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+              <CardHeader className="pb-3 md:pb-6">
+                <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
                   <CheckCircle className="h-5 w-5 text-green-500" />
                   <span>Approval Workflow</span>
                 </CardTitle>
@@ -423,8 +412,8 @@ const AssetAllocationDetailPage = () => {
                   {/* Current Step Indicator */}
                   {currentStep && (
                     <div className="mt-2 flex items-center gap-2 text-xs text-blue-600">
-                      <AlertCircle className="h-3 w-3" />
-                      <span>Waiting for: <strong>{currentStep.step.step_name}</strong></span>
+                      <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                      <span className="break-words">Waiting for: <strong>{currentStep.step.step_name}</strong></span>
                     </div>
                   )}
                 </div>
@@ -462,9 +451,9 @@ const AssetAllocationDetailPage = () => {
                         </div>
                         
                         {/* Task Header */}
-                        <div className="flex items-center justify-between mb-1 ml-4">
-                          <span className="text-sm font-medium text-gray-900">{task.step.step_name}</span>
-                          <Badge className={`text-xs ${
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 ml-4 space-y-1 sm:space-y-0">
+                          <span className="text-sm font-medium text-gray-900 break-words">{task.step.step_name}</span>
+                          <Badge className={`text-xs w-fit ${
                             task.status === 'completed' ? 'bg-green-100 text-green-800 border-green-200' :
                             task.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
                             task.status === 'rejected' ? 'bg-red-100 text-red-800 border-red-200' :
@@ -493,9 +482,9 @@ const AssetAllocationDetailPage = () => {
                         {/* Approval Actions */}
                         {task.status === 'pending' && (
                           <div className="ml-4 pt-2 border-t border-gray-200">
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2">
                               <Button
-                                onClick={() => handleApproval(task.id, 'approve')}
+                                onClick={() => handleApproval(task.id, 'completed')}
                                 disabled={isApproving}
                                 size="sm"
                                 className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs"
@@ -513,7 +502,7 @@ const AssetAllocationDetailPage = () => {
                                 )}
                               </Button>
                               <Button
-                                onClick={() => handleApproval(task.id, 'reject')}
+                                onClick={() => handleApproval(task.id, 'rejected')}
                                 disabled={isApproving}
                                 size="sm"
                                 variant="destructive"
@@ -569,56 +558,12 @@ const AssetAllocationDetailPage = () => {
             </Card>
           )}
 
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5 text-orange-500" />
-                <span>Quick Actions</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                onClick={handleEditAllocation}
-                className="w-full justify-start"
-                variant="outline"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Allocation
-              </Button>
-              <Button
-                onClick={handleViewAssetDetails}
-                className="w-full justify-start"
-                variant="outline"
-              >
-                <Package className="h-4 w-4 mr-2" />
-                View Asset Details
-              </Button>
-              {allocation.responding_to_request && (
-                <Button
-                  onClick={handleViewRequestDetails}
-                  className="w-full justify-start"
-                  variant="outline"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  View Request Details
-                </Button>
-              )}
-              <Button
-                onClick={handleDeleteAllocation}
-                className="w-full justify-start text-red-600 hover:text-red-700"
-                variant="outline"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Allocation
-              </Button>
-            </CardContent>
-          </Card>
+          
 
           {/* Timestamps */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+            <CardHeader className="pb-3 md:pb-6">
+              <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
                 <Clock className="h-5 w-5 text-gray-500" />
                 <span>Timestamps</span>
               </CardTitle>
@@ -626,11 +571,11 @@ const AssetAllocationDetailPage = () => {
             <CardContent className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-gray-500">Created</label>
-                <p className="text-sm">{formatDate(allocation.created_at)}</p>
+                <p className="text-sm break-words">{formatDate(allocation.created_at)}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Last Updated</label>
-                <p className="text-sm">{formatDate(allocation.updated_at)}</p>
+                <p className="text-sm break-words">{formatDate(allocation.updated_at)}</p>
               </div>
             </CardContent>
           </Card>

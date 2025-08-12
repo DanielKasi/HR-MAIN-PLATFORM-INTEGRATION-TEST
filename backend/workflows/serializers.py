@@ -73,6 +73,7 @@ class InstitutionApprovalStepSerializer(serializers.ModelSerializer):
             "action",
             "action_details",
             "level",
+            "is_active"
         ]
 
     def get_roles(self, obj):

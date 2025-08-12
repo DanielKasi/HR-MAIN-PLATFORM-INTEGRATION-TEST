@@ -138,7 +138,7 @@ export const EditAssetRequestDialog = ({
             </Label>
             <div className="p-3 bg-gray-50 rounded-lg border">
               <p className="text-sm text-gray-900">
-                {request.requester?.fullname || 'Unknown User'}
+                {request.requester?.user.fullname || 'Unknown User'}
               </p>
             </div>
           </div>
