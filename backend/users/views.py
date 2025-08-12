@@ -194,8 +194,7 @@ class UserDetailAPIView(APIView):
         if user_id:
             try:
                 user = CustomUser.objects.get(id=user_id)
-                user.is_active = False
-                user.save()
+                user.delete()
                 return Response(
                     {"message": "User deleted successfully"},
                     status=status.HTTP_204_NO_CONTENT,

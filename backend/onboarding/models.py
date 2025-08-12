@@ -17,6 +17,7 @@ class BaseModel(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         abstract = True
@@ -26,14 +27,8 @@ class BaseModel(models.Model):
         Soft-deletes the record by setting the deleted_at timestamp.
         """
         self.deleted_at = timezone.now()
-        self.save()
-
-    @property
-    def is_active(self):
-        """
-        A convenience property to check if the record is not deleted.
-        """
-        return self.deleted_at is None
+        self.is_active = False
+        self.save(update_fields=["deleted_at", "is_active"])
 
 
 class OnBoarding(models.Model):
@@ -220,7 +215,7 @@ class InstitutionSeparationPolicy(BaseModel):
         constraints = [
             UniqueConstraint(
                 fields=["separation_type"],
-                condition=Q(deleted_at__isnull=True),
+                condition=Q(deleted_at__isnull=True, is_active=True),
                 name="unique_active_separation_policy"
             )
         ]

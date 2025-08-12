@@ -20,6 +20,7 @@ class BaseModel(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         abstract = True
@@ -27,12 +28,8 @@ class BaseModel(models.Model):
     def delete(self, *args, **kwargs):
         """Soft deletes a record by setting the deleted_at timestamp"""
         self.deleted_at = timezone.now()
-        self.save()
-    
-    @property
-    def is_active(self):
-        """Check if the record is not deleted (is active)"""
-        return self.deleted_at is None
+        self.is_active = False
+        self.save(update_fields=["deleted_at", "is_active"])
 
 
 class Institution(BaseModel):

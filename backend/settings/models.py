@@ -5,6 +5,7 @@ from django.utils import timezone
 
 class BaseModel(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         abstract = True
@@ -12,11 +13,8 @@ class BaseModel(models.Model):
     def delete(self, *args, **kwargs):
         """soft deletes configuration by setting the deleted_at timestamp"""
         self.deleted_at = timezone.now()
-        self.save()
-    
-    @property
-    def is_active(self):
-        return self.deleted_at is None
+        self.is_active = False
+        self.save(update_fields=["deleted_at", "is_active"])
 
 
 class SystemConfiguration(BaseModel):
