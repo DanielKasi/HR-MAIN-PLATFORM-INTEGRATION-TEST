@@ -1733,6 +1733,27 @@ class EmployeeContractApprovalAPIView(APIView):
                 contract.applicant = None
                 contract.save()
 
+                context = {
+                    "employee_name": contract.applicant.applicant_name,
+                    "position": contract.applicant.job_position_advert.job_position,
+                    "department": contract.applicant.job_position_advert.job_position.department,
+                    "date_of_joining": timezone.now().date(),
+                    "email": contract.applicant.applicant_email,
+                    "phone_number": contract.applicant.applicant_phone,
+                }
+
+                html_message = render_to_string("emails/onboarding_email.html", context)
+                plain_message = render_to_string("emails/onboarding_email.txt", context)
+
+                send_mail(
+                    subject="Welcome to the Team!",
+                    message=plain_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[self.application.applicant_email],
+                    html_message=html_message,
+                    fail_silently=False,
+                )
+
             except ValidationError as e:
                 return Response(
                     {"error": f"Failed to create employee: {str(e)}"},
