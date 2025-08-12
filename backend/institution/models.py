@@ -96,6 +96,13 @@ class Institution(BaseModel):
 
     class Meta:
         unique_together = ("institution_owner", "institution_name")
+        constraints = [
+            UniqueConstraint(
+                fields=["institution_owner", "institution_name"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_institution_name_per_institution_owner"
+            )
+        ]
 
     def __str__(self):
         return self.institution_name
@@ -336,6 +343,13 @@ class InstitutionBankAccount(BaseModel):
 
     class Meta:
         unique_together = ("institution_bank", "account_number")
+        constraints = [
+            UniqueConstraint(
+                fields=["institution_bank", "account_number"],
+                condition=Q(deleted_at__isnull=True),
+                name="unique_active_account_number_per_instititution_bank"
+            )
+        ]
 
     def __str__(self):
         return f"{self.account_name} - {self.institution_bank.bank_fullname} - {self.institution_bank.institution.institution_name}"
