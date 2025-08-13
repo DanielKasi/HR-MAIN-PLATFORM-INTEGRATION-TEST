@@ -13,6 +13,7 @@ from jsignature.fields import JSignatureField
 from django import forms
 from jsignature.forms import JSignatureField as JSignatureFormField
 from django.db.models import UniqueConstraint, Q
+from utilities.utility_base_model import UtilityBaseModel
 
 
 class CustomUserManager(BaseUserManager):
@@ -33,23 +34,8 @@ class CustomUserManager(BaseUserManager):
 class UserType(TextChoices):
     STAFF = "STAFF", "Staff"
 
-class BaseModel(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    deleted_at = models.DateTimeField(null=True, blank=True)
-    is_active = models.BooleanField(default=True)
 
-    class Meta:
-        abstract = True
-    
-    def delete(self, *args, **kwargs):
-        """Soft deletes a record by setting the deleted_at timestamp"""
-        self.deleted_at = timezone.now()
-        self.is_active = False
-        self.save(update_fields=["deleted_at", "is_active"])
-
-    
-class CustomUser(AbstractBaseUser, PermissionsMixin, BaseModel):
+class CustomUser(AbstractBaseUser, PermissionsMixin, UtilityBaseModel):
     email = models.EmailField(unique=True)
     fullname = models.CharField(max_length=255)
     # is_active = models.BooleanField(default=True)
@@ -151,7 +137,7 @@ class Profile(models.Model):
         return f"Profile of {self.user.email}"
 
 
-class PermissionCategory(BaseModel):
+class PermissionCategory(UtilityBaseModel):
     permission_category_name = models.CharField(max_length=255)
     permission_category_description = models.TextField()
 
@@ -171,7 +157,7 @@ class PermissionCategory(BaseModel):
 
 # many to many relationship between roles and permissions
 # Role - RolePermission - Permission
-class Permission(BaseModel):
+class Permission(UtilityBaseModel):
     permission_code = models.CharField(max_length=255)
     permission_name = models.CharField(max_length=255)
     permission_description = models.TextField(blank=True, null=True)
@@ -196,7 +182,7 @@ class Permission(BaseModel):
             )
         ]
 
-class Role(BaseModel):
+class Role(UtilityBaseModel):
     name = models.CharField(max_length=255)
     description = models.TextField()
     institution = models.ForeignKey(

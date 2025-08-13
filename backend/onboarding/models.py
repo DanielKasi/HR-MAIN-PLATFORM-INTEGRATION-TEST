@@ -9,26 +9,7 @@ from io import BytesIO
 from weasyprint import HTML
 from django.db.models import UniqueConstraint, Q
 from django.core.exceptions import ValidationError
-
-
-class BaseModel(models.Model):
-    # This field tracks the date and time a record was soft-deleted.
-    # A null value means the record is active.
-    deleted_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        abstract = True
-
-    def delete(self, *args, **kwargs):
-        """
-        Soft-deletes the record by setting the deleted_at timestamp.
-        """
-        self.deleted_at = timezone.now()
-        self.is_active = False
-        self.save(update_fields=["deleted_at", "is_active"])
+from utilities.utility_base_model import UtilityBaseModel
 
 
 class OnBoarding(models.Model):
@@ -71,7 +52,7 @@ class OnBoarding(models.Model):
 
 
 
-class OffboardingStage(BaseModel):
+class OffboardingStage(UtilityBaseModel):
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
@@ -94,7 +75,7 @@ class OffboardingStage(BaseModel):
         ]
 
 
-class InstitutionEmployeeSeparationTypes(BaseModel):
+class InstitutionEmployeeSeparationTypes(UtilityBaseModel):
 
     SEPARATION_CATEGORY_CHOICES = [
         ("resignation", "Resignation"),
@@ -126,7 +107,7 @@ class InstitutionEmployeeSeparationTypes(BaseModel):
         return f"{self.institution.institution_name} - {self.separation_type}"
 
 
-class InstitutionSeparationPolicy(BaseModel):
+class InstitutionSeparationPolicy(UtilityBaseModel):
     separation_type = models.ForeignKey(
         InstitutionEmployeeSeparationTypes,
         on_delete=models.CASCADE,
@@ -219,7 +200,7 @@ class EmployeeSeparation(models.Model):
                 self.employee.user.save()
 
 
-class ResignationRequest(BaseModel):
+class ResignationRequest(UtilityBaseModel):
     REQUEST_STATUS_CHOICES = [
         ("submitted", "Submitted"),
         ("under_review", "Under Review"),
@@ -291,7 +272,7 @@ class ResignationRequest(BaseModel):
             )
 
 
-class TerminationInitiation(BaseModel):
+class TerminationInitiation(UtilityBaseModel):
     separation = models.OneToOneField(
         EmployeeSeparation,
         on_delete=models.CASCADE,

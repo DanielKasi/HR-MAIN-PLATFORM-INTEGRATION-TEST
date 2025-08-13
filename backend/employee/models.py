@@ -31,28 +31,10 @@ from difflib import Differ, SequenceMatcher
 import re
 from django.db.models import UniqueConstraint, Q
 import math
-
-class BaseModel(models.Model):
-    # This field tracks the date and time a record was soft-deleted.
-    # A null value means the record is active.
-    deleted_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        abstract = True
-
-    def delete(self, *args, **kwargs):
-        """
-        Soft-deletes the record by setting the deleted_at timestamp.
-        """
-        self.deleted_at = timezone.now()
-        self.is_active = False
-        self.save(update_fields=["deleted_at", "is_active"])
+from utilities.utility_base_model import UtilityBaseModel
 
 
-class EmployeeType(BaseModel):
+class EmployeeType(UtilityBaseModel):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     code = models.CharField(max_length=10, blank=True, null=True)
@@ -75,7 +57,7 @@ class EmployeeType(BaseModel):
         ]
 
 
-class WorkType(BaseModel):
+class WorkType(UtilityBaseModel):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     code = models.CharField(max_length=10, blank=True, null=True)
@@ -98,7 +80,7 @@ class WorkType(BaseModel):
         ]
 
 
-class Employee(BaseModel):
+class Employee(UtilityBaseModel):
     """
     Employee model to store employee details in the system.
     """
@@ -566,7 +548,7 @@ class EmployeeWorkingDays(models.Model):
         return f"{self.employee.user.fullname} - Custom Working Days"
 
 
-class EmployeeAttendance(BaseModel):
+class EmployeeAttendance(UtilityBaseModel):
     employee = models.ForeignKey(
         Employee, on_delete=models.CASCADE, related_name="attendance_records"
     )
@@ -681,7 +663,7 @@ class EmployeeAttendance(BaseModel):
         super().save(*args, **kwargs)
 
 
-class EmployeeContract(BaseModel):
+class EmployeeContract(UtilityBaseModel):
     STATUS_CHOICES = (
         ("MATCHED_NEEDS_REVIEW", "Matched, Needs Review"),
         ("NOT_MATCHED_NEEDS_REVIEW", "Not Matched, Needs Review"),
@@ -717,6 +699,7 @@ class EmployeeContract(BaseModel):
         default="PENDING",
         blank=True,
     )
+
     differences = models.TextField(blank=True, null=True)
 
     def __str__(self):

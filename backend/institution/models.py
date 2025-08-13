@@ -12,27 +12,12 @@ from recruitment.models import JobPosition
 import json
 from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
+from utilities.utility_base_model import UtilityBaseModel
 
 logger = logging.getLogger(__name__)
 
 
-class BaseModel(models.Model):
-    deleted_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        abstract = True
-    
-    def delete(self, *args, **kwargs):
-        """Soft deletes a record by setting the deleted_at timestamp"""
-        self.deleted_at = timezone.now()
-        self.is_active = False
-        self.save(update_fields=["deleted_at", "is_active"])
-
-
-class Institution(BaseModel):
+class Institution(UtilityBaseModel):
     APPROVAL_STATUS_CHOICES = [
         ("pending", "Pending Approval"),
         ("approved", "Approved"),
@@ -290,7 +275,7 @@ class InstitutionDocument(models.Model):
         return 0
 
 
-class InstitutionBankType(BaseModel):
+class InstitutionBankType(UtilityBaseModel):
     institution = models.ForeignKey(
         Institution, related_name="banks", on_delete=models.CASCADE
     )
@@ -316,7 +301,7 @@ class InstitutionBankType(BaseModel):
         return f"Type: {self.bank_fullname} FOR {self.institution.institution_name}"
 
 
-class InstitutionBankAccount(BaseModel):
+class InstitutionBankAccount(UtilityBaseModel):
     institution_bank = models.ForeignKey(
         InstitutionBankType, related_name="accounts", on_delete=models.CASCADE
     )
@@ -384,7 +369,7 @@ class InstitutionWorkingDays(models.Model):
         return f"Working Days for {self.institution.institution_name}"
 
 
-class InstitutionTax(BaseModel):
+class InstitutionTax(UtilityBaseModel):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, related_name="taxes"
     )
@@ -414,7 +399,7 @@ class InstitutionTax(BaseModel):
         verbose_name = "Institution Tax"
 
 
-class InstitutionTaxRule(BaseModel):
+class InstitutionTaxRule(UtilityBaseModel):
     institution_tax = models.ForeignKey(
         InstitutionTax, related_name="rules", on_delete=models.CASCADE
     )
@@ -452,7 +437,7 @@ class InstitutionTaxRule(BaseModel):
         return self.tax_rule_name
 
 
-class Branch(BaseModel):
+class Branch(UtilityBaseModel):
     institution = models.ForeignKey(
         Institution, related_name="branches", on_delete=models.CASCADE
     )
@@ -565,7 +550,7 @@ class UserBranch(models.Model):
         return self.user.email + " - " + self.branch.branch_location
 
 
-class Department(BaseModel):
+class Department(UtilityBaseModel):
     name = models.CharField(max_length=255)
     description = models.TextField()
     institution = models.ForeignKey(
@@ -585,6 +570,6 @@ class Department(BaseModel):
         null=True,
         blank=True,
     )
-
+    
     def __str__(self):
         return self.name
