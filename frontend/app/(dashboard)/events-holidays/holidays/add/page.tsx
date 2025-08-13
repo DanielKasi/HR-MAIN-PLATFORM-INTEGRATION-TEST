@@ -31,6 +31,7 @@ export default function AddHolidayPage() {
 
     try {
       await apiPost("/calendar/public-holidays/", formData);
+      alert("Holiday created successfully!");
       router.push("/events-holidays");
     } catch (error) {
       console.error("Error creating holiday:", error);

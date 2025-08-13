@@ -125,11 +125,10 @@ const AssetRequestsComponent = () => {
     try {
       setIsLoading(true);
       const response = await assetsAPI.getAssetRequests();
-      console.log("Response", response)
       setAssetRequests(response || []);
     } catch (error) {
-      console.error("Error fetching asset requests:", error);
-      toast.error("Failed to load asset requests");
+      console.warn("Error fetching asset requests:", error);
+   
     } finally {
       setIsLoading(false);
     }
@@ -301,12 +300,7 @@ const AssetRequestsComponent = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300"
-                        />
-                      </TableHead>
+                      
                       <TableHead>Reference</TableHead>
                       <TableHead>Asset</TableHead>
                       <TableHead>Requester</TableHead>
@@ -325,12 +319,7 @@ const AssetRequestsComponent = () => {
                     ) : (
                       paginatedRequests.map((request) => (
                         <TableRow key={request.id}>
-                          <TableCell>
-                            <input
-                              type="checkbox"
-                              className="rounded border-gray-300"
-                            />
-                          </TableCell>
+                          
                           <TableCell className="font-mono text-sm">
                             {request.request_reference_code}
                           </TableCell>

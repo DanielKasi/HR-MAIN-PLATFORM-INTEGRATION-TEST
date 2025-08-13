@@ -96,6 +96,8 @@ import {
   IAssetRequestFormData,
   IAssetAllocation,
   IAssetAllocationFormData,
+  IAssetReturn,
+  IAssetReturnFormData,
 } from "@/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -4074,6 +4076,58 @@ export const assetsAPI = {
       return response.data;
     } catch (error) {
       console.error("Error approving/rejecting asset request:", error);
+      throw error;
+    }
+  },
+
+  // Asset Return API methods
+  getAssetReturns: async (): Promise<IAssetReturn[]> => {
+    try {
+      const response = await apiRequest.get("/assets/asset-returns/");
+      console.log("Asset Returns response", response);
+      return response.data.results || response.data;
+    } catch (error) {
+      console.error("Error fetching asset returns:", error);
+      throw error;
+    }
+  },
+
+  getAssetReturnById: async (id: number): Promise<IAssetReturn> => {
+    try {
+      const response = await apiRequest.get(`/assets/asset-returns/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching asset return:", error);
+      throw error;
+    }
+  },
+
+  createAssetReturn: async (data: IAssetReturnFormData): Promise<IAssetReturn> => {
+    try {
+      const response = await apiRequest.post("/assets/asset-returns/", data);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating asset return:", error);
+      throw error;
+    }
+  },
+
+  updateAssetReturn: async (id: number, data: Partial<IAssetReturnFormData>): Promise<IAssetReturn> => {
+    try {
+      const response = await apiRequest.patch(`/assets/asset-returns/${id}/`, data);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating asset return:", error);
+      throw error;
+    }
+  },
+
+  deleteAssetReturn: async (id: number): Promise<boolean> => {
+    try {
+      const response = await apiRequest.delete(`/assets/asset-returns/${id}/`);
+      return response.status === 204;
+    } catch (error) {
+      console.error("Error deleting asset return:", error);
       throw error;
     }
   },

@@ -233,12 +233,7 @@ const AssetCategoriesComponent = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300"
-                        />
-                      </TableHead>
+                      
                       <TableHead>Category Name</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead>Status</TableHead>
@@ -256,12 +251,7 @@ const AssetCategoriesComponent = () => {
                     ) : (
                       paginatedAssetCategories.map((category) => (
                         <TableRow key={category.id}>
-                          <TableCell>
-                            <input
-                              type="checkbox"
-                              className="rounded border-gray-300"
-                            />
-                          </TableCell>
+                          
                           <TableCell className="font-medium">{category.category_name}</TableCell>
                           <TableCell className="max-w-xs truncate">
                             {category.category_description || "No description"}
