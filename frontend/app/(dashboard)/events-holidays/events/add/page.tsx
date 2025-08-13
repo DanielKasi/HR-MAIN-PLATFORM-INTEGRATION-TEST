@@ -255,7 +255,7 @@ export default function AddEventPage() {
             </Button>
           </Link>
           <div className="space-y-2">
-            <h1 className="text-[20px] text-[#232E3F] bg-clip-text text-transparent">
+            <h1 className="text-[20px] text-[#232E3F]">
               Create New Event
             </h1>
             {(departmentsLoading || employeesLoading) && (

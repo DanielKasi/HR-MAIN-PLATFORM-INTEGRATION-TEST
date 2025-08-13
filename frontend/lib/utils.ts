@@ -87,8 +87,6 @@ import {
   ITaxFormData,
   ITaxRule,
   ITaxRuleFormData,
-
-  IEmployeeTaxFormData,
   IAssetCategory,
   IAssetCategoryFormData,
   IAsset,
@@ -98,9 +96,6 @@ import {
   IAssetRequestFormData,
   IAssetAllocation,
   IAssetAllocationFormData,
-  IPublicHoliday,
-  ICalendarEvent,
-
 } from "@/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -3491,8 +3486,8 @@ export const AttendanceAPI = {
   },
 
   // Update an attendance record by ID
-  updateAttendanceRecord: async ({id, data}:{id: number, data: Partial<IAttendanceFormData>}) => {
-    const response = await apiRequest.patch(`/employee/attendance/${id}/`, data);
+  updateAttendanceRecord: async (id: number, data: Partial<IAttendanceFormData>) => {
+    const response = await apiRequest.put(`/employee/attendance/${id}/`, data);
     return response.data;
   },
 
@@ -3597,6 +3592,7 @@ export const taxesAPI = {
   getAll: async (): Promise<ITax[]> => {
     try {
       const response = await apiRequest.get('/institution/tax/');
+      console.log("Tax response",response)
       return response.data as ITax[];
     } catch (error) {
       throw error;
@@ -3828,43 +3824,18 @@ export const taxAPI = {
     }catch (error) {
       throw error
     }
+  
   },
 
   getAll: async () => {
     try {
+
       const response = await apiRequest.get("/institution/tax")
       return response.data as Itax[]
     }catch (error) {
 
     }
-  },
-
-  getAllEmployeeTaxes: async ({}) => {
-      const response = await apiRequest.get("/payroll/employee-taxes")
-      return response.data as IPaginatedResponse<Itax>
-  },
-
-  createEmployeeTaxes: async ({data}:{data:IEmployeeTaxFormData}) => {
-      const response = await apiRequest.post("/payroll/employee-taxes/", data)
-      return response.data as Itax
-  },
-  getEmployeeTax: async ({taxId}:{taxId:number|string}) => {
-      const response = await apiRequest.get(`/payroll/employee-taxes/${taxId}`)
-      return response.data as Itax
-  },
-  updateEmployeeTax: async ({data, taxId}:{data:Partial<IEmployeeTaxFormData>, taxId:number|string}) => {
-      const response = await apiRequest.patch(`/payroll/employee-taxes/${taxId}`, data)
-      return response.data as Itax
-  },
-  
-  deleteEmployeeTax: async (taxId: number): Promise<boolean> => {
-    try {
-      const response = await apiRequest.delete(`/payroll/employee-taxes/${taxId}`)
-      return response.status === 204
-    } catch (error) {
-      throw error
-    }
-  },
+  }
 
   
 
@@ -4126,22 +4097,24 @@ export const employeeAPI = {
 export const calendarAPI = {
   // Get calendar data for a specific institution and year
   getInstitutionCalendar: async (year: number) => {
-    const response = await apiRequest.get(`calendar/institutions-calendar?year=${year}`);
-
-    if (response.status !== 200) {
+    const response = await apiRequest.get(`calendar/institutions-calendar/?year=${year}`);
+    if (response.status === 200) {
+      return response.data;
+    } else {
       throw new Error('Failed to fetch calendar data');
     }
     
-    return response.data;
   },
 
   // Get all events for an institution
   getEvents: async () => {
     const response = await apiRequest.get(`calendar/events/`);
-    if (response.status !== 200) {
+    if (response.status === 200) {
+      return response.data;
+    } else {
       throw new Error('Failed to fetch events');
     }
-    return response.json();
+    
   },
 
   // Create a new event
@@ -4156,10 +4129,12 @@ export const calendarAPI = {
     specific_employees?: string[];
   }) => {
     const response = await apiRequest.post('calendar/events/', eventData);
-    if (!response.ok) {
+    if (response.status === 201) {
+      return response.data;
+    } else {
       throw new Error('Failed to create event');
     }
-    return response.json();
+    
   },
 
   // Update an existing event
@@ -4172,45 +4147,46 @@ export const calendarAPI = {
     department?: string;
     specific_employees?: string[];
   }) => {
-    const response = await apiRequest.put(`calendar/events/${eventId}/`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(eventData),
-    });
-    if (!response.ok) {
+    const response = await apiRequest.put(`calendar/events/${eventId}/`, eventData);
+    if (response.status === 200) {
+      return response.data;
+    } else {
       throw new Error('Failed to update event');
     }
-    return response.json();
+    
   },
 
   // Delete an event
   deleteEvent: async (eventId: number) => {
-    const response = await fetch(`/api/calendar2/events/${eventId}/`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
+    const response = await apiRequest.delete(`calendar/events/${eventId}/`);
+    if (response.status === 204) {
+      return true;
+    } else {
       throw new Error('Failed to delete event');
     }
-    return true;
+    
   },
 
   // Get a specific event by ID
   getEvent: async (eventId: number) => {
-    const response = await fetch(`/api/calendar2/events/${eventId}/`);
-    if (!response.ok) {
+    const response = await apiRequest.get(`calendar/events/${eventId}/`);
+    if (response.status === 200) {
+      return response.data;
+    } else {
       throw new Error('Failed to fetch event');
     }
-    return response.json();
+    
   },
 
   // Get public holidays for an institution
-  getPublicHolidays: async () => {
-    const response = await apiRequest.get(`calendar/public-holidays/`);
-    if (response.status !== 200) {
+  getPublicHolidays: async (institutionId: number) => {
+    const response = await apiRequest.get(`calendar/public-holidays/?institution=${institutionId}`);
+    if (response.status === 200) {
+      return response.data;
+    } else {
       throw new Error('Failed to fetch public holidays');
     }
-    return response.data
+    
   },
 
   // Create a new public holiday
@@ -4220,10 +4196,12 @@ export const calendarAPI = {
     date: string;
   }) => {
     const response = await apiRequest.post('calendar/public-holidays/', holidayData);
-    if (!response.ok) {
+    if (response.status === 201) {
+      return response.data;
+    } else {
       throw new Error('Failed to create public holiday');
     }
-    return response.json();
+    
   },
 
   // Update a public holiday
@@ -4231,37 +4209,37 @@ export const calendarAPI = {
     title?: string;
     date?: string;
   }) => {
-    const response = await fetch(`/api/calendar2/public-holidays/${holidayId}/`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(holidayData),
-    });
-    if (!response.ok) {
+    const response = await apiRequest.put(`calendar/public-holidays/${holidayId}/`, holidayData);
+    if (response.status === 200) {
+      return response.data;
+    } else {
       throw new Error('Failed to update public holiday');
     }
-    return response.json();
+    
   },
 
   // Delete a public holiday
   deletePublicHoliday: async (holidayId: number) => {
-    const response = await fetch(`/api/calendar2/public-holidays/${holidayId}/`, {
+    const response = await apiRequest.delete(`calendar/public-holidays/${holidayId}/`, {
       method: 'DELETE',
     });
-    if (!response.ok) {
+    if (response.status === 204) {
+      return true;
+    } else {
       throw new Error('Failed to delete public holiday');
     }
-    return true;
+    
   },
 
   // Get calendar data for a specific month/year
   getMonthCalendar: async (institutionId: number, year: number, month: number) => {
-    const response = await fetch(`/api/calendar2/institutions-calendar/?institution=${institutionId}&year=${year}&month=${month}`);
-    if (!response.ok) {
+    const response = await apiRequest.get(`calendar/institutions-calendar/?institution=${institutionId}&year=${year}&month=${month}`);
+    if (response.status === 200) {
+      return response.data;
+    } else {
       throw new Error('Failed to fetch month calendar');
     }
-    return response.json();
+    
   },
 };
 
