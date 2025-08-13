@@ -181,7 +181,7 @@ class EventListCreateView(APIView):
         tags=["Calendar"],
     )
     def post(self, request):
-        print("Creating event with data:", request.data)
+
         serializer = EventSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(created_by=request.user.profile)

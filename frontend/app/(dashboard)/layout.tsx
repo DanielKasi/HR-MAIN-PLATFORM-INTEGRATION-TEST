@@ -279,9 +279,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       icon: <Icon icon="hugeicons:calendar-01" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
         { title: "Calendar", href: "/events-holidays" },
-        { title: "Events", href: "/events-holidays/events" },
-        { title: "Add Event", href: "/events-holidays/events/add" },
-        { title: "Add Holiday", href: "/events-holidays/holidays/add" },
+        
       ],
     },
    
