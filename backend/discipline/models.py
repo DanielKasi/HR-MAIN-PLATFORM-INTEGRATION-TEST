@@ -2,6 +2,7 @@ from django.db import models
 from django.core.validators import MinLengthValidator
 from employee.models import Employee
 from users.models import CustomUser
+from utilities.utility_base_model import UtilityBaseModel
 
 
 class DisciplineType(models.Model):
@@ -27,7 +28,7 @@ class DisciplineType(models.Model):
         ordering = ["severity", "name"]
 
 
-class DisciplinaryAction(models.Model):
+class DisciplinaryAction(UtilityBaseModel):
     """Main disciplinary action record"""
 
     STATUS_CHOICES = [
@@ -70,9 +71,6 @@ class DisciplinaryAction(models.Model):
     follow_up_required = models.BooleanField(default=False)
     follow_up_date = models.DateField(null=True, blank=True)
 
-    # Metadata
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     notes = models.TextField(blank=True, help_text="Any additional notes or comments")
 
     def __str__(self):

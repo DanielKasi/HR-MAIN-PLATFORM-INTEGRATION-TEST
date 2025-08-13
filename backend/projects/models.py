@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
+from utilities.utility_base_model import UtilityBaseModel
 
 class BaseModel(models.Model):
     created_by = models.ForeignKey(
@@ -19,20 +20,12 @@ class BaseModel(models.Model):
         blank=True,
         related_name="%(class)s_updated_by",
     )
-    deleted_at = models.DateTimeField(null=True, blank=True)
-    is_active = models.BooleanField(default=True)
 
     class Meta:
         abstract = True
     
-    def delete(self, *args, **kwargs):
-        """Soft deletes a record by setting the deleted_at timestamp"""
-        self.deleted_at = timezone.now()
-        self.is_active = False
-        self.save(update_fields=["deleted_at", "is_active"])
 
-
-class Project(BaseModel):
+class Project(BaseModel, UtilityBaseModel):
     PROJECT_STATUS_CHOICES = [
         ("not_started", "Not Started"),
         ("planning", "Planning"),
@@ -82,7 +75,7 @@ class Project(BaseModel):
         ]
 
 
-class ProjectDocument(BaseModel):
+class ProjectDocument(BaseModel, UtilityBaseModel):
     project = models.ForeignKey(
         Project,
         on_delete=models.CASCADE,
@@ -103,7 +96,7 @@ class ProjectDocument(BaseModel):
         ]
 
 
-class Task(BaseModel):
+class Task(BaseModel, UtilityBaseModel):
     TASK_STATUS_CHOICES = [
         ("not_started", "Not Started"),
         ("in_progress", "In Progress"),
@@ -171,7 +164,7 @@ class Task(BaseModel):
         ]
 
 
-class TaskDocument(BaseModel):
+class TaskDocument(BaseModel, UtilityBaseModel):
     task = models.ForeignKey(
         Task,
         on_delete=models.CASCADE,
@@ -192,7 +185,7 @@ class TaskDocument(BaseModel):
         ]
 
 
-class TaskTimeSheet(BaseModel):
+class TaskTimeSheet(BaseModel, UtilityBaseModel):
     task = models.OneToOneField(
         Task,
         on_delete=models.CASCADE,
