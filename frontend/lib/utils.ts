@@ -98,6 +98,8 @@ import {
   IAssetRequestFormData,
   IAssetAllocation,
   IAssetAllocationFormData,
+  IPublicHoliday,
+  ICalendarEvent,
 
 } from "@/types/types.utils";
 
@@ -4119,4 +4121,148 @@ export const employeeAPI = {
     }
   },
 };  
+
+// Calendar API functions
+export const calendarAPI = {
+  // Get calendar data for a specific institution and year
+  getInstitutionCalendar: async (year: number) => {
+    const response = await apiRequest.get(`calendar/institutions-calendar?year=${year}`);
+
+    if (response.status !== 200) {
+      throw new Error('Failed to fetch calendar data');
+    }
+    
+    return response.data;
+  },
+
+  // Get all events for an institution
+  getEvents: async () => {
+    const response = await apiRequest.get(`calendar/events/`);
+    if (response.status !== 200) {
+      throw new Error('Failed to fetch events');
+    }
+    return response.json();
+  },
+
+  // Create a new event
+  createEvent: async (eventData: {
+    institution: number;
+    title: string;
+    description: string;
+    date: string;
+    target_audience: "all" | "department" | "individual" | "specific_employees";
+    event_mode: "physical" | "online" | "hybrid";
+    department?: string;
+    specific_employees?: string[];
+  }) => {
+    const response = await apiRequest.post('calendar/events/', eventData);
+    if (!response.ok) {
+      throw new Error('Failed to create event');
+    }
+    return response.json();
+  },
+
+  // Update an existing event
+  updateEvent: async (eventId: number, eventData: {
+    title?: string;
+    description?: string;
+    date?: string;
+    target_audience?: "all" | "department" | "individual" | "specific_employees";
+    event_mode?: "physical" | "online" | "hybrid";
+    department?: string;
+    specific_employees?: string[];
+  }) => {
+    const response = await apiRequest.put(`calendar/events/${eventId}/`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(eventData),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to update event');
+    }
+    return response.json();
+  },
+
+  // Delete an event
+  deleteEvent: async (eventId: number) => {
+    const response = await fetch(`/api/calendar2/events/${eventId}/`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete event');
+    }
+    return true;
+  },
+
+  // Get a specific event by ID
+  getEvent: async (eventId: number) => {
+    const response = await fetch(`/api/calendar2/events/${eventId}/`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch event');
+    }
+    return response.json();
+  },
+
+  // Get public holidays for an institution
+  getPublicHolidays: async () => {
+    const response = await apiRequest.get(`calendar/public-holidays/`);
+    if (response.status !== 200) {
+      throw new Error('Failed to fetch public holidays');
+    }
+    return response.data
+  },
+
+  // Create a new public holiday
+  createPublicHoliday: async (holidayData: {
+    institution: number;
+    title: string;
+    date: string;
+  }) => {
+    const response = await apiRequest.post('calendar/public-holidays/', holidayData);
+    if (!response.ok) {
+      throw new Error('Failed to create public holiday');
+    }
+    return response.json();
+  },
+
+  // Update a public holiday
+  updatePublicHoliday: async (holidayId: number, holidayData: {
+    title?: string;
+    date?: string;
+  }) => {
+    const response = await fetch(`/api/calendar2/public-holidays/${holidayId}/`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(holidayData),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to update public holiday');
+    }
+    return response.json();
+  },
+
+  // Delete a public holiday
+  deletePublicHoliday: async (holidayId: number) => {
+    const response = await fetch(`/api/calendar2/public-holidays/${holidayId}/`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete public holiday');
+    }
+    return true;
+  },
+
+  // Get calendar data for a specific month/year
+  getMonthCalendar: async (institutionId: number, year: number, month: number) => {
+    const response = await fetch(`/api/calendar2/institutions-calendar/?institution=${institutionId}&year=${year}&month=${month}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch month calendar');
+    }
+    return response.json();
+  },
+};
+
 

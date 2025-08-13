@@ -2054,15 +2054,7 @@ export interface IAssetReturnFormData {
   notes?: string;
 }
 
-export interface IAssetCategory {
-  id: number;
-  institution: number;
-  category_name: string;
-  category_description: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+
 
 export interface IAssetCategoryFormData {
   category_name: string;
@@ -2095,15 +2087,39 @@ export interface IAssetFormData {
   status?: "available" | "allocated" | "maintenance" | "decommissioned";
 }
 
-export interface IAssetHistory {
+
+export interface IEvent {
   id: number;
-  asset: number;
-  event_type: "allocated" | "returned" | "maintenance" | "decommissioned" | "created" | "reassigned";
-  performed_by: number;
-  performed_by_details?: any;
-  affected_user: number | null;
-  affected_user_details?: any;
-  notes: string | null;
+  institution: number;
+  title: string;
+  description: string;
+  date: string;
+  target_audience: "all" | "department" | "individual" | "specific_employees";
+  event_mode: "physical" | "online" | "hybrid";
+  department?: string;
+  specific_employees?: string[];
+  created_at: string;
+  updated_at: string;
+  created_by?: number;
+  updated_by?: number;
+}
+
+export interface IEventFormData {
+  institution: number;
+  title: string;
+  description: string;
+  date: string;
+  target_audience: "all" | "department" | "individual" | "specific_employees";
+  event_mode: "physical" | "online" | "hybrid";
+  department?: string;
+  specific_employees?: string[];
+}
+
+export interface IPublicHoliday {
+  id: number;
+  institution: number;
+  title: string;
+  date: string;
   created_at: string;
   updated_at: string;
 }
@@ -2219,12 +2235,25 @@ export interface IEmployeeTax {
   employee: IEmployee;
   institution_tax: ITax;
 }
-export interface IAssetCategory {
+
+export interface IPublicHolidayFormData {
+  institution: number;
+  title: string;
+  date: string;
+}
+
+export interface IEventOccurrence {
+  id: number;
+  event: IEvent;
+  date: string;
+}
+
+export interface ICalendar {
   id: number;
   institution: number;
-  category_name: string;
-  category_description: string | null;
-  is_active: boolean;
+  year: number;
+  public_holidays: IPublicHoliday[];
+  event_occurrences: IEventOccurrence[];
   created_at: string;
   updated_at: string;
 }
@@ -2384,6 +2413,23 @@ export interface IEmployeeTaxFormData {
   effective_from: string;
   effective_to: string;
   institution_tax: number|string;
+}
+export interface ICalendarResponse {
+  calendar: ICalendar;
+  events: IEvent[];
+  holidays: IPublicHoliday[];
+}
+
+
+
+export interface ICalendarEvent {
+  institution: number | IInstitution;
+  year: string;
+  public_holidays: number[] | IPublicHoliday[];
+  events: number[] | IEvent[];
+  created_at: string;
+  updated_at: string;
+
 }
 
 
