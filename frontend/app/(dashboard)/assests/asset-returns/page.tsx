@@ -375,7 +375,7 @@ const AssetReturnsComponent = () => {
             </div>
             
             <div className="flex items-center gap-2">
-              <Select value={pageSize.toString()} onValueChange={(value) => handlePageSizeChange(Number(value))}>
+              <Select value={pageSize.toString()} onValueChange={(value: string) => handlePageSizeChange(Number(value))}>
                 <SelectTrigger className="w-[80px]">
                   <SelectValue />
                 </SelectTrigger>

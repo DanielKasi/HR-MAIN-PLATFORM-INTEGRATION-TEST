@@ -475,17 +475,17 @@ export default function PayrollPeriodDetails() {
 
 
       const updatedData = {
-        basic_salary: basicSalary.toString(), 
-        total_allowances: totalAllowances.toString(), 
-        total_deductions: totalDeductions.toString(), 
+        basic_salary: basicSalary.toString(),
+        total_allowances: totalAllowances.toString(),
+        total_deductions: totalDeductions.toString(),
         days_worked: daysWorked,
         gross_salary: (basicSalary + totalAllowances).toString(),
-        net_salary: (basicSalary + totalAllowances - totalDeductions).toString(), 
+        net_salary: (basicSalary + totalAllowances - totalDeductions).toString(),
       }
 
       const updatedPayslip = await updatePayslip({
         id: editingPayslip.id,
-        payslipData: updatedData, 
+        payslipData: updatedData,
       })
       setPayslips((prev) => [...prev.map((slip) => (slip.id === updatedPayslip.id ? updatedPayslip : slip))])
 
@@ -575,149 +575,207 @@ export default function PayrollPeriodDetails() {
               <div>
                 {
                   payrollPeriod && <>
-                <CardTitle className="text-2xl font-bold text-gray-900">Payslips for {payrollPeriod.name}</CardTitle>
-                <CardDescription className="text-gray-600">
-                  Manage payslips for {formatDate(payrollPeriod.start_date)} - {formatDate(payrollPeriod.end_date)}
-                </CardDescription>
+                    <CardTitle className="text-2xl font-bold text-gray-900">Payslips for {payrollPeriod.name}</CardTitle>
+                    <CardDescription className="text-gray-600">
+                      Manage payslips for {formatDate(payrollPeriod.start_date)} - {formatDate(payrollPeriod.end_date)}
+                    </CardDescription>
                   </>
                 }
               </div>
             </div>
           </div>
         </CardHeader>
-        
-        {/* Search and Filters */}<div className="flex items-center justify-between mt-10">
-  {/* Search bar */}
-  <div className="relative flex-1 max-w-xl">
-    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-    <Input
-      placeholder="Search by employee name or email..."
-      value={searchTerm}
-      onChange={(e) => {
-        setSearchTerm(e.target.value)
-        resetPagination()
-      }}
-      className="pl-10 h-12 w-full"
-    />
-  </div>
 
-  {/* Buttons container */}
-  <div className="flex gap-2 ml-6">
-    {/* Bulk Payments dialog/button */}
-    <Dialog open={bulkPaymentModalOpen} onOpenChange={setBulkPaymentModalOpen}>
+        {/* Search and Filters */}<div className="flex items-center justify-between mt-10">
+          {/* Search bar */}
+          <div className="relative flex-1 max-w-xl">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search by employee name or email..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                resetPagination()
+              }}
+              className="pl-10 h-12 w-full"
+            />
+          </div>
+
+          {/* Buttons container */}
+          <div className="flex gap-2 ml-6">
+            {/* Bulk Payments dialog/button */}
+            <Dialog open={bulkPaymentModalOpen} onOpenChange={setBulkPaymentModalOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  className="bg-green-600 hover:bg-green-700 shadow-md"
+                  disabled={!selectedInstitution || displayedPayslips.filter((p) => !p.is_paid).length === 0}
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Bulk Payments
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Process Payments in Bulk</DialogTitle>
+                  <DialogDescription>
+                    Select a department to mark all unpaid payslips as paid for this period
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label htmlFor="department" className="text-sm font-medium text-gray-700">
+                        Department
+                      </label>
+                      <Select
+                        value={selectedDepartment}
+                        onValueChange={setSelectedDepartment}
+                        disabled={bulkProcessing}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select department" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Departments</SelectItem>
+                          {departments.map((dept, idx) => (
+                            <SelectItem key={idx} value={dept.id.toString()}>
+                              {dept.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {selectedDepartment && (
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <h4 className="font-semibold text-green-900 mb-2">
+                          {getUnpaidPayslipsByDepartment(selectedDepartment).length} unpaid payslips found
+                        </h4>
+                        <div className="text-sm text-green-800">
+                          {selectedDepartment === "all"
+                            ? "This will process payments for all unpaid payslips in this period."
+                            : `This will process payments for all unpaid payslips in ${departments.find(dept => dept.id.toString() === selectedDepartment)?.name || ""}.`}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setBulkPaymentModalOpen(false)
+                        setSelectedDepartment("all")
+                      }}
+                      disabled={bulkProcessing}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleBulkMarkAsPaid}
+                      className="bg-green-600 hover:bg-green-700"
+                      disabled={
+                        bulkProcessing ||
+                        !selectedDepartment ||
+                        getUnpaidPayslipsByDepartment(selectedDepartment).length === 0
+                      }
+                    >
+                      {bulkProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Process {getUnpaidPayslipsByDepartment(selectedDepartment).length} Payments
+                    </Button>
+                  </DialogFooter>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+
+            {/* Generate Payslips button */}
+            {payrollPeriod && <Button
+              onClick={handleGeneratePayslips}
+              className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400"
+              disabled={payrollPeriod.is_processed || !selectedInstitution || !payrollPeriodId || isGenerating}
+            >
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4 mr-2" />
+              )}
+              {isGenerating ? "Generating..." : "Generate Payslips"}
+            </Button>}
+
+            {
+              payrollPeriod &&
+              <Dialog open={downloadModalOpen} onOpenChange={setDownloadModalOpen}>
                 <DialogTrigger asChild>
-                  <Button
-                    className="bg-green-600 hover:bg-green-700 shadow-md"
-                    disabled={!selectedInstitution || displayedPayslips.filter((p) => !p.is_paid).length === 0}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Bulk Payments
+                  <Button className="shadow-md" disabled={!selectedInstitution?.id}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>Process Payments in Bulk</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2">
+                      <CreditCard className="h-5 w-5" />
+                      Select Payment Account
+                    </DialogTitle>
                     <DialogDescription>
-                      Select a department to mark all unpaid payslips as paid for this period
+                      Choose the bank account from which payslips will be generated for {payrollPeriod.name}
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label htmlFor="department" className="text-sm font-medium text-gray-700">
-                          Department
-                        </label>
-                        <Select
-                          value={selectedDepartment}
-                          onValueChange={setSelectedDepartment}
-                          disabled={bulkProcessing}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select department" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Departments</SelectItem>
-                            {departments.map((dept, idx) => (
-                              <SelectItem key={idx} value={dept.id.toString()}>
-                                {dept.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {selectedDepartment && (
-                        <div className="bg-green-50 p-4 rounded-lg">
-                          <h4 className="font-semibold text-green-900 mb-2">
-                            {getUnpaidPayslipsByDepartment(selectedDepartment).length} unpaid payslips found
-                          </h4>
-                          <div className="text-sm text-green-800">
-                            {selectedDepartment === "all"
-                              ? "This will process payments for all unpaid payslips in this period."
-                              : `This will process payments for all unpaid payslips in ${departments.find(dept => dept.id.toString() === selectedDepartment)?.name || ""}.`}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setBulkPaymentModalOpen(false)
-                          setSelectedDepartment("all")
-                        }}
-                        disabled={bulkProcessing}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={handleBulkMarkAsPaid}
-                        className="bg-green-600 hover:bg-green-700"
-                        disabled={
-                          bulkProcessing ||
-                          !selectedDepartment ||
-                          getUnpaidPayslipsByDepartment(selectedDepartment).length === 0
-                        }
-                      >
-                        {bulkProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Process {getUnpaidPayslipsByDepartment(selectedDepartment).length} Payments
-                      </Button>
-                    </DialogFooter>
+
+                  <div className="py-4">
+                    <InfiniteScrollSelect
+                      items={bankAccounts}
+                      loading={bankAccountsLoading}
+                      hasMore={bankAccountsHasMore}
+                      onLoadMore={handleLoadMoreBankAccounts}
+                      onSearch={handleBankAccountSearch}
+                      onSelect={setSelectedBankAccount}
+                      selectedItem={selectedBankAccount}
+                      getItemId={(account) => account.id}
+                      getItemLabel={(account) => account.account_name || account.account_number}
+                      getItemDescription={(account) => `${account.account_name} • ${account.account_number}`}
+                      placeholder="Select a bank account..."
+                      searchPlaceholder="Search bank accounts..."
+                      emptyMessage="No bank accounts found"
+                    />
                   </div>
+
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setDownloadModalOpen(false)
+                        setSelectedBankAccount(null)
+                      }}
+                      disabled={isDownloading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleDownloadPayroll}
+                      disabled={!selectedBankAccount || isDownloading}
+                    >
+                      {isDownloading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Downloading...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 h-4 w-4" />
+                          Download Payroll
+                        </>
+                      )}
+                    </Button>
+                  </DialogFooter>
                 </DialogContent>
               </Dialog>
+            }
+          </div>
+        </div>
 
 
-    {/* Generate Payslips button */}
-    {payrollPeriod && <Button
-      onClick={handleGeneratePayslips}
-      className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400"
-      disabled={payrollPeriod.is_processed || !selectedInstitution || !payrollPeriodId || isGenerating}
-    >
-      {isGenerating ? (
-        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-      ) : (
-        <Plus className="w-4 h-4 mr-2" />
-      )}
-      {isGenerating ? "Generating..." : "Generate Payslips"}
-    </Button>}
-
-    {/* Download dialog/button */}
-    <Dialog open={downloadModalOpen} onOpenChange={setDownloadModalOpen}>
-      <DialogTrigger asChild>
-        <Button className="shadow-md" disabled={!selectedInstitution?.id}>
-          <Download className="w-4 h-4 mr-2" />
-          Download
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl">
-        {/* Dialog contents here */}
-      </DialogContent>
-    </Dialog>
-  </div>
-</div>
-
-                      
 
         {/* Results Table */}
         <div className="bg-white rounded-lg shadow-sm  overflow-hidden mx-2">
@@ -746,326 +804,324 @@ export default function PayrollPeriodDetails() {
             </div>
           ) : (
             <>
-          <div className="overflow-x-auto mt-10">
-            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-              <TableHeader className="bg-gray-50/50">
-                  <TableRow className="bg-gray-50">
-                    <TableHead className="font-semibold text-gray-700 py-4">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        Employee
-                      </div>
-                    </TableHead>
-                    <TableHead className="font-semibold text-gray-700">Basic Salary</TableHead>
-                    <TableHead className="font-semibold text-gray-700">Allowances</TableHead>
-                    <TableHead className="font-semibold text-gray-700">Deductions</TableHead>
-                    <TableHead className="font-semibold text-gray-700">
-                      <div className="flex items-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        Net Salary
-                      </div>
-                    </TableHead>
-                    <TableHead className="font-semibold text-gray-700">Days</TableHead>
-                    <TableHead className="font-semibold text-gray-700">Status</TableHead>
-                    <TableHead className="font-semibold text-gray-700 text-center">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {displayedPayslips.map((payslip, index) => (
-                    <TableRow
-                      key={payslip.id}
-                      className={`hover:bg-orange-50/30 transition-colors border-b ${
-                        index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
-                      }`}
-                    >
-                      <TableCell className="py-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10 border-2 border-orange-100">
-                            <AvatarFallback className="bg-orange-100 text-orange-700 font-semibold">
-                              {getInitials(payslip.employee.user?.fullname || "")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-semibold text-gray-900">{payslip.employee.user?.fullname || ""}</div>
-                            <div className="text-sm text-gray-500">{payslip.employee.department.name}</div>
-                          </div>
+              <div className="overflow-x-auto mt-10">
+                <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                  <TableHeader className="bg-gray-50/50">
+                    <TableRow className="bg-gray-50">
+                      <TableHead className="font-semibold text-gray-700 py-4">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4" />
+                          Employee
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-semibold text-gray-900">{formatCurrency(payslip.basic_salary)}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-semibold text-green-600">
-                          {formatCurrency(payslip.total_allowances)}
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700">Basic Salary</TableHead>
+                      <TableHead className="font-semibold text-gray-700">Allowances</TableHead>
+                      <TableHead className="font-semibold text-gray-700">Deductions</TableHead>
+                      <TableHead className="font-semibold text-gray-700">
+                        <div className="flex items-center gap-2">
+                          <Plus className="w-4 h-4" />
+                          Net Salary
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-semibold text-red-600">{formatCurrency(payslip.total_deductions)}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-semibold text-green-700">{formatCurrency(payslip.net_salary)}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-center font-medium text-gray-700">{payslip.days_worked}</div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={payslip.is_paid ? "default" : "secondary"}
-                          className={`${
-                            payslip.is_paid
-                              ? "bg-green-100 text-green-800 border-green-200"
-                              : "bg-yellow-100 text-yellow-800 border-yellow-200"
-                          } font-medium px-3 py-1`}
-                        >
-                          <div className="flex items-center gap-1">
-                            {payslip.is_paid ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                            {payslip.is_paid ? "Paid" : "Unpaid"}
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700">Days</TableHead>
+                      <TableHead className="font-semibold text-gray-700">Status</TableHead>
+                      <TableHead className="font-semibold text-gray-700 text-center">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {displayedPayslips.map((payslip, index) => (
+                      <TableRow
+                        key={payslip.id}
+                        className={`hover:bg-orange-50/30 transition-colors border-b ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                          }`}
+                      >
+                        <TableCell className="py-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-10 w-10 border-2 border-orange-100">
+                              <AvatarFallback className="bg-orange-100 text-orange-700 font-semibold">
+                                {getInitials(payslip.employee.user?.fullname || "")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-semibold text-gray-900">{payslip.employee.user?.fullname || ""}</div>
+                              <div className="text-sm text-gray-500">{payslip.employee.department.name}</div>
+                            </div>
                           </div>
-                        </Badge>
-                        {payslip.paid_date && (
-                          <div className="text-xs text-gray-500 mt-1">{formatDate(payslip.paid_date)}</div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex justify-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
-                                title="Actions"
-                              >
-                                <MoreVertical className="w-5 h-5 text-gray-600" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-white rounded-lg shadow-lg p-3">
-                              {/* Add Edit button as first option */}
-                              <DropdownMenuItem className="flex justify-start">
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-semibold text-gray-900">{formatCurrency(payslip.basic_salary)}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-semibold text-green-600">
+                            {formatCurrency(payslip.total_allowances)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-semibold text-red-600">{formatCurrency(payslip.total_deductions)}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-semibold text-green-700">{formatCurrency(payslip.net_salary)}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-center font-medium text-gray-700">{payslip.days_worked}</div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={payslip.is_paid ? "default" : "secondary"}
+                            className={`${payslip.is_paid
+                                ? "bg-green-100 text-green-800 border-green-200"
+                                : "bg-yellow-100 text-yellow-800 border-yellow-200"
+                              } font-medium px-3 py-1`}
+                          >
+                            <div className="flex items-center gap-1">
+                              {payslip.is_paid ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                              {payslip.is_paid ? "Paid" : "Unpaid"}
+                            </div>
+                          </Badge>
+                          {payslip.paid_date && (
+                            <div className="text-xs text-gray-500 mt-1">{formatDate(payslip.paid_date)}</div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-center">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
                                 <Button
-                                  variant={"ghost"}
-                                  className="!w-full !justify-start flex"
-                                  onClick={() => handleEditPayslip(payslip)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
+                                  title="Actions"
                                 >
-                                  <Edit className="w-4 h-4 mr-2 text-blue-600" />
-                                  Edit Payslip
+                                  <MoreVertical className="w-5 h-5 text-gray-600" />
                                 </Button>
-                              </DropdownMenuItem>
-
-                              <DropdownMenuItem className="flex justify-start">
-                                <Button
-                                  variant={"ghost"}
-                                  className="!w-full !justify-start flex"
-                                  onClick={() => navigateToPayslipItems(payslip.id)}
-                                >
-                                  <FileText className="w-4 h-4 mr-2 text-blue-600" />
-                                  View Payslip Items
-                                </Button>
-                              </DropdownMenuItem>
-
-                              {/* Rest of your existing menu items */}
-                              {!payslip.is_paid && (
-                                <DropdownMenuItem className="!justify-start !items-start flex">
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="bg-white rounded-lg shadow-lg p-3">
+                                {/* Add Edit button as first option */}
+                                <DropdownMenuItem className="flex justify-start">
                                   <Button
                                     variant={"ghost"}
-                                    className="!w-full !items-start justify-start flex"
-                                    onClick={() => handleMarkAsPaid(payslip)}
+                                    className="!w-full !justify-start flex"
+                                    onClick={() => handleEditPayslip(payslip)}
                                   >
-                                    <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
-                                    Mark as Paid
+                                    <Edit className="w-4 h-4 mr-2 text-blue-600" />
+                                    Edit Payslip
                                   </Button>
                                 </DropdownMenuItem>
-                              )}
 
-                              <DropdownMenuSeparator />
+                                <DropdownMenuItem className="flex justify-start">
+                                  <Button
+                                    variant={"ghost"}
+                                    className="!w-full !justify-start flex"
+                                    onClick={() => navigateToPayslipItems(payslip.id)}
+                                  >
+                                    <FileText className="w-4 h-4 mr-2 text-blue-600" />
+                                    View Payslip Items
+                                  </Button>
+                                </DropdownMenuItem>
 
-                              <DropdownMenuItem className="flex !justify-start items-center text-red-600 focus:text-red-700">
-                                <Button
-                                  variant={"ghost"}
-                                  className="!w-full !items-start justify-start"
-                                  onClick={() => setDeleteConfirmId(payslip.id)}
-                                >
-                                  <Trash2 className="w-4 h-4 mr-2" />
-                                  Delete
-                                </Button>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                          <Dialog
-                            open={deleteConfirmId === payslip.id}
-                            onOpenChange={(open: any) => !open && setDeleteConfirmId(null)}
-                          >
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Confirm Deletion</DialogTitle>
-                                <DialogDescription>
-                                  Are you sure you want to delete the payslip for{" "}
-                                  {payslip.employee.user?.fullname || ""} in {payslip.payroll_period.name}? This action
-                                  cannot be undone.
-                                </DialogDescription>
-                              </DialogHeader>
-                              <DialogFooter>
-                                <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
-                                  Cancel
-                                </Button>
-                                <Button variant="destructive" onClick={() => handleDelete(payslip.id)}>
-                                  Delete
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                          {/* Add this Edit Modal Dialog after the delete confirmation dialog */}
-                          <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-                            <DialogContent className="max-w-2xl">
-                              <DialogHeader>
-                                <DialogTitle>Edit Payslip</DialogTitle>
-                                <DialogDescription>
-                                  Update payslip details for {editingPayslip?.employee.user?.fullname || ""} in{" "}
-                                  {editingPayslip?.payroll_period.name}
-                                </DialogDescription>
-                              </DialogHeader>
+                                {/* Rest of your existing menu items */}
+                                {!payslip.is_paid && (
+                                  <DropdownMenuItem className="!justify-start !items-start flex">
+                                    <Button
+                                      variant={"ghost"}
+                                      className="!w-full !items-start justify-start flex"
+                                      onClick={() => handleMarkAsPaid(payslip)}
+                                    >
+                                      <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                                      Mark as Paid
+                                    </Button>
+                                  </DropdownMenuItem>
+                                )}
 
-                              <div className="grid grid-cols-2 gap-4 py-4">
-                                <div className="space-y-2">
-                                  <label htmlFor="basic_salary" className="text-sm font-medium">
-                                    Basic Salary (UGX)
-                                  </label>
-                                  <Input
-                                    id="basic_salary"
-                                    type="number"
-                                    value={editFormData.basic_salary}
-                                    onChange={(e) =>
-                                      setEditFormData((prev) => ({
-                                        ...prev,
-                                        basic_salary: Number(e.target.value),
-                                      }))
-                                    }
-                                    disabled={isUpdating}
-                                    placeholder="Enter basic salary"
-                                  />
-                                </div>
+                                <DropdownMenuSeparator />
 
-                                <div className="space-y-2">
-                                  <label htmlFor="days_worked" className="text-sm font-medium">
-                                    Days Worked
-                                  </label>
-                                  <Input
-                                    id="days_worked"
-                                    type="number"
-                                    value={editFormData.days_worked}
-                                    onChange={(e) =>
-                                      setEditFormData((prev) => ({
-                                        ...prev,
-                                        days_worked: Number(e.target.value),
-                                      }))
-                                    }
-                                    disabled={isUpdating}
-                                    placeholder="Enter days worked"
-                                  />
-                                </div>
+                                <DropdownMenuItem className="flex !justify-start items-center text-red-600 focus:text-red-700">
+                                  <Button
+                                    variant={"ghost"}
+                                    className="!w-full !items-start justify-start"
+                                    onClick={() => setDeleteConfirmId(payslip.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete
+                                  </Button>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                            <Dialog
+                              open={deleteConfirmId === payslip.id}
+                              onOpenChange={(open: any) => !open && setDeleteConfirmId(null)}
+                            >
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Confirm Deletion</DialogTitle>
+                                  <DialogDescription>
+                                    Are you sure you want to delete the payslip for{" "}
+                                    {payslip.employee.user?.fullname || ""} in {payslip.payroll_period.name}? This action
+                                    cannot be undone.
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <DialogFooter>
+                                  <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
+                                    Cancel
+                                  </Button>
+                                  <Button variant="destructive" onClick={() => handleDelete(payslip.id)}>
+                                    Delete
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                            {/* Add this Edit Modal Dialog after the delete confirmation dialog */}
+                            <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+                              <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                  <DialogTitle>Edit Payslip</DialogTitle>
+                                  <DialogDescription>
+                                    Update payslip details for {editingPayslip?.employee.user?.fullname || ""} in{" "}
+                                    {editingPayslip?.payroll_period.name}
+                                  </DialogDescription>
+                                </DialogHeader>
 
-                                <div className="space-y-2">
-                                  <label htmlFor="total_allowances" className="text-sm font-medium">
-                                    Total Allowances (UGX)
-                                  </label>
-                                  <Input
-                                    id="total_allowances"
-                                    type="number"
-                                    value={editFormData.total_allowances}
-                                    onChange={(e) =>
-                                      setEditFormData((prev) => ({
-                                        ...prev,
-                                        total_allowances: Number(e.target.value),
-                                      }))
-                                    }
-                                    disabled={isUpdating}
-                                    placeholder="Enter total allowances"
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <label htmlFor="total_deductions" className="text-sm font-medium">
-                                    Total Deductions (UGX)
-                                  </label>
-                                  <Input
-                                    id="total_deductions"
-                                    type="number"
-                                    value={editFormData.total_deductions}
-                                    onChange={(e) =>
-                                      setEditFormData((prev) => ({
-                                        ...prev,
-                                        total_deductions: Number(e.target.value),
-                                      }))
-                                    }
-                                    disabled={isUpdating}
-                                    placeholder="Enter total deductions"
-                                  />
-                                </div>
-                              </div>
-
-                              {/* Preview calculated values */}
-                              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                                <h4 className="font-medium text-gray-900">Calculated Values</h4>
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                  <div>
-                                    <span className="text-gray-600">Gross Salary:</span>
-                                    <span className="ml-2 font-medium">
-                                      UGX{" "}
-                                      {formatCurrency(
-                                        Number(editFormData.basic_salary || 0) +
-                                          Number(editFormData.total_allowances || 0),
-                                      )}
-                                    </span>
+                                <div className="grid grid-cols-2 gap-4 py-4">
+                                  <div className="space-y-2">
+                                    <label htmlFor="basic_salary" className="text-sm font-medium">
+                                      Basic Salary (UGX)
+                                    </label>
+                                    <Input
+                                      id="basic_salary"
+                                      type="number"
+                                      value={editFormData.basic_salary}
+                                      onChange={(e) =>
+                                        setEditFormData((prev) => ({
+                                          ...prev,
+                                          basic_salary: Number(e.target.value),
+                                        }))
+                                      }
+                                      disabled={isUpdating}
+                                      placeholder="Enter basic salary"
+                                    />
                                   </div>
-                                  <div>
-                                    <span className="text-gray-600">Net Salary:</span>
-                                    <span className="ml-2 font-medium text-green-600">
-                                      UGX{" "}
-                                      {formatCurrency(
-                                        Number(editFormData.basic_salary || 0) +
+
+                                  <div className="space-y-2">
+                                    <label htmlFor="days_worked" className="text-sm font-medium">
+                                      Days Worked
+                                    </label>
+                                    <Input
+                                      id="days_worked"
+                                      type="number"
+                                      value={editFormData.days_worked}
+                                      onChange={(e) =>
+                                        setEditFormData((prev) => ({
+                                          ...prev,
+                                          days_worked: Number(e.target.value),
+                                        }))
+                                      }
+                                      disabled={isUpdating}
+                                      placeholder="Enter days worked"
+                                    />
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <label htmlFor="total_allowances" className="text-sm font-medium">
+                                      Total Allowances (UGX)
+                                    </label>
+                                    <Input
+                                      id="total_allowances"
+                                      type="number"
+                                      value={editFormData.total_allowances}
+                                      onChange={(e) =>
+                                        setEditFormData((prev) => ({
+                                          ...prev,
+                                          total_allowances: Number(e.target.value),
+                                        }))
+                                      }
+                                      disabled={isUpdating}
+                                      placeholder="Enter total allowances"
+                                    />
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <label htmlFor="total_deductions" className="text-sm font-medium">
+                                      Total Deductions (UGX)
+                                    </label>
+                                    <Input
+                                      id="total_deductions"
+                                      type="number"
+                                      value={editFormData.total_deductions}
+                                      onChange={(e) =>
+                                        setEditFormData((prev) => ({
+                                          ...prev,
+                                          total_deductions: Number(e.target.value),
+                                        }))
+                                      }
+                                      disabled={isUpdating}
+                                      placeholder="Enter total deductions"
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Preview calculated values */}
+                                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                                  <h4 className="font-medium text-gray-900">Calculated Values</h4>
+                                  <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                      <span className="text-gray-600">Gross Salary:</span>
+                                      <span className="ml-2 font-medium">
+                                        UGX{" "}
+                                        {formatCurrency(
+                                          Number(editFormData.basic_salary || 0) +
+                                          Number(editFormData.total_allowances || 0),
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-600">Net Salary:</span>
+                                      <span className="ml-2 font-medium text-green-600">
+                                        UGX{" "}
+                                        {formatCurrency(
+                                          Number(editFormData.basic_salary || 0) +
                                           Number(editFormData.total_allowances || 0) -
                                           Number(editFormData.total_deductions || 0),
-                                      )}
-                                    </span>
+                                        )}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
 
-                              <DialogFooter>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => {
-                                    setEditModalOpen(false)
-                                    resetEditForm()
-                                  }}
-                                  disabled={isUpdating}
-                                >
-                                  Cancel
-                                </Button>
-                                <Button
-                                  onClick={handleUpdatePayslip}
-                                  disabled={isUpdating}
-                                  className="bg-orange-600 hover:bg-orange-700"
-                                >
-                                  {isUpdating ? (
-                                    <>
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                      Updating...
-                                    </>
-                                  ) : (
-                                    "Update Payslip"
-                                  )}
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                                <DialogFooter>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditModalOpen(false)
+                                      resetEditForm()
+                                    }}
+                                    disabled={isUpdating}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    onClick={handleUpdatePayslip}
+                                    disabled={isUpdating}
+                                    className="bg-orange-600 hover:bg-orange-700"
+                                  >
+                                    {isUpdating ? (
+                                      <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Updating...
+                                      </>
+                                    ) : (
+                                      "Update Payslip"
+                                    )}
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white">
                   <div className="flex items-center text-sm text-gray-700">
@@ -1096,11 +1152,10 @@ export default function PayrollPeriodDetails() {
                               variant={currentPage === page ? "default" : "outline"}
                               size="sm"
                               onClick={() => handlePageChange(page as number)}
-                              className={`w-8 h-8 p-0 ${
-                                currentPage === page
+                              className={`w-8 h-8 p-0 ${currentPage === page
                                   ? "bg-orange-600 hover:bg-orange-700 text-white"
                                   : "hover:bg-gray-50"
-                              }`}
+                                }`}
                             >
                               {page}
                             </Button>
