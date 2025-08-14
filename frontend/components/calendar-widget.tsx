@@ -94,6 +94,8 @@ export function SimpleCalendarWidget() {
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const institutionId = selectedInstitution?.id;
 
+  console.log("Calendar", calendar)
+
   const fetchCalendar = async (year: number) => {
     try {
       setLoading(true);
@@ -116,10 +118,12 @@ export function SimpleCalendarWidget() {
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
+    
+    // Create dates using UTC to avoid timezone issues
+    const firstDay = new Date(Date.UTC(year, month, 1));
+    const lastDay = new Date(Date.UTC(year, month + 1, 0));
+    const daysInMonth = lastDay.getUTCDate();
+    const startingDayOfWeek = firstDay.getUTCDay();
 
     const days = [];
 
@@ -128,9 +132,13 @@ export function SimpleCalendarWidget() {
       days.push(null);
     }
 
-    // Add all days of the month
+    // Add all days of the month using UTC dates
     for (let day = 1; day <= daysInMonth; day++) {
-      days.push(new Date(year, month, day));
+      // Create date using UTC to avoid timezone shifts
+      const utcDate = new Date(Date.UTC(year, month, day));
+      // Convert to local date for display
+      const localDate = new Date(utcDate.getTime());
+      days.push(localDate);
     }
 
     return days;
@@ -138,7 +146,10 @@ export function SimpleCalendarWidget() {
 
   const getEventsForDate = (date: Date) => {
     if (!calendar) return {events: [], holidays: []};
-    const dateStr = date.toISOString().split("T")[0];
+    
+    // Create a date string in YYYY-MM-DD format using local date components
+    // This avoids timezone issues when comparing dates
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
     const events = calendar.event_occurrences
       .filter((occurrence) => occurrence.date === dateStr)
@@ -161,7 +172,10 @@ export function SimpleCalendarWidget() {
 
   const isToday = (date: Date) => {
     const today = new Date();
-    return date.toDateString() === today.toDateString();
+    // Compare date components directly to avoid timezone issues
+    return date.getFullYear() === today.getFullYear() &&
+           date.getMonth() === today.getMonth() &&
+           date.getDate() === today.getDate();
   };
 
   const handleMouseEnter = (day: Date, event: React.MouseEvent) => {
