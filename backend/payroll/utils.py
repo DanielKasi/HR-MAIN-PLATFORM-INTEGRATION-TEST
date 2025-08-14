@@ -215,9 +215,10 @@ class PayrollProcessor:
         if isinstance(payroll_period, int):
             payroll_period = get_object_or_404(PayrollPeriod, id=payroll_period)
 
-        employees = Employee.objects.filter(is_active=True)
-        if employee_ids:
-            employees = employees.filter(id__in=employee_ids)
+        employees = Employee.objects.filter(
+            id__in=employee_ids,
+            is_active=True,
+        )
 
         created_payslips = []
 
