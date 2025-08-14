@@ -2,6 +2,7 @@
 
 import { IEmployeeAllowance } from '@/types/types.utils'
 import { Users, CoinsIcon as Coins2, CalendarPlus2Icon as CalendarIcon2, Percent } from 'lucide-react'
+import { formatCurrency } from '@/lib/helpers'
 
 interface AllowanceStatsCardsProps {
   allowances: IEmployeeAllowance[]
@@ -45,7 +46,7 @@ export function AllowanceStatsCards({ allowances, getCalculatedAmount }: Allowan
           <div className="ml-3">
             <p className="text-sm font-medium text-gray-600">Total Monthly Cost</p>
             <p className="text-2xl font-bold text-blue-600">
-              {totalMonthlyCost.toLocaleString()}
+              {formatCurrency(totalMonthlyCost)}
             </p>
           </div>
         </div>

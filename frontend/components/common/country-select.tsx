@@ -50,7 +50,7 @@ export default function CountrySelect({
     }, [searchTerm, countries])
 
     const getFlag = (cca2: string) =>
-        String.fromCodePoint(...cca2.split("").map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
+        String.fromCodePoint(...cca2?.split("").map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
 
     const getCountryCode = (country: ICountry) =>
         country.idd?.root

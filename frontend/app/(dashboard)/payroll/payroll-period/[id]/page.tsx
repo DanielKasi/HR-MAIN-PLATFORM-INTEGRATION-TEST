@@ -792,18 +792,18 @@ export default function PayrollPeriodDetails() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="font-semibold text-gray-900">UGX {formatCurrency(payslip.basic_salary)}</div>
+                        <div className="font-semibold text-gray-900">{formatCurrency(payslip.basic_salary)}</div>
                       </TableCell>
                       <TableCell>
                         <div className="font-semibold text-green-600">
-                          UGX {formatCurrency(payslip.total_allowances)}
+                          {formatCurrency(payslip.total_allowances)}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="font-semibold text-red-600">UGX {formatCurrency(payslip.total_deductions)}</div>
+                        <div className="font-semibold text-red-600">{formatCurrency(payslip.total_deductions)}</div>
                       </TableCell>
                       <TableCell>
-                        <div className="font-semibold text-green-700">UGX {formatCurrency(payslip.net_salary)}</div>
+                        <div className="font-semibold text-green-700">{formatCurrency(payslip.net_salary)}</div>
                       </TableCell>
                       <TableCell>
                         <div className="text-center font-medium text-gray-700">{payslip.days_worked}</div>

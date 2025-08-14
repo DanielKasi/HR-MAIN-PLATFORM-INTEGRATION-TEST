@@ -1920,7 +1920,7 @@ export default function ApplicationsPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground z-10" />
                 <Select
-                  value={formData.job_position_advert.toString()}
+                  value={formData.job_position_advert?.toString()}
                   onValueChange={(value: string) =>
                     handleInputChange("job_position_advert", Number.parseInt(value))
                   }

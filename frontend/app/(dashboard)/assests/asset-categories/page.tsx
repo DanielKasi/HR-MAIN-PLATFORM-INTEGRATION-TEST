@@ -32,8 +32,8 @@ import { CreateAssetCategoryDialog } from "@/components/asset-categories/create-
 import { EditAssetCategoryDialog } from "@/components/asset-categories/edit-asset-category-dialog";
 import { DeleteAssetCategoryDialog } from "@/components/asset-categories/delete-asset-category-dialog";
 import { useRouter } from "next/navigation";
-import { assetCategoriesAPI } from "@/lib/utils";
-import type { IAssetCategory } from "@/types/types.utils";
+import { assetCategoriesAPI, assetsAPI } from "@/lib/utils";
+import type { IAssetCategory, IAsset } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
 
 // Pagination constants
@@ -58,6 +58,7 @@ const AssetCategoriesComponent = () => {
   const router = useRouter();
   const isMobile = useMobile();
   const [assetCategories, setAssetCategories] = useState<IAssetCategory[]>([]);
+  const [assets, setAssets] = useState<IAsset[]>([]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingAssetCategory, setEditingAssetCategory] = useState<IAssetCategory | null>(null);
@@ -87,9 +88,28 @@ const AssetCategoriesComponent = () => {
     }
   }, [selectedInstitution?.id]);
 
+  // Fetch assets from API
+  const fetchAssets = useCallback(async () => {
+    if (!selectedInstitution?.id) return;
+
+    try {
+      const data = await assetsAPI.getAll();
+      setAssets(data);
+    } catch (error) {
+      console.warn("Error fetching assets:", error);
+      setAssets([]);
+    }
+  }, [selectedInstitution?.id]);
+
   useEffect(() => {
     fetchAssetCategories();
-  }, [fetchAssetCategories]);
+    fetchAssets();
+  }, [fetchAssetCategories, fetchAssets]);
+
+  // Calculate asset count for each category
+  const getAssetCount = useCallback((categoryId: number) => {
+    return assets.filter(asset => asset.category?.id === categoryId).length;
+  }, [assets]);
 
   const handleCreateSuccess = (newAssetCategory: IAssetCategory) => {
     setAssetCategories([newAssetCategory, ...assetCategories]);
@@ -233,9 +253,8 @@ const AssetCategoriesComponent = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      
                       <TableHead>Category Name</TableHead>
-                      <TableHead>Description</TableHead>
+                      <TableHead className="text-center">Asset Count</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead className="w-12">Actions</TableHead>
@@ -244,7 +263,7 @@ const AssetCategoriesComponent = () => {
                   <TableBody>
                     {paginatedAssetCategories.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                           {hasFilters ? "No asset categories found matching your filters" : "No asset categories found"}
                         </TableCell>
                       </TableRow>
@@ -253,9 +272,12 @@ const AssetCategoriesComponent = () => {
                         <TableRow key={category.id}>
                           
                           <TableCell className="font-medium">{category.category_name}</TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {category.category_description || "No description"}
+                          <TableCell className="text-center">
+                            <span className="font-medium text-gray-900">
+                              {getAssetCount(category.id)} Asset{getAssetCount(category.id) !== 1 ? '(s)' : ''}
+                            </span>
                           </TableCell>
+                       
                           <TableCell>
                             <Badge className={getStatusColor(category.is_active)}>
                               {category.is_active ? "Active" : "Inactive"}
@@ -306,19 +328,17 @@ const AssetCategoriesComponent = () => {
                     <div key={category.id} className="bg-gray-50 rounded-lg p-4 border">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 mb-1">{category.category_name}</h3>
-                          <div className="space-y-1 mb-2">
-                            <p className="text-sm text-gray-600">
-                              {category.category_description || "No description"}
-                            </p>
-                            <div className="flex items-center gap-2">
-                              <Badge className={getStatusColor(category.is_active)}>
-                                {category.is_active ? "Active" : "Inactive"}
-                              </Badge>
-                              <span className="text-sm text-gray-500">
-                                Created: {formatDate(category.created_at)}
-                              </span>
-                            </div>
+                          <h3 className="font-semibold text-gray-900 mb-2">{category.category_name}</h3>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-medium text-gray-900 bg-white px-3 py-1 rounded-full border">
+                              {getAssetCount(category.id)} Asset{getAssetCount(category.id) !== 1 ? '(s)' : ''}
+                            </span>
+                            <Badge className={getStatusColor(category.is_active)}>
+                              {category.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                            <span className="text-sm text-gray-500">
+                              Created: {formatDate(category.created_at)}
+                            </span>
                           </div>
                         </div>
                         <DropdownMenu>

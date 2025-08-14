@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import {useState, useEffect} from "react";
+import {useState, useEffect, useMemo} from "react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
@@ -139,6 +139,14 @@ export default function AddEmployeeForm() {
     marital_status: "single",
     children_count: 0,
   });
+
+  // Filter positions based on selected department
+  const filteredPositions = useMemo(() => {
+    if (!formData.department || formData.department === 0) {
+      return positions; // Show all positions if no department is selected
+    }
+    return positions.filter(position => position.department === formData.department);
+  }, [positions, formData.department]);
 
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -303,6 +311,16 @@ export default function AddEmployeeForm() {
         setFormData(updatedFormData);
         handleSaveLocalEmployeeCreateForm(updatedFormData);
       }
+    } else if (field === "department") {
+      // Clear position when department changes
+      const departmentValue = typeof value === 'number' ? value : Number(value);
+      const updatedFormData = {
+        ...formData,
+        department: departmentValue,
+        position: 0, // Reset position when department changes
+      };
+      setFormData(updatedFormData);
+      handleSaveLocalEmployeeCreateForm(updatedFormData);
     } else {
       const updatedFormData = {
         ...formData,
@@ -852,31 +870,7 @@ export default function AddEmployeeForm() {
           <div className="space-y-6">
             <h3 className="text-lg font-semibold">Work Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="position">Position *</Label>
-                <Select
-                  value={formData.position > 0 ? formData.position.toString() : ""}
-                  onValueChange={(value) => handleInputChange("position", Number.parseInt(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select position" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {positions.length > 0 ? (
-                      positions.map((position) => (
-                        <SelectItem key={position.id} value={position.id.toString()}>
-                          {position.name}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <div className="px-2 py-1.5 text-sm text-gray-500">
-                        No positions available
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
+            <div className="space-y-2">
                 <Label htmlFor="department">Department *</Label>
                 <Select
                   value={formData.department > 0 ? formData.department.toString() : ""}
@@ -900,6 +894,39 @@ export default function AddEmployeeForm() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="position">Position *</Label>
+                {formData.department > 0 && (
+                  <p className="text-xs text-gray-500">
+                    Showing positions for {departments.find(d => d.id === formData.department)?.name}
+                  </p>
+                )}
+                <Select
+                  value={formData.position > 0 ? formData.position.toString() : ""}
+                  onValueChange={(value) => handleInputChange("position", Number.parseInt(value))}
+                  disabled={formData.department === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select position" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredPositions.length > 0 ? (
+                      filteredPositions.map((position) => (
+                        <SelectItem key={position.id} value={position.id.toString()}>
+                          {position.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="px-2 py-1.5 text-sm text-gray-500">
+                        {formData.department > 0 
+                          ? "No positions available for this department" 
+                          : "Please select a department first"}
+                      </div>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="workType">Work Type</Label>
                 <div className="flex gap-2">

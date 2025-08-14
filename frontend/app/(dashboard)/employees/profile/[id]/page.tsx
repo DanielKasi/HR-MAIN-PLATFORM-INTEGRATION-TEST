@@ -52,6 +52,7 @@ import { AttendanceAPI, getEmployeeById } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import type { IEmployee } from "@/types/types.utils";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/helpers";
 
 const formatDate = (dateString: string) => {
   if (!dateString) return "Not provided";
@@ -103,12 +104,7 @@ const getEmployeeInitials = (employee: IEmployee) => {
   return employee.email?.[0]?.toUpperCase() || "E";
 };
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "UGX",
-  }).format(amount);
-};
+
 
 const formatTime = (timeString: string) => {
   if (!timeString) return "N/A";
