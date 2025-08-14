@@ -2846,7 +2846,7 @@ export const createPayslip = async ({
 export const createBulkPayslips = async ({
   institutionId,
   payrollPeriodId,
-  employeeIds,
+  // employeeIds,
 }: {
   institutionId: number;
   payrollPeriodId: number;
@@ -2855,7 +2855,7 @@ export const createBulkPayslips = async ({
   try {
     const requestData = {
       payroll_period: payrollPeriodId,
-      employee_ids: employeeIds || [],
+      // employee_ids: employeeIds || [],
     };
 
     const response = await apiRequest.post(`payroll/${institutionId}/payslips/`, requestData);
