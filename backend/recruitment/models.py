@@ -9,6 +9,26 @@ from users.models import Profile
 from django.utils import timezone
 from django.db import transaction
 from utilities.utility_base_model import UtilityBaseModel
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericRelation
+
+
+class RequiredDocument(UtilityBaseModel):
+    """
+    A generic model to define a document requirement for any other model.
+    """
+    document_name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    is_optional = models.BooleanField(default=False)
+
+    # These fields set up the generic foreign key
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey("content_type", "object_id")
+
+    def __str__(self):
+        return f"{self.document_name} ({'Optional' if self.is_optional else 'Required'})"
 
 
 class JobPosition(UtilityBaseModel):
@@ -47,6 +67,7 @@ class JobPosition(UtilityBaseModel):
         choices=JOB_POSITION_STATUS_CHOICES,
         default="inactive",
     )
+    required_documents = GenericRelation(RequiredDocument, on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.name}"

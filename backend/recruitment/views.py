@@ -24,11 +24,11 @@ from .models import (
     JobInterview,
     JobPosition,
     JobPositionAdvert,
+    RequiredDocument,
 )
 
 
 class JobPositionListAPI(APIView):
-    parser_classes = [MultiPartParser, FormParser]
 
     @extend_schema(
         request=JobPositionSerializer,
