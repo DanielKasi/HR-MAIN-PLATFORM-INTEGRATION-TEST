@@ -15,6 +15,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from users.models import CustomUser
 from users.serializers import CustomUserSerializer
+from recruitment.models import RequiredDocument
 
 
 class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
@@ -216,6 +217,12 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
         return advert
 
 
+class RequiredDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RequiredDocument
+        fields = ["id", "document_name", "description", "is_optional"]
+
+
 class JobPositionSerializer(serializers.ModelSerializer):
     department_details = serializers.SerializerMethodField(read_only=True)
     reports_to_details = serializers.SerializerMethodField()
@@ -227,6 +234,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
         help_text="List of employee IDs to apply salary change to",
     )
     employees = EmployeeSerializer(many=True, read_only=True)
+    required_documents = RequiredDocumentSerializer(many=True, required=False)
 
     class Meta:
         model = JobPosition
@@ -244,7 +252,8 @@ class JobPositionSerializer(serializers.ModelSerializer):
             "employees",
             "apply_salary_to_employees",
             "job_position_status",
-            "is_active"
+            "is_active",
+            "required_documents",
         ]
 
     def __init__(self, *args, **kwargs):
@@ -287,10 +296,19 @@ class JobPositionSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        documents_data = validated_data.pop("required_documents", [])
+
         job_position = JobPosition.objects.create(**validated_data)
 
         institution = job_position.department.institution
         content_type = ContentType.objects.get_for_model(JobPosition)
+
+        for doc_data in documents_data:
+            RequiredDocument.objects.create(
+                content_type=content_type,
+                object_id=job_position.id,
+                **doc_data
+            )
 
         try:
             action = WorkflowAction.objects.get(code="job_position_creation")
@@ -321,10 +339,21 @@ class JobPositionSerializer(serializers.ModelSerializer):
         from employee.models import Employee
 
         employee_ids = validated_data.pop("apply_salary_to_employees", [])
+        documents_data = validated_data.pop("required_documents", None)
         old_salary = instance.salary
         new_salary = validated_data.get("salary", old_salary)
-
+        
         instance = super().update(instance, validated_data)
+
+        if documents_data is not None:
+            instance.required_documents.all().delete()
+            content_type = ContentType.objects.get_for_model(JobPosition)
+            for doc in documents_data:
+                RequiredDocument.objects.create(
+                    content_type=content_type,
+                    object_id=instance.id,
+                    **doc
+                )
 
         if new_salary is not None and old_salary != new_salary and employee_ids:
             Employee.objects.filter(id__in=employee_ids, position=instance).update(

@@ -24,11 +24,12 @@ from .models import (
     JobInterview,
     JobPosition,
     JobPositionAdvert,
+    RequiredDocument,
 )
+from django.contrib.contenttypes.models import ContentType
 
 
 class JobPositionListAPI(APIView):
-    parser_classes = [MultiPartParser, FormParser]
 
     @extend_schema(
         request=JobPositionSerializer,
