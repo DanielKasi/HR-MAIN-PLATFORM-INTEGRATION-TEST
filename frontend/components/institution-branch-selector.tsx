@@ -89,11 +89,11 @@ export function InstitutionBranchSelector() {
   return (
     
     <DropdownMenu>
-      <DropdownMenuTrigger className="bg-white border rounded-full px-4 py-2 flex items-center gap-2 w-[200px]">
+      <DropdownMenuTrigger className="bg-white border rounded-full px-4 py-2 flex items-center gap-2 min-w-0 max-w-[200px] w-full">
         <span className="truncate">{displayName}</span>
-        <ChevronDown className="h-4 w-4 ml-auto" />
+        <ChevronDown className="h-4 w-4 ml-auto flex-shrink-0" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-[200px] rounded-xl z-[150]">
+      <DropdownMenuContent className="min-w-[200px] max-w-[90vw] rounded-xl z-[150]">
         {InstitutionsAttached.map((Institution) => (
           <div key={Institution.id}>
             {Institution.branches &&

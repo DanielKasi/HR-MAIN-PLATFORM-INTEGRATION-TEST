@@ -289,12 +289,7 @@ const AssetsComponent = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300"
-                        />
-                      </TableHead>
+                    
                       <TableHead>Asset Name</TableHead>
                       <TableHead>Serial Number</TableHead>
                       <TableHead>Category</TableHead>
@@ -313,12 +308,7 @@ const AssetsComponent = () => {
                     ) : (
                       paginatedAssets.map((asset) => (
                         <TableRow key={asset.id}>
-                          <TableCell>
-                            <input
-                              type="checkbox"
-                              className="rounded border-gray-300"
-                            />
-                          </TableCell>
+                          
                           <TableCell className="font-medium">{asset.asset_name}</TableCell>
                           <TableCell className="font-mono text-sm">{asset.serial_number}</TableCell>
                           <TableCell>

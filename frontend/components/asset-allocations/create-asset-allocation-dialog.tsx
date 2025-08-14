@@ -35,8 +35,7 @@ export const CreateAssetAllocationDialog = ({
   const [assetRequests, setAssetRequests] = useState<IAssetRequest[]>([]);
   const [formData, setFormData] = useState<IAssetAllocationFormData>({
     asset: 0,
-    allocated_to: 0,
-    responding_to_request: undefined,
+    allocated_to: 0
   });
 
   // Search states
@@ -122,8 +121,7 @@ export const CreateAssetAllocationDialog = ({
       fetchAssetRequests();
       setFormData({
         asset: 0,
-        allocated_to: 0,
-        responding_to_request: undefined,
+        allocated_to: 0
       });
       // Reset search terms when opening
       setAssetSearchTerm("");
@@ -299,62 +297,7 @@ export const CreateAssetAllocationDialog = ({
             )}
           </div>
 
-          {/* Asset Request Selection (Optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="request" className="text-sm font-medium text-gray-700">
-              Responding to Request (Optional)
-            </Label>
-            <Select
-              value={formData.responding_to_request?.toString() || "none"}
-              onValueChange={(value: string) => {
-                setFormData({ 
-                  ...formData, 
-                  responding_to_request: value === "none" ? undefined : parseInt(value)
-                });
-                setIsRequestDropdownOpen(false);
-              }}
-              open={isRequestDropdownOpen}
-              onOpenChange={setIsRequestDropdownOpen}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select an asset request (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                {/* Asset Request Search Input */}
-                <div className="p-2 border-b border-gray-200">
-                  <div className="relative">
-                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      placeholder="Search asset requests..."
-                      value={requestSearchTerm}
-                      onChange={(e) => setRequestSearchTerm(e.target.value)}
-                      className="pl-8 h-8 text-sm border-0 focus:ring-0 focus:border-0"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                </div>
-                
-                <SelectItem value="none">None</SelectItem>
-                {filteredAssetRequests.length > 0 ? (
-                  filteredAssetRequests.map((request) => (
-                    <SelectItem key={request.id} value={request.id.toString()}>
-                      <div className="flex items-center space-x-2">
-                        <FileText className="h-4 w-4" />
-                        <span>{request.request_reference_code}</span>
-                        <span className="text-gray-500 text-xs">
-                          ({request.asset.asset_name})
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))
-                ) : (
-                  <div className="p-2 text-sm text-gray-500 text-center">
-                    {requestSearchTerm ? "No asset requests found" : "No asset requests available"}
-                  </div>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+          
         </div>
 
         <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">

@@ -754,6 +754,7 @@ class AssetReturnListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def post(self, request):
+        print(f"request {request.data}")
         serializer = AssetReturnSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()

@@ -130,7 +130,7 @@ export const CreateAssetRequestDialog = ({
             </Label>
             <Select
               value={formData.asset_id.toString()}
-              onValueChange={(value) => {
+              onValueChange={(value: string) => {
                 setFormData({ ...formData, asset_id: parseInt(value) });
                 setIsAssetDropdownOpen(false);
               }}
@@ -191,7 +191,7 @@ export const CreateAssetRequestDialog = ({
               placeholder="Add any additional notes or reasons for the request..."
               value={formData.notes || ""}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="min-h-[100px] rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20"
+              className="min-h-[100px] resize-none rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20"
             />
           </div>
         </div>

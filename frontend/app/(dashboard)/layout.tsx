@@ -270,6 +270,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { title: "Assets", href: "/assests/assets" },
         { title: "Asset Requests", href: "/assests/asset-requests" },
         { title: "Asset Allocations", href: "/assests/asset-allocations" },
+        { title: "Asset Returns", href: "/assests/asset-returns" },
       ],
       requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
     },
@@ -452,7 +453,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 overflow-hidden dashboard-layout">
       {/* Desktop Sidebar */}
       {!isMobile && (
         <div
@@ -544,13 +545,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content Area */}
       <div
-        className={`flex-1 flex flex-col ${
+        className={`flex-1 flex flex-col min-w-0 ${
           !isMobile ? (isSideBarOpen ? "ml-64" : "ml-20") : ""
         } transition-all duration-300`}
       >
         {/* Header */}
         <div className="bg-white p-4 flex justify-between items-center border-b min-h-16 h-20 max-h-20">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 min-w-0">
             <button
               onClick={onToggle}
               className={`mobile-menu-button w-8 h-8 z-[50] bg-primary rounded-full flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 ${
@@ -564,12 +565,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               ) : (
                 <ChevronRight className="w-4 h-4 text-white" />
               )}
+              
             </button>
+            <h1 className="text-xl font-bold truncate">PERACOSOFT</h1>
           </div>
 
-          <div className="flex-1 flex justify-center">{!isMobile && <InstitutionBranchSelector />}</div>
+          <div className="flex-1 flex justify-center min-w-0">{!isMobile && <InstitutionBranchSelector />}</div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 min-w-0">
             <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_MODULES}>
               <Modules />
             </ProtectedComponent>
@@ -590,11 +593,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </div>
                   {!isMobile && (
                     <>
-                      <div className="hidden md:block">
-                        <div className="text-sm font-medium">{userName || "User"}</div>
-                        <div className="text-xs text-gray-500">{userRole || "Staff"}</div>
+                      <div className="hidden md:block min-w-0">
+                        <div className="text-sm font-medium truncate">{userName || "User"}</div>
+                        <div className="text-xs text-gray-500 truncate">{userRole || "Staff"}</div>
                       </div>
-                      <ChevronDown className="h-4 w-4 hidden md:block" />
+                      <ChevronDown className="h-4 w-4 hidden md:block flex-shrink-0" />
                     </>
                   )}
                 </div>
@@ -627,10 +630,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Content */}
-        <div className="w-full p-4 relative">
+        <div className="w-full p-4 relative min-w-0">
           {selectedInstitution ? (
             <>
-              <div className="overflow-y-auto max-h-[87svh] relative">{children}</div>
+              <div className="overflow-y-auto max-h-[87svh] relative min-w-0">{children}</div>
             </>
           ) : (
             <CreateOrganisationWizard />

@@ -382,8 +382,24 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
 
 
 class AssetReturnSerializer(serializers.ModelSerializer):
-    asset = AssetSerializer(read_only=True)
-
+   
     class Meta:
         model = AssetReturn
         fields = "__all__"
+
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        if instance.asset:
+            rep["asset"] = AssetSerializer(instance.asset).data
+        else:
+            rep["asset"] = None
+
+        if instance.allocation:
+            rep["allocation"] = AssetAllocationSerializer(instance.allocation).data
+        else:
+            rep["allocation"] = None
+
+        
+
+        return rep
