@@ -5,29 +5,10 @@ from decimal import Decimal
 from users.models import CustomUser
 from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
+from utilities.utility_base_model import UtilityBaseModel
 
 
-class BaseModel(models.Model):
-    # This field tracks the date and time a record was soft-deleted.
-    # A null value means the record is active.
-    deleted_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        abstract = True
-
-    def delete(self, *args, **kwargs):
-        """
-        Soft-deletes the record by setting the deleted_at timestamp.
-        """
-        self.deleted_at = timezone.now()
-        self.is_active = False
-        self.save(update_fields=["deleted_at", "is_active"])
-
-
-class LeaveType(BaseModel):
+class LeaveType(UtilityBaseModel):
     """Leave types like Annual, Sick, Maternity, etc."""
 
     LEAVE_CATEGORIES = [
@@ -160,7 +141,7 @@ class LeaveType(BaseModel):
         return synced_count
 
 
-class LeaveBalance(BaseModel):
+class LeaveBalance(UtilityBaseModel):
     """Track leave balances for each employee per leave type per year"""
 
     institution = models.ForeignKey(
@@ -204,7 +185,7 @@ class LeaveBalance(BaseModel):
         return f"{self.employee.user.fullname} - {self.leave_type.name} ({self.year})"
 
 
-class LeaveApplication(BaseModel):
+class LeaveApplication(UtilityBaseModel):
     """Leave application requests"""
 
     STATUS_CHOICES = [
@@ -268,7 +249,7 @@ class LeaveApplication(BaseModel):
         return f"{self.employee.user.fullname} - {self.leave_type.name} ({self.start_date} to {self.end_date})"
 
 
-class LeavePolicy(BaseModel):
+class LeavePolicy(UtilityBaseModel):
     """Company leave policies and rules"""
 
     institution = models.ForeignKey(

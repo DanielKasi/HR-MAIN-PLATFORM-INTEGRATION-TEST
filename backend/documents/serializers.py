@@ -16,7 +16,7 @@ class DocumentTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DocumentType
-        fields = ["id", "institution", "name", "code", "description"]
+        fields = ["id", "institution", "name", "code", "description", "is_active"]
         read_only_fields = ["code"]
 
     def to_representation(self, instance):

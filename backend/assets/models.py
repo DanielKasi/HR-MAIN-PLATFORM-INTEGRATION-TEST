@@ -6,32 +6,10 @@ from .utils.history import create_asset_history
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
+from utilities.utility_base_model import UtilityBaseModel
 
 
-class BaseModel(models.Model):
-    #is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    # The deleted_at field tracks the date and time a record was soft deleted
-    # A null value means the record is active
-    deleted_at = models.DateTimeField(null=True, blank=True)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        abstract = True
-    
-    def delete(self, *args, **kwargs):
-        """Soft deletes a record by setting the deleted_at timestamp"""
-        self.deleted_at = timezone.now()
-        self.is_active = False
-        self.save(update_fields=["deleted_at", "is_active"])
-
-
-
-
-
-
-class AssetCategory(BaseModel):
+class AssetCategory(UtilityBaseModel):
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
@@ -130,7 +108,7 @@ class AssetCategory(BaseModel):
 
 
 
-class Asset(BaseModel):
+class Asset(UtilityBaseModel):
     ASSET_ALLOCATION_CHOICES = [
         ("available", "Available"),
         ("allocated", "Allocated"),
@@ -201,7 +179,7 @@ class Asset(BaseModel):
             )
 
 
-class AssetRequest(BaseModel):
+class AssetRequest(UtilityBaseModel):
 
     ASSET_REQUEST_STATUS_CHOICES = [
         ("pending", "Pending"),
@@ -299,7 +277,7 @@ class AssetRequest(BaseModel):
             )
 
 
-class AssetAllocation(BaseModel):
+class AssetAllocation(UtilityBaseModel):
 
     ASSET_ALLOCATION_STATUS_CHOICES = [
         ("cancelled", "Cancelled"),
@@ -420,7 +398,7 @@ class AssetAllocation(BaseModel):
             )
 
 
-class AssetReturn(BaseModel):
+class AssetReturn(UtilityBaseModel):
     ASSET_CONDITION_CHOICES = [
         ("good", "Good"),
         ("damaged", "Damaged"),
@@ -438,7 +416,6 @@ class AssetReturn(BaseModel):
         on_delete=models.CASCADE,
         related_name="returns",
     )
-
     condition = models.CharField(max_length=20, choices=ASSET_CONDITION_CHOICES)
     notes = models.TextField(blank=True, null=True)
 
@@ -469,7 +446,7 @@ class AssetReturn(BaseModel):
             self.asset.save(update_fields=["status", "current_holder"])
 
 
-class AssetHistory(BaseModel):
+class AssetHistory(UtilityBaseModel):
     EVENT_TYPE_CHOICES = [
         ("allocated", "Allocated"),
         ("returned", "Returned"),

@@ -28,7 +28,6 @@ class AssetCategorySerializer(serializers.ModelSerializer):
             "id",
             "created_at",
             "updated_at",
-            "deleted_at",
             "institution",
         ]
 
@@ -74,7 +73,6 @@ class AssetSerializer(serializers.ModelSerializer):
             "is_active",
             "created_at",
             "updated_at",
-            "deleted_at",
             "created_by",
             "current_holder",
             "asset_histories",
@@ -83,7 +81,6 @@ class AssetSerializer(serializers.ModelSerializer):
             "id",
             "created_at",
             "updated_at",
-            "deleted_at",
             "batch_number",
             "institution",
         ]
@@ -138,14 +135,12 @@ class AssetRequestSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "is_active",
-            "deleted_at"
         ]
 
         read_only_fields = [
             "id",
             "created_at",
             "updated_at",
-            "deleted_at",
             "request_reference_code",
             "asset_request_status",
             "requester",
@@ -239,7 +234,6 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
             "is_active",
             "created_at",
             "updated_at",
-            "deleted_at"
         ]
         read_only_fields = [
             "id",
