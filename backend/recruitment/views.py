@@ -26,7 +26,6 @@ from .models import (
     JobPositionAdvert,
     RequiredDocument,
 )
-from django.contrib.contenttypes.models import ContentType
 
 
 class JobPositionListAPI(APIView):
