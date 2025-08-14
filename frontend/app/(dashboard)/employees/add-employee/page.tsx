@@ -758,7 +758,7 @@ export default function AddEmployeeForm() {
                   <Label htmlFor="maritalStatus">Marital Status</Label>
                   <Select
                     value={formData.marital_status}
-                    onValueChange={(value) => handleInputChange("marital_status", value)}
+                    onValueChange={(value: string) => handleInputChange("marital_status", value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select marital status" />
@@ -874,7 +874,7 @@ export default function AddEmployeeForm() {
                 <Label htmlFor="department">Department *</Label>
                 <Select
                   value={formData.department > 0 ? formData.department.toString() : ""}
-                  onValueChange={(value) => handleInputChange("department", Number.parseInt(value))}
+                  onValueChange={(value: string) => handleInputChange("department", Number.parseInt(value))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select department" />
@@ -896,14 +896,10 @@ export default function AddEmployeeForm() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="position">Position *</Label>
-                {formData.department > 0 && (
-                  <p className="text-xs text-gray-500">
-                    Showing positions for {departments.find(d => d.id === formData.department)?.name}
-                  </p>
-                )}
+                
                 <Select
                   value={formData.position > 0 ? formData.position.toString() : ""}
-                  onValueChange={(value) => handleInputChange("position", Number.parseInt(value))}
+                  onValueChange={(value: string) => handleInputChange("position", Number.parseInt(value))}
                   disabled={formData.department === 0}
                 >
                   <SelectTrigger>
@@ -932,7 +928,7 @@ export default function AddEmployeeForm() {
                 <div className="flex gap-2">
                   <Select
                     value={formData.work_type > 0 ? formData.work_type.toString() : ""}
-                    onValueChange={(value) =>
+                    onValueChange={(value: string) =>
                       handleInputChange("work_type", Number.parseInt(value))
                     }
                   >
