@@ -2034,6 +2034,20 @@ export interface IAssetAllocationFormData {
   allocation_status?: "pending" | "allocated" | "rejected" | "cancelled";
 }
 
+// export interface IAssetReturn {
+//   id: number;
+//   asset: IAsset;
+//   returned_by: IEmployee; 
+//   returned_to: IEmployee; 
+//   return_date: string;
+//   return_reason: string | null;
+//   asset_condition: "good" | "fair" | "poor" | "damaged";
+//   notes: string | null;
+//   created_at: string;
+//   updated_at: string;
+// }
+
+
 export interface IAssetReturn {
   id: number;
   asset: IAsset;
@@ -2236,6 +2250,19 @@ export interface IAssetAllocationFormData {
   allocation_status?: "pending" | "allocated" | "rejected" | "cancelled";
 }
 
+
+
+
+
+
+export interface IEmployeeTaxFormData {
+  target_departments?: number[];
+  target_job_positions?: number[];
+  target_employees?: number[];
+  effective_from: string;
+  effective_to: string;
+  institution_tax: number|string;
+}
 
 
 export interface ICalendarEvent {

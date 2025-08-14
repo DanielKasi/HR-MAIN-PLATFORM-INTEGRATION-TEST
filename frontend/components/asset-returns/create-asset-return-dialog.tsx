@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { assetsAPI } from "@/lib/utils";
-import type { IAsset, IAssetAllocation, IAssetReturnFormData } from "@/types/types.utils";
+import type { IAsset, IAssetAllocation } from "@/types/types.utils";
+import { IAssetReturnFormData } from "@/types/types.utils";
 
 interface CreateAssetReturnDialogProps {
   open: boolean;
@@ -94,7 +95,7 @@ export function CreateAssetReturnDialog({
 
     setIsLoading(true);
     try {
-      const submitData = {
+      const submitData: IAssetReturnFormData = {
         asset: Number(selectedAssetId),
         allocation: Number(selectedAllocationId),
         condition: formData.condition,
