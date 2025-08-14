@@ -381,7 +381,7 @@ export default function AddSeparationPolicyPage() {
               </div>
               <Switch
                 checked={formData.require_separation_letter}
-                onCheckedChange={(checked: string) =>
+                onCheckedChange={(checked: boolean) =>
                   handleInputChange("require_separation_letter", checked)
                 }
               />
@@ -398,7 +398,9 @@ export default function AddSeparationPolicyPage() {
               </div>
               <Switch
                 checked={formData.require_all_stages}
-                onCheckedChange={(checked: string) => handleInputChange("require_all_stages", checked)}
+                onCheckedChange={(checked: boolean) =>
+                  handleInputChange("require_all_stages", checked)
+                }
               />
             </div>
           </CardContent>
@@ -422,7 +424,9 @@ export default function AddSeparationPolicyPage() {
               </div>
               <Switch
                 checked={formData.is_active}
-                onCheckedChange={(checked: string) => handleInputChange("is_active", checked)}
+                onCheckedChange={(checked: boolean) =>
+                  handleInputChange("is_active", checked)
+                }
               />
             </div>
 
@@ -437,7 +441,9 @@ export default function AddSeparationPolicyPage() {
               </div>
               <Switch
                 checked={formData.enforce_policy}
-                onCheckedChange={(checked: string) => handleInputChange("enforce_policy", checked)}
+                onCheckedChange={(checked: boolean) =>
+                  handleInputChange("enforce_policy", checked)
+                }
               />
             </div>
           </CardContent>

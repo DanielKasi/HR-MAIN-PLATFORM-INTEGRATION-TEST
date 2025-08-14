@@ -86,7 +86,7 @@ export default function EmployeeTaxesPage() {
         setTaxes((taxesData.results as unknown as IEmployeeTax[]) || [])
       } catch (error) {
         setTaxes([])
-        toast.error("Failed to load employee taxes")
+       
       }
     }
 

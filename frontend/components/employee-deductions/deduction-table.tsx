@@ -15,6 +15,7 @@ import type { IEmployeeDeduction } from "@/types/types.utils"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import { DialogFooter, DialogHeader } from "../ui/dialog";
 import { useState } from "react";
+import { formatCurrency } from "@/lib/helpers";
 
 interface DeductionTableProps {
   deductions: IEmployeeDeduction[];
@@ -121,7 +122,7 @@ export function DeductionTable({
               </TableCell>
               <TableCell>
                 <span className="text-lg font-semibold text-red-600">
-                  UGX {getCalculatedAmount(deduction).toLocaleString()}
+                  {formatCurrency(getCalculatedAmount(deduction))}
                 </span>
               </TableCell>
               <TableCell>

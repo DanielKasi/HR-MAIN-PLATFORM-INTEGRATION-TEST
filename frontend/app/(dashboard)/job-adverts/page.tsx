@@ -44,6 +44,7 @@ import { PERMISSION_CODES } from "@/types/types.utils";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import RichTextDisplay from "@/components/common/rich-text-display";
 import { TableSkeleton } from "@/components/common/table-skeleton";
+import { formatCurrency } from "@/lib/helpers";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -530,7 +531,7 @@ export default function JobAdvertsPage() {
                       </span>
                     </TableCell>
                    <TableCell className="whitespace-nowrap">
-                      {advert.number_of_employees_expected || "-"}
+                      {formatCurrency(advert.number_of_employees_expected ?? 0) || "-"}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 whitespace-nowrap">
@@ -565,11 +566,11 @@ export default function JobAdvertsPage() {
                           <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_JOB_ADVERTS}>
                             <Dialog
                               open={closingAdvertId === advert.id}
-                              onOpenChange={(open) => setClosingAdvertId(open ? advert.id : null)}
+                              onOpenChange={(open: boolean) => setClosingAdvertId(open ? advert.id : null)}
                             >
                               <DialogTrigger asChild>
                                 <DropdownMenuItem
-                                  onSelect={(e) => e.preventDefault()}
+                                  onSelect={(e: React.SyntheticEvent) => e.preventDefault()}
                                   className="text-destructive"
                                   disabled={isClosing}
                                 >
@@ -665,7 +666,7 @@ export default function JobAdvertsPage() {
             </Button>
             <Select
               value={currentPage.toString()}
-              onValueChange={(value) => handlePageChange(parseInt(value))}
+              onValueChange={(value: string) => handlePageChange(parseInt(value))}
             >
               <SelectTrigger className="w-[60px] sm:w-[70px] h-8">
                 <SelectValue />
