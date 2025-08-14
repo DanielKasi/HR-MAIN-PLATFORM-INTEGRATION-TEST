@@ -80,12 +80,9 @@ export default function DepartmentsPage() {
       setError("")
 
       const fetchedDepartments = await getDepartments({ institutionId: selectedInstitution.id })
-      if (fetchedDepartments) {
-        setDepartments(fetchedDepartments)
-      } else {
-        setError("Failed to fetch departments. Please try again.")
-        toast.error("Failed to load departments")
-      }
+      
+      setDepartments(fetchedDepartments)
+      
     } catch (err) {
       setError("Failed to fetch departments. Please try again.")
       toast.error("Failed to load departments")

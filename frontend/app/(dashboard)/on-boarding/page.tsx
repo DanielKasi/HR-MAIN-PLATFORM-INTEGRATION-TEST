@@ -220,10 +220,7 @@ export default function OnboardPage() {
 
       if (fetchedOnboardings) {
         setOnboardings(fetchedOnboardings)
-      } else {
-        setError("Failed to fetch onboarding records. Please try again.")
-        toast.error("Failed to load onboarding records")
-      }
+      } 
     } catch (err) {
       setError("Failed to fetch onboarding records. Please try again.")
       toast.error("Failed to load onboarding records")

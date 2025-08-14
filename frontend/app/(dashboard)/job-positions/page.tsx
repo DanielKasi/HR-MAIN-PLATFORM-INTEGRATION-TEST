@@ -94,10 +94,7 @@ export default function JobPositionsPage() {
       const fetchedJobPositions = await getJobPositions({ institutionId: selectedInstitution.id })
       if (fetchedJobPositions) {
         setJobPositions(fetchedJobPositions)
-      } else {
-        setError("Failed to fetch job position/titles. Please try again.")
-        toast.error("Failed to load job position/titles ")
-      }
+      } 
     } catch (err) {
       setError("Failed to fetch job position/titles . Please try again.")
       toast.error("Failed to load job position/titles ")

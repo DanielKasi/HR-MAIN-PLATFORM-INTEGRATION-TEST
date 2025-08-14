@@ -85,10 +85,7 @@ export default function JobPositionDetailsPage() {
 
       if (fetchedJobPosition) {
         setJobPosition(fetchedJobPosition);
-      } else {
-        setError("Job position not found");
-        toast.error("Job position not found");
-      }
+      } 
     } catch (err) {
       setError("Failed to fetch job position/title details");
       toast.error("Failed to load job position/title details");

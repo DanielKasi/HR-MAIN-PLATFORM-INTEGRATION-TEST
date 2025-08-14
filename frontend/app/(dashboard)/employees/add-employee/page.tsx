@@ -55,11 +55,11 @@ import type {
   IEmployeeTypeFormData,
   ICountry,
 } from "@/types/types.utils";
-import type {IUserInstitution} from "@/types";
 import {toast} from "sonner";
 import {selectEmployeeCreationForm} from "@/store/miscellaneous/selectors";
 import {useDispatch} from "react-redux";
 import {clearEmployeeForm, saveEmployeeForm} from "@/store/miscellaneous/actions";
+
 
 const maritalStatusOptions = [
   {value: "single", label: "Single"},
@@ -169,6 +169,7 @@ export default function AddEmployeeForm() {
   }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
 
   const dispatch = useDispatch();
+  console.log("Error", submitError)
 
   const showErrorToast = (message: string) => {
     toast.error(message);
@@ -743,6 +744,7 @@ export default function AddEmployeeForm() {
                     value={formData.phone_number|| ""}
                     country={phoneInput.country}
                     onChange={setPhoneInput}
+                    setError={setSubmitError}
                   />
                 </div>
                 <div className="space-y-2">
@@ -848,6 +850,7 @@ export default function AddEmployeeForm() {
                     value={formData.emergency_contact_phone || ""}
                     country={emergencyPhoneInput.country}
                     onChange={setEmergencyPhoneInput}
+                    setError={setSubmitError}
                   />
                 </div>
                 <div className="space-y-2">
@@ -1411,7 +1414,7 @@ export default function AddEmployeeForm() {
                       type="button"
                       onClick={nextStep}
                       className="bg-orange-600 hover:bg-orange-700 px-6"
-                      disabled={!isCurrentStepValid() || isValidating}
+                      disabled={!isCurrentStepValid() || isValidating || !!submitError}
                     >
                       {isValidating ? (
                         <>

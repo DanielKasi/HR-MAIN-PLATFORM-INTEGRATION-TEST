@@ -74,10 +74,7 @@ export default function InterviewViewPage() {
 
       if (fetchedInterview) {
         setInterview(fetchedInterview);
-      } else {
-        setError("Interview not found");
-        toast.error("Interview not found");
-      }
+      } 
     } catch (err) {
       setError("Failed to fetch interview details");
       toast.error("Failed to load interview details");

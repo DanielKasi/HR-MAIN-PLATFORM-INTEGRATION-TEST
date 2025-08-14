@@ -72,7 +72,7 @@ export default function TerminationInitiationsPage() {
       setTotalItems(data.count)
       setTotalPages(Math.ceil(data.count / pageSize))
     } catch (error) {
-      console.error("Failed to fetch termination initiations:", error)
+      console.warn("Failed to fetch termination initiations:", error)
     }
     setLoading(false)
   }
