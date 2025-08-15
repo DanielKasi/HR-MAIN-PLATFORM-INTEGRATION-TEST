@@ -268,15 +268,13 @@ const AssetDetailPage = () => {
               <div className="flex-1">
                 <h1 className="text-lg sm:text-xl lg:text-[24px] font-bold text-gray-900">{asset.asset_name}</h1>
               </div>
-              <div className="flex items-center space-x-2 sm:hidden">
+              <div className="hidden sm:flex items-center space-x-2 lg:mr-2">
                 <Badge className={getStatusColor(asset.status)}>{getStatusDisplay(asset.status)}</Badge>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-              <div className="hidden sm:flex items-center space-x-2 lg:mr-2">
-                <Badge className={getStatusColor(asset.status)}>{getStatusDisplay(asset.status)}</Badge>
-              </div>
+              
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
                 <Button
                   onClick={handleAssignAsset}
