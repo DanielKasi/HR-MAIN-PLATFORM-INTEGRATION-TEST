@@ -22,12 +22,14 @@ interface CreateAssetAllocationDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (allocation: any) => void;
+  preSelectedAsset?: IAsset;
 }
 
 export const CreateAssetAllocationDialog = ({
   isOpen,
   onClose,
   onSuccess,
+  preSelectedAsset,
 }: CreateAssetAllocationDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [assets, setAssets] = useState<IAsset[]>([]);
@@ -75,9 +77,18 @@ export const CreateAssetAllocationDialog = ({
     try {
       const response = await assetsAPI.getAll();
       // Filter for available assets (not currently allocated)
-      const availableAssets = response.filter((asset: IAsset) => 
+      let availableAssets = response.filter((asset: IAsset) => 
         asset.status === "available" && asset.is_active
       );
+      
+      // If we have a pre-selected asset, include it even if not available
+      if (preSelectedAsset) {
+        const preSelectedAssetExists = availableAssets.find(asset => asset.id === preSelectedAsset.id);
+        if (!preSelectedAssetExists) {
+          availableAssets = [preSelectedAsset, ...availableAssets];
+        }
+      }
+      
       setAssets(availableAssets);
     } catch (error) {
       console.error("Error fetching assets:", error);
@@ -119,16 +130,27 @@ export const CreateAssetAllocationDialog = ({
       fetchAssets();
       fetchEmployees();
       fetchAssetRequests();
-      setFormData({
-        asset: 0,
-        allocated_to: 0
-      });
-      // Reset search terms when opening
-      setAssetSearchTerm("");
-      setEmployeeSearchTerm("");
-      setRequestSearchTerm("");
+      
+      // If we have a pre-selected asset, set it in the form
+      if (preSelectedAsset) {
+        setFormData({
+          asset: preSelectedAsset.id,
+          allocated_to: 0
+        });
+        // Also set the asset search term to show the asset
+        setAssetSearchTerm(preSelectedAsset.asset_name);
+      } else {
+        setFormData({
+          asset: 0,
+          allocated_to: 0
+        });
+        // Reset search terms when opening
+        setAssetSearchTerm("");
+        setEmployeeSearchTerm("");
+        setRequestSearchTerm("");
+      }
     }
-  }, [isOpen, selectedInstitution]);
+  }, [isOpen, selectedInstitution, preSelectedAsset]);
 
   const handleSubmit = async () => {
     if (!formData.asset) {
