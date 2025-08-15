@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, RefreshCw, Package, User, History } from "lucide-react"
+import { ArrowLeft, RefreshCw, Package, User, History, CheckCircle, Clock, ArrowDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -251,241 +251,321 @@ const AssetDetailPage = () => {
   }
 
   return (
-    <div className="space-y-6 p-2 sm:p-4 bg-white rounded-lg">
-      {/* Asset Header */}
-      <div className="">
-        <div className="">
-          <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push("/assests/assets")}
-                className="border rounded-full w-10 h-10 flex items-center justify-center"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-              </Button>
-              <div className="flex-1">
-                <h1 className="text-lg sm:text-xl lg:text-[24px] font-bold text-gray-900">{asset.asset_name}</h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/assests/assets")}
+              className="p-2 hover:bg-gray-100 rounded-full"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-600" />
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900">ALLOC-00001-20001</h1>
+              <div className="flex items-center gap-3 mt-2">
+                <Badge className="bg-blue-100 text-blue-800 border-blue-200 px-3 py-1 text-sm font-medium">
+                  Pending
+                </Badge>
               </div>
-              <div className="hidden sm:flex items-center space-x-2 lg:mr-2">
-                <Badge className={getStatusColor(asset.status)}>{getStatusDisplay(asset.status)}</Badge>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Asset Details */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Asset Card */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Asset</h3>
+                <Badge className="bg-green-100 text-green-800 border-green-200">
+                  Available
+                </Badge>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Dell Latitude 5420</p>
+                  <p className="text-sm text-gray-500">Serial: 8721638716389</p>
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+            {/* Connection Line - Dotted with Arrow */}
+            <div className="flex justify-center">
+              <div className="w-0.5 h-8 bg-gray-300 relative" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #d1d5db 2px, #d1d5db 4px)' }}>
+                <ArrowDown className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-4 w-4 text-gray-400" />
+              </div>
+            </div>
+
+            {/* Allocate to Card */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Allocate to</h3>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                  <User className="h-5 w-5 text-gray-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Muwanguzi David</p>
+                  <p className="text-sm text-gray-500">EMP-2109838203</p>
+                  <p className="text-sm text-gray-500">Position: Sales Representative</p>
+                  <p className="text-sm text-gray-500">Department: Sales</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Created By Card */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Created By</h3>
+              <div>
+                <p className="font-medium text-gray-900">Mugisha John</p>
+                <p className="text-sm text-gray-500">Head Human Resource</p>
+              </div>
+            </div>
+
+            {/* Assignment History Section */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <div className="border-b border-gray-200 mb-6">
+                <nav className="-mb-px flex space-x-8">
+                  <button
+                    onClick={() => setActiveTab("assignment-history")}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === "assignment-history"
+                        ? "border-orange-500 text-orange-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    Assignment History
+                  </button>
+                </nav>
+              </div>
+
+              <div className="overflow-x-auto">
+                {assignmentHistory.length > 0 ? (
+                  <div className="min-w-full">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="font-medium text-gray-900 min-w-[150px]">Employee</TableHead>
+                          <TableHead className="font-medium text-gray-900 min-w-[120px]">Assigned Date</TableHead>
+                          <TableHead className="font-medium text-gray-900 min-w-[120px]">Date Returned</TableHead>
+                          <TableHead className="font-medium text-gray-900 min-w-[120px]">Assigned By</TableHead>
+                          <TableHead className="font-medium text-gray-900 min-w-[100px]">Condition</TableHead>
+                          <TableHead className="font-medium text-gray-900 min-w-[100px]">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {assignmentHistory.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell className="min-w-[150px]">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <User className="h-4 w-4 text-gray-600" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-gray-900 truncate">
+                                    {typeof item.affected_user === "object"
+                                      ? item.affected_user?.user?.fullname
+                                      : item.affected_user}
+                                  </p>
+                                  <p className="text-xs text-gray-500 truncate">
+                                    {typeof item.affected_user === "object"
+                                      ? item.affected_user?.user?.roles?.map((role: any) => role.role_name).join(", ")
+                                      : item.affected_user}
+                                  </p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-900 min-w-[120px]">
+                              {formatDate(item.created_at)}
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-900 min-w-[120px]">
+                              {formatDate(item.updated_at)}
+                            </TableCell>
+                            <TableCell className="min-w-[120px]">
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {typeof item.performed_by === "object"
+                                    ? item.performed_by?.user?.fullname
+                                    : item.performed_by}
+                                </p>
+                                <p className="text-xs text-gray-500 truncate">
+                                  {typeof item.performed_by === "object"
+                                    ? item.performed_by?.user?.roles?.map((role: any) => role.role_name).join(", ")
+                                    : item.performed_by}
+                                </p>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-900 min-w-[100px]"></TableCell>
+                            <TableCell className="min-w-[100px]">
+                              <Badge className={getStatusColor(item.event_type)}>{item.event_type}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500 text-sm">No assignment history available for this asset</p>
+                    <p className="text-gray-400 text-xs mt-1">
+                      Assignment history will appear here when the asset is allocated or returned
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {assignmentHistory.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-6 space-y-4 sm:space-y-0">
+                  <div className="text-sm text-gray-700">
+                    Showing 1-{assignmentHistory.length} of {assignmentHistory.length}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button variant="outline" size="sm" disabled>
+                      &lt; Previous
+                    </Button>
+                    <Button variant="outline" size="sm" className="bg-orange-500 text-white border-orange-500">
+                      1
+                    </Button>
+                    <Button variant="outline" size="sm" disabled>
+                      Next &gt;
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column - Approvals */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm sticky top-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Approvals</h3>
               
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
-                <Button
-                  onClick={handleAssignAsset}
-                  variant="outline"
-                  className="rounded-lg w-full sm:w-auto bg-transparent"
-                  disabled={asset.status !== "available"}
-                  title={
-                    asset.status !== "available"
-                      ? `Asset is ${asset.status.toLowerCase()}`
-                      : "Assign this asset to an employee"
-                  }
-                >
-                  Assign
-                </Button>
-                <Button
-                  onClick={handleReturnAsset}
-                  variant="outline"
-                  className="rounded-lg w-full sm:w-auto bg-transparent"
-                  disabled={asset.status !== "allocated"}
-                  title={
-                    asset.status !== "allocated"
-                      ? `Asset is ${asset.status.toLowerCase()}`
-                      : "Return this asset to available pool"
-                  }
-                >
-                  Return
-                </Button>
-                <Button
-                  onClick={handleRetireAsset}
-                  variant="outline"
-                  className="rounded-lg w-full sm:w-auto bg-transparent"
-                  disabled={asset.status === "decommissioned"}
-                  title={asset.status === "decommissioned" ? "Asset is already retired" : "Retire this asset"}
-                >
-                  Retire
-                </Button>
+              {/* Approval Steps */}
+              <div className="space-y-6">
+                {/* Step 1 - Approved */}
+                <div className="relative">
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 bg-green-100 border-2 border-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-semibold text-green-700">1</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-900">Approval Step Name</h4>
+                      <Badge className="bg-green-100 text-green-800 border-green-200 text-xs mt-1">
+                        Approved
+                      </Badge>
+                      <p className="text-xs text-gray-500 mt-1">Approved - Feb 12, 2025</p>
+                    </div>
+                  </div>
+                  {/* Connection Line - Dotted */}
+                  <div className="absolute left-4 top-8 w-0.5 h-8 ml-1" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #d1d5db 2px, #d1d5db 4px)' }}></div>
+                </div>
+
+                {/* Step 2 - Approved */}
+                <div className="relative">
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 bg-green-100 border-2 border-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-semibold text-green-700">2</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-900">Approval Step Name</h4>
+                      <Badge className="bg-green-100 text-green-800 border-green-200 text-xs mt-1">
+                        Approved
+                      </Badge>
+                      <p className="text-xs text-gray-500 mt-1">Approved - Feb 18, 2025</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Vestibulum luctus eros consectetur libero maximus aliquet.
+                      </p>
+                    </div>
+                  </div>
+                  {/* Connection Line - Dotted */}
+                  <div className="absolute left-4 top-8 w-0.5 h-8 ml-1" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #d1d5db 2px, #d1d5db 4px)' }}></div>
+                </div>
+
+                {/* Step 3 - Pending */}
+                <div className="relative">
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 bg-blue-100 border-2 border-blue-400 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-semibold text-blue-700">3</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-900">Approval Step Name</h4>
+                      <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs mt-1">
+                        Pending
+                      </Badge>
+                      <p className="text-xs text-gray-500 mt-1">Pending Approval</p>
+                      <div className="flex gap-2 mt-3">
+                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1">
+                          Approve
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-red-600 border-red-300 text-xs px-3 py-1">
+                          Reject
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Connection Line - Dotted */}
+                  <div className="absolute left-4 top-8 w-0.5 h-8 ml-1" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #d1d5db 2px, #d1d5db 4px)' }}></div>
+                </div>
+
+                {/* Step 4 - Pending */}
+                <div className="relative">
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 bg-blue-100 border-2 border-blue-400 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-semibold text-blue-700">4</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-900">Approval Step Name</h4>
+                      <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs mt-1">
+                        Pending
+                      </Badge>
+                      <p className="text-xs text-gray-500 mt-1">Pending Approval</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="mt-6 space-y-3">
+              <Button
+                onClick={handleAssignAsset}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={asset.status !== "available"}
+              >
+                Assign Asset
+              </Button>
+              <Button
+                onClick={handleReturnAsset}
+                variant="outline"
+                className="w-full"
+                disabled={asset.status !== "allocated"}
+              >
+                Return Asset
+              </Button>
+              <div className="grid grid-cols-2 gap-3">
                 <Button
                   onClick={handleEditAsset}
                   variant="outline"
-                  className="rounded-lg w-full sm:w-auto bg-transparent"
+                  className="w-full"
                 >
-                  <Icon icon="hugeicons:edit-04" className="h-[24px] w-[24px] sm:mr-1" />
-                  <span className="sm:inline">Edit</span>
+                  Edit
                 </Button>
                 <Button
                   onClick={handleDeleteAsset}
                   variant="outline"
-                  className="text-primary rounded-lg w-full sm:w-auto bg-transparent"
+                  className="w-full text-red-600 border-red-300 hover:bg-red-50"
                 >
-                  <Icon icon="hugeicons:delete-02" className="h-[24px] w-[24px] sm:mr-1" />
-                  <span className="sm:inline">Delete</span>
+                  Delete
                 </Button>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Asset Specifications */}
-      <div className="">
-        <div className="">
-          <div className="flex flex-col">
-            <div className="flex flex-col sm:grid sm:grid-cols-2 lg:flex lg:flex-row lg:items-center gap-4 lg:gap-2 justify-between py-1">
-              <div className="space-y-4 sm:space-y-0 sm:contents lg:contents">
-                <div>
-                  <label className="text-sm font-medium text-[#848496]">Batch No</label>
-                  <p className="text-sm text-[#162032] mt-1">{asset.batch_number}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-[#848496]">Serial Number</label>
-                  <p className="text-sm text-[#162032] mt-1 font-mono break-all">{asset.serial_number}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-[#848496]">Category</label>
-                  <p className="text-sm text-[#162032] mt-1">{asset.category?.category_name || "Unknown"}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-[#848496]">Currently Assigned</label>
-                  <p className="text-sm text-[#162032] mt-1">
-                    {asset.current_holder && typeof asset.current_holder === "object" && asset.current_holder.user
-                      ? `${asset.current_holder.user.fullname} (Employee)`
-                      : "Not assigned"}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-4 py-1">
-              <div>
-                <label className="text-sm font-medium text-[#848496]">Description</label>
-                <p className="text-sm text-[#162032] mt-1">{asset.description || "A simple description"}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Assignment History Section */}
-      <div className="">
-        <div className="">
-          {/* Tab Navigation */}
-          <div className="border-b border-gray-200 mb-6">
-            <div className="flex items-center justify-between">
-              <nav className="-mb-px flex space-x-8">
-                <button
-                  onClick={() => setActiveTab("assignment-history")}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === "assignment-history"
-                      ? "border-orange-500 text-orange-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  Assignment History
-                </button>
-              </nav>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto -mx-2 sm:mx-0">
-            {assignmentHistory.length > 0 ? (
-              <div className="min-w-full">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="font-medium text-gray-900 min-w-[150px]">Employee</TableHead>
-                      <TableHead className="font-medium text-gray-900 min-w-[120px]">Assigned Date</TableHead>
-                      <TableHead className="font-medium text-gray-900 min-w-[120px]">Date Returned</TableHead>
-                      <TableHead className="font-medium text-gray-900 min-w-[120px]">Assigned By</TableHead>
-                      <TableHead className="font-medium text-gray-900 min-w-[100px]">Condition</TableHead>
-                      <TableHead className="font-medium text-gray-900 min-w-[100px]">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {assignmentHistory.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="min-w-[150px]">
-                          <div className="flex items-center space-x-2">
-                            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                              <User className="h-4 w-4 text-gray-600" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {typeof item.affected_user === "object"
-                                  ? item.affected_user?.user?.fullname
-                                  : item.affected_user}
-                              </p>
-                              <p className="text-xs text-gray-500 truncate">
-                                {typeof item.affected_user === "object"
-                                  ? item.affected_user?.user?.roles?.map((role: any) => role.role_name).join(", ")
-                                  : item.affected_user}
-                              </p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm text-gray-900 min-w-[120px]">
-                          {formatDate(item.created_at)}
-                        </TableCell>
-                        <TableCell className="text-sm text-gray-900 min-w-[120px]">
-                          {formatDate(item.updated_at)}
-                        </TableCell>
-                        <TableCell className="min-w-[120px]">
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {typeof item.performed_by === "object"
-                                ? item.performed_by?.user?.fullname
-                                : item.performed_by}
-                            </p>
-                            <p className="text-xs text-gray-500 truncate">
-                              {typeof item.performed_by === "object"
-                                ? item.performed_by?.user?.roles?.map((role: any) => role.role_name).join(", ")
-                                : item.performed_by}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm text-gray-900 min-w-[100px]"></TableCell>
-                        <TableCell className="min-w-[100px]">
-                          <Badge className={getStatusColor(item.event_type)}>{item.event_type}</Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 text-sm">No assignment history available for this asset</p>
-                <p className="text-gray-400 text-xs mt-1">
-                  Assignment history will appear here when the asset is allocated or returned
-                </p>
-              </div>
-            )}
-          </div>
-
-          {assignmentHistory.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between mt-6 space-y-4 sm:space-y-0">
-              <div className="text-sm text-gray-700">
-                Showing 1-{assignmentHistory.length} of {assignmentHistory.length}
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm" disabled>
-                  &lt; Previous
-                </Button>
-                <Button variant="outline" size="sm" className="bg-orange-500 text-white border-orange-500">
-                  1
-                </Button>
-                <Button variant="outline" size="sm" disabled>
-                  Next &gt;
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
