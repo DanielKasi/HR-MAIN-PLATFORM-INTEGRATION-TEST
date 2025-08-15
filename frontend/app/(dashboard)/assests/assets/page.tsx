@@ -11,7 +11,6 @@ import {
   ChevronRight, 
   ChevronsLeft, 
   ChevronsRight, 
-  Plus,
   Eye,
   Package
 } from 'lucide-react';
@@ -36,6 +35,7 @@ import { useRouter } from "next/navigation";
 import { assetsAPI } from "@/lib/utils";
 import type { IAsset } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
+import { Icon } from "@iconify/react"
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -230,21 +230,25 @@ const AssetsComponent = () => {
         </div>
         <div className="p-6 border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+            <div className="flex items-center gap-4 justify-between">
               <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Icon icon="hugeicons:search-01" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 !h-5 !w-5" />
                 <Input
-                  placeholder="Search assets..."
+                  placeholder="Search"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+              
+              
+            </div>
+            <div className="flex items-center gap-4">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[110px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent> 
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="available">Available</SelectItem>
                   <SelectItem value="allocated">Allocated</SelectItem>
@@ -253,7 +257,7 @@ const AssetsComponent = () => {
                 </SelectContent>
               </Select>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
@@ -265,12 +269,8 @@ const AssetsComponent = () => {
                   ))}
                 </SelectContent>
               </Select>
-              {hasFilters && (
-                <Button variant="outline" onClick={clearFilters} size="sm">
-                  Clear Filters
-                </Button>
-              )}
-            </div>
+              </div>
+              
             <div className="flex items-center gap-2">
               <CreateAssetDialog
                 onSuccess={handleCreateSuccess}
@@ -289,12 +289,11 @@ const AssetsComponent = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                    
+                      <TableHead>Batch No</TableHead>
                       <TableHead>Asset Name</TableHead>
                       <TableHead>Serial Number</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
                       <TableHead className="w-12">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -308,7 +307,7 @@ const AssetsComponent = () => {
                     ) : (
                       paginatedAssets.map((asset) => (
                         <TableRow key={asset.id}>
-                          
+                          <TableCell className="font-mono text-sm">{asset.batch_number}</TableCell>
                           <TableCell className="font-medium">{asset.asset_name}</TableCell>
                           <TableCell className="font-mono text-sm">{asset.serial_number}</TableCell>
                           <TableCell>
@@ -319,12 +318,11 @@ const AssetsComponent = () => {
                               {getStatusDisplay(asset.status)}
                             </Badge>
                           </TableCell>
-                          <TableCell>{formatDate(asset.created_at)}</TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="sm">
-                                  <MoreVertical className="h-4 w-4" />
+                                  <Icon icon="hugeicons:more-horizontal-square-01" className="!h-4 !w-4 text-dark" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">

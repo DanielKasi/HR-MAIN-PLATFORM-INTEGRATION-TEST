@@ -53,6 +53,20 @@ class AssetHistorySerializer(serializers.ModelSerializer):
         model = AssetHistory
         fields = "__all__"
 
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        if instance.performed_by:
+            rep["performed_by"] = ProfileSerializer(instance.performed_by).data
+        else:
+            rep["performed_by"] = None
+
+        if instance.affected_user:
+            rep["affected_user"] = ProfileSerializer(instance.affected_user).data
+        else:
+            rep["affected_user"] = None
+
+        return rep
+
 
 class AssetSerializer(serializers.ModelSerializer):
     asset_histories = AssetHistorySerializer(many=True, read_only=True)
@@ -114,6 +128,12 @@ class AssetSerializer(serializers.ModelSerializer):
             rep["category"] = AssetCategorySerializer(instance.category).data
         else:
             rep["category"] = None
+
+        
+        if instance.asset_histories:
+            rep["asset_histories"] = AssetHistorySerializer(instance.asset_histories, many=True).data
+        else:
+            rep["asset_histories"] = []
             
         return rep
 
@@ -399,6 +419,8 @@ class AssetReturnSerializer(serializers.ModelSerializer):
             rep["allocation"] = AssetAllocationSerializer(instance.allocation).data
         else:
             rep["allocation"] = None
+
+        
 
         
 

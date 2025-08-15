@@ -124,7 +124,7 @@ const AssetReturnsComponent = () => {
       const data = await assetsAPI.getAssetReturns();
       setAssetReturns(data);
     } catch (error) {
-      console.error("Error fetching asset returns:", error);
+      console.warn("Error fetching asset returns:", error);
       toast.error("Failed to fetch asset returns");
     } finally {
       setIsLoading(false);

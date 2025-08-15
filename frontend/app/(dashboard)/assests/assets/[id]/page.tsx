@@ -1,179 +1,227 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import { 
-  ArrowLeft, 
-  Edit, 
-  Trash2, 
-  RefreshCw, 
-  Package,
-  User,
-  Calendar,
-  Clock,
-  CheckCircle,
-  Wrench,
-  Archive,
-  History,
-  FileText,
-  MoreVertical,
-  RotateCcw
-} from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react"
+import { useParams, useRouter } from "next/navigation"
+import { ArrowLeft, RefreshCw, Package, User, History } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { toast } from "sonner"
+import { assetsAPI } from "@/lib/utils"
+import type { IAsset } from "@/types/types.utils"
+import { EditAssetDialog } from "@/components/assets/edit-asset-dialog"
+import { DeleteAssetDialog } from "@/components/assets/delete-asset-dialog"
+import { CreateAssetAllocationDialog } from "@/components/asset-allocations/create-asset-allocation-dialog"
+import { Icon } from "@iconify/react"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { assetsAPI } from "@/lib/utils";
-import type { IAsset, IAssetHistory } from "@/types/types.utils";
-import { EditAssetDialog } from "@/components/assets/edit-asset-dialog";
-import { DeleteAssetDialog } from "@/components/assets/delete-asset-dialog";
-import { AssetReturnDialog } from "@/components/assets/asset-return-dialog";
-import { AssetHistory } from "@/components/assets/asset-history";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 
 const getStatusColor = (status: string) => {
   switch (status) {
     case "available":
-      return "bg-green-100 text-green-800 border-green-200";
+      return "bg-green-100 text-green-800 border-green-200"
     case "allocated":
-      return "bg-blue-100 text-blue-800 border-blue-200";
+      return "bg-blue-100 text-blue-800 border-blue-200"
     case "maintenance":
-      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      return "bg-yellow-100 text-yellow-800 border-yellow-200"
     case "decommissioned":
-      return "bg-red-100 text-red-800 border-red-200";
+      return "bg-red-100 text-red-800 border-red-200"
     default:
-      return "bg-gray-100 text-gray-800 border-gray-200";
+      return "bg-gray-100 text-gray-800 border-gray-200"
   }
-};
+}
 
 const getStatusDisplay = (status: string) => {
   switch (status) {
     case "available":
-      return "Available";
+      return "Available"
     case "allocated":
-      return "Allocated";
+      return "Allocated"
     case "maintenance":
-      return "Under Maintenance";
+      return "Under Maintenance"
     case "decommissioned":
-      return "Decommissioned";
+      return "Decommissioned"
     default:
-      return status;
+      return status
   }
-};
-
-const getEventTypeDisplay = (eventType: string) => {
-  switch (eventType) {
-    case "allocated":
-      return "Allocated";
-    case "returned":
-      return "Returned";
-    case "maintenance":
-      return "Maintenance";
-    case "decommissioned":
-      return "Decommissioned";
-    case "created":
-      return "Created";
-    case "reassigned":
-      return "Reassigned";
-    default:
-      return eventType;
-  }
-};
-
-const getEventTypeIcon = (eventType: string) => {
-  switch (eventType) {
-    case "allocated":
-      return <User className="h-4 w-4 text-blue-500" />;
-    case "returned":
-      return <CheckCircle className="h-4 w-4 text-green-500" />;
-    case "maintenance":
-      return <Wrench className="h-4 w-4 text-yellow-500" />;
-    case "decommissioned":
-      return <Archive className="h-4 w-4 text-red-500" />;
-    case "created":
-      return <Package className="h-4 w-4 text-purple-500" />;
-    case "reassigned":
-      return <RefreshCw className="h-4 w-4 text-orange-500" />;
-    default:
-      return <FileText className="h-4 w-4 text-gray-500" />;
-  }
-};
+}
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+  if (!dateString) return "-"
+
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  } catch (error) {
+    return dateString // Return original string if parsing fails
+  }
+}
 
 const AssetDetailPage = () => {
-  const params = useParams();
-  const router = useRouter();
-  const selectedInstitution = useSelector(selectSelectedInstitution);
-  
-  const [asset, setAsset] = useState<IAsset | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const params = useParams()
+  const router = useRouter()
+
+  const [asset, setAsset] = useState<IAsset | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState("assignment-history")
+  const [isRetireConfirmOpen, setIsRetireConfirmOpen] = useState(false)
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
+  const [isReturnConfirmOpen, setIsReturnConfirmOpen] = useState(false)
 
   console.log("Asset", asset)
 
-  const assetId = params.id as string;
+  const assetId = params.id as string
 
   // Fetch asset details
   const fetchAssetDetails = async () => {
     try {
-      setIsLoading(true);
-      const response = await assetsAPI.getById(parseInt(assetId));
-      setAsset(response);
+      setIsLoading(true)
+      const response = await assetsAPI.getById(Number.parseInt(assetId))
+      setAsset(response)
     } catch (error) {
-      console.warn("Error fetching asset details:", error);
-      toast.error("Failed to load asset details");
+      console.warn("Error fetching asset details:", error)
+      toast.error("Failed to load asset details")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
     if (assetId) {
-      fetchAssetDetails();
+      fetchAssetDetails()
     }
-  }, [assetId]);
+  }, [assetId])
 
   const handleEditSuccess = (updatedAsset: IAsset) => {
-    setAsset(updatedAsset);
-    setIsEditDialogOpen(false);
-    toast.success("Asset updated successfully");
-  };
+    setAsset(updatedAsset)
+    setIsEditDialogOpen(false)
+    toast.success("Asset updated successfully")
+  }
 
   const handleDeleteSuccess = () => {
-    toast.success("Asset deleted successfully");
-    router.push("/assests/assets");
-  };
+    toast.success("Asset deleted successfully")
+    router.push("/assests/assets")
+  }
 
   const handleAssetReturn = () => {
     // Refresh asset details after return
-    fetchAssetDetails();
-    toast.success("Asset returned successfully");
-  };
+    fetchAssetDetails()
+    toast.success("Asset returned successfully")
+  }
 
   const handleEditAsset = () => {
-    setIsEditDialogOpen(true);
-  };
+    setIsEditDialogOpen(true)
+  }
 
   const handleDeleteAsset = () => {
-    setIsDeleteDialogOpen(true);
-  };
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleAssignAsset = () => {
+    if (!asset) {
+      toast.error("Asset not found")
+      return
+    }
+    setIsAssignDialogOpen(true)
+  }
+
+  const handleReturnAsset = () => {
+    if (!asset) {
+      toast.error("Asset not found")
+      return
+    }
+
+    // Check if asset is currently allocated
+    if (asset.status !== "allocated") {
+      toast.error("Only allocated assets can be returned")
+      return
+    }
+
+    setIsReturnConfirmOpen(true)
+  }
+
+  const confirmReturnAsset = async () => {
+    if (!asset) {
+      toast.error("Asset not found")
+      return
+    }
+
+    try {
+      // Update asset status to available
+      const updatedAsset = await assetsAPI.update(asset.id, {
+        status: "available",
+      })
+
+      // Update local asset state
+      setAsset(updatedAsset)
+
+      // Show success message
+      toast.success("Asset has been successfully returned and is now available")
+
+      // Close the modal
+      setIsReturnConfirmOpen(false)
+
+      // Refresh asset details to get updated data
+      fetchAssetDetails()
+    } catch (error: any) {
+      console.warn("Error returning asset:", error)
+      toast.error(error.message || "Failed to return asset. Please try again.")
+    }
+  }
+
+  const handleRetireAsset = () => {
+    if (!asset) {
+      toast.error("Asset not found")
+      return
+    }
+    setIsRetireConfirmOpen(true)
+  }
+
+  const confirmRetireAsset = async () => {
+    if (!asset) {
+      toast.error("Asset not found")
+      return
+    }
+
+    try {
+      // Update asset status to decommissioned
+      const updatedAsset = await assetsAPI.update(asset.id, {
+        status: "decommissioned",
+      })
+
+      // Update local asset state
+      setAsset(updatedAsset)
+
+      // Show success message
+      toast.success("Asset has been successfully retired (decommissioned)")
+
+      // Close the modal
+      setIsRetireConfirmOpen(false)
+
+      // Refresh asset details to get updated data
+      fetchAssetDetails()
+    } catch (error: any) {
+      console.warn("Error retiring asset:", error)
+      toast.error(error.message || "Failed to retire asset. Please try again.")
+    }
+  }
+
+  // Get the transformed asset history data
+  const assignmentHistory = asset ? asset.asset_histories || [] : []
 
   if (isLoading) {
     return (
@@ -183,7 +231,7 @@ const AssetDetailPage = () => {
           <span className="text-lg text-gray-600">Loading asset details...</span>
         </div>
       </div>
-    );
+    )
   }
 
   if (!asset) {
@@ -199,180 +247,247 @@ const AssetDetailPage = () => {
           </Button>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="space-y-4 md:space-y-6 p-4 md:p-6">
-      {/* Header */}
-      <div className="bg-white rounded-lg border shadow-sm">
-        <div className="p-4 md:p-6 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+    <div className="space-y-6 p-2 sm:p-4 bg-white rounded-lg">
+      {/* Asset Header */}
+      <div className="">
+        <div className="">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 justify-between">
+            <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => router.push("/assests/assets")}
-                className="text-gray-600 hover:text-gray-900 w-fit"
+                className="border rounded-full w-10 h-10 flex items-center justify-center"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Assets
               </Button>
-              <div>
-                <h1 className="text-xl md:text-2xl font-bold text-gray-900 break-words">{asset.asset_name}</h1>
-                <p className="text-sm text-gray-600">Asset Details</p>
+              <div className="flex-1">
+                <h1 className="text-lg sm:text-xl lg:text-[24px] font-bold text-gray-900">{asset.asset_name}</h1>
+              </div>
+              <div className="flex items-center space-x-2 sm:hidden">
+                <Badge className={getStatusColor(asset.status)}>{getStatusDisplay(asset.status)}</Badge>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                    <MoreVertical className="h-4 w-4 mr-2" />
-                    Actions
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleEditAsset}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Asset
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={handleDeleteAsset}
-                    className="text-red-600"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Asset
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+              <div className="hidden sm:flex items-center space-x-2 lg:mr-2">
+                <Badge className={getStatusColor(asset.status)}>{getStatusDisplay(asset.status)}</Badge>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
+                <Button
+                  onClick={handleAssignAsset}
+                  variant="outline"
+                  className="rounded-lg w-full sm:w-auto bg-transparent"
+                  disabled={asset.status !== "available"}
+                  title={
+                    asset.status !== "available"
+                      ? `Asset is ${asset.status.toLowerCase()}`
+                      : "Assign this asset to an employee"
+                  }
+                >
+                  Assign
+                </Button>
+                <Button
+                  onClick={handleReturnAsset}
+                  variant="outline"
+                  className="rounded-lg w-full sm:w-auto bg-transparent"
+                  disabled={asset.status !== "allocated"}
+                  title={
+                    asset.status !== "allocated"
+                      ? `Asset is ${asset.status.toLowerCase()}`
+                      : "Return this asset to available pool"
+                  }
+                >
+                  Return
+                </Button>
+                <Button
+                  onClick={handleRetireAsset}
+                  variant="outline"
+                  className="rounded-lg w-full sm:w-auto bg-transparent"
+                  disabled={asset.status === "decommissioned"}
+                  title={asset.status === "decommissioned" ? "Asset is already retired" : "Retire this asset"}
+                >
+                  Retire
+                </Button>
+                <Button
+                  onClick={handleEditAsset}
+                  variant="outline"
+                  className="rounded-lg w-full sm:w-auto bg-transparent"
+                >
+                  <Icon icon="hugeicons:edit-04" className="h-[24px] w-[24px] sm:mr-1" />
+                  <span className="sm:inline">Edit</span>
+                </Button>
+                <Button
+                  onClick={handleDeleteAsset}
+                  variant="outline"
+                  className="text-primary rounded-lg w-full sm:w-auto bg-transparent"
+                >
+                  <Icon icon="hugeicons:delete-02" className="h-[24px] w-[24px] sm:mr-1" />
+                  <span className="sm:inline">Delete</span>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
-        {/* Main Asset Information */}
-        <div className="xl:col-span-2 space-y-4 md:space-y-6">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader className="pb-3 md:pb-6">
-              <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
-                <Package className="h-5 w-5" />
-                <span>Basic Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Asset Specifications */}
+      <div className="">
+        <div className="">
+          <div className="flex flex-col">
+            <div className="flex flex-col sm:grid sm:grid-cols-2 lg:flex lg:flex-row lg:items-center gap-4 lg:gap-2 justify-between py-1">
+              <div className="space-y-4 sm:space-y-0 sm:contents lg:contents">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Asset Name</label>
-                  <p className="text-sm text-gray-900 mt-1 break-words">{asset.asset_name}</p>
+                  <label className="text-sm font-medium text-[#848496]">Batch No</label>
+                  <p className="text-sm text-[#162032] mt-1">{asset.batch_number}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Serial Number</label>
-                  <p className="text-sm font-mono text-gray-900 mt-1 break-all">{asset.serial_number}</p>
+                  <label className="text-sm font-medium text-[#848496]">Serial Number</label>
+                  <p className="text-sm text-[#162032] mt-1 font-mono break-all">{asset.serial_number}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Batch Number</label>
-                  <p className="text-sm text-gray-900 mt-1 break-words">{asset.batch_number}</p>
+                  <label className="text-sm font-medium text-[#848496]">Category</label>
+                  <p className="text-sm text-[#162032] mt-1">{asset.category?.category_name || "Unknown"}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Category</label>
-                  <p className="text-sm text-gray-900 mt-1 break-words">
-                    {asset.category?.category_name || 'Unknown'}
+                  <label className="text-sm font-medium text-[#848496]">Currently Assigned</label>
+                  <p className="text-sm text-[#162032] mt-1">
+                    {asset.current_holder && typeof asset.current_holder === "object" && asset.current_holder.user
+                      ? `${asset.current_holder.user.fullname} (Employee)`
+                      : "Not assigned"}
                   </p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Status</label>
-                  <div className="mt-1">
-                    <Badge className={getStatusColor(asset.status)}>
-                      {getStatusDisplay(asset.status)}
-                    </Badge>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Active</label>
-                  <div className="mt-1">
-                    <Badge variant={asset.is_active ? "default" : "secondary"}>
-                      {asset.is_active ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
-                </div>
               </div>
-              {asset.description && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Description</label>
-                  <p className="text-sm text-gray-900 mt-1 break-words">{asset.description}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Assignment Information */}
-          <Card>
-            <CardHeader className="pb-3 md:pb-6">
-              <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
-                <User className="h-5 w-5" />
-                <span>Assignment Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {asset.current_holder ? (
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                    <span className="text-sm font-medium text-gray-900">Currently Assigned To:</span>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-sm text-gray-900 break-words">
-                      {typeof asset.current_holder === 'object' && asset.current_holder.user && typeof asset.current_holder.user === 'object'
-                        ? asset.current_holder.user.fullname
-                        : 'Unknown User'}
-                    </p>
-                    {typeof asset.current_holder === 'object' &&
-                      asset.current_holder.user &&
-                      typeof asset.current_holder.user === 'object' &&
-                      asset.current_holder.user.email && (
-                        <p className="text-sm text-gray-600 mt-1 break-all">{asset.current_holder.user.email}</p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <User className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Not currently assigned to anyone</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Asset History - Using the new component */}
-          <AssetHistory asset={asset} onRefresh={fetchAssetDetails} />
+            </div>
+            <div className="space-y-4 py-1">
+              <div>
+                <label className="text-sm font-medium text-[#848496]">Description</label>
+                <p className="text-sm text-[#162032] mt-1">{asset.description || "A simple description"}</p>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* Sidebar */}
-        <div className="space-y-4 md:space-y-6">
-          {/* Timestamps */}
-          <Card>
-            <CardHeader className="pb-3 md:pb-6">
-              <CardTitle className="text-lg">Timestamps</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900">Created</p>
-                  <p className="text-xs text-gray-600 break-words">{formatDate(asset.created_at)}</p>
-                </div>
+      {/* Assignment History Section */}
+      <div className="">
+        <div className="">
+          {/* Tab Navigation */}
+          <div className="border-b border-gray-200 mb-6">
+            <div className="flex items-center justify-between">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setActiveTab("assignment-history")}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === "assignment-history"
+                      ? "border-orange-500 text-orange-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  Assignment History
+                </button>
+              </nav>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
+            {assignmentHistory.length > 0 ? (
+              <div className="min-w-full">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="font-medium text-gray-900 min-w-[150px]">Employee</TableHead>
+                      <TableHead className="font-medium text-gray-900 min-w-[120px]">Assigned Date</TableHead>
+                      <TableHead className="font-medium text-gray-900 min-w-[120px]">Date Returned</TableHead>
+                      <TableHead className="font-medium text-gray-900 min-w-[120px]">Assigned By</TableHead>
+                      <TableHead className="font-medium text-gray-900 min-w-[100px]">Condition</TableHead>
+                      <TableHead className="font-medium text-gray-900 min-w-[100px]">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {assignmentHistory.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="min-w-[150px]">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                              <User className="h-4 w-4 text-gray-600" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {typeof item.affected_user === "object"
+                                  ? item.affected_user?.user?.fullname
+                                  : item.affected_user}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate">
+                                {typeof item.affected_user === "object"
+                                  ? item.affected_user?.user?.roles?.map((role: any) => role.role_name).join(", ")
+                                  : item.affected_user}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-900 min-w-[120px]">
+                          {formatDate(item.created_at)}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-900 min-w-[120px]">
+                          {formatDate(item.updated_at)}
+                        </TableCell>
+                        <TableCell className="min-w-[120px]">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {typeof item.performed_by === "object"
+                                ? item.performed_by?.user?.fullname
+                                : item.performed_by}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">
+                              {typeof item.performed_by === "object"
+                                ? item.performed_by?.user?.roles?.map((role: any) => role.role_name).join(", ")
+                                : item.performed_by}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-900 min-w-[100px]"></TableCell>
+                        <TableCell className="min-w-[100px]">
+                          <Badge className={getStatusColor(item.event_type)}>{item.event_type}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 text-sm">No assignment history available for this asset</p>
+                <p className="text-gray-400 text-xs mt-1">
+                  Assignment history will appear here when the asset is allocated or returned
+                </p>
+              </div>
+            )}
+          </div>
+
+          {assignmentHistory.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between mt-6 space-y-4 sm:space-y-0">
+              <div className="text-sm text-gray-700">
+                Showing 1-{assignmentHistory.length} of {assignmentHistory.length}
               </div>
               <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900">Last Updated</p>
-                  <p className="text-xs text-gray-600 break-words">{formatDate(asset.updated_at)}</p>
-                </div>
+                <Button variant="outline" size="sm" disabled>
+                  &lt; Previous
+                </Button>
+                <Button variant="outline" size="sm" className="bg-orange-500 text-white border-orange-500">
+                  1
+                </Button>
+                <Button variant="outline" size="sm" disabled>
+                  Next &gt;
+                </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          )}
         </div>
       </div>
 
@@ -391,10 +506,58 @@ const AssetDetailPage = () => {
             onClose={() => setIsDeleteDialogOpen(false)}
             onSuccess={handleDeleteSuccess}
           />
+          <CreateAssetAllocationDialog
+            isOpen={isAssignDialogOpen}
+            onClose={() => setIsAssignDialogOpen(false)}
+            onSuccess={(allocation) => {
+              toast.success("Asset allocated successfully")
+              setIsAssignDialogOpen(false)
+              fetchAssetDetails() // Refresh to show updated status
+            }}
+            preSelectedAsset={asset}
+          />
         </>
       )}
-    </div>
-  );
-};
 
-export default AssetDetailPage;
+      {/* Return Asset Confirmation Modal */}
+      <Dialog open={isReturnConfirmOpen} onOpenChange={setIsReturnConfirmOpen}>
+        <DialogContent className="sm:max-w-[500px] rounded-2xl border-0 shadow-2xl">
+          <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
+            <DialogTitle className="text-2xl font-bold text-gray-900">Return Asset</DialogTitle>
+            <DialogDescription className="text-gray-600 text-base">
+              Are you sure you want to return this asset? This action will make the asset available for allocation
+              again.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="flex space-x-3">
+            <Button onClick={confirmReturnAsset} className="flex-1 bg-primary rounded-lg">
+              Return Asset
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Retire Asset Confirmation Modal */}
+      <Dialog open={isRetireConfirmOpen} onOpenChange={setIsRetireConfirmOpen}>
+        <DialogContent className="sm:max-w-[500px] rounded-2xl border-0 shadow-2xl">
+          <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
+            <DialogTitle className="text-2xl font-bold text-gray-900">Retire Asset</DialogTitle>
+            <DialogDescription className="text-gray-600 text-base">
+              Are you sure you want to retire this asset? This action will decommission the asset and will not be
+              available for allocation.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="flex space-x-3">
+            <Button onClick={confirmRetireAsset} className="flex-1 bg-red-600 hover:bg-red-700 rounded-lg">
+              Retire Asset
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+export default AssetDetailPage

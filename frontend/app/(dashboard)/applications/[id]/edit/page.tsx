@@ -134,10 +134,7 @@ export default function EditApplicationPage() {
           currentResumeUrl: fetchedApplication.resume,
           currentCoverLetterUrl: fetchedApplication.cover_letter || undefined,
         })
-      } else {
-        setError("Application not found")
-        toast.error("Application not found")
-      }
+      } 
     } catch (err) {
       setError("Failed to fetch application details")
       toast.error("Failed to load application details")

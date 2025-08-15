@@ -426,13 +426,14 @@ export default function ApplicationViewPage() {
 
       const fetchedApplication = await getJobApplicationById({applicationId});
 
-      if (fetchedApplication) {
-        setApplication(fetchedApplication);
-        await fetchInterviewData(fetchedApplication);
-      } else {
+      
+      setApplication(fetchedApplication);
+      if (!fetchedApplication) {
         setError("Application not found");
-        toast.error("Application not found");
+        return;
       }
+      await fetchInterviewData(fetchedApplication);
+      
     } catch (err) {
       setError("Failed to fetch application details");
       toast.error("Failed to load application details");

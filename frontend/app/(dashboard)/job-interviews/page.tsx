@@ -157,10 +157,7 @@ export default function InterviewsPage() {
 
       if (fetchedInterviews) {
         setInterviews(fetchedInterviews);
-      } else {
-        setError("Failed to fetch interviews. Please try again.");
-        toast.error("Failed to load interviews");
-      }
+      } 
     } catch (err) {
       setError("Failed to fetch interviews. Please try again.");
       toast.error("Failed to load interviews");

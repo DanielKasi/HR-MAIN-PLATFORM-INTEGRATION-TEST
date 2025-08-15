@@ -113,7 +113,7 @@ export function CreateAssetDialog({
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant={isEmbeded ? "outline" : "default"} className="flex items-center gap-2" disabled={disabled}>
+        <Button variant={isEmbeded ? "outline" : "default"} className="flex items-center gap-2 rounded-lg" disabled={disabled}>
           <Plus className="h-4 w-4" />
           {!isEmbeded ? "Add Asset" : ""}
         </Button>

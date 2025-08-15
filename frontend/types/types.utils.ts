@@ -1940,12 +1940,10 @@ export interface IAssetFormData {
 
 export interface IAssetHistory {
   id: number;
-  asset: number;
+  asset: number | IAsset;
   event_type: "allocated" | "returned" | "maintenance" | "decommissioned" | "created" | "reassigned";
-  performed_by: number;
-  performed_by_details?: any;
-  affected_user: number | null;
-  affected_user_details?: any;
+  performed_by: number | UserProfile;
+  affected_user: number | UserProfile;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -2154,18 +2152,7 @@ export interface IAssetFormData {
   status?: "available" | "allocated" | "maintenance" | "decommissioned";
 }
 
-export interface IAssetHistory {
-  id: number;
-  asset: number;
-  event_type: "allocated" | "returned" | "maintenance" | "decommissioned" | "created" | "reassigned";
-  performed_by: number;
-  performed_by_details?: any;
-  affected_user: number | null;
-  affected_user_details?: any;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
+
 
 export interface IAssetRequest {
   id: number;
