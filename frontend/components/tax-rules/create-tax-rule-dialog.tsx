@@ -216,7 +216,6 @@ export function CreateTaxRuleDialog({
                 Fixed Amount *
               </Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
                 <Input
                   id="tax_rule_fixed_amount"
                   type="number"
@@ -238,7 +237,6 @@ export function CreateTaxRuleDialog({
                 Salary From *
               </Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
                 <Input
                   id="salary_from"
                   type="number"
@@ -258,7 +256,6 @@ export function CreateTaxRuleDialog({
                 Salary To *
               </Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
                 <Input
                   id="salary_to"
                   type="number"

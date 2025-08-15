@@ -12,6 +12,7 @@ import {toast} from "sonner";
 
 import {getPayslip, getPayslipItems} from "@/lib/utils";
 import {IPayslip, IPayslipItem} from "@/types/types.utils";
+import {formatCurrency} from "@/lib/helpers";
 
 
 
@@ -77,10 +78,6 @@ export default function PayslipItems() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    const cleanAmount = amount % 1 === 0 ? Math.floor(amount) : amount;
-    return `UGX ${cleanAmount.toLocaleString()}`;
-  };
 
   const getTotals = () => {
     const allowances = items

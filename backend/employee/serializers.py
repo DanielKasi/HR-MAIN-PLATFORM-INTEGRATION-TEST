@@ -366,11 +366,10 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
             "signed_contract",
             "created_at",
             "updated_at",
-            "deleted_at",
             "status",
             "differences",
         ]
-        read_only_fields = ["contract_reference", "created_at", "status", "updated_at"]
+        read_only_fields = ["contract_reference", "created_at", "status"]
 
     def create(self, validated_data):
         # Generate contract_reference

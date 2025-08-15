@@ -58,6 +58,7 @@ import { TasksCards } from "@/components/dashboard_components/tasks-cards";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
 import { IDepartment, IEmployee, IInterview, ILeaveRequest, JobPositionAdvert } from "@/types/types.utils";
+import { formatCurrency } from "@/lib/helpers";
 
 
 // Interface for leave applications
@@ -394,7 +395,7 @@ const StatsCards = ({
     {
       title: "Avg. Salary",
       subtitle: departmentId === "all" ? "Estimated average" : `In ${departmentId}`,
-      value: `UGX ${stats.avgSalary.toLocaleString()}`,
+      value: formatCurrency(stats.avgSalary),
       change: "+5.2% YoY",
       icon: Coins,
       color: "bg-emerald-50 text-emerald-600",

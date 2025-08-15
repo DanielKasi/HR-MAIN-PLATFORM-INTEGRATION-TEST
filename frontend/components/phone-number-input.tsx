@@ -1,4 +1,4 @@
-import {useState, useEffect} from "react";
+import {useState, useEffect, use} from "react";
 import {countryAPI} from "@/lib/helpers";
 import {CountryCode, isValidPhoneNumber} from "libphonenumber-js";
 import {Input} from "@/components/ui/input";
@@ -19,6 +19,7 @@ interface PhoneNumberInputProps {
     isValid: boolean;
   }) => void;
   error?: string | null;
+  setError?: (error: string | null) => void;
   defaultCountry?: ICountry | null;
   disabled?: boolean;
 }
@@ -30,6 +31,7 @@ export default function PhoneNumberInput({
   country,
   onChange,
   error,
+  setError,
   defaultCountry = null,
   disabled = false,
 }: PhoneNumberInputProps) {
@@ -71,11 +73,20 @@ export default function PhoneNumberInput({
     setPhoneNumber(value);
   }, [value]);
 
+  useEffect(() => {
+    if (phoneError && setError) {
+      setError(phoneError);
+    }
+  }, [phoneError]);
+
   const getCountryCode = () => {
     if (!selectedCountry?.idd?.root) return "";
     const suffix = selectedCountry.idd.suffixes?.[0] || "";
     return `${selectedCountry.idd.root}${suffix}`;
   };
+
+
+
 
   const getFlag = (cca2: string) =>
     String.fromCodePoint(...cca2.split("").map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));

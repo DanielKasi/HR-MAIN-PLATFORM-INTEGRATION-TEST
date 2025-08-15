@@ -301,12 +301,7 @@ const AssetAllocationsComponent = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300"
-                        />
-                      </TableHead>
+                      
                       <TableHead>Allocation Code</TableHead>
                       <TableHead>Asset</TableHead>
                       <TableHead>Allocated To</TableHead>
@@ -326,12 +321,7 @@ const AssetAllocationsComponent = () => {
                     ) : (
                       paginatedAllocations.map((allocation) => (
                         <TableRow key={allocation.id}>
-                          <TableCell>
-                            <input
-                              type="checkbox"
-                              className="rounded border-gray-300"
-                            />
-                          </TableCell>
+                         
                           <TableCell className="font-mono text-sm">
                             {allocation.alloc_code}
                           </TableCell>

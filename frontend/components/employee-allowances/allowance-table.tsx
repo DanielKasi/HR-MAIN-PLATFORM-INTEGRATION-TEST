@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { IEmployeeAllowance } from "@/types/types.utils"
-
+import { formatCurrency } from "@/lib/helpers"
 
 interface AllowanceTableProps {
   allowances: IEmployeeAllowance[]
@@ -110,7 +110,7 @@ export function AllowanceTable({
               </TableCell>
               <TableCell>
                 <span className="text-lg font-semibold text-orange-600">
-                  {getCalculatedAmount(allowance).toLocaleString()}
+                  {formatCurrency(getCalculatedAmount(allowance))}
                 </span>
               </TableCell>
               <TableCell>

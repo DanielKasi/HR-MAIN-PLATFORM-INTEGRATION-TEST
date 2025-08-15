@@ -81,7 +81,7 @@ axiosJsonInstance.interceptors.response.use(
       isRefreshing = true;
       try {
         const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/user/token/refresh/`,
+          `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/"}/user/token/refresh/`,
           {refresh: refreshToken},
           {
             headers: {

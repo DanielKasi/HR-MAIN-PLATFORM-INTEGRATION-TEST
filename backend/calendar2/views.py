@@ -43,6 +43,7 @@ class PublicHolidayListCreateView(APIView):
         paginator = CustomPageNumberPagination()
         paginated_holidays = paginator.paginate_queryset(public_holidays, request)
         serializer = PublicHolidaySerializer(paginated_holidays, many=True)
+    
         return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
@@ -88,6 +89,7 @@ class PublicHolidayDetailView(APIView):
     def get(self, request, pk):
         public_holiday = get_object_or_404(PublicHoliday, pk=pk)
         serializer = PublicHolidaySerializer(public_holiday)
+        
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @extend_schema(
@@ -179,6 +181,7 @@ class EventListCreateView(APIView):
         tags=["Calendar"],
     )
     def post(self, request):
+
         serializer = EventSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(created_by=request.user.profile)
@@ -270,11 +273,13 @@ class InstitutionCalendarView(APIView):
         tags=["Calendar"],
     )
     def get(self, request):
+        
         institution = get_object_or_404(
             Institution, id=request.user.profile.institution.id
         )
 
         year = request.query_params.get("year", None)
+        print("Fetching institution calendar for user:", year)
         if year:
             try:
                 year = int(year)
@@ -293,6 +298,8 @@ class InstitutionCalendarView(APIView):
                 {"detail": f"Calendar not found for the year {year}"},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+        
 
         serializer = CalendarSerializer(calendar)
         return Response(serializer.data, status=status.HTTP_200_OK)

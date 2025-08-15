@@ -558,9 +558,19 @@ class PayslipAPIView(APIView):
         payroll_period = input_serializer.validated_data["payroll_period"]
 
         employees = Employee.objects.filter(
-            department__institution=institution_id,
-            date_of_joining__range=[payroll_period.start_date, payroll_period.end_date],
+            department__institution__id=institution_id,
+            date_of_joining__lte=payroll_period.end_date,
         )
+
+        if not employees.exists():
+            return Response(
+                {"detail": "No employees found for the given payroll period."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        print("\n\n\n")
+        print(f"Employees found: {employees}")
+
         employee_ids = list(employees.values_list("id", flat=True))
 
         created_payslips = PayrollProcessor.generate_payslips_for_period(

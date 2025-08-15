@@ -28,7 +28,6 @@ class AssetCategorySerializer(serializers.ModelSerializer):
             "id",
             "created_at",
             "updated_at",
-            "deleted_at",
             "institution",
         ]
 
@@ -54,6 +53,20 @@ class AssetHistorySerializer(serializers.ModelSerializer):
         model = AssetHistory
         fields = "__all__"
 
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        if instance.performed_by:
+            rep["performed_by"] = ProfileSerializer(instance.performed_by).data
+        else:
+            rep["performed_by"] = None
+
+        if instance.affected_user:
+            rep["affected_user"] = ProfileSerializer(instance.affected_user).data
+        else:
+            rep["affected_user"] = None
+
+        return rep
+
 
 class AssetSerializer(serializers.ModelSerializer):
     asset_histories = AssetHistorySerializer(many=True, read_only=True)
@@ -74,7 +87,6 @@ class AssetSerializer(serializers.ModelSerializer):
             "is_active",
             "created_at",
             "updated_at",
-            "deleted_at",
             "created_by",
             "current_holder",
             "asset_histories",
@@ -83,7 +95,6 @@ class AssetSerializer(serializers.ModelSerializer):
             "id",
             "created_at",
             "updated_at",
-            "deleted_at",
             "batch_number",
             "institution",
         ]
@@ -117,6 +128,12 @@ class AssetSerializer(serializers.ModelSerializer):
             rep["category"] = AssetCategorySerializer(instance.category).data
         else:
             rep["category"] = None
+
+        
+        if instance.asset_histories:
+            rep["asset_histories"] = AssetHistorySerializer(instance.asset_histories, many=True).data
+        else:
+            rep["asset_histories"] = []
             
         return rep
 
@@ -137,15 +154,13 @@ class AssetRequestSerializer(serializers.ModelSerializer):
             "notes",
             "created_at",
             "updated_at",
-            "is_active"
-            "deleted_at"
+            "is_active",
         ]
 
         read_only_fields = [
             "id",
             "created_at",
             "updated_at",
-            "deleted_at",
             "request_reference_code",
             "asset_request_status",
             "requester",
@@ -239,7 +254,6 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
             "is_active",
             "created_at",
             "updated_at",
-            "deleted_at"
         ]
         read_only_fields = [
             "id",
@@ -388,8 +402,26 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
 
 
 class AssetReturnSerializer(serializers.ModelSerializer):
-    asset = AssetSerializer(read_only=True)
-
+   
     class Meta:
         model = AssetReturn
         fields = "__all__"
+
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        if instance.asset:
+            rep["asset"] = AssetSerializer(instance.asset).data
+        else:
+            rep["asset"] = None
+
+        if instance.allocation:
+            rep["allocation"] = AssetAllocationSerializer(instance.allocation).data
+        else:
+            rep["allocation"] = None
+
+        
+
+        
+
+        return rep

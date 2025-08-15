@@ -87,8 +87,6 @@ import {
   ITaxFormData,
   ITaxRule,
   ITaxRuleFormData,
-
-  IEmployeeTaxFormData,
   IAssetCategory,
   IAssetCategoryFormData,
   IAsset,
@@ -98,7 +96,8 @@ import {
   IAssetRequestFormData,
   IAssetAllocation,
   IAssetAllocationFormData,
-
+  IAssetReturn,
+  IAssetReturnFormData,
 } from "@/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -2847,7 +2846,7 @@ export const createPayslip = async ({
 export const createBulkPayslips = async ({
   institutionId,
   payrollPeriodId,
-  employeeIds,
+  // employeeIds,
 }: {
   institutionId: number;
   payrollPeriodId: number;
@@ -2856,7 +2855,7 @@ export const createBulkPayslips = async ({
   try {
     const requestData = {
       payroll_period: payrollPeriodId,
-      employee_ids: employeeIds || [],
+      // employee_ids: employeeIds || [],
     };
 
     const response = await apiRequest.post(`payroll/${institutionId}/payslips/`, requestData);
@@ -3489,8 +3488,8 @@ export const AttendanceAPI = {
   },
 
   // Update an attendance record by ID
-  updateAttendanceRecord: async ({id, data}:{id: number, data: Partial<IAttendanceFormData>}) => {
-    const response = await apiRequest.patch(`/employee/attendance/${id}/`, data);
+  updateAttendanceRecord: async (id: number, data: Partial<IAttendanceFormData>) => {
+    const response = await apiRequest.put(`/employee/attendance/${id}/`, data);
     return response.data;
   },
 
@@ -3595,6 +3594,7 @@ export const taxesAPI = {
   getAll: async (): Promise<ITax[]> => {
     try {
       const response = await apiRequest.get('/institution/tax/');
+      console.log("Tax response",response)
       return response.data as ITax[];
     } catch (error) {
       throw error;
@@ -3826,10 +3826,12 @@ export const taxAPI = {
     }catch (error) {
       throw error
     }
+  
   },
 
   getAll: async () => {
     try {
+
       const response = await apiRequest.get("/institution/tax")
       return response.data as Itax[]
     }catch (error) {
@@ -3863,8 +3865,6 @@ export const taxAPI = {
       throw error
     }
   },
-
-  
 
 
 }
@@ -4104,6 +4104,58 @@ export const assetsAPI = {
       throw error;
     }
   },
+
+  // Asset Return API methods
+  getAssetReturns: async (): Promise<IAssetReturn[]> => {
+    try {
+      const response = await apiRequest.get("/assets/asset-returns/");
+      console.log("Asset Returns response", response);
+      return response.data.results || response.data;
+    } catch (error) {
+      console.error("Error fetching asset returns:", error);
+      throw error;
+    }
+  },
+
+  getAssetReturnById: async (id: number): Promise<IAssetReturn> => {
+    try {
+      const response = await apiRequest.get(`/assets/asset-returns/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching asset return:", error);
+      throw error;
+    }
+  },
+
+  createAssetReturn: async (data: IAssetReturnFormData): Promise<IAssetReturn> => {
+    try {
+      const response = await apiRequest.post("/assets/asset-returns/", data);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating asset return:", error);
+      throw error;
+    }
+  },
+
+  updateAssetReturn: async (id: number, data: Partial<IAssetReturnFormData>): Promise<IAssetReturn> => {
+    try {
+      const response = await apiRequest.patch(`/assets/asset-returns/${id}/`, data);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating asset return:", error);
+      throw error;
+    }
+  },
+
+  deleteAssetReturn: async (id: number): Promise<boolean> => {
+    try {
+      const response = await apiRequest.delete(`/assets/asset-returns/${id}/`);
+      return response.status === 204;
+    } catch (error) {
+      console.error("Error deleting asset return:", error);
+      throw error;
+    }
+  },
 };
 
 
@@ -4119,4 +4171,155 @@ export const employeeAPI = {
     }
   },
 };  
+
+// Calendar API functions
+export const calendarAPI = {
+  // Get calendar data for a specific institution and year
+  getInstitutionCalendar: async (year: number) => {
+    const response = await apiRequest.get(`calendar/institutions-calendar/?year=${year}`);
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      throw new Error('Failed to fetch calendar data');
+    }
+    
+  },
+
+  // Get all events for an institution
+  getEvents: async () => {
+    const response = await apiRequest.get(`calendar/events/`);
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      throw new Error('Failed to fetch events');
+    }
+    
+  },
+
+  // Create a new event
+  createEvent: async (eventData: {
+    institution: number;
+    title: string;
+    description: string;
+    date: string;
+    target_audience: "all" | "department" | "individual" | "specific_employees";
+    event_mode: "physical" | "online" | "hybrid";
+    department?: string;
+    specific_employees?: string[];
+  }) => {
+    const response = await apiRequest.post('calendar/events/', eventData);
+    if (response.status === 201) {
+      return response.data;
+    } else {
+      throw new Error('Failed to create event');
+    }
+    
+  },
+
+  // Update an existing event
+  updateEvent: async (eventId: number, eventData: {
+    title?: string;
+    description?: string;
+    date?: string;
+    target_audience?: "all" | "department" | "individual" | "specific_employees";
+    event_mode?: "physical" | "online" | "hybrid";
+    department?: string;
+    specific_employees?: string[];
+  }) => {
+    const response = await apiRequest.put(`calendar/events/${eventId}/`, eventData);
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      throw new Error('Failed to update event');
+    }
+    
+  },
+
+  // Delete an event
+  deleteEvent: async (eventId: number) => {
+    const response = await apiRequest.delete(`calendar/events/${eventId}/`);
+    if (response.status === 204) {
+      return true;
+    } else {
+      throw new Error('Failed to delete event');
+    }
+    
+  },
+
+  // Get a specific event by ID
+  getEvent: async (eventId: number) => {
+    const response = await apiRequest.get(`calendar/events/${eventId}/`);
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      throw new Error('Failed to fetch event');
+    }
+    
+  },
+
+  // Get public holidays for an institution
+  getPublicHolidays: async (institutionId: number) => {
+    const response = await apiRequest.get(`calendar/public-holidays/?institution=${institutionId}`);
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      throw new Error('Failed to fetch public holidays');
+    }
+    
+  },
+
+  // Create a new public holiday
+  createPublicHoliday: async (holidayData: {
+    institution: number;
+    title: string;
+    date: string;
+  }) => {
+    const response = await apiRequest.post('calendar/public-holidays/', holidayData);
+    if (response.status === 201) {
+      return response.data;
+    } else {
+      throw new Error('Failed to create public holiday');
+    }
+    
+  },
+
+  // Update a public holiday
+  updatePublicHoliday: async (holidayId: number, holidayData: {
+    title?: string;
+    date?: string;
+  }) => {
+    const response = await apiRequest.put(`calendar/public-holidays/${holidayId}/`, holidayData);
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      throw new Error('Failed to update public holiday');
+    }
+    
+  },
+
+  // Delete a public holiday
+  deletePublicHoliday: async (holidayId: number) => {
+    const response = await apiRequest.delete(`calendar/public-holidays/${holidayId}/`, {
+      method: 'DELETE',
+    });
+    if (response.status === 204) {
+      return true;
+    } else {
+      throw new Error('Failed to delete public holiday');
+    }
+    
+  },
+
+  // Get calendar data for a specific month/year
+  getMonthCalendar: async (institutionId: number, year: number, month: number) => {
+    const response = await apiRequest.get(`calendar/institutions-calendar/?institution=${institutionId}&year=${year}&month=${month}`);
+    if (response.status === 200) {
+      return response.data;
+    } else {
+      throw new Error('Failed to fetch month calendar');
+    }
+    
+  },
+};
+
 

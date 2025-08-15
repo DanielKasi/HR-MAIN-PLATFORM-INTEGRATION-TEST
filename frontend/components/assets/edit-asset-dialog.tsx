@@ -19,6 +19,21 @@ import { toast } from "sonner";
 import { assetsAPI, assetCategoriesAPI } from "@/lib/utils";
 import type { IAsset, IAssetFormData, IAssetCategory } from "@/types/types.utils";
 
+const getStatusDisplay = (status: string) => {
+  switch (status) {
+    case "available":
+      return "Available";
+    case "allocated":
+      return "Allocated";
+    case "maintenance":
+      return "Under Maintenance";
+    case "decommissioned":
+      return "Decommissioned";
+    default:
+      return status;
+  }
+};
+
 interface EditAssetDialogProps {
   asset: IAsset;
   isOpen: boolean;
@@ -40,8 +55,23 @@ export function EditAssetDialog({
     serial_number: "",
     category: 0,
     description: "",
-    status: "available",
   });
+
+  // Initialize form data when asset changes
+  useEffect(() => {
+    if (asset) {
+      const categoryId = typeof asset.category === 'object' && asset.category ? asset.category.id : 
+                        (typeof asset.category === 'number' ? asset.category : 0);
+      console.log('Asset category:', asset.category);
+      console.log('Extracted category ID:', categoryId);
+      setFormData({
+        asset_name: asset.asset_name,
+        serial_number: asset.serial_number,
+        category: categoryId,
+        description: asset.description || "",
+      });
+    }
+  }, [asset]);
 
   const fetchCategories = async () => {
     try {
@@ -59,15 +89,8 @@ export function EditAssetDialog({
   useEffect(() => {
     if (isOpen) {
       fetchCategories();
-      setFormData({
-        asset_name: asset.asset_name,
-        serial_number: asset.serial_number,
-        category: asset.category,
-        description: asset.description || "",
-        status: asset.status,
-      });
     }
-  }, [asset, isOpen]);
+  }, [isOpen]);
 
   const handleSubmit = async () => {
     if (!formData.asset_name.trim()) {
@@ -142,7 +165,7 @@ export function EditAssetDialog({
               Category *
             </Label>
             <Select 
-              value={formData.category ? formData.category.toString() : undefined} 
+              value={formData.category && formData.category > 0 ? formData.category.toString() : ""} 
               onValueChange={(value) => {
                 if (value && value !== "loading" && value !== "no-categories") {
                   setFormData({ ...formData, category: parseInt(value) });
@@ -175,23 +198,11 @@ export function EditAssetDialog({
 
           <div className="space-y-3">
             <Label htmlFor="status" className="text-sm text-gray-800">
-              Status
+              Status 
             </Label>
-            <Select 
-              value={formData.status} 
-              onValueChange={(value: any) => setFormData({ ...formData, status: value })}
-              disabled={isSubmitting}
-            >
-              <SelectTrigger className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="allocated">Allocated</SelectItem>
-                <SelectItem value="maintenance">Under Maintenance</SelectItem>
-                <SelectItem value="decommissioned">Decommissioned</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-base text-gray-700">
+              {getStatusDisplay(asset.status)}
+            </div>
           </div>
 
           <div className="space-y-3">

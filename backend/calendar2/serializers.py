@@ -20,6 +20,8 @@ class EventSerializer(serializers.ModelSerializer):
             "date",
             "target_audience",
             "event_mode",
+            "frequency",
+            "repeat_until",
             "department",
             "specific_employees",
             "created_at",
