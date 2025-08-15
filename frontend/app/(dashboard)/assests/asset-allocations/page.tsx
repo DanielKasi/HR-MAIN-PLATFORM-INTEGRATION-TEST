@@ -43,6 +43,7 @@ import { useRouter } from "next/navigation";
 import { assetsAPI } from "@/lib/utils";
 import type { IAssetAllocation } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
+import { Icon } from "@iconify/react";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -234,21 +235,15 @@ const AssetAllocationsComponent = () => {
               <h1 className="text-3xl font-bold text-gray-900">Asset Allocations</h1>
             
             </div>
-            <Button
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="bg-primary text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Allocation
-            </Button>
+            
           </div>
         </div>
 
         {/* Filters */}
         <div className="p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
-              <div className="relative flex-1 max-w-sm">
+          <div className="">
+            <div className="flex items-center gap-4 justify-between">
+              <div className="relative flex justify-between">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="Search allocations..."
@@ -258,7 +253,7 @@ const AssetAllocationsComponent = () => {
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectTrigger className="w-full sm:w-[130px] border-none shadow-none">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -269,24 +264,16 @@ const AssetAllocationsComponent = () => {
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-                <SelectTrigger className="w-full sm:w-[100px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAGE_SIZES.map((size) => (
-                    <SelectItem key={size} value={size.toString()}>
-                      {size}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Button
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="bg-primary text-white rounded-[11px]"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Allocation
+            </Button>
+              
             </div>
-            {hasFilters && (
-              <Button variant="outline" onClick={clearFilters} size="sm">
-                Clear Filters
-              </Button>
-            )}
+            
           </div>
         </div>
 
@@ -307,7 +294,6 @@ const AssetAllocationsComponent = () => {
                       <TableHead>Allocated To</TableHead>
                       <TableHead>Allocated By</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
                       <TableHead className="w-12">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -342,12 +328,11 @@ const AssetAllocationsComponent = () => {
                               </Badge>
                             </div>
                           </TableCell>
-                          <TableCell>{formatDate(allocation.created_at)}</TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="sm">
-                                  <MoreVertical className="h-4 w-4" />
+                                  <Icon icon="hugeicons:more-horizontal-circle-01" className="!h-4 !w-4 text-dark" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
