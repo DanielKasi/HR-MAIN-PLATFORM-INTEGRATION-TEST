@@ -26,6 +26,7 @@ from .serializers import (
     PayslipItemSerializer,
     PayslipGenerationInputSerializer,
     EmployeeTaxSerializer,
+    AttendanceReportSerializer,
 )
 from employee.models import Employee
 from .utils import PayrollProcessor, generate_eft_excel
@@ -34,6 +35,7 @@ from django.http import HttpResponse
 from django.utils.encoding import escape_uri_path
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from institution.models import Institution
+
 
 
 class ExportEFTExcelView(APIView):
@@ -638,3 +640,19 @@ class PayslipsByPayrollAPIView(APIView):
         paginated_qs = paginator.paginate_queryset(payslips, request)
         serializer = PayslipSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
+
+
+
+class PayrollPeriodAttendanceReportAPIView(APIView):
+    """
+    Generate an attendance report for all employees in a given payroll period.
+    """
+
+    @extend_schema(
+        summary="Attendance report for a payroll period",
+        responses=AttendanceReportSerializer,
+    )
+    def get(self, request, pk):
+        payroll_period = get_object_or_404(PayrollPeriod, pk=pk)
+        serializer = AttendanceReportSerializer().to_representation(payroll_period)
+        return Response(serializer, status=status.HTTP_200_OK)

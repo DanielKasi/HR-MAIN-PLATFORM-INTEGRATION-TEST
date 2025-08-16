@@ -64,4 +64,9 @@ urlpatterns = [
         EmployeeTaxDetailAPIView.as_view(),
         name="employee-tax-detail",
     ),
+    path(
+        "payroll-periods/<int:pk>/attendance-report/",
+        PayrollPeriodAttendanceReportAPIView.as_view(),
+        name="payroll-period-attendance-report",
+    ),
 ]
