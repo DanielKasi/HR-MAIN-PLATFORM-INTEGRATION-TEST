@@ -44,6 +44,7 @@ import { useRouter } from "next/navigation";
 import { assetsAPI } from "@/lib/utils";
 import type { IAssetReturn } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
+import { Icon } from "@iconify/react";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -112,8 +113,6 @@ const AssetReturnsComponent = () => {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
-
-  console.log("Asset Returns Component Rendered", assetReturns);
 
   // Fetch asset returns from API
   const fetchAssetReturns = useCallback(async () => {
@@ -207,254 +206,291 @@ const AssetReturnsComponent = () => {
     toast.success("Asset return created successfully");
   };
 
+  const hasFilters = searchTerm || conditionFilter !== "all";
+
   if (isLoading) {
     return <TableSkeleton />;
   }
 
   return (
-    <div className="min-h-screen bg-background p-2 sm:p-4 lg:p-6 overflow-x-hidden w-full max-w-full">
-      <div className="mx-auto space-y-4 lg:space-y-6 w-full">
-        {/* Header */}
-        <div className="space-y-3 lg:space-y-4 w-full">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 lg:gap-4 w-full">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.back()}
-                className="shadow-sm bg-transparent rounded-full w-8 h-8 sm:w-9 sm:h-9 p-0 flex items-center justify-center flex-shrink-0"
-              >
-                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-              </Button>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground truncate">Asset Returns</h1>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-white rounded-lg border shadow-sm">
+        <div className="p-6 ">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Asset Returns</h1>
             </div>
+          </div>
+        </div>
 
-            {/* Create Asset Return Button */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center min-w-0">
-              <Button 
+        {/* Filters */}
+        <div className="p-6">
+          <div className="">
+            <div className="flex items-center gap-4 justify-between">
+              <div className="relative flex justify-between">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search returns..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={conditionFilter} onValueChange={setConditionFilter}>
+                <SelectTrigger className="w-full sm:w-[130px] border-none shadow-none">
+                  <SelectValue placeholder="All Conditions" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Conditions</SelectItem>
+                  <SelectItem value="good">Good</SelectItem>
+                  <SelectItem value="damaged">Damaged</SelectItem>
+                  <SelectItem value="lost">Lost</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
                 onClick={() => setIsCreateDialogOpen(true)}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto text-sm"
+                className="bg-primary text-white rounded-[11px]"
               >
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="h-4 w-4 mr-2" />
                 Return Asset
               </Button>
             </div>
           </div>
-
-          {/* Search and Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 w-full">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search asset returns..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <Select value={conditionFilter} onValueChange={setConditionFilter}>
-              <SelectTrigger className="w-full sm:w-[180px] min-w-0">
-                <SelectValue placeholder="Filter by condition" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Conditions</SelectItem>
-                <SelectItem value="good">Good</SelectItem>
-                <SelectItem value="damaged">Damaged</SelectItem>
-                <SelectItem value="lost">Lost</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
-        {/* Asset Returns Table */}
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[120px]">Asset</TableHead>
-                  <TableHead className="min-w-[100px]">Serial Number</TableHead>
-                  <TableHead className="min-w-[100px]">Batch Number</TableHead>
-                  <TableHead className="min-w-[100px]">Condition</TableHead>
-                  <TableHead className="min-w-[120px]">Return Date</TableHead>
-                  <TableHead className="min-w-[100px]">Notes</TableHead>
-                  <TableHead className="min-w-[80px] text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+        {/* Content */}
+        <div className="p-6">
+          {isLoading ? (
+            <TableSkeleton />
+          ) : (
+            <>
+              {/* Desktop Table */}
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Asset</TableHead>
+                      <TableHead>Serial Number</TableHead>
+                      <TableHead>Condition</TableHead>
+                      <TableHead>Return Date</TableHead>
+                      <TableHead className="w-12">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedAssetReturns.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                          {hasFilters ? "No returns found matching your filters" : "No asset returns found"}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      paginatedAssetReturns.map((assetReturn) => (
+                        <TableRow key={assetReturn.id}>
+                          <TableCell className="font-medium">
+                            {assetReturn.asset?.asset_name || 'Unknown Asset'}
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {assetReturn.asset?.serial_number || 'N/A'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              {getConditionIcon(assetReturn.condition)}
+                              <Badge className={getConditionColor(assetReturn.condition)}>
+                                {getConditionDisplay(assetReturn.condition)}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>{formatDate(assetReturn.created_at)}</TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <Icon icon="hugeicons:more-horizontal-circle-01" className="!h-4 !w-4 text-dark" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleView(assetReturn)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEdit(assetReturn)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleDelete(assetReturn)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="sm:hidden space-y-3">
                 {paginatedAssetReturns.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      <div className="flex flex-col items-center gap-2">
-                        <RotateCcw className="h-8 w-8 opacity-50" />
-                        <p>No asset returns found</p>
-                        {searchTerm || conditionFilter !== "all" ? (
-                          <p className="text-sm">Try adjusting your search or filters</p>
-                        ) : (
-                          <p className="text-sm">Create your first asset return</p>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  <div className="text-center py-8 text-gray-500">
+                    {hasFilters ? "No returns found matching your filters" : "No asset returns found"}
+                  </div>
                 ) : (
                   paginatedAssetReturns.map((assetReturn) => (
-                    <TableRow key={assetReturn.id}>
-                      <TableCell className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <div className="min-w-0">
-                            <p className="font-medium truncate">{assetReturn.asset?.asset_name}</p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {assetReturn.asset?.category?.category_name}
+                    <div key={assetReturn.id} className="bg-gray-50 rounded-lg p-4 border">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Users className="h-4 w-4 text-gray-500" />
+                            <h3 className="font-semibold text-gray-900">
+                              {assetReturn.asset?.asset_name || 'Unknown Asset'}
+                            </h3>
+                          </div>
+                          <div className="space-y-1 mb-2">
+                            <p className="text-sm text-gray-600 font-mono">
+                              Serial: {assetReturn.asset?.serial_number || 'N/A'}
                             </p>
+                            <p className="text-sm text-gray-600">
+                              Batch: {assetReturn.asset?.batch_number || 'N/A'}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center space-x-2">
+                                {getConditionIcon(assetReturn.condition)}
+                                <Badge className={getConditionColor(assetReturn.condition)}>
+                                  {getConditionDisplay(assetReturn.condition)}
+                                </Badge>
+                              </div>
+                              <span className="text-sm text-gray-500">
+                                Returned: {formatDate(assetReturn.created_at)}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </TableCell>
-                      <TableCell className="min-w-0">
-                        <span className="font-mono text-sm">{assetReturn.asset?.serial_number}</span>
-                      </TableCell>
-                      <TableCell className="min-w-0">
-                        <span className="font-mono text-sm">{assetReturn.asset?.batch_number}</span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`${getConditionColor(assetReturn.condition)} flex items-center gap-1`}>
-                          {getConditionIcon(assetReturn.condition)}
-                          {getConditionDisplay(assetReturn.condition)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">{formatDate(assetReturn.created_at)}</span>
-                      </TableCell>
-                      <TableCell className="min-w-0 max-w-[200px]">
-                        <p className="text-sm text-muted-foreground truncate">
-                          {assetReturn.notes || "No notes"}
-                        </p>
-                      </TableCell>
-                      <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <Button variant="ghost" size="sm">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleView(assetReturn)}>
-                              <Eye className="mr-2 h-4 w-4" />
+                              <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleEdit(assetReturn)}>
-                              <Edit className="mr-2 h-4 w-4" />
+                              <Edit className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => handleDelete(assetReturn)}
-                              className="text-destructive focus:text-destructive"
+                              className="text-red-600"
                             >
-                              <Trash2 className="mr-2 h-4 w-4" />
+                              <Trash2 className="h-4 w-4 mr-2" />
                               Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                    </div>
                   ))
                 )}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>
-                Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} results
-              </span>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Select value={pageSize.toString()} onValueChange={(value: string) => handlePageSizeChange(Number(value))}>
-                <SelectTrigger className="w-[80px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAGE_SIZES.map((size) => (
-                    <SelectItem key={size} value={size.toString()}>
-                      {size}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(1)}
-                  disabled={currentPage === 1}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(totalPages)}
-                  disabled={currentPage === totalPages}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
               </div>
-            </div>
-          </div>
-        )}
 
-        {/* Dialogs */}
-        {editingAssetReturn && (
-          <EditAssetReturnDialog
-            open={isEditDialogOpen}
-            onOpenChange={setIsEditDialogOpen}
-            assetReturn={editingAssetReturn}
-            onSuccess={handleEditSuccess}
-          />
-        )}
-
-        {deletingAssetReturn && (
-          <DeleteAssetReturnDialog
-            open={isDeleteDialogOpen}
-            onOpenChange={setIsDeleteDialogOpen}
-            assetReturn={deletingAssetReturn}
-            onSuccess={handleDeleteSuccess}
-          />
-        )}
-
-        <CreateAssetReturnDialog
-          open={isCreateDialogOpen}
-          onOpenChange={setIsCreateDialogOpen}
-          onSuccess={handleCreateSuccess}
-        />
+              {/* Pagination */}
+              {filteredAssetReturns.length > 0 && (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
+                  <div className="text-sm text-gray-700">
+                    Showing {((currentPage - 1) * pageSize) + 1} to{" "}
+                    {Math.min(currentPage * pageSize, filteredAssetReturns.length)} of{" "}
+                    {filteredAssetReturns.length} returns
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(1)}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronsLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        const page = i + 1;
+                        return (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(page)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {page}
+                          </Button>
+                        );
+                      })}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(totalPages)}
+                        disabled={currentPage === totalPages}
+                      >
+                        <ChevronsRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Dialogs */}
+      {editingAssetReturn && (
+        <EditAssetReturnDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          assetReturn={editingAssetReturn}
+          onSuccess={handleEditSuccess}
+        />
+      )}
+
+      {deletingAssetReturn && (
+        <DeleteAssetReturnDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          assetReturn={deletingAssetReturn}
+          onSuccess={handleDeleteSuccess}
+        />
+      )}
+
+      <CreateAssetReturnDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSuccess={handleCreateSuccess}
+      />
     </div>
   );
 };
