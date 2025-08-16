@@ -650,9 +650,22 @@ class PayrollPeriodAttendanceReportAPIView(APIView):
 
     @extend_schema(
         summary="Attendance report for a payroll period",
-        responses=AttendanceReportSerializer,
+        responses=AttendanceReportSerializer(many=True),
     )
     def get(self, request, pk):
         payroll_period = get_object_or_404(PayrollPeriod, pk=pk)
-        serializer = AttendanceReportSerializer().to_representation(payroll_period)
-        return Response(serializer, status=status.HTTP_200_OK)
+        report_data = AttendanceReportSerializer().to_representation(payroll_period)
+        
+        employees_list = report_data["employees"]
+
+        paginator = CustomPageNumberPagination()
+        paginated_employees = paginator.paginate_queryset(employees_list, request)
+
+        paginated_response = {
+            "payroll_period": report_data["payroll_period"],
+            "employees": paginated_employees,
+        }
+
+        return paginator.get_paginated_response(paginated_response)
+
+
