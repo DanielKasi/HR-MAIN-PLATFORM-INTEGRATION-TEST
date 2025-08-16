@@ -19,7 +19,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  FileText
+  FileText,
+  Users
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,7 @@ import { useRouter } from "next/navigation";
 import { assetsAPI } from "@/lib/utils";
 import type { IAssetRequest } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
+import { Icon } from "@iconify/react";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -117,9 +119,7 @@ const AssetRequestsComponent = () => {
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-
-  console.log("AssetsRequest", assetRequests)
-
+ 
   // Fetch asset requests from API
   const fetchAssetRequests = useCallback(async () => {
     try {
@@ -128,7 +128,7 @@ const AssetRequestsComponent = () => {
       setAssetRequests(response || []);
     } catch (error) {
       console.warn("Error fetching asset requests:", error);
-   
+      toast.error("Failed to load asset requests");
     } finally {
       setIsLoading(false);
     }
@@ -185,7 +185,7 @@ const AssetRequestsComponent = () => {
       filtered = filtered.filter(request =>
         request.asset?.asset_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         request.request_reference_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.requester?.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.requester?.user.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (request.notes?.toLowerCase() || '').includes(searchTerm.toLowerCase())
       );
     }
@@ -227,27 +227,19 @@ const AssetRequestsComponent = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg border shadow-sm">
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 ">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Asset Requests</h1>
-              
             </div>
-            <Button
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="bg-primary text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Request
-            </Button>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
-              <div className="relative flex-1 max-w-sm">
+        <div className="p-6">
+          <div className="">
+            <div className="flex items-center gap-4 justify-between">
+              <div className="relative flex justify-between">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="Search requests..."
@@ -257,7 +249,7 @@ const AssetRequestsComponent = () => {
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectTrigger className="w-full sm:w-[130px] border-none shadow-none">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -268,24 +260,14 @@ const AssetRequestsComponent = () => {
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-                <SelectTrigger className="w-full sm:w-[100px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAGE_SIZES.map((size) => (
-                    <SelectItem key={size} value={size.toString()}>
-                      {size}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {hasFilters && (
-              <Button variant="outline" onClick={clearFilters} size="sm">
-                Clear Filters
+              <Button
+                onClick={() => setIsCreateDialogOpen(true)}
+                className="bg-primary text-white rounded-[11px]"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Request
               </Button>
-            )}
+            </div>
           </div>
         </div>
 
@@ -300,26 +282,23 @@ const AssetRequestsComponent = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      
-                      <TableHead>Reference</TableHead>
+                      <TableHead>Request Code</TableHead>
                       <TableHead>Asset</TableHead>
                       <TableHead>Requester</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
                       <TableHead className="w-12">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedRequests.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                           {hasFilters ? "No requests found matching your filters" : "No asset requests found"}
                         </TableCell>
                       </TableRow>
                     ) : (
                       paginatedRequests.map((request) => (
                         <TableRow key={request.id}>
-                          
                           <TableCell className="font-mono text-sm">
                             {request.request_reference_code}
                           </TableCell>
@@ -327,7 +306,7 @@ const AssetRequestsComponent = () => {
                             {request.asset?.asset_name || 'Unknown Asset'}
                           </TableCell>
                           <TableCell>
-                            {request.requester?.user.fullname|| 'Unknown User'}
+                            {request.requester?.user.fullname || 'Unknown User'}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
@@ -337,12 +316,11 @@ const AssetRequestsComponent = () => {
                               </Badge>
                             </div>
                           </TableCell>
-                          <TableCell>{formatDate(request.created_at)}</TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="sm">
-                                  <MoreVertical className="h-4 w-4" />
+                                  <Icon icon="hugeicons:more-horizontal-circle-01" className="!h-4 !w-4 text-dark" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
@@ -383,17 +361,17 @@ const AssetRequestsComponent = () => {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <Package className="h-4 w-4 text-gray-500" />
+                            <Users className="h-4 w-4 text-gray-500" />
                             <h3 className="font-semibold text-gray-900">
                               {request.asset?.asset_name || 'Unknown Asset'}
                             </h3>
                           </div>
                           <div className="space-y-1 mb-2">
                             <p className="text-sm text-gray-600 font-mono">
-                              Ref: {request.request_reference_code}
+                              Code: {request.request_reference_code}
                             </p>
                             <p className="text-sm text-gray-600">
-                              Requester: {request.requester?.fullname || 'Unknown User'}
+                              Requester: {request.requester?.user.fullname || 'Unknown User'}
                             </p>
                             <div className="flex items-center gap-2">
                               <div className="flex items-center space-x-2">
@@ -406,11 +384,6 @@ const AssetRequestsComponent = () => {
                                 Created: {formatDate(request.created_at)}
                               </span>
                             </div>
-                            {request.notes && (
-                              <p className="text-sm text-gray-600 mt-1">
-                                {request.notes}
-                              </p>
-                            )}
                           </div>
                         </div>
                         <DropdownMenu>
