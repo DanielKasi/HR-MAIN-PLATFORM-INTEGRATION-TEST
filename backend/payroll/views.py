@@ -37,7 +37,6 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from institution.models import Institution
 
 
-
 class ExportEFTExcelView(APIView):
     """
     API endpoint to generate and download an EFT Excel file for a given payroll period.
@@ -642,7 +641,6 @@ class PayslipsByPayrollAPIView(APIView):
         return paginator.get_paginated_response(serializer.data)
 
 
-
 class PayrollPeriodAttendanceReportAPIView(APIView):
     """
     Generate an attendance report for all employees in a given payroll period.
@@ -655,7 +653,7 @@ class PayrollPeriodAttendanceReportAPIView(APIView):
     def get(self, request, pk):
         payroll_period = get_object_or_404(PayrollPeriod, pk=pk)
         report_data = AttendanceReportSerializer().to_representation(payroll_period)
-        
+
         employees_list = report_data["employees"]
 
         paginator = CustomPageNumberPagination()
@@ -667,5 +665,3 @@ class PayrollPeriodAttendanceReportAPIView(APIView):
         }
 
         return paginator.get_paginated_response(paginated_response)
-
-
