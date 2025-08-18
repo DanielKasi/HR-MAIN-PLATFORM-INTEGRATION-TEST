@@ -4226,7 +4226,7 @@ export const calendarAPI = {
     department?: string;
     specific_employees?: string[];
   }) => {
-    const response = await apiRequest.put(`calendar/events/${eventId}/`, eventData);
+    const response = await apiRequest.patch(`calendar/events/${eventId}/`, eventData);
     if (response.status === 200) {
       return response.data;
     } else {
@@ -4288,7 +4288,7 @@ export const calendarAPI = {
     title?: string;
     date?: string;
   }) => {
-    const response = await apiRequest.put(`calendar/public-holidays/${holidayId}/`, holidayData);
+    const response = await apiRequest.patch(`calendar/public-holidays/${holidayId}/`, holidayData);
     if (response.status === 200) {
       return response.data;
     } else {
