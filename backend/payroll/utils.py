@@ -21,8 +21,6 @@ from datetime import date
 from employee.models import Employee, EmployeeAttendance
 from leave_mgt.models import LeaveApplication
 from settings.models import SystemDay
-
-
 from recruitment.models import JobPosition
 
 
