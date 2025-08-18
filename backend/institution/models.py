@@ -45,6 +45,7 @@ class Institution(UtilityBaseModel):
         blank=True,
         null=True,
     )
+    is_attendance_penalties_enabled = models.BooleanField(default=False)
     setup = models.BooleanField(default=False)
     location = models.CharField(max_length=500, blank=True, null=True)
     country_code = models.CharField(max_length=10, blank=True, null=True)

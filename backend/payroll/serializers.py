@@ -311,7 +311,7 @@ class EmployeeTaxSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         rep["employee"] = EmployeeSerializer(instance.employee).data
         rep["institution_tax"] = InstitutionTaxSerializer(instance.institution_tax).data
-        return rep        
+        return rep
 
     def validate(self, data):
         departments = data.get("target_departments", [])
@@ -421,7 +421,9 @@ class AttendanceReportSerializer(serializers.Serializer):
         attendances = EmployeeAttendance.objects.filter(
             date__range=[payroll_period.start_date, payroll_period.end_date],
             employee__is_active=True,
-        ).select_related("employee", "employee__user", "employee__department", "employee__position")
+        ).select_related(
+            "employee", "employee__user", "employee__department", "employee__position"
+        )
 
         # Group by employee
         employee_data = {}
