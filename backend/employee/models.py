@@ -41,19 +41,19 @@ class EmployeeType(UtilityBaseModel):
 
     def __str__(self):
         return self.name
-    
+
     class Meta:
         constraints = [
             UniqueConstraint(
                 fields=["name"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_type_name"
+                name="unique_active_employee_type_name",
             ),
             UniqueConstraint(
                 fields=["code"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_type_code"
-            )
+                name="unique_active_employee_type_code",
+            ),
         ]
 
 
@@ -64,19 +64,19 @@ class WorkType(UtilityBaseModel):
 
     def __str__(self):
         return self.name
-    
+
     class Meta:
         constraints = [
             UniqueConstraint(
                 fields=["name"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_work_type_name"
+                name="unique_active_work_type_name",
             ),
             UniqueConstraint(
                 fields=["code"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_work_type_code"
-            )
+                name="unique_active_work_type_code",
+            ),
         ]
 
 
@@ -179,7 +179,7 @@ class Employee(UtilityBaseModel):
 
     def __str__(self):
         return f"{self.user.fullname}  - {self.position}"
-    
+
     class Meta:
         constraints = [
             # A OneToOneField is essentially a ForeignKey with unique=True
@@ -212,9 +212,7 @@ class Employee(UtilityBaseModel):
                 existing = existing.exclude(pk=self.pk)
             if existing.exists():
                 raise ValidationError(
-                    
-                        "An employee with this phone number already exists."
-                    
+                    "An employee with this phone number already exists."
                 )
 
         # ✅ Validate minimum age of 18 years
@@ -229,7 +227,9 @@ class Employee(UtilityBaseModel):
                 )
             )
             if age < 18:
-                raise ValidationError(f"Employee must be at least 18 years old. Current age: {age} years.")
+                raise ValidationError(
+                    f"Employee must be at least 18 years old. Current age: {age} years."
+                )
 
         # Prevent future date of birth
         if self.date_of_birth and self.date_of_birth > date.today():
@@ -456,7 +456,7 @@ class Employee(UtilityBaseModel):
             random.choice(lowercase),
             random.choice(uppercase),
             random.choice(digits),
-            random.choice(special)
+            random.choice(special),
         ]
 
         all_characters = lowercase + uppercase + digits + special
@@ -464,15 +464,13 @@ class Employee(UtilityBaseModel):
             password.append(random.choice(all_characters))
 
         random.shuffle(password)
-        return "".join(password) 
+        return "".join(password)
 
         random_password = generate_compliant_password()
         self.user.set_password(random_password)
         self.user.is_password_verified = False
         self.user.save()
         return random_password
-   
-    
 
     def create_password_token_and_send_link(self, request):
         """Create token and send password link to user."""
@@ -594,11 +592,11 @@ class EmployeeAttendance(UtilityBaseModel):
                 return hours
         return 0.0
 
-    def _haversine_distance(self, lat1,lon1, lat2, lon2):
+    def _haversine_distance(self, lat1, lon1, lat2, lon2):
         if None in (lat1, lon1, lat2, lon2):
-            return float('inf')
+            return float("inf")
 
-        R = 6371000 # Earth radius in meters
+        R = 6371000  # Earth radius in meters
 
         # Convert to radians
         lat1_rad = math.radians(lat1)
@@ -609,7 +607,10 @@ class EmployeeAttendance(UtilityBaseModel):
         dlat = lat2_rad - lat1_rad
         dlon = lon2_rad - lon1_rad
 
-        a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
+        a = (
+            math.sin(dlat / 2) ** 2
+            + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2) ** 2
+        )
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
         return R * c
@@ -639,25 +640,41 @@ class EmployeeAttendance(UtilityBaseModel):
         super().clean()
 
         # Validate check-in location if provided
-        if self.check_in_time and (self.check_in_latitude is not None or self.check_in_longitude is not None):
+        if self.check_in_time and (
+            self.check_in_latitude is not None or self.check_in_longitude is not None
+        ):
             if self.check_in_latitude is None or self.check_in_longitude is None:
-                raise ValidationError("Both check-in latitude and longitude must be provided if one is set.")
-            if not self._is_location_valid(self.check_in_latitude, self.check_in_longitude):
-                raise ValidationError("Check-in location does not match any attached branch location.")
+                raise ValidationError(
+                    "Both check-in latitude and longitude must be provided if one is set."
+                )
+            if not self._is_location_valid(
+                self.check_in_latitude, self.check_in_longitude
+            ):
+                raise ValidationError(
+                    "Check-in location does not match any attached branch location."
+                )
 
         # Validate check-out location if provided
-        if self.check_out_time and (self.check_out_latitude is not None or self.check_out_longitude is not None):
+        if self.check_out_time and (
+            self.check_out_latitude is not None or self.check_out_longitude is not None
+        ):
             if self.check_out_latitude is None or self.check_out_longitude is None:
-                raise ValidationError("Both check-out latitude and longitude must be provided if one is set.")
-            if not self._is_location_valid(self.check_out_latitude, self.check_out_longitude):
-                raise ValidationError("Check-out location does not match any attached branch location.")                    
+                raise ValidationError(
+                    "Both check-out latitude and longitude must be provided if one is set."
+                )
+            if not self._is_location_valid(
+                self.check_out_latitude, self.check_out_longitude
+            ):
+                raise ValidationError(
+                    "Check-out location does not match any attached branch location."
+                )
 
     def save(self, *args, **kwargs):
 
         if self.date is None:
             self.date = datetime.today().date()
 
-        self.full_clean()    
+        self.full_clean()
 
         self.overtime_hours = self.calculate_overtime_hours()
         super().save(*args, **kwargs)
@@ -684,9 +701,7 @@ class EmployeeContract(UtilityBaseModel):
         null=True,
         blank=True,
     )
-    contract_reference = models.CharField(
-        max_length=20, blank=True, null=True
-    )
+    contract_reference = models.CharField(max_length=20, blank=True, null=True)
     original_contract = models.FileField(
         upload_to="contracts/original/", blank=True, null=True
     )
@@ -704,13 +719,13 @@ class EmployeeContract(UtilityBaseModel):
 
     def __str__(self):
         return f"Contract {self.contract_reference} "
-    
+
     class Meta:
         constraints = [
             UniqueConstraint(
                 fields=["contract_reference"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_contract_reference"
+                name="unique_active_contract_reference",
             )
         ]
 

@@ -82,7 +82,7 @@ class Institution(UtilityBaseModel):
             UniqueConstraint(
                 fields=["institution_owner", "institution_name"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_institution_name_per_institution_owner"
+                name="unique_active_institution_name_per_institution_owner",
             )
         ]
 
@@ -329,7 +329,7 @@ class InstitutionBankAccount(UtilityBaseModel):
             UniqueConstraint(
                 fields=["institution_bank", "account_number"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_account_number_per_instititution_bank"
+                name="unique_active_account_number_per_instititution_bank",
             )
         ]
 
@@ -570,6 +570,6 @@ class Department(UtilityBaseModel):
         null=True,
         blank=True,
     )
-    
+
     def __str__(self):
         return self.name

@@ -168,7 +168,7 @@ class LeaveBalance(UtilityBaseModel):
             UniqueConstraint(
                 fields=["employee", "leave_type", "year"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_leave_type_per_year_per_employee"
+                name="unique_active_leave_type_per_year_per_employee",
             )
         ]
 
