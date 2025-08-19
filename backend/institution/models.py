@@ -45,6 +45,7 @@ class Institution(UtilityBaseModel):
         blank=True,
         null=True,
     )
+    is_attendance_penalties_enabled = models.BooleanField(default=False)
     setup = models.BooleanField(default=False)
     location = models.CharField(max_length=500, blank=True, null=True)
     country_code = models.CharField(max_length=10, blank=True, null=True)
@@ -82,7 +83,7 @@ class Institution(UtilityBaseModel):
             UniqueConstraint(
                 fields=["institution_owner", "institution_name"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_institution_name_per_institution_owner"
+                name="unique_active_institution_name_per_institution_owner",
             )
         ]
 
@@ -329,7 +330,7 @@ class InstitutionBankAccount(UtilityBaseModel):
             UniqueConstraint(
                 fields=["institution_bank", "account_number"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_account_number_per_instititution_bank"
+                name="unique_active_account_number_per_instititution_bank",
             )
         ]
 
@@ -570,6 +571,6 @@ class Department(UtilityBaseModel):
         null=True,
         blank=True,
     )
-    
+
     def __str__(self):
         return self.name

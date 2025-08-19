@@ -1,10 +1,16 @@
-"use client"
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+"use client";
+import {useState, useEffect} from "react";
+import {useParams, useRouter} from "next/navigation";
+import {Button} from "@/components/ui/button";
+import {Card, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -13,12 +19,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { TableSkeleton } from "@/components/common/table-skeleton"
-import { InfiniteScrollSelect } from "@/components/infinite-scroll-select"
+} from "@/components/ui/dialog";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Badge} from "@/components/ui/badge";
+import {Avatar, AvatarFallback} from "@/components/ui/avatar";
+import {TableSkeleton} from "@/components/common/table-skeleton";
+import {InfiniteScrollSelect} from "@/components/infinite-scroll-select";
 import {
   Plus,
   CheckCircle,
@@ -35,9 +41,9 @@ import {
   Edit,
   CreditCard,
   Search,
-} from "lucide-react"
-import { toast } from "sonner"
-import { useSelector } from "react-redux"
+} from "lucide-react";
+import {toast} from "sonner";
+import {useSelector} from "react-redux";
 import {
   deletePayslip,
   markPayslipAsPaid,
@@ -46,387 +52,407 @@ import {
   updatePayslip,
   getPayrollPeriod,
   getDepartments,
-} from "@/lib/utils"
-import type { IDepartment, IPayrollPeriod, IPayslip, IBankAccount } from "@/types/types.utils"
-import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors"
+} from "@/lib/utils";
+import type {IDepartment, IPayrollPeriod, IPayslip, IBankAccount} from "@/types/types.utils";
+import {selectAccessToken, selectSelectedInstitution} from "@/store/auth/selectors";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { formatCurrency } from "@/lib/helpers"
-import { payrollAPI, bankAccountsAPI } from "@/lib/utils"
+} from "@/components/ui/dropdown-menu";
+import {formatCurrency} from "@/lib/helpers";
+import {payrollAPI, bankAccountsAPI} from "@/lib/utils";
 
 export default function PayrollPeriodDetails() {
-  const router = useRouter()
-  const [payslips, setPayslips] = useState<IPayslip[]>([])
-  const [payrollPeriod, setPayrollPeriod] = useState<IPayrollPeriod | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterStatus, setFilterStatus] = useState<"all" | "paid" | "unpaid">("all")
-  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
-  const [bulkPaymentModalOpen, setBulkPaymentModalOpen] = useState(false)
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("all")
-  const [bulkProcessing, setBulkProcessing] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(10)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [departments, setDepartments] = useState<IDepartment[]>([])
+  const router = useRouter();
+  const [payslips, setPayslips] = useState<IPayslip[]>([]);
+  const [payrollPeriod, setPayrollPeriod] = useState<IPayrollPeriod | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "paid" | "unpaid">("all");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [bulkPaymentModalOpen, setBulkPaymentModalOpen] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [departments, setDepartments] = useState<IDepartment[]>([]);
 
-  const accessToken = useSelector(selectAccessToken)
-  const [editingPayslip, setEditingPayslip] = useState<IPayslip | null>(null)
-  const [editModalOpen, setEditModalOpen] = useState(false)
+  const accessToken = useSelector(selectAccessToken);
+  const [editingPayslip, setEditingPayslip] = useState<IPayslip | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
     basic_salary: 0,
     total_allowances: 0,
     total_deductions: 0,
     days_worked: 0,
-  })
-  const [isUpdating, setIsUpdating] = useState(false)
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Add these state variables after the existing ones
-  const [totalItems, setTotalItems] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   // Bank account selection modal states
-  const [downloadModalOpen, setDownloadModalOpen] = useState(false)
-  const [bankAccounts, setBankAccounts] = useState<IBankAccount[]>([])
-  const [selectedBankAccount, setSelectedBankAccount] = useState<IBankAccount | null>(null)
-  const [bankAccountsLoading, setBankAccountsLoading] = useState(false)
-  const [bankAccountsHasMore, setBankAccountsHasMore] = useState(true)
-  const [bankAccountsPage, setBankAccountsPage] = useState(1)
-  const [bankAccountsSearch, setBankAccountsSearch] = useState("")
-  const [isDownloading, setIsDownloading] = useState(false)
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
+  const [bankAccounts, setBankAccounts] = useState<IBankAccount[]>([]);
+  const [selectedBankAccount, setSelectedBankAccount] = useState<IBankAccount | null>(null);
+  const [bankAccountsLoading, setBankAccountsLoading] = useState(false);
+  const [bankAccountsHasMore, setBankAccountsHasMore] = useState(true);
+  const [bankAccountsPage, setBankAccountsPage] = useState(1);
+  const [bankAccountsSearch, setBankAccountsSearch] = useState("");
+  const [isDownloading, setIsDownloading] = useState(false);
 
-  const params = useParams()
-  const selectedInstitution = useSelector(selectSelectedInstitution)
-  const payrollPeriodId = params.id as string
+  const params = useParams();
+  const selectedInstitution = useSelector(selectSelectedInstitution);
+  const payrollPeriodId = params.id as string;
+
+  const extractItems = (payslips: IPayslip[]) => {
+    const allItems = new Set<string>();
+
+    payslips.forEach((payslip) => {
+      if (payslip.items?.allowance) {
+        Object.keys(payslip.items.allowance).forEach((key) => allItems.add(key));
+      }
+      if (payslip.items?.deduction) {
+        Object.keys(payslip.items.deduction).forEach((key) => allItems.add(key));
+      }
+    });
+
+    return Array.from(allItems).sort();
+  };
 
   useEffect(() => {
     if (selectedInstitution && payrollPeriodId) {
-      fetchData(currentPage, itemsPerPage)
-      fetchDepartments()
+      fetchData(currentPage, itemsPerPage);
+      fetchDepartments();
     }
-  }, [selectedInstitution, payrollPeriodId, currentPage, itemsPerPage, filterStatus])
+  }, [selectedInstitution, payrollPeriodId, currentPage, itemsPerPage, filterStatus]);
 
   const handleErrorToast = (error: any, defaultMessage: string) => {
-    toast.error(error?.message || error?.detail?.error || defaultMessage)
-  }
+    toast.error(error?.message || error?.detail?.error || defaultMessage);
+  };
 
   const fetchDepartments = async () => {
     if (!selectedInstitution) {
-      return
+      return;
     }
     try {
-      const depts = await getDepartments({ institutionId: selectedInstitution.id })
-      setDepartments(depts)
+      const depts = await getDepartments({institutionId: selectedInstitution.id});
+      setDepartments(depts);
     } catch (error: any) {
-      handleErrorToast(error, "Failed to fetch departments")
+      handleErrorToast(error, "Failed to fetch departments");
     }
-  }
+  };
 
   const fetchData = async (page = 1, pageSize: number = itemsPerPage) => {
     if (!selectedInstitution?.id || !payrollPeriodId) {
-      return
+      return;
     }
 
     try {
-      setIsLoading(true)
+      setIsLoading(true);
 
       // Fetch payroll period info
-      const fetchedPeriod = await getPayrollPeriod({ payrollPeriodId })
-      setPayrollPeriod(fetchedPeriod)
+      const fetchedPeriod = await getPayrollPeriod({payrollPeriodId});
+      setPayrollPeriod(fetchedPeriod);
 
       // Build API parameters for pagination and filters
       const apiParams: {
-        page: number
-        page_size: number
-        is_paid?: boolean
+        page: number;
+        page_size: number;
+        is_paid?: boolean;
       } = {
         page,
         page_size: pageSize,
-      }
+      };
 
       // Add filter parameters
       if (filterStatus === "paid") {
-        apiParams.is_paid = true
+        apiParams.is_paid = true;
       } else if (filterStatus === "unpaid") {
-        apiParams.is_paid = false
+        apiParams.is_paid = false;
       }
 
       // Fetch paginated payslips
       const response = await payrollAPI.getPayslipsByPayrollPeriod({
         payrollId: payrollPeriodId,
         params: apiParams,
-      })
+      });
 
-      setPayslips(response.results)
-      setTotalItems(response.count || 0)
-      setTotalPages(Math.ceil((response.count || 0) / pageSize))
+      setPayslips(response.results);
+      setTotalItems(response.count || 0);
+      setTotalPages(Math.ceil((response.count || 0) / pageSize));
     } catch (error) {
-      console.error("Error fetching data:", error)
-      toast.error("Failed to load data", { duration: 5000 })
+      console.error("Error fetching data:", error);
+      toast.error("Failed to load data", {duration: 5000});
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // Bank accounts fetching functions
   const fetchBankAccounts = async (page = 1, search = "", reset = false) => {
     try {
-      setBankAccountsLoading(true)
+      setBankAccountsLoading(true);
 
-      const searchParams = new URLSearchParams()
-      searchParams.append("page", page.toString())
-      searchParams.append("page_size", "20")
+      const searchParams = new URLSearchParams();
+      searchParams.append("page", page.toString());
+      searchParams.append("page_size", "20");
       if (search) {
-        searchParams.append("search", search)
+        searchParams.append("search", search);
       }
 
-      const response = await bankAccountsAPI.getAll(`?${searchParams.toString()}`)
+      const response = await bankAccountsAPI.getAll(`?${searchParams.toString()}`);
 
       if (reset) {
-        setBankAccounts(response.results)
+        setBankAccounts(response.results);
       } else {
-        setBankAccounts((prev) => [...prev, ...response.results])
+        setBankAccounts((prev) => [...prev, ...response.results]);
       }
 
-      setBankAccountsHasMore(!!response.next)
-      setBankAccountsPage(page)
+      setBankAccountsHasMore(!!response.next);
+      setBankAccountsPage(page);
     } catch (error: any) {
-      handleErrorToast(error, "Failed to fetch bank accounts")
+      handleErrorToast(error, "Failed to fetch bank accounts");
     } finally {
-      setBankAccountsLoading(false)
+      setBankAccountsLoading(false);
     }
-  }
+  };
 
   const handleBankAccountSearch = (query: string) => {
-    setBankAccountsSearch(query)
-    setBankAccountsPage(1)
-    fetchBankAccounts(1, query, true)
-  }
+    setBankAccountsSearch(query);
+    setBankAccountsPage(1);
+    fetchBankAccounts(1, query, true);
+  };
 
   const handleLoadMoreBankAccounts = () => {
     if (!bankAccountsLoading && bankAccountsHasMore) {
-      fetchBankAccounts(bankAccountsPage + 1, bankAccountsSearch, false)
+      fetchBankAccounts(bankAccountsPage + 1, bankAccountsSearch, false);
     }
-  }
+  };
 
   // Initialize bank accounts when modal opens
   useEffect(() => {
     if (downloadModalOpen && bankAccounts.length === 0) {
-      fetchBankAccounts(1, "", true)
+      fetchBankAccounts(1, "", true);
     }
-  }, [downloadModalOpen])
+  }, [downloadModalOpen]);
 
   // Remove the filteredPayslips calculation and replace with:
-  const displayedPayslips = payslips // Data is already filtered and paginated from server
+  const displayedPayslips = payslips; // Data is already filtered and paginated from server
 
   // Update pagination handlers
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
+    setCurrentPage(page);
     // fetchData will be called by useEffect
-  }
+  };
 
   const handleItemsPerPageChange = (items: number) => {
-    setItemsPerPage(items)
-    setCurrentPage(1)
+    setItemsPerPage(items);
+    setCurrentPage(1);
     // fetchData will be called by useEffect
-  }
+  };
 
   const resetPagination = () => {
-    setCurrentPage(1)
-  }
+    setCurrentPage(1);
+  };
 
   const handleDownloadPayroll = async () => {
     if (!selectedBankAccount) {
-      toast.error("Please select a bank account")
-      return
+      toast.error("Please select a bank account");
+      return;
     }
 
     if (!payrollPeriodId) {
-      return
+      return;
     }
 
     try {
-      setIsDownloading(true)
+      setIsDownloading(true);
       await downloadPayrollDocument({
         accessToken,
         payrollId: payrollPeriodId,
         payingAccountId: selectedBankAccount.id.toString(),
-      })
-      toast.success("Payroll document download started")
-      setDownloadModalOpen(false)
-      setSelectedBankAccount(null)
+      });
+      toast.success("Payroll document download started");
+      setDownloadModalOpen(false);
+      setSelectedBankAccount(null);
     } catch (error: any) {
-      handleErrorToast(error, "Failed to download payroll document")
+      handleErrorToast(error, "Failed to download payroll document");
     } finally {
-      setIsDownloading(false)
+      setIsDownloading(false);
     }
-  }
+  };
 
   const getPageNumbers = () => {
-    const pages = []
-    const maxVisiblePages = 5
+    const pages = [];
+    const maxVisiblePages = 5;
 
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
-        pages.push(i)
+        pages.push(i);
       }
     } else {
-      const halfVisible = Math.floor(maxVisiblePages / 2)
-      let startPage = Math.max(1, currentPage - halfVisible)
-      let endPage = Math.min(totalPages, currentPage + halfVisible)
+      const halfVisible = Math.floor(maxVisiblePages / 2);
+      let startPage = Math.max(1, currentPage - halfVisible);
+      let endPage = Math.min(totalPages, currentPage + halfVisible);
 
       if (currentPage <= halfVisible) {
-        endPage = Math.min(totalPages, maxVisiblePages)
+        endPage = Math.min(totalPages, maxVisiblePages);
       }
       if (currentPage > totalPages - halfVisible) {
-        startPage = Math.max(1, totalPages - maxVisiblePages + 1)
+        startPage = Math.max(1, totalPages - maxVisiblePages + 1);
       }
 
       if (startPage > 1) {
-        pages.push(1)
+        pages.push(1);
         if (startPage > 2) {
-          pages.push("...")
+          pages.push("...");
         }
       }
 
       for (let i = startPage; i <= endPage; i++) {
-        pages.push(i)
+        pages.push(i);
       }
 
       if (endPage < totalPages) {
         if (endPage < totalPages - 1) {
-          pages.push("...")
+          pages.push("...");
         }
-        pages.push(totalPages)
+        pages.push(totalPages);
       }
     }
 
-    return pages
-  }
+    return pages;
+  };
 
   const getUnpaidPayslipsByDepartment = (department: string) => {
     return displayedPayslips.filter(
       (payslip) =>
-        !payslip.is_paid && (department === "all" || payslip.employee.department.id.toString() === department),
-    )
-  }
+        !payslip.is_paid &&
+        (department === "all" || payslip.employee.department.id.toString() === department),
+    );
+  };
 
   const handleBulkMarkAsPaid = async () => {
-    const unpaidPayslips = getUnpaidPayslipsByDepartment(selectedDepartment)
+    const unpaidPayslips = getUnpaidPayslipsByDepartment(selectedDepartment);
 
     if (unpaidPayslips.length === 0) {
-      toast.info("No unpaid payslips found for the selected criteria")
-      return
+      toast.info("No unpaid payslips found for the selected criteria");
+      return;
     }
 
-    setBulkProcessing(true)
-    let successCount = 0
-    let errorCount = 0
+    setBulkProcessing(true);
+    let successCount = 0;
+    let errorCount = 0;
 
     try {
       for (const payslip of unpaidPayslips) {
         try {
-          const success = await markPayslipAsPaid(payslip.id)
+          const success = await markPayslipAsPaid(payslip.id);
           if (success) {
-            successCount++
+            successCount++;
           } else {
-            errorCount++
+            errorCount++;
           }
         } catch (error) {
-          errorCount++
+          errorCount++;
         }
       }
 
       if (successCount > 0) {
         setPayslips((prev) =>
           prev.map((p) => {
-            const wasMarked = unpaidPayslips.find((up) => up.id === p.id)
-            return wasMarked && !p.is_paid ? { ...p, is_paid: true, paid_date: new Date().toISOString() } : p
+            const wasMarked = unpaidPayslips.find((up) => up.id === p.id);
+            return wasMarked && !p.is_paid
+              ? {...p, is_paid: true, paid_date: new Date().toISOString()}
+              : p;
           }),
-        )
+        );
       }
 
       if (successCount > 0 && errorCount > 0) {
-        toast.warning(`Processed payments for ${successCount} payslips, ${errorCount} failed`)
+        toast.warning(`Processed payments for ${successCount} payslips, ${errorCount} failed`);
       } else if (successCount > 0 && errorCount === 0) {
-        toast.success(`Successfully processed payment for ${successCount} payslips`)
+        toast.success(`Successfully processed payment for ${successCount} payslips`);
       } else {
-        toast.error("Failed to mark any payslips as paid")
+        toast.error("Failed to mark any payslips as paid");
       }
 
-      setBulkPaymentModalOpen(false)
-      setSelectedDepartment("all")
+      setBulkPaymentModalOpen(false);
+      setSelectedDepartment("all");
     } catch (error: any) {
-      toast.error("An error occurred during bulk payment processing")
+      toast.error("An error occurred during bulk payment processing");
     } finally {
-      setBulkProcessing(false)
+      setBulkProcessing(false);
     }
-  }
+  };
 
   const handleMarkAsPaid = async (payslip: IPayslip) => {
     if (payslip.is_paid) {
-      toast.info("This payslip is already marked as paid")
-      return
+      toast.info("This payslip is already marked as paid");
+      return;
     }
 
     try {
-      setIsLoading(true)
-      const success = await markPayslipAsPaid(payslip.id)
+      setIsLoading(true);
+      const success = await markPayslipAsPaid(payslip.id);
 
       if (success) {
         setPayslips((prev) =>
-          prev.map((p) => (p.id === payslip.id ? { ...p, is_paid: true, paid_date: new Date().toISOString() } : p)),
-        )
-        toast.success(`Payslip for ${payslip.employee.user?.fullname} marked as paid`)
+          prev.map((p) =>
+            p.id === payslip.id ? {...p, is_paid: true, paid_date: new Date().toISOString()} : p,
+          ),
+        );
+        toast.success(`Payslip for ${payslip.employee.user?.fullname} marked as paid`);
       } else {
-        toast.error("Failed to mark payslip as paid")
+        toast.error("Failed to mark payslip as paid");
       }
     } catch (error: any) {
-      toast.error(error.message || "An error occurred while marking payslip as paid")
+      toast.error(error.message || "An error occurred while marking payslip as paid");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleDelete = async (id: number) => {
     try {
-      const success = await deletePayslip(id)
+      const success = await deletePayslip(id);
       if (success) {
-        setPayslips((prev) => prev.filter((p) => p.id !== id))
-        toast.success("Payslip deleted successfully")
-        setDeleteConfirmId(null)
+        setPayslips((prev) => prev.filter((p) => p.id !== id));
+        toast.success("Payslip deleted successfully");
+        setDeleteConfirmId(null);
       } else {
-        toast.error("Failed to delete payslip")
+        toast.error("Failed to delete payslip");
       }
     } catch (error: any) {
-      toast.error(error.message || "An error occurred while deleting the payslip")
+      toast.error(error.message || "An error occurred while deleting the payslip");
     }
-  }
+  };
 
   const navigateToPayslipItems = (payslipId: number) => {
-    router.push(`/payroll/payroll-period/payslip/${payslipId}/items`)
-  }
+    router.push(`/payroll/payroll-period/payslip/${payslipId}/items`);
+  };
 
   const getInitials = (name: string) => {
     return name
       .split(" ")
       .map((n) => n[0])
       .join("")
-      .toUpperCase()
-  }
+      .toUpperCase();
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
-    })
-  }
+    });
+  };
 
   // Add debounced search effect
   useEffect(() => {
@@ -434,45 +460,43 @@ export default function PayrollPeriodDetails() {
       if (searchTerm) {
         // For now, we'll handle search client-side since the API doesn't support it
         // You may want to add search support to your API later
-        fetchData(1, itemsPerPage)
+        fetchData(1, itemsPerPage);
       } else {
-        fetchData(currentPage, itemsPerPage)
+        fetchData(currentPage, itemsPerPage);
       }
-    }, 500)
+    }, 500);
 
-    return () => clearTimeout(timeoutId)
-  }, [searchTerm, currentPage, itemsPerPage])
-
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, currentPage, itemsPerPage]);
 
   if (!payrollPeriod && !isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <span className="ml-2">Payroll period not found.</span>
       </div>
-    )
+    );
   }
 
   const handleEditPayslip = (payslip: IPayslip) => {
-    setEditingPayslip(payslip)
+    setEditingPayslip(payslip);
     setEditFormData({
       basic_salary: Number(payslip.basic_salary || 0),
       total_allowances: Number(payslip.total_allowances || 0),
       total_deductions: Number(payslip.total_deductions || 0),
       days_worked: payslip.days_worked,
-    })
-    setEditModalOpen(true)
-  }
+    });
+    setEditModalOpen(true);
+  };
 
   const handleUpdatePayslip = async () => {
-    if (!editingPayslip) return
+    if (!editingPayslip) return;
 
-    setIsUpdating(true)
+    setIsUpdating(true);
     try {
-      const basicSalary = Number(editFormData.basic_salary || 0)
-      const totalAllowances = Number(editFormData.total_allowances || 0)
-      const totalDeductions = Number(editFormData.total_deductions || 0)
-      const daysWorked = Number(editFormData.days_worked || 0)
-
+      const basicSalary = Number(editFormData.basic_salary || 0);
+      const totalAllowances = Number(editFormData.total_allowances || 0);
+      const totalDeductions = Number(editFormData.total_deductions || 0);
+      const daysWorked = Number(editFormData.days_worked || 0);
 
       const updatedData = {
         basic_salary: basicSalary.toString(),
@@ -481,23 +505,25 @@ export default function PayrollPeriodDetails() {
         days_worked: daysWorked,
         gross_salary: (basicSalary + totalAllowances).toString(),
         net_salary: (basicSalary + totalAllowances - totalDeductions).toString(),
-      }
+      };
 
       const updatedPayslip = await updatePayslip({
         id: editingPayslip.id,
         payslipData: updatedData,
-      })
-      setPayslips((prev) => [...prev.map((slip) => (slip.id === updatedPayslip.id ? updatedPayslip : slip))])
+      });
+      setPayslips((prev) => [
+        ...prev.map((slip) => (slip.id === updatedPayslip.id ? updatedPayslip : slip)),
+      ]);
 
-      toast.success("Payslip updated successfully")
-      setEditModalOpen(false)
-      setEditingPayslip(null)
+      toast.success("Payslip updated successfully");
+      setEditModalOpen(false);
+      setEditingPayslip(null);
     } catch (error: any) {
-      toast.error(error?.message || error?.detail || "Failed to update payslip")
+      toast.error(error?.message || error?.detail || "Failed to update payslip");
     } finally {
-      setIsUpdating(false)
+      setIsUpdating(false);
     }
-  }
+  };
 
   const resetEditForm = () => {
     setEditFormData({
@@ -505,31 +531,30 @@ export default function PayrollPeriodDetails() {
       total_allowances: 0,
       total_deductions: 0,
       days_worked: 0,
-    })
-    setEditingPayslip(null)
-  }
+    });
+    setEditingPayslip(null);
+  };
 
   const handleGeneratePayslips = async () => {
     if (!selectedInstitution) {
-      toast.error("No institution found")
-      return
+      toast.error("No institution found");
+      return;
     }
 
-    setIsGenerating(true)
+    setIsGenerating(true);
     try {
       await createBulkPayslips({
         institutionId: selectedInstitution.id,
         payrollPeriodId: Number(payrollPeriodId),
-      })
-      toast.success(`Successfully generated payslips`)
-      await fetchData(currentPage, itemsPerPage)
+      });
+      toast.success(`Successfully generated payslips`);
+      await fetchData(currentPage, itemsPerPage);
     } catch (error: any) {
-      toast.error(error?.message || error?.detail || "An error occurred while processing payslips")
+      toast.error(error?.message || error?.detail || "An error occurred while processing payslips");
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
-  }
-
+  };
 
   if (isLoading) {
     return (
@@ -554,67 +579,74 @@ export default function PayrollPeriodDetails() {
           <TableSkeleton rows={10} columns={8} />
         </Card>
       </div>
-    )
+    );
   }
 
-  const startIndex = (currentPage - 1) * itemsPerPage
+  const startIndex = (currentPage - 1) * itemsPerPage;
 
   return (
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div>
         <CardHeader className="p-0">
-          <div className="flex justify-between gap-8 items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-4 sm:gap-8 sm:items-center">
             <div className="flex items-center justify-start gap-4">
               <Button
                 variant="outline"
                 onClick={() => router.back()}
-                className="flex items-center gap-2 rounded-full aspect-square"
+                className="flex items-center gap-2 rounded-full aspect-square flex-shrink-0"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div>
-                {
-                  payrollPeriod && <>
-                    <CardTitle className="text-2xl font-bold text-gray-900">Payslips for {payrollPeriod.name}</CardTitle>
-                    <CardDescription className="text-gray-600">
-                      Manage payslips for {formatDate(payrollPeriod.start_date)} - {formatDate(payrollPeriod.end_date)}
+              <div className="min-w-0 flex-1">
+                {payrollPeriod && (
+                  <>
+                    <CardTitle className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
+                      Payslips for {payrollPeriod.name}
+                    </CardTitle>
+                    <CardDescription className="text-sm sm:text-base text-gray-600">
+                      Manage payslips for {formatDate(payrollPeriod.start_date)} -{" "}
+                      {formatDate(payrollPeriod.end_date)}
                     </CardDescription>
                   </>
-                }
+                )}
               </div>
             </div>
           </div>
         </CardHeader>
 
-        {/* Search and Filters */}<div className="flex items-center justify-between mt-10">
+        {/* Search and Filters */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6 sm:mt-10">
           {/* Search bar */}
-          <div className="relative flex-1 max-w-xl">
+          <div className="relative flex-1 max-w-full sm:max-w-xl">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search by employee name or email..."
               value={searchTerm}
               onChange={(e) => {
-                setSearchTerm(e.target.value)
-                resetPagination()
+                setSearchTerm(e.target.value);
+                resetPagination();
               }}
               className="pl-10 h-12 w-full"
             />
           </div>
 
           {/* Buttons container */}
-          <div className="flex gap-2 ml-6">
+          <div className="flex flex-col sm:flex-row gap-2 sm:ml-6">
             {/* Bulk Payments dialog/button */}
             <Dialog open={bulkPaymentModalOpen} onOpenChange={setBulkPaymentModalOpen}>
               <DialogTrigger asChild>
                 <Button
-                  className="bg-green-600 hover:bg-green-700 shadow-md"
-                  disabled={!selectedInstitution || displayedPayslips.filter((p) => !p.is_paid).length === 0}
+                  className="bg-green-600 hover:bg-green-700 shadow-md w-full sm:w-auto"
+                  disabled={
+                    !selectedInstitution || displayedPayslips.filter((p) => !p.is_paid).length === 0
+                  }
                 >
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Bulk Payments
+                  <span className="hidden sm:inline">Bulk Payments</span>
+                  <span className="sm:hidden">Bulk Pay</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-[95vw] sm:max-w-2xl mx-4">
                 <DialogHeader>
                   <DialogTitle>Process Payments in Bulk</DialogTitle>
                   <DialogDescription>
@@ -648,12 +680,13 @@ export default function PayrollPeriodDetails() {
                     {selectedDepartment && (
                       <div className="bg-green-50 p-4 rounded-lg">
                         <h4 className="font-semibold text-green-900 mb-2">
-                          {getUnpaidPayslipsByDepartment(selectedDepartment).length} unpaid payslips found
+                          {getUnpaidPayslipsByDepartment(selectedDepartment).length} unpaid payslips
+                          found
                         </h4>
                         <div className="text-sm text-green-800">
                           {selectedDepartment === "all"
                             ? "This will process payments for all unpaid payslips in this period."
-                            : `This will process payments for all unpaid payslips in ${departments.find(dept => dept.id.toString() === selectedDepartment)?.name || ""}.`}
+                            : `This will process payments for all unpaid payslips in ${departments.find((dept) => dept.id.toString() === selectedDepartment)?.name || ""}.`}
                         </div>
                       </div>
                     )}
@@ -663,8 +696,8 @@ export default function PayrollPeriodDetails() {
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        setBulkPaymentModalOpen(false)
-                        setSelectedDepartment("all")
+                        setBulkPaymentModalOpen(false);
+                        setSelectedDepartment("all");
                       }}
                       disabled={bulkProcessing}
                     >
@@ -687,26 +720,37 @@ export default function PayrollPeriodDetails() {
               </DialogContent>
             </Dialog>
 
-
             {/* Generate Payslips button */}
-            {payrollPeriod && <Button
-              onClick={handleGeneratePayslips}
-              className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400"
-              disabled={payrollPeriod.is_processed || !selectedInstitution || !payrollPeriodId || isGenerating}
-            >
-              {isGenerating ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Plus className="w-4 h-4 mr-2" />
-              )}
-              {isGenerating ? "Generating..." : "Generate Payslips"}
-            </Button>}
+            {payrollPeriod && (
+              <Button
+                onClick={handleGeneratePayslips}
+                className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400 w-full sm:w-auto"
+                disabled={
+                  payrollPeriod.is_processed ||
+                  !selectedInstitution ||
+                  !payrollPeriodId ||
+                  isGenerating
+                }
+              >
+                {isGenerating ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4 mr-2" />
+                )}
+                <span className="hidden sm:inline">
+                  {isGenerating ? "Generating..." : "Generate Payslips"}
+                </span>
+                <span className="sm:hidden">{isGenerating ? "Generating..." : "Generate"}</span>
+              </Button>
+            )}
 
-            {
-              payrollPeriod &&
+            {payrollPeriod && (
               <Dialog open={downloadModalOpen} onOpenChange={setDownloadModalOpen}>
                 <DialogTrigger asChild>
-                  <Button className="shadow-md" disabled={!selectedInstitution?.id}>
+                  <Button
+                    className="shadow-md w-full sm:w-auto"
+                    disabled={!selectedInstitution?.id}
+                  >
                     <Download className="w-4 h-4 mr-2" />
                     Download
                   </Button>
@@ -718,7 +762,8 @@ export default function PayrollPeriodDetails() {
                       Select Payment Account
                     </DialogTitle>
                     <DialogDescription>
-                      Choose the bank account from which payslips will be generated for {payrollPeriod.name}
+                      Choose the bank account from which payslips will be generated for{" "}
+                      {payrollPeriod.name}
                     </DialogDescription>
                   </DialogHeader>
 
@@ -733,7 +778,9 @@ export default function PayrollPeriodDetails() {
                       selectedItem={selectedBankAccount}
                       getItemId={(account) => account.id}
                       getItemLabel={(account) => account.account_name || account.account_number}
-                      getItemDescription={(account) => `${account.account_name} • ${account.account_number}`}
+                      getItemDescription={(account) =>
+                        `${account.account_name} • ${account.account_number}`
+                      }
                       placeholder="Select a bank account..."
                       searchPlaceholder="Search bank accounts..."
                       emptyMessage="No bank accounts found"
@@ -745,8 +792,8 @@ export default function PayrollPeriodDetails() {
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        setDownloadModalOpen(false)
-                        setSelectedBankAccount(null)
+                        setDownloadModalOpen(false);
+                        setSelectedBankAccount(null);
                       }}
                       disabled={isDownloading}
                     >
@@ -771,16 +818,14 @@ export default function PayrollPeriodDetails() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-            }
+            )}
           </div>
         </div>
 
-
-
         {/* Results Table */}
-        <div className="bg-white rounded-lg shadow-sm  overflow-hidden mx-2">
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden mx-0 sm:mx-2">
           {displayedPayslips.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 px-4">
               <Users className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No payslips found</h3>
               <p className="mt-1 text-sm text-gray-500">
@@ -791,9 +836,9 @@ export default function PayrollPeriodDetails() {
               {payslips.length > 0 && (
                 <Button
                   onClick={() => {
-                    setSearchTerm("")
-                    setFilterStatus("all")
-                    resetPagination()
+                    setSearchTerm("");
+                    setFilterStatus("all");
+                    resetPagination();
                   }}
                   variant="outline"
                   className="mt-4 bg-transparent"
@@ -804,52 +849,82 @@ export default function PayrollPeriodDetails() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto mt-10">
-                <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+              <div className="overflow-x-auto mt-6 sm:mt-10">
+                <Table className="min-w-max [&_th]:border-0 [&_td]:border-0">
                   <TableHeader className="bg-gray-50/50">
                     <TableRow className="bg-gray-50">
-                      <TableHead className="font-semibold text-gray-700 py-4">
+                      <TableHead className="font-semibold text-gray-700 py-4 min-w-[200px] sm:min-w-0">
                         <div className="flex items-center gap-2">
                           <Users className="w-4 h-4" />
                           Employee
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700">Basic Salary</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Allowances</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Deductions</TableHead>
-                      <TableHead className="font-semibold text-gray-700">
+                      <TableHead className="font-semibold text-gray-700 min-w-[120px]">
+                        Basic Salary
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700 min-w-[120px]">
+                        Allowances
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700 min-w-[120px]">
+                        Deductions
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700 min-w-[120px]">
                         <div className="flex items-center gap-2">
                           <Plus className="w-4 h-4" />
                           Net Salary
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700">Days</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Status</TableHead>
-                      <TableHead className="font-semibold text-gray-700 text-center">Actions</TableHead>
+                      <TableHead className="font-semibold text-gray-700 min-w-[80px]">
+                        Days
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700 min-w-[100px]">
+                        Status
+                      </TableHead>
+                      {/* Dynamic item columns */}
+                      {extractItems(displayedPayslips).map((itemName, index) => (
+                        <TableHead
+                          key={itemName}
+                          className={`text-center font-semibold text-gray-700 min-w-[100px] ${
+                            index === 0 ? "border-l border-gray-200" : ""
+                          }`}
+                        >
+                          {itemName}
+                        </TableHead>
+                      ))}
+                      <TableHead className="font-semibold text-gray-700 text-center sticky right-0 bg-white z-10 border-l min-w-[120px]">
+                        Actions
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {displayedPayslips.map((payslip, index) => (
                       <TableRow
                         key={payslip.id}
-                        className={`hover:bg-orange-50/30 transition-colors border-b ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
-                          }`}
+                        className={`hover:bg-orange-50/30 transition-colors border-b ${
+                          index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                        }`}
                       >
-                        <TableCell className="py-4">
+                        <TableCell className="py-4 min-w-[200px] sm:min-w-0">
                           <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10 border-2 border-orange-100">
-                              <AvatarFallback className="bg-orange-100 text-orange-700 font-semibold">
+                            <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border-2 border-orange-100 flex-shrink-0">
+                              <AvatarFallback className="bg-orange-100 text-orange-700 font-semibold text-xs sm:text-sm">
                                 {getInitials(payslip.employee.user?.fullname || "")}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <div className="font-semibold text-gray-900">{payslip.employee.user?.fullname || ""}</div>
-                              <div className="text-sm text-gray-500">{payslip.employee.department.name}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                                {payslip.employee.user?.fullname || ""}
+                              </div>
+                              <div className="text-sm text-gray-500 truncate">
+                                {payslip.employee.department.name}
+                              </div>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="font-semibold text-gray-900">{formatCurrency(payslip.basic_salary)}</div>
+                          <div className="font-semibold text-gray-900">
+                            {formatCurrency(payslip.basic_salary)}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="font-semibold text-green-600">
@@ -857,32 +932,91 @@ export default function PayrollPeriodDetails() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="font-semibold text-red-600">{formatCurrency(payslip.total_deductions)}</div>
+                          <div className="font-semibold text-red-600">
+                            {formatCurrency(payslip.total_deductions)}
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <div className="font-semibold text-green-700">{formatCurrency(payslip.net_salary)}</div>
+                          <div className="font-semibold text-green-700">
+                            {formatCurrency(payslip.net_salary)}
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-center font-medium text-gray-700">{payslip.days_worked}</div>
+                          <div className="text-center font-medium text-gray-700">
+                            {payslip.days_worked}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge
                             variant={payslip.is_paid ? "default" : "secondary"}
-                            className={`${payslip.is_paid
+                            className={`${
+                              payslip.is_paid
                                 ? "bg-green-100 text-green-800 border-green-200"
                                 : "bg-yellow-100 text-yellow-800 border-yellow-200"
-                              } font-medium px-3 py-1`}
+                            } font-medium px-3 py-1`}
                           >
                             <div className="flex items-center gap-1">
-                              {payslip.is_paid ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                              {payslip.is_paid ? (
+                                <CheckCircle className="w-3 h-3" />
+                              ) : (
+                                <Clock className="w-3 h-3" />
+                              )}
                               {payslip.is_paid ? "Paid" : "Unpaid"}
                             </div>
                           </Badge>
                           {payslip.paid_date && (
-                            <div className="text-xs text-gray-500 mt-1">{formatDate(payslip.paid_date)}</div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {formatDate(payslip.paid_date)}
+                            </div>
                           )}
                         </TableCell>
-                        <TableCell>
+                        {/* Dynamic item cells */}
+                        {extractItems(displayedPayslips).map((itemName, index) => {
+                          const allowanceItem = payslip.items?.allowance?.[itemName];
+                          const deductionItem = payslip.items?.deduction?.[itemName];
+
+                          let totalAmount = 0;
+                          let count = 0;
+                          let isDeduction = false;
+
+                          if (allowanceItem) {
+                            totalAmount = allowanceItem.reduce(
+                              (sum, item) => sum + Number.parseFloat(item.amount),
+                              0,
+                            );
+                            count = allowanceItem.length;
+                          } else if (deductionItem) {
+                            totalAmount = deductionItem.reduce(
+                              (sum, item) => sum + Number.parseFloat(item.amount),
+                              0,
+                            );
+                            count = deductionItem.length;
+                            isDeduction = true;
+                          }
+
+                          return (
+                            <TableCell
+                              key={itemName}
+                              className={`text-center ${index === 0 ? "border-l border-gray-200" : ""}`}
+                            >
+                              {totalAmount > 0 ? (
+                                <div className="space-y-1">
+                                  <div
+                                    className={`font-semibold ${isDeduction ? "text-red-600" : "text-green-600"}`}
+                                  >
+                                    {formatCurrency(totalAmount)}
+                                  </div>
+                                  {count > 1 && (
+                                    <div className="text-xs text-gray-500">{count}x</div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                        <TableCell className="sticky right-0 bg-white z-10 border-l">
                           <div className="flex justify-center">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -895,7 +1029,10 @@ export default function PayrollPeriodDetails() {
                                   <MoreVertical className="w-5 h-5 text-gray-600" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="bg-white rounded-lg shadow-lg p-3">
+                              <DropdownMenuContent
+                                align="end"
+                                className="bg-white rounded-lg shadow-lg p-3"
+                              >
                                 {/* Add Edit button as first option */}
                                 <DropdownMenuItem className="flex justify-start">
                                   <Button
@@ -956,15 +1093,21 @@ export default function PayrollPeriodDetails() {
                                   <DialogTitle>Confirm Deletion</DialogTitle>
                                   <DialogDescription>
                                     Are you sure you want to delete the payslip for{" "}
-                                    {payslip.employee.user?.fullname || ""} in {payslip.payroll_period.name}? This action
-                                    cannot be undone.
+                                    {payslip.employee.user?.fullname || ""} in{" "}
+                                    {payslip.payroll_period.name}? This action cannot be undone.
                                   </DialogDescription>
                                 </DialogHeader>
                                 <DialogFooter>
-                                  <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => setDeleteConfirmId(null)}
+                                  >
                                     Cancel
                                   </Button>
-                                  <Button variant="destructive" onClick={() => handleDelete(payslip.id)}>
+                                  <Button
+                                    variant="destructive"
+                                    onClick={() => handleDelete(payslip.id)}
+                                  >
                                     Delete
                                   </Button>
                                 </DialogFooter>
@@ -976,7 +1119,8 @@ export default function PayrollPeriodDetails() {
                                 <DialogHeader>
                                   <DialogTitle>Edit Payslip</DialogTitle>
                                   <DialogDescription>
-                                    Update payslip details for {editingPayslip?.employee.user?.fullname || ""} in{" "}
+                                    Update payslip details for{" "}
+                                    {editingPayslip?.employee.user?.fullname || ""} in{" "}
                                     {editingPayslip?.payroll_period.name}
                                   </DialogDescription>
                                 </DialogHeader>
@@ -1021,7 +1165,10 @@ export default function PayrollPeriodDetails() {
                                   </div>
 
                                   <div className="space-y-2">
-                                    <label htmlFor="total_allowances" className="text-sm font-medium">
+                                    <label
+                                      htmlFor="total_allowances"
+                                      className="text-sm font-medium"
+                                    >
                                       Total Allowances (UGX)
                                     </label>
                                     <Input
@@ -1040,7 +1187,10 @@ export default function PayrollPeriodDetails() {
                                   </div>
 
                                   <div className="space-y-2">
-                                    <label htmlFor="total_deductions" className="text-sm font-medium">
+                                    <label
+                                      htmlFor="total_deductions"
+                                      className="text-sm font-medium"
+                                    >
                                       Total Deductions (UGX)
                                     </label>
                                     <Input
@@ -1069,7 +1219,7 @@ export default function PayrollPeriodDetails() {
                                         UGX{" "}
                                         {formatCurrency(
                                           Number(editFormData.basic_salary || 0) +
-                                          Number(editFormData.total_allowances || 0),
+                                            Number(editFormData.total_allowances || 0),
                                         )}
                                       </span>
                                     </div>
@@ -1079,8 +1229,8 @@ export default function PayrollPeriodDetails() {
                                         UGX{" "}
                                         {formatCurrency(
                                           Number(editFormData.basic_salary || 0) +
-                                          Number(editFormData.total_allowances || 0) -
-                                          Number(editFormData.total_deductions || 0),
+                                            Number(editFormData.total_allowances || 0) -
+                                            Number(editFormData.total_deductions || 0),
                                         )}
                                       </span>
                                     </div>
@@ -1091,8 +1241,8 @@ export default function PayrollPeriodDetails() {
                                   <Button
                                     variant="outline"
                                     onClick={() => {
-                                      setEditModalOpen(false)
-                                      resetEditForm()
+                                      setEditModalOpen(false);
+                                      resetEditForm();
                                     }}
                                     disabled={isUpdating}
                                   >
@@ -1119,6 +1269,87 @@ export default function PayrollPeriodDetails() {
                         </TableCell>
                       </TableRow>
                     ))}
+                    {/* Totals Row */}
+                    <TableRow className="bg-gray-100 border-t-2 border-gray-300 font-semibold">
+                      <TableCell className="py-3 font-bold text-gray-900">TOTALS</TableCell>
+                      <TableCell className="text-center font-bold text-gray-900">
+                        {formatCurrency(
+                          displayedPayslips.reduce(
+                            (sum, p) => sum + Number.parseFloat(p.basic_salary || "0"),
+                            0,
+                          ),
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center font-bold text-green-600">
+                        {formatCurrency(
+                          displayedPayslips.reduce(
+                            (sum, p) => sum + Number.parseFloat(p.total_allowances || "0"),
+                            0,
+                          ),
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center font-bold text-red-600">
+                        {formatCurrency(
+                          displayedPayslips.reduce(
+                            (sum, p) => sum + Number.parseFloat(p.total_deductions || "0"),
+                            0,
+                          ),
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center font-bold text-green-700">
+                        {formatCurrency(
+                          displayedPayslips.reduce(
+                            (sum, p) => sum + Number.parseFloat(p.net_salary || "0"),
+                            0,
+                          ),
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {/* Empty for Days - no total needed */}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {/* Empty for Status - no total needed */}
+                      </TableCell>
+
+                      {/* Dynamic item totals */}
+                      {extractItems(displayedPayslips).map((itemName, index) => {
+                        let totalAmount = 0;
+                        let isDeduction = false;
+
+                        displayedPayslips.forEach((payslip) => {
+                          const allowanceItem = payslip.items?.allowance?.[itemName];
+                          const deductionItem = payslip.items?.deduction?.[itemName];
+
+                          if (allowanceItem) {
+                            totalAmount += allowanceItem.reduce(
+                              (sum, item) => sum + Number.parseFloat(item.amount),
+                              0,
+                            );
+                          } else if (deductionItem) {
+                            totalAmount += deductionItem.reduce(
+                              (sum, item) => sum + Number.parseFloat(item.amount),
+                              0,
+                            );
+                            isDeduction = true;
+                          }
+                        });
+
+                        return (
+                          <TableCell
+                            key={itemName}
+                            className={`text-center font-bold ${index === 0 ? "border-l border-gray-200" : ""} ${
+                              isDeduction ? "text-red-600" : "text-green-600"
+                            }`}
+                          >
+                            {totalAmount > 0 ? formatCurrency(totalAmount) : "-"}
+                          </TableCell>
+                        );
+                      })}
+
+                      <TableCell className="sticky right-0 bg-gray-100 z-10 border-l font-bold text-gray-900">
+                        {/* Empty for Actions column */}
+                      </TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               </div>
@@ -1127,8 +1358,10 @@ export default function PayrollPeriodDetails() {
                   <div className="flex items-center text-sm text-gray-700">
                     <span>
                       Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
-                      <span className="font-medium">{Math.min(startIndex + itemsPerPage, totalItems)}</span> of{" "}
-                      <span className="font-medium">{totalItems}</span> results
+                      <span className="font-medium">
+                        {Math.min(startIndex + itemsPerPage, totalItems)}
+                      </span>{" "}
+                      of <span className="font-medium">{totalItems}</span> results
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -1152,10 +1385,11 @@ export default function PayrollPeriodDetails() {
                               variant={currentPage === page ? "default" : "outline"}
                               size="sm"
                               onClick={() => handlePageChange(page as number)}
-                              className={`w-8 h-8 p-0 ${currentPage === page
+                              className={`w-8 h-8 p-0 ${
+                                currentPage === page
                                   ? "bg-orange-600 hover:bg-orange-700 text-white"
                                   : "hover:bg-gray-50"
-                                }`}
+                              }`}
                             >
                               {page}
                             </Button>
@@ -1181,5 +1415,5 @@ export default function PayrollPeriodDetails() {
         </div>
       </div>
     </div>
-  )
+  );
 }

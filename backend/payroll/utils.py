@@ -3,15 +3,114 @@ from datetime import timedelta, date, datetime
 from decimal import Decimal
 from .models import AllowanceType, DeductionType, PayrollPeriod, Payslip, PayslipItem
 from employee.models import Employee
-from institution.models import Institution, InstitutionBankAccount, InstitutionBankType
+from institution.models import (
+    Institution,
+    InstitutionBankAccount,
+    InstitutionBankType,
+    Department,
+)
 from django.shortcuts import get_object_or_404
-
-
+from io import BytesIO
 import io
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 from .models import Payslip, PayrollPeriod
+
+from datetime import date
+from employee.models import Employee, EmployeeAttendance
+from leave_mgt.models import LeaveApplication
+from settings.models import SystemDay
+from recruitment.models import JobPosition
+
+
+DAY_CODE_TO_WEEKDAY = {
+    "MON": 0,
+    "TUE": 1,
+    "WED": 2,
+    "THU": 3,
+    "FRI": 4,
+    "SAT": 5,
+    "SUN": 6,
+}
+
+
+def get_employee_institution_working_days(employee_id):
+
+    employee = Employee.objects.get(id=employee_id)
+
+    if hasattr(employee, "custom_working_days"):
+        working_days = employee.custom_working_days.days.values_list(
+            "day_code", flat=True
+        )
+    else:
+        institution = employee.payroll_branch.institution
+        working_days = institution.working_days.days.values_list("day_code", flat=True)
+
+    weekday_integers = {
+        DAY_CODE_TO_WEEKDAY.get(day_code.upper())
+        for day_code in working_days
+        if day_code.upper() in DAY_CODE_TO_WEEKDAY
+    }
+
+    if not weekday_integers:
+        raise ValueError("Working days are empty or invalid for employee/institution.")
+
+    return weekday_integers
+
+
+def get_employee_attendance_status_for_date(employee_id, target_date: date) -> str:
+    try:
+        employee = Employee.objects.get(id=employee_id)
+    except Employee.DoesNotExist:
+        raise Employee.DoesNotExist(f"Employee with ID {employee_id} does not exist.")
+
+    weekday = target_date.weekday()
+    working_weekdays = get_employee_institution_working_days(employee_id)
+
+    if weekday not in working_weekdays:
+        return "N-W-D"
+
+    leave = LeaveApplication.objects.filter(
+        employee=employee,
+        status="approved",
+        start_date__lte=target_date,
+        end_date__gte=target_date,
+    ).first()
+
+    if leave:
+        category = leave.leave_type.category
+        return {
+            "annual": "A-L",
+            "sick": "S-L",
+            "maternity": "M-L",
+            "paternity": "P-L",
+            "compassionate": "C-L",
+            "study": "Sty-L",
+            "unpaid": "UN-P-L",
+        }.get(category, "L")
+
+    attendance = EmployeeAttendance.objects.filter(
+        employee=employee,
+        status="approved",
+        date=target_date,
+    ).first()
+
+    if attendance:
+        if not attendance.check_in_time:
+            return "absent"
+
+        branch_open_time = getattr(employee.payroll_branch, "branch_opening_time", None)
+
+        if not branch_open_time:
+            raise ValueError("Branch opening time is not set for this employee.")
+
+        if attendance.check_in_time <= branch_open_time:
+            return "P-on-T"
+        else:
+            return "P-past-T"
+
+    return "absent"
 
 
 def generate_eft_excel(payroll_period_id: int, paying_account_id: int):
@@ -477,3 +576,186 @@ def process_monthly_payroll(year=None, month=None, employee_ids=None):
         "payslips_generated": len(payslips),
         "payslips": payslips,
     }
+
+
+FILL_PRESENT = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+FILL_LATE = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
+FILL_ABSENT = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+FILL_ANNUAL = PatternFill(start_color="BDD7EE", end_color="BDD7EE", fill_type="solid")
+FILL_SICK = PatternFill(start_color="D9D2E9", end_color="D9D2E9", fill_type="solid")
+FILL_OTHER_LEAVE = PatternFill(
+    start_color="E0E0E0", end_color="E0E0E0", fill_type="solid"
+)
+FILL_NON_WORKING = PatternFill(
+    start_color="F2F2F2", end_color="F2F2F2", fill_type="solid"
+)
+FILL_ERROR = PatternFill(start_color="A93226", end_color="A93226", fill_type="solid")
+
+FONT_WHITE = Font(color="FFFFFF")
+FONT_GRAY = Font(color="808080")
+BOLD_FONT = Font(bold=True)
+
+
+def generate_attendance_excel(
+    start_date: date, end_date: date, context: dict
+) -> BytesIO:
+    employee_qs = Employee.objects.filter(is_active=True).select_related("user")
+
+    target_ids = context.get("target_employees")
+    target_departments = context.get("target_departments")
+    target_positions = context.get("target_job_positions")
+
+    if target_ids:
+        employee_qs = employee_qs.filter(id__in=target_ids)
+    elif target_departments:
+        employee_qs = employee_qs.filter(department__in=target_departments)
+    elif target_positions:
+        employee_qs = employee_qs.filter(position__in=target_positions)
+
+    employees = employee_qs.order_by("user__fullname")
+    if not employees.exists():
+        raise ValueError("No employees found for the provided filters.")
+
+    num_days = (end_date - start_date).days + 1
+    date_list = [start_date + timedelta(days=i) for i in range(num_days)]
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Attendance Report"
+
+    center_align = Alignment(horizontal="center", vertical="center")
+    thin_border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
+    )
+    header_fill = PatternFill(
+        start_color="D9E1F2", end_color="D9E1F2", fill_type="solid"
+    )
+
+    legend_data = [
+        ("P-on-T", "Present on Time", FILL_PRESENT),
+        ("P-past-T", "Present but Late", FILL_LATE),
+        ("absent", "Absent (no check-in)", FILL_ABSENT),
+        ("A-L", "Annual Leave", FILL_ANNUAL),
+        ("S-L", "Sick Leave", FILL_SICK),
+        ("M-L", "Maternity Leave", FILL_OTHER_LEAVE),
+        ("P-L", "Paternity Leave", FILL_OTHER_LEAVE),
+        ("C-L", "Compassionate Leave", FILL_OTHER_LEAVE),
+        ("Sty-L", "Study Leave", FILL_OTHER_LEAVE),
+        ("UN-P-L", "Unpaid Leave", FILL_OTHER_LEAVE),
+        ("N-W-D", "Not a Working Day", FILL_NON_WORKING),
+        ("ERR", "Error fetching status", FILL_ERROR),
+    ]
+
+    for idx, (code, description, fill) in enumerate(legend_data, start=1):
+        ws.cell(row=idx, column=1, value=code).fill = fill
+        ws.cell(row=idx, column=1).font = BOLD_FONT
+        ws.cell(row=idx, column=2, value=description).alignment = Alignment(
+            wrap_text=True
+        )
+        if code == "ERR":
+            ws.cell(row=idx, column=1).font = FONT_WHITE
+
+    start_data_row = len(legend_data) + 2
+
+    headers = [
+        "Employee ID",
+        "Full Name",
+        "Present",
+        "Absent",
+        "Late",
+        "Leave",
+        "Total Days",
+    ]
+    for col_num, header in enumerate(headers, start=1):
+        cell = ws.cell(row=start_data_row, column=col_num, value=header)
+        cell.font = BOLD_FONT
+        cell.fill = header_fill
+        cell.alignment = center_align
+        cell.border = thin_border
+        ws.column_dimensions[cell.column_letter].width = 15
+
+    for col_num, current_date in enumerate(date_list, start=len(headers) + 1):
+        cell = ws.cell(
+            row=start_data_row, column=col_num, value=current_date.strftime("%d-%b")
+        )
+        cell.font = BOLD_FONT
+        cell.fill = header_fill
+        cell.alignment = center_align
+        cell.border = thin_border
+        ws.column_dimensions[cell.column_letter].width = 12
+
+    for row_offset, employee in enumerate(employees, start=start_data_row + 1):
+        present_count = 0
+        absent_count = 0
+        late_count = 0
+        leave_count = 0
+        total_working_days = 0
+
+        ws.cell(row=row_offset, column=1, value=employee.id).border = thin_border
+        full_name = employee.user.fullname if employee.user else "N/A"
+        ws.cell(row=row_offset, column=2, value=full_name).border = thin_border
+
+        for col_offset, current_date in enumerate(date_list, start=len(headers) + 1):
+            try:
+                status = get_employee_attendance_status_for_date(
+                    employee.id, current_date
+                )
+            except Exception:
+                status = "ERR"
+
+            if status == "P-on-T":
+                present_count += 1
+                total_working_days += 1
+            elif status == "P-past-T":
+                late_count += 1
+                total_working_days += 1
+            elif status == "absent":
+                absent_count += 1
+                total_working_days += 1
+            elif status in ["A-L", "S-L", "M-L", "P-L", "C-L", "Sty-L", "UN-P-L"]:
+                leave_count += 1
+                total_working_days += 1
+
+            cell = ws.cell(row=row_offset, column=col_offset, value=status)
+            cell.border = thin_border
+            cell.alignment = center_align
+
+            if status == "P-on-T":
+                cell.fill = FILL_PRESENT
+            elif status == "P-past-T":
+                cell.fill = FILL_LATE
+            elif status == "absent":
+                cell.fill = FILL_ABSENT
+            elif status == "A-L":
+                cell.fill = FILL_ANNUAL
+            elif status == "S-L":
+                cell.fill = FILL_SICK
+            elif status in ["M-L", "P-L", "C-L", "Sty-L", "UN-P-L"]:
+                cell.fill = FILL_OTHER_LEAVE
+            elif status == "N-W-D":
+                cell.fill = FILL_NON_WORKING
+                cell.font = FONT_GRAY
+            elif status == "ERR":
+                cell.fill = FILL_ERROR
+                cell.font = FONT_WHITE
+
+        summary = [
+            present_count,
+            absent_count,
+            late_count,
+            leave_count,
+            total_working_days,
+        ]
+        for idx, value in enumerate(summary, start=3):
+            cell = ws.cell(row=row_offset, column=idx, value=value)
+            cell.border = thin_border
+
+    ws.freeze_panes = ws.cell(row=start_data_row + 1, column=len(headers) + 1)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output

@@ -21,6 +21,8 @@ from .serializers import (
     WorkTypeSerializer,
     EmployeeContractSerializer,
     EmployeeWorkingDaysSerializer,
+    AttendanceReportSerializer,
+    AttendanceQueryParamsSerializer,
 )
 from .models import (
     Employee,
@@ -32,7 +34,12 @@ from .models import (
 from rest_framework.parsers import MultiPartParser, FormParser
 from institution.utils import generate_compliant_password
 from employee.service import EmployeeBranchService
-from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiExample,
+    OpenApiResponse,
+    OpenApiTypes,
+)
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 import logging
 from django.db import transaction
@@ -57,7 +64,13 @@ from openpyxl.utils import get_column_letter
 from decimal import Decimal, InvalidOperation
 from django.contrib.auth import get_user_model
 from datetime import date
-
+from django.http import FileResponse
+from payroll.utils import generate_attendance_excel
+from django.utils.encoding import escape_uri_path
+from datetime import datetime
+from django.utils.dateparse import parse_date
+from .service import build_attendance_report_data
+from institution.models import Institution
 
 
 class EmployeeListAPIView(APIView):
@@ -234,7 +247,6 @@ class EmployeeCreateAPIView(APIView):
             EmployeeSerializer(employee).data, status=status.HTTP_201_CREATED
         )
 
-  
     def handle_bulk_upload(self, request):
         """Handle bulk employee creation from uploaded CSV/Excel file."""
         start_time = datetime.now()
@@ -334,7 +346,9 @@ class EmployeeCreateAPIView(APIView):
             print("Checking for duplicate emails")
             emails = df["user.email"].str.strip().dropna().tolist()
             duplicate_emails_in_file = [
-                email for email, count in pd.Series(emails).value_counts().items() if count > 1
+                email
+                for email, count in pd.Series(emails).value_counts().items()
+                if count > 1
             ]
             if duplicate_emails_in_file:
                 duplicate_rows = df[df["user.email"].isin(duplicate_emails_in_file)][
@@ -357,9 +371,9 @@ class EmployeeCreateAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            existing_emails = CustomUser.objects.filter(
-                email__in=emails
-            ).values_list("email", flat=True)
+            existing_emails = CustomUser.objects.filter(email__in=emails).values_list(
+                "email", flat=True
+            )
             if existing_emails:
                 duplicate_rows = df[df["user.email"].isin(existing_emails)][
                     ["user.email"]
@@ -398,7 +412,9 @@ class EmployeeCreateAPIView(APIView):
                 with transaction.atomic():
                     user_objects = []
                     employee_data_list = []
-                    batch_errors = []  # Per-batch errors, but we'll append to global later
+                    batch_errors = (
+                        []
+                    )  # Per-batch errors, but we'll append to global later
 
                     for index, row in batch.iterrows():
                         row_errors = {}  # Dict of field: [msgs] per row
@@ -432,19 +448,25 @@ class EmployeeCreateAPIView(APIView):
                                     mapping = instance_mappings.get(column, {})
                                     instance = mapping.get(value.lower())
                                     if instance is None:
-                                        row_errors.setdefault(column, []).append(f'"{value}" does not exist.')
+                                        row_errors.setdefault(column, []).append(
+                                            f'"{value}" does not exist.'
+                                        )
                                     else:
                                         employee_data[column] = instance
                                 elif column == "gender" and value:
                                     mapped = gender_map.get(value)
                                     if mapped is None:
-                                        row_errors.setdefault("gender", []).append(f'"{value}" is not a valid choice.')
+                                        row_errors.setdefault("gender", []).append(
+                                            f'"{value}" is not a valid choice.'
+                                        )
                                     else:
                                         employee_data[column] = mapped
                                 elif column == "marital_status" and value:
                                     mapped = marital_status_map.get(value)
                                     if mapped is None:
-                                        row_errors.setdefault("marital_status", []).append(f'"{value}" is not a valid choice.')
+                                        row_errors.setdefault(
+                                            "marital_status", []
+                                        ).append(f'"{value}" is not a valid choice.')
                                     else:
                                         employee_data[column] = mapped
                                 else:
@@ -459,28 +481,56 @@ class EmployeeCreateAPIView(APIView):
                             )
 
                         # Additional per-row validations (to mimic model/serializer)
-                        if "date_of_birth" in employee_data and employee_data["date_of_birth"]:
+                        if (
+                            "date_of_birth" in employee_data
+                            and employee_data["date_of_birth"]
+                        ):
                             try:
-                                dob = datetime.strptime(employee_data["date_of_birth"], "%Y-%m-%d").date()
+                                dob = datetime.strptime(
+                                    employee_data["date_of_birth"], "%Y-%m-%d"
+                                ).date()
                                 age = (date.today() - dob).days // 365
                                 if age < 18:
-                                    row_errors.setdefault("date_of_birth", []).append(f"Employee must be at least 18 years old. Current age: {age}.")
+                                    row_errors.setdefault("date_of_birth", []).append(
+                                        f"Employee must be at least 18 years old. Current age: {age}."
+                                    )
                                 if dob > date.today():
-                                    row_errors.setdefault("date_of_birth", []).append("Date of birth cannot be in the future.")
-                                employee_data["date_of_birth"] = dob  # Convert to date object
+                                    row_errors.setdefault("date_of_birth", []).append(
+                                        "Date of birth cannot be in the future."
+                                    )
+                                employee_data["date_of_birth"] = (
+                                    dob  # Convert to date object
+                                )
                             except ValueError:
-                                row_errors.setdefault("date_of_birth", []).append("Invalid date format. Use YYYY-MM-DD.")
-                        if "date_of_joining" in employee_data and employee_data["date_of_joining"]:
+                                row_errors.setdefault("date_of_birth", []).append(
+                                    "Invalid date format. Use YYYY-MM-DD."
+                                )
+                        if (
+                            "date_of_joining" in employee_data
+                            and employee_data["date_of_joining"]
+                        ):
                             try:
-                                employee_data["date_of_joining"] = datetime.strptime(employee_data["date_of_joining"], "%Y-%m-%d").date()
+                                employee_data["date_of_joining"] = datetime.strptime(
+                                    employee_data["date_of_joining"], "%Y-%m-%d"
+                                ).date()
                             except ValueError:
-                                row_errors.setdefault("date_of_joining", []).append("Invalid date format. Use YYYY-MM-DD.")
+                                row_errors.setdefault("date_of_joining", []).append(
+                                    "Invalid date format. Use YYYY-MM-DD."
+                                )
                         for field in ["experience", "children_count"]:
                             if field in employee_data and employee_data[field]:
                                 try:
-                                    employee_data[field] = int(float(str(employee_data[field]).replace(" years", "")))  # Handle "11 years"
+                                    employee_data[field] = int(
+                                        float(
+                                            str(employee_data[field]).replace(
+                                                " years", ""
+                                            )
+                                        )
+                                    )  # Handle "11 years"
                                 except (ValueError, TypeError):
-                                    row_errors.setdefault(field, []).append("Must be a valid number.")
+                                    row_errors.setdefault(field, []).append(
+                                        "Must be a valid number."
+                                    )
                                     employee_data[field] = 0
 
                         if row_errors:
@@ -522,13 +572,17 @@ class EmployeeCreateAPIView(APIView):
                     employee_objects = []
                     for employee_data in employee_data_list:
                         user_index = employee_data.pop("user")  # Remove temporary index
-                        employee_data["user"] = created_users[user_index]  # Assign CustomUser instance
+                        employee_data["user"] = created_users[
+                            user_index
+                        ]  # Assign CustomUser instance
                         employee_objects.append(Employee(**employee_data))
 
                     # Bulk create employees
                     try:
                         print(f"Creating {len(employee_objects)} employees")
-                        created_employees = Employee.objects.bulk_create(employee_objects)
+                        created_employees = Employee.objects.bulk_create(
+                            employee_objects
+                        )
                         print(f"Created {len(created_employees)} employees")
                     except Exception as e:
                         print(f"Error bulk creating employees: {str(e)}")
@@ -544,9 +598,13 @@ class EmployeeCreateAPIView(APIView):
                         .order_by("-employee_id")
                         .first()
                     )
-                    last_number = int(last_employee.employee_id.replace(prefix, "")) if last_employee and last_employee.employee_id else 0
+                    last_number = (
+                        int(last_employee.employee_id.replace(prefix, ""))
+                        if last_employee and last_employee.employee_id
+                        else 0
+                    )
 
-                    fields_to_update = ['employee_id', 'salary', 'payroll_branch']
+                    fields_to_update = ["employee_id", "salary", "payroll_branch"]
 
                     for employee in created_employees:
                         last_number += 1
@@ -566,7 +624,9 @@ class EmployeeCreateAPIView(APIView):
 
                     # Bulk update the updated fields
                     try:
-                        Employee.objects.bulk_update(created_employees, fields_to_update)
+                        Employee.objects.bulk_update(
+                            created_employees, fields_to_update
+                        )
                     except Exception as e:
                         print(f"Error bulk updating employees: {str(e)}")
                         errors.append(
@@ -602,12 +662,20 @@ class EmployeeCreateAPIView(APIView):
             )
             if created_count == 0 and errors:
                 return Response(
-                    {"detail": "No employees could be created", "created_count": created_count, "errors": errors},
+                    {
+                        "detail": "No employees could be created",
+                        "created_count": created_count,
+                        "errors": errors,
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             elif errors:
                 return Response(
-                    {"detail": "Some employees created successfully, but others had errors", "created_count": created_count, "errors": errors},
+                    {
+                        "detail": "Some employees created successfully, but others had errors",
+                        "created_count": created_count,
+                        "errors": errors,
+                    },
                     status=status.HTTP_201_CREATED,
                 )
             else:
@@ -623,7 +691,10 @@ class EmployeeCreateAPIView(APIView):
         except Exception as e:
             print(f"Error processing file: {str(e)}")
             return Response(
-                {"detail": f"Error processing file: {str(e)}", "created_count": created_count,},
+                {
+                    "detail": f"Error processing file: {str(e)}",
+                    "created_count": created_count,
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -866,7 +937,7 @@ class EmployeeDeleteAPIView(APIView):
             employee = Employee.objects.get(
                 id=employee_id, department__institution_id=institution_id
             )
-            employee.delete() # Custom delete method to handle soft delete
+            employee.delete()  # Custom delete method to handle soft delete
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Employee.DoesNotExist:
             return Response(
@@ -1468,7 +1539,7 @@ class EmployeeTypeDetailAPIView(APIView):
     @extend_schema(description="Delete an employee type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.delete() #Custom delete method that handles soft delete
+        obj.delete()  # Custom delete method that handles soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1526,7 +1597,7 @@ class WorkTypeDetailAPIView(APIView):
     @extend_schema(description="Delete a work type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.delete() # Custom delete method that handles soft delete
+        obj.delete()  # Custom delete method that handles soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1585,7 +1656,7 @@ class EmployeeTypeDetailAPIView(APIView):
     @extend_schema(description="Delete an employee type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.delete() #Custom method to handle soft delete
+        obj.delete()  # Custom method to handle soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1642,7 +1713,7 @@ class WorkTypeDetailAPIView(APIView):
     @extend_schema(description="Delete a work type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.delete() #Custom delete method to handle soft delete
+        obj.delete()  # Custom delete method to handle soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1714,7 +1785,7 @@ class EmployeeContractDetailAPIView(APIView):
     )
     def delete(self, request, pk):
         contract = self.get_object(pk)
-        contract.delete() #Custom delete method to handle soft delete
+        contract.delete()  # Custom delete method to handle soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1819,3 +1890,100 @@ class EmployeeContractApprovalAPIView(APIView):
 
         serializer = EmployeeContractSerializer(contract)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ExportAttendanceExcelView(APIView):
+    """
+    API endpoint to generate and download an Attendance Excel Report.
+    Access this endpoint with a POST request containing start_date, end_date, and any applicable filters.
+    """
+
+    @extend_schema(
+        tags=["export-attendance2excel"],
+        request=AttendanceReportSerializer,
+        responses={
+            200: None,
+            400: None,
+            404: None,
+            500: None,
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = AttendanceReportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        start_date = serializer.validated_data["start_date"]
+        end_date = serializer.validated_data["end_date"]
+        context = serializer.get_report_context()
+
+        try:
+            excel_file = generate_attendance_excel(start_date, end_date, context)
+
+            filename = f"ATTENDANCE_REPORT_{start_date}_{end_date}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+            response = HttpResponse(
+                excel_file.getvalue(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+            response["Content-Disposition"] = (
+                f'attachment; filename="{escape_uri_path(filename)}"'
+            )
+            return response
+
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            print(f"Unexpected error during attendance export: {e}")
+            return Response(
+                {
+                    "error": "An internal server error occurred while generating the Excel."
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class AttendanceReportGetView(APIView):
+    """
+    Returns attendance data as JSON.
+    Defaults to past 30 days and all employees.
+    """
+
+    @extend_schema(
+        tags=["attendance-data"],
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def get(self, request, *args, **kwargs):
+
+        user = request.user.profile
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = AttendanceQueryParamsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+
+        start_date = serializer.validated_data["start_date"]
+        end_date = serializer.validated_data["end_date"]
+        context = serializer.get_filter_context()
+
+        try:
+            report_data = build_attendance_report_data(
+                start_date,
+                end_date,
+                context,
+                institution,
+            )
+            return Response(report_data)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"Error generating attendance report: {e}")
+            return Response(
+                {"error": "Internal server error while generating report."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

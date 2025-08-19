@@ -22,6 +22,7 @@ import {
   MapPin, 
   Tag,
   Users,
+  ArrowDown,
 
   Activity,
   MessageSquare,
@@ -29,7 +30,6 @@ import {
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -69,20 +69,7 @@ const getStatusDisplay = (status: string) => {
   }
 };
 
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case "pending":
-      return <AlertCircle className="h-5 w-5 text-yellow-500" />;
-    case "allocated":
-      return <CheckCircle className="h-5 w-5 text-green-500" />;
-    case "rejected":
-      return <XCircle className="h-5 w-5 text-red-500" />;
-    case "cancelled":
-      return <Archive className="h-5 w-5 text-gray-500" />;
-    default:
-      return <AlertCircle className="h-5 w-5 text-gray-500" />;
-  }
-};
+
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -140,19 +127,7 @@ const AssetAllocationDetailPage = () => {
     router.push("/assests/asset-allocations");
   };
 
-  const handleEditAllocation = () => {
-    setIsEditDialogOpen(true);
-  };
-
-  const handleDeleteAllocation = () => {
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleViewAssetDetails = () => {
-    if (allocation?.asset?.id) {
-      router.push(`/assets/${allocation.asset.id}`);
-    }
-  };
+ 
 
   
 
@@ -174,39 +149,15 @@ const AssetAllocationDetailPage = () => {
       
       toast.success(`Asset allocation ${action}d successfully`);
     } catch (error) {
-      console.error(`Error ${action}ing asset allocation:`, error);
+      console.warn(`Error ${action}ing asset allocation:`, error);
       toast.error(`Failed to ${action} asset allocation`);
     } finally {
       setIsApproving(false);
     }
   };
 
-  const toggleCommentInput = (taskId: number) => {
-    setShowCommentInput(prev => ({ ...prev, [taskId]: !prev[taskId] }));
-    if (!showCommentInput[taskId]) {
-      setApprovalComments(prev => ({ ...prev, [taskId]: "" }));
-    }
-  };
+  
 
-  const getWorkflowProgress = () => {
-    // @ts-ignore - tasks property may exist at runtime
-    if (!allocation?.tasks) return { completed: 0, total: 0, percentage: 0 };
-    
-    // @ts-ignore - tasks property may exist at runtime
-    const completed = allocation.tasks.filter((task: any) => task.status === 'completed').length;
-    // @ts-ignore - tasks property may exist at runtime
-    const total = allocation.tasks.length;
-    const percentage = total > 0 ? (completed / total) * 100 : 0;
-    
-    return { completed, total, percentage };
-  };
-
-  const getCurrentStep = () => {
-    // @ts-ignore - tasks property may exist at runtime
-    if (!allocation?.tasks) return null;
-    // @ts-ignore - tasks property may exist at runtime
-    return allocation.tasks.find((task: any) => task.status === 'pending');
-  };
 
   if (isLoading) {
     return (
@@ -235,350 +186,213 @@ const AssetAllocationDetailPage = () => {
     );
   }
 
-  const workflowProgress = getWorkflowProgress();
-  const currentStep = getCurrentStep();
-
+ 
   return (
-    <div className="space-y-4 md:space-y-6 p-4 md:p-6">
+    <div className="space-y-4 md:space-y-6 p-4 md:p-6 bg-white rounded-lg">
       {/* Header */}
-      <div className="bg-white rounded-lg border shadow-sm">
-        <div className="p-4 md:p-6 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push("/assests/asset-allocations")}
-                className="text-gray-600 hover:text-gray-900 w-fit"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                <span>Back to Allocations</span>
-              </Button>
-              <div>
-                <h1 className="text-xl md:text-3xl font-bold text-gray-900">Asset Allocation Details</h1>
-                <p className="text-gray-600 break-all">Allocation Code: {allocation.alloc_code}</p>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-              <Button
-                variant="outline"
-                onClick={handleEditAllocation}
-                className="flex items-center justify-center space-x-2 w-full sm:w-auto"
-              >
-                <Edit className="h-4 w-4" />
-                <span>Edit Allocation</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleDeleteAllocation}
-                className="flex items-center justify-center space-x-2 text-red-600 hover:text-red-700 w-full sm:w-auto"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span>Delete</span>
-              </Button>
-            </div>
+      <div className="">
+        <div className="p-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/assests/asset-allocations")}
+              className="p-2 hover:bg-gray-100 rounded-full border"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <p className="text-[#162032] text-lg md:text-[24px] break-all">{allocation.alloc_code}</p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
+      <div className="flex flex-col lg:flex-row justify-between gap-6">
         {/* Main Content */}
-        <div className="xl:col-span-2 space-y-4 md:space-y-6">
-          {/* Enhanced Approval Workflow */}
-          
-
-          {/* Basic Information */}
-          <Card>
-            <CardHeader className="pb-3 md:pb-6">
-              <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
-                <Users className="h-5 w-5 text-orange-500" />
-                <span>Allocation Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Allocation Code</label>
-                  <p className="text-base md:text-lg font-mono break-all">{allocation.alloc_code}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Status</label>
-                  <div className="flex items-center space-x-2 mt-1">
-                    {getStatusIcon(allocation.allocation_status)}
-                    <Badge className={getStatusColor(allocation.allocation_status)}>
-                      {getStatusDisplay(allocation.allocation_status)}
-                    </Badge>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Allocated To</label>
-                  <p className="text-base md:text-lg font-medium break-words">{allocation.allocated_to?.user.fullname}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Asset</label>
-                  <p className="text-base md:text-lg break-words">{allocation.asset?.asset_name}</p>
-                </div>
+        <div className="flex flex-col w-full lg:flex-[0.7] space-y-4 lg:space-y-6">
+          {/* Asset Card */}
+          <div className="border rounded-[20px] p-4 my-2 lg:my-4">
+            <div className="">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Asset</h3>
+                
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Asset Information */}
-          <Card>
-            <CardHeader className="pb-3 md:pb-6">
-              <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
-                <Package className="h-5 w-5 text-blue-500" />
-                <span>Asset Details</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Serial Number</label>
-                  <p className="text-base md:text-lg font-mono break-all">{allocation.asset?.serial_number}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Category</label>
-                  <p className="text-base md:text-lg break-words">{allocation.asset?.category?.category_name || "Unknown"}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Asset Status</label>
-                  <p className="text-base md:text-lg break-words">{allocation.asset?.status}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Allocated By</label>
-                  <p className="text-base md:text-lg break-words">{allocation.allocated_by?.user.fullname}</p>
-                </div>
-              </div>
-              
-            </CardContent>
-          </Card>
-
-          {/* Related Request Information */}
-          {allocation.responding_to_request && (
-            <Card>
-              <CardHeader className="pb-3 md:pb-6">
-                <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
-                  <FileText className="h-5 w-5 text-purple-500" />
-                  <span>Related Request</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Request Code</label>
-                    <p className="text-base md:text-lg font-mono break-all">{allocation.responding_to_request.request_reference_code}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Requester</label>
-                    <p className="text-base md:text-lg break-words">{allocation.responding_to_request.requester?.fullname}</p>
-                  </div>
+            </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
+              <div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <p className="text-sm font-medium text-gray-900">{allocation.asset?.asset_name}</p>
+                  <Badge className={getStatusColor(allocation.allocation_status)}>
+                    {getStatusDisplay(allocation.allocation_status)}
+                  </Badge>
                 </div>
                 
-              </CardContent>
-            </Card>
-          )}
+                <p className="text-sm text-gray-500">{allocation.asset?.serial_number}</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+                <div>
+                  <p className="text-sm text-gray-500">Batch No</p>
+                  <p className="text-base font-mono break-all">{allocation.asset?.batch_number}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Category</p>
+                  <p className="text-base font-mono break-all">{allocation.asset?.category?.category_name || "Unknown"}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Connection Line - Dotted with Arrow */}
+          <div className="flex justify-center">
+            <div className="w-0.5 h-8 bg-gray-300 relative" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #d1d5db 2px, #d1d5db 4px)' }}>
+              <ArrowDown className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-4 w-4 text-gray-400" />
+            </div>
+          </div>
+
+          {/* Allocate to Card */}
+          <div className="border rounded-[20px] p-4 my-2 lg:my-4">
+            <h3 className="text-lg font-semibold text-gray-900">Allocate to</h3>
+            <div className="">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
+                <div className="flex items-center gap-2 ">
+                  <User className="h-5 w-5 text-gray-600" />
+                  <div className="flex flex-col"> 
+                    <p className="font-medium text-gray-900">{allocation.allocated_to?.user.fullname}</p>
+                    <p className="text-sm text-gray-500">EMP-{allocation.allocated_to?.user.id}</p>
+                  </div>
+                  
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+                  <div>
+                    <p className="text-sm text-gray-500">Position</p>
+                    <p className="text-sm text-gray-500">{allocation.allocated_to?.user.roles?.[0]?.name || "Not specified"}</p>
+                    
+                  </div>
+                  <div className="flex flex-col"> 
+                    <p className="text-sm text-gray-500">Department</p>
+                    <p className="text-sm text-gray-500">Not specified</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Created By Card */}
+          <div className="rounded-[20px] p-4 my-2 lg:my-4">
+            <h3 className="text-lg font-semibold text-gray-900">Created By</h3>
+            <div className="">
+              <div>
+                <p className="font-medium text-gray-900">{allocation.allocated_by?.user.fullname}</p>
+                <p className="text-sm text-gray-500">{allocation.allocated_by?.user.roles?.[0]?.name || "Not specified"}</p>
+              </div>
+            </div>
+          </div>
+
+        
         </div>
 
+        {/* Vertical Separator Line - Hidden on mobile, visible on larger screens */}
+        <div className="hidden lg:block w-px bg-gray-200 mx-2"></div>
+
         {/* Sidebar */}
-        <div className="space-y-4 md:space-y-6">
+        <div className="w-full lg:flex-[0.2]">
           {/* Approval Workflow */}
           {/* @ts-ignore - tasks property may exist at runtime */}
           {allocation.tasks && allocation.tasks.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3 md:pb-6">
-                <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                  <span>Approval Workflow</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Workflow Progress Overview */}
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Progress</span>
-                    <span className="text-sm font-medium text-gray-600">
-                      {Math.round(workflowProgress.percentage)}%
-                    </span>
-                  </div>
-                  
-                  {/* Progress Bar */}
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500 ease-out"
-                      style={{ width: `${workflowProgress.percentage}%` }}
-                    />
-                  </div>
-                  
-                  {/* Current Step Indicator */}
-                  {currentStep && (
-                    <div className="mt-2 flex items-center gap-2 text-xs text-blue-600">
-                      <AlertCircle className="h-3 w-3 flex-shrink-0" />
-                      <span className="break-words">Waiting for: <strong>{currentStep.step.step_name}</strong></span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Quick Stats */}
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  <div className="bg-green-50 rounded-lg p-2">
-                    <div className="text-lg font-bold text-green-600">{workflowProgress.completed}</div>
-                    <div className="text-xs text-green-600">Completed</div>
-                  </div>
-                  <div className="bg-yellow-50 rounded-lg p-2">
-                    <div className="text-lg font-bold text-yellow-600">
-                      {/* @ts-ignore - tasks property may exist at runtime */}
-                      {allocation.tasks.filter((t: any) => t.status === 'pending').length}
-                    </div>
-                    <div className="text-xs text-yellow-600">Pending</div>
-                  </div>
-                </div>
-
-                {/* Approval Tasks - Compact View */}
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-gray-900">Approval Steps</h4>
-                  <div className="space-y-2">
-                    {/* @ts-ignore - tasks property may exist at runtime */}
-                    {allocation.tasks.map((task: any, index: any) => (
-                      <div key={task.id} className={`relative border rounded-lg p-2 ${
-                        task.status === 'completed' ? 'bg-green-50 border-green-200' :
-                        task.status === 'pending' ? 'bg-yellow-50 border-yellow-200' :
-                        task.status === 'rejected' ? 'bg-red-50 border-red-200' :
-                        'bg-gray-50 border-gray-200'
+            <div className="border-gray-200 p-4 lg:p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 lg:mb-6">Approvals</h3>
+              
+              {/* Approval Steps */}
+              <div className="space-y-4 lg:space-y-6">
+                {/* @ts-ignore - tasks property may exist at runtime */}
+                {allocation.tasks && allocation.tasks.map((task: any, index: any) => (
+                  <div key={task.id} className="relative">
+                    <div className="flex items-start gap-3 lg:gap-4">
+                      <div className={`w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${
+                        task.status === 'completed' 
+                          ? 'bg-green-100 border-green-500' 
+                          : 'bg-blue-100 border-blue-400'
                       }`}>
-                        {/* Step Number Badge */}
-                        <div className="absolute -top-2 -left-2 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-sm">
+                        <span className={`text-xs lg:text-sm font-semibold ${
+                          task.status === 'completed' ? 'text-green-700' : 'text-blue-700'
+                        }`}>
                           {index + 1}
-                        </div>
-                        
-                        {/* Task Header */}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 ml-4 space-y-1 sm:space-y-0">
-                          <span className="text-sm font-medium text-gray-900 break-words">{task.step.step_name}</span>
-                          <Badge className={`text-xs w-fit ${
-                            task.status === 'completed' ? 'bg-green-100 text-green-800 border-green-200' :
-                            task.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                            task.status === 'rejected' ? 'bg-red-100 text-red-800 border-red-200' :
-                            'bg-gray-100 text-gray-800 border-gray-200'
-                          }`}>
-                            {task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('_', ' ')}
+                        </span>
+                      </div>
+                      <div className="flex flex-col bg-gray-50 rounded-lg p-3 lg:p-4 flex-1">
+
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 justify-between">
+                          <h4 className="text-sm font-medium text-gray-900">{task.step.step_name}</h4>
+                          
+                          <Badge className={`text-xs mt-1 ${
+                          task.status === 'completed' 
+                            ? 'bg-green-100 text-green-800 border-green-200' 
+                            : 'bg-blue-100 text-blue-800 border-blue-200'
+                            }`}>
+                            {task.status === 'completed' ? 'Approved' : 'Pending'}
                           </Badge>
                         </div>
                         
-                        {/* Approvers */}
-                        <div className="ml-4 mb-2">
-                          <div className="flex flex-wrap gap-1">
-                            {task.step.roles_details?.map((role: any) => (
-                              <Badge key={role.id} variant="outline" className="text-xs">
-                                {role.name}
-                              </Badge>
-                            ))}
-                            {task.step.approvers_details?.map((approver: any) => (
-                              <Badge key={approver.id} variant="outline" className="text-xs">
-                                {approver.approver_user.fullname}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Approval Actions */}
+                        <p className="text-xs text-gray-500 mt-1">
+                            {task.status === 'completed' 
+                              ? `Approved - ${formatDate(task.updated_at)}`
+                              : 'Pending Approval'
+                            }
+                          </p>
+                        {task.status === 'completed' && task.comments && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {task.comments}
+                          </p>
+                        )}
                         {task.status === 'pending' && (
-                          <div className="ml-4 pt-2 border-t border-gray-200">
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <Button
-                                onClick={() => handleApproval(task.id, 'completed')}
-                                disabled={isApproving}
-                                size="sm"
-                                className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs"
-                              >
-                                {isApproving ? (
-                                  <>
-                                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                                    Approving...
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle className="h-3 w-3 mr-1" />
-                                    Approve
-                                  </>
-                                )}
-                              </Button>
-                              <Button
-                                onClick={() => handleApproval(task.id, 'rejected')}
-                                disabled={isApproving}
-                                size="sm"
-                                variant="destructive"
-                                className="flex-1 text-xs"
-                              >
-                                {isApproving ? (
-                                  <>
-                                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                                    Rejecting...
-                                  </>
-                                ) : (
-                                  <>
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                    Reject
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                            
-                            {/* Comment Toggle */}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleCommentInput(task.id)}
-                              className="w-full mt-2 text-blue-600 hover:text-blue-700 text-xs"
+                          <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                            <Button 
+                              size="sm" 
+                              className="bg-green-600 hover:bg-green-700 text-white w-full text-xs lg:text-sm"
+                              onClick={() => handleApproval(task.id, 'completed')}
+                              disabled={isApproving}
                             >
-                              <MessageSquare className="h-3 w-3 mr-1" />
-                              {showCommentInput[task.id] ? 'Hide Comment' : 'Add Comment'}
+                              {isApproving ? (
+                                <>
+                                  <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                                  Approving...
+                                </>
+                              ) : (
+                                'Approve'
+                              )}
                             </Button>
-                            
-                            {/* Comment Input */}
-                            {showCommentInput[task.id] && (
-                              <div className="mt-2">
-                                <Textarea
-                                  placeholder="Add a comment..."
-                                  value={approvalComments[task.id] || ""}
-                                  onChange={(e) => setApprovalComments(prev => ({ 
-                                    ...prev, 
-                                    [task.id]: e.target.value 
-                                  }))}
-                                  className="text-xs"
-                                  rows={2}
-                                />
-                              </div>
-                            )}
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-red-600 border-red-300 text-xs lg:text-sm w-full"
+                              onClick={() => handleApproval(task.id, 'rejected')}
+                              disabled={isApproving}
+                            >
+                              {isApproving ? (
+                                <>
+                                  <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                                  Rejecting...
+                                </>
+                              ) : (
+                                'Reject'
+                              )}
+                            </Button>
                           </div>
                         )}
                       </div>
-                    ))}
+                    </div>
+                    {/* Connection Line - Dotted (show only if not the last step) */}
+                    {/* @ts-ignore - tasks property may exist at runtime */}
+                    {index < allocation.tasks.length - 1 && (
+                      <div className="absolute left-3 lg:left-4 top-6 lg:top-8 w-0.5 h-6 lg:h-8 ml-1" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #d1d5db 2px, #d1d5db 4px)' }}></div>
+                    )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                ))}
+              </div>
+            </div>
           )}
 
           
 
-          {/* Timestamps */}
-          <Card>
-            <CardHeader className="pb-3 md:pb-6">
-              <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
-                <Clock className="h-5 w-5 text-gray-500" />
-                <span>Timestamps</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-gray-500">Created</label>
-                <p className="text-sm break-words">{formatDate(allocation.created_at)}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Last Updated</label>
-                <p className="text-sm break-words">{formatDate(allocation.updated_at)}</p>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
 

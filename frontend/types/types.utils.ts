@@ -390,28 +390,26 @@ export interface JobApplication {
 }
 
 export interface JobApplicationFormData {
-  job_position_advert: number
-  applicant_name: string
-  applicant_email: string
-  applicant_phone?: string
-  resume: File | null
-  cover_letter?: File | null
-  application_date?: string
-  status?: "new" | "reviewed" | "shortlisted" | "rejected" | "passed"
-  gender: "male" | "female"
-  state?: string
-  address: string
-  country: string
-  source?: "website" | "referral" | "job_board" | "social_media" | "head_hunt" | "other"
-  created_by?: number,
+  job_position_advert: number;
+  applicant_name: string;
+  applicant_email: string;
+  applicant_phone?: string;
+  resume: File | null;
+  cover_letter?: File | null;
+  application_date?: string;
+  status?: "new" | "reviewed" | "shortlisted" | "rejected" | "passed";
+  gender: "male" | "female";
+  state?: string;
+  address: string;
+  country: string;
+  source?: "website" | "referral" | "job_board" | "social_media" | "head_hunt" | "other";
+  created_by?: number;
   reviewed_by?: number;
   shortlisted_by?: number;
   recommended_by?: number;
   reviewed_by_name?: string;
   shortlisted_by_name?: string;
   recommended_by_name?: string;
-
-
 }
 
 // Extended application form data that includes additional fields
@@ -421,7 +419,6 @@ export interface JobApplicationCompleteFormData extends JobApplicationFormData {
   address_longitude?: string;
 }
 
-
 export type JobAdvertStatus =
   | "expired"
   | "active"
@@ -429,7 +426,6 @@ export type JobAdvertStatus =
   | "closed"
   | "inactive"
   | "pending_approval";
-
 
 export type JobAdvertTypes = "internal" | "external";
 
@@ -487,7 +483,6 @@ export interface JobAdvertCompleteFormData extends JobPositionAdvertFormData {
   newFeedbackFieldType: string;
 }
 
-
 export interface IEmployee {
   first_name: any;
   last_name: any;
@@ -531,6 +526,11 @@ export interface IEmployee {
   roles: Role[];
 }
 
+export interface IPayrollItems {
+  allowance: Record<string, IPayslipItem[]>;
+  deduction: Record<string, IPayslipItem[]>;
+}
+
 export interface IPayslip {
   id: number;
   employee: IEmployee;
@@ -547,6 +547,7 @@ export interface IPayslip {
   paid_date: string | null;
   created_at: string;
   updated_at: string;
+  items: IPayrollItems;
 }
 
 export interface IInterviewStageFormData {
@@ -1717,10 +1718,10 @@ export interface IAttendance {
 export interface IAttendanceFormData {
   employee: number;
   check_in_time: string;
-  check_in_longitude?:number,
-  check_in_latitude?:number,
-  check_out_longitude?:number,
-  check_out_latitude?:number,
+  check_in_longitude?: number;
+  check_in_latitude?: number;
+  check_out_longitude?: number;
+  check_out_latitude?: number;
   check_out_time?: string | null;
   status: string;
   date?: string;
@@ -1941,7 +1942,13 @@ export interface IAssetFormData {
 export interface IAssetHistory {
   id: number;
   asset: number | IAsset;
-  event_type: "allocated" | "returned" | "maintenance" | "decommissioned" | "created" | "reassigned";
+  event_type:
+    | "allocated"
+    | "returned"
+    | "maintenance"
+    | "decommissioned"
+    | "created"
+    | "reassigned";
   performed_by: number | UserProfile;
   affected_user: number | UserProfile;
   notes: string | null;
@@ -2035,8 +2042,8 @@ export interface IAssetAllocationFormData {
 // export interface IAssetReturn {
 //   id: number;
 //   asset: IAsset;
-//   returned_by: IEmployee; 
-//   returned_to: IEmployee; 
+//   returned_by: IEmployee;
+//   returned_to: IEmployee;
 //   return_date: string;
 //   return_reason: string | null;
 //   asset_condition: "good" | "fair" | "poor" | "damaged";
@@ -2044,7 +2051,6 @@ export interface IAssetAllocationFormData {
 //   created_at: string;
 //   updated_at: string;
 // }
-
 
 export interface IAssetReturn {
   id: number;
@@ -2152,8 +2158,6 @@ export interface IAssetFormData {
   status?: "available" | "allocated" | "maintenance" | "decommissioned";
 }
 
-
-
 export interface IAssetRequest {
   id: number;
   asset: IAsset;
@@ -2237,20 +2241,14 @@ export interface IAssetAllocationFormData {
   allocation_status?: "pending" | "allocated" | "rejected" | "cancelled";
 }
 
-
-
-
-
-
 export interface IEmployeeTaxFormData {
   target_departments?: number[];
   target_job_positions?: number[];
   target_employees?: number[];
   effective_from: string;
   effective_to: string;
-  institution_tax: number|string;
+  institution_tax: number | string;
 }
-
 
 export interface ICalendarEvent {
   institution: number | IInstitution;
@@ -2259,6 +2257,33 @@ export interface ICalendarEvent {
   events: number[] | IEvent[];
   created_at: string;
   updated_at: string;
+}
 
+
+export interface AttendanceEmployee {
+  id: number;
+  full_name: string;
+  department: string;
+  position: string;
+}
+
+export interface AttendanceSummary {
+  present: number;
+  absent: number;
+  late: number;
+  leave: number;
+  total_working_days: number;
+}
+
+export interface AttendanceEmployeeData {
+  employee: AttendanceEmployee;
+  summary: AttendanceSummary;
+  daily_statuses: Record<string, string>;
+}
+
+export interface AttendanceResponse {
+  start_date: string;
+  end_date: string;
+  employees: AttendanceEmployeeData[];
 }
 
