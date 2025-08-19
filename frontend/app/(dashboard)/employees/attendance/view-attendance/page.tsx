@@ -4,11 +4,11 @@ import {
   useState,
   useMemo,
   useEffect,
-  JSXElementConstructor,
-  Key,
-  ReactElement,
-  ReactNode,
-  ReactPortal,
+  type JSXElementConstructor,
+  type Key,
+  type ReactElement,
+  type ReactNode,
+  type ReactPortal,
 } from "react";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
@@ -30,11 +30,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {Badge} from "@/components/ui/badge";
-import {Download, Users, Building, Search, Info, Loader2} from "lucide-react";
+import {Download, Users, Building, Search, Info, Loader2, FileSpreadsheet} from "lucide-react";
 import {fetchAttendanceData} from "@/lib/utils";
-import type {AttendanceResponse} from "@/types/types.utils";
+import type {AttendanceResponse, IDepartment, IEmployee, IJobPosition} from "@/types/types.utils";
 import {useSelector} from "react-redux";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {selectSelectedInstitution, selectAccessToken} from "@/store/auth/selectors";
+import {getDepartments, getJobPositions, fetchEmployees} from "@/lib/utils";
 
 const attendanceCodes = {
   "P-onT": {label: "Present on Time", color: "bg-green-100 text-green-800"},
@@ -63,6 +64,15 @@ interface DownloadFilters {
   department: string;
   position: string;
   scope: string;
+}
+
+interface ExcelDownloadFilters {
+  startDate: string;
+  endDate: string;
+  filterType: "employees" | "departments" | "positions";
+  selectedEmployees: number[];
+  selectedDepartments: number[];
+  selectedPositions: number[];
 }
 
 function AttendanceLegend() {
@@ -102,6 +112,10 @@ export default function AttendanceTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const selectedInstitution = useSelector(selectSelectedInstitution);
+  const accessToken = useSelector(selectAccessToken);
+  const [allDepartments, setAllDepartments] = useState<IDepartment[]>([]);
+  const [allPositions, setAllPositions] = useState<IJobPosition[]>([]);
+  const [allEmployees, setAllEmployees] = useState<IEmployee[]>([]);
 
   const [filters, setFilters] = useState<AttendanceFilters>({
     startDate: "2025-07-20",
@@ -117,13 +131,38 @@ export default function AttendanceTable() {
     position: "all",
   });
 
-  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
-  const [downloadFilters, setDownloadFilters] = useState<DownloadFilters>({
-    searchTerm: "",
-    department: "all",
-    position: "all",
-    scope: "all",
+  const [excelModalOpen, setExcelModalOpen] = useState(false);
+  const [excelFilters, setExcelFilters] = useState<ExcelDownloadFilters>({
+    startDate: new Date().toISOString().split("T")[0],
+    endDate: new Date().toISOString().split("T")[0],
+    filterType: "employees",
+    selectedEmployees: [],
+    selectedDepartments: [],
+    selectedPositions: [],
   });
+  const [excelDownloading, setExcelDownloading] = useState(false);
+
+  useEffect(() => {
+    const loadFiltersData = async () => {
+      if (!selectedInstitution) return;
+
+      try {
+        const [departments, positions, employees] = await Promise.all([
+          getDepartments({institutionId: selectedInstitution.id}),
+          getJobPositions({institutionId: selectedInstitution.id}),
+          fetchEmployees({institutionId: selectedInstitution.id}),
+        ]);
+
+        setAllDepartments(departments || []);
+        setAllPositions(positions || []);
+        setAllEmployees(Array.isArray(employees) ? employees : []);
+      } catch (err) {
+        console.error("Failed to load filters data:", err);
+      }
+    };
+
+    loadFiltersData();
+  }, [selectedInstitution]);
 
   useEffect(() => {
     if (selectedInstitution) {
@@ -146,23 +185,8 @@ export default function AttendanceTable() {
     }
   };
 
-  const departments = useMemo(() => {
-    const actualData = (attendanceData as any)?.data || attendanceData;
-    if (!actualData?.employees) return [];
-    const depts = [
-      ...new Set(actualData.employees.map((emp: any) => emp.employee.department)),
-    ] as string[];
-    return depts;
-  }, [attendanceData]);
-
-  const positions = useMemo(() => {
-    const actualData = (attendanceData as any)?.data || attendanceData;
-    if (!actualData?.employees) return [];
-    const pos = [
-      ...new Set(actualData.employees.map((emp: any) => emp.employee.position)),
-    ] as string[];
-    return pos;
-  }, [attendanceData]);
+  const departments = useMemo(() => allDepartments.map((d) => d.name), [allDepartments]);
+  const positions = useMemo(() => allPositions.map((p) => p.name), [allPositions]);
 
   const dateRange = useMemo(() => {
     const actualData = (attendanceData as any)?.data || attendanceData;
@@ -212,32 +236,6 @@ export default function AttendanceTable() {
     );
   }, [tempFilters, employeesWithAttendance]);
 
-  const downloadFilteredEmployees = useMemo(() => {
-    return employeesWithAttendance.filter(
-      (emp: {
-        employee: {
-          full_name: string;
-          id: {toString: () => string | string[]};
-          department: string;
-          position: string;
-        };
-      }) => {
-        const searchMatch =
-          downloadFilters.searchTerm === "" ||
-          emp.employee.full_name.toLowerCase().includes(downloadFilters.searchTerm.toLowerCase()) ||
-          emp.employee.id.toString().includes(downloadFilters.searchTerm);
-
-        const deptMatch =
-          downloadFilters.department === "all" ||
-          emp.employee.department === downloadFilters.department;
-        const posMatch =
-          downloadFilters.position === "all" || emp.employee.position === downloadFilters.position;
-
-        return searchMatch && deptMatch && posMatch;
-      },
-    );
-  }, [downloadFilters, employeesWithAttendance]);
-
   const handleFilterChange = (key: keyof AttendanceFilters, value: string) => {
     setTempFilters((prev) => ({...prev, [key]: value}));
   };
@@ -246,78 +244,135 @@ export default function AttendanceTable() {
     setFilters(tempFilters);
   };
 
-  // Check if filters have changed
   const hasFilterChanges =
     tempFilters.startDate !== filters.startDate ||
     tempFilters.endDate !== filters.endDate ||
     tempFilters.department !== filters.department ||
     tempFilters.position !== filters.position;
 
-  const handleDownloadFilterChange = (key: keyof DownloadFilters, value: string) => {
-    setDownloadFilters((prev) => ({...prev, [key]: value}));
+  const handleExcelFilterChange = (key: keyof ExcelDownloadFilters, value: any) => {
+    setExcelFilters((prev) => ({
+      ...prev,
+      [key]: value,
+      ...(key === "filterType" && {
+        selectedEmployees: [],
+        selectedDepartments: [],
+        selectedPositions: [],
+      }),
+    }));
   };
 
-  const handleDownload = () => {
-    const dataToDownload = downloadFilteredEmployees;
+  const handleExcelDownload = async () => {
+    setExcelDownloading(true);
 
-    const legendData = Object.entries(attendanceCodes).map(([code, {label}]) => `${code},${label}`);
+    try {
+      const payload: any = {
+        start_date: excelFilters.startDate,
+        end_date: excelFilters.endDate,
+      };
 
-    const headers = ["Full Name", "Present", "Absent", "Late", "Leave", "Total Days"];
-    const employeeData = dataToDownload.map(
-      (emp: {
-        employee: {full_name: any};
-        summary: {present: any; absent: any; late: any; leave: any; total_working_days: any};
-      }) => [
-        emp.employee.full_name,
-        emp.summary.present,
-        emp.summary.absent,
-        emp.summary.late,
-        emp.summary.leave,
-        emp.summary.total_working_days,
-      ],
-    );
+      if (excelFilters.filterType === "employees" && excelFilters.selectedEmployees.length > 0) {
+        payload.target_employees = excelFilters.selectedEmployees;
+      } else if (
+        excelFilters.filterType === "departments" &&
+        excelFilters.selectedDepartments.length > 0
+      ) {
+        payload.target_departments = excelFilters.selectedDepartments;
+      } else if (
+        excelFilters.filterType === "positions" &&
+        excelFilters.selectedPositions.length > 0
+      ) {
+        payload.target_job_positions = excelFilters.selectedPositions;
+      }
 
-    const excelContent = [
-      "ATTENDANCE CODES",
-      "Code,Description",
-      ...legendData,
-      "",
-      "",
-      "ATTENDANCE REPORT",
-      `Period: ${filters.startDate} to ${filters.endDate}`,
-      "",
-      headers.join(","),
-      ...employeeData.map((row: any[]) => row.join(",")),
-    ].join("\n");
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/employee/attendance2excel/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(payload),
+        },
+      );
 
-    const blob = new Blob([excelContent], {type: "application/vnd.ms-excel"});
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `attendance-report-${filters.startDate}-to-${filters.endDate}.xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `attendance-report-${excelFilters.startDate}-${excelFilters.endDate}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
 
-    setDownloadModalOpen(false);
-    setDownloadFilters({
-      searchTerm: "",
-      department: "all",
-      position: "all",
-      scope: "all",
-    });
+        setExcelModalOpen(false);
+      } else {
+        const errorData = await response.json();
+        console.error("Excel download failed:", errorData);
+      }
+    } catch (error) {
+      console.error("Excel download error:", error);
+    } finally {
+      setExcelDownloading(false);
+    }
   };
 
-  const handleModalOpen = (open: boolean) => {
-    setDownloadModalOpen(open);
+  const handleExcelModalOpen = (open: boolean) => {
+    setExcelModalOpen(open);
     if (open) {
-      setDownloadFilters({
-        searchTerm: "",
-        department: "all",
-        position: "all",
-        scope: "all",
+      setExcelFilters({
+        startDate: new Date().toISOString().split("T")[0],
+        endDate: new Date().toISOString().split("T")[0],
+        filterType: "employees",
+        selectedEmployees: [],
+        selectedDepartments: [],
+        selectedPositions: [],
       });
+    }
+  };
+
+  const getAvailableOptions = () => {
+    if (excelFilters.filterType === "employees") {
+      return allEmployees.map((emp) => ({
+        id: emp.id,
+        name: `${emp.first_name} ${emp.last_name}`.trim(),
+      }));
+    } else if (excelFilters.filterType === "departments") {
+      return allDepartments.map((dept) => ({
+        id: dept.id,
+        name: dept.name,
+      }));
+    } else if (excelFilters.filterType === "positions") {
+      return allPositions.map((pos) => ({
+        id: pos.id,
+        name: pos.name,
+      }));
+    }
+    return [];
+  };
+
+  const getSelectedItems = () => {
+    const options = getAvailableOptions();
+    if (excelFilters.filterType === "employees") {
+      return options.filter((opt) => excelFilters.selectedEmployees.includes(opt.id));
+    } else if (excelFilters.filterType === "departments") {
+      return options.filter((opt) => excelFilters.selectedDepartments.includes(opt.id));
+    } else if (excelFilters.filterType === "positions") {
+      return options.filter((opt) => excelFilters.selectedPositions.includes(opt.id));
+    }
+    return [];
+  };
+
+  const handleSelectionChange = (selectedIds: number[]) => {
+    if (excelFilters.filterType === "employees") {
+      handleExcelFilterChange("selectedEmployees", selectedIds);
+    } else if (excelFilters.filterType === "departments") {
+      handleExcelFilterChange("selectedDepartments", selectedIds);
+    } else if (excelFilters.filterType === "positions") {
+      handleExcelFilterChange("selectedPositions", selectedIds);
     }
   };
 
@@ -366,7 +421,7 @@ export default function AttendanceTable() {
             className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
-
+        {/* 
         <div className="space-y-2">
           <Label htmlFor="end-date" className="text-sm font-medium text-gray-700">
             End Date
@@ -379,7 +434,7 @@ export default function AttendanceTable() {
             onChange={(e) => handleFilterChange("endDate", e.target.value)}
             className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
           />
-        </div>
+        </div> */}
 
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">Department</Label>
@@ -445,99 +500,153 @@ export default function AttendanceTable() {
           <h3 className="font-semibold text-gray-900">
             Attendance Records ({filteredEmployees.length} employees)
           </h3>
-          <Dialog open={downloadModalOpen} onOpenChange={handleModalOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
-                <Download className="h-4 w-4" />
-                Download Report
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Download Attendance Report</DialogTitle>
-                <DialogDescription>
-                  Filter and search employees to customize your download (
-                  {downloadFilteredEmployees.length} employees selected)
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="search" className="flex items-center gap-2">
-                    <Search className="h-4 w-4" />
-                    Search Employees
-                  </Label>
-                  <Input
-                    id="search"
-                    placeholder="Search by name or employee ID..."
-                    value={downloadFilters.searchTerm}
-                    onChange={(e) => handleDownloadFilterChange("searchTerm", e.target.value)}
-                  />
-                </div>
+          <div className="flex gap-2">
+            <Dialog open={excelModalOpen} onOpenChange={handleExcelModalOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2 bg-green-600 hover:bg-green-700">
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Generate Excel Report
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Generate Excel Attendance Report</DialogTitle>
+                  <DialogDescription>
+                    Select date range and filter criteria for your Excel report
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="excel-start-date">Start Date</Label>
+                      <Input
+                        id="excel-start-date"
+                        type="date"
+                        value={excelFilters.startDate}
+                        onChange={(e) => handleExcelFilterChange("startDate", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="excel-end-date">End Date</Label>
+                      <Input
+                        id="excel-end-date"
+                        type="date"
+                        value={excelFilters.endDate}
+                        onChange={(e) => handleExcelFilterChange("endDate", e.target.value)}
+                      />
+                    </div>
+                  </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Building className="h-4 w-4" />
-                      Filter by Department
-                    </Label>
+                    <Label>Filter By</Label>
                     <Select
-                      value={downloadFilters.department}
-                      onValueChange={(value) => handleDownloadFilterChange("department", value)}
+                      value={excelFilters.filterType}
+                      onValueChange={(value: "employees" | "departments" | "positions") =>
+                        handleExcelFilterChange("filterType", value)
+                      }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Departments</SelectItem>
-                        {departments.map((dept) => (
-                          <SelectItem key={dept} value={dept}>
-                            {dept}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="employees">Specific Employees</SelectItem>
+                        <SelectItem value="departments">Departments</SelectItem>
+                        <SelectItem value="positions">Job Positions</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Filter by Position
+                    <Label>
+                      Select{" "}
+                      {excelFilters.filterType === "employees"
+                        ? "Employees"
+                        : excelFilters.filterType === "departments"
+                          ? "Departments"
+                          : "Positions"}
                     </Label>
-                    <Select
-                      value={downloadFilters.position}
-                      onValueChange={(value) => handleDownloadFilterChange("position", value)}
+                    <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
+                      {getAvailableOptions().map((option) => (
+                        <div key={option.id} className="flex items-center space-x-2 py-1">
+                          <input
+                            type="checkbox"
+                            id={`option-${option.id}`}
+                            checked={
+                              excelFilters.filterType === "employees"
+                                ? excelFilters.selectedEmployees.includes(option.id)
+                                : excelFilters.filterType === "departments"
+                                  ? excelFilters.selectedDepartments.includes(option.id)
+                                  : excelFilters.selectedPositions.includes(option.id)
+                            }
+                            onChange={(e) => {
+                              const currentSelection =
+                                excelFilters.filterType === "employees"
+                                  ? excelFilters.selectedEmployees
+                                  : excelFilters.filterType === "departments"
+                                    ? excelFilters.selectedDepartments
+                                    : excelFilters.selectedPositions;
+
+                              const newSelection = e.target.checked
+                                ? [...currentSelection, option.id]
+                                : currentSelection.filter((id) => id !== option.id);
+
+                              handleSelectionChange(newSelection);
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <label htmlFor={`option-${option.id}`} className="text-sm cursor-pointer">
+                            {option.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+
+                    {getSelectedItems().length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-600 mb-2">
+                          Selected ({getSelectedItems().length}):
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {getSelectedItems().map((item) => (
+                            <Badge key={item.id} variant="secondary" className="text-xs">
+                              {item.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setExcelModalOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleExcelDownload}
+                      disabled={
+                        excelDownloading ||
+                        !excelFilters.startDate ||
+                        !excelFilters.endDate ||
+                        getSelectedItems().length === 0
+                      }
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select position" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Positions</SelectItem>
-                        {positions.map((pos) => (
-                          <SelectItem key={pos} value={pos}>
-                            {pos}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      {excelDownloading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <FileSpreadsheet className="h-4 w-4 mr-2" />
+                          Generate Excel ({getSelectedItems().length} selected)
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setDownloadModalOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleDownload}
-                    disabled={downloadFilteredEmployees.length === 0}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download Excel ({downloadFilteredEmployees.length} employees)
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
         <div className="p-6">
           <div className="overflow-x-auto">
