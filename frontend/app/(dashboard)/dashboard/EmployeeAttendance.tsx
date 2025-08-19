@@ -11,7 +11,7 @@ import {CheckInModal} from "@/components/checkin-modal";
 import {AttendanceAPI} from "@/lib/utils";
 import {CheckOutModal} from "@/components/checkout-modal";
 import {getCurrentUserLocation} from "@/lib/helpers";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 
 interface Stat {
   label: string;
@@ -65,7 +65,7 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
     }
   }
 
-  const openCheckInModal = async (employee:IEmployee ) => {
+  const openCheckInModal = async (employee: IEmployee) => {
     setSelectedEmployee(employee);
     setCheckInModalOpen(true);
     await getCurrentUserLocation(handlePositionChange);
@@ -83,8 +83,9 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
   };
 
   const handleCheckIn = async (date: string, checkInTime: string) => {
-
-    if (!selectedEmployee){return};
+    if (!selectedEmployee) {
+      return;
+    }
     if (!currentUserlocation) {
       toast.warning("You need to allow access to your location to be able to proceed !");
       return;
@@ -106,7 +107,9 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
   };
 
   const handleCheckOut = async (date: string, checkOutTime: string) => {
-    if (!selectedAttendanceRecord){return};
+    if (!selectedAttendanceRecord) {
+      return;
+    }
     const record = attendance.find((r) => r.id === selectedAttendanceRecord.id);
     const checkInTime = record?.check_in_time || "";
     await getCurrentUserLocation(handlePositionChange);
@@ -116,16 +119,13 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
     }
 
     try {
-      await AttendanceAPI.updateAttendanceRecord({
-        id: selectedAttendanceRecord.id,
-        data: {
-          employee: selectedAttendanceRecord?.employee.id,
-          check_in_time: checkInTime,
-          check_out_time: checkOutTime,
-          check_out_latitude: currentUserlocation.coords.latitude,
-          check_out_longitude: currentUserlocation.coords.longitude,
-          status: "approved",
-        },
+      await AttendanceAPI.updateAttendanceRecord(selectedAttendanceRecord.id, {
+        employee: selectedAttendanceRecord?.employee.id,
+        check_in_time: checkInTime,
+        check_out_time: checkOutTime,
+        check_out_latitude: currentUserlocation.coords.latitude,
+        check_out_longitude: currentUserlocation.coords.longitude,
+        status: "approved",
       });
 
       await fetchAttendance();
@@ -137,7 +137,7 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
 
   return (
     <>
-      <div  className="">
+      <div className="">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span className="mb-2">Attendance ({employees.length})</span>
@@ -214,9 +214,7 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
                           >
                             {emp.user?.fullname || ""}
                           </Link>
-                          <span className="text-xs text-gray-400">
-                            {emp.department.name}
-                          </span>
+                          <span className="text-xs text-gray-400">{emp.department.name}</span>
                         </div>
                       </TableCell>
                       <TableCell>
