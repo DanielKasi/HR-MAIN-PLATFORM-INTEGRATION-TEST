@@ -6,12 +6,13 @@ import {AttendanceAPI, getAllEmployees} from "@/lib/utils";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 
-import {IAttendance, IEmployee} from "@/types/types.utils";
+import {IAttendance, IEmployee, PERMISSION_CODES} from "@/types/types.utils";
 import {toast} from "sonner";
 import {TableSkeleton} from "@/components/common/table-skeleton";
 import {Card, CardHeader} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
+import ProtectedComponent from "@/components/ProtectedComponent";
 
 const AttendancePage = () => {
   const [search, setSearch] = useState("");
@@ -148,13 +149,15 @@ const AttendancePage = () => {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Attendance</h1>
               <p className="text-muted-foreground">Manage daily attendance for your organization</p>
             </div>
-            <Button
-              onClick={handleViewAttendance}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
-            >
-              <Eye className="w-4 h-4" />
-              View Attendance
-            </Button>
+            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ATTENDANCE_RECORDS}>
+              <Button
+                onClick={handleViewAttendance}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                View Attendance
+              </Button>
+            </ProtectedComponent>
           </div>
         </div>
         <EmployeeAttendance
