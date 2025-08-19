@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  useState,
-  useMemo,
-  useEffect,
-  type JSXElementConstructor,
-  type Key,
-  type ReactElement,
-  type ReactNode,
-  type ReactPortal,
-} from "react";
+import {useState, useMemo, useEffect} from "react";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
@@ -30,7 +21,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {Badge} from "@/components/ui/badge";
-import {Download, Users, Building, Search, Info, Loader2, FileSpreadsheet} from "lucide-react";
+import {Users, Building, Info, FileSpreadsheet, UserCheck} from "lucide-react";
+import {TableSkeleton} from "@/components/common/table-skeleton";
 import {fetchAttendanceData} from "@/lib/utils";
 import type {AttendanceResponse, IDepartment, IEmployee, IJobPosition} from "@/types/types.utils";
 import {useSelector} from "react-redux";
@@ -55,15 +47,8 @@ const attendanceCodes = {
 interface AttendanceFilters {
   startDate: string;
   endDate: string;
-  department: string;
-  position: string;
-}
-
-interface DownloadFilters {
-  searchTerm: string;
-  department: string;
-  position: string;
-  scope: string;
+  filterType: "all" | "department" | "position";
+  filterValue: string;
 }
 
 interface ExcelDownloadFilters {
@@ -89,16 +74,17 @@ function AttendanceLegend() {
           <h3 className="font-semibold text-gray-900">Attendance Codes</h3>
         </div>
         <Button variant="ghost" size="sm">
-          {isExpanded ? "Hide" : "Show"} Legend
+          <span className="hidden sm:inline">{isExpanded ? "Hide" : "Show"} Codes</span>
+          <span className="sm:hidden">{isExpanded ? "Hide" : "Show"}</span>
         </Button>
       </div>
 
       {isExpanded && (
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
           {Object.entries(attendanceCodes).map(([code, {label, color}]) => (
             <div key={code} className="flex items-center gap-2 p-2 rounded-md bg-gray-50">
               <span className={`px-2 py-1 rounded text-xs font-medium ${color}`}>{code}</span>
-              <span className="text-xs text-gray-600">{label}</span>
+              <span className="text-xs text-gray-600 truncate">{label}</span>
             </div>
           ))}
         </div>
@@ -120,15 +106,15 @@ export default function AttendanceTable() {
   const [filters, setFilters] = useState<AttendanceFilters>({
     startDate: "2025-07-20",
     endDate: "2025-08-19",
-    department: "all",
-    position: "all",
+    filterType: "all",
+    filterValue: "all",
   });
 
   const [tempFilters, setTempFilters] = useState<AttendanceFilters>({
     startDate: "2025-07-20",
     endDate: "2025-08-19",
-    department: "all",
-    position: "all",
+    filterType: "all",
+    filterValue: "all",
   });
 
   const [excelModalOpen, setExcelModalOpen] = useState(false);
@@ -155,9 +141,19 @@ export default function AttendanceTable() {
 
         setAllDepartments(departments || []);
         setAllPositions(positions || []);
-        setAllEmployees(Array.isArray(employees) ? employees : []);
+
+        let employeesList = [];
+        if (Array.isArray(employees)) {
+          employeesList = employees;
+        } else if (employees && typeof employees === "object" && "results" in employees) {
+          employeesList = (employees as any).results || [];
+        } else if (employees && typeof employees === "object" && "data" in employees) {
+          employeesList = (employees as any).data || [];
+        }
+
+        setAllEmployees(employeesList);
       } catch (err) {
-        console.error("Failed to load filters data:", err);
+        //console.error("Failed to load filters data:", err);
       }
     };
 
@@ -184,9 +180,6 @@ export default function AttendanceTable() {
       setLoading(false);
     }
   };
-
-  const departments = useMemo(() => allDepartments.map((d) => d.name), [allDepartments]);
-  const positions = useMemo(() => allPositions.map((p) => p.name), [allPositions]);
 
   const dateRange = useMemo(() => {
     const actualData = (attendanceData as any)?.data || attendanceData;
@@ -225,19 +218,32 @@ export default function AttendanceTable() {
   }, [attendanceData]);
 
   const filteredEmployees = useMemo(() => {
-    return employeesWithAttendance.filter(
-      (emp: {employee: {department: string; position: string}}) => {
-        const deptMatch =
-          tempFilters.department === "all" || emp.employee.department === tempFilters.department;
-        const posMatch =
-          tempFilters.position === "all" || emp.employee.position === tempFilters.position;
-        return deptMatch && posMatch;
-      },
-    );
+    return employeesWithAttendance.filter((emp: any) => {
+      if (tempFilters.filterType === "all") return true;
+
+      if (tempFilters.filterType === "department") {
+        return (
+          tempFilters.filterValue === "all" || emp.employee.department === tempFilters.filterValue
+        );
+      }
+
+      if (tempFilters.filterType === "position") {
+        return (
+          tempFilters.filterValue === "all" || emp.employee.position === tempFilters.filterValue
+        );
+      }
+
+      return true;
+    });
   }, [tempFilters, employeesWithAttendance]);
 
   const handleFilterChange = (key: keyof AttendanceFilters, value: string) => {
-    setTempFilters((prev) => ({...prev, [key]: value}));
+    setTempFilters((prev) => ({
+      ...prev,
+      [key]: value,
+      // Reset filterValue when filterType changes
+      ...(key === "filterType" && {filterValue: "all"}),
+    }));
   };
 
   const handleApplyFilters = () => {
@@ -247,8 +253,17 @@ export default function AttendanceTable() {
   const hasFilterChanges =
     tempFilters.startDate !== filters.startDate ||
     tempFilters.endDate !== filters.endDate ||
-    tempFilters.department !== filters.department ||
-    tempFilters.position !== filters.position;
+    tempFilters.filterType !== filters.filterType ||
+    tempFilters.filterValue !== filters.filterValue;
+
+  const getFilterOptions = () => {
+    if (tempFilters.filterType === "department") {
+      return allDepartments.map((dept) => ({value: dept.name, label: dept.name, id: dept.id}));
+    } else if (tempFilters.filterType === "position") {
+      return allPositions.map((pos) => ({value: pos.name, label: pos.name, id: pos.id}));
+    }
+    return [];
+  };
 
   const handleExcelFilterChange = (key: keyof ExcelDownloadFilters, value: any) => {
     setExcelFilters((prev) => ({
@@ -302,7 +317,7 @@ export default function AttendanceTable() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `attendance-report-${excelFilters.startDate}-${excelFilters.endDate}.xlsx`;
+        a.download = `attendance-report-${excelFilters.startDate}.xlsx`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -311,10 +326,9 @@ export default function AttendanceTable() {
         setExcelModalOpen(false);
       } else {
         const errorData = await response.json();
-        console.error("Excel download failed:", errorData);
       }
     } catch (error) {
-      console.error("Excel download error:", error);
+      //console.error("Excel download error:", error);
     } finally {
       setExcelDownloading(false);
     }
@@ -338,7 +352,10 @@ export default function AttendanceTable() {
     if (excelFilters.filterType === "employees") {
       return allEmployees.map((emp) => ({
         id: emp.id,
-        name: `${emp.first_name} ${emp.last_name}`.trim(),
+        name:
+          emp.user?.fullname ||
+          `${emp.first_name || ""} ${emp.last_name || ""}`.trim() ||
+          `Employee ${emp.id}`,
       }));
     } else if (excelFilters.filterType === "departments") {
       return allDepartments.map((dept) => ({
@@ -378,12 +395,32 @@ export default function AttendanceTable() {
 
   if (loading) {
     return (
-      <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-            <p className="text-gray-600">Loading attendance data...</p>
+      <div className="space-y-6 p-3 sm:p-6 bg-gray-50 min-h-screen">
+        <div className="bg-white rounded-lg shadow-md border p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
+            </div>
+            <div className="h-8 bg-gray-200 rounded w-24 animate-pulse"></div>
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {Array.from({length: 5}).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+              <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md border">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b border-gray-200 gap-4 sm:gap-0">
+            <div className="h-6 bg-gray-200 rounded w-48 animate-pulse"></div>
+            <div className="h-10 bg-gray-200 rounded w-40 animate-pulse"></div>
+          </div>
+          <TableSkeleton rows={10} columns={12} />
         </div>
       </div>
     );
@@ -391,7 +428,7 @@ export default function AttendanceTable() {
 
   if (error) {
     return (
-      <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
+      <div className="space-y-6 p-3 sm:p-6 bg-gray-50 min-h-screen">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <p className="text-red-600 mb-4">{error}</p>
@@ -405,10 +442,10 @@ export default function AttendanceTable() {
   }
 
   return (
-    <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
+    <div className="space-y-6 p-3 sm:p-6 bg-gray-50 min-h-screen">
       <AttendanceLegend />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="space-y-2">
           <Label htmlFor="start-date" className="text-sm font-medium text-gray-700">
             Start Date
@@ -421,118 +458,118 @@ export default function AttendanceTable() {
             className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
-        {/* 
-        <div className="space-y-2">
-          <Label htmlFor="end-date" className="text-sm font-medium text-gray-700">
-            End Date
-          </Label>
-          <Input
-            id="end-date"
-            type="date"
-            value={tempFilters.endDate}
-            max={new Date().toISOString().split("T")[0]}
-            onChange={(e) => handleFilterChange("endDate", e.target.value)}
-            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div> */}
 
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">Department</Label>
+          <Label className="text-sm font-medium text-gray-700">Filter By</Label>
           <Select
-            value={tempFilters.department}
-            onValueChange={(value) => handleFilterChange("department", value)}
+            value={tempFilters.filterType}
+            onValueChange={(value: "all" | "department" | "position") =>
+              handleFilterChange("filterType", value)
+            }
           >
             <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
-              <SelectValue placeholder="Select department" />
+              <SelectValue placeholder="Select filter type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Departments</SelectItem>
-              {departments.map((dept) => (
-                <SelectItem key={dept} value={dept}>
-                  {dept}
-                </SelectItem>
-              ))}
+              <SelectItem value="all">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  <span className="hidden sm:inline">All Employees</span>
+                  <span className="sm:hidden">All</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="department">
+                <div className="flex items-center gap-2">
+                  <Building className="h-4 w-4" />
+                  <span className="hidden sm:inline">By Department</span>
+                  <span className="sm:hidden">Department</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="position">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="h-4 w-4" />
+                  <span className="hidden sm:inline">By Position</span>
+                  <span className="sm:hidden">Position</span>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">Position</Label>
-          <Select
-            value={tempFilters.position}
-            onValueChange={(value) => handleFilterChange("position", value)}
-          >
-            <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
-              <SelectValue placeholder="Select position" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Positions</SelectItem>
-              {positions.map((pos) => (
-                <SelectItem key={pos} value={pos}>
-                  {pos}
+        {tempFilters.filterType !== "all" && (
+          <div className="space-y-2 sm:col-span-1 lg:col-span-1">
+            <Label className="text-sm font-medium text-gray-700">
+              Select {tempFilters.filterType === "department" ? "Department" : "Position"}
+            </Label>
+            <Select
+              value={tempFilters.filterValue}
+              onValueChange={(value) => handleFilterChange("filterValue", value)}
+            >
+              <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder={`Select ${tempFilters.filterType}`} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  All {tempFilters.filterType === "department" ? "Departments" : "Positions"}
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+                {getFilterOptions().map((option) => (
+                  <SelectItem key={`${tempFilters.filterType}-${option.id}`} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
-        <div className="space-y-2">
+        <div className="space-y-2 sm:col-span-2 lg:col-span-1">
           <Label className="text-sm font-medium text-gray-700 invisible">Apply</Label>
           <Button
             onClick={handleApplyFilters}
             disabled={!hasFilterChanges || loading}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Loading...
-              </>
-            ) : (
-              "Apply Filters"
-            )}
+            <span className="hidden sm:inline">Apply Filters</span>
+            <span className="sm:hidden">Apply</span>
           </Button>
         </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-md border">
-        <div className="flex flex-row items-center justify-between p-6 border-b border-gray-200">
-          <h3 className="font-semibold text-gray-900">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b border-gray-200 gap-4 sm:gap-0">
+          <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
             Attendance Records ({filteredEmployees.length} employees)
           </h3>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             <Dialog open={excelModalOpen} onOpenChange={handleExcelModalOpen}>
               <DialogTrigger asChild>
-                <Button className="flex items-center gap-2 bg-green-600 hover:bg-green-700">
+                <Button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-xs sm:text-sm flex-1 sm:flex-none">
                   <FileSpreadsheet className="h-4 w-4" />
-                  Generate Excel Report
+                  <span className="hidden sm:inline">Generate Excel Report</span>
+                  <span className="sm:hidden">Excel Report</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Generate Excel Attendance Report</DialogTitle>
-                  <DialogDescription>
+                  <DialogTitle className="text-lg sm:text-xl">
+                    Generate Excel Attendance Report
+                  </DialogTitle>
+                  <DialogDescription className="text-sm">
                     Select date range and filter criteria for your Excel report
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="excel-start-date">Start Date</Label>
+                      <Label htmlFor="excel-start-date">Date</Label>
                       <Input
                         id="excel-start-date"
                         type="date"
                         value={excelFilters.startDate}
-                        onChange={(e) => handleExcelFilterChange("startDate", e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="excel-end-date">End Date</Label>
-                      <Input
-                        id="excel-end-date"
-                        type="date"
-                        value={excelFilters.endDate}
-                        onChange={(e) => handleExcelFilterChange("endDate", e.target.value)}
+                        onChange={(e) => {
+                          handleExcelFilterChange("startDate", e.target.value);
+                          handleExcelFilterChange("endDate", e.target.value);
+                        }}
                       />
                     </div>
                   </div>
@@ -557,49 +594,60 @@ export default function AttendanceTable() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>
+                    <Label className="text-sm">
                       Select{" "}
                       {excelFilters.filterType === "employees"
                         ? "Employees"
                         : excelFilters.filterType === "departments"
                           ? "Departments"
-                          : "Positions"}
+                          : "Positions"}{" "}
+                      ({getAvailableOptions().length} available)
                     </Label>
-                    <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
-                      {getAvailableOptions().map((option) => (
-                        <div key={option.id} className="flex items-center space-x-2 py-1">
-                          <input
-                            type="checkbox"
-                            id={`option-${option.id}`}
-                            checked={
-                              excelFilters.filterType === "employees"
-                                ? excelFilters.selectedEmployees.includes(option.id)
-                                : excelFilters.filterType === "departments"
-                                  ? excelFilters.selectedDepartments.includes(option.id)
-                                  : excelFilters.selectedPositions.includes(option.id)
-                            }
-                            onChange={(e) => {
-                              const currentSelection =
+
+                    {getAvailableOptions().length === 0 ? (
+                      <div className="border rounded-md p-3 text-center text-gray-500 text-sm">
+                        No {excelFilters.filterType} available
+                      </div>
+                    ) : (
+                      <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
+                        {getAvailableOptions().map((option) => (
+                          <div key={option.id} className="flex items-center space-x-2 py-1">
+                            <input
+                              type="checkbox"
+                              id={`option-${option.id}`}
+                              checked={
                                 excelFilters.filterType === "employees"
-                                  ? excelFilters.selectedEmployees
+                                  ? excelFilters.selectedEmployees.includes(option.id)
                                   : excelFilters.filterType === "departments"
-                                    ? excelFilters.selectedDepartments
-                                    : excelFilters.selectedPositions;
+                                    ? excelFilters.selectedDepartments.includes(option.id)
+                                    : excelFilters.selectedPositions.includes(option.id)
+                              }
+                              onChange={(e) => {
+                                const currentSelection =
+                                  excelFilters.filterType === "employees"
+                                    ? excelFilters.selectedEmployees
+                                    : excelFilters.filterType === "departments"
+                                      ? excelFilters.selectedDepartments
+                                      : excelFilters.selectedPositions;
 
-                              const newSelection = e.target.checked
-                                ? [...currentSelection, option.id]
-                                : currentSelection.filter((id) => id !== option.id);
+                                const newSelection = e.target.checked
+                                  ? [...currentSelection, option.id]
+                                  : currentSelection.filter((id) => id !== option.id);
 
-                              handleSelectionChange(newSelection);
-                            }}
-                            className="rounded border-gray-300"
-                          />
-                          <label htmlFor={`option-${option.id}`} className="text-sm cursor-pointer">
-                            {option.name}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
+                                handleSelectionChange(newSelection);
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                            <label
+                              htmlFor={`option-${option.id}`}
+                              className="text-sm cursor-pointer truncate"
+                            >
+                              {option.name}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     {getSelectedItems().length > 0 && (
                       <div className="mt-2">
@@ -608,7 +656,11 @@ export default function AttendanceTable() {
                         </p>
                         <div className="flex flex-wrap gap-1">
                           {getSelectedItems().map((item) => (
-                            <Badge key={item.id} variant="secondary" className="text-xs">
+                            <Badge
+                              key={item.id}
+                              variant="secondary"
+                              className="text-xs truncate max-w-[150px]"
+                            >
                               {item.name}
                             </Badge>
                           ))}
@@ -617,8 +669,12 @@ export default function AttendanceTable() {
                     )}
                   </div>
 
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setExcelModalOpen(false)}>
+                  <div className="flex flex-col sm:flex-row justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setExcelModalOpen(false)}
+                      className="w-full sm:w-auto"
+                    >
                       Cancel
                     </Button>
                     <Button
@@ -629,16 +685,20 @@ export default function AttendanceTable() {
                         !excelFilters.endDate ||
                         getSelectedItems().length === 0
                       }
+                      className="w-full sm:w-auto"
                     >
                       {excelDownloading ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Generating...
+                          <span className="hidden sm:inline">Generating...</span>
+                          <span className="sm:hidden">Generating</span>
                         </>
                       ) : (
                         <>
                           <FileSpreadsheet className="h-4 w-4 mr-2" />
-                          Generate Excel ({getSelectedItems().length} selected)
+                          <span className="hidden sm:inline">
+                            Generate Excel ({getSelectedItems().length} selected)
+                          </span>
+                          <span className="sm:hidden">Generate ({getSelectedItems().length})</span>
                         </>
                       )}
                     </Button>
@@ -648,197 +708,64 @@ export default function AttendanceTable() {
             </Dialog>
           </div>
         </div>
-        <div className="p-6">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b">
-                  <TableHead className="font-semibold text-gray-900 sticky left-0 bg-white z-10">
-                    Full Name
-                  </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-900 sticky left-[150px] bg-white z-10">
-                    Present
-                  </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-900 sticky left-[220px] bg-white z-10">
-                    Absent
-                  </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-900 sticky left-[290px] bg-white z-10">
-                    Late
-                  </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-900 sticky left-[360px] bg-white z-10">
-                    Leave
-                  </TableHead>
-                  <TableHead className="text-center font-semibold text-gray-900 sticky left-[430px] bg-white z-10">
-                    Total Days
-                  </TableHead>
-                  {dateRange.map((date) => (
-                    <TableHead
-                      key={date}
-                      className="text-center font-semibold text-gray-900 min-w-[80px]"
-                    >
-                      <div className="text-xs">
-                        {new Date(date).toLocaleDateString("en-US", {
-                          day: "numeric",
-                          month: "short",
-                        })}
-                      </div>
+        <div className="p-3 sm:p-6">
+          <div className="overflow-x-auto -mx-3 sm:mx-0">
+            <div className="min-w-[800px]">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b">
+                    <TableHead className="font-semibold text-gray-900 sticky left-0 bg-white z-10 min-w-[120px] w-[120px] sm:min-w-[150px] sm:w-[150px] text-xs sm:text-sm">
+                      Full Name
                     </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEmployees.map(
-                  (emp: {
-                    employee: {
-                      id: Key | null | undefined;
-                      full_name:
-                        | string
-                        | number
-                        | bigint
-                        | boolean
-                        | ReactElement<unknown, string | JSXElementConstructor<any>>
-                        | Iterable<ReactNode>
-                        | ReactPortal
-                        | Promise<
-                            | string
-                            | number
-                            | bigint
-                            | boolean
-                            | ReactPortal
-                            | ReactElement<unknown, string | JSXElementConstructor<any>>
-                            | Iterable<ReactNode>
-                            | null
-                            | undefined
-                          >
-                        | null
-                        | undefined;
-                    };
-                    summary: {
-                      present:
-                        | string
-                        | number
-                        | bigint
-                        | boolean
-                        | ReactElement<unknown, string | JSXElementConstructor<any>>
-                        | Iterable<ReactNode>
-                        | ReactPortal
-                        | Promise<
-                            | string
-                            | number
-                            | bigint
-                            | boolean
-                            | ReactPortal
-                            | ReactElement<unknown, string | JSXElementConstructor<any>>
-                            | Iterable<ReactNode>
-                            | null
-                            | undefined
-                          >
-                        | null
-                        | undefined;
-                      absent:
-                        | string
-                        | number
-                        | bigint
-                        | boolean
-                        | ReactElement<unknown, string | JSXElementConstructor<any>>
-                        | Iterable<ReactNode>
-                        | ReactPortal
-                        | Promise<
-                            | string
-                            | number
-                            | bigint
-                            | boolean
-                            | ReactPortal
-                            | ReactElement<unknown, string | JSXElementConstructor<any>>
-                            | Iterable<ReactNode>
-                            | null
-                            | undefined
-                          >
-                        | null
-                        | undefined;
-                      late:
-                        | string
-                        | number
-                        | bigint
-                        | boolean
-                        | ReactElement<unknown, string | JSXElementConstructor<any>>
-                        | Iterable<ReactNode>
-                        | ReactPortal
-                        | Promise<
-                            | string
-                            | number
-                            | bigint
-                            | boolean
-                            | ReactPortal
-                            | ReactElement<unknown, string | JSXElementConstructor<any>>
-                            | Iterable<ReactNode>
-                            | null
-                            | undefined
-                          >
-                        | null
-                        | undefined;
-                      leave:
-                        | string
-                        | number
-                        | bigint
-                        | boolean
-                        | ReactElement<unknown, string | JSXElementConstructor<any>>
-                        | Iterable<ReactNode>
-                        | ReactPortal
-                        | Promise<
-                            | string
-                            | number
-                            | bigint
-                            | boolean
-                            | ReactPortal
-                            | ReactElement<unknown, string | JSXElementConstructor<any>>
-                            | Iterable<ReactNode>
-                            | null
-                            | undefined
-                          >
-                        | null
-                        | undefined;
-                      total_working_days:
-                        | string
-                        | number
-                        | bigint
-                        | boolean
-                        | ReactElement<unknown, string | JSXElementConstructor<any>>
-                        | Iterable<ReactNode>
-                        | ReactPortal
-                        | Promise<
-                            | string
-                            | number
-                            | bigint
-                            | boolean
-                            | ReactPortal
-                            | ReactElement<unknown, string | JSXElementConstructor<any>>
-                            | Iterable<ReactNode>
-                            | null
-                            | undefined
-                          >
-                        | null
-                        | undefined;
-                    };
-                    daily_statuses: {[x: string]: string};
-                  }) => (
+                    <TableHead className="text-center font-semibold text-gray-900 sticky left-[120px] sm:left-[150px] bg-white z-10 min-w-[60px] w-[60px] sm:min-w-[70px] sm:w-[70px] text-xs sm:text-sm">
+                      Present
+                    </TableHead>
+                    <TableHead className="text-center font-semibold text-gray-900 sticky left-[180px] sm:left-[220px] bg-white z-10 min-w-[60px] w-[60px] sm:min-w-[70px] sm:w-[70px] text-xs sm:text-sm">
+                      Absent
+                    </TableHead>
+                    <TableHead className="text-center font-semibold text-gray-900 sticky left-[240px] sm:left-[290px] bg-white z-10 min-w-[60px] w-[60px] sm:min-w-[70px] sm:w-[70px] text-xs sm:text-sm">
+                      Late
+                    </TableHead>
+                    <TableHead className="text-center font-semibold text-gray-900 sticky left-[300px] sm:left-[360px] bg-white z-10 min-w-[60px] w-[60px] sm:min-w-[70px] sm:w-[70px] text-xs sm:text-sm">
+                      Leave
+                    </TableHead>
+                    <TableHead className="text-center font-semibold text-gray-900 sticky left-[360px] sm:left-[430px] bg-white z-10 min-w-[80px] w-[80px] sm:min-w-[100px] sm:w-[100px] text-xs sm:text-sm">
+                      Total Days
+                    </TableHead>
+                    {dateRange.map((date) => (
+                      <TableHead
+                        key={date}
+                        className="text-center font-semibold text-gray-900 min-w-[70px] w-[70px] sm:min-w-[80px] sm:w-[80px]"
+                      >
+                        <div className="text-xs">
+                          {new Date(date).toLocaleDateString("en-US", {
+                            day: "numeric",
+                            month: "short",
+                          })}
+                        </div>
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEmployees.map((emp: any) => (
                     <TableRow key={emp.employee.id} className="border-b hover:bg-gray-50">
-                      <TableCell className="font-medium text-gray-900 sticky left-0 bg-white z-10 w-[150px] min-w-[150px]">
+                      <TableCell className="font-medium text-gray-900 sticky left-0 bg-white z-10 min-w-[120px] w-[120px] sm:min-w-[150px] sm:w-[150px] text-xs sm:text-sm truncate">
                         {emp.employee.full_name}
                       </TableCell>
-                      <TableCell className="text-center sticky left-[150px] bg-white z-10 w-[70px] min-w-[70px]">
+                      <TableCell className="text-center sticky left-[120px] sm:left-[150px] bg-white z-10 min-w-[60px] w-[60px] sm:min-w-[70px] sm:w-[70px] text-xs sm:text-sm">
                         {emp.summary.present}
                       </TableCell>
-                      <TableCell className="text-center sticky left-[220px] bg-white z-10 w-[70px] min-w-[70px]">
+                      <TableCell className="text-center sticky left-[180px] sm:left-[220px] bg-white z-10 min-w-[60px] w-[60px] sm:min-w-[70px] sm:w-[70px] text-xs sm:text-sm">
                         {emp.summary.absent}
                       </TableCell>
-                      <TableCell className="text-center sticky left-[290px] bg-white z-10 w-[70px] min-w-[70px]">
+                      <TableCell className="text-center sticky left-[240px] sm:left-[290px] bg-white z-10 min-w-[60px] w-[60px] sm:min-w-[70px] sm:w-[70px] text-xs sm:text-sm">
                         {emp.summary.late}
                       </TableCell>
-                      <TableCell className="text-center sticky left-[360px] bg-white z-10 w-[70px] min-w-[70px]">
+                      <TableCell className="text-center sticky left-[300px] sm:left-[360px] bg-white z-10 min-w-[60px] w-[60px] sm:min-w-[70px] sm:w-[70px] text-xs sm:text-sm">
                         {emp.summary.leave}
                       </TableCell>
-                      <TableCell className="text-center font-medium text-gray-900 sticky left-[430px] bg-white z-10 w-[100px] min-w-[100px]">
+                      <TableCell className="text-center font-medium text-gray-900 sticky left-[360px] sm:left-[430px] bg-white z-10 min-w-[80px] w-[80px] sm:min-w-[100px] sm:w-[100px] text-xs sm:text-sm">
                         {emp.summary.total_working_days}
                       </TableCell>
                       {dateRange.map((date) => {
@@ -848,9 +775,9 @@ export default function AttendanceTable() {
                           attendanceCodes["ERR"];
 
                         return (
-                          <TableCell key={date} className="text-center p-2">
+                          <TableCell key={date} className="text-center p-1 sm:p-2">
                             <span
-                              className={`px-1.5 py-0.5 rounded text-xs font-medium ${statusConfig.color}`}
+                              className={`px-1 sm:px-1.5 py-0.5 rounded text-xs font-medium ${statusConfig.color}`}
                               title={statusConfig.label}
                             >
                               {status}
@@ -859,10 +786,10 @@ export default function AttendanceTable() {
                         );
                       })}
                     </TableRow>
-                  ),
-                )}
-              </TableBody>
-            </Table>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </div>
       </div>
