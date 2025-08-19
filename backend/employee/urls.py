@@ -19,6 +19,7 @@ from .views import (
     EmployeeContractApprovalAPIView,
     EmployeeWorkingDaysDetailAPIView,
     ExportAttendanceExcelView,
+    AttendanceReportGetView,
 )
 
 urlpatterns = [
@@ -108,4 +109,5 @@ urlpatterns = [
         ExportAttendanceExcelView.as_view(),
         name="export-attendance-2-excel",
     ),
+    path("attendance-data/", AttendanceReportGetView.as_view(), name="attendance-data"),
 ]
