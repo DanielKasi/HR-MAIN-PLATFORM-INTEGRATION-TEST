@@ -588,22 +588,22 @@ export default function PayrollPeriodDetails() {
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div>
         <CardHeader className="p-0">
-          <div className="flex justify-between gap-8 items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-4 sm:gap-8 sm:items-center">
             <div className="flex items-center justify-start gap-4">
               <Button
                 variant="outline"
                 onClick={() => router.back()}
-                className="flex items-center gap-2 rounded-full aspect-square"
+                className="flex items-center gap-2 rounded-full aspect-square flex-shrink-0"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div>
+              <div className="min-w-0 flex-1">
                 {payrollPeriod && (
                   <>
-                    <CardTitle className="text-2xl font-bold text-gray-900">
+                    <CardTitle className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
                       Payslips for {payrollPeriod.name}
                     </CardTitle>
-                    <CardDescription className="text-gray-600">
+                    <CardDescription className="text-sm sm:text-base text-gray-600">
                       Manage payslips for {formatDate(payrollPeriod.start_date)} -{" "}
                       {formatDate(payrollPeriod.end_date)}
                     </CardDescription>
@@ -615,9 +615,9 @@ export default function PayrollPeriodDetails() {
         </CardHeader>
 
         {/* Search and Filters */}
-        <div className="flex items-center justify-between mt-10">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6 sm:mt-10">
           {/* Search bar */}
-          <div className="relative flex-1 max-w-xl">
+          <div className="relative flex-1 max-w-full sm:max-w-xl">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search by employee name or email..."
@@ -631,21 +631,22 @@ export default function PayrollPeriodDetails() {
           </div>
 
           {/* Buttons container */}
-          <div className="flex gap-2 ml-6">
+          <div className="flex flex-col sm:flex-row gap-2 sm:ml-6">
             {/* Bulk Payments dialog/button */}
             <Dialog open={bulkPaymentModalOpen} onOpenChange={setBulkPaymentModalOpen}>
               <DialogTrigger asChild>
                 <Button
-                  className="bg-green-600 hover:bg-green-700 shadow-md"
+                  className="bg-green-600 hover:bg-green-700 shadow-md w-full sm:w-auto"
                   disabled={
                     !selectedInstitution || displayedPayslips.filter((p) => !p.is_paid).length === 0
                   }
                 >
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Bulk Payments
+                  <span className="hidden sm:inline">Bulk Payments</span>
+                  <span className="sm:hidden">Bulk Pay</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-[95vw] sm:max-w-2xl mx-4">
                 <DialogHeader>
                   <DialogTitle>Process Payments in Bulk</DialogTitle>
                   <DialogDescription>
@@ -723,7 +724,7 @@ export default function PayrollPeriodDetails() {
             {payrollPeriod && (
               <Button
                 onClick={handleGeneratePayslips}
-                className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400"
+                className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400 w-full sm:w-auto"
                 disabled={
                   payrollPeriod.is_processed ||
                   !selectedInstitution ||
@@ -736,14 +737,20 @@ export default function PayrollPeriodDetails() {
                 ) : (
                   <Plus className="w-4 h-4 mr-2" />
                 )}
-                {isGenerating ? "Generating..." : "Generate Payslips"}
+                <span className="hidden sm:inline">
+                  {isGenerating ? "Generating..." : "Generate Payslips"}
+                </span>
+                <span className="sm:hidden">{isGenerating ? "Generating..." : "Generate"}</span>
               </Button>
             )}
 
             {payrollPeriod && (
               <Dialog open={downloadModalOpen} onOpenChange={setDownloadModalOpen}>
                 <DialogTrigger asChild>
-                  <Button className="shadow-md" disabled={!selectedInstitution?.id}>
+                  <Button
+                    className="shadow-md w-full sm:w-auto"
+                    disabled={!selectedInstitution?.id}
+                  >
                     <Download className="w-4 h-4 mr-2" />
                     Download
                   </Button>
@@ -816,9 +823,9 @@ export default function PayrollPeriodDetails() {
         </div>
 
         {/* Results Table */}
-        <div className="bg-white rounded-lg shadow-sm  overflow-hidden mx-2">
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden mx-0 sm:mx-2">
           {displayedPayslips.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 px-4">
               <Users className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No payslips found</h3>
               <p className="mt-1 text-sm text-gray-500">
@@ -842,27 +849,37 @@ export default function PayrollPeriodDetails() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto mt-10">
+              <div className="overflow-x-auto mt-6 sm:mt-10">
                 <Table className="min-w-max [&_th]:border-0 [&_td]:border-0">
                   <TableHeader className="bg-gray-50/50">
                     <TableRow className="bg-gray-50">
-                      <TableHead className="font-semibold text-gray-700 py-4">
+                      <TableHead className="font-semibold text-gray-700 py-4 min-w-[200px] sm:min-w-0">
                         <div className="flex items-center gap-2">
                           <Users className="w-4 h-4" />
                           Employee
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700">Basic Salary</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Allowances</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Deductions</TableHead>
-                      <TableHead className="font-semibold text-gray-700">
+                      <TableHead className="font-semibold text-gray-700 min-w-[120px]">
+                        Basic Salary
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700 min-w-[120px]">
+                        Allowances
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700 min-w-[120px]">
+                        Deductions
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700 min-w-[120px]">
                         <div className="flex items-center gap-2">
                           <Plus className="w-4 h-4" />
                           Net Salary
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700">Days</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Status</TableHead>
+                      <TableHead className="font-semibold text-gray-700 min-w-[80px]">
+                        Days
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700 min-w-[100px]">
+                        Status
+                      </TableHead>
                       {/* Dynamic item columns */}
                       {extractItems(displayedPayslips).map((itemName, index) => (
                         <TableHead
@@ -874,7 +891,7 @@ export default function PayrollPeriodDetails() {
                           {itemName}
                         </TableHead>
                       ))}
-                      <TableHead className="font-semibold text-gray-700 text-center sticky right-0 bg-white z-10 border-l">
+                      <TableHead className="font-semibold text-gray-700 text-center sticky right-0 bg-white z-10 border-l min-w-[120px]">
                         Actions
                       </TableHead>
                     </TableRow>
@@ -887,18 +904,18 @@ export default function PayrollPeriodDetails() {
                           index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
                         }`}
                       >
-                        <TableCell className="py-4">
+                        <TableCell className="py-4 min-w-[200px] sm:min-w-0">
                           <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10 border-2 border-orange-100">
-                              <AvatarFallback className="bg-orange-100 text-orange-700 font-semibold">
+                            <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border-2 border-orange-100 flex-shrink-0">
+                              <AvatarFallback className="bg-orange-100 text-orange-700 font-semibold text-xs sm:text-sm">
                                 {getInitials(payslip.employee.user?.fullname || "")}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <div className="font-semibold text-gray-900">
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-gray-900 text-sm sm:text-base truncate">
                                 {payslip.employee.user?.fullname || ""}
                               </div>
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-gray-500 truncate">
                                 {payslip.employee.department.name}
                               </div>
                             </div>
@@ -964,13 +981,13 @@ export default function PayrollPeriodDetails() {
 
                           if (allowanceItem) {
                             totalAmount = allowanceItem.reduce(
-                              (sum, item) => sum + parseFloat(item.amount),
+                              (sum, item) => sum + Number.parseFloat(item.amount),
                               0,
                             );
                             count = allowanceItem.length;
                           } else if (deductionItem) {
                             totalAmount = deductionItem.reduce(
-                              (sum, item) => sum + parseFloat(item.amount),
+                              (sum, item) => sum + Number.parseFloat(item.amount),
                               0,
                             );
                             count = deductionItem.length;
@@ -1258,7 +1275,7 @@ export default function PayrollPeriodDetails() {
                       <TableCell className="text-center font-bold text-gray-900">
                         {formatCurrency(
                           displayedPayslips.reduce(
-                            (sum, p) => sum + parseFloat(p.basic_salary || "0"),
+                            (sum, p) => sum + Number.parseFloat(p.basic_salary || "0"),
                             0,
                           ),
                         )}
@@ -1266,7 +1283,7 @@ export default function PayrollPeriodDetails() {
                       <TableCell className="text-center font-bold text-green-600">
                         {formatCurrency(
                           displayedPayslips.reduce(
-                            (sum, p) => sum + parseFloat(p.total_allowances || "0"),
+                            (sum, p) => sum + Number.parseFloat(p.total_allowances || "0"),
                             0,
                           ),
                         )}
@@ -1274,7 +1291,7 @@ export default function PayrollPeriodDetails() {
                       <TableCell className="text-center font-bold text-red-600">
                         {formatCurrency(
                           displayedPayslips.reduce(
-                            (sum, p) => sum + parseFloat(p.total_deductions || "0"),
+                            (sum, p) => sum + Number.parseFloat(p.total_deductions || "0"),
                             0,
                           ),
                         )}
@@ -1282,16 +1299,16 @@ export default function PayrollPeriodDetails() {
                       <TableCell className="text-center font-bold text-green-700">
                         {formatCurrency(
                           displayedPayslips.reduce(
-                            (sum, p) => sum + parseFloat(p.net_salary || "0"),
+                            (sum, p) => sum + Number.parseFloat(p.net_salary || "0"),
                             0,
                           ),
                         )}
                       </TableCell>
-                      <TableCell className="text-center font-bold text-gray-900">
-                        {displayedPayslips.reduce((sum, p) => sum + p.days_worked, 0)}
+                      <TableCell className="text-center">
+                        {/* Empty for Days - no total needed */}
                       </TableCell>
-                      <TableCell className="text-center font-bold text-gray-900">
-                        {displayedPayslips.length} Total
+                      <TableCell className="text-center">
+                        {/* Empty for Status - no total needed */}
                       </TableCell>
 
                       {/* Dynamic item totals */}
@@ -1305,12 +1322,12 @@ export default function PayrollPeriodDetails() {
 
                           if (allowanceItem) {
                             totalAmount += allowanceItem.reduce(
-                              (sum, item) => sum + parseFloat(item.amount),
+                              (sum, item) => sum + Number.parseFloat(item.amount),
                               0,
                             );
                           } else if (deductionItem) {
                             totalAmount += deductionItem.reduce(
-                              (sum, item) => sum + parseFloat(item.amount),
+                              (sum, item) => sum + Number.parseFloat(item.amount),
                               0,
                             );
                             isDeduction = true;
