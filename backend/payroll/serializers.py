@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from employee.serializers import EmployeeSerializer
 from rest_framework import serializers
 from .models import (
@@ -370,12 +372,18 @@ class PayrollPeriodSerializer(serializers.ModelSerializer):
         model = PayrollPeriod
         fields = "__all__"
 
+class PayslipItemSimpleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PayslipItem
+        fields="__all__"
 
 class PayslipSerializer(serializers.ModelSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
     payroll_period = serializers.PrimaryKeyRelatedField(
         queryset=PayrollPeriod.objects.all()
     )
+
+    items = PayslipItemSimpleSerializer(many=True, read_only=True)
 
     class Meta:
         model = Payslip
@@ -385,6 +393,16 @@ class PayslipSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         rep["employee"] = EmployeeSerializer(instance.employee).data
         rep["payroll_period"] = PayrollPeriodSerializer(instance.payroll_period).data
+
+        grouped_items = defaultdict(lambda: defaultdict(list))
+
+        for item in PayslipItemSimpleSerializer(instance.items.all(), many=True).data:
+            item_type = item.get("item_type")
+            name = item.get("name")
+            grouped_items[item_type][name].append(item)
+
+        rep["items"] = {item_type: dict(names) for item_type, names in grouped_items.items()}
+
         return rep
 
 
