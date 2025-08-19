@@ -22,6 +22,7 @@ from .serializers import (
     EmployeeContractSerializer,
     EmployeeWorkingDaysSerializer,
     AttendanceReportSerializer,
+    AttendanceQueryParamsSerializer,
 )
 from .models import (
     Employee,
@@ -67,6 +68,9 @@ from django.http import FileResponse
 from payroll.utils import generate_attendance_excel
 from django.utils.encoding import escape_uri_path
 from datetime import datetime
+from django.utils.dateparse import parse_date
+from .service import build_attendance_report_data
+from institution.models import Institution
 
 
 class EmployeeListAPIView(APIView):
@@ -1934,5 +1938,52 @@ class ExportAttendanceExcelView(APIView):
                 {
                     "error": "An internal server error occurred while generating the Excel."
                 },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class AttendanceReportGetView(APIView):
+    """
+    Returns attendance data as JSON.
+    Defaults to past 30 days and all employees.
+    """
+
+    @extend_schema(
+        tags=["attendance-data"],
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def get(self, request, *args, **kwargs):
+
+        user = request.user.profile
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = AttendanceQueryParamsSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+
+        start_date = serializer.validated_data["start_date"]
+        end_date = serializer.validated_data["end_date"]
+        context = serializer.get_filter_context()
+
+        try:
+            report_data = build_attendance_report_data(
+                start_date,
+                end_date,
+                context,
+                institution,
+            )
+            return Response(report_data)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"Error generating attendance report: {e}")
+            return Response(
+                {"error": "Internal server error while generating report."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
