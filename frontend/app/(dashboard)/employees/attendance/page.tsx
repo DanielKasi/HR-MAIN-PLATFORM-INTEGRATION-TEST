@@ -1,15 +1,17 @@
 "use client";
 import React, {useState, useEffect, useMemo} from "react";
 import EmployeeAttendance from "../../dashboard/EmployeeAttendance";
-import { BarChart2, UserCheck, UserX, Users} from "lucide-react";
+import {BarChart2, UserCheck, UserX, Users, Eye} from "lucide-react";
 import {AttendanceAPI, getAllEmployees} from "@/lib/utils";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 
 import {IAttendance, IEmployee} from "@/types/types.utils";
 import {toast} from "sonner";
-import { TableSkeleton } from "@/components/common/table-skeleton";
-import { Card, CardHeader } from "@/components/ui/card";
+import {TableSkeleton} from "@/components/common/table-skeleton";
+import {Card, CardHeader} from "@/components/ui/card";
+import {Button} from "@/components/ui/button";
+import {useRouter} from "next/navigation";
 
 const AttendancePage = () => {
   const [search, setSearch] = useState("");
@@ -19,6 +21,7 @@ const AttendancePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const selectedInstitution = useSelector(selectSelectedInstitution);
+  const router = useRouter();
 
   useEffect(() => {
     loadEmployees();
@@ -57,6 +60,11 @@ const AttendancePage = () => {
       setLoading(false);
     }
   };
+
+  const handleViewAttendance = () => {
+    router.push("attendance/view-attendance");
+  };
+
   const stats = useMemo(() => {
     const total = employees.length;
     const checkedIn = attendance.filter((a) => a.check_in_time).length;
@@ -105,39 +113,49 @@ const AttendancePage = () => {
     );
   }
 
-
-    if (loading) {
-      return (
-        <div className="p-2 space-y-6">
-          <Card className="h-[calc(100vh-2rem)] shadow-lg">
-            <CardHeader className="border-b">
-              <div className="flex justify-between gap-8 items-center">
-                <div className="flex items-center justify-start gap-4">
-                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
-                  <div className="space-y-2">
-                    <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+  if (loading) {
+    return (
+      <div className="p-2 space-y-6">
+        <Card className="h-[calc(100vh-2rem)] shadow-lg">
+          <CardHeader className="border-b">
+            <div className="flex justify-between gap-8 items-center">
+              <div className="flex items-center justify-start gap-4">
+                <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="space-y-2">
+                  <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
                 </div>
               </div>
-            </CardHeader>
-            <TableSkeleton rows={10} columns={8} />
-          </Card>
-        </div>
-      )
-    }
+              <div className="flex gap-2">
+                <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+          </CardHeader>
+          <TableSkeleton rows={10} columns={8} />
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="w-full">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Attendance</h1>
-          <p className="text-muted-foreground">Manage daily attendance for your organization</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Attendance</h1>
+              <p className="text-muted-foreground">Manage daily attendance for your organization</p>
+            </div>
+            <Button
+              onClick={handleViewAttendance}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
+            >
+              <Eye className="w-4 h-4" />
+              View Attendance
+            </Button>
+          </div>
         </div>
         <EmployeeAttendance
           employees={employees}

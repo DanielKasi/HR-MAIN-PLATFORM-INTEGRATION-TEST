@@ -389,6 +389,8 @@ export interface ICustomUser {
 
 export type MaritalStatus = 'single' | 'married' | 'divorced' | 'widowed';
 
+
+
 // export interface IEmployee {
 //   id: number;
 
