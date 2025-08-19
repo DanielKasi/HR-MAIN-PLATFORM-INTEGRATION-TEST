@@ -111,19 +111,19 @@ export default function PayrollPeriodDetails() {
   const payrollPeriodId = params.id as string;
 
   const extractItems = (payslips: IPayslip[]) => {
-  const allItems = new Set<string>();
-  
-  payslips.forEach(payslip => {
-    if (payslip.items?.allowance) {
-      Object.keys(payslip.items.allowance).forEach(key => allItems.add(key));
-    } 
-    if (payslip.items?.deduction) {
-      Object.keys(payslip.items.deduction).forEach(key => allItems.add(key));
-    }
-  });
-  
-  return Array.from(allItems).sort();
-};
+    const allItems = new Set<string>();
+
+    payslips.forEach((payslip) => {
+      if (payslip.items?.allowance) {
+        Object.keys(payslip.items.allowance).forEach((key) => allItems.add(key));
+      }
+      if (payslip.items?.deduction) {
+        Object.keys(payslip.items.deduction).forEach((key) => allItems.add(key));
+      }
+    });
+
+    return Array.from(allItems).sort();
+  };
 
   useEffect(() => {
     if (selectedInstitution && payrollPeriodId) {
@@ -864,16 +864,16 @@ export default function PayrollPeriodDetails() {
                       <TableHead className="font-semibold text-gray-700">Days</TableHead>
                       <TableHead className="font-semibold text-gray-700">Status</TableHead>
                       {/* Dynamic item columns */}
-                        {extractItems(displayedPayslips).map((itemName, index) => (
-                          <TableHead 
-                            key={itemName} 
-                            className={`text-center font-semibold text-gray-700 min-w-[100px] ${
-                              index === 0 ? 'border-l border-gray-200' : ''
-                            }`}
-                          >
-                            {itemName}
-                          </TableHead>
-                        ))}
+                      {extractItems(displayedPayslips).map((itemName, index) => (
+                        <TableHead
+                          key={itemName}
+                          className={`text-center font-semibold text-gray-700 min-w-[100px] ${
+                            index === 0 ? "border-l border-gray-200" : ""
+                          }`}
+                        >
+                          {itemName}
+                        </TableHead>
+                      ))}
                       <TableHead className="font-semibold text-gray-700 text-center sticky right-0 bg-white z-10 border-l">
                         Actions
                       </TableHead>
@@ -954,42 +954,51 @@ export default function PayrollPeriodDetails() {
                           )}
                         </TableCell>
                         {/* Dynamic item cells */}
-                          {extractItems(displayedPayslips).map((itemName, index) => {
-                            const allowanceItem = payslip.items?.allowance?.[itemName];
-                            const deductionItem = payslip.items?.deduction?.[itemName];
-                            
-                            let totalAmount = 0;
-                            let count = 0;
-                            let isDeduction = false;
-                            
-                            if (allowanceItem) {
-                              totalAmount = allowanceItem.reduce((sum, item) => sum + parseFloat(item.amount), 0);
-                              count = allowanceItem.length;
-                            } else if (deductionItem) {
-                              totalAmount = deductionItem.reduce((sum, item) => sum + parseFloat(item.amount), 0);
-                              count = deductionItem.length;
-                              isDeduction = true;
-                            }
-                            
-                            return (
-                              <TableCell key={itemName} className={`text-center ${index === 0 ? 'border-l border-gray-200' : ''}`}>
-                                {totalAmount > 0 ? (
-                                  <div className="space-y-1">
-                                    <div className={`font-semibold ${isDeduction ? 'text-red-600' : 'text-green-600'}`}>
-                                      {formatCurrency(totalAmount)}
-                                    </div>
-                                    {count > 1 && (
-                                      <div className="text-xs text-gray-500">
-                                        {count}x
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-400">-</span>
-                                )}
-                              </TableCell>
+                        {extractItems(displayedPayslips).map((itemName, index) => {
+                          const allowanceItem = payslip.items?.allowance?.[itemName];
+                          const deductionItem = payslip.items?.deduction?.[itemName];
+
+                          let totalAmount = 0;
+                          let count = 0;
+                          let isDeduction = false;
+
+                          if (allowanceItem) {
+                            totalAmount = allowanceItem.reduce(
+                              (sum, item) => sum + parseFloat(item.amount),
+                              0,
                             );
-                          })}
+                            count = allowanceItem.length;
+                          } else if (deductionItem) {
+                            totalAmount = deductionItem.reduce(
+                              (sum, item) => sum + parseFloat(item.amount),
+                              0,
+                            );
+                            count = deductionItem.length;
+                            isDeduction = true;
+                          }
+
+                          return (
+                            <TableCell
+                              key={itemName}
+                              className={`text-center ${index === 0 ? "border-l border-gray-200" : ""}`}
+                            >
+                              {totalAmount > 0 ? (
+                                <div className="space-y-1">
+                                  <div
+                                    className={`font-semibold ${isDeduction ? "text-red-600" : "text-green-600"}`}
+                                  >
+                                    {formatCurrency(totalAmount)}
+                                  </div>
+                                  {count > 1 && (
+                                    <div className="text-xs text-gray-500">{count}x</div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </TableCell>
+                          );
+                        })}
                         <TableCell className="sticky right-0 bg-white z-10 border-l">
                           <div className="flex justify-center">
                             <DropdownMenu>
@@ -1244,62 +1253,86 @@ export default function PayrollPeriodDetails() {
                       </TableRow>
                     ))}
                     {/* Totals Row */}
-                      <TableRow className="bg-gray-100 border-t-2 border-gray-300 font-semibold">
-                        <TableCell className="py-3 font-bold text-gray-900">
-                          TOTALS
-                        </TableCell>
-                        <TableCell className="text-center font-bold text-gray-900">
-                          {formatCurrency(displayedPayslips.reduce((sum, p) => sum + parseFloat(p.basic_salary || '0'), 0))}
-                        </TableCell>
-                        <TableCell className="text-center font-bold text-green-600">
-                          {formatCurrency(displayedPayslips.reduce((sum, p) => sum + parseFloat(p.total_allowances || '0'), 0))}
-                        </TableCell>
-                        <TableCell className="text-center font-bold text-red-600">
-                          {formatCurrency(displayedPayslips.reduce((sum, p) => sum + parseFloat(p.total_deductions || '0'), 0))}
-                        </TableCell>
-                        <TableCell className="text-center font-bold text-green-700">
-                          {formatCurrency(displayedPayslips.reduce((sum, p) => sum + parseFloat(p.net_salary || '0'), 0))}
-                        </TableCell>
-                        <TableCell className="text-center font-bold text-gray-900">
-                          {displayedPayslips.reduce((sum, p) => sum + p.days_worked, 0)}
-                        </TableCell>
-                        <TableCell className="text-center font-bold text-gray-900">
-                          {displayedPayslips.length} Total
-                        </TableCell>
-                        
-                        {/* Dynamic item totals */}
-                        {extractItems(displayedPayslips).map((itemName, index) => {
-                          let totalAmount = 0;
-                          let isDeduction = false;
-                          
-                          displayedPayslips.forEach(payslip => {
-                            const allowanceItem = payslip.items?.allowance?.[itemName];
-                            const deductionItem = payslip.items?.deduction?.[itemName];
-                            
-                            if (allowanceItem) {
-                              totalAmount += allowanceItem.reduce((sum, item) => sum + parseFloat(item.amount), 0);
-                            } else if (deductionItem) {
-                              totalAmount += deductionItem.reduce((sum, item) => sum + parseFloat(item.amount), 0);
-                              isDeduction = true;
-                            }
-                          });
-                          
-                          return (
-                            <TableCell 
-                              key={itemName} 
-                              className={`text-center font-bold ${index === 0 ? 'border-l border-gray-200' : ''} ${
-                                isDeduction ? 'text-red-600' : 'text-green-600'
-                              }`}
-                            >
-                              {totalAmount > 0 ? formatCurrency(totalAmount) : '-'}
-                            </TableCell>
-                          );
-                        })}
-                        
-                        <TableCell className="sticky right-0 bg-gray-100 z-10 border-l font-bold text-gray-900">
-                          {/* Empty for Actions column */}
-                        </TableCell>
-                      </TableRow>
+                    <TableRow className="bg-gray-100 border-t-2 border-gray-300 font-semibold">
+                      <TableCell className="py-3 font-bold text-gray-900">TOTALS</TableCell>
+                      <TableCell className="text-center font-bold text-gray-900">
+                        {formatCurrency(
+                          displayedPayslips.reduce(
+                            (sum, p) => sum + parseFloat(p.basic_salary || "0"),
+                            0,
+                          ),
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center font-bold text-green-600">
+                        {formatCurrency(
+                          displayedPayslips.reduce(
+                            (sum, p) => sum + parseFloat(p.total_allowances || "0"),
+                            0,
+                          ),
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center font-bold text-red-600">
+                        {formatCurrency(
+                          displayedPayslips.reduce(
+                            (sum, p) => sum + parseFloat(p.total_deductions || "0"),
+                            0,
+                          ),
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center font-bold text-green-700">
+                        {formatCurrency(
+                          displayedPayslips.reduce(
+                            (sum, p) => sum + parseFloat(p.net_salary || "0"),
+                            0,
+                          ),
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center font-bold text-gray-900">
+                        {displayedPayslips.reduce((sum, p) => sum + p.days_worked, 0)}
+                      </TableCell>
+                      <TableCell className="text-center font-bold text-gray-900">
+                        {displayedPayslips.length} Total
+                      </TableCell>
+
+                      {/* Dynamic item totals */}
+                      {extractItems(displayedPayslips).map((itemName, index) => {
+                        let totalAmount = 0;
+                        let isDeduction = false;
+
+                        displayedPayslips.forEach((payslip) => {
+                          const allowanceItem = payslip.items?.allowance?.[itemName];
+                          const deductionItem = payslip.items?.deduction?.[itemName];
+
+                          if (allowanceItem) {
+                            totalAmount += allowanceItem.reduce(
+                              (sum, item) => sum + parseFloat(item.amount),
+                              0,
+                            );
+                          } else if (deductionItem) {
+                            totalAmount += deductionItem.reduce(
+                              (sum, item) => sum + parseFloat(item.amount),
+                              0,
+                            );
+                            isDeduction = true;
+                          }
+                        });
+
+                        return (
+                          <TableCell
+                            key={itemName}
+                            className={`text-center font-bold ${index === 0 ? "border-l border-gray-200" : ""} ${
+                              isDeduction ? "text-red-600" : "text-green-600"
+                            }`}
+                          >
+                            {totalAmount > 0 ? formatCurrency(totalAmount) : "-"}
+                          </TableCell>
+                        );
+                      })}
+
+                      <TableCell className="sticky right-0 bg-gray-100 z-10 border-l font-bold text-gray-900">
+                        {/* Empty for Actions column */}
+                      </TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               </div>
