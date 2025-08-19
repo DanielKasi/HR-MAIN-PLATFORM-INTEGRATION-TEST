@@ -104,7 +104,6 @@ const LeaveTypesComponent = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
-  // Redux selectors
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[]
 
@@ -128,7 +127,7 @@ const LeaveTypesComponent = () => {
     gender_specific: "all",
   })
 
-  // Reset form data
+
   const resetFormData = () => {
     setFormData({
       name: "",
@@ -142,7 +141,6 @@ const LeaveTypesComponent = () => {
     })
   }
 
-  // Fetch leave types
   const fetchLeaveTypes = useCallback(
     async (showRefreshLoader = false) => {
       if (selectedInstitution?.id === undefined) {

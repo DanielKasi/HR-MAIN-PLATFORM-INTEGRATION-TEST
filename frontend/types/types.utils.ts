@@ -2258,3 +2258,32 @@ export interface ICalendarEvent {
   created_at: string;
   updated_at: string;
 }
+
+
+export interface AttendanceEmployee {
+  id: number;
+  full_name: string;
+  department: string;
+  position: string;
+}
+
+export interface AttendanceSummary {
+  present: number;
+  absent: number;
+  late: number;
+  leave: number;
+  total_working_days: number;
+}
+
+export interface AttendanceEmployeeData {
+  employee: AttendanceEmployee;
+  summary: AttendanceSummary;
+  daily_statuses: Record<string, string>;
+}
+
+export interface AttendanceResponse {
+  start_date: string;
+  end_date: string;
+  employees: AttendanceEmployeeData[];
+}
+

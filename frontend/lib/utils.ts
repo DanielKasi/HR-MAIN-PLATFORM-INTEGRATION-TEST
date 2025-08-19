@@ -98,6 +98,8 @@ import {
   IAssetAllocationFormData,
   IAssetReturn,
   IAssetReturnFormData,
+  AttendanceResponse,
+  IEmployeeTaxFormData,
 } from "@/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -4323,3 +4325,28 @@ export const calendarAPI = {
 };
 
 
+export async function fetchAttendanceData(
+  startDate?: string,
+  endDate?: string
+): Promise<AttendanceResponse> {
+  try {
+    let endpoint = 'employee/attendance-data/';
+    
+    const params = new URLSearchParams();
+    if (startDate) {
+      params.append('start_date', startDate);
+    }
+    if (endDate) {
+      params.append('end_date', endDate);
+    }
+    
+    if (params.toString()) {
+      endpoint += `?${params.toString()}`;
+    }
+    
+    return await apiRequest.get(endpoint);
+  } catch (error) {
+    console.error("Error fetching attendance data:", error);
+    throw error;
+  }
+}
