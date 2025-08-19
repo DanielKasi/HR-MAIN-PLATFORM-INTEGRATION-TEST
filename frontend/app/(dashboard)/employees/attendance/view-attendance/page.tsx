@@ -1,6 +1,15 @@
 "use client";
 
-import {useState, useMemo, useEffect} from "react";
+import {
+  useState,
+  useMemo,
+  useEffect,
+  JSXElementConstructor,
+  Key,
+  ReactElement,
+  ReactNode,
+  ReactPortal,
+} from "react";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
@@ -95,13 +104,12 @@ export default function AttendanceTable() {
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
   const [filters, setFilters] = useState<AttendanceFilters>({
-    startDate: "2025-07-20", // Set to a past date to see data
-    endDate: "2025-08-19", // Set to today to see data
+    startDate: "2025-07-20",
+    endDate: "2025-08-19",
     department: "all",
     position: "all",
   });
 
-  // Separate state for the form inputs (before applying filters)
   const [tempFilters, setTempFilters] = useState<AttendanceFilters>({
     startDate: "2025-07-20",
     endDate: "2025-08-19",
@@ -117,7 +125,6 @@ export default function AttendanceTable() {
     scope: "all",
   });
 
-  // Fetch data on component mount and when filters change (only for actual applied filters)
   useEffect(() => {
     if (selectedInstitution) {
       loadData();
@@ -130,36 +137,33 @@ export default function AttendanceTable() {
     try {
       setLoading(true);
       setError(null);
-
-      // Only fetch attendance data - we don't need getAllEmployees since attendance API has all the info
-      console.log("Fetching attendance data with dates:", filters.startDate, filters.endDate);
       const attendance = await fetchAttendanceData(filters.startDate, filters.endDate);
-      console.log("Attendance data received:", attendance);
       setAttendanceData(attendance);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
-      console.error("Error loading data:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Get unique departments and positions for filter dropdowns
   const departments = useMemo(() => {
     const actualData = (attendanceData as any)?.data || attendanceData;
     if (!actualData?.employees) return [];
-    const depts = [...new Set(actualData.employees.map((emp: any) => emp.employee.department))];
+    const depts = [
+      ...new Set(actualData.employees.map((emp: any) => emp.employee.department)),
+    ] as string[];
     return depts;
   }, [attendanceData]);
 
   const positions = useMemo(() => {
     const actualData = (attendanceData as any)?.data || attendanceData;
     if (!actualData?.employees) return [];
-    const pos = [...new Set(actualData.employees.map((emp: any) => emp.employee.position))];
+    const pos = [
+      ...new Set(actualData.employees.map((emp: any) => emp.employee.position)),
+    ] as string[];
     return pos;
   }, [attendanceData]);
 
-  // Get date range for columns
   const dateRange = useMemo(() => {
     const actualData = (attendanceData as any)?.data || attendanceData;
     if (!actualData) return [];
@@ -175,22 +179,13 @@ export default function AttendanceTable() {
     return dates;
   }, [attendanceData]);
 
-  // Create combined employee data with attendance info
   const employeesWithAttendance = useMemo(() => {
-    console.log("Processing attendance data:", attendanceData);
-
-    // Check if attendanceData has a 'data' property (Axios response)
     const actualData = (attendanceData as any)?.data || attendanceData;
-    console.log("Actual data:", actualData);
 
     if (!actualData?.employees) {
-      console.log("No attendance data or employees found");
       return [];
     }
 
-    console.log("Found employees:", actualData.employees.length);
-
-    // Use attendance data directly - this has all the employee info we need
     const result = actualData.employees.map((attendanceRecord: any) => ({
       employee: {
         id: attendanceRecord.employee.id,
@@ -202,36 +197,45 @@ export default function AttendanceTable() {
       daily_statuses: attendanceRecord.daily_statuses,
     }));
 
-    console.log("Processed employees:", result);
     return result;
   }, [attendanceData]);
 
-  // Filter employees based on current filters (using tempFilters for immediate UI feedback)
   const filteredEmployees = useMemo(() => {
-    return employeesWithAttendance.filter((emp: { employee: { department: string; position: string; }; }) => {
-      const deptMatch =
-        tempFilters.department === "all" || emp.employee.department === tempFilters.department;
-      const posMatch =
-        tempFilters.position === "all" || emp.employee.position === tempFilters.position;
-      return deptMatch && posMatch;
-    });
+    return employeesWithAttendance.filter(
+      (emp: {employee: {department: string; position: string}}) => {
+        const deptMatch =
+          tempFilters.department === "all" || emp.employee.department === tempFilters.department;
+        const posMatch =
+          tempFilters.position === "all" || emp.employee.position === tempFilters.position;
+        return deptMatch && posMatch;
+      },
+    );
   }, [tempFilters, employeesWithAttendance]);
 
   const downloadFilteredEmployees = useMemo(() => {
-    return employeesWithAttendance.filter((emp: { employee: { full_name: string; id: { toString: () => string | string[]; }; department: string; position: string; }; }) => {
-      const searchMatch =
-        downloadFilters.searchTerm === "" ||
-        emp.employee.full_name.toLowerCase().includes(downloadFilters.searchTerm.toLowerCase()) ||
-        emp.employee.id.toString().includes(downloadFilters.searchTerm);
+    return employeesWithAttendance.filter(
+      (emp: {
+        employee: {
+          full_name: string;
+          id: {toString: () => string | string[]};
+          department: string;
+          position: string;
+        };
+      }) => {
+        const searchMatch =
+          downloadFilters.searchTerm === "" ||
+          emp.employee.full_name.toLowerCase().includes(downloadFilters.searchTerm.toLowerCase()) ||
+          emp.employee.id.toString().includes(downloadFilters.searchTerm);
 
-      const deptMatch =
-        downloadFilters.department === "all" ||
-        emp.employee.department === downloadFilters.department;
-      const posMatch =
-        downloadFilters.position === "all" || emp.employee.position === downloadFilters.position;
+        const deptMatch =
+          downloadFilters.department === "all" ||
+          emp.employee.department === downloadFilters.department;
+        const posMatch =
+          downloadFilters.position === "all" || emp.employee.position === downloadFilters.position;
 
-      return searchMatch && deptMatch && posMatch;
-    });
+        return searchMatch && deptMatch && posMatch;
+      },
+    );
   }, [downloadFilters, employeesWithAttendance]);
 
   const handleFilterChange = (key: keyof AttendanceFilters, value: string) => {
@@ -256,28 +260,29 @@ export default function AttendanceTable() {
   const handleDownload = () => {
     const dataToDownload = downloadFilteredEmployees;
 
-    // Create Excel-compatible content with legend and data
     const legendData = Object.entries(attendanceCodes).map(([code, {label}]) => `${code},${label}`);
 
     const headers = ["Full Name", "Present", "Absent", "Late", "Leave", "Total Days"];
-    const employeeData = dataToDownload.map((emp: { employee: { full_name: any; }; summary: { present: any; absent: any; late: any; leave: any; total_working_days: any; }; }) => [
-      emp.employee.full_name,
-      emp.summary.present,
-      emp.summary.absent,
-      emp.summary.late,
-      emp.summary.leave,
-      emp.summary.total_working_days,
-    ]);
+    const employeeData = dataToDownload.map(
+      (emp: {
+        employee: {full_name: any};
+        summary: {present: any; absent: any; late: any; leave: any; total_working_days: any};
+      }) => [
+        emp.employee.full_name,
+        emp.summary.present,
+        emp.summary.absent,
+        emp.summary.late,
+        emp.summary.leave,
+        emp.summary.total_working_days,
+      ],
+    );
 
-    // Create Excel content with legend section and data section
     const excelContent = [
-      // Legend section
       "ATTENDANCE CODES",
       "Code,Description",
       ...legendData,
-      "", // Empty row separator
-      "", // Empty row separator
-      // Data section
+      "",
+      "",
       "ATTENDANCE REPORT",
       `Period: ${filters.startDate} to ${filters.endDate}`,
       "",
@@ -285,7 +290,6 @@ export default function AttendanceTable() {
       ...employeeData.map((row: any[]) => row.join(",")),
     ].join("\n");
 
-    // Download as Excel file
     const blob = new Blob([excelContent], {type: "application/vnd.ms-excel"});
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -574,43 +578,180 @@ export default function AttendanceTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredEmployees.map((emp) => (
-                  <TableRow key={emp.employee.id} className="border-b hover:bg-gray-50">
-                    <TableCell className="font-medium text-gray-900 sticky left-0 bg-white z-10 w-[150px] min-w-[150px]">
-                      {emp.employee.full_name}
-                    </TableCell>
-                    <TableCell className="text-center sticky left-[150px] bg-white z-10 w-[70px] min-w-[70px]">
-                      {emp.summary.present}
-                    </TableCell>
-                    <TableCell className="text-center sticky left-[220px] bg-white z-10 w-[70px] min-w-[70px]">
-                      {emp.summary.absent}
-                    </TableCell>
-                    <TableCell className="text-center sticky left-[290px] bg-white z-10 w-[70px] min-w-[70px]">
-                      {emp.summary.late}
-                    </TableCell>
-                    <TableCell className="text-center sticky left-[360px] bg-white z-10 w-[70px] min-w-[70px]">
-                      {emp.summary.leave}
-                    </TableCell>
-                    <TableCell className="text-center font-medium text-gray-900 sticky left-[430px] bg-white z-10 w-[100px] min-w-[100px]">
-                      {emp.summary.total_working_days}
-                    </TableCell>
-                    {dateRange.map((date) => {
-                      const status = emp.daily_statuses[date] || "N/A";
-                      const statusConfig = attendanceCodes[status] || attendanceCodes["ERR"];
-
-                      return (
-                        <TableCell key={date} className="text-center p-2">
-                          <span
-                            className={`px-1.5 py-0.5 rounded text-xs font-medium ${statusConfig.color}`}
-                            title={statusConfig.label}
+                {filteredEmployees.map(
+                  (emp: {
+                    employee: {
+                      id: Key | null | undefined;
+                      full_name:
+                        | string
+                        | number
+                        | bigint
+                        | boolean
+                        | ReactElement<unknown, string | JSXElementConstructor<any>>
+                        | Iterable<ReactNode>
+                        | ReactPortal
+                        | Promise<
+                            | string
+                            | number
+                            | bigint
+                            | boolean
+                            | ReactPortal
+                            | ReactElement<unknown, string | JSXElementConstructor<any>>
+                            | Iterable<ReactNode>
+                            | null
+                            | undefined
                           >
-                            {status}
-                          </span>
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                ))}
+                        | null
+                        | undefined;
+                    };
+                    summary: {
+                      present:
+                        | string
+                        | number
+                        | bigint
+                        | boolean
+                        | ReactElement<unknown, string | JSXElementConstructor<any>>
+                        | Iterable<ReactNode>
+                        | ReactPortal
+                        | Promise<
+                            | string
+                            | number
+                            | bigint
+                            | boolean
+                            | ReactPortal
+                            | ReactElement<unknown, string | JSXElementConstructor<any>>
+                            | Iterable<ReactNode>
+                            | null
+                            | undefined
+                          >
+                        | null
+                        | undefined;
+                      absent:
+                        | string
+                        | number
+                        | bigint
+                        | boolean
+                        | ReactElement<unknown, string | JSXElementConstructor<any>>
+                        | Iterable<ReactNode>
+                        | ReactPortal
+                        | Promise<
+                            | string
+                            | number
+                            | bigint
+                            | boolean
+                            | ReactPortal
+                            | ReactElement<unknown, string | JSXElementConstructor<any>>
+                            | Iterable<ReactNode>
+                            | null
+                            | undefined
+                          >
+                        | null
+                        | undefined;
+                      late:
+                        | string
+                        | number
+                        | bigint
+                        | boolean
+                        | ReactElement<unknown, string | JSXElementConstructor<any>>
+                        | Iterable<ReactNode>
+                        | ReactPortal
+                        | Promise<
+                            | string
+                            | number
+                            | bigint
+                            | boolean
+                            | ReactPortal
+                            | ReactElement<unknown, string | JSXElementConstructor<any>>
+                            | Iterable<ReactNode>
+                            | null
+                            | undefined
+                          >
+                        | null
+                        | undefined;
+                      leave:
+                        | string
+                        | number
+                        | bigint
+                        | boolean
+                        | ReactElement<unknown, string | JSXElementConstructor<any>>
+                        | Iterable<ReactNode>
+                        | ReactPortal
+                        | Promise<
+                            | string
+                            | number
+                            | bigint
+                            | boolean
+                            | ReactPortal
+                            | ReactElement<unknown, string | JSXElementConstructor<any>>
+                            | Iterable<ReactNode>
+                            | null
+                            | undefined
+                          >
+                        | null
+                        | undefined;
+                      total_working_days:
+                        | string
+                        | number
+                        | bigint
+                        | boolean
+                        | ReactElement<unknown, string | JSXElementConstructor<any>>
+                        | Iterable<ReactNode>
+                        | ReactPortal
+                        | Promise<
+                            | string
+                            | number
+                            | bigint
+                            | boolean
+                            | ReactPortal
+                            | ReactElement<unknown, string | JSXElementConstructor<any>>
+                            | Iterable<ReactNode>
+                            | null
+                            | undefined
+                          >
+                        | null
+                        | undefined;
+                    };
+                    daily_statuses: {[x: string]: string};
+                  }) => (
+                    <TableRow key={emp.employee.id} className="border-b hover:bg-gray-50">
+                      <TableCell className="font-medium text-gray-900 sticky left-0 bg-white z-10 w-[150px] min-w-[150px]">
+                        {emp.employee.full_name}
+                      </TableCell>
+                      <TableCell className="text-center sticky left-[150px] bg-white z-10 w-[70px] min-w-[70px]">
+                        {emp.summary.present}
+                      </TableCell>
+                      <TableCell className="text-center sticky left-[220px] bg-white z-10 w-[70px] min-w-[70px]">
+                        {emp.summary.absent}
+                      </TableCell>
+                      <TableCell className="text-center sticky left-[290px] bg-white z-10 w-[70px] min-w-[70px]">
+                        {emp.summary.late}
+                      </TableCell>
+                      <TableCell className="text-center sticky left-[360px] bg-white z-10 w-[70px] min-w-[70px]">
+                        {emp.summary.leave}
+                      </TableCell>
+                      <TableCell className="text-center font-medium text-gray-900 sticky left-[430px] bg-white z-10 w-[100px] min-w-[100px]">
+                        {emp.summary.total_working_days}
+                      </TableCell>
+                      {dateRange.map((date) => {
+                        const status = emp.daily_statuses[date] || "N/A";
+                        const statusConfig =
+                          attendanceCodes[status as keyof typeof attendanceCodes] ||
+                          attendanceCodes["ERR"];
+
+                        return (
+                          <TableCell key={date} className="text-center p-2">
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-xs font-medium ${statusConfig.color}`}
+                              title={statusConfig.label}
+                            >
+                              {status}
+                            </span>
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  ),
+                )}
               </TableBody>
             </Table>
           </div>
