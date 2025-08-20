@@ -304,6 +304,24 @@ class EmployeeAttendanceSerializer(serializers.ModelSerializer):
         rep["employee"] = EmployeeSerializer(instance.employee).data
         return rep
 
+    def validate(self, data):
+        # Temporarily instantiate the model to run your custom validation logic
+        instance = EmployeeAttendance(**data)
+        # Manually call your validation methods (adapt as needed)
+        if data.get('check_in_time') and (data.get('check_in_latitude') is not None or data.get('check_in_longitude') is not None):
+            if data.get('check_in_latitude') is None or data.get('check_in_longitude') is None:
+                raise serializers.ValidationError({"error": "Both check-in latitude and longitude must be provided if one is set."})
+            if not instance._is_location_valid(data['check_in_latitude'], data['check_in_longitude']):
+                raise serializers.ValidationError({"error": "Check-in location does not match any attached branch location."})
+        
+        if data.get('check_out_time') and (data.get('check_out_latitude') is not None or data.get('check_out_longitude') is not None):
+            if data.get('check_out_latitude') is None or data.get('check_out_longitude') is None:
+                raise serializers.ValidationError({"error": "Both check-out latitude and longitude must be provided if one is set."})
+            if not instance._is_location_valid(data['check_out_latitude'], data['check_out_longitude']):
+                raise serializers.ValidationError({"error": "Check-out location does not match any attached branch location."})
+        
+        return data    
+
 
 class EmployeeActivationSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False, allow_blank=True)
