@@ -639,38 +639,38 @@ class EmployeeAttendance(UtilityBaseModel):
                 return True
         return False
 
-    def clean(self):
-        super().clean()
+    # def clean(self):
+    #     super().clean()
 
-        Validate check-in location if provided
-        if self.check_in_time and (
-            self.check_in_latitude is not None or self.check_in_longitude is not None
-        ):
-            if self.check_in_latitude is None or self.check_in_longitude is None:
-                raise ValidationError(
-                    {"error": f"Both check-in latitude and longitude must be provided if one is set."}
-                )
-            if not self._is_location_valid(
-                self.check_in_latitude, self.check_in_longitude
-            ):
-                raise ValidationError(
-                    {"error": f"Check-in location does not match any attached branch location."}
-                )
+    #     Validate check-in location if provided
+    #     if self.check_in_time and (
+    #         self.check_in_latitude is not None or self.check_in_longitude is not None
+    #     ):
+    #         if self.check_in_latitude is None or self.check_in_longitude is None:
+    #             raise ValidationError(
+    #                 {"error": f"Both check-in latitude and longitude must be provided if one is set."}
+    #             )
+    #         if not self._is_location_valid(
+    #             self.check_in_latitude, self.check_in_longitude
+    #         ):
+    #             raise ValidationError(
+    #                 {"error": f"Check-in location does not match any attached branch location."}
+    #             )
 
-        # Validate check-out location if provided
-        if self.check_out_time and (
-            self.check_out_latitude is not None or self.check_out_longitude is not None
-        ):
-            if self.check_out_latitude is None or self.check_out_longitude is None:
-                raise ValidationError(
-                    {"error": f"Both check-out latitude and longitude must be provided if one is set."}
-                )
-            if not self._is_location_valid(
-                self.check_out_latitude, self.check_out_longitude
-            ):
-                raise ValidationError(
-                    {"error": f"Check-out location does not match any attached branch location."}
-                )
+    #     # Validate check-out location if provided
+    #     if self.check_out_time and (
+    #         self.check_out_latitude is not None or self.check_out_longitude is not None
+    #     ):
+    #         if self.check_out_latitude is None or self.check_out_longitude is None:
+    #             raise ValidationError(
+    #                 {"error": f"Both check-out latitude and longitude must be provided if one is set."}
+    #             )
+    #         if not self._is_location_valid(
+    #             self.check_out_latitude, self.check_out_longitude
+    #         ):
+    #             raise ValidationError(
+    #                 {"error": f"Check-out location does not match any attached branch location."}
+    #             )
         
 
     def save(self, *args, **kwargs):
