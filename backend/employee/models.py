@@ -286,7 +286,7 @@ class Employee(UtilityBaseModel):
             self.payroll_branch = self.get_default_branch()
 
         if self.position and hasattr(self.position, "salary"):
-            self.salary = self.position.salary
+            self.salary = self.position.salary_min
 
         if not self.employee_id:
             self.employee_id = self.generate_employee_id()

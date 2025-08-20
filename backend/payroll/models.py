@@ -109,7 +109,7 @@ class DeductionType(BaseModel, UtilityBaseModel):
             if self.is_recurring:
                 raise ValidationError(
                     {
-                        {"error": "is_recurring": "Attendance-related deductions cannot be recurring."}
+                        {"error": "Attendance-related deductions cannot be recurring."}
                     }
                 )
             if self.frequency:
