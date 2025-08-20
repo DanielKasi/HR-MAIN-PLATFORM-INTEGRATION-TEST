@@ -372,10 +372,12 @@ class PayrollPeriodSerializer(serializers.ModelSerializer):
         model = PayrollPeriod
         fields = "__all__"
 
+
 class PayslipItemSimpleSerializer(serializers.ModelSerializer):
     class Meta:
         model = PayslipItem
-        fields="__all__"
+        fields = "__all__"
+
 
 class PayslipSerializer(serializers.ModelSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
@@ -401,7 +403,9 @@ class PayslipSerializer(serializers.ModelSerializer):
             name = item.get("name")
             grouped_items[item_type][name].append(item)
 
-        rep["items"] = {item_type: dict(names) for item_type, names in grouped_items.items()}
+        rep["items"] = {
+            item_type: dict(names) for item_type, names in grouped_items.items()
+        }
 
         return rep
 
@@ -476,3 +480,13 @@ class AttendanceReportSerializer(serializers.Serializer):
             "payroll_period": PayrollPeriodSerializer(payroll_period).data,
             "employees": list(employee_data.values()),
         }
+
+
+class PayslipsExcelReportSerializer(serializers.Serializer):
+    payroll_period_id = serializers.IntegerField()
+
+    def validate_payroll_period_id(self, value):
+        try:
+            return PayrollPeriod.objects.get(id=value)
+        except PayrollPeriod.DoesNotExist:
+            raise serializers.ValidationError("Invalid payroll period ID")

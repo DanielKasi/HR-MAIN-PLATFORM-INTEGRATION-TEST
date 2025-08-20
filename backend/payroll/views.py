@@ -27,9 +27,10 @@ from .serializers import (
     PayslipGenerationInputSerializer,
     EmployeeTaxSerializer,
     AttendanceReportSerializer,
+    PayslipsExcelReportSerializer,
 )
 from employee.models import Employee
-from .utils import PayrollProcessor, generate_eft_excel
+from .utils import PayrollProcessor, generate_eft_excel, generate_allpayslips_excel
 from datetime import datetime
 from django.http import HttpResponse
 from django.utils.encoding import escape_uri_path
@@ -665,3 +666,46 @@ class PayrollPeriodAttendanceReportAPIView(APIView):
         }
 
         return paginator.get_paginated_response(paginated_response)
+
+
+class PayrollPeriodPayslipsExcelReportAPIView(APIView):
+    @extend_schema(
+        tags=["export-all-payslips2excel"],
+        request=PayslipsExcelReportSerializer,
+        responses={
+            200: None,
+            400: None,
+            404: None,
+            500: None,
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = PayslipsExcelReportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        payroll_period_id = serializer.validated_data["payroll_period_id"]
+
+        try:
+            excel_file = generate_allpayslips_excel(payroll_period_id)
+
+            filename = f"PAYROLL-PERIOD-PASSLIPS_REPORT_{datetime.now().strftime('%Y%m%d')}.xlsx"
+            response = HttpResponse(
+                excel_file.getvalue(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+            response["Content-Disposition"] = (
+                f'attachment; filename="{escape_uri_path(filename)}"'
+            )
+            return response
+
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            print(f"Unexpected error during attendance export: {e}")
+            return Response(
+                {
+                    "error": "An internal server error occurred while generating the Excel."
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

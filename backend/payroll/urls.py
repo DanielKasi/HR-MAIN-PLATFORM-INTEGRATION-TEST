@@ -69,4 +69,9 @@ urlpatterns = [
         PayrollPeriodAttendanceReportAPIView.as_view(),
         name="payroll-period-attendance-report",
     ),
+    path(
+        "export-passlips-report2excel/",
+        PayrollPeriodPayslipsExcelReportAPIView.as_view(),
+        name="export-passlips-report-2-excel",
+    ),
 ]
