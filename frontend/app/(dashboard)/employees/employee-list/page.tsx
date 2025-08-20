@@ -25,9 +25,13 @@ export default function EmployeesPage() {
     );
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number, refreshCallback?:()=>void) => {
+    if (!selectedInstitution) {
+      return;
+    }
     try {
-      await deleteEmployee({employeeId:id})
+      await deleteEmployee({employeeId:id, institutionId: selectedInstitution.id});
+      refreshCallback?.();
     } catch (err:unknown) {
       showErrorToast({error, defaultMessage: "Failed to delete employee"});
     }

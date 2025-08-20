@@ -225,11 +225,11 @@ class VerifyOTPAPIView(APIView):
                 {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        user_id = serializer.validated_data["user_id"]
+        email = serializer.validated_data["email"]
         otp = serializer.validated_data["otp"]
 
         try:
-            user = CustomUser.objects.get(id=user_id)
+            user = CustomUser.objects.get(email=email)
 
             success, message = verify_otp(user_id, received_otp=otp)
 
@@ -262,58 +262,6 @@ class VerifyOTPAPIView(APIView):
             )
 
 
-class ResendOTPView(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    @extend_schema(
-        request=ResendOTPSerializer,
-        responses={200: {"message": "string", "user_id": "integer"}},
-        description="Resend OTP to user",
-        summary="Resend OTP",
-        tags=["User Management"],
-    )
-    def post(self, request):
-        serializer = ResendOTPSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(
-                {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        user_id = serializer.validated_data["user_id"]
-
-        # Get the user from the database
-        try:
-            user = CustomUser.objects.get(id=user_id)
-
-            # Don't resend OTP if user is already verified
-            if user.is_email_verified:
-                return Response(
-                    {"message": "User is already verified"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            # Create and send new OTP
-            otp = create_and_institution_otp(
-                user_id=user.id, purpose=f"registration_{user.id}", expiry_minutes=15
-            )
-            send_otp_to_user(user, otp)
-
-            logger.info(f"OTP resent to user {user_id}")
-            return Response(
-                {"message": "OTP sent successfully", "user_id": user_id},
-                status=status.HTTP_200_OK,
-            )
-        except CustomUser.DoesNotExist:
-            logger.warning(f"User {user_id} not found during OTP resend")
-            return Response(
-                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            logger.error(f"Error resending OTP to user {user_id}: {str(e)}")
-            return Response(
-                {"error": "Failed to resend OTP"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
 
 
 class VerifyPasswordResetAPIView(APIView):
@@ -381,8 +329,8 @@ class ResendOTPAPIView(APIView):
             )
         try:
 
-            user_id = serializer.validated_data["user_id"]
-            user_instance = CustomUser.objects.get(id=user_id)
+            email = serializer.validated_data["email"]
+            user_instance = CustomUser.objects.get(email=email)
             otp = create_and_institution_otp(
                 user_id=user_instance.id, purpose="registration", expiry_minutes=15
             )

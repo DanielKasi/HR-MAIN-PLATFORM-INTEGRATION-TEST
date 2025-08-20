@@ -153,6 +153,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     dispatch(fetchUpToDateInstitution());
   }, [dispatch]);
 
+  useEffect(()=>{
+    setMobileMenuOpen(isSideBarOpen)
+  }, [isSideBarOpen])
+
   useEffect(() => {
     if (selectedInstitution) setInstitutionId(selectedInstitution.id.toString());
     else if (InstitutionsAttached && InstitutionsAttached.length > 0)
@@ -189,7 +193,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   }, []);
 
   useEffect(() => {
-    setMobileMenuOpen(false);
+    if(isMobile){
+      onCloseSidebar()
+    }
   }, [pathname]);
 
   useEffect(() => {
@@ -197,7 +203,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       if (mobileMenuOpen && isMobile) {
         const target = event.target as HTMLElement;
         if (!target.closest(".mobile-nav-drawer") && !target.closest(".mobile-menu-button")) {
-          setMobileMenuOpen(false);
+          onCloseSidebar()
         }
       }
     };
@@ -377,7 +383,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
 
   const onToggle = () => {
     if (isMobile) {
-      setMobileMenuOpen(!mobileMenuOpen);
+      // setMobileMenuOpen(!mobileMenuOpen);
+      dispatch(!isSideBarOpen ? openSideBar():closeSideBar());
+      console.log("Dispatching toggle action with sidebar state:", isSideBarOpen);
     } else {
       if (isSideBarOpen) {
         dispatch(closeSideBar());
@@ -386,6 +394,15 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       }
     }
   };
+
+  const onOpenSidebar = () => {
+      dispatch(openSideBar());
+  };
+
+  const onCloseSidebar = () => {
+      dispatch(closeSideBar());
+   }
+
 
   const markSetupAsComplete = async () => {
     if (!InstitutionId) return;
@@ -423,7 +440,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             } else {
               router.push(item.href);
               if (isMobileView) {
-                setMobileMenuOpen(false);
+                onToggle();
               }
             }
           }}
@@ -458,7 +475,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                   onClick={() => {
                     router.push(sub.href);
                     if (isMobileView) {
-                      setMobileMenuOpen(false);
+                      onToggle();
                     }
                   }}
                 >
@@ -515,7 +532,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
           {mobileMenuOpen && (
             <div
               className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
-              onClick={() => setMobileMenuOpen(false)}
+              // onClick={onCloseSidebar}
             />
           )}
 
@@ -546,7 +563,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={onToggle}
                 className="p-2 hover:bg-gray-100"
               >
                 <X className="h-5 w-5" />
@@ -582,7 +599,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
               }`}
             >
               {isMobile ? (
-                <Menu className="w-4 h-4 text-white" />
+                <Menu className="w-4 h-4" />
               ) : (
                 <Icon
                   icon={!isSideBarOpen ? "hugeicons:transition-right" : "hugeicons:transition-left"}
