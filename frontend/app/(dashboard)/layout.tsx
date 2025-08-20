@@ -124,7 +124,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [InstitutionId, setInstitutionId] = useState<string | null>(null);
-  const [isPathLoading, setIsPathLoading] = useState(false);
+  // const [isPathLoading, setIsPathLoading] = useState(false);
 
   const InstitutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
   const [InstitutionLogo, setInstitutionLogo] = useState<string | null>(null);
@@ -139,14 +139,14 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const dispatch = useDispatch();
   const router = useRouter();
 
-  useEffect(() => {
-    setIsPathLoading(true);
-    const timer = setTimeout(() => {
-      setIsPathLoading(false);
-    }, 500);
+  // useEffect(() => {
+  //   setIsPathLoading(true);
+  //   const timer = setTimeout(() => {
+  //     setIsPathLoading(false);
+  //   }, 500);
 
-    return () => clearTimeout(timer);
-  }, [pathname]);
+  //   return () => clearTimeout(timer);
+  // }, [pathname]);
 
   useEffect(() => {
     dispatch(fetchRemoteUserStart());
@@ -574,10 +574,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       >
         {/* Header */}
         <div className="bg-white p-4 flex justify-between items-center border-b min-h-16 h-20 max-h-20">
-          <div className="flex items-center gap-4 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={onToggle}
-              className={`mobile-menu-button w-8 h-8 z-[50] bg-primary rounded-full flex items-center justify-center transition-colors ${
+              className={`mobile-menu-button w-8 h-8 z-[50] bg-transparent rounded-full flex items-center justify-center transition-colors text-gray-600 ${
                 isMobile ? "" : ""
               }`}
             >
@@ -674,7 +674,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
           ) : (
             <CreateOrganisationWizard />
           )}
-          {isPathLoading ? <FixedLoader fixed={false} className="!bg-white/90 z-[100]" /> : <></>}
+          {/* {isPathLoading ? <FixedLoader fixed={false} className="!bg-white/90 z-[100]" /> : <></>} */}
         </div>
       </div>
 

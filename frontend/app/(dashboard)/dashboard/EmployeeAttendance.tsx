@@ -143,11 +143,11 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
             <span className="mb-2">Attendance ({employees.length})</span>
           </CardTitle>
           {/* Stats cards above search */}
-          <div className="flex flex-wrap gap-4 mb-16">
+          <div className="grid grid-cols-1 md:flex flex-wrap gap-4 mb-16">
             {stats.map((stat, idx) => (
               <div
                 key={idx}
-                className="flex-1 min-w-[160px] max-w-[210px] bg-white rounded-xl border border-gray-200 shadow-sm flex items-center gap-3 px-6 py-4"
+                className="w-full md:flex-1 md:min-w-[14rem] md:max-w-[20rem] bg-white rounded-xl border border-gray-200 shadow-sm flex items-center gap-3 px-6 py-4"
               >
                 <div className="text-xl">{stat.icon}</div>
                 <div>
@@ -229,7 +229,7 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
                           <span className="text-gray-400">N/A</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="min-w-[6rem]">
                         {record?.check_in_time ? (
                           <Badge className="bg-green-100 text-green-800">
                             {record.check_in_time}
@@ -245,7 +245,7 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
                           <span className="text-gray-400 text-lg">–</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="min-w-[6rem]">
                         {record ? (
                           record?.check_out_time ? (
                             <Badge className="bg-purple-100 text-purple-800">
