@@ -236,7 +236,7 @@ class ResignationRequest(UtilityBaseModel):
     @transaction.atomic
     def approve(self):
         if self.request_status != "submitted":
-            raise ValidationError("Only submitted requests can be approved.")
+            raise ValidationError({"error": "Only submitted requests can be approved."})
 
         self.request_status = "approved"
         self.save()
@@ -306,12 +306,12 @@ class TerminationInitiation(UtilityBaseModel):
     def clean(self):
         if self.separation.employee_separation_type.category != "termination":
             raise ValidationError(
-                "TerminationInitiation must be linked to a termination type separation."
+                {"error": "TerminationInitiation must be linked to a termination type separation."}
             )
 
     def approve(self):
         if self.initiation_status != "submitted":
-            raise ValidationError("Only submitted requests can be approved.")
+            raise ValidationError({"error": "Only submitted requests can be approved."})
 
         self.initiation_status = "approved"
 
@@ -384,12 +384,12 @@ class RetirementRequest(models.Model):
     def clean(self):
         if self.separation.employee_separation_type.category != "retirement":
             raise ValidationError(
-                "RetirementRequest must be linked to a retirement type separation."
+                {"error": "RetirementRequest must be linked to a retirement type separation."}
             )
 
     def approve(self):
         if self.request_status != "submitted":
-            raise ValidationError("Only submitted requests can be approved.")
+            raise ValidationError({"error": "Only submitted requests can be approved."})
 
         self.request_status = "approved"
         self.save()

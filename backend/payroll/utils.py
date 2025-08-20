@@ -22,6 +22,10 @@ from employee.models import Employee, EmployeeAttendance
 from leave_mgt.models import LeaveApplication
 from settings.models import SystemDay
 from recruitment.models import JobPosition
+from collections import defaultdict
+from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
+from decimal import Decimal
+from django.db.models import Prefetch
 
 
 DAY_CODE_TO_WEEKDAY = {
@@ -754,6 +758,125 @@ def generate_attendance_excel(
             cell.border = thin_border
 
     ws.freeze_panes = ws.cell(row=start_data_row + 1, column=len(headers) + 1)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
+
+
+def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
+    payslips = Payslip.objects.filter(
+        payroll_period_id=payroll_period_id
+    ).prefetch_related(
+        Prefetch("items"),
+        "employee__user",
+    )
+
+    if not payslips.exists():
+        raise ValueError("No payslips found for the given payroll period.")
+
+    allowance_names = set()
+    deduction_names = set()
+
+    for payslip in payslips:
+        for item in payslip.items.all():
+            if item.item_type == "allowance":
+                allowance_names.add(item.name)
+            elif item.item_type == "deduction":
+                deduction_names.add(item.name)
+
+    allowance_names = sorted(allowance_names)
+    deduction_names = sorted(deduction_names)
+
+    base_headers = [
+        "Full Name",
+        "Basic Salary",
+        "Gross Salary",
+        "Net Salary",
+    ]
+    deduction_headers = [f"Deduction - {name}" for name in deduction_names]
+    allowance_headers = [f"Allowance - {name}" for name in allowance_names]
+    final_headers = base_headers + deduction_headers + allowance_headers
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Payslips"
+
+    # Styling
+    bold_font = Font(bold=True)
+    center_align = Alignment(horizontal="center")
+    header_fill = PatternFill(
+        start_color="D9E1F2", end_color="D9E1F2", fill_type="solid"
+    )
+    total_fill = PatternFill(
+        start_color="E2EFDA", end_color="E2EFDA", fill_type="solid"
+    )
+    thin_border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
+    )
+
+    totals = defaultdict(Decimal)
+
+    # Write header in row 2
+    for col_idx, header in enumerate(final_headers, start=1):
+        cell = ws.cell(row=2, column=col_idx, value=header)
+        cell.font = bold_font
+        cell.alignment = center_align
+        cell.fill = header_fill
+        cell.border = thin_border
+        ws.column_dimensions[cell.column_letter].width = max(15, len(header) + 2)
+
+    for row_idx, payslip in enumerate(payslips, start=3):
+        employee = payslip.employee
+        employee_name = employee.user.fullname if employee.user else "N/A"
+
+        base_row = [
+            employee_name,
+            float(payslip.basic_salary),
+            float(payslip.gross_salary),
+            float(payslip.net_salary),
+        ]
+
+        deduction_map = defaultdict(lambda: Decimal("0.00"))
+        allowance_map = defaultdict(lambda: Decimal("0.00"))
+
+        for item in payslip.items.all():
+            if item.item_type == "deduction":
+                deduction_map[item.name] += item.amount
+            elif item.item_type == "allowance":
+                allowance_map[item.name] += item.amount
+
+        row = base_row
+        for name in deduction_names:
+            row.append(float(deduction_map.get(name, 0.00)))
+
+        for name in allowance_names:
+            row.append(float(allowance_map.get(name, 0.00)))
+
+        for col_idx, value in enumerate(row, start=1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=value)
+            cell.alignment = center_align
+            cell.border = thin_border
+
+            if isinstance(value, (int, float)):
+                totals[col_idx] += Decimal(str(value))
+
+    for col_idx in range(1, len(final_headers) + 1):
+        value = totals.get(col_idx)
+        if value is not None:
+            cell = ws.cell(row=1, column=col_idx, value=float(value))
+            cell.font = bold_font
+            cell.alignment = center_align
+            cell.fill = total_fill
+            cell.border = thin_border
+
+    ws.cell(row=1, column=1, value="TOTALS").font = bold_font
+
+    ws.freeze_panes = ws["A3"]
 
     output = BytesIO()
     wb.save(output)

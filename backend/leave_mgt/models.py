@@ -243,7 +243,7 @@ class LeaveApplication(UtilityBaseModel):
         from django.core.exceptions import ValidationError
 
         if self.start_date and self.end_date and self.start_date > self.end_date:
-            raise ValidationError("End date must be after start date")
+            raise ValidationError({"error": "End date must be after start date"})
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.leave_type.name} ({self.start_date} to {self.end_date})"

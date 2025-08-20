@@ -47,7 +47,23 @@ class JobPosition(UtilityBaseModel):
     offer_letter_template = models.FileField(
         upload_to="job_positions/offer_letters/", blank=True, null=True
     )
-    salary = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    
+    # Salary range fields
+    salary_min = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        blank=True, 
+        null=True,
+        help_text="Minimum salary for this position"
+    )
+    salary_max = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        blank=True, 
+        null=True,
+        help_text="Maximum salary for this position"
+    )
+    
     reports_to = models.ForeignKey(
         "self",
         on_delete=models.SET_NULL,
@@ -69,30 +85,73 @@ class JobPosition(UtilityBaseModel):
     )
     required_documents = GenericRelation(RequiredDocument, on_delete=models.CASCADE)
 
+    def clean(self):
+        """Validate that salary_max is greater than or equal to salary_min"""
+        super().clean()
+        if self.salary_min and self.salary_max:
+            if self.salary_max < self.salary_min:
+                raise ValidationError({
+                    'salary_max': 'Maximum salary must be greater than or equal to minimum salary.'
+                })
+
+    def save(self, *args, **kwargs):
+        """Override save to call clean validation"""
+        self.clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.name}"
 
+    @property
+    def salary_range_display(self):
+        """Display salary range as a formatted string"""
+        if self.salary_min and self.salary_max:
+            if self.salary_min == self.salary_max:
+                return f"${self.salary_min:,.2f}"
+            return f"${self.salary_min:,.2f} - ${self.salary_max:,.2f}"
+        elif self.salary_min:
+            return f"From ${self.salary_min:,.2f}"
+        elif self.salary_max:
+            return f"Up to ${self.salary_max:,.2f}"
+        return "Salary not specified"
+
+    @property
+    def salary_midpoint(self):
+        """Calculate the midpoint of the salary range"""
+        if self.salary_min and self.salary_max:
+            return (self.salary_min + self.salary_max) / 2
+        return None
+
+    def is_salary_in_range(self, salary_amount):
+        """Check if a given salary amount falls within the position's range"""
+        if not salary_amount:
+            return False
+        
+        min_ok = True if not self.salary_min else salary_amount >= self.salary_min
+        max_ok = True if not self.salary_max else salary_amount <= self.salary_max
+        
+        return min_ok and max_ok
+
     def activate_job_position(self):
         if self.job_position_status != "inactive":
-            raise ValidationError("Only inactive job positions can be activated.")
-
+            raise ValidationError({"error": "Only inactive job positions can be activated."})
         self.job_position_status = "active"
         self.save()
 
     def finish_workflow(self):
         from workflows.models import ApprovalTask
         from django.contrib.contenttypes.models import ContentType
-
+        
         content_type = ContentType.objects.get_for_model(self.__class__)
-
         tasks = ApprovalTask.objects.filter(
             content_type=content_type, object_id=self.pk
         )
-
+        
         if tasks.exists() and tasks.filter(status="rejected").exists():
             self.job_position_status = "inactive"
             self.save()
             return
+
         if (
             tasks.exists()
             and not tasks.filter(
@@ -154,7 +213,7 @@ class JobPositionAdvert(models.Model):
             if existing_active.exists():
                 conflicting_advert = existing_active.first()
                 raise ValidationError(
-                    f"There is already an active advert for '{self.job_position.name}' (ID: {conflicting_advert.pk})."
+                    {"error": f"There is already an active advert for '{self.job_position.name}' (ID: {conflicting_advert.pk})."}
                 )
 
     def save(self, *args, **kwargs):
@@ -166,7 +225,7 @@ class JobPositionAdvert(models.Model):
         """Approve the advert, ensuring it’s in the correct state."""
         if self.job_position_advert_status != "pending_approval":
             raise ValidationError(
-                "Only job position adverts with 'pending_approval' status can be approved."
+                {"error": "Only job position adverts with 'pending_approval' status can be approved."}
             )
         self.job_position_advert_status = "active"  # Fixed typo
         self.full_clean()  # Validate before saving

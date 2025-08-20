@@ -9,7 +9,7 @@
     import {Input} from "@/components/ui/input";
     import Link from "next/link";
     import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
-    import {getAllEmployees, getPaginatedEmployeesFromUrl, AttendanceAPI} from "@/lib/utils";
+    import {getAllEmployees, getPaginatedEmployeesFromUrl, AttendanceAPI, showErrorToast} from "@/lib/utils";
     import {IAttendance, IEmployee} from "@/types/types.utils";
     import {toast} from "sonner";
     import {CheckInModal} from "@/components/checkin-modal";
@@ -71,8 +71,7 @@
 
           await attendanceRefreshRef.current?.();
         } catch (error: any) {
-          const errorMessage = error?.detail || error?.message || "Failed to record check-in!";
-          toast.error(errorMessage);
+          showErrorToast({error, defaultMessage: "Failed to record check-in!" });
         }
       };
 
@@ -98,8 +97,7 @@
 
           await attendanceRefreshRef.current?.();
         } catch (error: any) {
-          const errorMessage = error?.detail || error?.message || "Failed to record check-out!";
-          toast.error(errorMessage);
+            showErrorToast({error, defaultMessage: "Failed to record check-in!" });
         }
       };
 
@@ -141,7 +139,7 @@
                   return (
                     <>
                       <div className="">
-                        <CardHeader>
+                        <CardHeader className="px-2 md:px-4">
                           <CardTitle className="flex items-center justify-between">
                             <span className="mb-2">Attendance ({employees.length})</span>
                           </CardTitle>

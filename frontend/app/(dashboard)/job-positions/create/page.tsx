@@ -11,13 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import { CreateDepartmentDialog } from "@/components/dialogs/create-department-dialog";
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
@@ -52,15 +46,19 @@ export default function CreateJobPositionPage() {
     reports_to: null,
     job_position_status: "inactive",
     offer_letter_template: null,
-    salary: "",
+    salary_min: "",
+    salary_max: "",
   });
   const [departments, setDepartments] = useState<IDepartment[]>([]);
   const [jobPositions, setJobPositions] = useState<IJobPosition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof JobPositionFormData, string>>>({});
-  const [salaryDisplay, setSalaryDisplay] = useState(
-    formData.salary ? formatWithCommas(String(formData.salary)) : "",
+  const [salaryMinDisplay, setSalaryMinDisplay] = useState(
+    formData.salary_min ? formatWithCommas(String(formData.salary_min)) : "",
+  );
+  const [salaryMaxDisplay, setSalaryMaxDisplay] = useState(
+    formData.salary_max ? formatWithCommas(String(formData.salary_max)) : "",
   );
 
   const router = useRouter();
@@ -68,8 +66,12 @@ export default function CreateJobPositionPage() {
   const selectedBranch = useSelector(selectSelectedBranch);
 
   useEffect(() => {
-    setSalaryDisplay(formData.salary ? formatWithCommas(String(formData.salary)) : "");
-  }, [formData.salary]);
+    setSalaryMinDisplay(formData.salary_min ? formatWithCommas(String(formData.salary_min)) : "");
+  }, [formData.salary_min]);
+
+  useEffect(() => {
+    setSalaryMaxDisplay(formData.salary_max ? formatWithCommas(String(formData.salary_max)) : "");
+  }, [formData.salary_max]);
 
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
@@ -137,10 +139,20 @@ export default function CreateJobPositionPage() {
       newErrors.department = "Please select a department";
     }
 
-    if (!formData.salary.trim()) {
-      newErrors.salary = "Salary is required";
-    } else if (isNaN(Number(formData.salary)) || Number(formData.salary) <= 0) {
-      newErrors.salary = "Please enter a valid salary amount";
+    if (!formData.salary_min.trim()) {
+      newErrors.salary_min = "Minimum salary is required";
+    } else if (isNaN(Number(formData.salary_min)) || Number(formData.salary_min) <= 0) {
+      newErrors.salary_min = "Please enter a valid minimum salary amount";
+    }
+
+    if (!formData.salary_max.trim()) {
+      newErrors.salary_max = "Maximum salary is required";
+    } else if (isNaN(Number(formData.salary_max)) || Number(formData.salary_max) <= 0) {
+      newErrors.salary_max = "Please enter a valid maximum salary amount";
+    }
+
+    if (formData.salary_min && formData.salary_max && Number(formData.salary_min) > Number(formData.salary_max)) {
+      newErrors.salary_max = "Maximum salary must be greater than minimum salary";
     }
 
     if (!formData.job_position_status) {
@@ -173,7 +185,8 @@ export default function CreateJobPositionPage() {
         name: formData.name.trim(),
         description: formData.description.trim(),
         department: formData.department!,
-        salary: Number(formData.salary),
+        salary_min: Number(formData.salary_min),
+        salary_max: Number(formData.salary_max),
         affected_employees: [],
         job_position_status: formData.job_position_status,
       };
@@ -267,30 +280,59 @@ export default function CreateJobPositionPage() {
                   {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
                 </div>
 
-                {/* Salary */}
                 <div className="space-y-2">
-                  <Label htmlFor="salary" className="text-sm font-medium">
-                    Salary *
+                  <Label htmlFor="salary_min" className="text-sm font-medium">
+                    Salary Range *
                   </Label>
+                  <div className="grid grid-cols-2 gap-2">
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">From UGX</span>
                   <Input
-                    id="salary"
+                    id="salary_min"
                     type="text"
                     inputMode="numeric"
                     placeholder="50,000"
-                    value={salaryDisplay}
+                    value={salaryMinDisplay}
                     onChange={(e) => {
                       const raw = e.target.value;
                       const numeric = unformat(raw);
 
                       if (!/^\d*$/.test(numeric)) return;
 
-                      setSalaryDisplay(formatWithCommas(numeric));
-                      updateFormData("salary", numeric);
+                      setSalaryMinDisplay(formatWithCommas(numeric));
+                      updateFormData("salary_min", numeric);
                     }}
-                    className={errors.salary ? "border-destructive" : ""}
+                    className={errors.salary_min ? "border-destructive" : ""}
                   />
-                  {errors.salary && <p className="text-sm text-destructive">{errors.salary}</p>}
+                  {errors.salary_min && <p className="text-sm text-destructive">{errors.salary_min}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">To UGX</span>
+                    <Input
+                    id="salary_max"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="75,000"
+                    value={salaryMaxDisplay}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const numeric = unformat(raw);
+
+                      if (!/^\d*$/.test(numeric)) return;
+
+                      setSalaryMaxDisplay(formatWithCommas(numeric));
+                      updateFormData("salary_max", numeric);
+                    }}
+                    className={errors.salary_max ? "border-destructive" : ""}
+                  />
+                  {errors.salary_max && <p className="text-sm text-destructive">{errors.salary_max}</p>}
+                  </div>
+                  </div>
+                  
                 </div>
+
+
 
                 {/* Department */}
                 <div className="space-y-2">

@@ -27,7 +27,6 @@ const AttendancePage = () => {
     router.push("attendance/view-attendance");
   };
 
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
@@ -86,19 +85,20 @@ const AttendancePage = () => {
       <div className="w-full">
         <div className="mb-8">
           <div className="flex flex-col w-full">
-
-              <div className="flex items-center justify-between w-full gap-8">
-                <h1 className="text-xl md:text-3xl font-bold text-gray-900 mb-2">Employee Attendance</h1>
-                <Button
-                  size="sm"
-                  onClick={handleViewAttendance}
-                  className="flex items-center gap-2  text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
-                >
-                  <Eye className="w-4 h-4" />
-                  <span className="hidden md:inline">View Attendance</span>
-                </Button>
-              </div>
-              <p className="text-muted-foreground">Manage daily attendance for your organization</p>
+            <div className="flex items-center justify-between w-full gap-8">
+              <h1 className="text-xl md:text-3xl font-bold text-gray-900 mb-2">
+                Employee Attendance
+              </h1>
+              <Button
+                size="sm"
+                onClick={handleViewAttendance}
+                className="flex items-center gap-2  text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                <span className="hidden sm:inline">View Attendance</span>
+              </Button>
+            </div>
+            <p className="text-muted-foreground">Manage daily attendance for your organization</p>
           </div>
         </div>
         <EmployeeAttendance

@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiGet, apiPatch } from "@/lib/apiRequest";
 import { handleApiError } from "@/lib/apiErrorHandler";
-import { PaginatedResponse } from "@/types/types.utils";
+import { IPaginatedResponse } from "@/types/types.utils";
 
 interface PermissionsByCategory {
   [categoryId: number]: {
@@ -67,7 +67,7 @@ export default function EditRolePage() {
 
   //       while (nextUrl) {
   //         const response = await apiGet(nextUrl);
-  //         const data = response.data as PaginatedResponse;
+  //         const data = response.data as IPaginatedResponse;
 
   //         console.log(`Fetched page with ${data.results.length} permissions`);
   //         allPermissions = [...allPermissions, ...data.results];

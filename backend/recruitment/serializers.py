@@ -231,10 +231,14 @@ class JobPositionSerializer(serializers.ModelSerializer):
         child=serializers.IntegerField(),
         write_only=True,
         required=False,
-        help_text="List of employee IDs to apply salary change to",
+        help_text="List of employee IDs to apply minimum salary to",
     )
     employees = EmployeeSerializer(many=True, read_only=True)
     required_documents = RequiredDocumentSerializer(many=True, required=False)
+    
+    # Add computed salary fields
+    salary_range_display = serializers.ReadOnlyField()
+    salary_midpoint = serializers.ReadOnlyField()
 
     class Meta:
         model = JobPosition
@@ -247,7 +251,10 @@ class JobPositionSerializer(serializers.ModelSerializer):
             "reports_to",
             "reports_to_details",
             "offer_letter_template",
-            "salary",
+            "salary_min",
+            "salary_max",  # Fixed typo: was "salery_max"
+            "salary_range_display",
+            "salary_midpoint",
             "job_adverts",
             "employees",
             "apply_salary_to_employees",
@@ -278,6 +285,16 @@ class JobPositionSerializer(serializers.ModelSerializer):
         return JobPositionAdvertSerializer(adverts, many=True).data
 
     def validate(self, attrs):
+        # Validate salary range
+        salary_min = attrs.get('salary_min')
+        salary_max = attrs.get('salary_max')
+        
+        if salary_min and salary_max and salary_max < salary_min:
+            raise serializers.ValidationError({
+                'salary_max': 'Maximum salary must be greater than or equal to minimum salary.'
+            })
+
+        # Validate employee IDs
         employee_ids = attrs.get("apply_salary_to_employees", [])
         if employee_ids:
             from employee.models import Employee
@@ -290,13 +307,14 @@ class JobPositionSerializer(serializers.ModelSerializer):
             if invalid_ids:
                 raise serializers.ValidationError(
                     {
-                        "apply_salary_to_employees": f"Some employee IDs are invalid: {list(invalid_ids)}"
+                        "error": f"Some employee IDs are invalid: {list(invalid_ids)}"
                     }
                 )
         return attrs
 
     def create(self, validated_data):
         documents_data = validated_data.pop("required_documents", [])
+        validated_data.pop("apply_salary_to_employees", [])  # Remove this from model creation
 
         job_position = JobPosition.objects.create(**validated_data)
 
@@ -340,11 +358,14 @@ class JobPositionSerializer(serializers.ModelSerializer):
 
         employee_ids = validated_data.pop("apply_salary_to_employees", [])
         documents_data = validated_data.pop("required_documents", None)
-        old_salary = instance.salary
-        new_salary = validated_data.get("salary", old_salary)
+        
+        # Get old and new salary_min for comparison
+        old_salary_min = instance.salary_min
+        new_salary_min = validated_data.get("salary_min", old_salary_min)
         
         instance = super().update(instance, validated_data)
 
+        # Update required documents if provided
         if documents_data is not None:
             instance.required_documents.all().delete()
             content_type = ContentType.objects.get_for_model(JobPosition)
@@ -355,10 +376,14 @@ class JobPositionSerializer(serializers.ModelSerializer):
                     **doc
                 )
 
-        if new_salary is not None and old_salary != new_salary and employee_ids:
-            Employee.objects.filter(id__in=employee_ids, position=instance).update(
-                salary=new_salary
-            )
+        # Apply salary_min to selected employees if it changed
+        if (new_salary_min is not None and 
+            old_salary_min != new_salary_min and 
+            employee_ids):
+            Employee.objects.filter(
+                id__in=employee_ids, 
+                position=instance
+            ).update(salary=new_salary_min)
 
         return instance
 
@@ -399,6 +424,6 @@ class JobInterviewSerializer(serializers.ModelSerializer):
 
             if rating is not None and (rating < 1 or rating > 10):
                 raise serializers.ValidationError(
-                    {"rating": "Rating must be between 1 and 10."}
+                    {"error": "Rating must be between 1 and 10."}
                 )
         return attrs

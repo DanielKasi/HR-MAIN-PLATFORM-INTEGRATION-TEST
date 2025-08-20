@@ -72,7 +72,7 @@ import type {
   JobApplication,
   JobApplicationFormData,
   JobPositionAdvert,
-  PaginatedResponse,
+  IPaginatedResponse,
 } from "@/types/types.utils";
 import { selectUser, selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { selectApplicationForm } from "@/store/miscellaneous/selectors";

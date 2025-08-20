@@ -52,12 +52,12 @@ class TaskTimeSheetSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
 
         if not request or not request.user.is_authenticated:
-            raise serializers.ValidationError("User context is required.")
+            raise serializers.ValidationError({"error": "User context is required."})
 
         current_user_profile = getattr(request.user, "profile", None)
 
         if not current_user_profile:
-            raise serializers.ValidationError("User must have a profile.")
+            raise serializers.ValidationError({"error": "User must have a profile."})
 
         task = self.instance.task if self.instance else None
 
@@ -65,13 +65,13 @@ class TaskTimeSheetSerializer(serializers.ModelSerializer):
             task_leaders = task.leaders.all()
             if current_user_profile not in task_leaders:
                 raise serializers.ValidationError(
-                    "Only task leaders can update timesheets for this task"
+                    {"error": "Only task leaders can update timesheets for this task"}
                 )
 
             if start_time and not self.instance.start_time:
                 if task.status != "not_started":
                     raise serializers.ValidationError(
-                        "Start time can only be set when the task is not started"
+                        {"error": "Start time can only be set when the task is not started"}
                     )
 
         current_start = self.instance.start_time if self.instance else None
@@ -82,7 +82,7 @@ class TaskTimeSheetSerializer(serializers.ModelSerializer):
 
         if final_start and final_end:
             if final_start >= final_end:
-                raise serializers.ValidationError("Start time must be before end time")
+                raise serializers.ValidationError({"error": "Start time must be before end time"})
 
         return data
 
@@ -94,14 +94,14 @@ class TaskTimeSheetSerializer(serializers.ModelSerializer):
         ):
             if self.instance.start_time is not None:
                 raise serializers.ValidationError(
-                    "Start time can only be set once and cannot be changed"
+                    {"error": "Start time can only be set once and cannot be changed"}
                 )
 
         return value
 
     def create(self, validated_data):
         raise serializers.ValidationError(
-            "Timesheets are automatically created when tasks are created."
+            {"error": "Timesheets are automatically created when tasks are created."}
         )
 
     def update(self, instance, validated_data):
@@ -112,7 +112,7 @@ class TaskTimeSheetSerializer(serializers.ModelSerializer):
         current_user_profile = request.user.profile
 
         if current_user_profile not in instance.task.leaders.all():
-            raise serializers.ValidationError("Only task leaders can update timesheets")
+            raise serializers.ValidationError({"error": "Only task leaders can update timesheets"})
 
         task = instance.task
 
@@ -182,7 +182,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         member_ids = [member.id for member in members]
 
         if not institution:
-            raise serializers.ValidationError("Institution is required")
+            raise serializers.ValidationError({"error": "Institution is required"})
 
         from users.models import Profile
 
@@ -194,7 +194,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             invalid_leaders = set(leader_ids) - set(valid_leaders)
             if invalid_leaders:
                 raise serializers.ValidationError(
-                    f"Leaders with IDs {list(invalid_leaders)} do not belong to the selected institution"
+                    {"error": f"Leaders with IDs {list(invalid_leaders)} do not belong to the selected institution"}
                 )
 
         if members:
@@ -205,7 +205,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             invalid_members = set(member_ids) - set(valid_members)
             if invalid_members:
                 raise serializers.ValidationError(
-                    f"Members with IDs {list(invalid_members)} do not belong to the selected institution"
+                    {"error": f"Members with IDs {list(invalid_members)} do not belong to the selected institution"}
                 )
 
         return data
@@ -300,7 +300,7 @@ class TaskSerializer(serializers.ModelSerializer):
         assigned_to = data.get("assigned_to", [])
 
         if not project:
-            raise serializers.ValidationError("Project is required.")
+            raise serializers.ValidationError({"error": "Project is required."})
 
         leaders_ids = [leader.id for leader in leaders]
         assigned_to_ids = [profile.id for profile in assigned_to]
@@ -316,7 +316,7 @@ class TaskSerializer(serializers.ModelSerializer):
 
             if invalid_leaders:
                 raise serializers.ValidationError(
-                    f"Leaders with IDs {list(invalid_leaders)} do not belong to the institution."
+                    {"error": f"Leaders with IDs {list(invalid_leaders)} do not belong to the institution."}
                 )
 
         if assigned_to:
@@ -330,7 +330,7 @@ class TaskSerializer(serializers.ModelSerializer):
         end_date = data.get("end_date")
 
         if start_date and end_date and start_date > end_date:
-            raise serializers.ValidationError("Start date cannot be after end date.")
+            raise serializers.ValidationError({"error": "Start date cannot be after end date."})
         return data
 
     @transaction.atomic

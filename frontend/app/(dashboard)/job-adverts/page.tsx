@@ -37,7 +37,7 @@ import {
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { getJobPositionAdverts, updateJobPositionAdvert } from "@/lib/utils";
-import type { JobPositionAdvert, JobAdvertStatus, PaginatedResponse } from "@/types/types.utils";
+import type { JobPositionAdvert, JobAdvertStatus, IPaginatedResponse } from "@/types/types.utils";
 import { toast } from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/types/types.utils";
@@ -129,7 +129,7 @@ export default function JobAdvertsPage() {
         }
         setError("");
 
-       const response: PaginatedResponse<JobPositionAdvert> = await getJobPositionAdverts({
+       const response: IPaginatedResponse<JobPositionAdvert> = await getJobPositionAdverts({
         institutionId: selectedInstitution.id,
       });
 

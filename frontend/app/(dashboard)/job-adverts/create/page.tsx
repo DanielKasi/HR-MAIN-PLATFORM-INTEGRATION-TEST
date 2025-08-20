@@ -25,7 +25,7 @@ import {
 import type {
   JobPositionAdvert,
   JobAdvertStatus,
-  PaginatedResponse,
+  IPaginatedResponse,
   JobPositionAdvertFormData,
   JobAdvertCompleteFormData,
   IJobPosition,
@@ -699,7 +699,7 @@ export default function JobAdvertsPage() {
         }
         setError("")
 
-        const response: PaginatedResponse<JobPositionAdvert> = await getJobPositionAdverts({
+        const response: IPaginatedResponse<JobPositionAdvert> = await getJobPositionAdverts({
           institutionId: selectedInstitution.id,
         })
 

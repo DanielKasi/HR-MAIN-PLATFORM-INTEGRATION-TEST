@@ -60,7 +60,7 @@ import {
   PaginatedEmployeeResponse,
   PaginatedIOnboardingResponse,
   ILeaveBalance,
-  PaginatedResponse,
+  IPaginatedResponse,
   IContract,
   IContractFormData,
   IDocumentTypeFormData,
@@ -104,10 +104,10 @@ import {
 
 import apiRequest, { apiGet } from "./apiRequest";
 import { IEmployee } from "@/types/types.utils";
-import { IPaginatedResponse, Role } from "@/types";
 import { AxiosError, AxiosRequestConfig } from "axios";
 import { toast } from "sonner";
 import { error } from "console";
+import { Role } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -271,7 +271,7 @@ export const deleteDepartment = async ({ departmentId }: { departmentId: number 
 export const getDepartments = async ({ institutionId }: { institutionId: number }) => {
   try {
     const response = await apiRequest.get(`institution/${institutionId}/department/`);
-    const data = response.data as PaginatedResponse<IDepartment>;
+    const data = response.data as IPaginatedResponse<IDepartment>;
     return data.results;
   } catch (error) {
     throw error
@@ -281,7 +281,7 @@ export const getDepartments = async ({ institutionId }: { institutionId: number 
 export const getJobPositions = async ({ institutionId }: { institutionId: number }) => {
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`);
-    const data = response.data as PaginatedResponse<IJobPosition>;
+    const data = response.data as IPaginatedResponse<IJobPosition>;
     return data.results;
   } catch (error) {
     throw error;
@@ -338,7 +338,8 @@ export const createJobPosition = async ({
     if (jobPositionData.reports_to) {
       formData.append("reports_to", jobPositionData.reports_to.toString());
     }
-    formData.append("salary", jobPositionData.salary.toString());
+    formData.append("salary_min", jobPositionData.salary_min.toString());
+    formData.append("salary_max", jobPositionData.salary_max.toString());
     formData.append("job_position_status", jobPositionData.job_position_status.toString());
 
     if (jobPositionData.offer_letter_template) {
@@ -375,8 +376,8 @@ export const updateJobPosition = async ({
     if (jobPositionData.reports_to) {
       formData.append("reports_to", jobPositionData.reports_to.toString());
     }
-    formData.append("salary", jobPositionData.salary.toString());
-
+    formData.append("salary_min", jobPositionData.salary_min.toString());
+    formData.append("salary_max", jobPositionData.salary_max.toString());
     formData.append("job_position_status", jobPositionData.job_position_status.toString());
 
     if (jobPositionData.offer_letter_template) {
@@ -434,12 +435,12 @@ export const getJobApplications = async ({
   institutionId,
 }: {
   institutionId: number;
-}): Promise<PaginatedResponse<JobApplication> | null> => {
+}): Promise<IPaginatedResponse<JobApplication> | null> => {
   try {
     const response = await apiRequest.get(
       `recruitment/institution/${institutionId}/job-application/`,
     );
-    return response.data as PaginatedResponse<JobApplication>;
+    return response.data as IPaginatedResponse<JobApplication>;
   } catch (error) {
     // console.error("Failed to fetch job applications", error);
     throw error;
@@ -742,7 +743,7 @@ export const getInterviewStages = async ({
     const response = await apiRequest.get(
       `recruitment/institution/${institutionId}/interview-stage/`,
     );
-    const data = response.data as PaginatedResponse<IInterviewStage>;
+    const data = response.data as IPaginatedResponse<IInterviewStage>;
 
     // Return the results array instead of the entire response
     return data.results;
@@ -963,14 +964,14 @@ export const getAllEmployees = async ({ institutionId, page = 1, search, }: {
     }
     const endpoint = `employee/${institutionId}/employee/?${params.toString()}`;
     const response = await apiRequest.get(endpoint);
-    return response.data as PaginatedResponse<IEmployee>;
+    return response.data as IPaginatedResponse<IEmployee>;
 };
 
 
 
-export const getPaginatedEmployeesFromUrl = async ({ url }: { url: string }): Promise<PaginatedResponse<IEmployee>> => {
+export const getPaginatedEmployeesFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IEmployee>> => {
     const response = await apiRequest.get(url);
-    return response.data as PaginatedResponse<IEmployee>;
+    return response.data as IPaginatedResponse<IEmployee>;
 };
 
 
@@ -1089,7 +1090,7 @@ export const getRoles = async ({ institutionId }: { institutionId: number }): Pr
 export const getPositions = async ({ institutionId }: { institutionId: number }) => {
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`);
-    const data = response.data as PaginatedResponse<IJobPosition>;
+    const data = response.data as IPaginatedResponse<IJobPosition>;
     return data.results;
   } catch (error) {
     // console.error("Error fetching positions:", error);
@@ -1225,19 +1226,27 @@ export const createWorkType = async ({
   }
 };
 
-export const getWorkTypes = async ({
-  institutionId,
-}: {
-  institutionId: number;
-}): Promise<IWorkType[]> => {
-  try {
-    const response = await apiRequest.get(`employee/work-types/`);
-    const data = response.data as PaginatedResponse<IWorkType>;
-    return data.results;
-  } catch (error) {
-    // console.error("Failed to fetch work types:", error);
-    return [];
-  }
+
+export const getWorkTypes = async ({ institutionId, page = 1, search, }: { 
+  institutionId: number, 
+  page?: number;
+  search?: string; 
+})=> {
+        const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    const response = await apiRequest.get(`employee/work-types/?${params.toString()}`);
+    const data = response.data as IPaginatedResponse<IWorkType>;
+    return data
+};
+
+export const getPaginatedWorkTypesFromUrl = async ({ url }: { url: string })=> {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IWorkType>;
 };
 
 export const updateWorkType = async ({
@@ -1296,16 +1305,30 @@ export const createEmployeeType = async ({
 
 export const getEmployeeTypes = async ({
   institutionId,
+  page = 1,
+  search,
 }: {
   institutionId: number;
-}): Promise<IEmployeeType[]> => {
+  page?: number;
+  search?: string;
+}): Promise<IPaginatedResponse<IEmployeeType>> => {
   try {
-    const response = await apiRequest.get(`employee/employee-types/`);
-    const data = response.data as PaginatedResponse<IEmployeeType>;
-    return data.results;
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+    if (search) {
+      params.append("search", search);
+    }
+    const response = await apiRequest.get(`employee/employee-types/?${params.toString()}`);
+    return response.data as IPaginatedResponse<IEmployeeType>;
   } catch (error) {
     throw error;
   }
+};
+
+export const getPaginatedEmployeeTypesFromUrl = async ({ url }: { url: string }) => {
+  const response = await apiRequest.get(url);
+  return response.data as IPaginatedResponse<IEmployeeType>;
 };
 
 export const updateEmployeeType = async ({
@@ -1461,7 +1484,7 @@ export const getDisciplineTypes = async ({
       `discipline/discipline-types/?institution=${institutionId}`,
     );
 
-    const data = response.data as PaginatedResponse<DisciplineTypeResponse>;
+    const data = response.data as IPaginatedResponse<DisciplineTypeResponse>;
 
     // Return the results array instead of the entire response
     return data.results;
@@ -1470,15 +1493,32 @@ export const getDisciplineTypes = async ({
   }
 };
 
-export const getDisciplinaryActions = async (): Promise<DisciplinaryActionAPIResponse[] | null> => {
+export const getDisciplinaryActions = async ({
+  institutionId,
+  page = 1,
+  search,
+}: {
+  institutionId?: number;
+  page?: number;
+  search?: string;
+}): Promise<IPaginatedResponse<DisciplinaryActionAPIResponse>> => {
   try {
-    const response = await apiRequest.get(`discipline/disciplinary-actions/`);
-
-    const data = response.data as PaginatedResponse<DisciplinaryActionAPIResponse>;
-    return data.results;
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+    if (search) {
+      params.append("search", search);
+    }
+    const response = await apiRequest.get(`discipline/disciplinary-actions/?institution=${institutionId}&${params.toString()}`);
+    return response.data as IPaginatedResponse<DisciplinaryActionAPIResponse>;
   } catch (error) {
     throw error;
   }
+};
+
+export const getPaginatedDisciplinaryActionsFromUrl = async ({ url }: { url: string }) => {
+  const response = await apiRequest.get(url);
+  return response.data as IPaginatedResponse<DisciplinaryActionAPIResponse>;
 };
 
 export const updateDisciplinaryAction = async ({
@@ -1984,7 +2024,7 @@ export const getAllowanceTypes = async (
 )=> {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/allowance-types/`);
-    const data = response.data as PaginatedResponse<IAllowanceType>;
+    const data = response.data as IPaginatedResponse<IAllowanceType>;
 
     // Return the results array instead of the entire response
     return data.results;
@@ -1999,7 +2039,7 @@ export const getAllLeaveBalances = async ({ institutionId }: { institutionId: nu
   try {
     const endpoint = `leave-mgt/${institutionId}/leave-balances/`;
     const response = await apiRequest.get(endpoint);
-    const data = response.data as PaginatedResponse<ILeaveBalance>;
+    const data = response.data as IPaginatedResponse<ILeaveBalance>;
 
     // Return the results array instead of the entire response
     return data.results;
@@ -2138,7 +2178,7 @@ export const getDeductionTypes = async (
 ) => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/deduction-types/`);
-    const data = response.data as PaginatedResponse<IDeductionType>;
+    const data = response.data as IPaginatedResponse<IDeductionType>;
 
     // Return the results array instead of the entire response
     return data.results;
@@ -2563,7 +2603,7 @@ export const getPayrollPeriods = async (
 ): Promise<IPayrollPeriod[] | null> => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/payroll-periods/`);
-    const data = response.data as PaginatedResponse<IPayrollPeriod>;
+    const data = response.data as IPaginatedResponse<IPayrollPeriod>;
 
     // Return the results array instead of the entire response
     return data.results;
@@ -2918,7 +2958,7 @@ export const getPayslips = async (
     const url = `payroll/${institutionId}/payslips/${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
     const response = await apiRequest.get(url);
 
-    const data = response.data as PaginatedResponse<IPayslip>;
+    const data = response.data as IPaginatedResponse<IPayslip>;
 
     // Return the results array instead of the entire response
     return data.results;
@@ -3009,7 +3049,7 @@ export const getPaidPayslips = async (institutionId: number): Promise<IPayslip[]
 export const getPayslipItems = async (payslipId: number)=> {
   try {
     const response = await apiRequest.get(`payroll/payslips/${payslipId}/items/`);
-    const data = response.data as PaginatedResponse<IPayslipItem>;
+    const data = response.data as IPaginatedResponse<IPayslipItem>;
 
     // Return the results array instead of the entire response
     return data.results;
@@ -3019,19 +3059,32 @@ export const getPayslipItems = async (payslipId: number)=> {
   }
 };
 
-export const getContracts = async ({
-  institutionId,
-}: {
-  institutionId: number;
-}): Promise<IContract[] | null> => {
-  try {
-    const response = await apiRequest.get(`employee/employee-contracts/`);
-    const data = response.data as PaginatedResponse<IContract>;
-    return data.results;
-  } catch (error) {
-    // console.error("Failed to fetch contracts:", error);
-    throw error;
-  }
+export const getContracts = async ({ institutionId, page = 1, search, }: { 
+  institutionId: number, 
+  page?: number;
+  search?: string; 
+})=>{
+
+
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+
+    const endpoint = `employee/employee-contracts/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IContract>;
+
+};
+
+
+
+export const getPaginatedContractsFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IContract>> => {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IContract>;
 };
 
 export const getContractById = async ({
@@ -3131,7 +3184,7 @@ export const getDocumentTypes = async ({
 }): Promise<IDocumentType[]> => {
   try {
     const response = await apiRequest.get(`documents/institution/${institutionId}/types/`);
-    const data = response.data as PaginatedResponse<IDocumentType>;
+    const data = response.data as IPaginatedResponse<IDocumentType>;
     return data.results;
   } catch (error) {
     return [];
@@ -3242,7 +3295,7 @@ export const getDocumentTemplates = async ({
 }): Promise<IDocumentTemplate[]> => {
   try {
     const response = await apiRequest.get(`documents/institution/${institutionId}/templates/`);
-    const data = response.data as PaginatedResponse<IDocumentTemplate>;
+    const data = response.data as IPaginatedResponse<IDocumentTemplate>;
     return data.results;
   } catch (error) {
     return [];
@@ -3270,11 +3323,11 @@ export const TerminationInitiationsAPI = {
     searchParams,
   }: {
     searchParams?: URLSearchParams;
-  }): Promise<PaginatedResponse<ITermination>> => {
+  }): Promise<IPaginatedResponse<ITermination>> => {
     try {
       const queryString = searchParams ? `?${searchParams}` : "";
       const response = await apiRequest.get(`on-boarding/termination-initiations/${queryString}`);
-      return response.data as PaginatedResponse<ITermination>;
+      return response.data as IPaginatedResponse<ITermination>;
     } catch (error) {
       throw error;
     }
@@ -3362,10 +3415,10 @@ export const SeparationPolicyTypesAPI = {
   }: {
     institutionId: number;
     searchParams?: URLSearchParams;
-  }): Promise<PaginatedResponse<ISeparationType>> => {
+  }): Promise<IPaginatedResponse<ISeparationType>> => {
     try {
       const response = await apiRequest.get(`on-boarding/separation-types/?${searchParams}`);
-      return response.data as PaginatedResponse<ISeparationType>;
+      return response.data as IPaginatedResponse<ISeparationType>;
     } catch (error) {
       throw error;
     }
@@ -3502,7 +3555,7 @@ export const AttendanceAPI = {
 
   fetchAttendanceRecordsFromUrl: async (url: string) => {
     const response = await apiRequest.get(url);
-    return response.data as PaginatedResponse<IAttendance>;
+    return response.data as IPaginatedResponse<IAttendance>;
   },
 
   // Fetch attendance records for a specific employee over a date range
@@ -3517,7 +3570,7 @@ export const AttendanceAPI = {
     if (endDate) params.push(`end_date=${endDate}`);
     if (params.length) url += `?${params.join("&")}`;
     const response = await apiRequest.get(url);
-    return response.data as PaginatedResponse<IAttendance>;
+    return response.data as IPaginatedResponse<IAttendance>;
   },
 
   // Update an attendance record by ID
@@ -3759,7 +3812,7 @@ export const payrollAPI = {
     const url = `payroll/${institutionId}/payslips/${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
     const response = await apiRequest.get(url);
 
-    const data = response.data as PaginatedResponse<IPayslip>;
+    const data = response.data as IPaginatedResponse<IPayslip>;
 
     // Return the results array instead of the entire response
     return data.results;
@@ -3790,7 +3843,7 @@ export const payrollAPI = {
     const url = `/payroll/payslips/by-payroll/${payrollId}/${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
     const response = await apiRequest.get(url);
 
-    const data = response.data as PaginatedResponse<IPayslip>;
+    const data = response.data as IPaginatedResponse<IPayslip>;
 
     // Return the results array instead of the entire response
     return data;
@@ -4380,7 +4433,8 @@ export async function fetchAttendanceData(
 }
 
 export const showErrorToast = ({error, defaultMessage}: {error: any, defaultMessage?: string}) => {
-  const errorMessage = error?.detail || error?.message || defaultMessage || "An unexpected error occurred.";
+  console.log("\n\n The received error is", error);
+  const errorMessage = (error?.error  && Array.isArray(error?.error)) ? error.error [0] : error?.detail || error?.message ||  defaultMessage || "An unexpected error occurred.";
   toast.error(errorMessage);
 }
 
