@@ -107,6 +107,7 @@ import { IEmployee } from "@/types/types.utils";
 import { IPaginatedResponse, Role } from "@/types";
 import { AxiosError, AxiosRequestConfig } from "axios";
 import { toast } from "sonner";
+import { error } from "console";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -948,16 +949,30 @@ export const bulkCreateEmployees = async ({
   }
 };
 
-export const getAllEmployees = async ({ institutionId }: { institutionId: number }) => {
-  try {
-    const endpoint = `employee/${institutionId}/employee/`;
+export const getAllEmployees = async ({ institutionId, page = 1, search, }: { 
+  institutionId: number, 
+  page?: number;
+  search?: string; 
+})=> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    const endpoint = `employee/${institutionId}/employee/?${params.toString()}`;
     const response = await apiRequest.get(endpoint);
-    const data = response.data as PaginatedResponse<IEmployee>;
-    return data.results;
-  } catch (error) {
-    throw error;
-  }
+    return response.data as PaginatedResponse<IEmployee>;
 };
+
+
+
+export const getPaginatedEmployeesFromUrl = async ({ url }: { url: string }): Promise<PaginatedResponse<IEmployee>> => {
+    const response = await apiRequest.get(url);
+    return response.data as PaginatedResponse<IEmployee>;
+};
+
 
 export const createEmployee = async ({
   institutionId,
@@ -1030,6 +1045,16 @@ export const updateEmployee = async ({
   } catch (error: any) {
     throw new Error("Failed to update employee. Please try again.");
   }
+};
+
+export const deleteEmployee = async ({
+  employeeId,
+  institutionId
+}: {
+  employeeId: number;
+  institutionId:number;
+}) => {
+    await apiRequest.delete(`/employee/${institutionId}/${employeeId}/delete/`);
 };
 
 export const getEmployeeById = async ({ employeeId }: { employeeId: number | string }) => {
@@ -3469,9 +3494,15 @@ export const AttendanceAPI = {
     return response.data;
   },
 
-  fetchAttendanceRecords: async (date?: string) => {
+  fetchAttendanceRecords: async ({date, institutionId,search, page }:{date?: string,institutionId?:number,  page?: number;
+  search?: string; }) => {
     const response = await apiRequest.get(`/employee/attendance/${date ? `?date=${date}` : ""}`);
     return response.data as IPaginatedResponse<IAttendance>;
+  },
+
+  fetchAttendanceRecordsFromUrl: async (url: string) => {
+    const response = await apiRequest.get(url);
+    return response.data as PaginatedResponse<IAttendance>;
   },
 
   // Fetch attendance records for a specific employee over a date range
@@ -4328,8 +4359,7 @@ export const calendarAPI = {
 export async function fetchAttendanceData(
   startDate?: string,
   endDate?: string
-): Promise<AttendanceResponse> {
-  try {
+){
     let endpoint = 'employee/attendance-data/';
     
     const params = new URLSearchParams();
@@ -4344,9 +4374,13 @@ export async function fetchAttendanceData(
       endpoint += `?${params.toString()}`;
     }
     
-    return await apiRequest.get(endpoint);
-  } catch (error) {
-    console.error("Error fetching attendance data:", error);
-    throw error;
-  }
+    const response =  await apiRequest.get(endpoint);
+    return response.data as AttendanceResponse;
+
 }
+
+export const showErrorToast = ({error, defaultMessage}: {error: any, defaultMessage?: string}) => {
+  const errorMessage = error?.detail || error?.message || defaultMessage || "An unexpected error occurred.";
+  toast.error(errorMessage);
+}
+

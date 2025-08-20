@@ -24,7 +24,7 @@ import {Badge} from "@/components/ui/badge";
 import {Users, Building, Info, FileSpreadsheet, UserCheck} from "lucide-react";
 import {TableSkeleton} from "@/components/common/table-skeleton";
 import {fetchAttendanceData} from "@/lib/utils";
-import type {AttendanceResponse, IDepartment, IEmployee, IJobPosition} from "@/types/types.utils";
+import type {AttendanceEmployeeData, AttendanceResponse, IDepartment, IEmployee, IJobPosition} from "@/types/types.utils";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution, selectAccessToken} from "@/store/auth/selectors";
 import {getDepartments, getJobPositions, fetchEmployees} from "@/lib/utils";
@@ -127,6 +127,7 @@ export default function AttendanceTable() {
     selectedPositions: [],
   });
   const [excelDownloading, setExcelDownloading] = useState(false);
+  const [filteredEmployees, setFilteredEmployees] = useState<AttendanceEmployeeData[]>([]);
 
   useEffect(() => {
     const loadFiltersData = async () => {
@@ -197,13 +198,12 @@ export default function AttendanceTable() {
   }, [attendanceData]);
 
   const employeesWithAttendance = useMemo(() => {
-    const actualData = (attendanceData as any)?.data || attendanceData;
 
-    if (!actualData?.employees) {
+    if (!attendanceData?.employees) {
       return [];
     }
 
-    const result = actualData.employees.map((attendanceRecord: any) => ({
+    const result = attendanceData.employees.map((attendanceRecord) => ({
       employee: {
         id: attendanceRecord.employee.id,
         full_name: attendanceRecord.employee.full_name,
@@ -217,8 +217,8 @@ export default function AttendanceTable() {
     return result;
   }, [attendanceData]);
 
-  const filteredEmployees = useMemo(() => {
-    return employeesWithAttendance.filter((emp: any) => {
+  useEffect(()=>{
+    const data =  attendanceData?.employees.filter((emp: any) => {
       if (tempFilters.filterType === "all") return true;
 
       if (tempFilters.filterType === "department") {
@@ -235,7 +235,28 @@ export default function AttendanceTable() {
 
       return true;
     });
-  }, [tempFilters, employeesWithAttendance]);
+    setFilteredEmployees(data || []);
+  }, [tempFilters, attendanceData])
+
+  // const filteredEmployees = useMemo(() => {
+  //   return attendanceData?.employees.filter((emp: any) => {
+  //     if (tempFilters.filterType === "all") return true;
+
+  //     if (tempFilters.filterType === "department") {
+  //       return (
+  //         tempFilters.filterValue === "all" || emp.employee.department === tempFilters.filterValue
+  //       );
+  //     }
+
+  //     if (tempFilters.filterType === "position") {
+  //       return (
+  //         tempFilters.filterValue === "all" || emp.employee.position === tempFilters.filterValue
+  //       );
+  //     }
+
+  //     return true;
+  //   });
+  // }, [tempFilters, employeesWithAttendance]);
 
   const handleFilterChange = (key: keyof AttendanceFilters, value: string) => {
     setTempFilters((prev) => ({

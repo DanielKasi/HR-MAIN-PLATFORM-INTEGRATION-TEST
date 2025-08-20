@@ -1,23 +1,18 @@
 "use client";
-import React, {useState, useEffect, useMemo} from "react";
+import React, {useState, useEffect} from "react";
 import EmployeeAttendance from "../../dashboard/EmployeeAttendance";
-import {BarChart2, UserCheck, UserX, Users, Eye} from "lucide-react";
-import {AttendanceAPI, getAllEmployees} from "@/lib/utils";
+import {Eye} from "lucide-react";
+
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 
-import {IAttendance, IEmployee, PERMISSION_CODES} from "@/types/types.utils";
-import {toast} from "sonner";
 import {TableSkeleton} from "@/components/common/table-skeleton";
 import {Card, CardHeader} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
-import ProtectedComponent from "@/components/ProtectedComponent";
+// import ProtectedComponent from "@/components/ProtectedComponent";
 
 const AttendancePage = () => {
-  const [search, setSearch] = useState("");
-  const [employees, setEmployees] = useState<IEmployee[]>([]);
-  const [attendance, setAttendance] = useState<IAttendance[]>([]);
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,67 +20,13 @@ const AttendancePage = () => {
   const router = useRouter();
 
   useEffect(() => {
-    loadEmployees();
-    handleFetchAttendance();
+    setLoading(false);
   }, [selectedInstitution]);
-
-  const loadEmployees = async () => {
-    if (!selectedInstitution) {
-      return;
-    }
-    try {
-      setLoading(true);
-      const data = await getAllEmployees({institutionId: selectedInstitution.id});
-      setEmployees(data);
-    } catch (err: any) {
-      setError("Failed to load employees");
-      toast.error(err?.message || err?.detail || "Failed to load employees");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFetchAttendance = async () => {
-    if (!selectedInstitution) {
-      return;
-    }
-    try {
-      setLoading(true);
-      const response = await AttendanceAPI.fetchAttendanceRecords();
-      setAttendance(response.results);
-    } catch (error: any) {
-      let errorMessage = error?.message || error?.detail || "Failed to fetch attendance records";
-      toast.error(errorMessage);
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleViewAttendance = () => {
     router.push("attendance/view-attendance");
   };
 
-  const stats = useMemo(() => {
-    const total = employees.length;
-    const checkedIn = attendance.filter((a) => a.check_in_time).length;
-    const checkedOut = attendance.filter((a) => a.check_out_time).length;
-    const absent = total - checkedIn;
-    return [
-      {label: "Total Employees", value: total, icon: <Users className="text-blue-500 w-5 h-5" />},
-      {
-        label: "Checked In",
-        value: checkedIn,
-        icon: <UserCheck className="text-green-500 w-5 h-5" />,
-      },
-      {
-        label: "Checked Out",
-        value: checkedOut,
-        icon: <UserX className="text-purple-500 w-5 h-5" />,
-      },
-      {label: "Absent", value: absent, icon: <BarChart2 className="text-red-500 w-5 h-5" />},
-    ];
-  }, [attendance, employees.length]);
 
   if (loading) {
     return (
@@ -144,31 +85,26 @@ const AttendancePage = () => {
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="w-full">
         <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Attendance</h1>
+          <div className="flex flex-col w-full">
+
+              <div className="flex items-center justify-between w-full gap-8">
+                <h1 className="text-xl md:text-3xl font-bold text-gray-900 mb-2">Employee Attendance</h1>
+                <Button
+                  size="sm"
+                  onClick={handleViewAttendance}
+                  className="flex items-center gap-2  text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span className="hidden md:inline">View Attendance</span>
+                </Button>
+              </div>
               <p className="text-muted-foreground">Manage daily attendance for your organization</p>
-            </div>
-            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ATTENDANCE_RECORDS}>
-              <Button
-                onClick={handleViewAttendance}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
-              >
-                <Eye className="w-4 h-4" />
-                View Attendance
-              </Button>
-            </ProtectedComponent>
           </div>
         </div>
         <EmployeeAttendance
-          employees={employees}
-          search={search}
-          setSearch={setSearch}
-          attendance={attendance}
-          setAttendance={setAttendance}
+          selectedInstitution={selectedInstitution}
           selectedDate={selectedDate}
           setSelectedDate={setSelectedDate}
-          stats={stats}
         />
       </div>
     </div>

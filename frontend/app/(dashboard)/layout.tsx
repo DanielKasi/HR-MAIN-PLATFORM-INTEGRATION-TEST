@@ -124,7 +124,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [InstitutionId, setInstitutionId] = useState<string | null>(null);
-  const [isPathLoading, setIsPathLoading] = useState(false);
+  // const [isPathLoading, setIsPathLoading] = useState(false);
 
   const InstitutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
   const [InstitutionLogo, setInstitutionLogo] = useState<string | null>(null);
@@ -139,19 +139,23 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const dispatch = useDispatch();
   const router = useRouter();
 
-  useEffect(() => {
-    setIsPathLoading(true);
-    const timer = setTimeout(() => {
-      setIsPathLoading(false);
-    }, 500);
+  // useEffect(() => {
+  //   setIsPathLoading(true);
+  //   const timer = setTimeout(() => {
+  //     setIsPathLoading(false);
+  //   }, 500);
 
-    return () => clearTimeout(timer);
-  }, [pathname]);
+  //   return () => clearTimeout(timer);
+  // }, [pathname]);
 
   useEffect(() => {
     dispatch(fetchRemoteUserStart());
     dispatch(fetchUpToDateInstitution());
   }, [dispatch]);
+
+  useEffect(()=>{
+    setMobileMenuOpen(isSideBarOpen)
+  }, [isSideBarOpen])
 
   useEffect(() => {
     if (selectedInstitution) setInstitutionId(selectedInstitution.id.toString());
@@ -189,7 +193,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   }, []);
 
   useEffect(() => {
-    setMobileMenuOpen(false);
+    if(isMobile){
+      onCloseSidebar()
+    }
   }, [pathname]);
 
   useEffect(() => {
@@ -197,7 +203,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       if (mobileMenuOpen && isMobile) {
         const target = event.target as HTMLElement;
         if (!target.closest(".mobile-nav-drawer") && !target.closest(".mobile-menu-button")) {
-          setMobileMenuOpen(false);
+          onCloseSidebar()
         }
       }
     };
@@ -377,7 +383,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
 
   const onToggle = () => {
     if (isMobile) {
-      setMobileMenuOpen(!mobileMenuOpen);
+      // setMobileMenuOpen(!mobileMenuOpen);
+      dispatch(!isSideBarOpen ? openSideBar():closeSideBar());
+      console.log("Dispatching toggle action with sidebar state:", isSideBarOpen);
     } else {
       if (isSideBarOpen) {
         dispatch(closeSideBar());
@@ -386,6 +394,15 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       }
     }
   };
+
+  const onOpenSidebar = () => {
+      dispatch(openSideBar());
+  };
+
+  const onCloseSidebar = () => {
+      dispatch(closeSideBar());
+   }
+
 
   const markSetupAsComplete = async () => {
     if (!InstitutionId) return;
@@ -423,7 +440,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             } else {
               router.push(item.href);
               if (isMobileView) {
-                setMobileMenuOpen(false);
+                onToggle();
               }
             }
           }}
@@ -458,7 +475,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                   onClick={() => {
                     router.push(sub.href);
                     if (isMobileView) {
-                      setMobileMenuOpen(false);
+                      onToggle();
                     }
                   }}
                 >
@@ -515,7 +532,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
           {mobileMenuOpen && (
             <div
               className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
-              onClick={() => setMobileMenuOpen(false)}
+              // onClick={onCloseSidebar}
             />
           )}
 
@@ -546,7 +563,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={onToggle}
                 className="p-2 hover:bg-gray-100"
               >
                 <X className="h-5 w-5" />
@@ -574,15 +591,15 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       >
         {/* Header */}
         <div className="bg-white p-4 flex justify-between items-center border-b min-h-16 h-20 max-h-20">
-          <div className="flex items-center gap-4 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={onToggle}
-              className={`mobile-menu-button w-8 h-8 z-[50] bg-primary rounded-full flex items-center justify-center transition-colors ${
+              className={`mobile-menu-button w-8 h-8 z-[50] bg-transparent rounded-full flex items-center justify-center transition-colors text-gray-600 ${
                 isMobile ? "" : ""
               }`}
             >
               {isMobile ? (
-                <Menu className="w-4 h-4 text-white" />
+                <Menu className="w-4 h-4" />
               ) : (
                 <Icon
                   icon={!isSideBarOpen ? "hugeicons:transition-right" : "hugeicons:transition-left"}
@@ -674,7 +691,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
           ) : (
             <CreateOrganisationWizard />
           )}
-          {isPathLoading ? <FixedLoader fixed={false} className="!bg-white/90 z-[100]" /> : <></>}
+          {/* {isPathLoading ? <FixedLoader fixed={false} className="!bg-white/90 z-[100]" /> : <></>} */}
         </div>
       </div>
 
