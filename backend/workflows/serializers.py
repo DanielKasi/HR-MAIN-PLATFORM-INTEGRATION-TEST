@@ -192,7 +192,7 @@ class ReorderStepsSerializer(serializers.Serializer):
         for item in value:
             if set(item.keys()) != {"id", "level"}:
                 raise serializers.ValidationError(
-                    "Each entry must contain exactly 'id' and 'level'."
+                    {"error": "Each entry must contain exactly 'id' and 'level'."}
                 )
         return value
 

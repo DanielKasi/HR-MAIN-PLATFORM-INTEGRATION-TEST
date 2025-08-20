@@ -13,7 +13,7 @@ class SystemConfigurationSerializer(serializers.ModelSerializer):
         Validate the input data, ensuring institution is provided and name is not empty.
         """
         if not data.get("name"):
-            raise serializers.ValidationError({"name": "This field cannot be empty."})
+            raise serializers.ValidationError({"error": "This field cannot be empty."})
         return data
 
 

@@ -54,7 +54,7 @@ class OffboardingStageSerializer(serializers.ModelSerializer):
 
     def validate_stage_name(self, value):
         if not value:
-            raise serializers.ValidationError("Stage name cannot be empty.")
+            raise serializers.ValidationError({"error": "Stage name cannot be empty."})
         return value
 
     def create(self, validated_data):
@@ -69,10 +69,10 @@ class OffboardingStageSerializer(serializers.ModelSerializer):
         try:
             institution = Institution.objects.get(id=institution.id)
         except Institution.DoesNotExist:
-            raise serializers.ValidationError("Institution does not exist.")
+            raise serializers.ValidationError({"error": "Institution does not exist."})
 
         if not institution:
-            raise serializers.ValidationError("Institution is required.")
+            raise serializers.ValidationError({"error": "Institution is required."})
 
         validated_data["institution"] = institution
 
@@ -103,7 +103,7 @@ class InstitutionEmployeeSeparationTypesSerializer(serializers.ModelSerializer):
 
     def validate_separation_type(self, value):
         if not value:
-            raise serializers.ValidationError("Separation type cannot be empty.")
+            raise serializers.ValidationError({"error": "Separation type cannot be empty."})
         return value
 
     def create(self, validated_data):
@@ -118,10 +118,10 @@ class InstitutionEmployeeSeparationTypesSerializer(serializers.ModelSerializer):
         try:
             institution = Institution.objects.get(id=institution.id)
         except Institution.DoesNotExist:
-            raise serializers.ValidationError("Institution does not exist.")
+            raise serializers.ValidationError({"error": "Institution does not exist."})
 
         if not institution:
-            raise serializers.ValidationError("Institution is required.")
+            raise serializers.ValidationError({"error": "Institution is required."})
 
         validated_data["institution"] = institution
 
@@ -229,13 +229,13 @@ class ResignationRequestSerializer(serializers.ModelSerializer):
 
         if not employee:
             raise serializers.ValidationError(
-                "Employee context is required for resignation requests."
+                {"error": "Employee context is required for resignation requests."}
             )
 
         institution = getattr(employee, "institution", None)
 
         if not institution:
-            raise serializers.ValidationError("Employee's institution is not set.")
+            raise serializers.ValidationError({"error": "Employee's institution is not set."})
 
         try:
             separation_type = InstitutionEmployeeSeparationTypes.objects.get(
@@ -245,7 +245,7 @@ class ResignationRequestSerializer(serializers.ModelSerializer):
             )
         except InstitutionEmployeeSeparationTypes.DoesNotExist:
             raise serializers.ValidationError(
-                "Resignation separation type is not configured for this institution."
+                {"error": "Resignation separation type is not configured for this institution."}
             )
 
         active_sep = EmployeeSeparation.objects.filter(
@@ -259,7 +259,7 @@ class ResignationRequestSerializer(serializers.ModelSerializer):
             and ResignationRequest.objects.filter(separation=active_sep).exists()
         ):
             raise serializers.ValidationError(
-                "An active resignation request already exists for this employee."
+                {"error": "An active resignation request already exists for this employee."}
             )
 
         data["employee"] = employee
@@ -371,13 +371,13 @@ class RetirementRequestSerializer(serializers.ModelSerializer):
 
         if not employee:
             raise serializers.ValidationError(
-                "Employee context is required for retirement requests."
+                {"error": "Employee context is required for retirement requests."}
             )
 
         institution = getattr(employee, "institution", None)
 
         if not institution:
-            raise serializers.ValidationError("Employee's institution is not set.")
+            raise serializers.ValidationError({"error": "Employee's institution is not set."})
 
         try:
             separation_type = InstitutionEmployeeSeparationTypes.objects.get(
@@ -387,7 +387,7 @@ class RetirementRequestSerializer(serializers.ModelSerializer):
             )
         except InstitutionEmployeeSeparationTypes.DoesNotExist:
             raise serializers.ValidationError(
-                "Retirement separation type is not configured for this institution."
+                {"error": "Retirement separation type is not configured for this institution."}
             )
 
         active_sep = EmployeeSeparation.objects.filter(
@@ -401,7 +401,7 @@ class RetirementRequestSerializer(serializers.ModelSerializer):
             and RetirementRequest.objects.filter(separation=active_sep).exists()
         ):
             raise serializers.ValidationError(
-                "An active retirement request already exists for this employee."
+                {"error": "An active retirement request already exists for this employee."}
             )
 
         data["employee"] = employee
@@ -518,12 +518,12 @@ class TerminationInitiationSerializer(serializers.ModelSerializer):
         try:
             employee = Employee.objects.get(id=value)
         except Employee.DoesNotExist:
-            raise serializers.ValidationError("Employee does not exist.")
+            raise serializers.ValidationError({"error": "Employee does not exist."})
 
         if getattr(user, "institution", None) != employee.department.institution:
             print("\n\n\n Employee belongs to institution : ", employee.department.institution, "\n\n Your institution is ", getattr(user, "institution"))
             raise serializers.ValidationError(
-                "You are not authorized to terminate this employee."
+                {"error": "You are not authorized to terminate this employee."}
             )
 
         self._validated_employee = employee
@@ -545,7 +545,7 @@ class TerminationInitiationSerializer(serializers.ModelSerializer):
             )
         except InstitutionEmployeeSeparationTypes.DoesNotExist:
             raise serializers.ValidationError(
-                "Termination separation type not configured for this institution."
+                {"error": "Termination separation type not configured for this institution."}
             )
 
         last_working_day = validated_data.get("last_working_day", None)

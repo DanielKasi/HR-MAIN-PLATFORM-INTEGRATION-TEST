@@ -74,7 +74,7 @@ class JobPosition(UtilityBaseModel):
 
     def activate_job_position(self):
         if self.job_position_status != "inactive":
-            raise ValidationError("Only inactive job positions can be activated.")
+            raise ValidationError({"error": "Only inactive job positions can be activated."})
 
         self.job_position_status = "active"
         self.save()
@@ -154,7 +154,7 @@ class JobPositionAdvert(models.Model):
             if existing_active.exists():
                 conflicting_advert = existing_active.first()
                 raise ValidationError(
-                    f"There is already an active advert for '{self.job_position.name}' (ID: {conflicting_advert.pk})."
+                    {"error": f"There is already an active advert for '{self.job_position.name}' (ID: {conflicting_advert.pk})."}
                 )
 
     def save(self, *args, **kwargs):
@@ -166,7 +166,7 @@ class JobPositionAdvert(models.Model):
         """Approve the advert, ensuring it’s in the correct state."""
         if self.job_position_advert_status != "pending_approval":
             raise ValidationError(
-                "Only job position adverts with 'pending_approval' status can be approved."
+                {"error": "Only job position adverts with 'pending_approval' status can be approved."}
             )
         self.job_position_advert_status = "active"  # Fixed typo
         self.full_clean()  # Validate before saving
