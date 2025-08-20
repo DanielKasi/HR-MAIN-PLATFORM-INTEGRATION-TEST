@@ -16,7 +16,7 @@ import {Badge} from "@/components/ui/badge";
 import {Users, Building, Info, FileSpreadsheet, UserCheck} from "lucide-react";
 import {TableSkeleton} from "@/components/common/table-skeleton";
 import {fetchAttendanceData} from "@/lib/utils";
-import type {AttendanceEmployeeData, AttendanceResponse, IDepartment, IEmployee, IJobPosition} from "@/types/types.utils";
+import type {AttendanceResponse, IDepartment, IEmployee, IJobPosition} from "@/types/types.utils";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution, selectAccessToken} from "@/store/auth/selectors";
 import {getDepartments, getJobPositions, fetchEmployees} from "@/lib/utils";
@@ -101,7 +101,6 @@ export default function AttendanceTable() {
     filterType: "all",
     filterValue: "all",
   });
-  const [filteredEmployees, setFilteredEmployees] = useState<AttendanceEmployeeData[]>([]);
 
   useEffect(() => {
     const loadFiltersData = async () => {
@@ -172,12 +171,13 @@ export default function AttendanceTable() {
   }, [attendanceData]);
 
   const employeesWithAttendance = useMemo(() => {
+    const actualData = (attendanceData as any)?.data || attendanceData;
 
-    if (!attendanceData?.employees) {
+    if (!actualData?.employees) {
       return [];
     }
 
-    const result = attendanceData.employees.map((attendanceRecord) => ({
+    const result = actualData.employees.map((attendanceRecord: any) => ({
       employee: {
         id: attendanceRecord.employee.id,
         full_name: attendanceRecord.employee.full_name,
@@ -205,28 +205,7 @@ export default function AttendanceTable() {
 
       return true;
     });
-    setFilteredEmployees(data || []);
-  }, [tempFilters, attendanceData])
-
-  // const filteredEmployees = useMemo(() => {
-  //   return attendanceData?.employees.filter((emp: any) => {
-  //     if (tempFilters.filterType === "all") return true;
-
-  //     if (tempFilters.filterType === "department") {
-  //       return (
-  //         tempFilters.filterValue === "all" || emp.employee.department === tempFilters.filterValue
-  //       );
-  //     }
-
-  //     if (tempFilters.filterType === "position") {
-  //       return (
-  //         tempFilters.filterValue === "all" || emp.employee.position === tempFilters.filterValue
-  //       );
-  //     }
-
-  //     return true;
-  //   });
-  // }, [tempFilters, employeesWithAttendance]);
+  }, [filters, employeesWithAttendance]);
 
   const handleFilterChange = (key: keyof AttendanceFilters, value: string) => {
     setTempFilters((prev) => ({
@@ -277,7 +256,6 @@ export default function AttendanceTable() {
           return;
         }
       } else if (filters.filterType === "position" && filters.filterValue !== "all") {
-        // Find position ID by name
         const position = allPositions.find((pos) => pos.name === filters.filterValue);
         if (position) {
           payload.target_job_positions = [position.id];
@@ -287,7 +265,6 @@ export default function AttendanceTable() {
           return;
         }
       } else {
-        // If no specific filter is applied, use all employees from current data
         const employeeIds = filteredEmployees.map((emp: any) => emp.employee.id);
         if (employeeIds.length === 0) {
           toast.error("No employees found to download. Please apply filters and try again.");
@@ -296,9 +273,6 @@ export default function AttendanceTable() {
         }
         payload.target_employees = employeeIds;
       }
-
-      console.log("Sending payload:", payload); // Debug log
-
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/employee/attendance2excel/`,
         {
@@ -326,7 +300,6 @@ export default function AttendanceTable() {
         const errorData = await response.json();
         console.error("Download failed:", errorData);
 
-        // Show user-friendly error message using toast
         if (errorData.non_field_errors && errorData.non_field_errors.length > 0) {
           toast.error(`Download failed: ${errorData.non_field_errors[0]}`);
         } else if (errorData.detail) {
@@ -336,7 +309,6 @@ export default function AttendanceTable() {
         }
       }
     } catch (error) {
-      console.error("Excel download error:", error);
       toast.error(
         "An error occurred while downloading the report. Please check your internet connection and try again.",
       );
@@ -493,7 +465,7 @@ export default function AttendanceTable() {
           <Button
             onClick={handleApplyFilters}
             disabled={!hasFilterChanges || loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+            className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
           >
             <span className="hidden sm:inline">Apply Filters</span>
             <span className="sm:hidden">Apply</span>
