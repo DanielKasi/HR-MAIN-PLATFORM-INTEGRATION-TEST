@@ -32,6 +32,9 @@ from django.core.validators import FileExtensionValidator
 from settings.serializers import SystemDaySerializer
 from settings.models import SystemDay
 from .models import EmployeeWorkingDays
+from institution.models import Department
+from recruitment.models import JobPosition
+from datetime import date, timedelta
 
 
 class EmployeeTypeSerializer(serializers.ModelSerializer):
@@ -447,3 +450,75 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
     #             "Either applicant or employee must be provided."
     #         )
     #     return data
+
+
+class AttendanceReportSerializer(serializers.Serializer):
+    start_date = serializers.DateField()
+    end_date = serializers.DateField()
+
+    target_employees = serializers.ListField(
+        child=serializers.IntegerField(), required=False
+    )
+    target_departments = serializers.ListField(
+        child=serializers.PrimaryKeyRelatedField(queryset=Department.objects.all()),
+        required=False,
+    )
+    target_job_positions = serializers.ListField(
+        child=serializers.PrimaryKeyRelatedField(queryset=JobPosition.objects.all()),
+        required=False,
+    )
+
+    def validate(self, data):
+        if not (
+            data.get("target_employees")
+            or data.get("target_departments")
+            or data.get("target_job_positions")
+        ):
+            raise serializers.ValidationError(
+                "You must provide at least one of: target_employees, target_departments, or target_job_positions."
+            )
+        return data
+
+    def get_report_context(self):
+        return {
+            "target_employees": self.validated_data.get("target_employees", []),
+            "target_departments": self.validated_data.get("target_departments", []),
+            "target_job_positions": self.validated_data.get("target_job_positions", []),
+        }
+
+
+class AttendanceQueryParamsSerializer(serializers.Serializer):
+    start_date = serializers.DateField(required=False)
+    end_date = serializers.DateField(required=False)
+
+    target_employees = serializers.ListField(
+        child=serializers.IntegerField(), required=False
+    )
+    target_departments = serializers.ListField(
+        child=serializers.PrimaryKeyRelatedField(queryset=Department.objects.all()),
+        required=False,
+    )
+    target_job_positions = serializers.ListField(
+        child=serializers.PrimaryKeyRelatedField(queryset=JobPosition.objects.all()),
+        required=False,
+    )
+
+    def validate(self, data):
+        today = date.today()
+
+        # Set defaults if missing
+        data["end_date"] = data.get("end_date", today)
+        data["start_date"] = data.get("start_date", today - timedelta(days=30))
+
+        # Optional: Ensure start <= end
+        if data["start_date"] > data["end_date"]:
+            raise serializers.ValidationError("start_date cannot be after end_date.")
+
+        return data
+
+    def get_filter_context(self):
+        return {
+            "target_employees": self.validated_data.get("target_employees", []),
+            "target_departments": self.validated_data.get("target_departments", []),
+            "target_job_positions": self.validated_data.get("target_job_positions", []),
+        }

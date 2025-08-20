@@ -26,6 +26,7 @@ from .serializers import (
     PayslipItemSerializer,
     PayslipGenerationInputSerializer,
     EmployeeTaxSerializer,
+    AttendanceReportSerializer,
 )
 from employee.models import Employee
 from .utils import PayrollProcessor, generate_eft_excel
@@ -638,3 +639,29 @@ class PayslipsByPayrollAPIView(APIView):
         paginated_qs = paginator.paginate_queryset(payslips, request)
         serializer = PayslipSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
+
+
+class PayrollPeriodAttendanceReportAPIView(APIView):
+    """
+    Generate an attendance report for all employees in a given payroll period.
+    """
+
+    @extend_schema(
+        summary="Attendance report for a payroll period",
+        responses=AttendanceReportSerializer(many=True),
+    )
+    def get(self, request, pk):
+        payroll_period = get_object_or_404(PayrollPeriod, pk=pk)
+        report_data = AttendanceReportSerializer().to_representation(payroll_period)
+
+        employees_list = report_data["employees"]
+
+        paginator = CustomPageNumberPagination()
+        paginated_employees = paginator.paginate_queryset(employees_list, request)
+
+        paginated_response = {
+            "payroll_period": report_data["payroll_period"],
+            "employees": paginated_employees,
+        }
+
+        return paginator.get_paginated_response(paginated_response)

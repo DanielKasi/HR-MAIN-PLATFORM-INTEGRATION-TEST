@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from employee.serializers import EmployeeSerializer
 from rest_framework import serializers
 from .models import (
@@ -10,11 +12,12 @@ from .models import (
     PayslipItem,
     EmployeeTax,
 )
-from employee.models import Employee
+from employee.models import Employee, EmployeeAttendance
 from institution.models import Institution, Department
 from recruitment.models import JobPosition
 from institution.serializers import InstitutionSerializer, InstitutionTaxSerializer
 from django.db import transaction
+from employee.serializers import EmployeeAttendanceSerializer
 
 
 class BaseModelSerializer(serializers.ModelSerializer):
@@ -310,7 +313,7 @@ class EmployeeTaxSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         rep["employee"] = EmployeeSerializer(instance.employee).data
         rep["institution_tax"] = InstitutionTaxSerializer(instance.institution_tax).data
-        return rep        
+        return rep
 
     def validate(self, data):
         departments = data.get("target_departments", [])
@@ -369,12 +372,18 @@ class PayrollPeriodSerializer(serializers.ModelSerializer):
         model = PayrollPeriod
         fields = "__all__"
 
+class PayslipItemSimpleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PayslipItem
+        fields="__all__"
 
 class PayslipSerializer(serializers.ModelSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
     payroll_period = serializers.PrimaryKeyRelatedField(
         queryset=PayrollPeriod.objects.all()
     )
+
+    items = PayslipItemSimpleSerializer(many=True, read_only=True)
 
     class Meta:
         model = Payslip
@@ -384,6 +393,16 @@ class PayslipSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         rep["employee"] = EmployeeSerializer(instance.employee).data
         rep["payroll_period"] = PayrollPeriodSerializer(instance.payroll_period).data
+
+        grouped_items = defaultdict(lambda: defaultdict(list))
+
+        for item in PayslipItemSimpleSerializer(instance.items.all(), many=True).data:
+            item_type = item.get("item_type")
+            name = item.get("name")
+            grouped_items[item_type][name].append(item)
+
+        rep["items"] = {item_type: dict(names) for item_type, names in grouped_items.items()}
+
         return rep
 
 
@@ -404,3 +423,56 @@ class PayslipGenerationInputSerializer(serializers.Serializer):
     payroll_period = serializers.PrimaryKeyRelatedField(
         queryset=PayrollPeriod.objects.all()
     )
+
+
+class AttendanceReportSerializer(serializers.Serializer):
+    payroll_period_id = serializers.IntegerField()
+
+    def validate_payroll_period_id(self, value):
+        try:
+            return PayrollPeriod.objects.get(id=value)
+        except PayrollPeriod.DoesNotExist:
+            raise serializers.ValidationError("Invalid payroll period ID")
+
+    def to_representation(self, payroll_period):
+        # Get all attendance records in this payroll period
+        attendances = EmployeeAttendance.objects.filter(
+            date__range=[payroll_period.start_date, payroll_period.end_date],
+            employee__is_active=True,
+        ).select_related(
+            "employee", "employee__user", "employee__department", "employee__position"
+        )
+
+        # Group by employee
+        employee_data = {}
+        for attendance in attendances:
+            emp = attendance.employee
+            if emp.id not in employee_data:
+                employee_data[emp.id] = {
+                    "employee": EmployeeSerializer(emp).data,
+                    "attendance_records": [],
+                    "summary": {
+                        "total_days": 0,
+                        "approved_days": 0,
+                        "pending_days": 0,
+                        "rejected_days": 0,
+                        "total_overtime_hours": 0,
+                    },
+                }
+
+            record = EmployeeAttendanceSerializer(attendance).data
+            employee_data[emp.id]["attendance_records"].append(record)
+
+            # Update summary
+            employee_data[emp.id]["summary"]["total_days"] += 1
+            employee_data[emp.id]["summary"][f"{attendance.status}_days"] = (
+                employee_data[emp.id]["summary"].get(f"{attendance.status}_days", 0) + 1
+            )
+            employee_data[emp.id]["summary"]["total_overtime_hours"] += float(
+                attendance.overtime_hours or 0
+            )
+
+        return {
+            "payroll_period": PayrollPeriodSerializer(payroll_period).data,
+            "employees": list(employee_data.values()),
+        }
