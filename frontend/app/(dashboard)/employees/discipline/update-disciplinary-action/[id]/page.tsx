@@ -10,11 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { updateDisciplinaryAction, createDisciplineType, getDisciplineTypes, getAllEmployees, getDisciplinaryActionById } from "@/lib/utils";
-import type { DisciplinaryActionForm, DisciplineTypeForm } from "@/types/types.utils";
+import type { DisciplinaryActionForm, DisciplineTypeForm, IEmployee } from "@/types/types.utils";
 import { toast } from "sonner";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
@@ -77,14 +77,7 @@ export default function DisciplinaryUpdateForm() {
     }>
   >([]);
 
-  const [employees, setEmployees] = useState<
-    Array<{
-      id: string;
-      name: string;
-      department: string;
-      email: string;
-    }>
-  >([]);
+  const [employees, setEmployees] = useState<IEmployee[]>([]);
 
   useEffect(() => {
     if (selectedInstitution) {
@@ -153,17 +146,9 @@ export default function DisciplinaryUpdateForm() {
       try {
         const fetchedEmployees = await getAllEmployees({ institutionId });
 
-        if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
-          const formattedEmployees: typeof employees = fetchedEmployees.map((emp: any) => ({
-            id: emp.id.toString(),
-            name: emp.user?.fullname || emp.email || "Unknown Employee",
-            department: emp.department || "",
-            email: emp.email || "",
-          }));
-          setEmployees(formattedEmployees);
-        } else {
-          setEmployees([]);
-        }
+
+          setEmployees(fetchedEmployees.results);
+
       } catch (error) {
         toast.error("Failed to load employees");
         setEmployees([]);
@@ -377,12 +362,29 @@ export default function DisciplinaryUpdateForm() {
     );
   }
 
+
+  const handleBack = () => {  
+    router.back();
+  }
+  
+
   return (
-    <div className="min-h-screen w-full bg-gray-50 p-6">
-      <div className="max-w-full mx-auto">
-        <Card className="w-full">
+    <div className="min-h-screen w-full bg-gray-50">
+      <div className="max-w-full">
+        <Card className="w-full border-none shadow-none p-0 bg-transparent">
+
           <CardHeader>
+            <div className="flex items-center justify-start gap-4">
+            <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleBack}
+            className="rounded-full h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10"
+          >
+            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+          </Button>
             <CardTitle>Update Disciplinary Action</CardTitle>
+            </div>
             <CardDescription>Modify the details of this disciplinary action</CardDescription>
           </CardHeader>
           <CardContent>
@@ -696,8 +698,11 @@ export default function DisciplinaryUpdateForm() {
                 />
               </div>
 
-              <div className="flex gap-4 pt-6">
-                <Button type="submit" className="flex-1 bg-orange-600 hover:bg-orange-700 h-12" disabled={isSubmitting}>
+              <div className="flex items-center justify-end gap-8 pt-4">
+                                <Button type="button" variant="outline" className="" onClick={handleDisciplinaryActionCancel} disabled={isSubmitting}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -707,9 +712,7 @@ export default function DisciplinaryUpdateForm() {
                     "Update Disciplinary Action"
                   )}
                 </Button>
-                <Button type="button" variant="outline" className="flex-1 h-12" onClick={handleDisciplinaryActionCancel} disabled={isSubmitting}>
-                  Cancel
-                </Button>
+
               </div>
             </form>
           </CardContent>

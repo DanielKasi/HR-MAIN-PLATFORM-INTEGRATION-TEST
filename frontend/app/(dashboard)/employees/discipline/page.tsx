@@ -1,14 +1,20 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+import {useState, useEffect} from "react";
+import {useRouter} from "next/navigation";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Badge} from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -16,12 +22,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Plus,
   Search,
-  MoreHorizontal,
   Edit,
   Trash2,
   Eye,
@@ -33,434 +43,381 @@ import {
   XCircle,
   AlertCircle,
   Loader2,
-  RefreshCw,
   MoreVertical,
-} from "lucide-react"
-import { getDisciplinaryActions, deleteDisciplinaryAction } from "@/lib/utils"
-import { transformDisciplinaryActionData, PERMISSION_CODES } from "@/types/types.utils"
-import { toast } from "sonner"
-import ProtectedComponent from "@/components/ProtectedComponent"
-import { TableSkeleton } from "@/components/common/table-skeleton"
+} from "lucide-react";
+import {getDisciplinaryActions, deleteDisciplinaryAction, getPaginatedDisciplinaryActionsFromUrl} from "@/lib/utils";
+import {transformDisciplinaryActionData, PERMISSION_CODES} from "@/types/types.utils";
+import {toast} from "sonner";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import {TableSkeleton} from "@/components/common/table-skeleton";
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 
 interface DisciplinaryAction {
-  id: string
-  employee_name: string
-  employee_department: string
-  discipline_type: string
-  discipline_severity: "low" | "medium" | "high" | "critical"
-  incident_date: string
-  reported_date: string
-  description: string
-  evidence: string
-  reported_by: string
-  assigned_to: string
-  status: "pending" | "in_progress" | "completed" | "dismissed"
-  action_taken: string
-  resolution_date: string
-  follow_up_required: boolean
-  follow_up_date: string
-  notes: string
+  id: string;
+  employee_name: string;
+  employee_department: string;
+  discipline_type: string;
+  discipline_severity: "low" | "medium" | "high" | "critical";
+  incident_date: string;
+  reported_date: string;
+  description: string;
+  evidence: string;
+  reported_by: string;
+  assigned_to: string;
+  status: "pending" | "in_progress" | "completed" | "dismissed";
+  action_taken: string;
+  resolution_date: string;
+  follow_up_required: boolean;
+  follow_up_date: string;
+  notes: string;
 }
 
-interface DisciplinaryActionsTableProps {
-  formRoute?: string
-}
+export default function DisciplinaryActionsPage() {
+  const router = useRouter();
+  const selectedInstitution = useSelector(selectSelectedInstitution);
 
-export default function DisciplinaryActionsTable({
-  formRoute = "/employees/discipline/create",
-}: DisciplinaryActionsTableProps) {
-  const router = useRouter()
-
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [severityFilter, setSeverityFilter] = useState("all")
-  const [selectedAction, setSelectedAction] = useState<DisciplinaryAction | null>(null)
-  const [disciplinaryActions, setDisciplinaryActions] = useState<DisciplinaryAction[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [actionToDelete, setActionToDelete] = useState<string | null>(null)
-
-  const fetchDisciplinaryActions = async () => {
-    setIsLoading(true)
-    try {
-      const fetchedActions = await getDisciplinaryActions()
-      const transformedActions = transformDisciplinaryActionData(fetchedActions)
-      setDisciplinaryActions(transformedActions)
-    } catch (error) {
-      toast.error("Failed to load disciplinary actions")
-      setDisciplinaryActions([])
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchDisciplinaryActions()
-  }, [])
-
-  const handleRefresh = async () => {
-    await fetchDisciplinaryActions()
-    toast.success("Disciplinary actions refreshed")
-  }
-
-  const handleDeleteAction = async () => {
-    if (!actionToDelete) return
-    setIsLoading(true)
-    try {
-      const idAsNumber = parseInt(actionToDelete, 10)
-      if (isNaN(idAsNumber)) {
-        throw new Error("Invalid disciplinary action ID")
-      }
-      const success = await deleteDisciplinaryAction(idAsNumber)
-      if (success) {
-        toast.success("Disciplinary action deleted successfully")
-        setDisciplinaryActions(prev => prev.filter(action => action.id !== actionToDelete))
-      } else {
-        toast.error("Failed to delete disciplinary action")
-      }
-    } catch (error: any) {
-      toast.error("Failed to delete disciplinary action")
-    } finally {
-      setIsLoading(false)
-      setIsDeleteDialogOpen(false)
-      setActionToDelete(null)
-    }
-  }
-
-  const openDeleteDialog = (actionId: string) => {
-    setActionToDelete(actionId)
-    setIsDeleteDialogOpen(true)
-  }
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [severityFilter, setSeverityFilter] = useState("all");
+  const [selectedAction, setSelectedAction] = useState<DisciplinaryAction | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [actionToDelete, setActionToDelete] = useState<string | null>(null);
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case "low":
-        return "bg-green-100 text-green-800 border-green-200"
+        return "bg-green-100 text-green-800 border-green-200";
       case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "high":
-        return "bg-orange-100 text-orange-800 border-orange-200"
+        return "bg-orange-100 text-orange-800 border-orange-200";
       case "critical":
-        return "bg-red-100 text-red-800 border-red-200"
+        return "bg-red-100 text-red-800 border-red-200";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
-        return "bg-green-100 text-green-800 border-green-200"
+        return "bg-green-100 text-green-800 border-green-200";
       case "in_progress":
-        return "bg-blue-100 text-blue-800 border-blue-200"
+        return "bg-blue-100 text-blue-800 border-blue-200";
       case "pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "dismissed":
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-gray-100 text-gray-800 border-gray-200";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
-  }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "completed":
-        return <CheckCircle className="h-4 w-4" />
+        return <CheckCircle className="h-4 w-4" />;
       case "in_progress":
-        return <Clock className="h-4 w-4" />
+        return <Clock className="h-4 w-4" />;
       case "pending":
-        return <AlertCircle className="h-4 w-4" />
+        return <AlertCircle className="h-4 w-4" />;
       case "dismissed":
-        return <XCircle className="h-4 w-4" />
+        return <XCircle className="h-4 w-4" />;
       default:
-        return <Clock className="h-4 w-4" />
+        return <Clock className="h-4 w-4" />;
     }
-  }
+  };
 
-  const filteredActions = disciplinaryActions.filter((action) => {
-    const matchesSearch =
-      action.employee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      action.discipline_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (action.employee_department &&
-        action.employee_department.toLowerCase().includes(searchTerm.toLowerCase()))
-    const matchesStatus = statusFilter === "all" || action.status === statusFilter
-    const matchesSeverity = severityFilter === "all" || action.discipline_severity === severityFilter
-
-    return matchesSearch && matchesStatus && matchesSeverity
-  })
+  const openDeleteDialog = (actionId: string) => {
+    setActionToDelete(actionId);
+    setIsDeleteDialogOpen(true);
+  };
 
   const handleAddNewAction = () => {
-    router.push("/employees/discipline/create-disciplinary-action")
-  }
+    router.push("/employees/discipline/create-disciplinary-action");
+  };
 
   const handleEditAction = (actionId: string) => {
-    router.push(`/employees/discipline/update-disciplinary-action/${actionId}/`)
-  }
-
-  if (isLoading) {
-    return (
-      <div className="w-full max-w-[1600px] mx-auto p-6 space-y-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Disciplinary Actions</h1>
-        </div>
-        <Card>
-          <CardContent className="flex items-center justify-center py-12">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              Loading disciplinary actions...
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-
-    if (isLoading) {
-      return (
-        <div className="p-2 space-y-6">
-          <Card className="h-[calc(100vh-2rem)] shadow-lg">
-            <CardHeader className="border-b">
-              <div className="flex justify-between gap-8 items-center">
-                <div className="flex items-center justify-start gap-4">
-                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
-                  <div className="space-y-2">
-                    <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
-                </div>
-              </div>
-            </CardHeader>
-            <TableSkeleton rows={10} columns={8} />
-          </Card>
-        </div>
-      )
-    }
+    router.push(`/employees/discipline/update-disciplinary-action/${actionId}/`);
+  };
 
   return (
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
-      <div className="mb-6">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900">Disciplinary Actions</h1>
-           <CardDescription className="text-sm sm:text-base">Complete overview of disciplinary actions across all departments</CardDescription>
-      </div>
-      <div >
-        <CardContent>
-          <div>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 mt-12 flex-wrap -ml-8">
-
-              {/* Left Side: Search + Filters */}
-              <div className="flex flex-col sm:flex-row gap-4 flex-wrap items-start">
-                <div className="relative w-[36rem]">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by employee or discipline type..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-
-                <div className="flex items-center gap-4 flex-wrap sm:ml-4">
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full sm:w-48">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="dismissed">Dismissed</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={severityFilter} onValueChange={setSeverityFilter}>
-                    <SelectTrigger className="w-full sm:w-48">
-                      <SelectValue placeholder="Filter by severity" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Severities</SelectItem>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Right Side: Add Button */}
-              <div className="flex justify-end items-end">
-                <Button onClick={handleAddNewAction} className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
-                  <Plus className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Add New Action</span>
-                  <span className="sm:hidden">Add New</span>
-                </Button>
-              </div>
-
-            </div>
-        </CardContent>
+      <div className="">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900">Disciplinary Actions</h1>
+          <Button onClick={handleAddNewAction} className="">
+            <Plus className="h-4 w-4 mr-2" />
+            <span className="hidden md:inline">Add New Action</span>
+          </Button>
         </div>
-
-          <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-6">
-          <div className="inline-block min-w-full px-3 sm:px-4 lg:px-6">
-            <div className="overflow-x-auto mt-10 -ml-4">
-              <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-                <TableHeader className="bg-gray-50/50">
-                <TableRow>
-                  <TableHead className="font-semibold w-48">Employee</TableHead>
-                  <TableHead className="font-semibold w-56">Type & Severity</TableHead>
-                  <TableHead className="font-semibold w-36">Incident Date</TableHead>
-                  <TableHead className="font-semibold w-40">Status</TableHead>
-                  <TableHead className="font-semibold w-44">Assigned To</TableHead>
-                  <TableHead className="font-semibold w-36">Follow-up</TableHead>
-                  <TableHead className="font-semibold text-right w-32">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredActions.map((action) => (
-                  <TableRow key={action.id} className="hover:bg-gray-50">
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{action.employee_name}</div>
-                        {action.employee_department && action.employee_department.trim() && (
-                          <div className="text-sm text-muted-foreground">{action.employee_department}</div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="font-medium">{action.discipline_type}</div>
-                        <Badge variant="outline" className={getSeverityColor(action.discipline_severity)}>
-                          {action.discipline_severity.toUpperCase()}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {new Date(action.incident_date).toLocaleDateString()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={`${getStatusColor(action.status)} flex items-center gap-1 w-fit`}
-                      >
-                        {getStatusIcon(action.status)}
-                        {action.status.replace("_", " ").toUpperCase()}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        {action.assigned_to}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {action.follow_up_required ? (
-                        <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">
-                          {action.follow_up_date ? new Date(action.follow_up_date).toLocaleDateString() : "Required"}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">None</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DISCIPLINE_CASES}>
-                          <DropdownMenuItem onClick={() => setSelectedAction(action)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                        </ProtectedComponent>
-                         <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_DISCIPLINE_CASES}>
-                          <DropdownMenuItem onClick={() => handleEditAction(action.id)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          </ProtectedComponent>
-                          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_DISCIPLINE_CASES}>
-                          <DropdownMenuItem 
-                            onClick={() => openDeleteDialog(action.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                          </ProtectedComponent>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            </div>
-            </div>
-          </div>
-          <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
-            setIsDeleteDialogOpen(open)
-            if (!open) setActionToDelete(null)
-          }}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Confirm Deletion</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to delete the disciplinary action for{" "}
-                  {actionToDelete && disciplinaryActions.find(action => action.id === actionToDelete)?.employee_name || "this employee"}
-                  {" "}({actionToDelete && disciplinaryActions.find(action => action.id === actionToDelete)?.discipline_type || "this type"})?
-                  This action cannot be undone.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsDeleteDialogOpen(false)
-                    setActionToDelete(null)
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleDeleteAction}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Deleting...
-                    </>
-                  ) : (
-                    "Delete"
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          {filteredActions.length === 0 && !isLoading && (
-            <div className="text-center py-8 text-muted-foreground">
-              {disciplinaryActions.length === 0
-                ? "No disciplinary actions found. Click 'Add New Action' to create your first one."
-                : "No disciplinary actions found matching your criteria."}
-            </div>
-          )}
-        </CardContent>
+        <CardDescription className="text-sm sm:text-base">
+          Complete overview of disciplinary actions across all departments
+        </CardDescription>
       </div>
+
+      <div className="mt-6 mb-4">
+        <div className="flex flex-col md:flex-row gap-4 items-start">
+          <div className="relative w-full md:max-w-lg lg:max-w-xl ">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by employee or discipline type..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-full"
+            />
+          </div>
+
+          <div className="flex w-full items-center justify-start gap-4">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="md:w-full md:max-w-[16rem] w-48">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="dismissed">Dismissed</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={severityFilter} onValueChange={setSeverityFilter}>
+              <SelectTrigger className="md:w-full md:max-w-[16rem] max-w-48">
+                <SelectValue placeholder="Filter by severity" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Severities</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      <PaginatedTableWrapper<any, { institutionId?: number; search?: string }>
+        fetchFirstPage={async (query) => {
+          const res = await getDisciplinaryActions({
+            institutionId: selectedInstitution?.id,
+            page: 1,
+            search: searchTerm || undefined,
+          });
+          return res;
+        }}
+        fetchFromUrl={async ({ url }) => await getPaginatedDisciplinaryActionsFromUrl({ url })}
+        deps={[selectedInstitution?.id, searchTerm]}
+      >
+        {({ data, loading, refresh }) => {
+          const apiResults = data?.results || [];
+          const disciplinaryActions = transformDisciplinaryActionData(apiResults);
+
+          const filteredActions = disciplinaryActions.filter((action) => {
+            const matchesSearch =
+              action.employee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              action.discipline_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              (action.employee_department && action.employee_department.toLowerCase().includes(searchTerm.toLowerCase()));
+            const matchesStatus = statusFilter === "all" || action.status === statusFilter;
+            const matchesSeverity = severityFilter === "all" || action.discipline_severity === severityFilter;
+            return matchesSearch && matchesStatus && matchesSeverity;
+          });
+
+          const handleDeleteAction = async () => {
+            if (!actionToDelete) return;
+            try {
+              const idAsNumber = parseInt(actionToDelete, 10);
+              if (isNaN(idAsNumber)) {
+                throw new Error("Invalid disciplinary action ID");
+              }
+              const success = await deleteDisciplinaryAction(idAsNumber);
+              if (success) {
+                toast.success("Disciplinary action deleted successfully");
+                await refresh();
+              } else {
+                toast.error("Failed to delete disciplinary action");
+              }
+            } catch (error: any) {
+              toast.error("Failed to delete disciplinary action");
+            } finally {
+              setIsDeleteDialogOpen(false);
+              setActionToDelete(null);
+            }
+          };
+
+          if (loading) {
+            return (
+              <Card className="h-[calc(100vh-2rem)] shadow-lg">
+                <CardHeader className="border-b">
+                  <div className="flex justify-between gap-8 items-center">
+                    <div className="flex items-center justify-start gap-4">
+                      <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                      <div className="space-y-2">
+                        <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <TableSkeleton rows={10} columns={8} />
+              </Card>
+            );
+          }
+
+          return (
+            <CardContent className="">
+              <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-6">
+                <div className="inline-block min-w-full px-3 sm:px-4 lg:px-6">
+                  <div className="overflow-x-auto mt-10 -ml-4">
+                    <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                      <TableHeader className="bg-gray-50/50">
+                        <TableRow>
+                          <TableHead className="font-semibold w-48">Employee</TableHead>
+                          <TableHead className="font-semibold w-56">Type & Severity</TableHead>
+                          <TableHead className="font-semibold w-36">Incident Date</TableHead>
+                          <TableHead className="font-semibold w-40">Status</TableHead>
+                          <TableHead className="font-semibold w-44">Assigned To</TableHead>
+                          <TableHead className="font-semibold w-36">Follow-up</TableHead>
+                          <TableHead className="font-semibold text-right w-32">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredActions.map((action) => (
+                          <TableRow key={action.id} className="hover:bg-gray-50">
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{action.employee_name}</div>
+                                {action.employee_department && action.employee_department.trim() && (
+                                  <div className="text-sm text-muted-foreground">{action.employee_department}</div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="font-medium">{action.discipline_type}</div>
+                                <Badge variant="outline" className={getSeverityColor(action.discipline_severity)}>
+                                  {action.discipline_severity.toUpperCase()}
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                {new Date(action.incident_date).toLocaleDateString()}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={`${getStatusColor(action.status)} flex items-center gap-1 w-fit`}>
+                                {getStatusIcon(action.status)}
+                                {action.status.replace("_", " ").toUpperCase()}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4 text-muted-foreground" />
+                                {action.assigned_to}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {action.follow_up_required ? (
+                                <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">
+                                  {action.follow_up_date ? new Date(action.follow_up_date).toLocaleDateString() : "Required"}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground">None</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DISCIPLINE_CASES}>
+                                    <DropdownMenuItem onClick={() => setSelectedAction(action)}>
+                                      <Eye className="mr-2 h-4 w-4" />
+                                      View Details
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_DISCIPLINE_CASES}>
+                                    <DropdownMenuItem onClick={() => handleEditAction(action.id)}>
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_DISCIPLINE_CASES}>
+                                    <DropdownMenuItem onClick={() => { setActionToDelete(action.id); setIsDeleteDialogOpen(true); }} className="text-red-600">
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </div>
+
+              <Dialog
+                open={isDeleteDialogOpen}
+                onOpenChange={(open) => {
+                  setIsDeleteDialogOpen(open);
+                  if (!open) setActionToDelete(null);
+                }}
+              >
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Confirm Deletion</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to delete the disciplinary action for {" "}
+                      {(actionToDelete && filteredActions.find((action) => action.id === actionToDelete)?.employee_name) ||
+                        "this employee"}{" "}
+                      ({(actionToDelete && filteredActions.find((action) => action.id === actionToDelete)?.discipline_type) ||
+                        "this type"}
+                      )? This action cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setIsDeleteDialogOpen(false);
+                        setActionToDelete(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button variant="destructive" onClick={handleDeleteAction}>
+                      Delete
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {filteredActions.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No disciplinary actions found matching your criteria.
+                </div>
+              )}
+            </CardContent>
+          );
+        }}
+      </PaginatedTableWrapper>
+
       {selectedAction && (
         <Dialog open={!!selectedAction} onOpenChange={() => setSelectedAction(null)}>
           <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
@@ -493,10 +450,7 @@ export default function DisciplinaryActionsTable({
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Status</Label>
-                  <Badge
-                    variant="outline"
-                    className={`${getStatusColor(selectedAction.status)} flex items-center gap-1 w-fit mt-1`}
-                  >
+                  <Badge variant="outline" className={`${getStatusColor(selectedAction.status)} flex items-center gap-1 w-fit mt-1`}>
                     {getStatusIcon(selectedAction.status)}
                     {selectedAction.status.replace("_", " ").toUpperCase()}
                   </Badge>
@@ -530,9 +484,7 @@ export default function DisciplinaryActionsTable({
                 {selectedAction.action_taken && (
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Action Taken</Label>
-                    <p className="mt-1 p-3 bg-green-50 rounded-md border border-green-200">
-                      {selectedAction.action_taken}
-                    </p>
+                    <p className="mt-1 p-3 bg-green-50 rounded-md border border-green-200">{selectedAction.action_taken}</p>
                   </div>
                 )}
                 {selectedAction.notes && (
@@ -547,5 +499,5 @@ export default function DisciplinaryActionsTable({
         </Dialog>
       )}
     </div>
-  )
+  );
 }

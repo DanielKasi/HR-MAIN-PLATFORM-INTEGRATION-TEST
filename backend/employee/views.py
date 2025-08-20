@@ -706,8 +706,9 @@ class EmployeeCreateAPIView(APIView):
             )
             if created_count == 0 and errors:
                 print(
-                f"Total upload time: {(datetime.now() - start_time).total_seconds()} seconds"
-            )
+                    f"Total upload time: {(datetime.now() - start_time).total_seconds()} seconds"
+                )
+                
             if created_count == 0 and errors:
                 return Response(
                     {
