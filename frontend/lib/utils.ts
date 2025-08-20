@@ -107,6 +107,7 @@ import { IEmployee } from "@/types/types.utils";
 import { IPaginatedResponse, Role } from "@/types";
 import { AxiosError, AxiosRequestConfig } from "axios";
 import { toast } from "sonner";
+import { error } from "console";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -948,16 +949,30 @@ export const bulkCreateEmployees = async ({
   }
 };
 
-export const getAllEmployees = async ({ institutionId }: { institutionId: number }) => {
-  try {
-    const endpoint = `employee/${institutionId}/employee/`;
+export const getAllEmployees = async ({ institutionId, page = 1, search, }: { 
+  institutionId: number, 
+  page?: number;
+  search?: string; 
+})=> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    const endpoint = `employee/${institutionId}/employee/?${params.toString()}`;
     const response = await apiRequest.get(endpoint);
-    const data = response.data as PaginatedResponse<IEmployee>;
-    return data.results;
-  } catch (error) {
-    throw error;
-  }
+    return response.data as PaginatedResponse<IEmployee>;
 };
+
+
+
+export const getPaginatedEmployeesFromUrl = async ({ url }: { url: string }): Promise<PaginatedResponse<IEmployee>> => {
+    const response = await apiRequest.get(url);
+    return response.data as PaginatedResponse<IEmployee>;
+};
+
 
 export const createEmployee = async ({
   institutionId,
@@ -1030,6 +1045,14 @@ export const updateEmployee = async ({
   } catch (error: any) {
     throw new Error("Failed to update employee. Please try again.");
   }
+};
+
+export const deleteEmployee = async ({
+  employeeId
+}: {
+  employeeId: number;
+}) => {
+    await apiRequest.delete(`/employee/${employeeId}/delete/`);
 };
 
 export const getEmployeeById = async ({ employeeId }: { employeeId: number | string }) => {
@@ -4350,3 +4373,9 @@ export async function fetchAttendanceData(
     throw error;
   }
 }
+
+export const showErrorToast = ({error, defaultMessage}: {error: any, defaultMessage?: string}) => {
+  const errorMessage = error?.detail || error?.message || defaultMessage || "An unexpected error occurred.";
+  toast.error(errorMessage);
+}
+

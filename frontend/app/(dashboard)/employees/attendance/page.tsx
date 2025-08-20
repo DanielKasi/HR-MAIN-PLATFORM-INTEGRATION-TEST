@@ -2,7 +2,7 @@
 import React, {useState, useEffect, useMemo} from "react";
 import EmployeeAttendance from "../../dashboard/EmployeeAttendance";
 import {BarChart2, UserCheck, UserX, Users, Eye} from "lucide-react";
-import {AttendanceAPI, getAllEmployees} from "@/lib/utils";
+import {AttendanceAPI, getAllEmployees, showErrorToast} from "@/lib/utils";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 
@@ -36,10 +36,10 @@ const AttendancePage = () => {
     try {
       setLoading(true);
       const data = await getAllEmployees({institutionId: selectedInstitution.id});
-      setEmployees(data);
+      setEmployees(data.results);
     } catch (err: any) {
       setError("Failed to load employees");
-      toast.error(err?.message || err?.detail || "Failed to load employees");
+      showErrorToast({error: err, defaultMessage: "Failed to load employees"});
     } finally {
       setLoading(false);
     }
@@ -144,20 +144,20 @@ const AttendancePage = () => {
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="w-full">
         <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Attendance</h1>
+          <div className="flex flex-col w-full">
+
+              <div className="flex items-center justify-between w-full gap-8">
+                <h1 className="text-xl md:text-3xl font-bold text-gray-900 mb-2">Employee Attendance</h1>
+                <Button
+                  size="sm"
+                  onClick={handleViewAttendance}
+                  className="flex items-center gap-2  text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span className="hidden md:inline">View Attendance</span>
+                </Button>
+              </div>
               <p className="text-muted-foreground">Manage daily attendance for your organization</p>
-            </div>
-            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ATTENDANCE_RECORDS}>
-              <Button
-                onClick={handleViewAttendance}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
-              >
-                <Eye className="w-4 h-4" />
-                View Attendance
-              </Button>
-            </ProtectedComponent>
           </div>
         </div>
         <EmployeeAttendance
