@@ -42,7 +42,7 @@ class AssetCategorySerializer(serializers.ModelSerializer):
             institution = user.institution
             validated_data["institution"] = institution
         else:
-            raise serializers.ValidationError("User institution is required.")
+            raise serializers.ValidationError({"error": f"User institution is required."})
 
         return super().create(validated_data)
 
@@ -109,7 +109,7 @@ class AssetSerializer(serializers.ModelSerializer):
             institution = user.institution
             validated_data["institution"] = institution
         else:
-            raise serializers.ValidationError("User institution is required.")
+            raise serializers.ValidationError({"error": f"User institution is required."})
 
         asset = super().create(validated_data)
 
@@ -173,7 +173,7 @@ class AssetRequestSerializer(serializers.ModelSerializer):
         user = request.user.profile if request and hasattr(request, "user") else None
 
         if not user:
-            raise serializers.ValidationError("User institution is required.")
+            raise serializers.ValidationError({"error": f"User institution is required."})
 
         institution = user.institution
 
@@ -184,14 +184,14 @@ class AssetRequestSerializer(serializers.ModelSerializer):
         try:
             asset = Asset.objects.get(id=asset_id)
         except Asset.DoesNotExist:
-            raise serializers.ValidationError("Asset not found.")
+            raise serializers.ValidationError({"error": f"Asset not found."})
 
         validated_data["requester"] = user
         validated_data["asset"] = asset
 
         if institution != asset.institution:
             raise serializers.ValidationError(
-                "Asset does not belong to the user's institution."
+                {"error": f"Asset does not belong to the user's institution."}
             )
 
         asset_request = AssetRequest.objects.create(**validated_data)
@@ -275,7 +275,7 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
         user = request.user.profile if request and hasattr(request, "user") else None
 
         if not user:
-            raise serializers.ValidationError("User institution is required.")
+            raise serializers.ValidationError({"error": f"User institution is required."})
 
         institution = user.institution
 
@@ -286,7 +286,7 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
             asset_id = asset.id
             asset = Asset.objects.get(id=asset_id)
         except Asset.DoesNotExist:
-            raise serializers.ValidationError("Asset not found.")
+            raise serializers.ValidationError({"error": f"Asset not found."})
 
         # Get the allocated_to employee object
         try:
@@ -294,11 +294,11 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
             allocated_to_id = allocated_to.id
             allocated_to = Employee.objects.get(id=allocated_to_id)
         except Employee.DoesNotExist:
-            raise serializers.ValidationError("Employee not found.")
+            raise serializers.ValidationError({"error": f"Employee not found."})
 
         # Get the employee's profile (required for AssetAllocation.allocated_to field)
         if not allocated_to.user or not allocated_to.user.profile:
-            raise serializers.ValidationError("Employee does not have an associated user profile.")
+            raise serializers.ValidationError({"error": f"Employee does not have an associated user profile."})
 
         employee_profile = allocated_to.user.profile
 
@@ -308,12 +308,12 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
             try:
                 responding_to_request = AssetRequest.objects.get(id=responding_to_request)
             except AssetRequest.DoesNotExist:
-                raise serializers.ValidationError("Asset request not found.")
+                raise serializers.ValidationError({"error": f"Asset request not found."})
 
         # Validate institution ownership
         if institution != asset.institution:
             raise serializers.ValidationError(
-                "Asset does not belong to the user's institution."
+                {"error": f"Asset does not belong to the user's institution."}
             )
 
         # Get employee's institution through department or user profile
@@ -325,17 +325,17 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
         
         if not employee_institution:
             raise serializers.ValidationError(
-                "Employee does not have an associated institution."
+                {"error": f"Employee does not have an associated institution."}
             )
 
         if institution != employee_institution:
             raise serializers.ValidationError(
-                "Employee does not belong to the user's institution."
+                {"error": f"Employee does not belong to the user's institution."}
             )
 
         if responding_to_request and institution != responding_to_request.asset.institution:
             raise serializers.ValidationError(
-                "Asset request does not belong to the user's institution."
+                {"error": f"Asset request does not belong to the user's institution."}
             )
 
         # Set the allocation data

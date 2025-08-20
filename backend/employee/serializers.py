@@ -73,7 +73,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             age = relativedelta(today, value).years
             if age < 18:
                 raise serializers.ValidationError(
-                    "Employee must be at least 18 years old."
+                    {"error": f"Employee must be at least 18 years old."}
                 )
         return value
 
@@ -115,7 +115,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
                 except Institution.DoesNotExist:
                     raise serializers.ValidationError(
-                        "Institution does not exist for the provided user."
+                        {"error": f"Institution does not exist for the provided user."}
                     )
 
         employee = Employee.objects.create(**validated_data)
@@ -132,7 +132,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
                 )
             except Branch.DoesNotExist:
                 raise serializers.ValidationError(
-                    f"Branch with ID {branch_id} does not exist."
+                    {"error": f"Branch with ID {branch_id} does not exist."}
                 )
 
         return employee
@@ -254,14 +254,14 @@ class EmployeeWorkingDaysSerializer(serializers.ModelSerializer):
             or not employee.department.institution
         ):
             raise serializers.ValidationError(
-                "Employee must belong to a department and institution."
+                {"error": f"Employee must belong to a department and institution."}
             )
 
         institution = employee.department.institution
 
         if not hasattr(institution, "working_days"):
             raise serializers.ValidationError(
-                "Institution does not have working days defined."
+                {"error": f"Institution does not have working days defined."}
             )
 
         allowed_days = institution.working_days.days.all()
@@ -269,7 +269,7 @@ class EmployeeWorkingDaysSerializer(serializers.ModelSerializer):
         for day in selected_days:
             if day not in allowed_days:
                 raise serializers.ValidationError(
-                    f"{day.day_name} is not a valid working day for this institution."
+                    {"error": f"{day.day_name} is not a valid working day for this institution."}
                 )
 
         return data
@@ -336,7 +336,7 @@ def validate_pdf(file):
         print("PDF validation successful")
     except Exception as e:
         print(f"PDF validation failed: {str(e)}")
-        raise serializers.ValidationError(f"Invalid PDF file: {str(e)}")
+        raise serializers.ValidationError({"error": f"Invalid PDF file: {str(e)}"})
     return file
 
 
@@ -396,12 +396,12 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
                     content, name=signed_contract.name
                 )
             except Exception as e:
-                raise serializers.ValidationError(
+                raise serializers.ValidationError({"error":
                     f"Failed to read signed_contract: {str(e)}"
-                )
-                raise serializers.ValidationError(
+                })
+                raise serializers.ValidationError({"error":
                     f"Failed to read signed_contract: {str(e)}"
-                )
+                })
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -475,8 +475,8 @@ class AttendanceReportSerializer(serializers.Serializer):
             or data.get("target_job_positions")
         ):
             raise serializers.ValidationError(
-                "You must provide at least one of: target_employees, target_departments, or target_job_positions."
-            )
+                {"error": f"You must provide at least one of: target_employees, target_departments, or target_job_positions."
+            })
         return data
 
     def get_report_context(self):
@@ -512,7 +512,7 @@ class AttendanceQueryParamsSerializer(serializers.Serializer):
 
         # Optional: Ensure start <= end
         if data["start_date"] > data["end_date"]:
-            raise serializers.ValidationError("start_date cannot be after end_date.")
+            raise serializers.ValidationError({"error": f"start_date cannot be after end_date."})
 
         return data
 
