@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { useSelector } from "react-redux";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {useState, useMemo, useEffect, useCallback} from "react";
+import {useSelector} from "react-redux";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -22,20 +22,9 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Badge} from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,8 +53,9 @@ import {
   RefreshCw,
   Settings,
   MoreVertical,
+  Download,
 } from "lucide-react";
-import { toast } from "sonner";
+import {toast} from "sonner";
 import Link from "next/link";
 import {
   createPayrollPeriod,
@@ -76,13 +66,13 @@ import {
   checkPeriodOverlap,
   getAllEmployees,
   getPayslips,
-  createBulkPayslips
+  createBulkPayslips,
 } from "@/lib/utils";
-import { IPayrollPeriod, IPayrollPeriodFormData, IEmployee, IPayslip, } from "@/types/types.utils";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
+import {IPayrollPeriod, IPayrollPeriodFormData, IEmployee, IPayslip} from "@/types/types.utils";
+import {selectSelectedInstitution, selectAccessToken} from "@/store/auth/selectors";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/types/types.utils";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import {PERMISSION_CODES} from "@/types/types.utils";
+import {TableSkeleton} from "@/components/common/table-skeleton";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -117,8 +107,9 @@ export default function PayrollPeriods() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const selectedInstitution = useSelector(selectSelectedInstitution);
-  const [ isLoading, setIsLoading] = useState(false);
-
+  const [isLoading, setIsLoading] = useState(false);
+  const accessToken = useSelector(selectAccessToken);
+  const [isExcelPayslipsReportDownloading, setIsExcelPayslipsReportDownloading] = useState(false);
 
   // Fetch payroll periods
   const fetchPayrollPeriods = useCallback(async () => {
@@ -155,8 +146,11 @@ export default function PayrollPeriods() {
   useEffect(() => {
     if (formData.start_date && formData.end_date && !editingPeriod) {
       const generatedName = generatePeriodName(formData.start_date, formData.end_date);
-      if (formData.name === "" || formData.name === generatePeriodName(formData.start_date, formData.end_date)) {
-        setFormData((prev) => ({ ...prev, name: generatedName }));
+      if (
+        formData.name === "" ||
+        formData.name === generatePeriodName(formData.start_date, formData.end_date)
+      ) {
+        setFormData((prev) => ({...prev, name: generatedName}));
       }
     }
   }, [formData.start_date, formData.end_date, editingPeriod]);
@@ -181,10 +175,11 @@ export default function PayrollPeriods() {
       if (formData.start_date && formData.end_date) {
         const duration = Math.ceil(
           (new Date(formData.end_date).getTime() - new Date(formData.start_date).getTime()) /
-          (1000 * 60 * 60 * 24)
+            (1000 * 60 * 60 * 24),
         );
         if (duration > 365) {
-          errors.warning = "This period is longer than a year. Please verify the dates are correct.";
+          errors.warning =
+            "This period is longer than a year. Please verify the dates are correct.";
         } else if (duration < 1) {
           errors.end_date = "Period must be at least 1 day long";
         }
@@ -216,21 +211,21 @@ export default function PayrollPeriods() {
   const totalPeriods = useMemo(() => filteredPeriods.length, [filteredPeriods]);
   const processedPeriods = useMemo(
     () => filteredPeriods.filter((p) => p.is_processed).length,
-    [filteredPeriods]
+    [filteredPeriods],
   );
   const pendingPeriods = useMemo(
     () => filteredPeriods.filter((p) => !p.is_processed).length,
-    [filteredPeriods]
+    [filteredPeriods],
   );
   const upcomingPayDays = useMemo(
     () =>
       filteredPeriods.filter((p) => {
         const daysRemaining = Math.ceil(
-          (new Date(p.pay_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+          (new Date(p.pay_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
         );
         return daysRemaining >= 0 && daysRemaining <= 7;
       }).length,
-    [filteredPeriods]
+    [filteredPeriods],
   );
 
   const hasValidationErrors = () => {
@@ -306,7 +301,7 @@ export default function PayrollPeriods() {
         });
         if (updatedPeriod) {
           setPayrollPeriods((prev) =>
-            prev.map((p) => (p.id === editingPeriod.id ? updatedPeriod : p))
+            prev.map((p) => (p.id === editingPeriod.id ? updatedPeriod : p)),
           );
           toast.success("Payroll period updated successfully");
         }
@@ -327,7 +322,6 @@ export default function PayrollPeriods() {
       toast.error(error.message || "An error occurred while saving the payroll period");
     } finally {
       setSaving(false);
-      
     }
   };
 
@@ -394,6 +388,44 @@ export default function PayrollPeriods() {
     setCurrentPage(1);
   };
 
+  const exportPayslipsReport = async (period_id: number) => {
+    setIsExcelPayslipsReportDownloading(true);
+
+    try {
+      const payload: any = {
+        payroll_period_id: period_id,
+      };
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/payroll/export-passlips-report2excel/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `excel-payslips-report-${period_id}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error("Excel download error:", error);
+    } finally {
+      setIsExcelPayslipsReportDownloading(false);
+    }
+  };
+
   if (!selectedInstitution?.id) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -411,32 +443,31 @@ export default function PayrollPeriods() {
     );
   }
 
-
-    if (isLoading) {
-      return (
-        <div className="p-2 space-y-6">
-          <Card className="h-[calc(100vh-2rem)] shadow-lg">
-            <CardHeader className="border-b">
-              <div className="flex justify-between gap-8 items-center">
-                <div className="flex items-center justify-start gap-4">
-                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
-                  <div className="space-y-2">
-                    <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+  if (isLoading) {
+    return (
+      <div className="p-2 space-y-6">
+        <Card className="h-[calc(100vh-2rem)] shadow-lg">
+          <CardHeader className="border-b">
+            <div className="flex justify-between gap-8 items-center">
+              <div className="flex items-center justify-start gap-4">
+                <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="space-y-2">
+                  <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
                 </div>
               </div>
-            </CardHeader>
-            <TableSkeleton rows={10} columns={8} />
-          </Card>
-        </div>
-      )
-    }
+              <div className="flex gap-2">
+                <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+          </CardHeader>
+          <TableSkeleton rows={10} columns={8} />
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
@@ -464,9 +495,7 @@ export default function PayrollPeriods() {
           <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_PAYROLL_PERIODS}>
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
               <DialogTrigger asChild>
-                <Button
-                  onClick={resetForm}
-                 >
+                <Button onClick={resetForm}>
                   <Plus className="h-4 w-4" />
                   Add Period
                 </Button>
@@ -480,7 +509,10 @@ export default function PayrollPeriods() {
                     Configure payroll period details and dates
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+                <form
+                  onSubmit={handleSubmit}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6"
+                >
                   <div className="space-y-3">
                     <Label htmlFor="name" className="text-sm font-semibold text-gray-800">
                       Period Name *
@@ -492,8 +524,11 @@ export default function PayrollPeriods() {
                       value={formData.name}
                       onChange={(e) => handleInputChange("name", e.target.value)}
                       disabled={saving}
-                      className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.name ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                        }`}
+                      className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
+                        validationErrors.name
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : ""
+                      }`}
                     />
                     {validationErrors.name && (
                       <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -512,8 +547,11 @@ export default function PayrollPeriods() {
                       value={formData.start_date}
                       onChange={(e) => handleInputChange("start_date", e.target.value)}
                       disabled={saving}
-                      className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.start_date ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                        }`}
+                      className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
+                        validationErrors.start_date
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : ""
+                      }`}
                     />
                     {validationErrors.start_date && (
                       <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -533,8 +571,11 @@ export default function PayrollPeriods() {
                       onChange={(e) => handleInputChange("end_date", e.target.value)}
                       disabled={saving}
                       min={formData.start_date}
-                      className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.end_date ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                        }`}
+                      className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
+                        validationErrors.end_date
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : ""
+                      }`}
                     />
                     {validationErrors.end_date && (
                       <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -553,8 +594,11 @@ export default function PayrollPeriods() {
                       value={formData.pay_date}
                       onChange={(e) => handleInputChange("pay_date", e.target.value)}
                       disabled={saving}
-                      className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.pay_date ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                        }`}
+                      className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
+                        validationErrors.pay_date
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : ""
+                      }`}
                     />
                     {validationErrors.pay_date && (
                       <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -567,37 +611,33 @@ export default function PayrollPeriods() {
                     <div className="md:col-span-2 bg-amber-50 rounded-xl p-4">
                       <div className="flex items-start gap-2">
                         <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                        <p className="text-sm font-medium text-amber-800">{validationErrors.warning}</p>
+                        <p className="text-sm font-medium text-amber-800">
+                          {validationErrors.warning}
+                        </p>
                       </div>
                     </div>
                   )}
                 </form>
                 <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsModalOpen(false)}
-                    disabled={saving}
-                  >
+                  <Button variant="outline" onClick={() => setIsModalOpen(false)} disabled={saving}>
                     Cancel
                   </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={saving || hasValidationErrors()}
-                  >
+                  <Button onClick={handleSubmit} disabled={saving || hasValidationErrors()}>
                     {saving ? (
                       <>
                         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                         {editingPeriod ? "Updating..." : "Creating..."}
                       </>
+                    ) : editingPeriod ? (
+                      "Update Period"
                     ) : (
-                      editingPeriod ? "Update Period" : "Create Period"
+                      "Create Period"
                     )}
                   </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
           </ProtectedComponent>
-
         </div>
       </div>
 
@@ -630,64 +670,60 @@ export default function PayrollPeriods() {
       </div>
 
       {/* Search and Filters */}
-    <div className="flex flex-col sm:flex-row gap-6 mt-12 items-center">
-  {/* Search */}
-  <div className="relative w-full sm:w-[36rem]">
-    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-    <Input
-      placeholder="Search by period name..."
-      value={searchTerm}
-      onChange={(e) => setSearchTerm(e.target.value)}
-      className="pl-10 h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20"
-    />
-  </div>
-
-  {/* Filters Group */}
-  <div className="flex flex-col sm:flex-row gap-4 sm:ml-20">
-    {/* Filter by Status */}
-    <Select
-      value={filterStatus}
-      onValueChange={(value: string) => {
-        if (value === "all" || value === "processed" || value === "pending") {
-          setFilterStatus(value);
-        }
-      }}
-    >
-      <SelectTrigger className="w-[14rem] px-6 h-12 rounded-xl">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4" />
-          <SelectValue placeholder="Filter by status" />
+      <div className="flex flex-col sm:flex-row gap-6 mt-12 items-center">
+        {/* Search */}
+        <div className="relative w-full sm:w-[36rem]">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Search by period name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20"
+          />
         </div>
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All Status</SelectItem>
-        <SelectItem value="processed">Processed</SelectItem>
-        <SelectItem value="pending">Pending</SelectItem>
-      </SelectContent>
-    </Select>
 
-    {/* Rows per Page Selector */}
-    <div className="flex items-center gap-2">
-      <span className="text-sm text-muted-foreground">Rows per page:</span>
-      <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-        <SelectTrigger className="w-[70px] h-12">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {PAGE_SIZES.map((size) => (
-            <SelectItem key={size} value={size.toString()}>
-              {size}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  </div>
-</div>
+        {/* Filters Group */}
+        <div className="flex flex-col sm:flex-row gap-4 sm:ml-20">
+          {/* Filter by Status */}
+          <Select
+            value={filterStatus}
+            onValueChange={(value: string) => {
+              if (value === "all" || value === "processed" || value === "pending") {
+                setFilterStatus(value);
+              }
+            }}
+          >
+            <SelectTrigger className="w-[14rem] px-6 h-12 rounded-xl">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <SelectValue placeholder="Filter by status" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="processed">Processed</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+            </SelectContent>
+          </Select>
 
-
-  
-    
+          {/* Rows per Page Selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Rows per page:</span>
+            <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+              <SelectTrigger className="w-[70px] h-12">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZES.map((size) => (
+                  <SelectItem key={size} value={size.toString()}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
 
       {/* Payroll Periods Table */}
       {isRefreshing ? (
@@ -707,9 +743,9 @@ export default function PayrollPeriods() {
           </p>
         </div>
       ) : (
-         <div className="overflow-x-auto mt-10">
-            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-              <TableHeader className="bg-gray-50/50">
+        <div className="overflow-x-auto mt-10">
+          <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+            <TableHeader className="bg-gray-50/50">
               <TableRow className="border-b-2 border-gray-200">
                 <TableHead className="font-semibold text-gray-700 py-4">Period Name</TableHead>
                 <TableHead className="font-semibold text-gray-700">
@@ -745,8 +781,9 @@ export default function PayrollPeriods() {
                       </div>
                       <div className="text-xs text-gray-500">
                         {Math.ceil(
-                          (new Date(period.end_date).getTime() - new Date(period.start_date).getTime()) /
-                          (1000 * 60 * 60 * 24)
+                          (new Date(period.end_date).getTime() -
+                            new Date(period.start_date).getTime()) /
+                            (1000 * 60 * 60 * 24),
                         )}{" "}
                         days
                       </div>
@@ -757,10 +794,11 @@ export default function PayrollPeriods() {
                   </TableCell>
                   <TableCell>
                     <Badge
-                      className={`font-medium px-3 py-1 ${period.is_processed
-                        ? "bg-green-100 text-green-800 border-green-200"
-                        : "bg-yellow-100 text-yellow-800 border-yellow-200"
-                        }`}
+                      className={`font-medium px-3 py-1 ${
+                        period.is_processed
+                          ? "bg-green-100 text-green-800 border-green-200"
+                          : "bg-yellow-100 text-yellow-800 border-yellow-200"
+                      }`}
                     >
                       <div className="flex items-center gap-1">
                         {period.is_processed ? (
@@ -787,28 +825,48 @@ export default function PayrollPeriods() {
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
+                        >
                           <MoreVertical className="h-5 w-5 text-gray-600" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem>
-                          <Link href={`/payroll/payroll-period/${period.id}`} className="flex items-center w-full">
+                          <Link
+                            href={`/payroll/payroll-period/${period.id}`}
+                            className="flex items-center w-full"
+                          >
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
                           </Link>
                         </DropdownMenuItem>
-                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_PAYROLL_PERIODS}>
-                          <DropdownMenuItem onClick={() => handleEdit(period)} className="flex items-center">
+                        <ProtectedComponent
+                          permissionCode={PERMISSION_CODES.CAN_MANAGE_PAYROLL_PERIODS}
+                        >
+                          <DropdownMenuItem
+                            onClick={() => handleEdit(period)}
+                            className="flex items-center"
+                          >
                             <Edit className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
+
                           <DropdownMenuItem
                             onClick={() => setDeleteConfirmId(period.id)}
                             className="flex items-center text-red-600 focus:text-red-700"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => exportPayslipsReport(period.id)}
+                            className="flex items-center w-full"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download Payslips' Report
                           </DropdownMenuItem>
                         </ProtectedComponent>
                       </DropdownMenuContent>
@@ -829,15 +887,23 @@ export default function PayrollPeriods() {
                           </DialogTitle>
                           <DialogDescription className="text-gray-600 text-center text-base leading-relaxed">
                             Are you sure you want to delete the payroll period{" "}
-                            <span className="font-semibold text-gray-900">"{period.name}"</span>? This action cannot be
-                            undone.
+                            <span className="font-semibold text-gray-900">"{period.name}"</span>?
+                            This action cannot be undone.
                           </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>
-                          <Button variant="outline" onClick={() => setDeleteConfirmId(null)} disabled={saving}>
+                          <Button
+                            variant="outline"
+                            onClick={() => setDeleteConfirmId(null)}
+                            disabled={saving}
+                          >
                             Cancel
                           </Button>
-                          <Button variant="destructive" onClick={() => handleDelete(period.id)} disabled={saving}>
+                          <Button
+                            variant="destructive"
+                            onClick={() => handleDelete(period.id)}
+                            disabled={saving}
+                          >
                             {saving ? (
                               <>
                                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -871,8 +937,10 @@ export default function PayrollPeriods() {
       {!isRefreshing && (
         <div className="text-sm text-muted-foreground">
           Showing {filteredPeriods.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to{" "}
-          {Math.min(currentPage * pageSize, filteredPeriods.length)} of {filteredPeriods.length} payroll periods
-          {(searchTerm || filterStatus !== "all") && ` (filtered from ${payrollPeriods.length} total)`}
+          {Math.min(currentPage * pageSize, filteredPeriods.length)} of {filteredPeriods.length}{" "}
+          payroll periods
+          {(searchTerm || filterStatus !== "all") &&
+            ` (filtered from ${payrollPeriods.length} total)`}
         </div>
       )}
 
@@ -897,12 +965,15 @@ export default function PayrollPeriods() {
             <ChevronLeft className="h-4 w-4" />
             Previous
           </Button>
-          <Select value={currentPage.toString()} onValueChange={(value) => handlePageChange(parseInt(value))}>
+          <Select
+            value={currentPage.toString()}
+            onValueChange={(value) => handlePageChange(parseInt(value))}
+          >
             <SelectTrigger className="w-[70px] h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
                 <SelectItem key={page} value={page.toString()}>
                   {page}
                 </SelectItem>
