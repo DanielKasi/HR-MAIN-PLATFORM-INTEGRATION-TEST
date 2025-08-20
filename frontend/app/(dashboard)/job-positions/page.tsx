@@ -112,9 +112,15 @@ export default function JobPositionsPage() {
   const generateSalaryRanges = (positions: IJobPosition[]) => {
     if (!positions.length) return [];
 
-    const salaries = positions.map(pos => Number(pos.salary));
-    const minSalary = Math.min(...salaries);
-    const maxSalary = Math.max(...salaries);
+    const allSalaries = positions.flatMap(pos => [
+      Number(pos.salary_min || 0),
+      Number(pos.salary_max || 0)
+    ]).filter(salary => salary > 0);
+    
+    if (allSalaries.length === 0) return [];
+
+    const minSalary = Math.min(...allSalaries);
+    const maxSalary = Math.max(...allSalaries);
 
     // Calculate range size to create 4 ranges
     const rangeSize = Math.ceil((maxSalary - minSalary) / 4);
@@ -151,8 +157,10 @@ export default function JobPositionsPage() {
       if (selectedSalaryRange === "all") return true;
 
       const [min, max] = selectedSalaryRange.split("-").map(Number);
-      const salary = Number(position.salary);
-      return salary >= min && salary <= max;
+      const positionMin = Number(position.salary_min || 0);
+      const positionMax = Number(position.salary_max || 0);
+      // Check if the position's salary range overlaps with the filter range
+      return positionMin <= max && positionMax >= min;
     }
   );
 
@@ -223,7 +231,13 @@ export default function JobPositionsPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">
-                {formatCurrency(jobPositions.reduce((sum, pos) => Number(sum) + Number(pos.salary), 0))}
+                {formatCurrency(
+                  jobPositions.reduce((sum, pos) => {
+                    const min = Number(pos.salary_min || 0);
+                    const max = Number(pos.salary_max || 0);
+                    return sum + (min + max) / 2; // Use average of min/max for budget calculation
+                  }, 0)
+                )}
               </div>
               <p className="text-xs text-muted-foreground">Total Salary Budget</p>
             </CardContent>
@@ -232,7 +246,13 @@ export default function JobPositionsPage() {
             <CardContent className="p-4">
               <div className="text-2xl font-bold">
                 {formatCurrency(
-                  Math.round(jobPositions.reduce((sum, pos) => Number(sum) + Number(pos.salary), 0) / jobPositions.length) || 0
+                  Math.round(
+                    jobPositions.reduce((sum, pos) => {
+                      const min = Number(pos.salary_min || 0);
+                      const max = Number(pos.salary_max || 0);
+                      return sum + (min + max) / 2;
+                    }, 0) / jobPositions.length
+                  ) || 0
                 )}
               </div>
               <p className="text-xs text-muted-foreground">Average Salary</p>
@@ -324,7 +344,7 @@ export default function JobPositionsPage() {
               <TableRow className="border-b">
                 <TableHead>Name</TableHead>
                 <TableHead>Department</TableHead>
-                <TableHead>Salary</TableHead>
+                <TableHead>Salary Range</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Reports To</TableHead>
                 <TableHead>Templates</TableHead>
@@ -369,7 +389,7 @@ export default function JobPositionsPage() {
               <TableRow className="border-b bg-muted/30">
                 <TableHead>Name</TableHead>
                 <TableHead>Department</TableHead>
-                <TableHead>Salary</TableHead>
+                <TableHead>Salary Range</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Reports To</TableHead>
                 <TableHead>Templates</TableHead>
@@ -388,7 +408,13 @@ export default function JobPositionsPage() {
                     <Badge variant="outline">{position.department_details?.name}</Badge>
                   </TableCell>
                   <TableCell>
-                    UGX {formatCurrency(position?.salary?.toLocaleString() || 0)}
+                    {position?.salary_min && position?.salary_max ? (
+                      <span>
+                        UGX {formatCurrency(position.salary_min)} - {formatCurrency(position.salary_max)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Not set</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge variant={position.job_position_status === "active" ? "success" : "destructive"}>

@@ -280,7 +280,7 @@ export default function UpdateEmployeePage() {
 
       setPositions(Array.isArray(positionsData) ? positionsData : []);
       setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
-      setWorkTypes(Array.isArray(workTypesData) ? workTypesData : []);
+      setWorkTypes(workTypesData.results || []);
       setEmployeeTypes(Array.isArray(employeeTypesData) ? employeeTypesData : []);
     } catch (error) {
       setSubmitError("Failed to load form data. Please refresh the page.");
