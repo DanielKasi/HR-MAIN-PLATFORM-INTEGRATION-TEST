@@ -1,16 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState } from "react";
 import { useSelector } from "react-redux";
 import { 
   MoreVertical, 
   Edit, 
   Trash2, 
   Search, 
-  ChevronLeft, 
-  ChevronRight, 
-  ChevronsLeft, 
-  ChevronsRight, 
   Plus,
   Eye,
   Package,
@@ -40,15 +36,14 @@ import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateAssetReturnDialog } from "@/components/asset-returns/create-asset-return-dialog";
 import { EditAssetReturnDialog } from "@/components/asset-returns/edit-asset-return-dialog";
 import { DeleteAssetReturnDialog } from "@/components/asset-returns/delete-asset-return-dialog";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { useRouter } from "next/navigation";
 import { assetsAPI } from "@/lib/utils";
 import type { IAssetReturn } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
 import { Icon } from "@iconify/react";
 
-// Pagination constants
-const PAGE_SIZES = [10, 25, 50, 100];
-const DEFAULT_PAGE_SIZE = 10;
+
 
 const getConditionColor = (condition: string) => {
   switch (condition) {
@@ -100,78 +95,20 @@ const formatDate = (dateString: string) => {
 const AssetReturnsComponent = () => {
   const router = useRouter();
   const isMobile = useMobile();
-  const [assetReturns, setAssetReturns] = useState<IAssetReturn[]>([]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingAssetReturn, setEditingAssetReturn] = useState<IAssetReturn | null>(null);
   const [deletingAssetReturn, setDeletingAssetReturn] = useState<IAssetReturn | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [conditionFilter, setConditionFilter] = useState<string>("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  // Fetch asset returns from API
-  const fetchAssetReturns = useCallback(async () => {
-    if (!selectedInstitution) return;
-    
-    setIsLoading(true);
-    try {
-      const data = await assetsAPI.getAssetReturns();
-      setAssetReturns(data);
-    } catch (error) {
-      console.warn("Error fetching asset returns:", error);
-      toast.error("Failed to fetch asset returns");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedInstitution]);
 
-  useEffect(() => {
-    fetchAssetReturns();
-  }, [fetchAssetReturns]);
 
-  // Filter and search asset returns
-  const filteredAssetReturns = useMemo(() => {
-    let filtered = assetReturns;
 
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (assetReturn) =>
-          assetReturn.asset?.asset_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          assetReturn.asset?.serial_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          assetReturn.asset?.batch_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          assetReturn.notes?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Apply condition filter
-    if (conditionFilter !== "all") {
-      filtered = filtered.filter((assetReturn) => assetReturn.condition === conditionFilter);
-    }
-
-    return filtered;
-  }, [assetReturns, searchTerm, conditionFilter]);
-
-  // Pagination
-  const totalItems = filteredAssetReturns.length;
-  const totalPages = Math.ceil(totalItems / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedAssetReturns = filteredAssetReturns.slice(startIndex, endIndex);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize);
-    setCurrentPage(1);
-  };
 
   const handleEdit = (assetReturn: IAssetReturn) => {
     setEditingAssetReturn(assetReturn);
@@ -190,27 +127,20 @@ const AssetReturnsComponent = () => {
   const handleEditSuccess = () => {
     setIsEditDialogOpen(false);
     setEditingAssetReturn(null);
-    fetchAssetReturns();
     toast.success("Asset return updated successfully");
   };
 
   const handleDeleteSuccess = () => {
     setIsDeleteDialogOpen(false);
     setDeletingAssetReturn(null);
-    fetchAssetReturns();
     toast.success("Asset return deleted successfully");
   };
 
   const handleCreateSuccess = () => {
-    fetchAssetReturns();
     toast.success("Asset return created successfully");
   };
 
   const hasFilters = searchTerm || conditionFilter !== "all";
-
-  if (isLoading) {
-    return <TableSkeleton />;
-  }
 
   return (
     <div className="space-y-6">
@@ -261,209 +191,175 @@ const AssetReturnsComponent = () => {
 
         {/* Content */}
         <div className="p-6">
-          {isLoading ? (
-            <TableSkeleton />
-          ) : (
-            <>
-              {/* Desktop Table */}
-              <div className="hidden sm:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Asset</TableHead>
-                      <TableHead>Serial Number</TableHead>
-                      <TableHead>Condition</TableHead>
-                      <TableHead>Return Date</TableHead>
-                      <TableHead className="w-12">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedAssetReturns.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                          {hasFilters ? "No returns found matching your filters" : "No asset returns found"}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      paginatedAssetReturns.map((assetReturn) => (
-                        <TableRow key={assetReturn.id}>
-                          <TableCell className="font-medium">
-                            {assetReturn.asset?.asset_name || 'Unknown Asset'}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {assetReturn.asset?.serial_number || 'N/A'}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              {getConditionIcon(assetReturn.condition)}
-                              <Badge className={getConditionColor(assetReturn.condition)}>
-                                {getConditionDisplay(assetReturn.condition)}
-                              </Badge>
-                            </div>
-                          </TableCell>
-                          <TableCell>{formatDate(assetReturn.created_at)}</TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <Icon icon="hugeicons:more-horizontal-circle-01" className="!h-4 !w-4 text-dark" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleView(assetReturn)}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEdit(assetReturn)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleDelete(assetReturn)}
-                                  className="text-red-600"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+          <PaginatedTableWrapper<IAssetReturn>
+            fetchFirstPage={async () => {
+              if (!selectedInstitution) throw new Error("No institution selected");
+              return await assetsAPI.getPaginatedAssetReturns({
+                institutionId: selectedInstitution.id,
+                page: 1,
+                search: searchTerm || undefined,
+              });
+            }}
+            fetchFromUrl={assetsAPI.getPaginatedAssetReturnsFromUrl}
+            deps={[selectedInstitution?.id, searchTerm]}
+            className="space-y-4"
+            footerClassName="pt-4"
+          >
+            {({data, loading, refresh}) => {
+              if (loading) {
+                return <TableSkeleton rows={10} columns={5} />;
+              }
 
-              {/* Mobile Cards */}
-              <div className="sm:hidden space-y-3">
-                {paginatedAssetReturns.length === 0 ? (
+              if (!data || data.results.length === 0) {
+                return (
                   <div className="text-center py-8 text-gray-500">
-                    {hasFilters ? "No returns found matching your filters" : "No asset returns found"}
+                    {searchTerm ? "No returns found matching your search criteria" : "No asset returns found"}
                   </div>
-                ) : (
-                  paginatedAssetReturns.map((assetReturn) => (
-                    <div key={assetReturn.id} className="bg-gray-50 rounded-lg p-4 border">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Users className="h-4 w-4 text-gray-500" />
-                            <h3 className="font-semibold text-gray-900">
+                );
+              }
+
+              // Apply client-side filters (condition filter)
+              const filteredResults = data.results.filter((returnItem) => {
+                const matchesCondition = conditionFilter === "all" || returnItem.condition === conditionFilter;
+                return matchesCondition;
+              });
+
+              if (filteredResults.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-500">
+                    No returns found matching the selected condition filter.
+                  </div>
+                );
+              }
+
+              return (
+                <>
+                  {/* Desktop Table */}
+                  <div className="hidden sm:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Asset</TableHead>
+                          <TableHead>Serial Number</TableHead>
+                          <TableHead>Condition</TableHead>
+                          <TableHead>Return Date</TableHead>
+                          <TableHead className="w-12">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredResults.map((assetReturn) => (
+                          <TableRow key={assetReturn.id}>
+                            <TableCell className="font-medium">
                               {assetReturn.asset?.asset_name || 'Unknown Asset'}
-                            </h3>
-                          </div>
-                          <div className="space-y-1 mb-2">
-                            <p className="text-sm text-gray-600 font-mono">
-                              Serial: {assetReturn.asset?.serial_number || 'N/A'}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              Batch: {assetReturn.asset?.batch_number || 'N/A'}
-                            </p>
-                            <div className="flex items-center gap-2">
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {assetReturn.asset?.serial_number || 'N/A'}
+                            </TableCell>
+                            <TableCell>
                               <div className="flex items-center space-x-2">
                                 {getConditionIcon(assetReturn.condition)}
                                 <Badge className={getConditionColor(assetReturn.condition)}>
                                   {getConditionDisplay(assetReturn.condition)}
                                 </Badge>
                               </div>
-                              <span className="text-sm text-gray-500">
-                                Returned: {formatDate(assetReturn.created_at)}
-                              </span>
+                            </TableCell>
+                            <TableCell>{formatDate(assetReturn.created_at)}</TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <Icon icon="hugeicons:more-horizontal-circle-01" className="!h-4 !w-4 text-dark" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleView(assetReturn)}>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEdit(assetReturn)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDelete(assetReturn)}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Cards */}
+                  <div className="sm:hidden space-y-3">
+                    {filteredResults.map((assetReturn) => (
+                      <div key={assetReturn.id} className="bg-gray-50 rounded-lg p-4 border">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Users className="h-4 w-4 text-gray-500" />
+                              <h3 className="font-semibold text-gray-900">
+                                {assetReturn.asset?.asset_name || 'Unknown Asset'}
+                              </h3>
+                            </div>
+                            <div className="space-y-1 mb-2">
+                              <p className="text-sm text-gray-600 font-mono">
+                                Serial: {assetReturn.asset?.serial_number || 'N/A'}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                Batch: {assetReturn.asset?.batch_number || 'N/A'}
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center space-x-2">
+                                  {getConditionIcon(assetReturn.condition)}
+                                  <Badge className={getConditionColor(assetReturn.condition)}>
+                                    {getConditionDisplay(assetReturn.condition)}
+                                  </Badge>
+                                </div>
+                                <span className="text-sm text-gray-500">
+                                  Returned: {formatDate(assetReturn.created_at)}
+                                </span>
+                              </div>
                             </div>
                           </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleView(assetReturn)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEdit(assetReturn)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDelete(assetReturn)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleView(assetReturn)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEdit(assetReturn)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDelete(assetReturn)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Pagination */}
-              {filteredAssetReturns.length > 0 && (
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
-                  <div className="text-sm text-gray-700">
-                    Showing {((currentPage - 1) * pageSize) + 1} to{" "}
-                    {Math.min(currentPage * pageSize, filteredAssetReturns.length)} of{" "}
-                    {filteredAssetReturns.length} returns
+                    ))}
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(1)}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronsLeft className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        const page = i + 1;
-                        return (
-                          <Button
-                            key={page}
-                            variant={currentPage === page ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => handlePageChange(page)}
-                            className="w-8 h-8 p-0"
-                          >
-                            {page}
-                          </Button>
-                        );
-                      })}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(totalPages)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronsRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+                </>
+              );
+            }}
+          </PaginatedTableWrapper>
         </div>
       </div>
 

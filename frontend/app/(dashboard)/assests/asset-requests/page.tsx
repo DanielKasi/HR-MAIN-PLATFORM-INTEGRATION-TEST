@@ -7,10 +7,6 @@ import {
   Edit, 
   Trash2, 
   Search, 
-  ChevronLeft, 
-  ChevronRight, 
-  ChevronsLeft, 
-  ChevronsRight, 
   Plus,
   Eye,
   Package,
@@ -19,8 +15,7 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  FileText,
-  Users
+  FileText
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,15 +34,11 @@ import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateAssetRequestDialog } from "@/components/asset-requests/create-asset-request-dialog";
 import { EditAssetRequestDialog } from "@/components/asset-requests/edit-asset-request-dialog";
 import { DeleteAssetRequestDialog } from "@/components/asset-requests/delete-asset-request-dialog";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { useRouter } from "next/navigation";
 import { assetsAPI } from "@/lib/utils";
 import type { IAssetRequest } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
-import { Icon } from "@iconify/react";
-
-// Pagination constants
-const PAGE_SIZES = [10, 25, 50, 100];
-const DEFAULT_PAGE_SIZE = 10;
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -105,58 +96,28 @@ const formatDate = (dateString: string) => {
 const AssetRequestsComponent = () => {
   const router = useRouter();
   const isMobile = useMobile();
-  const [assetRequests, setAssetRequests] = useState<IAssetRequest[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState<IAssetRequest | null>(null);
   const [deletingRequest, setDeletingRequest] = useState<IAssetRequest | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
- 
-  // Fetch asset requests from API
-  const fetchAssetRequests = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const response = await assetsAPI.getAssetRequests();
-      setAssetRequests(response || []);
-    } catch (error) {
-      console.warn("Error fetching asset requests:", error);
-      toast.error("Failed to load asset requests");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAssetRequests();
-  }, [fetchAssetRequests]);
-
   const handleCreateSuccess = (newRequest: IAssetRequest) => {
-    setAssetRequests(prev => [newRequest, ...prev]);
     setIsCreateDialogOpen(false);
     toast.success("Asset request created successfully");
   };
 
   const handleUpdateSuccess = (updatedRequest: IAssetRequest) => {
-    setAssetRequests(prev => 
-      prev.map(request => 
-        request.id === updatedRequest.id ? updatedRequest : request
-      )
-    );
     setIsEditDialogOpen(false);
     setEditingRequest(null);
     toast.success("Asset request updated successfully");
   };
 
   const handleDeleteSuccess = (deletedId: number) => {
-    setAssetRequests(prev => prev.filter(request => request.id !== deletedId));
     setIsDeleteDialogOpen(false);
     setDeletingRequest(null);
     toast.success("Asset request deleted successfully");
@@ -176,49 +137,9 @@ const AssetRequestsComponent = () => {
     router.push(`/assests/asset-requests/${request.id}`);
   };
 
-  // Filtered and paginated data
-  const filteredRequests = useMemo(() => {
-    let filtered = assetRequests;
-
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(request =>
-        request.asset?.asset_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.request_reference_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.requester?.user.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (request.notes?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Apply status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(request => request.asset_request_status === statusFilter);
-    }
-
-    return filtered;
-  }, [assetRequests, searchTerm, statusFilter]);
-
-  const paginatedRequests = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return filteredRequests.slice(startIndex, endIndex);
-  }, [filteredRequests, currentPage, pageSize]);
-
-  const totalPages = Math.ceil(filteredRequests.length / pageSize);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handlePageSizeChange = (newPageSize: string) => {
-    setPageSize(Number(newPageSize));
-    setCurrentPage(1);
-  };
-
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("all");
-    setCurrentPage(1);
   };
 
   const hasFilters = searchTerm || statusFilter !== "all";
@@ -227,19 +148,29 @@ const AssetRequestsComponent = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg border shadow-sm">
-        <div className="p-6 ">
+        <div className="p-6 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Asset Requests</h1>
+              <p className="text-sm text-gray-600 mt-1">
+                Manage and track asset requests from employees
+              </p>
             </div>
+            <Button
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="bg-orange-500 hover:bg-orange-600 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Request
+            </Button>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="p-6">
-          <div className="">
-            <div className="flex items-center gap-4 justify-between">
-              <div className="relative flex justify-between">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+              <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="Search requests..."
@@ -249,7 +180,7 @@ const AssetRequestsComponent = () => {
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[130px] border-none shadow-none">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -260,224 +191,205 @@ const AssetRequestsComponent = () => {
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
-              <Button
-                onClick={() => setIsCreateDialogOpen(true)}
-                className="bg-primary text-white rounded-[11px]"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                New Request
-              </Button>
             </div>
+          
           </div>
+          
+
         </div>
 
         {/* Content */}
         <div className="p-6">
-          {isLoading ? (
-            <TableSkeleton />
-          ) : (
-            <>
-              {/* Desktop Table */}
-              <div className="hidden sm:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Request Code</TableHead>
-                      <TableHead>Asset</TableHead>
-                      <TableHead>Requester</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-12">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedRequests.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                          {hasFilters ? "No requests found matching your filters" : "No asset requests found"}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      paginatedRequests.map((request) => (
-                        <TableRow key={request.id}>
-                          <TableCell className="font-mono text-sm">
-                            {request.request_reference_code}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {request.asset?.asset_name || 'Unknown Asset'}
-                          </TableCell>
-                          <TableCell>
-                            {request.requester?.user.fullname || 'Unknown User'}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              {getStatusIcon(request.asset_request_status)}
-                              <Badge className={getStatusColor(request.asset_request_status)}>
-                                {getStatusDisplay(request.asset_request_status)}
-                              </Badge>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <Icon icon="hugeicons:more-horizontal-circle-01" className="!h-4 !w-4 text-dark" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleViewRequestDetails(request)}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditRequest(request)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleDeleteRequest(request)}
-                                  className="text-red-600"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+          <PaginatedTableWrapper<IAssetRequest>
+            fetchFirstPage={async () => {
+              if (!selectedInstitution) throw new Error("No institution selected");
+              return await assetsAPI.getPaginatedAssetRequests({
+                institutionId: selectedInstitution.id,
+                page: 1,
+                search: searchTerm || undefined,
+              });
+            }}
+            fetchFromUrl={assetsAPI.getPaginatedAssetRequestsFromUrl}
+            deps={[selectedInstitution?.id, searchTerm]}
+            className="space-y-4"
+            footerClassName="pt-4"
+          >
+            {({data, loading, refresh}) => {
+              if (loading) {
+                return <TableSkeleton rows={10} columns={7} />;
+              }
 
-              {/* Mobile Cards */}
-              <div className="sm:hidden space-y-3">
-                {paginatedRequests.length === 0 ? (
+              if (!data || data.results.length === 0) {
+                return (
                   <div className="text-center py-8 text-gray-500">
-                    {hasFilters ? "No requests found matching your filters" : "No asset requests found"}
+                    {searchTerm ? "No requests found matching your search criteria" : "No asset requests found"}
                   </div>
-                ) : (
-                  paginatedRequests.map((request) => (
-                    <div key={request.id} className="bg-gray-50 rounded-lg p-4 border">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Users className="h-4 w-4 text-gray-500" />
-                            <h3 className="font-semibold text-gray-900">
+                );
+              }
+
+              // Apply client-side filters (status filter)
+              const filteredResults = data.results.filter((request) => {
+                const matchesStatus = statusFilter === "all" || request.asset_request_status === statusFilter;
+                return matchesStatus;
+              });
+
+              if (filteredResults.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-500">
+                    No requests found matching the selected status filter.
+                  </div>
+                );
+              }
+
+              return (
+                <>
+                  {/* Desktop Table */}
+                  <div className="hidden sm:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12">
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300"
+                            />
+                          </TableHead>
+                          <TableHead>Reference</TableHead>
+                          <TableHead>Asset</TableHead>
+                          <TableHead>Requester</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead className="w-12">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredResults.map((request) => (
+                          <TableRow key={request.id}>
+                            <TableCell>
+                              <input
+                                type="checkbox"
+                                className="rounded border-gray-300"
+                              />
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {request.request_reference_code}
+                            </TableCell>
+                            <TableCell className="font-medium">
                               {request.asset?.asset_name || 'Unknown Asset'}
-                            </h3>
-                          </div>
-                          <div className="space-y-1 mb-2">
-                            <p className="text-sm text-gray-600 font-mono">
-                              Code: {request.request_reference_code}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              Requester: {request.requester?.user.fullname || 'Unknown User'}
-                            </p>
-                            <div className="flex items-center gap-2">
+                            </TableCell>
+                            <TableCell>
+                              {request.requester?.fullname || 'Unknown User'}
+                            </TableCell>
+                            <TableCell>
                               <div className="flex items-center space-x-2">
                                 {getStatusIcon(request.asset_request_status)}
                                 <Badge className={getStatusColor(request.asset_request_status)}>
                                   {getStatusDisplay(request.asset_request_status)}
                                 </Badge>
                               </div>
-                              <span className="text-sm text-gray-500">
-                                Created: {formatDate(request.created_at)}
-                              </span>
+                            </TableCell>
+                            <TableCell>{formatDate(request.created_at)}</TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleViewRequestDetails(request)}>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEditRequest(request)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDeleteRequest(request)}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Cards */}
+                  <div className="sm:hidden space-y-3">
+                    {filteredResults.map((request) => (
+                      <div key={request.id} className="bg-gray-50 rounded-lg p-4 border">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Package className="h-4 w-4 text-gray-500" />
+                              <h3 className="font-semibold text-gray-900">
+                                {request.asset?.asset_name || 'Unknown Asset'}
+                              </h3>
+                            </div>
+                            <div className="space-y-1 mb-2">
+                              <p className="text-sm text-gray-600 font-mono">
+                                Ref: {request.request_reference_code}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                Requester: {request.requester?.fullname || 'Unknown User'}
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center space-x-2">
+                                  {getStatusIcon(request.asset_request_status)}
+                                  <Badge className={getStatusColor(request.asset_request_status)}>
+                                    {getStatusDisplay(request.asset_request_status)}
+                                  </Badge>
+                                </div>
+                                <span className="text-sm text-gray-500">
+                                  Created: {formatDate(request.created_at)}
+                                </span>
+                              </div>
+                              {request.notes && (
+                                <p className="text-sm text-gray-600 mt-1">
+                                  {request.notes}
+                                </p>
+                              )}
                             </div>
                           </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleViewRequestDetails(request)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditRequest(request)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteRequest(request)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewRequestDetails(request)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditRequest(request)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDeleteRequest(request)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Pagination */}
-              {filteredRequests.length > 0 && (
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
-                  <div className="text-sm text-gray-700">
-                    Showing {((currentPage - 1) * pageSize) + 1} to{" "}
-                    {Math.min(currentPage * pageSize, filteredRequests.length)} of{" "}
-                    {filteredRequests.length} requests
+                    ))}
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(1)}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronsLeft className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        const page = i + 1;
-                        return (
-                          <Button
-                            key={page}
-                            variant={currentPage === page ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => handlePageChange(page)}
-                            className="w-8 h-8 p-0"
-                          >
-                            {page}
-                          </Button>
-                        );
-                      })}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(totalPages)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronsRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+                </>
+              );
+            }}
+          </PaginatedTableWrapper>
         </div>
       </div>
 
