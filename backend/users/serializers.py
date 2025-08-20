@@ -200,7 +200,7 @@ class UserOTPVerificationSerializer(serializers.Serializer):
 
 
 class ResendOTPSerializer(serializers.Serializer):
-    user_id = serializers.IntegerField()
+    email = serializers.EmailField()
 
 
 class UserPasswordResetSerializer(serializers.Serializer):

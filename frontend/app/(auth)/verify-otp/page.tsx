@@ -12,10 +12,12 @@ import {Card, CardContent, CardFooter, CardHeader, CardTitle} from "@/components
 import {Input} from "@/components/ui/input";
 import apiRequest from "@/lib/apiRequest";
 import {handleApiError} from "@/lib/apiErrorHandler";
+import {showErrorToast} from "@/lib/utils";
 
 export default function VerifyOTPPage() {
   const searchParams = useSearchParams();
-  const user_id = searchParams.get("user_id") || "";
+  const [emailValue, setEmailValue] = useState<string | null>(null);
+  const user_email = searchParams.get("u_e") || "";
   const [otp, setOTP] = useState<string[]>(Array(6).fill(""));
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -24,12 +26,14 @@ export default function VerifyOTPPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!user_id) {
+    if (!user_email) {
       setErrorMessage("Oops something went wrong!");
-      toast("Missing user information. Redirecting to login page.");
+      toast.error("Missing user information. Redirecting to login page.");
       router.push("/login");
+      return;
     }
-  }, [user_id, router]);
+    setEmailValue(decodeURIComponent(user_email));
+  }, [user_email, router]);
 
   useEffect(() => {
     // Countdown timer for resend button
@@ -47,10 +51,13 @@ export default function VerifyOTPPage() {
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!emailValue) {
+      return;
+    }
+
     // Validate OTP is complete
     if (otp.some((digit) => digit === "")) {
       setErrorMessage("Please enter all 6 digits of the OTP");
-
       return;
     }
 
@@ -59,7 +66,7 @@ export default function VerifyOTPPage() {
 
     try {
       const response = await apiRequest.post("user/verify-otp/", {
-        user_id,
+        email: emailValue,
         otp: otp.join(""),
       });
 
@@ -68,22 +75,20 @@ export default function VerifyOTPPage() {
         router.push("/login?verified=true");
       }
     } catch (error: any) {
-      console.error("Verification error:", error);
-      setErrorMessage(error.response?.data?.message || "Verification failed");
-      toast.error("Verification failed. Please check your OTP and try again.");
+      showErrorToast({error, defaultMessage: "Verification failed"});
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleResend = async () => {
-    if (resendDisabled) return;
+    if (resendDisabled || !emailValue) return;
 
     setIsSubmitting(true);
     setResendDisabled(true);
     setResendCountdown(60);
     try {
-      await apiRequest.post("user/resend-otp/", {user_id});
+      await apiRequest.post("user/resend-otp/", {email: emailValue});
       setErrorMessage("");
       setOTP(Array(6).fill(""));
       toast.success("A new verification code has been sent to your email.");

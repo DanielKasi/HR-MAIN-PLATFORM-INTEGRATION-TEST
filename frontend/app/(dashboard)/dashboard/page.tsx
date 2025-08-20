@@ -1037,20 +1037,15 @@ export default function HRDashboard() {
           getDepartments({institutionId: institutionIdNumber}),
         ]);
 
-        setEmployees(employeesResult);
-        setEmployees(employeesResult);
+        setEmployees(employeesResult.results || []); // Ensure results is an array
 
-        setLeaveApplications(leaveAppsResult);
         setLeaveApplications(leaveAppsResult);
 
         setJobAdverts(jobAdvertsResult.results);
 
         setInterviews(interviewsResult);
         setLeaveTypes(leaveTypesResult);
-        setInterviews(interviewsResult);
-        setLeaveTypes(leaveTypesResult);
 
-        setDepartments(departmentsResult);
         setDepartments(departmentsResult);
 
         setLeavePolicies((leavePoliciesResult as any) || []);

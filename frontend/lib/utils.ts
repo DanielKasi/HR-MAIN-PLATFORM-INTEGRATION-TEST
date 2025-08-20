@@ -1048,11 +1048,13 @@ export const updateEmployee = async ({
 };
 
 export const deleteEmployee = async ({
-  employeeId
+  employeeId,
+  institutionId
 }: {
   employeeId: number;
+  institutionId:number;
 }) => {
-    await apiRequest.delete(`/employee/${employeeId}/delete/`);
+    await apiRequest.delete(`/employee/${institutionId}/${employeeId}/delete/`);
 };
 
 export const getEmployeeById = async ({ employeeId }: { employeeId: number | string }) => {
@@ -3492,9 +3494,15 @@ export const AttendanceAPI = {
     return response.data;
   },
 
-  fetchAttendanceRecords: async (date?: string) => {
+  fetchAttendanceRecords: async ({date, institutionId,search, page }:{date?: string,institutionId?:number,  page?: number;
+  search?: string; }) => {
     const response = await apiRequest.get(`/employee/attendance/${date ? `?date=${date}` : ""}`);
     return response.data as IPaginatedResponse<IAttendance>;
+  },
+
+  fetchAttendanceRecordsFromUrl: async (url: string) => {
+    const response = await apiRequest.get(url);
+    return response.data as PaginatedResponse<IAttendance>;
   },
 
   // Fetch attendance records for a specific employee over a date range
@@ -4351,8 +4359,7 @@ export const calendarAPI = {
 export async function fetchAttendanceData(
   startDate?: string,
   endDate?: string
-): Promise<AttendanceResponse> {
-  try {
+){
     let endpoint = 'employee/attendance-data/';
     
     const params = new URLSearchParams();
@@ -4367,11 +4374,9 @@ export async function fetchAttendanceData(
       endpoint += `?${params.toString()}`;
     }
     
-    return await apiRequest.get(endpoint);
-  } catch (error) {
-    console.error("Error fetching attendance data:", error);
-    throw error;
-  }
+    const response =  await apiRequest.get(endpoint);
+    return response.data as AttendanceResponse;
+
 }
 
 export const showErrorToast = ({error, defaultMessage}: {error: any, defaultMessage?: string}) => {
