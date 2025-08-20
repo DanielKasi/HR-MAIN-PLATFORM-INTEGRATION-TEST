@@ -169,7 +169,7 @@ export default function LeaveBalanceComponent() {
         ]);
 
         setData(balances);
-        setEmployees(employeeData);
+        setEmployees(employeeData.results);
         setLeaveTypes(types.filter((type) => type.is_active !== false));
       } catch (error: any) {
         console.error("Error fetching data:", error);
