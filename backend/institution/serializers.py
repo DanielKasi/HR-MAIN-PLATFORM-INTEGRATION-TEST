@@ -53,7 +53,7 @@ class InstitutionDocumentSerializer(serializers.ModelSerializer):
             if ext not in allowed_extensions:
                 raise serializers.ValidationError(
                     {"error": f"File type {ext} not allowed. Allowed types: {', '.join(allowed_extensions)}"
-                )
+                })
         return value
 
 

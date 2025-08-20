@@ -652,7 +652,7 @@ class EmployeeCreateAPIView(APIView):
                         employee.employee_id = f"{prefix}{last_number:05d}"
 
                         if employee.position and hasattr(employee.position, "salary"):
-                            employee.salary = employee.position.salary
+                            employee.salary = employee.position.salary_min
 
                         if employee.user and not employee.payroll_branch:
                             employee.payroll_branch = employee.get_default_branch()
@@ -705,7 +705,7 @@ class EmployeeCreateAPIView(APIView):
                 f"Total upload time: {(datetime.now() - start_time).total_seconds()} seconds"
             )
             if created_count == 0 and errors:
-            print(
+                print(
                 f"Total upload time: {(datetime.now() - start_time).total_seconds()} seconds"
             )
             if created_count == 0 and errors:
@@ -1889,7 +1889,7 @@ class EmployeeContractApprovalAPIView(APIView):
                     "date_of_joining": timezone.now().date(),
                     "is_active": True,
                     "department": contract.applicant.job_position_advert.job_position.department,
-                    "salary": contract.applicant.job_position_advert.job_position.salary,
+                    "salary": contract.applicant.job_position_advert.job_position.salary_min,
                 }
 
                 employee = Employee(**employee_data)
