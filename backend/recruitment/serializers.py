@@ -290,7 +290,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
             if invalid_ids:
                 raise serializers.ValidationError(
                     {
-                        "apply_salary_to_employees": f"Some employee IDs are invalid: {list(invalid_ids)}"
+                        "error": f"Some employee IDs are invalid: {list(invalid_ids)}"
                     }
                 )
         return attrs
@@ -399,6 +399,6 @@ class JobInterviewSerializer(serializers.ModelSerializer):
 
             if rating is not None and (rating < 1 or rating > 10):
                 raise serializers.ValidationError(
-                    {"rating": "Rating must be between 1 and 10."}
+                    {"error": "Rating must be between 1 and 10."}
                 )
         return attrs

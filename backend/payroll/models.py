@@ -109,20 +109,20 @@ class DeductionType(BaseModel, UtilityBaseModel):
             if self.is_recurring:
                 raise ValidationError(
                     {
-                        "is_recurring": "Attendance-related deductions cannot be recurring."
+                        {"error": "is_recurring": "Attendance-related deductions cannot be recurring."}
                     }
                 )
             if self.frequency:
                 raise ValidationError(
                     {
-                        "frequency": "Attendance-related deductions must not have a frequency."
+                        "error": "Attendance-related deductions must not have a frequency."
                     }
                 )
 
             if not self.institution.is_attendance_penalties_enabled:
                 raise ValidationError(
                     {
-                        "institution": f"Institution '{self.institution.institution_name}' does not allow attendance penalties."
+                        "error": f"Institution '{self.institution.institution_name}' does not allow attendance penalties."
                     }
                 )
 

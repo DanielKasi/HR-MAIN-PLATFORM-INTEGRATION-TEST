@@ -100,13 +100,13 @@ class EmployeeRelatedSerializer(serializers.ModelSerializer):
         if data.get("calculation_method") == "percentage":
             if not data.get("percentage") or data.get("percentage") <= 0:
                 raise serializers.ValidationError(
-                    {"percentage": "Percentage must be greater than 0."}
+                    {"error": "Percentage must be greater than 0."}
                 )
 
         if data.get("calculation_method") == "fixed":
             if not data.get("amount") or data.get("amount") <= 0:
                 raise serializers.ValidationError(
-                    {"amount": "Amount must be greater than 0."}
+                    {"error": "Amount must be greater than 0."}
                 )
 
         departments = data.get("target_departments", [])
@@ -115,13 +115,13 @@ class EmployeeRelatedSerializer(serializers.ModelSerializer):
 
         if not any([departments, positions, target_employees]):
             raise serializers.ValidationError(
-                "At least one of target_departments, target_job_positions, or target_employees must be provided."
+                {"error": "At least one of target_departments, target_job_positions, or target_employees must be provided."}
             )
 
         employees = self.filter_employees(departments, positions, target_employees)
         if not employees.exists():
             raise serializers.ValidationError(
-                "No employees found matching the provided criteria."
+                {"error": "No employees found matching the provided criteria."}
             )
 
         data["employees"] = employees
@@ -322,13 +322,13 @@ class EmployeeTaxSerializer(serializers.ModelSerializer):
 
         if not any([departments, positions, target_employees]):
             raise serializers.ValidationError(
-                "At least one of target_departments, target_job_positions, or target_employees must be provided."
+                {"error": "At least one of target_departments, target_job_positions, or target_employees must be provided."}
             )
 
         employees = self.filter_employees(departments, positions, target_employees)
         if not employees.exists():
             raise serializers.ValidationError(
-                "No employees found matching the provided criteria."
+                {"error": "No employees found matching the provided criteria."}
             )
         data["employees"] = employees
         return data
@@ -436,7 +436,7 @@ class AttendanceReportSerializer(serializers.Serializer):
         try:
             return PayrollPeriod.objects.get(id=value)
         except PayrollPeriod.DoesNotExist:
-            raise serializers.ValidationError("Invalid payroll period ID")
+            raise serializers.ValidationError({"error": "Invalid payroll period ID"})
 
     def to_representation(self, payroll_period):
         # Get all attendance records in this payroll period
@@ -489,4 +489,4 @@ class PayslipsExcelReportSerializer(serializers.Serializer):
         try:
             return PayrollPeriod.objects.get(id=value)
         except PayrollPeriod.DoesNotExist:
-            raise serializers.ValidationError("Invalid payroll period ID")
+            raise serializers.ValidationError({"error": "Invalid payroll period ID"})
