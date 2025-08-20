@@ -94,11 +94,11 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
                 return self._clean_html(html_content)
 
             else:
-                raise serializers.ValidationError(f"Unsupported template type: {template_type}")
+                raise serializers.ValidationError({"error": f"Unsupported template type: {template_type}"})
 
         except Exception as e:
             print("Error reading file:", str(e))
-            raise serializers.ValidationError(f"Error reading file: {str(e)}")
+            raise serializers.ValidationError({"error": f"Error reading file: {str(e)}"})
 
     def _clean_html(self, html_content):
         """
@@ -223,14 +223,14 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
 
         if template_type in ("pdf", "word"):
             if not file and not self.instance:
-                raise serializers.ValidationError("File is required for PDF or Word Document templates.")
+                raise serializers.ValidationError({"error": f"File is required for PDF or Word Document templates."})
             if file:
                 if template_type == "pdf" and not file.name.endswith(".pdf"):
-                    raise serializers.ValidationError("File must be a PDF.")
+                    raise serializers.ValidationError({"error": f"File must be a PDF."})
                 if template_type == "word" and not file.name.endswith((".docx", ".doc")):
-                    raise serializers.ValidationError("File must be a Word document.")
+                    raise serializers.ValidationError({"error": f"File must be a Word document."})
         elif template_type == "text" and not content and not self.instance:
-            raise serializers.ValidationError("Content is required for Rich Text templates.")
+            raise serializers.ValidationError({"error": f"Content is required for Rich Text templates."})
 
         return data
 

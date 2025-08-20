@@ -247,6 +247,7 @@ class EmployeeCreateAPIView(APIView):
             EmployeeSerializer(employee).data, status=status.HTTP_201_CREATED
         )
 
+  
     def handle_bulk_upload(self, request):
         """Handle bulk employee creation from uploaded CSV/Excel file."""
         start_time = datetime.now()
@@ -271,9 +272,17 @@ class EmployeeCreateAPIView(APIView):
                 "bank_account_number": str,
                 "nin": str,
             }
+            dtype_dict = {
+                "phone_number": str,
+                "emergency_contact_phone": str,
+                "bank_account_number": str,
+                "nin": str,
+            }
             if file_extension == "csv":
                 df = pd.read_csv(file, dtype=dtype_dict)
+                df = pd.read_csv(file, dtype=dtype_dict)
             else:
+                df = pd.read_excel(file, dtype=dtype_dict)
                 df = pd.read_excel(file, dtype=dtype_dict)
 
             print(f"Excel/CSV columns: {df.columns.tolist()}")
@@ -358,6 +367,7 @@ class EmployeeCreateAPIView(APIView):
                     {
                         "detail": "Duplicate email addresses found in the uploaded file",
                         "created_count": 0,
+                        "created_count": 0,
                         "errors": [
                             {
                                 "row": idx + 2,
@@ -381,6 +391,7 @@ class EmployeeCreateAPIView(APIView):
                 return Response(
                     {
                         "detail": "Some email addresses already exist in the database",
+                        "created_count": 0,
                         "created_count": 0,
                         "errors": [
                             {
@@ -418,6 +429,7 @@ class EmployeeCreateAPIView(APIView):
 
                     for index, row in batch.iterrows():
                         row_errors = {}  # Dict of field: [msgs] per row
+                        row_errors = {}  # Dict of field: [msgs] per row
                         employee_data = {}
                         user_data = {
                             "fullname": str(row["user.fullname"]).strip(),
@@ -430,6 +442,12 @@ class EmployeeCreateAPIView(APIView):
                             "created_at": datetime.now(),
                             "updated_at": datetime.now(),
                         }
+
+                        # Basic validation for user data
+                        if not user_data["fullname"]:
+                            row_errors["user.fullname"] = ["This field is required."]
+                        if not user_data["email"]:
+                            row_errors["user.email"] = ["This field is required."]
 
                         # Basic validation for user data
                         if not user_data["fullname"]:
@@ -471,6 +489,9 @@ class EmployeeCreateAPIView(APIView):
                                         employee_data[column] = mapped
                                 else:
                                     employee_data[column] = value
+
+                        # Set employee email from user email
+                        employee_data["email"] = user_data["email"]
 
                         # Set employee email from user email
                         employee_data["email"] = user_data["email"]
@@ -548,7 +569,27 @@ class EmployeeCreateAPIView(APIView):
                         employee_data["created_at"] = datetime.now()
                         employee_data["updated_at"] = datetime.now()
                         employee_data_list.append(employee_data)
+                        if row_errors:
+                            batch_errors.append(
+                                {
+                                    "row": index + 2,
+                                    "errors": row_errors,
+                                }
+                            )
+                            continue  # Skip this row, but process others
 
+                        # If no errors, add to creation lists
+                        user_objects.append(CustomUser(**user_data))
+                        employee_data["user"] = len(user_objects) - 1  # Temporary index
+                        employee_data["created_at"] = datetime.now()
+                        employee_data["updated_at"] = datetime.now()
+                        employee_data_list.append(employee_data)
+
+                    # Append batch errors to global
+                    errors.extend(batch_errors)
+
+                    if not employee_data_list:
+                        print("No valid rows in batch, skipping creation")
                     # Append batch errors to global
                     errors.extend(batch_errors)
 
@@ -653,10 +694,17 @@ class EmployeeCreateAPIView(APIView):
                     employees.extend(created_employees)
                     created_count += len(created_employees)
 
+                    employees.extend(created_employees)
+                    created_count += len(created_employees)
+
                     print(
                         f"Batch {start_idx//batch_size + 1} completed in {(datetime.now() - batch_start_time).total_seconds()} seconds"
                     )
 
+            print(
+                f"Total upload time: {(datetime.now() - start_time).total_seconds()} seconds"
+            )
+            if created_count == 0 and errors:
             print(
                 f"Total upload time: {(datetime.now() - start_time).total_seconds()} seconds"
             )
