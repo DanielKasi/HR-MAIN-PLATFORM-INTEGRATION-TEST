@@ -331,7 +331,10 @@ class AssetRequestListCreateView(APIView):
         asset_requests = AssetRequest.objects.filter(asset__institution=institution)
 
         if employee_id:
-            asset_requests = asset_requests.filter(employee_id=employee_id)
+            asset_requests = asset_requests.filter(
+                requester__user__employees__employee_id=employee_id
+            )
+
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_requests, request)

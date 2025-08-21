@@ -66,7 +66,11 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
                                     line_html += f'<span style="{style}">{text}</span>'
                                 bbox = line.get("bbox", [0, 0, page.rect.width, 0])
                                 page_width = page.rect.width
-                                if abs(bbox[0] + bbox[2] - page_width) < page_width * 0.1:
+                                line_width = bbox[2] - bbox[0]
+                                left_margin = bbox[0]
+                                right_margin = page_width - bbox[2]
+                                # Improved centering detection: symmetric margins AND not full-width
+                                if abs(left_margin - right_margin) < page_width * 0.05 and line_width < page_width * 0.9:
                                     line_html = f'<p style="text-align: center;">{line_html}</p>'
                                 else:
                                     line_html = f'<p>{line_html}</p>'
@@ -76,15 +80,23 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
                 return self._clean_html(html_content)
 
             elif template_type == "word":
+                # (Unchanged from previous suggestion)
                 style_map = """
                     p[style-name='Title'] => h1
                     p[style-name='Heading 1'] => h1
                     p[style-name='Heading 2'] => h2
                     p[style-name='Heading 3'] => h3
+                    p[style-name='Heading 4'] => h4
                     p[style-name='Normal'] => p
-                    p[style*='center'] => p:text-center
+                    p:matches(alignment=centered) => p.centered:fresh
+                    p:matches(alignment=right) => p.right:fresh
+                    p:matches(alignment=justified) => p.justify:fresh
+                    p:matches(alignment=left) => p.left:fresh
+                    r[style-name='Strong'] => strong
+                    r[style-name='Emphasis'] => em
                     b => strong
                     i => em
+                    u => u
                 """
                 result = mammoth.convert_to_html(file, style_map=style_map)
                 html_content = result.value
@@ -99,6 +111,75 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
         except Exception as e:
             print("Error reading file:", str(e))
             raise serializers.ValidationError({"error": f"Error reading file: {str(e)}"})
+
+    def _clean_html(self, html_content):
+        """
+        Clean HTML content for CKEditor compatibility, preserving formatting and styles.
+        Updated to handle more alignment classes and keep additional styles like color, margins.
+        """
+        if not html_content:
+            return "<p></p>"
+
+        print("Raw HTML before cleaning:", html_content)
+        soup = BeautifulSoup(html_content, "html.parser")
+
+        # Remove unwanted tags (unchanged)
+        for tag in soup(["img", "script", "style", "meta", "link"]):
+            tag.decompose()
+
+        allowed_tags = [
+            "p", "h1", "h2", "h3", "h4", "h5", "h6", "span", "div",
+            "strong", "em", "b", "i", "u", "ul", "ol", "li", "br"
+        ]
+        allowed_attributes = ["style", "class"]
+
+        for tag in soup.find_all(True):
+            if tag.name not in allowed_tags:
+                tag.unwrap()
+            else:
+                attrs = dict(tag.attrs)
+                tag.attrs.clear()
+                for attr in allowed_attributes:
+                    if attr in attrs:
+                        tag[attr] = attrs[attr]
+                if "style" in tag.attrs:
+                    styles = tag["style"].split(";")
+                    valid_styles = [
+                        s for s in styles
+                        if s.strip() and any(prop in s for prop in [
+                            "font-size", "text-align", "font-weight",
+                            "font-style", "text-decoration", "margin", "padding",
+                            "color", "background-color", "line-height"  # Added more for preservation
+                        ])
+                    ]
+                    tag["style"] = ";".join(valid_styles) if valid_styles else None
+
+        # Handle alignment classes from mammoth or PDF (expanded for more cases)
+        alignment_map = {
+            'centered': 'center',
+            'center': 'center',
+            'text-center': 'center',
+            'right': 'right',
+            'justify': 'justify',
+            'left': 'left'  # Default, but explicit
+        }
+        for tag in soup.find_all(["p", "div", "h1", "h2", "h3", "h4", "h5", "h6"]):
+            classes = tag.get("class", [])
+            for cls in classes:
+                align = alignment_map.get(cls.lower())
+                if align:
+                    current_style = tag.get("style", "")
+                    tag["style"] = f"{current_style};text-align: {align};".strip(";")
+                    break  # Apply first matching alignment
+            # Remove classes after converting to styles (to avoid redundancy)
+            tag.attrs.pop("class", None)
+
+        if not soup.find(["p", "div", "h1", "h2", "h3", "ul", "ol"]):
+            soup = BeautifulSoup(f"<p>{soup.get_text()}</p>", "html.parser")
+
+        cleaned_html = str(soup).strip()
+        print("Cleaned HTML content:", cleaned_html)
+        return cleaned_html if cleaned_html else "<p></p>"
 
     def _clean_html(self, html_content):
         """
