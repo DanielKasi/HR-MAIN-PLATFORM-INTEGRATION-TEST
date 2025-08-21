@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from recruitment.models import (
     JobPosition,
     JobPositionAdvert,
@@ -16,6 +17,7 @@ from django.db import transaction
 from users.models import CustomUser
 from users.serializers import CustomUserSerializer
 from recruitment.models import RequiredDocument
+
 
 
 class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
@@ -118,6 +120,7 @@ class InterviewStageSerializer(serializers.ModelSerializer):
             "interviewers_details",
             "candidates_count",
             "candidates",
+            'feedback_fields',
         ]
 
     def get_candidates(self, obj):
@@ -140,6 +143,55 @@ class InterviewStageSerializer(serializers.ModelSerializer):
         return JobInterview.objects.filter(
             interview_stage=obj, status="scheduled"
         ).count()
+    
+    def validate_feedback_fields(self, value):
+        """
+        Validates the structure of the feedback_fields JSON data.
+        """
+        if not isinstance(value, list):
+            raise ValidationError({"error": "feedback_fields must be a list of objects."})
+
+        # Define valid field types
+        valid_types = ["text", "rating", "checkbox"]
+
+        for field in value:
+            # Check if each item is a dictionary
+            if not isinstance(field, dict):
+                raise ValidationError({"error": "Each feedback field must be an object."})
+
+            # Check for required properties in each field
+            required_props = ["label", "type", "required"]
+            if not all(prop in field for prop in required_props):
+                missing_props = [prop for prop in required_props if prop not in field]
+                raise ValidationError(
+                    {"error": f"Missing required properties in a feedback field: {', '.join(missing_props)}."}
+                )
+
+            # Validate the type of the field
+            if field["type"] not in valid_types:
+                raise ValidationError(
+                    {"error": f"Invalid field type '{field['type']}'. Must be one of: {', '.join(valid_types)}."}
+                )
+
+            # Specific validation for 'rating' type
+            if field["type"] == "rating":
+                if "options" not in field:
+                    raise ValidationError(
+                        {"error": "A 'rating' type field must have an 'options' list."}
+                    )
+                if not isinstance(field["options"], list) or not all(isinstance(i, int) for i in field["options"]):
+                    raise ValidationError(
+                        {"error": "'options' for a 'rating' type must be a list of integers."}
+                    )
+
+            # Ensure 'required' is a boolean
+            if not isinstance(field["required"], bool):
+                raise ValidationError(
+                    {"error": "'required' property must be a boolean."}
+                )
+        
+        return value
+
 
 
 class JobPositionAdvertSerializer(serializers.ModelSerializer):
