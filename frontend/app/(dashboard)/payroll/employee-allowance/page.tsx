@@ -13,8 +13,9 @@ import {
   getPaginatedEmployeeAllowancesFromUrl,
   deleteEmployeeAllowance,
   getAllowanceTypes,
+  getAllEmployees,
 } from "@/lib/utils"
-import type { IEmployeeAllowance, IAllowanceType } from "@/types/types.utils"
+import type { IEmployeeAllowance, IAllowanceType, IEmployee } from "@/types/types.utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { EmployeeAllowanceFormDialog } from "@/components/employee-allowances/employee-allowance-form-dialog"
 
@@ -36,7 +37,11 @@ export default function EmployeeAllowancesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
   const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all")
-  const [refreshFunction, setRefreshFunction] = useState<(() => void) | null>(null)
+  const [refreshFunction, setRefreshFunction] = useState<(() => void) | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
+  const [employees, setEmployees] = useState<IEmployee[]>([]);
+
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
 
@@ -58,8 +63,27 @@ export default function EmployeeAllowancesPage() {
     fetchAllowanceTypes()
   }, [selectedInstitution?.id])
 
+  useEffect(() => {
+    fetchEmployees()
+  }, [selectedInstitution])
 
+  const fetchEmployees = async () => {
+    if (!selectedInstitution?.id) {
+      return
+    }
 
+    setIsLoadingEmployees(true)
+    try {
+      const fetchedEmployees = await getAllEmployees({ institutionId: selectedInstitution.id })
+      setEmployees(fetchedEmployees.results || [])
+    } catch (error: any) {
+      setEmployees([])
+      toast.error(error?.message || error?.detail || "Failed to load employees")
+    } finally {
+      setIsLoadingEmployees(false)
+      setIsLoading(false)
+    }
+  }
 
 
   const getCalculatedAmount = (allowance: IEmployeeAllowance): number => {
