@@ -1425,17 +1425,20 @@ class EmployeeAttendanceListCreateAPIView(APIView):
 
     @extend_schema(
         responses=EmployeeAttendanceSerializer(many=True),
-        description="Retrieve all attendance records or for a specific employee if employee_id is provided.",
+        description="Retrieve all attendance records or for a specific employee if employee_id is provided either in path or query param.",
     )
     def get(self, request, employee_id=None):
+        # If employee_id is not in path, try query param
+        employee_id = employee_id or request.query_params.get("employee_id")
+
         date = request.query_params.get("date")
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
 
         records = EmployeeAttendance.objects.all()
 
-        # Filter by employee if employee_id is provided
-        if employee_id is not None:
+        # Filter by employee if provided
+        if employee_id:
             records = records.filter(employee_id=employee_id)
 
         # Filter by specific date
@@ -1454,6 +1457,7 @@ class EmployeeAttendanceListCreateAPIView(APIView):
         paginated_qs = paginator.paginate_queryset(records, request)
         serializer = EmployeeAttendanceSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
+
 
     @extend_schema(
         request=EmployeeAttendanceSerializer,

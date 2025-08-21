@@ -319,6 +319,7 @@ class AssetRequestListCreateView(APIView):
     )
     def get(self, request):
         user = request.user.profile if request and hasattr(request, "user") else None
+        employee_id = request.query_params.get("employee_id")
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
@@ -328,6 +329,10 @@ class AssetRequestListCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         asset_requests = AssetRequest.objects.filter(asset__institution=institution)
+
+        if employee_id:
+            asset_requests = asset_requests.filter(employee_id=employee_id)
+
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_requests, request)
         serializer = AssetRequestWorkflowSerializer(paginated_qs, many=True)

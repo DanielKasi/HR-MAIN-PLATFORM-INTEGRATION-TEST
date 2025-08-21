@@ -59,6 +59,8 @@ class EmployeeSerializer(serializers.ModelSerializer):
         child=serializers.IntegerField(), write_only=True, required=False
     )
     employee_working_days = serializers.SerializerMethodField()
+    work_type = serializers.PrimaryKeyRelatedField(queryset=WorkType.objects.all())
+    employee_type = serializers.PrimaryKeyRelatedField(queryset=EmployeeType.objects.all())
 
     class Meta:
         model = Employee
@@ -225,6 +227,8 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
         if data["position_details"]:
             data["position"] = data["position_details"]
+        data["work_type"] = WorkTypeSerializer(instance.work_type).data
+        data["employee_type"] = EmployeeTypeSerializer(instance.employee_type).data
 
         data.pop("department_details", None)
         data.pop("position_details", None)
