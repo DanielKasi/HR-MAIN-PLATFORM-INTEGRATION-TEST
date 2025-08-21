@@ -104,7 +104,7 @@ export const CreateAssetAllocationDialog = ({
 
     try {
       const data = await getAllEmployees({ institutionId: selectedInstitution.id });
-      setEmployees(data || []);
+      setEmployees(data.results || []);
     } catch (error) {
       console.error("Error fetching employees:", error);
       toast.error("Failed to load employees");

@@ -103,7 +103,7 @@ const formatDate = (dateString: string) => {
 
 interface LeaveType extends ILeaveType {}
 
-const LeaveTypesComponent = () => {
+const LeaveTypesPage = () => {
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -759,7 +759,6 @@ const LeaveTypesComponent = () => {
         </div>
       </div>
 
-      {/* Rows per Page Selector remains below or wherever you want */}
 
       {/* Leave Types Table */}
       {isLoading ? (
@@ -1229,4 +1228,4 @@ const LeaveTypesComponent = () => {
   );
 };
 
-export default LeaveTypesComponent;
+export default LeaveTypesPage;

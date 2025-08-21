@@ -279,15 +279,24 @@ export const getDepartments = async ({ institutionId }: { institutionId: number 
   }
 };
 
-export const getJobPositions = async ({ institutionId }: { institutionId: number }) => {
-  try {
-    const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`);
-    const data = response.data as IPaginatedResponse<IJobPosition>;
-    return data.results;
-  } catch (error) {
-    throw error;
+export const getJobPositions = async ({ institutionId, page=1, search }: { institutionId: number, page?: number, search?: string }) => {
+  const params = new URLSearchParams({
+    page: page?.toString() || "1",
+  });
+
+  if (search) {
+    params.append("search", search);
   }
+  const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/?${params.toString()}`);
+  const data = response.data as IPaginatedResponse<IJobPosition>;
+  return data.results;
 };
+
+export const getPaginatedJobPositionsFromUrl = async (url: string) => {
+  const response = await apiRequest.get(url);
+  return response.data as IPaginatedResponse<IJobPosition>;
+};
+
 
 export const getDefaultData = async (): Promise<IDepartment[] | null> => {
   try {

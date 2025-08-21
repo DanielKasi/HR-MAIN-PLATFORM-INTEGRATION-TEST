@@ -62,7 +62,7 @@ export function ContextSelector({
       switch (selectedContext) {
         case 'employee':
           const employees = await getAllEmployees({ institutionId:currentInstitution.id })
-          data = employees.map((emp: IEmployee) => ({
+          data = employees.results.map((emp: IEmployee) => ({
             id: emp.id,
             name: emp.user?.fullname || emp.email,
             description: `${emp.email} • ${emp.department?.name || 'No Department'}`
