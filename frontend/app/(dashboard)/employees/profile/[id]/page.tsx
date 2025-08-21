@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import { useSelector } from "react-redux";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { IAttendance } from "@/types/types.utils";
+import {useState, useEffect} from "react";
+import {useParams} from "next/navigation";
+import {useSelector} from "react-redux";
+import {Card, CardContent, CardHeader} from "@/components/ui/card";
+import {Badge} from "@/components/ui/badge";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import {Button} from "@/components/ui/button";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import type {IAttendance} from "@/types/types.utils";
 
-import { DocumentGenerationDialog } from "@/components/document-generation-dialog";
+import {DocumentGenerationDialog} from "@/components/document-generation-dialog";
 import {
   Mail,
   Phone,
@@ -24,12 +24,12 @@ import {
   FileText,
 } from "lucide-react";
 import Link from "next/link";
-import { AttendanceAPI, getEmployeeById } from "@/lib/utils";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import type { IEmployee } from "@/types/types.utils";
-import { toast } from "sonner";
+import {AttendanceAPI, getEmployeeById} from "@/lib/utils";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import type {IEmployee} from "@/types/types.utils";
+import {toast} from "sonner";
 
-export default function EmployeeProfileFigma() {
+export default function EmployeeProfile() {
   const params = useParams();
   const employeeId = params.id as string;
   const [employee, setEmployee] = useState<IEmployee | null>(null);
@@ -49,8 +49,8 @@ export default function EmployeeProfileFigma() {
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "Not provided";
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return null;
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -58,8 +58,9 @@ export default function EmployeeProfileFigma() {
     });
   };
 
-  const getMaritalStatusLabel = (status: string) => {
-    const statusMap: { [key: string]: string } = {
+  const getMaritalStatusLabel = (status: string | null) => {
+    if (!status) return null;
+    const statusMap: {[key: string]: string} = {
       single: "Single",
       married: "Married",
       divorced: "Divorced",
@@ -70,6 +71,8 @@ export default function EmployeeProfileFigma() {
 
   const getProfilePictureUrl = (employee: IEmployee) => {
     const pictureStr = employee.employee_profile_picture || "";
+    if (!pictureStr) return null;
+
     if (pictureStr.startsWith("http://") || pictureStr.startsWith("https://")) {
       return pictureStr;
     }
@@ -108,10 +111,10 @@ export default function EmployeeProfileFigma() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      present: { label: "Present", className: "bg-[#e1faec] text-[#3cb371] border-[#3cb371]" },
-      absent: { label: "Absent", className: "bg-[#fcdee2] text-[#e21732] border-[#e21732]" },
-      late: { label: "Late", className: "bg-[#d7effd] text-[#0ca0f5] border-[#0ca0f5]" },
-      leave: { label: "Leave", className: "bg-[#ebd4fa] text-[#9c36db] border-[#9c36db]" },
+      present: {label: "Present", className: "bg-[#e1faec] text-[#3cb371] border-[#3cb371]"},
+      absent: {label: "Absent", className: "bg-[#fcdee2] text-[#e21732] border-[#e21732]"},
+      late: {label: "Late", className: "bg-[#d7effd] text-[#0ca0f5] border-[#0ca0f5]"},
+      leave: {label: "Leave", className: "bg-[#ebd4fa] text-[#9c36db] border-[#9c36db]"},
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || {
@@ -165,7 +168,7 @@ export default function EmployeeProfileFigma() {
     setLoading(true);
     setError(null);
     try {
-      const fetchedEmployee = await getEmployeeById({ employeeId });
+      const fetchedEmployee = await getEmployeeById({employeeId});
       setEmployee(fetchedEmployee);
     } catch (error: any) {
       let errorMessage = "Failed to fetch employee";
@@ -220,7 +223,7 @@ export default function EmployeeProfileFigma() {
   const filteredAttendanceRecords = attendanceRecords.filter((record) => {
     const matchesSearch =
       searchTerm === "" ||
-      formatDate(record.date).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      formatDate(record.date)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.status.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === "all" || record.status === statusFilter;
@@ -229,367 +232,395 @@ export default function EmployeeProfileFigma() {
   });
 
   const attendanceSummary = {
-    totalWorkDays: attendanceRecords.length || 120,
-    daysAbsent: attendanceRecords.filter((record) => record.status === "absent").length || 5,
-    lateArrivals: attendanceRecords.filter((record) => record.status === "late").length || 32,
-    leaveBalance: 43,
+    totalWorkDays: attendanceRecords.length,
+    daysAbsent: attendanceRecords.filter((record) => record.status === "absent").length,
+    lateArrivals: attendanceRecords.filter((record) => record.status === "late").length,
+    leaveBalance: 0, // This should come from API
   };
 
   return (
-
     <div className="min-h-screen bg-[#f7f7fb]">
-      {
-        employee && (
-          <div className="w-full px-4 pb-8">
-            {/* Header section with back arrow, name, and action buttons */}
-            <div className="flex flex-row md:flex-row md:items-center justify-between py-4 my-6 gap-4">
-              <div className="flex items-center">
-                <Link href="/employees/employee-list">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-[#848496] hover:text-[#162032] rounded-full p-2"
-                  >
-                    <ArrowLeft className="w-5 h-5" />
-                  </Button>
-                </Link>
-
-                <h1 className="text-xl md:text-2xl font-bold text-[#162032] flex items-center justify-start gap-2 md:gap-3">
-                  <span>{employee.user?.fullname || ""}</span>
-                  <Badge className="bg-[#e1faec] text-[#3cb371] border-[#3cb371] font-medium self-start md:self-auto">
-                    {employee.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                </h1>
-
-              </div>
-              <div className="flex items-center space-x-3">
-                <Link
-                  href={`/employees/update-employee/${employee.id}`}
-                >
-                  <Button
-                    variant="outline"
-                    className="text-gray-500 hover:text-gray-600 flex items-center gap-2"
-                  >
-                    <Edit className="w-4 h-4" />
-                    <span className="hidden md:inline">Edit</span>
-                  </Button>
-                </Link>
+      {employee && (
+        <div className="w-full px-4 pb-8">
+          {/* Header section with back arrow, name, and action buttons */}
+          <div className="flex flex-row md:flex-row md:items-center justify-between py-4 my-6 gap-4">
+            <div className="flex items-center">
+              <Link href="/employees/employee-list">
                 <Button
-                  variant="outline"
-                  className="text-[#e21732] hover:text-[#e21732]/90 flex items-center gap-2"
+                  variant="ghost"
+                  size="sm"
+                  className="text-[#848496] hover:text-[#162032] rounded-full p-2"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  <span className="hidden md:inline">Delete</span>
+                  <ArrowLeft className="w-5 h-5" />
                 </Button>
+              </Link>
 
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDocumentDialog(true)}
-                  className="flex items-center gap-2 shadow-sm"
-                >
-                  <FileText className="h-4 w-4" />
-                  <span className="hidden md:inline">
-                    Generate Document
-                  </span>
-                </Button>
-              </div>
+              <h1 className="text-xl md:text-2xl font-bold text-[#162032] flex items-center justify-start gap-2 md:gap-3">
+                <span>{employee.user?.fullname || "Unknown Employee"}</span>
+                <Badge className="bg-[#e1faec] text-[#3cb371] border-[#3cb371] font-medium self-start md:self-auto">
+                  {employee.is_active ? "Active" : "Inactive"}
+                </Badge>
+              </h1>
             </div>
+            <div className="flex items-center space-x-3">
+              <Link href={`/employees/update-employee/${employee.id}`}>
+                <Button
+                  variant="outline"
+                  className="text-gray-500 hover:text-gray-600 flex items-center gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span className="hidden md:inline">Edit</span>
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                className="text-[#e21732] hover:text-[#e21732]/90 flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span className="hidden md:inline">Delete</span>
+              </Button>
 
-            {/* Profile card */}
-            <div className="bg-white rounded-lg shadow-sm border border-[#e8e8f2] mb-6 -mt-5">
-              <div className="p-4 md:p-6">
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
-                  {/* Left side - Avatar and basic info */}
-                  <div className="flex flex-col">
-                    <div className="flex flex-col md:flex-row md:items-start gap-4 mb-4">
-                      <Avatar className="w-16 h-16 md:w-20 md:h-20 border-4 border-white shadow-lg flex-shrink-0 self-center md:self-start">
-                        <AvatarImage
-                          src={getProfilePictureUrl(employee) || "/placeholder.svg"}
-                          alt="Profile picture"
-                          className="object-cover"
-                        />
-                        <AvatarFallback className="text-lg md:text-xl bg-[#f0f0f6] text-[#162032]">
-                          {getEmployeeInitials(employee)}
-                        </AvatarFallback>
-                      </Avatar>
+              <Button
+                variant="outline"
+                onClick={() => setShowDocumentDialog(true)}
+                className="flex items-center gap-2 shadow-sm"
+              >
+                <FileText className="h-4 w-4" />
+                <span className="hidden md:inline">Generate Document</span>
+              </Button>
+            </div>
+          </div>
 
-                      <div className="flex flex-col text-center md:text-left">
-                        <h2 className="text-lg md:text-xl font-bold text-[#162032] mb-1">
-                          {employee.user?.fullname || ""}
+          {/* Profile card */}
+          <div className="bg-white rounded-lg shadow-sm border border-[#e8e8f2] mb-6 -mt-5">
+            <div className="p-4 md:p-6">
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
+                {/* Left side - Avatar and basic info */}
+                <div className="flex flex-col">
+                  <div className="flex flex-col md:flex-row md:items-start gap-4 mb-4">
+                    <Avatar className="w-16 h-16 md:w-20 md:h-20 border-4 border-white shadow-lg flex-shrink-0 self-center md:self-start">
+                      <AvatarImage
+                        src={getProfilePictureUrl(employee) || "/placeholder.svg"}
+                        alt="Profile picture"
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="text-lg md:text-xl bg-[#f0f0f6] text-[#162032]">
+                        {getEmployeeInitials(employee)}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <div className="flex flex-col text-center md:text-left">
+                      <h2 className="text-lg md:text-xl font-bold text-[#162032] mb-1">
+                        {employee.user?.fullname || "Unknown Employee"}
+                        {employee.user?.gender && (
                           <span className="block md:inline text-[#9ca3af] text-sm font-normal md:ml-2">
-                            {employee.gender || "he/him"}
+                            {employee.user.gender}
                           </span>
-                        </h2>
-                        <p className="text-[#9ca3af] text-sm font-medium mb-2">
-                          {employee.employee_id || `EMP-${employee.id}`}
-                        </p>
+                        )}
+                      </h2>
+                      <p className="text-[#9ca3af] text-sm font-medium mb-2">
+                        {employee.employee_id}
+                      </p>
 
-                        <div className="flex items-center justify-center md:justify-start gap-2">
-                          <Building className="w-4 h-4 text-[#9ca3af]" />
-                          <span className="text-[#162032] font-medium">
-                            {employee.position?.name || "Head Office"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Contact info - stack vertically on mobile, horizontal on larger screens */}
-                    <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 text-sm">
                       <div className="flex items-center justify-center md:justify-start gap-2">
-                        <Mail className="w-4 h-4 text-[#9ca3af] flex-shrink-0" />
-                        <span className="text-[#162032] break-all">{employee.email}</span>
-                      </div>
-                      <div className="flex items-center justify-center md:justify-start gap-2">
-                        <Phone className="w-4 h-4 text-[#9ca3af] flex-shrink-0" />
-                        <span className="text-[#162032]">
-                          {employee.phone_number || "+256 752342991"}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-center md:justify-start gap-2">
-                        <MapPin className="w-4 h-4 text-[#9ca3af] flex-shrink-0" />
-                        <span className="text-[#162032] text-center md:text-left">
-                          {employee.address || "Kireka, Nakawa, Kampala"}
+                        <Building className="w-4 h-4 text-[#9ca3af]" />
+                        <span className="text-[#162032] font-medium">
+                          {employee.position?.name || "No Position"}
                         </span>
                       </div>
                     </div>
                   </div>
 
-
-
-                  {/* Right side - Job info and badges - show below on mobile, beside on desktop */}
-                  <div className="flex flex-col items-center lg:items-start gap-4 mt-6 pt-6 border-t border-[#e8e8f2] lg:mt-0 lg:pt-0 lg:border-t-0 lg:flex-row lg:gap-4 lg:flex-shrink-0">
-                    {/* Vertical divider line - only on desktop */}
-                    <div className="hidden lg:block h-16 w-px bg-[#e8e8f2]"></div>
-
-                    <div className="flex flex-col items-center lg:items-start gap-3">
-                      <div className="text-center lg:text-left">
-                        <div className="font-semibold text-sm text-[#162032]">
-                          {employee.position?.name || "Marketing Manager"}
-                        </div>
-                        <div className="text-xs text-[#848496]">
-                          {employee.department?.name || "Sales"}
-                        </div>
+                  {/* Contact info - stack vertically on mobile, horizontal on larger screens */}
+                  <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 text-sm">
+                    <div className="flex items-center justify-center md:justify-start gap-2">
+                      <Mail className="w-4 h-4 text-[#9ca3af] flex-shrink-0" />
+                      <span className="text-[#162032] break-all">{employee.email}</span>
+                    </div>
+                    {employee.phone_number && (
+                      <div className="flex items-center justify-center md:justify-start gap-2">
+                        <Phone className="w-4 h-4 text-[#9ca3af] flex-shrink-0" />
+                        <span className="text-[#162032]">{employee.phone_number}</span>
                       </div>
+                    )}
+                    {employee.address && (
+                      <div className="flex items-center justify-center md:justify-start gap-2">
+                        <MapPin className="w-4 h-4 text-[#9ca3af] flex-shrink-0" />
+                        <span className="text-[#162032] text-center md:text-left">
+                          {employee.address}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-                      {/* Salary Information */}
+                {/* Right side - Job info and badges - show below on mobile, beside on desktop */}
+                <div className="flex flex-col items-center lg:items-start gap-4 mt-6 pt-6 border-t border-[#e8e8f2] lg:mt-0 lg:pt-0 lg:border-t-0 lg:flex-row lg:gap-4 lg:flex-shrink-0">
+                  {/* Vertical divider line - only on desktop */}
+                  <div className="hidden lg:block h-16 w-px bg-[#e8e8f2]"></div>
+
+                  <div className="flex flex-col items-center lg:items-start gap-3">
+                    <div className="text-center lg:text-left">
+                      <div className="font-semibold text-sm text-[#162032]">
+                        {employee.position?.name || "No Position"}
+                      </div>
+                      <div className="text-xs text-[#848496]">
+                        {employee.department?.name || "No Department"}
+                      </div>
+                    </div>
+
+                    {/* Salary Information */}
+                    {employee.salary && (
                       <div className="text-center lg:text-left">
                         <div className="text-xs text-[#848496] mb-1">Monthly Salary</div>
                         <div className="font-bold text-lg text-[#162032]">
-                          UGX {employee.salary ? Number(employee.salary).toLocaleString() : "800,000"}
+                          UGX {Number(employee.salary).toLocaleString()}
                         </div>
                       </div>
+                    )}
 
-                      <div className="flex gap-2">
+                    <div className="flex gap-2">
+                      {employee.work_type && (
                         <Badge className="bg-[#e1faec] text-[#3cb371] border-[#3cb371] text-xs px-2 py-1">
-                          On Site
+                          {employee.work_type}
                         </Badge>
+                      )}
+                      {employee.employee_type && (
                         <Badge className="bg-[#d7effd] text-[#0ca0f5] border-[#0ca0f5] text-xs px-2 py-1">
-                          Full-Time
+                          {employee.employee_type}
                         </Badge>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Sidebar - stack on mobile, sidebar on desktop */}
-              <div className="lg:col-span-1 order-2 lg:order-1">
-                <Card className="bg-white border-[#e8e8f2]">
-                  <CardContent className="p-4 md:p-6 space-y-6">
-                    <div>
-                      <h3 className="text-lg font-semibold text-[#162032] mb-4">Additional Info</h3>
-                      <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Sidebar - stack on mobile, sidebar on desktop */}
+            <div className="lg:col-span-1 order-2 lg:order-1">
+              <Card className="bg-white border-[#e8e8f2]">
+                <CardContent className="p-4 md:p-6 space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#162032] mb-4">Additional Info</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium text-[#848496]">Employee ID</label>
+                        <p className="text-[#162032] font-medium break-all">
+                          {employee.employee_id}
+                        </p>
+                      </div>
+                      {employee.date_of_joining && (
                         <div>
-                          <label className="text-sm font-medium text-[#848496]">Employee ID</label>
-                          <p className="text-[#162032] font-medium break-all">
-                            {employee.employee_id || "EMP00004"}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-[#848496]">Date of Joining</label>
+                          <label className="text-sm font-medium text-[#848496]">
+                            Date of Joining
+                          </label>
                           <p className="text-[#162032] font-medium">
-                            {formatDate(employee.date_of_joining) || "May 12, 1977"}
+                            {formatDate(employee.date_of_joining)}
                           </p>
                         </div>
+                      )}
+                      {employee.date_of_birth && (
                         <div>
                           <label className="text-sm font-medium text-[#848496]">B.O.D</label>
                           <p className="text-[#162032] font-medium">
-                            {formatDate(employee.date_of_birth) || "Apr 24, 1997"}
+                            {formatDate(employee.date_of_birth)}
                           </p>
                         </div>
+                      )}
+                      {employee.nin && (
                         <div>
                           <label className="text-sm font-medium text-[#848496]">NIN</label>
-                          <p className="text-[#162032] font-medium break-all">
-                            {employee.nin || "CM873162848T88N"}
-                          </p>
+                          <p className="text-[#162032] font-medium break-all">{employee.nin}</p>
                         </div>
+                      )}
+                      {employee.tin && (
                         <div>
                           <label className="text-sm font-medium text-[#848496]">TIN</label>
-                          <p className="text-[#162032] font-medium break-all">
-                            {employee.tin || "267"}
-                          </p>
+                          <p className="text-[#162032] font-medium break-all">{employee.tin}</p>
                         </div>
+                      )}
+                      {employee.nssf_no && (
                         <div>
                           <label className="text-sm font-medium text-[#848496]">NSSF No.</label>
-                          <p className="text-[#162032] font-medium break-all">
-                            {employee.nssf_no || "Dolore perspiciatis"}
-                          </p>
+                          <p className="text-[#162032] font-medium break-all">{employee.nssf_no}</p>
                         </div>
+                      )}
+                      {(employee.marital_status || employee.children_count > 0) && (
                         <div>
-                          <label className="text-sm font-medium text-[#848496]">Marital Status</label>
+                          <label className="text-sm font-medium text-[#848496]">
+                            Marital Status
+                          </label>
                           <p className="text-[#162032] font-medium">
-                            {getMaritalStatusLabel(employee.marital_status) || "Married"}
+                            {getMaritalStatusLabel(employee.marital_status)}
                             {employee.children_count &&
                               employee.children_count > 0 &&
                               ` (${employee.children_count} ${employee.children_count === 1 ? "Child" : "Children"})`}
                           </p>
                         </div>
+                      )}
+                      {(employee.emergency_contact_name || employee.emergency_contact_phone) && (
                         <div>
                           <label className="text-sm font-medium text-[#848496]">
                             Emergency Contact
                           </label>
-                          <p className="text-[#162032] font-medium break-words">
-                            {employee.emergency_contact_name || "Freya Robbins"}{" "}
-                            <span className="text-[#848496]">
-                              ({employee.emergency_contact_relationship || "Father"})
-                            </span>
-                          </p>
-                          <p className="text-[#848496] text-sm break-all">
-                            {employee.emergency_contact_phone || "+1 (526) 656-4608"}
-                          </p>
+                          {employee.emergency_contact_name && (
+                            <p className="text-[#162032] font-medium break-words">
+                              {employee.emergency_contact_name}{" "}
+                              {employee.emergency_contact_relationship && (
+                                <span className="text-[#848496]">
+                                  ({employee.emergency_contact_relationship})
+                                </span>
+                              )}
+                            </p>
+                          )}
+                          {employee.emergency_contact_phone && (
+                            <p className="text-[#848496] text-sm break-all">
+                              {employee.emergency_contact_phone}
+                            </p>
+                          )}
                         </div>
+                      )}
+                      {(employee.bank || employee.bank_account_number) && (
                         <div>
                           <label className="text-sm font-medium text-[#848496]">Bank Details</label>
-                          <p className="text-[#162032] font-medium break-words">
-                            {employee.bank || "Nihil omnis in harum"}
-                          </p>
-                          <p className="text-[#848496] text-sm break-all">
-                            A/C: {employee.bank_account_number || "891"}
-                          </p>
+                          {employee.bank && (
+                            <p className="text-[#162032] font-medium break-words">
+                              {employee.bank}
+                            </p>
+                          )}
+                          {employee.bank_account_number && (
+                            <p className="text-[#848496] text-sm break-all">
+                              A/C: {employee.bank_account_number}
+                            </p>
+                          )}
                         </div>
-                      </div>
+                      )}
+                      {employee.country && (
+                        <div>
+                          <label className="text-sm font-medium text-[#848496]">Country</label>
+                          <p className="text-[#162032] font-medium">{employee.country}</p>
+                        </div>
+                      )}
                     </div>
+                  </div>
 
+                  {(employee.qualifications || employee.experience > 0 || employee.skills) && (
                     <div className="border-t border-[#e8e8f2] pt-6">
                       <h3 className="text-lg font-semibold text-[#162032] flex items-center gap-2 mb-4">
                         <GraduationCap className="w-5 h-5" />
                         Qualifications & Experience
                       </h3>
                       <div className="space-y-3">
-                        <div>
-                          <label className="text-xs text-[#848496]">Education</label>
-                          <p className="text-[#162032] font-medium">
-                            {employee.qualifications || "Postgraduate Diploma in Digital Marketing"}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="text-xs text-[#848496]">Years of Experience</label>
-                          <p className="text-[#162032] font-medium">
-                            {employee.experience
-                              ? `${new Date().getFullYear() - employee.experience} years`
-                              : "13 years"}
-                          </p>
-                        </div>
+                        {employee.qualifications && (
+                          <div>
+                            <label className="text-xs text-[#848496]">Education</label>
+                            <p className="text-[#162032] font-medium">{employee.qualifications}</p>
+                          </div>
+                        )}
+                        {employee.experience > 0 && (
+                          <div>
+                            <label className="text-xs text-[#848496]">Years of Experience</label>
+                            <p className="text-[#162032] font-medium">
+                              {employee.experience} years
+                            </p>
+                          </div>
+                        )}
+                        {employee.skills && (
+                          <div>
+                            <h4 className="text-lg font-semibold text-[#162032] flex items-center gap-2 mb-2">
+                              <Award className="w-5 h-5" />
+                              Skills
+                            </h4>
+                            <p className="text-[#162032]">{employee.skills}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
-                    <div className="border-t border-[#e8e8f2] pt-6">
-                      <h3 className="text-lg font-semibold text-[#162032] flex items-center gap-2 mb-4">
-                        <Award className="w-5 h-5" />
-                        Skills
-                      </h3>
-                      <p className="text-[#162032]">
-                        {employee.skills || "Team Leadership, Strategic Planning"}
-                      </p>
-                      <div className="mt-3 pt-3 border-t border-[#e8e8f2]">
-                        <p className="text-[#848496] text-xs">
-                          Joined {formatDate(employee.date_of_joining) || "Feb 23, 2025"}
-                        </p>
-                        <p className="text-[#848496] text-xs">
-                          Country: {employee.country || "Uganda"}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Main content area */}
-              <div className="lg:col-span-3 order-1 lg:order-2">
-                <Card className="bg-white border-[#e8e8f2]">
-                  <CardHeader className="border-b border-[#e8e8f2] pb-0">
-                    <div className="flex gap-2 md:gap-4 lg:gap-8 relative overflow-x-auto scrollbar-hide">
-                      <div className="flex gap-2 md:gap-4 lg:gap-8 min-w-max">
-                        {[
-                          { id: "attendance", label: "Attendance" },
-                          { id: "payroll", label: "Payroll & Finance" },
-                          { id: "assets", label: "Assets Assigned" },
-                          { id: "projects", label: "Projects Assigned" },
-                          { id: "documents", label: "Documents" },
-                          { id: "discipline", label: "Discipline" },
-                        ].map((tab) => (
-                          <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
-                            className={`pb-4 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
+            {/* Main content area */}
+            <div className="lg:col-span-3 order-1 lg:order-2">
+              <Card className="bg-white border-[#e8e8f2]">
+                <CardHeader className="border-b border-[#e8e8f2] pb-0">
+                  <div className="flex gap-2 md:gap-4 lg:gap-8 relative overflow-x-auto scrollbar-hide">
+                    <div className="flex gap-2 md:gap-4 lg:gap-8 min-w-max">
+                      {[
+                        {id: "attendance", label: "Attendance"},
+                        {id: "payroll", label: "Payroll & Finance"},
+                        {id: "assets", label: "Assets Assigned"},
+                        {id: "projects", label: "Projects Assigned"},
+                        {id: "documents", label: "Documents"},
+                        {id: "discipline", label: "Discipline"},
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setActiveTab(tab.id as any)}
+                          className={`pb-4 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
+                            activeTab === tab.id
                               ? "text-[#162032] font-semibold"
                               : "text-[#848496] hover:text-[#162032]"
-                              }`}
-                          >
-                            {tab.label}
-                            {activeTab === tab.id && (
-                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
-                            )}
-                          </button>
-                        ))}
-                      </div>
+                          }`}
+                        >
+                          {tab.label}
+                          {activeTab === tab.id && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+                          )}
+                        </button>
+                      ))}
                     </div>
-                  </CardHeader>
+                  </div>
+                </CardHeader>
 
-                  <CardContent className="p-4 md:p-6">
-                    {activeTab === "attendance" && (
-                      <div className="space-y-6">
-                        {/* Stats cards - responsive grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                          <Card className="bg-[#f0f0f6] border-[#e8e8f2]">
-                            <CardContent className="p-3 md:p-4">
-                              <div className="text-xs md:text-sm text-[#848496] mb-1">
-                                Total Work Days
-                              </div>
-                              <div className="text-lg md:text-2xl font-bold text-[#162032]">
-                                {attendanceSummary.totalWorkDays}{" "}
-                                <span className="text-[#848496] font-normal text-xs md:text-base">
-                                  Days
-                                </span>
-                              </div>
-                            </CardContent>
-                          </Card>
-                          <Card className="bg-[#f0f0f6] border-[#e8e8f2]">
-                            <CardContent className="p-3 md:p-4">
-                              <div className="text-xs md:text-sm text-[#848496] mb-1">Days Absent</div>
-                              <div className="text-lg md:text-2xl font-bold text-[#e21732]">
-                                {attendanceSummary.daysAbsent}{" "}
-                                <span className="text-[#848496] font-normal text-xs md:text-base">
-                                  Days
-                                </span>
-                              </div>
-                            </CardContent>
-                          </Card>
-                          <Card className="bg-[#f0f0f6] border-[#e8e8f2]">
-                            <CardContent className="p-3 md:p-4">
-                              <div className="text-xs md:text-sm text-[#848496] mb-1">
-                                Late Arrivals
-                              </div>
-                              <div className="text-lg md:text-2xl font-bold text-[#0ca0f5]">
-                                {attendanceSummary.lateArrivals}{" "}
-                                <span className="text-[#848496] font-normal text-xs md:text-base">
-                                  Times
-                                </span>
-                              </div>
-                            </CardContent>
-                          </Card>
+                <CardContent className="p-4 md:p-6">
+                  {activeTab === "attendance" && (
+                    <div className="space-y-6">
+                      {/* Stats cards - responsive grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                        <Card className="bg-[#f0f0f6] border-[#e8e8f2]">
+                          <CardContent className="p-3 md:p-4">
+                            <div className="text-xs md:text-sm text-[#848496] mb-1">
+                              Total Work Days
+                            </div>
+                            <div className="text-lg md:text-2xl font-bold text-[#162032]">
+                              {attendanceSummary.totalWorkDays}{" "}
+                              <span className="text-[#848496] font-normal text-xs md:text-base">
+                                Days
+                              </span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        <Card className="bg-[#f0f0f6] border-[#e8e8f2]">
+                          <CardContent className="p-3 md:p-4">
+                            <div className="text-xs md:text-sm text-[#848496] mb-1">
+                              Days Absent
+                            </div>
+                            <div className="text-lg md:text-2xl font-bold text-[#e21732]">
+                              {attendanceSummary.daysAbsent}{" "}
+                              <span className="text-[#848496] font-normal text-xs md:text-base">
+                                Days
+                              </span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        <Card className="bg-[#f0f0f6] border-[#e8e8f2]">
+                          <CardContent className="p-3 md:p-4">
+                            <div className="text-xs md:text-sm text-[#848496] mb-1">
+                              Late Arrivals
+                            </div>
+                            <div className="text-lg md:text-2xl font-bold text-[#0ca0f5]">
+                              {attendanceSummary.lateArrivals}{" "}
+                              <span className="text-[#848496] font-normal text-xs md:text-base">
+                                Times
+                              </span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        {attendanceSummary.leaveBalance > 0 && (
                           <Card className="bg-[#f0f0f6] border-[#e8e8f2]">
                             <CardContent className="p-3 md:p-4">
                               <div className="text-xs md:text-sm text-[#848496] mb-1">
@@ -603,130 +634,131 @@ export default function EmployeeProfileFigma() {
                               </div>
                             </CardContent>
                           </Card>
-                        </div>
+                        )}
+                      </div>
 
-                        <h3 className="text-lg md:text-xl font-semibold text-[#162032] mb-4">
-                          Attendance
-                        </h3>
+                      <h3 className="text-lg md:text-xl font-semibold text-[#162032] mb-4">
+                        Attendance Records
+                      </h3>
 
-                        {/* Mobile-optimized table with horizontal scroll */}
-                        <div className="bg-white rounded-lg overflow-hidden border border-[#e8e8f2]">
-                          <div className="overflow-x-auto">
-                            <Table>
-                              <TableHeader>
-                                <TableRow className="bg-[#f7f7fb] hover:bg-[#f7f7fb]">
-                                  <TableHead className="font-semibold text-[#162032] py-3 md:py-4 px-2 md:px-6 min-w-[100px] text-xs md:text-sm">
-                                    Date
-                                  </TableHead>
-                                  <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[80px] text-xs md:text-sm">
-                                    Day
-                                  </TableHead>
-                                  <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[70px] text-xs md:text-sm">
-                                    Time In
-                                  </TableHead>
-                                  <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[80px] text-xs md:text-sm">
-                                    Status
-                                  </TableHead>
-                                  <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[70px] text-xs md:text-sm">
-                                    Time Out
-                                  </TableHead>
+                      {/* Mobile-optimized table with horizontal scroll */}
+                      <div className="bg-white rounded-lg overflow-hidden border border-[#e8e8f2]">
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-[#f7f7fb] hover:bg-[#f7f7fb]">
+                                <TableHead className="font-semibold text-[#162032] py-3 md:py-4 px-2 md:px-6 min-w-[100px] text-xs md:text-sm">
+                                  Date
+                                </TableHead>
+                                <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[80px] text-xs md:text-sm">
+                                  Day
+                                </TableHead>
+                                <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[70px] text-xs md:text-sm">
+                                  Time In
+                                </TableHead>
+                                <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[80px] text-xs md:text-sm">
+                                  Status
+                                </TableHead>
+                                <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[70px] text-xs md:text-sm">
+                                  Time Out
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {loadingAttendance ? (
+                                <TableRow>
+                                  <TableCell colSpan={5} className="text-center py-8">
+                                    <div className="flex items-center justify-center space-x-2">
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#4426da]"></div>
+                                      <span className="text-[#848496] text-xs md:text-sm">
+                                        Loading attendance records...
+                                      </span>
+                                    </div>
+                                  </TableCell>
                                 </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {loadingAttendance ? (
-                                  <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-8">
-                                      <div className="flex items-center justify-center space-x-2">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#4426da]"></div>
-                                        <span className="text-[#848496] text-xs md:text-sm">
-                                          Loading attendance records...
-                                        </span>
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                ) : filteredAttendanceRecords.length === 0 ? (
-                                  <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-8">
-                                      <div className="text-[#848496] text-xs md:text-sm">
-                                        {searchTerm || statusFilter !== "all"
-                                          ? "No attendance records match your filters"
-                                          : "No attendance records found"}
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                ) : (
-                                  filteredAttendanceRecords.map((record, index) => (
-                                    <TableRow key={index} className="hover:bg-[#f7f7fb]/50">
-                                      <TableCell className="font-medium text-[#162032] py-3 md:py-4 px-2 md:px-6 text-xs md:text-sm">
-                                        <div className="min-w-0">
-                                          <div className="md:hidden">
-                                            {new Date(record.date).toLocaleDateString("en-US", {
-                                              month: "short",
-                                              day: "numeric",
-                                            })}
-                                          </div>
-                                          <div className="hidden md:block">
-                                            {formatDate(record.date)}
-                                          </div>
-                                        </div>
-                                      </TableCell>
-                                      <TableCell className="text-[#162032] px-2 md:px-6 text-xs md:text-sm">
+                              ) : filteredAttendanceRecords.length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={5} className="text-center py-8">
+                                    <div className="text-[#848496] text-xs md:text-sm">
+                                      {searchTerm || statusFilter !== "all"
+                                        ? "No attendance records match your filters"
+                                        : "No attendance records found"}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ) : (
+                                filteredAttendanceRecords.map((record, index) => (
+                                  <TableRow key={index} className="hover:bg-[#f7f7fb]/50">
+                                    <TableCell className="font-medium text-[#162032] py-3 md:py-4 px-2 md:px-6 text-xs md:text-sm">
+                                      <div className="min-w-0">
                                         <div className="md:hidden">
                                           {new Date(record.date).toLocaleDateString("en-US", {
-                                            weekday: "short",
+                                            month: "short",
+                                            day: "numeric",
                                           })}
                                         </div>
                                         <div className="hidden md:block">
-                                          {new Date(record.date).toLocaleDateString("en-US", {
-                                            weekday: "long",
-                                          })}
+                                          {formatDate(record.date)}
                                         </div>
-                                      </TableCell>
-                                      <TableCell className="text-[#162032] px-2 md:px-6 text-xs md:text-sm">
-                                        {record.check_in_time ? formatTime(record.check_in_time) : "-"}
-                                      </TableCell>
-                                      <TableCell className="px-2 md:px-6">
-                                        <div className="flex justify-center md:justify-start">
-                                          {getStatusBadge(record.status)}
-                                        </div>
-                                      </TableCell>
-                                      <TableCell className="text-[#162032] px-2 md:px-6 text-xs md:text-sm">
-                                        {record.check_out_time
-                                          ? formatTime(record.check_out_time)
-                                          : "-"}
-                                      </TableCell>
-                                    </TableRow>
-                                  ))
-                                )}
-                              </TableBody>
-                            </Table>
-                          </div>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-[#162032] px-2 md:px-6 text-xs md:text-sm">
+                                      <div className="md:hidden">
+                                        {new Date(record.date).toLocaleDateString("en-US", {
+                                          weekday: "short",
+                                        })}
+                                      </div>
+                                      <div className="hidden md:block">
+                                        {new Date(record.date).toLocaleDateString("en-US", {
+                                          weekday: "long",
+                                        })}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-[#162032] px-2 md:px-6 text-xs md:text-sm">
+                                      {record.check_in_time
+                                        ? formatTime(record.check_in_time)
+                                        : "-"}
+                                    </TableCell>
+                                    <TableCell className="px-2 md:px-6">
+                                      <div className="flex justify-center md:justify-start">
+                                        {getStatusBadge(record.status)}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-[#162032] px-2 md:px-6 text-xs md:text-sm">
+                                      {record.check_out_time
+                                        ? formatTime(record.check_out_time)
+                                        : "-"}
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              )}
+                            </TableBody>
+                          </Table>
                         </div>
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {activeTab !== "attendance" && (
-                      <div className="text-center py-12">
-                        <p className="text-[#848496]">
-                          Content for {activeTab} tab will be implemented here.
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                  {activeTab !== "attendance" && (
+                    <div className="text-center py-12">
+                      <p className="text-[#848496]">
+                        Content for {activeTab} tab will be implemented here.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
-
-            <DocumentGenerationDialog
-              open={showDocumentDialog}
-              onOpenChange={setShowDocumentDialog}
-              contextId={Number.parseInt(employeeId)}
-              context="employee"
-            />
           </div>
-        )
-      }
 
+          <DocumentGenerationDialog
+            open={showDocumentDialog}
+            onOpenChange={setShowDocumentDialog}
+            contextId={Number.parseInt(employeeId)}
+            context="employee"
+          />
+        </div>
+      )}
     </div>
   );
 }
