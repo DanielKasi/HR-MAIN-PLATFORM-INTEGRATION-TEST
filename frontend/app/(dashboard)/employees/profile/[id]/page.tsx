@@ -380,14 +380,14 @@ export default function EmployeeProfile() {
                     )}
 
                     <div className="flex gap-2">
-                      {employee.work_type && (
+                      {employee.work_type && typeof employee.work_type !== "number" && (
                         <Badge className="bg-[#e1faec] text-[#3cb371] border-[#3cb371] text-xs px-2 py-1">
-                          {employee.work_type}
+                          {employee.work_type?.name}
                         </Badge>
                       )}
-                      {employee.employee_type && (
+                      {employee.employee_type && typeof employee.employee_type !== "number" && (
                         <Badge className="bg-[#d7effd] text-[#0ca0f5] border-[#0ca0f5] text-xs px-2 py-1">
-                          {employee.employee_type}
+                          {employee.employee_type?.name}
                         </Badge>
                       )}
                     </div>

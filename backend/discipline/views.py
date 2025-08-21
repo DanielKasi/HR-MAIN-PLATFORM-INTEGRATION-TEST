@@ -21,7 +21,7 @@ class DisciplinaryActionAPIView(APIView):
         summary="List all disciplinary actions",
     )
     def get(self, request):
-
+        employee_id = request.query_params.get("employee_id")
         user = request.user.profile
 
         if user and user.institution:
@@ -36,6 +36,9 @@ class DisciplinaryActionAPIView(APIView):
         actions = DisciplinaryAction.objects.filter(
             employee__department__institution=institution
         )
+
+        if employee_id:
+            actions = actions.filter(employee_id=employee_id)
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(actions, request)
