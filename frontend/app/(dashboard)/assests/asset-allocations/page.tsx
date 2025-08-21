@@ -1,16 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState } from "react";
 import { useSelector } from "react-redux";
 import { 
   MoreVertical, 
   Edit, 
   Trash2, 
   Search, 
-  ChevronLeft, 
-  ChevronRight, 
-  ChevronsLeft, 
-  ChevronsRight, 
   Plus,
   Eye,
   Package,
@@ -39,15 +35,14 @@ import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateAssetAllocationDialog } from "@/components/asset-allocations/create-asset-allocation-dialog";
 import { EditAssetAllocationDialog } from "@/components/asset-allocations/edit-asset-allocation-dialog";
 import { DeleteAssetAllocationDialog } from "@/components/asset-allocations/delete-asset-allocation-dialog";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { useRouter } from "next/navigation";
 import { assetsAPI } from "@/lib/utils";
 import type { IAssetAllocation } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
 import { Icon } from "@iconify/react";
 
-// Pagination constants
-const PAGE_SIZES = [10, 25, 50, 100];
-const DEFAULT_PAGE_SIZE = 10;
+
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -105,60 +100,32 @@ const formatDate = (dateString: string) => {
 const AssetAllocationsComponent = () => {
   const router = useRouter();
   const isMobile = useMobile();
-  const [assetAllocations, setAssetAllocations] = useState<IAssetAllocation[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingAllocation, setEditingAllocation] = useState<IAssetAllocation | null>(null);
   const [deletingAllocation, setDeletingAllocation] = useState<IAssetAllocation | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
 
-  console.log("AssetAllocationsComponent rendered", assetAllocations);
+
+
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  // Fetch asset allocations from API
-  const fetchAssetAllocations = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const response = await assetsAPI.getAssetAllocations();
-      setAssetAllocations(response || []);
-    } catch (error) {
-      console.warn("Error fetching asset allocations:", error);
-      toast.error("Failed to load asset allocations");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAssetAllocations();
-  }, [fetchAssetAllocations]);
-
   const handleCreateSuccess = (newAllocation: IAssetAllocation) => {
-    setAssetAllocations(prev => [newAllocation, ...prev]);
     setIsCreateDialogOpen(false);
     toast.success("Asset allocation created successfully");
   };
 
   const handleUpdateSuccess = (updatedAllocation: IAssetAllocation) => {
-    setAssetAllocations(prev => 
-      prev.map(allocation => 
-        allocation.id === updatedAllocation.id ? updatedAllocation : allocation
-      )
-    );
     setIsEditDialogOpen(false);
     setEditingAllocation(null);
     toast.success("Asset allocation updated successfully");
   };
 
   const handleDeleteSuccess = (deletedId: number) => {
-    setAssetAllocations(prev => prev.filter(allocation => allocation.id !== deletedId));
     setIsDeleteDialogOpen(false);
     setDeletingAllocation(null);
     toast.success("Asset allocation deleted successfully");
@@ -178,49 +145,9 @@ const AssetAllocationsComponent = () => {
     router.push(`/assests/asset-allocations/${allocation.id}`);
   };
 
-  // Filtered and paginated data
-  const filteredAllocations = useMemo(() => {
-    let filtered = assetAllocations;
-
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(allocation =>
-        allocation.asset?.asset_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        allocation.alloc_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        allocation.allocated_to?.user.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        allocation.allocated_by?.user.fullname?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Apply status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(allocation => allocation.allocation_status === statusFilter);
-    }
-
-    return filtered;
-  }, [assetAllocations, searchTerm, statusFilter]);
-
-  const paginatedAllocations = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return filteredAllocations.slice(startIndex, endIndex);
-  }, [filteredAllocations, currentPage, pageSize]);
-
-  const totalPages = Math.ceil(filteredAllocations.length / pageSize);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handlePageSizeChange = (newPageSize: string) => {
-    setPageSize(Number(newPageSize));
-    setCurrentPage(1);
-  };
-
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("all");
-    setCurrentPage(1);
   };
 
   const hasFilters = searchTerm || statusFilter !== "all";
@@ -279,220 +206,184 @@ const AssetAllocationsComponent = () => {
 
         {/* Content */}
         <div className="p-6">
-          {isLoading ? (
-            <TableSkeleton />
-          ) : (
-            <>
-              {/* Desktop Table */}
-              <div className="hidden sm:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      
-                      <TableHead>Allocation Code</TableHead>
-                      <TableHead>Asset</TableHead>
-                      <TableHead>Allocated To</TableHead>
-                      <TableHead>Allocated By</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-12">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedAllocations.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                          {hasFilters ? "No allocations found matching your filters" : "No asset allocations found"}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      paginatedAllocations.map((allocation) => (
-                        <TableRow key={allocation.id}>
-                         
-                          <TableCell className="font-mono text-sm">
-                            {allocation.alloc_code}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {allocation.asset?.asset_name || 'Unknown Asset'}
-                          </TableCell>
-                          <TableCell>
-                            {allocation.allocated_to?.user.fullname || 'Unknown User'}
-                          </TableCell>
-                          <TableCell>
-                            {allocation.allocated_by?.user.fullname || 'Unknown User'}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              {getStatusIcon(allocation.allocation_status)}
-                              <Badge className={getStatusColor(allocation.allocation_status)}>
-                                {getStatusDisplay(allocation.allocation_status)}
-                              </Badge>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <Icon icon="hugeicons:more-horizontal-circle-01" className="!h-4 !w-4 text-dark" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleViewAllocationDetails(allocation)}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditAllocation(allocation)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleDeleteAllocation(allocation)}
-                                  className="text-red-600"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+          <PaginatedTableWrapper<IAssetAllocation>
+            fetchFirstPage={async () => {
+              if (!selectedInstitution) throw new Error("No institution selected");
+              return await assetsAPI.getPaginatedAssetAllocations({
+                institutionId: selectedInstitution.id,
+                page: 1,
+                search: searchTerm || undefined,
+              });
+            }}
+            fetchFromUrl={assetsAPI.getPaginatedAssetAllocationsFromUrl}
+            deps={[selectedInstitution?.id, searchTerm]}
+            className="space-y-4"
+            footerClassName="pt-4"
+          >
+            {({data, loading, refresh}) => {
+              if (loading) {
+                return <TableSkeleton rows={10} columns={6} />;
+              }
 
-              {/* Mobile Cards */}
-              <div className="sm:hidden space-y-3">
-                {paginatedAllocations.length === 0 ? (
+              if (!data || data.results.length === 0) {
+                return (
                   <div className="text-center py-8 text-gray-500">
-                    {hasFilters ? "No allocations found matching your filters" : "No asset allocations found"}
+                    {searchTerm ? "No allocations found matching your search criteria" : "No asset allocations found"}
                   </div>
-                ) : (
-                  paginatedAllocations.map((allocation) => (
-                    <div key={allocation.id} className="bg-gray-50 rounded-lg p-4 border">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Users className="h-4 w-4 text-gray-500" />
-                            <h3 className="font-semibold text-gray-900">
+                );
+              }
+
+              // Apply client-side filters (status filter)
+              const filteredResults = data.results.filter((allocation) => {
+                const matchesStatus = statusFilter === "all" || allocation.allocation_status === statusFilter;
+                return matchesStatus;
+              });
+
+              if (filteredResults.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-500">
+                    No allocations found matching the selected status filter.
+                  </div>
+                );
+              }
+
+              return (
+                <>
+                  {/* Desktop Table */}
+                  <div className="hidden sm:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Allocation Code</TableHead>
+                          <TableHead>Asset</TableHead>
+                          <TableHead>Allocated To</TableHead>
+                          <TableHead>Allocated By</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="w-12">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredResults.map((allocation) => (
+                          <TableRow key={allocation.id}>
+                            <TableCell className="font-mono text-sm">
+                              {allocation.alloc_code}
+                            </TableCell>
+                            <TableCell className="font-medium">
                               {allocation.asset?.asset_name || 'Unknown Asset'}
-                            </h3>
-                          </div>
-                          <div className="space-y-1 mb-2">
-                            <p className="text-sm text-gray-600 font-mono">
-                              Code: {allocation.alloc_code}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              To: {allocation.allocated_to?.user.fullname || 'Unknown User'}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              By: {allocation.allocated_by?.user.fullname || 'Unknown User'}
-                            </p>
-                            <div className="flex items-center gap-2">
+                            </TableCell>
+                            <TableCell>
+                              {allocation.allocated_to?.user.fullname || 'Unknown User'}
+                            </TableCell>
+                            <TableCell>
+                              {allocation.allocated_by?.user.fullname || 'Unknown User'}
+                            </TableCell>
+                            <TableCell>
                               <div className="flex items-center space-x-2">
                                 {getStatusIcon(allocation.allocation_status)}
                                 <Badge className={getStatusColor(allocation.allocation_status)}>
                                   {getStatusDisplay(allocation.allocation_status)}
                                 </Badge>
                               </div>
-                              <span className="text-sm text-gray-500">
-                                Created: {formatDate(allocation.created_at)}
-                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <Icon icon="hugeicons:more-horizontal-circle-01" className="!h-4 !w-4 text-dark" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleViewAllocationDetails(allocation)}>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEditAllocation(allocation)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDeleteAllocation(allocation)}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Cards */}
+                  <div className="sm:hidden space-y-3">
+                    {filteredResults.map((allocation) => (
+                      <div key={allocation.id} className="bg-gray-50 rounded-lg p-4 border">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Users className="h-4 w-4 text-gray-500" />
+                              <h3 className="font-semibold text-gray-900">
+                                {allocation.asset?.asset_name || 'Unknown Asset'}
+                              </h3>
+                            </div>
+                            <div className="space-y-1 mb-2">
+                              <p className="text-sm text-gray-600 font-mono">
+                                Code: {allocation.alloc_code}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                To: {allocation.allocated_to?.user.fullname || 'Unknown User'}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                By: {allocation.allocated_by?.user.fullname || 'Unknown User'}
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center space-x-2">
+                                  {getStatusIcon(allocation.allocation_status)}
+                                  <Badge className={getStatusColor(allocation.allocation_status)}>
+                                    {getStatusDisplay(allocation.allocation_status)}
+                                  </Badge>
+                                </div>
+                                <span className="text-sm text-gray-500">
+                                  Created: {formatDate(allocation.created_at)}
+                                </span>
+                              </div>
                             </div>
                           </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleViewAllocationDetails(allocation)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditAllocation(allocation)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteAllocation(allocation)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewAllocationDetails(allocation)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditAllocation(allocation)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDeleteAllocation(allocation)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Pagination */}
-              {filteredAllocations.length > 0 && (
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
-                  <div className="text-sm text-gray-700">
-                    Showing {((currentPage - 1) * pageSize) + 1} to{" "}
-                    {Math.min(currentPage * pageSize, filteredAllocations.length)} of{" "}
-                    {filteredAllocations.length} allocations
+                    ))}
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(1)}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronsLeft className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        const page = i + 1;
-                        return (
-                          <Button
-                            key={page}
-                            variant={currentPage === page ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => handlePageChange(page)}
-                            className="w-8 h-8 p-0"
-                          >
-                            {page}
-                          </Button>
-                        );
-                      })}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(totalPages)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronsRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+                </>
+              );
+            }}
+          </PaginatedTableWrapper>
         </div>
       </div>
 

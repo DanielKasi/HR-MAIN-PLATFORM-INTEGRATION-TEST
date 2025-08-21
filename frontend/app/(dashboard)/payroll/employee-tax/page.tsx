@@ -1,12 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus } from 'lucide-react'
+import { Plus, Search, Settings, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { useSelector } from "react-redux"
-import { Card, CardHeader } from "@/components/ui/card"
-import { TableSkeleton } from "@/components/common/table-skeleton"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
 import {
   taxAPI,
   getAllEmployees,
@@ -14,14 +17,29 @@ import {
 import type { IEmployeeTax, IEmployee, ITax } from "@/types/types.utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { EmployeeTaxFormDialog } from "@/components/employee-taxes/employee-tax-form-dialog"
-import { TaxStatsCards } from "@/components/employee-taxes/tax-stats-cards"
-import { TaxFilters } from "@/components/employee-taxes/tax-filters"
-import { TaxExportMenu } from "@/components/employee-taxes/tax-export-menu"
-import { TaxTable } from "@/components/employee-taxes/tax-table"
 
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "Active":
+      return "bg-green-100 text-green-800 border-green-200"
+    case "Upcoming":
+      return "bg-blue-100 text-blue-800 border-blue-200"
+    case "Expired":
+      return "bg-red-100 text-red-800 border-red-200"
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200"
+  }
+}
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
 
 export default function EmployeeTaxesPage() {
-  const [taxes, setTaxes] = useState<IEmployeeTax[]>([])
   const [employees, setEmployees] = useState<IEmployee[]>([])
   const [taxTypes, setTaxTypes] = useState<ITax[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -29,9 +47,6 @@ export default function EmployeeTaxesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "expired" | "upcoming">("all")
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
-  const [isLoading, setIsLoading] = useState(true)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
 
@@ -65,41 +80,18 @@ export default function EmployeeTaxesPage() {
     setIsLoadingEmployees(true)
     try {
       const fetchedEmployees = await getAllEmployees({ institutionId: selectedInstitution.id })
-      setEmployees(fetchedEmployees)
+      setEmployees(fetchedEmployees.results || [])
     } catch (error: any) {
       setEmployees([])
       toast.error(error?.message || error?.detail || "Failed to load employees")
     } finally {
       setIsLoadingEmployees(false)
-      setIsLoading(false)
     }
   }
 
-  useEffect(() => {
-    const fetchTaxes = async () => {
-      if (!selectedInstitution) {
-        return
-      }
-
-      try {
-        const taxesData = await taxAPI.getAllEmployeeTaxes({})
-        setTaxes((taxesData.results as unknown as IEmployeeTax[]) || [])
-      } catch (error) {
-        setTaxes([])
-       
-      }
-    }
-
-    fetchTaxes()
-  }, [selectedInstitution])
-
   const handleFormSuccess = (tax: IEmployeeTax, isEdit: boolean) => {
-    if (isEdit) {
-      setTaxes(prev => prev.map(t => t.id === tax.id ? tax : t))
-    } else {
-      setTaxes(prev => [...prev, tax])
-    }
     setEditingTax(null)
+    // The PaginatedTableWrapper will handle refreshing the data
   }
 
   const handleTaxTypeCreated = (newType: ITax) => {
@@ -115,8 +107,8 @@ export default function EmployeeTaxesPage() {
     try {
       const success = await taxAPI.deleteEmployeeTax(id)
       if (success) {
-        setTaxes(prev => prev.filter(t => t.id !== id))
         toast.success("Employee tax deleted successfully")
+        // The PaginatedTableWrapper will handle refreshing the data
       } else {
         toast.error("Failed to delete employee tax")
       }
@@ -130,37 +122,10 @@ export default function EmployeeTaxesPage() {
     setIsDialogOpen(true)
   }
 
-  const filteredTaxes = taxes.filter((tax) => {
-    // Search filter
-    const matchesSearch =
-      tax.employee.user?.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tax.institution_tax.tax_name.toLowerCase().includes(searchTerm.toLowerCase())
-
-    // Status filter
-    const now = new Date()
-    const effectiveFrom = new Date(tax.effective_from)
-    const effectiveTo = tax.effective_to ? new Date(tax.effective_to) : null
-    
-    let matchesStatus = true
-    if (statusFilter === "active") {
-      matchesStatus = effectiveFrom <= now && (!effectiveTo || effectiveTo >= now)
-    } else if (statusFilter === "inactive") {
-      matchesStatus = effectiveFrom > now
-    } else if (statusFilter === "expired") {
-      matchesStatus = effectiveTo !== null && effectiveTo < now
-    } else if (statusFilter === "upcoming") {
-      matchesStatus = effectiveFrom > now
-    }
-
-    return matchesSearch && matchesStatus
-  })
-
-  const clearAllFilters = () => {
+  const clearFilters = () => {
     setSearchTerm("")
     setStatusFilter("all")
   }
-
-  const hasActiveFilters = statusFilter !== "all"
 
   if (!selectedInstitution || !selectedInstitution.id) {
     return (
@@ -170,48 +135,45 @@ export default function EmployeeTaxesPage() {
     )
   }
 
-  if (isLoading) {
-    return (
-      <div className="p-2 space-y-6">
-        <Card className="h-[calc(100vh-2rem)] shadow-lg">
-          <CardHeader className="border-b">
-            <div className="flex justify-between gap-8 items-center">
-              <div className="flex items-center justify-start gap-4">
-                <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
-                <div className="space-y-2">
-                  <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-                  <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
-              </div>
-            </div>
-          </CardHeader>
-          <TableSkeleton rows={10} columns={8} />
-        </Card>
-      </div>
-    )
-  }
-
   return (
-    <div>
-      <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
-        {/* Header Section */}
-        <div className="mb-8 px-2">
-          <div className="flex items-center justify-between mb-4">
+    <div className="space-y-6">
+      {/* Header and Filters */}
+      <div className="bg-white rounded-lg border shadow-sm">
+        <div className="p-6 border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Tax Configurations</h1>
-              <p className="text-gray-600">Manage employee-specific tax configurations and settings</p>
+              <h1 className="text-3xl font-bold text-gray-900">Employee Tax Configurations</h1>
             </div>
-            <div className="flex gap-3">
-              <TaxExportMenu
-                taxes={filteredTaxes}
-                disabled={filteredTaxes.length === 0}
-              />
-
+          </div>
+        </div>
+        <div className="p-6 border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4 justify-between">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search employee taxes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <Select value={statusFilter} onValueChange={(value: string) => setStatusFilter(value as "all" | "active" | "inactive" | "expired" | "upcoming")}>
+                <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
+                  <SelectItem value="upcoming">Upcoming</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
               <Button
                 onClick={openNewTaxDialog}
                 disabled={!selectedInstitution.id}
@@ -221,43 +183,173 @@ export default function EmployeeTaxesPage() {
               </Button>
             </div>
           </div>
-
-          {/* Stats Cards */}
-          <TaxStatsCards
-            taxes={filteredTaxes}
-          />
+          
+         
         </div>
+        <div className="p-6">
+          <PaginatedTableWrapper<IEmployeeTax>
+            fetchFirstPage={async () => {
+              if (!selectedInstitution) throw new Error("No institution selected");
+              return await taxAPI.getPaginatedEmployeeTaxes({
+                institutionId: selectedInstitution.id,
+                page: 1,
+                search: searchTerm || undefined,
+              });
+            }}
+            fetchFromUrl={taxAPI.getPaginatedEmployeeTaxesFromUrl}
+            deps={[selectedInstitution?.id, searchTerm]}
+            className="space-y-4"
+            footerClassName="pt-4"
+          >
+            {({data, loading, refresh}) => {
+              if (loading) {
+                return (
+                  <div className="space-y-4">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="w-full h-12 bg-muted/10 rounded-md animate-pulse" />
+                    ))}
+                  </div>
+                );
+              }
 
-        {/* Search and Filters */}
-        <TaxFilters
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-          onClearFilters={clearAllFilters}
-          hasActiveFilters={hasActiveFilters}
-        />
+              if (!data || data.results.length === 0) {
+                return (
+                  <div className="p-12 text-center">
+                    <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No employee taxes found</h3>
+                    <p className="text-muted-foreground mb-4">
+                      {searchTerm ? "No employee taxes match your search criteria." : "Get started by creating your first employee tax configuration."}
+                    </p>
+                  </div>
+                );
+              }
 
-        {/* Results Table */}
-        <TaxTable
-          taxes={filteredTaxes}
-          totalTaxes={taxes.length}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onClearFilters={clearAllFilters}
-        />
+              // Apply client-side filters (status filter)
+              const filteredResults = data.results.filter((tax) => {
+                const now = new Date();
+                const effectiveFrom = new Date(tax.effective_from);
+                const effectiveTo = tax.effective_to ? new Date(tax.effective_to) : null;
+                
+                const matchesStatus = statusFilter === "all" || 
+                  (statusFilter === "active" && effectiveFrom <= now && (!effectiveTo || effectiveTo >= now)) ||
+                  (statusFilter === "inactive" && (effectiveFrom > now || (effectiveTo && effectiveTo < now))) ||
+                  (statusFilter === "expired" && effectiveTo && effectiveTo < now) ||
+                  (statusFilter === "upcoming" && effectiveFrom > now);
+                
+                return matchesStatus;
+              });
 
-        {/* Form Dialog */}
-        <EmployeeTaxFormDialog
-          isOpen={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          editingTax={editingTax}
-          taxes={taxTypes}
-          institutionId={selectedInstitution.id}
-          onSuccess={handleFormSuccess}
-          onTaxCreated={handleTaxTypeCreated}
-        />
+              if (filteredResults.length === 0) {
+                return (
+                  <div className="p-12 text-center">
+                    <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No employee taxes found</h3>
+                    <p className="text-muted-foreground mb-4">
+                      No employee taxes match the selected status filter.
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                    <TableHeader className="bg-gray-50/50">
+                      <TableRow>
+                        <TableHead>Employee</TableHead>
+                        <TableHead>Tax Name</TableHead>
+                        <TableHead>Effective From</TableHead>
+                        <TableHead>Effective To</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredResults.map((tax) => {
+                        const now = new Date()
+                        const effectiveFrom = new Date(tax.effective_from)
+                        const effectiveTo = tax.effective_to ? new Date(tax.effective_to) : null
+                        
+                        let status = "Inactive"
+                        
+                        if (effectiveFrom <= now && (!effectiveTo || effectiveTo >= now)) {
+                          status = "Active"
+                        } else if (effectiveFrom > now) {
+                          status = "Upcoming"
+                        } else if (effectiveTo && effectiveTo < now) {
+                          status = "Expired"
+                        }
+
+                        return (
+                          <TableRow key={tax.id}>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-3">
+                                <div>
+                                  <div className="font-medium text-gray-900">
+                                    {tax.employee?.user?.fullname || "N/A"}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {tax.employee?.employee_id || "N/A"}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium text-gray-900">
+                                {tax.institution_tax?.tax_name || "N/A"}
+                              </div>
+                            </TableCell>
+                            <TableCell>{formatDate(tax.effective_from)}</TableCell>
+                            <TableCell>
+                              {tax.effective_to ? formatDate(tax.effective_to) : "N/A"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getStatusColor(status)}>
+                                {status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center gap-2 justify-end">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEdit(tax)}
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDelete(tax.id)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              );
+            }}
+          </PaginatedTableWrapper>
+        </div>
       </div>
+
+      {/* Form Dialog */}
+      <EmployeeTaxFormDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        editingTax={editingTax}
+        taxes={taxTypes}
+        institutionId={selectedInstitution.id}
+        onSuccess={handleFormSuccess}
+        onTaxCreated={handleTaxTypeCreated}
+      />
     </div>
   )
 }
+

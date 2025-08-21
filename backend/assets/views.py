@@ -175,7 +175,6 @@ class AssetListCreateView(APIView):
         user_profile = get_object_or_404(Profile, user=request.user)
         data["created_by"] = user_profile.id
 
-        print(f"data {data}")
         serializer = AssetSerializer(data=data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
@@ -212,6 +211,7 @@ class AssetListCreateView(APIView):
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(assets, request)
         serializer = AssetSerializer(paginated_qs, many=True)
+        print(f"Paginated assets: {paginated_qs}")  # Debugging line
         return paginator.get_paginated_response(serializer.data)
 
 

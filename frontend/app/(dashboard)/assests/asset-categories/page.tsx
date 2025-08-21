@@ -7,12 +7,9 @@ import {
   Edit, 
   Trash2, 
   Search, 
-  ChevronLeft, 
-  ChevronRight, 
-  ChevronsLeft, 
-  ChevronsRight, 
   Plus,
-  Eye
+  Eye,
+  X
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,14 +28,11 @@ import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateAssetCategoryDialog } from "@/components/asset-categories/create-asset-category-dialog";
 import { EditAssetCategoryDialog } from "@/components/asset-categories/edit-asset-category-dialog";
 import { DeleteAssetCategoryDialog } from "@/components/asset-categories/delete-asset-category-dialog";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { useRouter } from "next/navigation";
 import { assetCategoriesAPI, assetsAPI } from "@/lib/utils";
 import type { IAssetCategory, IAsset } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
-
-// Pagination constants
-const PAGE_SIZES = [10, 25, 50, 100];
-const DEFAULT_PAGE_SIZE = 10;
 
 const getStatusColor = (status: boolean) => {
   return status
@@ -57,38 +51,17 @@ const formatDate = (dateString: string) => {
 const AssetCategoriesComponent = () => {
   const router = useRouter();
   const isMobile = useMobile();
-  const [assetCategories, setAssetCategories] = useState<IAssetCategory[]>([]);
   const [assets, setAssets] = useState<IAsset[]>([]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingAssetCategory, setEditingAssetCategory] = useState<IAssetCategory | null>(null);
   const [deletingAssetCategory, setDeletingAssetCategory] = useState<IAssetCategory | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  // Fetch asset categories from API
-  const fetchAssetCategories = useCallback(async () => {
-    if (!selectedInstitution?.id) return;
-
-    try {
-      setIsLoading(true);
-      const data = await assetCategoriesAPI.getAll();
-      setAssetCategories(data);
-    } catch (error) {
-      console.warn("Error fetching asset categories:", error);
-      toast.error("Failed to load asset categories");
-      setAssetCategories([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedInstitution?.id]);
-
-  // Fetch assets from API
+  // Fetch assets from API for counting
   const fetchAssets = useCallback(async () => {
     if (!selectedInstitution?.id) return;
 
@@ -102,9 +75,8 @@ const AssetCategoriesComponent = () => {
   }, [selectedInstitution?.id]);
 
   useEffect(() => {
-    fetchAssetCategories();
     fetchAssets();
-  }, [fetchAssetCategories, fetchAssets]);
+  }, [fetchAssets]);
 
   // Calculate asset count for each category
   const getAssetCount = useCallback((categoryId: number) => {
@@ -112,25 +84,24 @@ const AssetCategoriesComponent = () => {
   }, [assets]);
 
   const handleCreateSuccess = (newAssetCategory: IAssetCategory) => {
-    setAssetCategories([newAssetCategory, ...assetCategories]);
-    clearFilters();
     toast.success("Asset category created successfully");
   };
 
   const handleUpdateSuccess = (updatedAssetCategory: IAssetCategory) => {
-    setAssetCategories(assetCategories.map(category => 
-      category.id === updatedAssetCategory.id ? updatedAssetCategory : category
-    ));
     setIsEditDialogOpen(false);
     setEditingAssetCategory(null);
     toast.success("Asset category updated successfully");
   };
 
   const handleDeleteSuccess = (deletedId: number) => {
-    setAssetCategories(assetCategories.filter(category => category.id !== deletedId));
     setIsDeleteDialogOpen(false);
     setDeletingAssetCategory(null);
     toast.success("Asset category deleted successfully");
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
   };
 
   const handleEditAssetCategory = (assetCategory: IAssetCategory) => {
@@ -147,51 +118,6 @@ const AssetCategoriesComponent = () => {
     // Navigate to asset category detail page (if needed)
     // router.push(`/assests/asset-categories/${assetCategory.id}/detail`);
     toast.info("Asset category detail view not implemented yet");
-  };
-
-  // Filtered and paginated data
-  const filteredAssetCategories = useMemo(() => {
-    let filtered = assetCategories;
-
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(category =>
-        category.category_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (category.category_description?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Apply status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(category => 
-        statusFilter === "active" ? category.is_active : !category.is_active
-      );
-    }
-
-    return filtered;
-  }, [assetCategories, searchTerm, statusFilter]);
-
-  const paginatedAssetCategories = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return filteredAssetCategories.slice(startIndex, endIndex);
-  }, [filteredAssetCategories, currentPage, pageSize]);
-
-  const totalPages = Math.ceil(filteredAssetCategories.length / pageSize);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handlePageSizeChange = (newPageSize: string) => {
-    setPageSize(Number(newPageSize));
-    setCurrentPage(1);
-  };
-
-  const clearFilters = () => {
-    setSearchTerm("");
-    setStatusFilter("all");
-    setCurrentPage(1);
   };
 
   const hasFilters = searchTerm || statusFilter !== "all";
@@ -229,11 +155,7 @@ const AssetCategoriesComponent = () => {
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
-              {hasFilters && (
-                <Button variant="outline" onClick={clearFilters} size="sm">
-                  Clear Filters
-                </Button>
-              )}
+           
             </div>
             <div className="flex items-center gap-2">
               <CreateAssetCategoryDialog
@@ -244,196 +166,162 @@ const AssetCategoriesComponent = () => {
           </div>
         </div>
         <div className="p-6">
-          {isLoading ? (
-            <TableSkeleton />
-          ) : (
-            <>
-              {/* Desktop Table */}
-              <div className="hidden sm:block rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Category Name</TableHead>
-                      <TableHead className="text-center">Asset Count</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="w-12">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedAssetCategories.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                          {hasFilters ? "No asset categories found matching your filters" : "No asset categories found"}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      paginatedAssetCategories.map((category) => (
-                        <TableRow key={category.id}>
-                          
-                          <TableCell className="font-medium">{category.category_name}</TableCell>
-                          <TableCell className="text-center">
-                            <span className="font-medium text-gray-900">
-                              {getAssetCount(category.id)} Asset{getAssetCount(category.id) !== 1 ? '(s)' : ''}
-                            </span>
-                          </TableCell>
-                       
-                          <TableCell>
-                            <Badge className={getStatusColor(category.is_active)}>
-                              {category.is_active ? "Active" : "Inactive"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{formatDate(category.created_at)}</TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleViewAssetCategoryDetails(category)}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditAssetCategory(category)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleDeleteAssetCategory(category)}
-                                  className="text-red-600"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+          <PaginatedTableWrapper<IAssetCategory>
+            fetchFirstPage={async () => {
+              if (!selectedInstitution) throw new Error("No institution selected");
+              return await assetCategoriesAPI.getPaginated({
+                institutionId: selectedInstitution.id,
+                page: 1,
+                search: searchTerm || undefined,
+              });
+            }}
+            fetchFromUrl={assetCategoriesAPI.getPaginatedFromUrl}
+            deps={[selectedInstitution?.id, searchTerm]}
+            className="space-y-4"
+            footerClassName="pt-4"
+          >
+            {({data, loading, refresh}) => {
+              if (loading) {
+                return <TableSkeleton rows={10} columns={5} />;
+              }
 
-              {/* Mobile Cards */}
-              <div className="sm:hidden space-y-3">
-                {paginatedAssetCategories.length === 0 ? (
+              if (!data || data.results.length === 0) {
+                return (
                   <div className="text-center py-8 text-gray-500">
-                    {hasFilters ? "No asset categories found matching your filters" : "No asset categories found"}
+                    {searchTerm ? "No asset categories found matching your search criteria" : "No asset categories found"}
                   </div>
-                ) : (
-                  paginatedAssetCategories.map((category) => (
-                    <div key={category.id} className="bg-gray-50 rounded-lg p-4 border">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 mb-2">{category.category_name}</h3>
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm font-medium text-gray-900 bg-white px-3 py-1 rounded-full border">
-                              {getAssetCount(category.id)} Asset{getAssetCount(category.id) !== 1 ? '(s)' : ''}
-                            </span>
-                            <Badge className={getStatusColor(category.is_active)}>
-                              {category.is_active ? "Active" : "Inactive"}
-                            </Badge>
-                            <span className="text-sm text-gray-500">
-                              Created: {formatDate(category.created_at)}
-                            </span>
-                          </div>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewAssetCategoryDetails(category)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditAssetCategory(category)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDeleteAssetCategory(category)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+                );
+              }
 
-              {/* Pagination */}
-              {filteredAssetCategories.length > 0 && (
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
-                  <div className="text-sm text-gray-700">
-                    Showing {((currentPage - 1) * pageSize) + 1} to{" "}
-                    {Math.min(currentPage * pageSize, filteredAssetCategories.length)} of{" "}
-                    {filteredAssetCategories.length} asset categories
+              // Apply client-side filters (status filter)
+              const filteredResults = data.results.filter((category) => {
+                const matchesStatus = statusFilter === "all" || 
+                  (statusFilter === "active" && category.is_active) ||
+                  (statusFilter === "inactive" && !category.is_active);
+                
+                return matchesStatus;
+              });
+
+              if (filteredResults.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-500">
+                    No asset categories found matching the selected status filter.
                   </div>
-                  <div className="flex items-center gap-4">
-                    
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(1)}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronsLeft className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        const page = i + 1;
-                        return (
-                          <Button
-                            key={page}
-                            variant={currentPage === page ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => handlePageChange(page)}
-                            className="w-8 h-8 p-0"
-                          >
-                            {page}
-                          </Button>
-                        );
-                      })}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(totalPages)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronsRight className="h-4 w-4" />
-                      </Button>
-                    </div>
+                );
+              }
+
+              return (
+                <>
+                  {/* Desktop Table */}
+                  <div className="hidden sm:block rounded-md">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Category Name</TableHead>
+                          <TableHead className="text-center">Asset Count</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead className="w-12">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredResults.map((category) => (
+                          <TableRow key={category.id}>
+                            <TableCell className="font-medium">{category.category_name}</TableCell>
+                            <TableCell className="text-center">
+                              <span className="font-medium text-gray-900">
+                                {getAssetCount(category.id)} Asset{getAssetCount(category.id) !== 1 ? '(s)' : ''}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getStatusColor(category.is_active)}>
+                                {category.is_active ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{formatDate(category.created_at)}</TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleViewAssetCategoryDetails(category)}>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEditAssetCategory(category)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDeleteAssetCategory(category)}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
-                </div>
-              )}
-            </>
-          )}
+
+                  {/* Mobile Cards */}
+                  <div className="sm:hidden space-y-3">
+                    {filteredResults.map((category) => (
+                      <div key={category.id} className="bg-gray-50 rounded-lg p-4 border">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 mb-2">{category.category_name}</h3>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-medium text-gray-900 bg-white px-3 py-1 rounded-full border">
+                                {getAssetCount(category.id)} Asset{getAssetCount(category.id) !== 1 ? '(s)' : ''}
+                              </span>
+                              <Badge className={getStatusColor(category.is_active)}>
+                                {category.is_active ? "Active" : "Inactive"}
+                              </Badge>
+                              <span className="text-sm text-gray-500">
+                                Created: {formatDate(category.created_at)}
+                              </span>
+                            </div>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleViewAssetCategoryDetails(category)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditAssetCategory(category)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteAssetCategory(category)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              );
+            }}
+          </PaginatedTableWrapper>
         </div>
       </div>
 

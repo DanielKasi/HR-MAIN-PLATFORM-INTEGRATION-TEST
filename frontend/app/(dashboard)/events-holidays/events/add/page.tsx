@@ -51,6 +51,9 @@ export default function AddEventPage() {
   const [employeesLoading, setEmployeesLoading] = useState(false);
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
 
+
+  console.log("Employees: ", employees);
+
   // Fetch departments when component mounts or institution changes
   useEffect(() => {
     if (selectedInstitution?.id) {
@@ -569,11 +572,9 @@ export default function AddEventPage() {
                                   className="flex-1 cursor-pointer"
                                 >
                                     <div className="font-medium text-slate-900">
-                                      {employee.first_name} {employee.last_name}
+                                      {employee.user?.fullname}
                                     </div>
-                                  <div className="text-sm text-slate-600">
-                                      {employee.employee_id} • {employee.department?.name || 'No Department'}
-                                  </div>
+                                 
                                 </label>
                               </div>
                               ))
