@@ -32,6 +32,7 @@ from drf_spectacular.utils import extend_schema_view
 from users.models import Profile, CustomUser, UserRole
 from django.contrib.contenttypes.models import ContentType
 from workflows.models import ApprovalTask, InstitutionApprovalStepApprovorRole, InstitutionApprovalStepApprovorUser
+import Q
 
 
 class AssetCategoryListCreateView(APIView):
@@ -72,7 +73,9 @@ class AssetCategoryListCreateView(APIView):
     def get(self, request):
 
         user = request.user.profile
+        search_query = request.query_params.get('search', None)
 
+        
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
@@ -82,6 +85,14 @@ class AssetCategoryListCreateView(APIView):
             )
 
         categories = AssetCategory.objects.filter(institution=institution)
+
+        if search_query:
+            categories = categories.filter(
+                Q(category_name__icontains=search_query) | 
+                Q(category_description__icontains=search_query) |
+                Q(code__icontains=search_query)
+            )
+
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(categories, request)
@@ -194,6 +205,15 @@ class AssetListCreateView(APIView):
 
         user = request.user.profile if request and hasattr(request, "user") else None
 
+        search_query = request.query_params.get('search', None)
+
+        if search_query:
+            assets = assets.filter(
+                Q(asset_name__icontains=search_query) | 
+                Q(batch_number__icontains=search_query) |
+                Q(serial_number__icontains=search_query)
+            )
+        
         if not user:
             return Response(
                 {"detail": "User profile not found."},
@@ -207,6 +227,13 @@ class AssetListCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         assets = Asset.objects.filter(institution=institution)
+
+        if search_query:
+            assets = assets.filter(
+                Q(asset_name__icontains=search_query) | 
+                Q(batch_number__icontains=search_query) |
+                Q(serial_number__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(assets, request)
@@ -320,6 +347,10 @@ class AssetRequestListCreateView(APIView):
     def get(self, request):
         user = request.user.profile if request and hasattr(request, "user") else None
         employee_id = request.query_params.get("employee_id")
+        search_query = request.query_params.get("search", None)
+        requester_id = request.query_params.get("requester_id", None)
+
+            
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
@@ -335,6 +366,19 @@ class AssetRequestListCreateView(APIView):
                 requester__user__employees__employee_id=employee_id
             )
 
+        if requester_id:
+            asset_requests = asset_requests.filter(requester__id=requester_id)    
+
+        if search_query:
+        asset_requests = asset_requests.filter(
+            Q(request_reference_code__icontains=search_query) |
+            Q(asset_request_status__icontains=search_query) |
+            Q(notes__icontains=search_query) |
+            Q(asset__asset_name__icontains=search_query) |
+            Q(asset__batch_number__icontains=search_query) |
+            Q(requester__user__fullname__icontains=search_query) |
+            Q(requester__user__email__icontains=search_query)
+        )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_requests, request)
@@ -559,7 +603,17 @@ class AssetAllocationListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def get(self, request):
+        search_query = request.query_params.get('search', None)
         asset_allocations = AssetAllocation.objects.all()
+
+        if search_query:
+            asset_allocations = asset_allocations.filter(
+                Q(asset__asset_name__icontains=search_query) | 
+                Q(asset__batch_number__icontains=search_query) |
+                Q(asset__serial_number__icontains=search_query) |
+                Q(allocated_to__user__fullname__icontains=search_query) |
+                Q(allocated_to__user__email__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_allocations, request)
         serializer = AssetAllocationWorkflowSerializer(paginated_qs, many=True)
@@ -779,7 +833,14 @@ class AssetReturnListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def get(self, request):
+        search_query = request.query_params.get("search", None)
         asset_returns = AssetReturn.objects.all()
+        if search_query:
+            asset_returns = asset_returns.filter(
+                Q(asset__asset_name__icontains=search_query) | 
+                Q(allocation__allocated_to__user__fullname__icontains=search_query) |
+                Q(condition__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_returns, request)
         serializer = AssetReturnSerializer(paginated_qs, many=True)
