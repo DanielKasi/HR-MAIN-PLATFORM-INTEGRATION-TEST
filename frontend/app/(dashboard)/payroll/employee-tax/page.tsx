@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Plus, Search, Settings, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -47,8 +47,9 @@ export default function EmployeeTaxesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "expired" | "upcoming">("all")
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
-
   const selectedInstitution = useSelector(selectSelectedInstitution)
+
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const fetchTaxTypes = async () => {
@@ -92,6 +93,7 @@ export default function EmployeeTaxesPage() {
   const handleFormSuccess = (tax: IEmployeeTax, isEdit: boolean) => {
     setEditingTax(null)
     // The PaginatedTableWrapper will handle refreshing the data
+    refreshTableRef.current?.()
   }
 
   const handleTaxTypeCreated = (newType: ITax) => {
@@ -135,7 +137,7 @@ export default function EmployeeTaxesPage() {
     )
   }
 
-  return (
+    return (
     <div className="space-y-6">
       {/* Header and Filters */}
       <div className="bg-white rounded-lg border shadow-sm">
@@ -144,8 +146,8 @@ export default function EmployeeTaxesPage() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Employee Tax Configurations</h1>
             </div>
-          </div>
-        </div>
+                </div>
+              </div>
         <div className="p-6 border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4 justify-between">
@@ -183,7 +185,7 @@ export default function EmployeeTaxesPage() {
               </Button>
             </div>
           </div>
-          
+
          
         </div>
         <div className="p-6">
@@ -202,6 +204,9 @@ export default function EmployeeTaxesPage() {
             footerClassName="pt-4"
           >
             {({data, loading, refresh}) => {
+              useEffect(() => {
+                refreshTableRef.current = refresh;
+              }, [refresh]);
               if (loading) {
                 return (
                   <div className="space-y-4">
@@ -339,16 +344,16 @@ export default function EmployeeTaxesPage() {
         </div>
       </div>
 
-      {/* Form Dialog */}
-      <EmployeeTaxFormDialog
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        editingTax={editingTax}
-        taxes={taxTypes}
-        institutionId={selectedInstitution.id}
-        onSuccess={handleFormSuccess}
-        onTaxCreated={handleTaxTypeCreated}
-      />
+        {/* Form Dialog */}
+        <EmployeeTaxFormDialog
+          isOpen={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          editingTax={editingTax}
+          taxes={taxTypes}
+          institutionId={selectedInstitution.id}
+          onSuccess={handleFormSuccess}
+          onTaxCreated={handleTaxTypeCreated}
+        />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSelector } from "react-redux";
@@ -110,6 +110,7 @@ export default function JobAdvertsPage() {
   const [closingAdvertId, setClosingAdvertId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
   const router = useRouter();
   const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -144,7 +145,7 @@ export default function JobAdvertsPage() {
 
         if (updatedAdvert) {
           toast.success("Job advert closed successfully!");
-          
+          refreshTableRef.current?.(); // Add refresh call
         } else {
           toast.error("Failed to close job openings");
         }
@@ -152,7 +153,7 @@ export default function JobAdvertsPage() {
         toast.error("Failed to close job openings");
       } finally {
         setIsClosing(false);
-        setClosingAdvertId(null); // Reset the closing advert ID
+        setClosingAdvertId(null);
       }
     },
     []
@@ -183,8 +184,7 @@ export default function JobAdvertsPage() {
     event.preventDefault();
     setIsRefreshing(true);
     setError("");
-    // Just reload the page to trigger data refetch
-    router.refresh?.(); // Next.js 13+ navigation refresh
+    refreshTableRef.current?.(); // Use the ref instead of router.refresh
     setTimeout(() => setIsRefreshing(false), 1000);
   }
   return (
@@ -254,6 +254,11 @@ export default function JobAdvertsPage() {
             footerClassName="pt-4"
           >
             {({data, loading, refresh}) => {
+              // Store refresh function in ref when component mounts/updates
+              useEffect(() => {
+                refreshTableRef.current = refresh;
+              }, [refresh]);
+
               if (loading) {
                 return (
                   <div className="space-y-4">

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import {useState, useEffect, useMemo} from "react";
+import {useState, useEffect, useMemo, useRef} from "react";
 import {useRouter} from "next/navigation";
 import {useSelector} from "react-redux";
 import {
@@ -90,6 +90,7 @@ export default function InterviewsPage() {
   const router = useRouter();
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const selectedBranch = useSelector(selectSelectedBranch);
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
   useDocumentTitle("JOB INTERVIEWS");
 
@@ -233,6 +234,7 @@ export default function InterviewsPage() {
   const handleDeleteInterview = (interviewId: number) => {
     // TODO: Implement delete functionality
     toast.success("Interview deletion would be implemented here");
+    refreshTableRef.current?.();
   };
 
   const handleViewInterview = (interviewId: number) => {
@@ -337,6 +339,7 @@ export default function InterviewsPage() {
       if (result) {
         toast.success(`Successfully onboarded ${applicationIds.length} candidates`);
         setSelectedInterviews([]);
+        refreshTableRef.current?.();
         router.push("/on-boarding");
       } else {
         toast.error("Failed to onboard candidates");
@@ -589,6 +592,9 @@ export default function InterviewsPage() {
                 footerClassName="pt-4"
               >
                 {({data, loading, refresh}: {data: any, loading: boolean, refresh: () => void}) => {
+                  useEffect(() => {
+                    refreshTableRef.current = refresh;
+                  }, [refresh]);
                   if (loading) {
                     return <TableSkeleton rows={10} columns={6} />;
                   }
@@ -676,23 +682,23 @@ export default function InterviewsPage() {
                   try {
                     groupedInterviews = Object.entries(
                       filteredResults.reduce(
-                        (groups, interview) => {
-                          const applicantName =
+                      (groups, interview) => {
+                        const applicantName =
                             interview.job_position_application_details?.applicant_name || "Unknown Applicant";
-                          if (!groups[applicantName]) {
-                            groups[applicantName] = {
-                              interviews: [],
-                              contact: {
-                                email: interview.job_position_application_details?.applicant_email,
-                                phone: interview.job_position_application_details?.applicant_phone,
-                                address: interview.job_position_application_details?.address,
-                                state: interview.job_position_application_details?.state,
-                              },
-                            };
-                          }
-                          groups[applicantName].interviews.push(interview);
-                          return groups;
-                        },
+                        if (!groups[applicantName]) {
+                          groups[applicantName] = {
+                            interviews: [],
+                            contact: {
+                              email: interview.job_position_application_details?.applicant_email,
+                              phone: interview.job_position_application_details?.applicant_phone,
+                              address: interview.job_position_application_details?.address,
+                              state: interview.job_position_application_details?.state,
+                            },
+                          };
+                        }
+                        groups[applicantName].interviews.push(interview);
+                        return groups;
+                      },
                         {} as Record<string, {interviews: IInterview[]; contact: any}>
                       )
                     );
@@ -746,142 +752,142 @@ export default function InterviewsPage() {
                           </TableHeader>
                           <TableBody>
                             {groupedInterviews.map(([applicantName, data]) => (
-                              <React.Fragment key={applicantName}>
-                                <TableRow className="hover:bg-muted/50">
-                                  <TableCell>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 w-8 p-0"
-                                      onClick={() => {
-                                        setExpandedApplicants((prev) =>
-                                          prev.includes(applicantName)
-                                            ? prev.filter((a) => a !== applicantName)
-                                            : [...prev, applicantName],
-                                        );
-                                      }}
+                    <React.Fragment key={applicantName}>
+                      <TableRow className="hover:bg-muted/50">
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => {
+                              setExpandedApplicants((prev) =>
+                                prev.includes(applicantName)
+                                  ? prev.filter((a) => a !== applicantName)
+                                  : [...prev, applicantName],
+                              );
+                            }}
                                     >
                                       <ChevronDown className="h-4 w-4" />
                                     </Button>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-3">
-                                      <Avatar className="h-8 w-8">
-                                        <AvatarFallback className="text-xs">
-                                          {getInitials(applicantName)}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                      <div className="font-medium">{applicantName}</div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="text-sm text-muted-foreground">
-                                      <div>{data.contact.email}</div>
-                                      <div>{data.contact.phone}</div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge variant="secondary">{data.interviews.length} interviews</Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-2">
-                                      {getStatusIcon(data.interviews[data.interviews.length - 1].status)}
-                                      <Badge
-                                        variant={getStatusBadgeVariant(
-                                          data.interviews[data.interviews.length - 1].status,
-                                        )}
-                                      >
-                                        {data.interviews[data.interviews.length - 1].status}
-                                      </Badge>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-xs"
-                                      onClick={() =>
-                                        handleViewInterview(data.interviews[data.interviews.length - 1].id)
-                                      }
-                                    >
-                                      View Latest
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                                {expandedApplicants.includes(applicantName) &&
-                                  data.interviews.map((interview) => (
-                                    <TableRow key={interview.id} className="bg-muted/30">
-                                      <TableCell />
-                                      <TableCell className="pl-11">
-                                        <div className="font-medium">
-                                          {
-                                            interview.job_position_application_details
-                                              ?.job_position_advert_job_details?.name
-                                          }
-                                        </div>
-                                        <Badge variant="outline" className="mt-1">
-                                          {interview.interview_stage_details?.name}
-                                        </Badge>
-                                      </TableCell>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="text-xs">
+                                {getInitials(applicantName)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="font-medium">{applicantName}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm text-muted-foreground">
+                            <div>{data.contact.email}</div>
+                            <div>{data.contact.phone}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{data.interviews.length} interviews</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(data.interviews[data.interviews.length - 1].status)}
+                            <Badge
+                              variant={getStatusBadgeVariant(
+                                data.interviews[data.interviews.length - 1].status,
+                              )}
+                            >
+                              {data.interviews[data.interviews.length - 1].status}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() =>
+                              handleViewInterview(data.interviews[data.interviews.length - 1].id)
+                            }
+                          >
+                            View Latest
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      {expandedApplicants.includes(applicantName) &&
+                        data.interviews.map((interview) => (
+                          <TableRow key={interview.id} className="bg-muted/30">
+                            <TableCell />
+                            <TableCell className="pl-11">
+                              <div className="font-medium">
+                                {
+                                  interview.job_position_application_details
+                                    ?.job_position_advert_job_details?.name
+                                }
+                              </div>
+                              <Badge variant="outline" className="mt-1">
+                                {interview.interview_stage_details?.name}
+                              </Badge>
+                            </TableCell>
                                       <TableCell className="pl-11">
                                         <div className="text-sm text-muted-foreground">
-                                          {formatDate(interview.interview_date)}
-                                        </div>
+                                {formatDate(interview.interview_date)}
+                              </div>
                                         <div className="text-xs text-muted-foreground">
                                           {interview.location}
-                                        </div>
-                                      </TableCell>
+                              </div>
+                            </TableCell>
                                       <TableCell className="pl-11">
                                         <div className="flex items-center gap-2">
                                           {interview.rating && getRatingStars(interview.rating)}
                                         </div>
                                       </TableCell>
                                       <TableCell className="pl-11">
-                                        <div className="flex items-center gap-2">
-                                          {getStatusIcon(interview.status)}
-                                          <Badge variant={getStatusBadgeVariant(interview.status)}>
-                                            {interview.status}
-                                          </Badge>
-                                        </div>
-                                      </TableCell>
+                                <div className="flex items-center gap-2">
+                                  {getStatusIcon(interview.status)}
+                                  <Badge variant={getStatusBadgeVariant(interview.status)}>
+                                    {interview.status}
+                                  </Badge>
+                              </div>
+                            </TableCell>
                                       <TableCell className="pl-11">
-                                        <DropdownMenu>
-                                          <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                              <MoreVertical className="h-4 w-4" />
-                                            </Button>
-                                          </DropdownMenuTrigger>
-                                          <DropdownMenuContent align="end">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
                                             <DropdownMenuItem onClick={() => handleViewInterview(interview.id)}>
-                                              <Eye className="h-4 w-4 mr-2" />
+                                    <Eye className="h-4 w-4 mr-2" />
                                               View
-                                            </DropdownMenuItem>
+                                  </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => handleEditInterview(interview.id)}>
-                                              <Edit className="h-4 w-4 mr-2" />
-                                              Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                              onClick={() => handleDeleteInterview(interview.id)}
-                                              className="text-destructive"
-                                            >
-                                              <Trash2 className="h-4 w-4 mr-2" />
-                                              Delete
-                                            </DropdownMenuItem>
-                                          </DropdownMenuContent>
-                                        </DropdownMenu>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                              </React.Fragment>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteInterview(interview.id)}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </React.Fragment>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
                     </>
                   );
                 }}
               </PaginatedTableWrapper>
-            </div>
+                </div>
           </>
         )}
       </div>

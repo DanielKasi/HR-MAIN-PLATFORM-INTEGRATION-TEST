@@ -4345,13 +4345,13 @@ export const taxAPI = {
       return response.data as Itax
   },
   updateEmployeeTax: async ({data, taxId}:{data:Partial<IEmployeeTaxFormData>, taxId:number|string}) => {
-      const response = await apiRequest.patch(`/payroll/employee-taxes/${taxId}`, data)
+      const response = await apiRequest.patch(`/payroll/employee-taxes/${taxId}/`, data)
       return response.data as Itax
   },
   
   deleteEmployeeTax: async (taxId: number): Promise<boolean> => {
     try {
-      const response = await apiRequest.delete(`/payroll/employee-taxes/${taxId}`)
+      const response = await apiRequest.delete(`/payroll/employee-taxes/${taxId}/`)
       return response.status === 204
     } catch (error) {
       throw error

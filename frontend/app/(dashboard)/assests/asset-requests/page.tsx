@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSelector } from "react-redux";
 import { 
   MoreVertical, 
@@ -105,22 +105,26 @@ const AssetRequestsComponent = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
   const handleCreateSuccess = (newRequest: IAssetRequest) => {
     setIsCreateDialogOpen(false);
     toast.success("Asset request created successfully");
+    refreshTableRef.current?.();
   };
 
   const handleUpdateSuccess = (updatedRequest: IAssetRequest) => {
     setIsEditDialogOpen(false);
     setEditingRequest(null);
     toast.success("Asset request updated successfully");
+    refreshTableRef.current?.();
   };
 
   const handleDeleteSuccess = (deletedId: number) => {
     setIsDeleteDialogOpen(false);
     setDeletingRequest(null);
     toast.success("Asset request deleted successfully");
+    refreshTableRef.current?.();
   };
 
   const handleEditRequest = (request: IAssetRequest) => {
@@ -215,6 +219,11 @@ const AssetRequestsComponent = () => {
             footerClassName="pt-4"
           >
             {({data, loading, refresh}) => {
+              // Store refresh function in ref when component mounts/updates
+              useEffect(() => {
+                refreshTableRef.current = refresh;
+              }, [refresh]);
+
               if (loading) {
                 return <TableSkeleton rows={10} columns={7} />;
               }

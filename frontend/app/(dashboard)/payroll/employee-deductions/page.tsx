@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Plus, MoreVertical, Edit, Trash2, Search, X } from 'lucide-react'
 import { useSelector } from "react-redux"
 import { Button } from "@/components/ui/button"
@@ -21,6 +21,7 @@ import { PaginatedTableWrapper } from "@/components/common/tables/paginated-tabl
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ref } from "process"
 
 
 
@@ -36,6 +37,7 @@ export default function EmployeeDeductionsRefactored() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
   const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all")
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
 
@@ -81,6 +83,7 @@ export default function EmployeeDeductionsRefactored() {
   const handleFormSuccess = (deduction: any, isEdit: boolean) => {
     setEditingDeduction(null)
     toast.success(isEdit ? "Deduction updated successfully" : "Deduction created successfully")
+    refreshTableRef.current?.()
   }
 
   const handleDeductionTypeCreated = (newType: IDeductionType) => {
@@ -178,6 +181,9 @@ export default function EmployeeDeductionsRefactored() {
             footerClassName="pt-4"
           >
             {({data, loading, refresh}) => {
+              useEffect(() => {
+                refreshTableRef.current = refresh;
+              }, [refresh]);
               if (loading) {
                 return <TableSkeleton rows={10} columns={8} />;
               }
