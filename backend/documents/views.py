@@ -41,7 +41,7 @@ class DocumentTypeListCreateAPIView(APIView):
         responses={200: DocumentTypeSerializer(many=True)},
     )
     def get(self, request, institution_id):
-        queryset = DocumentType.objects.filter(institution_id=institution_id).order_by(
+        queryset = DocumentType.objects.filter(institution_id=institution_id, is_active=True).order_by(
             "-created_at"
         )
         paginator = CustomPageNumberPagination()
