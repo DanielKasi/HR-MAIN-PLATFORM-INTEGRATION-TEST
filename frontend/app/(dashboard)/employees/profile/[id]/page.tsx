@@ -1,6 +1,6 @@
 "use client";
 
-import {useState, useEffect} from "react";
+import {useState, useEffect, useCallback, useMemo} from "react";
 import {useParams} from "next/navigation";
 import {useSelector} from "react-redux";
 import {Card, CardContent, CardHeader} from "@/components/ui/card";
@@ -51,20 +51,25 @@ export default function EmployeeProfile() {
   const [leaveSubTab, setLeaveSubTab] = useState<"balances" | "applications">("balances");
   const [assetSubTab, setAssetSubTab] = useState<"requests" | "allocations">("requests");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Cache for tab data to prevent re-fetching
+  const [tabDataCache, setTabDataCache] = useState<Record<string, any>>({});
+
   const ATTENDANCE_PAGE_SIZE = 10;
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  const formatDate = (dateString: string | null) => {
+  // Memoized utility functions
+  const formatDate = useCallback((dateString: string | null) => {
     if (!dateString) return null;
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
-  };
+  }, []);
 
-  const getMaritalStatusLabel = (status: string | null) => {
+  const getMaritalStatusLabel = useCallback((status: string | null) => {
     if (!status) return null;
     const statusMap: {[key: string]: string} = {
       single: "Single",
@@ -73,9 +78,9 @@ export default function EmployeeProfile() {
       widowed: "Widowed",
     };
     return statusMap[status] || status;
-  };
+  }, []);
 
-  const getProfilePictureUrl = (employee: IEmployee) => {
+  const getProfilePictureUrl = useCallback((employee: IEmployee) => {
     const pictureStr = employee.employee_profile_picture || "";
     if (!pictureStr) return null;
 
@@ -93,9 +98,9 @@ export default function EmployeeProfile() {
       return `${baseUrl}/media/${pictureStr}`;
     }
     return null;
-  };
+  }, []);
 
-  const getEmployeeInitials = (employee: IEmployee) => {
+  const getEmployeeInitials = useCallback((employee: IEmployee) => {
     if (employee.user?.fullname) {
       const names = employee.user.fullname.split(" ").filter((name) => name.length > 0);
       if (names.length >= 2) {
@@ -105,17 +110,17 @@ export default function EmployeeProfile() {
       }
     }
     return employee.email?.[0]?.toUpperCase() || "E";
-  };
+  }, []);
 
-  const formatTime = (timeString: string) => {
+  const formatTime = useCallback((timeString: string) => {
     if (!timeString) return "N/A";
     return new Date(`2000-01-01T${timeString}`).toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
+  }, []);
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = useCallback((status: string) => {
     const statusConfig = {
       present: {label: "Present", className: "bg-[#e1faec] text-[#3cb371] border-[#3cb371]"},
       absent: {label: "Absent", className: "bg-[#fcdee2] text-[#e21732] border-[#e21732]"},
@@ -133,28 +138,72 @@ export default function EmployeeProfile() {
         {config.label}
       </Badge>
     );
-  };
+  }, []);
 
-  useEffect(() => {
-    fetchEmployee();
-  }, [selectedInstitution, employeeId]);
+  // Memoized filtered attendance records
+  const filteredAttendanceRecords = useMemo(() => {
+    return attendanceRecords.filter((record) => {
+      const matchesSearch =
+        searchTerm === "" ||
+        formatDate(record.date)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        record.status.toLowerCase().includes(searchTerm.toLowerCase());
 
-  useEffect(() => {
-    if (activeTab === "attendance") {
-      fetchAttendanceRecords();
+      const matchesStatus = statusFilter === "all" || record.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [attendanceRecords, searchTerm, statusFilter, formatDate]);
+
+  const attendanceSummary = useMemo(() => {
+    return {
+      totalWorkDays: attendanceRecords.length,
+      daysAbsent: attendanceRecords.filter((record) => record.status === "absent").length,
+      lateArrivals: attendanceRecords.filter((record) => record.status === "late").length,
+      leaveBalance: 0,
+    };
+  }, [attendanceRecords]);
+
+  const handleTabChange = useCallback(
+    (newTab: typeof activeTab) => {
+      if (newTab === activeTab) return;
+
+      setActiveTab(newTab);
+
+      if (newTab === "attendance" && !tabDataCache.attendance) {
+        fetchAttendanceRecords();
+      }
+    },
+    [activeTab, tabDataCache],
+  );
+
+  const fetchAttendanceRecords = useCallback(async () => {
+    if (!employeeId || loadingAttendance) return;
+
+    // Check cache first
+    if (tabDataCache.attendance) {
+      setAttendanceRecords(tabDataCache.attendance.records);
+      setTotalAttendanceRecords(tabDataCache.attendance.total);
+      return;
     }
-  }, [activeTab, attendancePage, employeeId]);
-
-  const fetchAttendanceRecords = async () => {
-    if (!employeeId) return;
 
     setLoadingAttendance(true);
     try {
       const response = await AttendanceAPI.fetchEmployeeAttendanceRecords(employeeId);
 
       if (response) {
-        setAttendanceRecords(response.results);
-        setTotalAttendanceRecords(response.count);
+        const attendanceData = {
+          records: response.results,
+          total: response.count,
+        };
+
+        setAttendanceRecords(attendanceData.records);
+        setTotalAttendanceRecords(attendanceData.total);
+
+        // Cache the data
+        setTabDataCache((prev) => ({
+          ...prev,
+          attendance: attendanceData,
+        }));
       }
     } catch (error: any) {
       let errorMessage = "Failed to fetch employee attendance records";
@@ -165,9 +214,9 @@ export default function EmployeeProfile() {
     } finally {
       setLoadingAttendance(false);
     }
-  };
+  }, [employeeId, loadingAttendance, tabDataCache.attendance]);
 
-  const fetchEmployee = async () => {
+  const fetchEmployee = useCallback(async () => {
     if (!selectedInstitution || !employeeId) {
       return;
     }
@@ -186,7 +235,28 @@ export default function EmployeeProfile() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedInstitution, employeeId]);
+
+  useEffect(() => {
+    fetchEmployee();
+  }, [fetchEmployee]);
+
+  useEffect(() => {
+    if (activeTab === "attendance" && !tabDataCache.attendance) {
+      fetchAttendanceRecords();
+    }
+  }, [activeTab, fetchAttendanceRecords, tabDataCache.attendance]);
+
+  // Tab configuration with lazy loading indicators
+  const tabConfig = useMemo(
+    () => [
+      {id: "attendance", label: "Attendance", hasData: !!tabDataCache.attendance},
+      {id: "discipline", label: "Discipline", hasData: true}, // Component handles own loading
+      {id: "leave", label: "Leave", hasData: true}, // Component handles own loading
+      {id: "assets", label: "Assets", hasData: true}, // Component handles own loading
+    ],
+    [tabDataCache],
+  );
 
   if (loading) {
     return (
@@ -225,24 +295,6 @@ export default function EmployeeProfile() {
       </div>
     );
   }
-
-  const filteredAttendanceRecords = attendanceRecords.filter((record) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      formatDate(record.date)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.status.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus = statusFilter === "all" || record.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const attendanceSummary = {
-    totalWorkDays: attendanceRecords.length,
-    daysAbsent: attendanceRecords.filter((record) => record.status === "absent").length,
-    lateArrivals: attendanceRecords.filter((record) => record.status === "late").length,
-    leaveBalance: 0, // This should come from API
-  };
 
   return (
     <div className="min-h-screen bg-[#f7f7fb]">
@@ -324,9 +376,9 @@ export default function EmployeeProfile() {
                           </span>
                         )}
                       </h2>
-                      <p className="text-[#9ca3af] text-sm font-medium mb-2">
+                      {/* <p className="text-[#9ca3af] text-sm font-medium mb-2">
                         {employee.employee_id}
-                      </p>
+                      </p> */}
 
                       <div className="flex items-center justify-center md:justify-start gap-2">
                         <Building className="w-4 h-4 text-[#9ca3af]" />
@@ -411,12 +463,6 @@ export default function EmployeeProfile() {
                   <div>
                     <h3 className="text-lg font-semibold text-[#162032] mb-4">Additional Info</h3>
                     <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-[#848496]">Employee ID</label>
-                        <p className="text-[#162032] font-medium break-all">
-                          {employee.employee_id}
-                        </p>
-                      </div>
                       {employee.date_of_joining && (
                         <div>
                           <label className="text-sm font-medium text-[#848496]">
@@ -555,19 +601,10 @@ export default function EmployeeProfile() {
                 <CardHeader className="border-b border-[#e8e8f2] pb-0">
                   <div className="flex gap-2 md:gap-4 lg:gap-8 relative overflow-x-auto scrollbar-hide">
                     <div className="flex gap-2 md:gap-4 lg:gap-8 min-w-max">
-                      {[
-                        {id: "attendance", label: "Attendance"},
-                        {id: "discipline", label: "Discipline"},
-                        {id: "leave", label: "Leave"},
-                        {id: "assets", label: "Assets"},
-                        //{id: "payroll", label: "Payroll & Finance"},
-                        // {id: "assets", label: "Assets Assigned"},
-                        // {id: "projects", label: "Projects Assigned"},
-                        // {id: "documents", label: "Documents"},
-                      ].map((tab) => (
+                      {tabConfig.map((tab) => (
                         <button
                           key={tab.id}
-                          onClick={() => setActiveTab(tab.id as any)}
+                          onClick={() => handleTabChange(tab.id as any)}
                           className={`pb-4 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
                             activeTab === tab.id
                               ? "text-[#162032] font-semibold"
@@ -696,7 +733,10 @@ export default function EmployeeProfile() {
                                 </TableRow>
                               ) : (
                                 filteredAttendanceRecords.map((record, index) => (
-                                  <TableRow key={index} className="hover:bg-[#f7f7fb]/50">
+                                  <TableRow
+                                    key={`${record.date}-${index}`}
+                                    className="hover:bg-[#f7f7fb]/50"
+                                  >
                                     <TableCell className="font-medium text-[#162032] py-3 md:py-4 px-2 md:px-6 text-xs md:text-sm">
                                       <div className="min-w-0">
                                         <div className="md:hidden">
@@ -746,6 +786,7 @@ export default function EmployeeProfile() {
                       </div>
                     </div>
                   )}
+
                   {activeTab === "discipline" && (
                     <EmployeeDiscipline
                       employeeId={employeeId}
@@ -804,13 +845,6 @@ export default function EmployeeProfile() {
                     </div>
                   )}
 
-                  {activeTab === "payroll" && (
-                    <div className="text-center py-12">
-                      <p className="text-[#848496]">
-                        Payroll & Finance content will be implemented here.
-                      </p>
-                    </div>
-                  )}
                   {activeTab === "assets" && (
                     <div className="space-y-6">
                       {/* Asset Sub-tabs */}
@@ -866,19 +900,6 @@ export default function EmployeeProfile() {
                           compact={false}
                         />
                       )}
-                    </div>
-                  )}
-                  {activeTab === "projects" && (
-                    <div className="text-center py-12">
-                      <p className="text-[#848496]">
-                        Projects Assigned content will be implemented here.
-                      </p>
-                    </div>
-                  )}
-
-                  {activeTab === "documents" && (
-                    <div className="text-center py-12">
-                      <p className="text-[#848496]">Documents content will be implemented here.</p>
                     </div>
                   )}
                 </CardContent>
