@@ -122,9 +122,8 @@ export default function LoginPage() {
         const response = await apiRequest.post("user/resend-otp/?mode=otp", {
           email,
         });
-        const user_id = response.data.id;
 
-        router.push(`verify-otp?user_id=${encodeURIComponent(user_id)}`);
+        router.push(`verify-otp?email=${encodeURIComponent(email)}`);
       } catch (error: any) {
         showErrorToast({error, defaultMessage:"Failed to send OTP "})
         // setErrorMessage(error?.message);
