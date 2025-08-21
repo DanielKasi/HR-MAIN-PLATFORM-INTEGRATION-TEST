@@ -236,13 +236,13 @@ export default function JobPositionDetailsPage() {
                       </Badge>
 
                     </div>
-                    <div className="flex items-center justify-start gap-2 mt-2 pl-12">
+                    <div className="flex items-center justify-start gap-2 mt-2">
                       <div className="flex flex-col items-start justify-start">
                         <p className="flex items-center gap-1 text-2xl font-bold text-green-600">
                           UGX
                           {formatCurrency(jobPosition.salary_min || 0)} - {formatCurrency(jobPosition.salary_max || 0)}
                         </p>
-                        <p className="text-sm text-muted-foreground">Salary Scale</p>
+                        <p className="text-sm text-muted-foreground">Salary Range</p>
                       </div>
                     </div>
                   </div>

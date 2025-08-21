@@ -75,7 +75,7 @@ export default function CreateTerminationInitiationPage() {
       if (!institutionId) return
       try {
         const data = await getAllEmployees({ institutionId })
-        setEmployees(data)
+        setEmployees(data.results || [])
       } catch (error) {
         toast.error("Failed to fetch employees")
       }

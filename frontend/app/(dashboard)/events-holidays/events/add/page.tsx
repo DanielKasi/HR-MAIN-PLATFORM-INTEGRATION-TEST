@@ -199,7 +199,7 @@ export default function AddEventPage() {
     setEmployeesLoading(true);
     try {
       const fetchedEmployees = await getAllEmployees({ institutionId: selectedInstitution.id });
-      setEmployees(fetchedEmployees);
+      setEmployees(fetchedEmployees.results || []);
     } catch (error) {
       console.error("Error fetching employees:", error);
       toast({

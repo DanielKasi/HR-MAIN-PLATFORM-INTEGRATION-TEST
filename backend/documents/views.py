@@ -24,10 +24,16 @@ from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 from django.template.loader import render_to_string
 from datetime import datetime, timedelta
+from bs4 import BeautifulSoup
 import re
+import html
+from docx import Document as DocxDocument
+from docx.shared import Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from django.core.files.base import ContentFile
 from weasyprint import HTML
 from employee.models import EmployeeContract, Employee
+from docxtpl import DocxTemplate
 import logging
 
 # Set up logging
@@ -41,7 +47,7 @@ class DocumentTypeListCreateAPIView(APIView):
         responses={200: DocumentTypeSerializer(many=True)},
     )
     def get(self, request, institution_id):
-        queryset = DocumentType.objects.filter(institution_id=institution_id).order_by(
+        queryset = DocumentType.objects.filter(institution_id=institution_id, is_active=True).order_by(
             "-created_at"
         )
         paginator = CustomPageNumberPagination()
@@ -325,97 +331,108 @@ class AuditLogListAPIView(APIView):
 
 class BaseDocumentView(APIView):
     def _normalize_placeholder(self, placeholder):
-        """Normalize placeholder to snake_case {{variable_name}} format, removing apostrophes."""
         cleaned_name = re.sub(r"[\{\}<>\[\]]+", "", placeholder).strip()
         normalized_name = re.sub(r"\s+", "_", cleaned_name.replace("'", "")).lower()
         return f"{{{{{normalized_name}}}}}" if normalized_name else placeholder
 
     def _replace_placeholders(self, content, placeholder_values):
-        """Replace all placeholder formats in HTML content with values, preserving structure."""
         if not content:
             return ""
 
-        preview = content
+        soup = BeautifulSoup(content, "html.parser")
         normalized_values = {
             re.sub(r"\s+", "_", k.replace("'", "")).lower(): v
             for k, v in placeholder_values.items()
             if v is not None
         }
 
-        # Define placeholder patterns to match all formats
         placeholder_patterns = [
-            r"\{\{[\w\s\'-]+\}\}",         # {{variable_name}} or {{Employee's Name}}
-            r"\{[\w\s\'-]+\}",            # {variable_name} or {Employee's Name}
-            r"\[\[[\w\s\'-]+\]\]",        # [[variable_name]] or [[Employee's Name]]
-            r"\[[\w\s\'-]*\w+\]",         # [variable_name] or [Parent]
-            r"<<[\w\s\'-]+>>",            # <<variable_name>> or <<Employee's Name>>
-            r"<[\w\s\'-]+>",              # <variable_name> or <Employee's Name>
-            r"([\w\s\'-]+?)\s*:?\s*_{10,}" # Phrase: __________
+            r"\{\{[\w\s\'-]+\}\}",
+            r"\{[\w\s\'-]+\}",
+            r"\[\[[\w\s\'-]+\]\]",
+            r"\[[\w\s\'-]*\w+\]",
+            r"<<[\w\s\'-]+>>",
+            r"<[\w\s\'-]+>",
+            r"([\w\s\'-]+?)\s*:?\s*_{10,}"
         ]
         combined_pattern = "|".join(f"({pattern})" for pattern in placeholder_patterns)
-        all_matches = re.findall(combined_pattern, preview, re.IGNORECASE)
 
-        # Process each match
-        for match_tuple in all_matches:
-            match = next(m for m in match_tuple if m)
-            if re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match, re.IGNORECASE):
-                # Handle underscore placeholders (e.g., "Name: ________")
-                phrase = re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match, re.IGNORECASE).group(1).strip()
-                normalized_key = re.sub(r"\s+", "_", phrase.replace("'", "")).lower()
-                value = normalized_values.get(normalized_key, "__________")
-                replacement = f"{phrase}: {value}"
-                preview = re.sub(re.escape(match), replacement, preview, count=1)
-            else:
-                # Handle other placeholder formats
-                normalized = self._normalize_placeholder(match)
-                normalized_key = normalized.strip("{}").lower()
-                value = normalized_values.get(normalized_key, match)
-                # Escape < and > for HTML content to prevent tag confusion
-                if match.startswith("<") and match.endswith(">"):
-                    escaped_match = match.replace("<", "&lt;").replace(">", "&gt;")
-                    preview = preview.replace(match, str(value))
+        for text_node in soup.find_all(string=True):
+            if not text_node.strip():
+                continue
+            text = text_node
+            matches = re.findall(combined_pattern, text, re.IGNORECASE)
+            matches = [match for group in matches for match in group if match]
+            if not matches:
+                continue
+
+            new_text = text
+            for match in matches:
+                if re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match, re.IGNORECASE):
+                    phrase = re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match, re.IGNORECASE).group(1).strip()
+                    normalized_key = re.sub(r"\s+", "_", phrase.replace("'", "")).lower()
+                    value = normalized_values.get(normalized_key, "__________")
+                    replacement = f"{phrase}: {value}"
+                    new_text = re.sub(re.escape(match), replacement, new_text, count=1)
                 else:
-                    preview = preview.replace(match, str(value))
+                    normalized_key = self._normalize_placeholder(match).strip("{}").lower()
+                    value = normalized_values.get(normalized_key, match)
+                    value = html.escape(str(value))
+                    new_text = new_text.replace(match, value)
 
-        # Handle special case placeholders (e.g., "initials: __________")
-        special_keys = ["initials", "signature", "days", "state"]
+            if new_text != text:
+                text_node.replace_with(new_text)
+
+        special_keys = ["initials", "signature", "days", "state", "employee_job_title", "employee_supervisor_name"]
         for key in special_keys:
             if key in normalized_values:
-                preview = re.sub(
-                    rf"(?i){key}\s*:?\s*_{{10,}}",
-                    f"{key.title()}: {normalized_values[key]}",
-                    preview,
-                    count=1,
-                )
+                for text_node in soup.find_all(string=re.compile(rf"(?i){key}\s*:?\s*_{{10,}}")):
+                    replacement = f"{key.title()}: {html.escape(str(normalized_values[key]))}"
+                    text_node.replace_with(text_node.replace(
+                        re.compile(rf"(?i){key}\s*:?\s*_{{10,}}"),
+                        replacement
+                    ))
 
-        return preview
+        return str(soup).strip()
+
+    def generate_word_document(self, template, placeholder_values):
+        if not template.raw_content or template.template_type != "word":
+            return None
+
+        doc = DocxDocument()
+        normalized_values = {
+            re.sub(r"\s+", "_", k.replace("'", "")).lower(): v
+            for k, v in placeholder_values.items()
+            if v is not None
+        }
+
+        paragraphs = template.raw_content.split("\n")
+        for para_text in paragraphs:
+            if not para_text.strip():
+                continue
+            new_text = para_text
+            for placeholder in template.placeholders:
+                normalized_key = re.sub(r"[\{\}<>\[\]]+", "", placeholder).strip().replace(" ", "_").lower()
+                value = normalized_values.get(normalized_key, placeholder)
+                new_text = new_text.replace(placeholder, str(value))
+            para = doc.add_paragraph()
+            if para_text.strip().startswith(("•", "◦", "-")):
+                para.style = "List Bullet"
+            elif re.match(r"^\d+\.", para_text.strip()):
+                para.style = "List Number"
+            elif para_text.strip().isupper():
+                para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                run = para.add_run(new_text)
+                run.bold = True
+                run.font.size = Pt(14)
+            else:
+                para.add_run(new_text)
+
+        temp_file = f"temp_{template.id}.docx"
+        doc.save(temp_file)
+        return temp_file
 
 class GenerateDocumentView(BaseDocumentView):
-    @extend_schema(
-        tags=["Document Generation"],
-        parameters=[
-            OpenApiParameter(
-                name="context",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                required=True,
-                enum=["onboarding", "employee", "leave"],
-                description="The context for document generation (e.g., onboarding, employee, leave)",
-            ),
-            OpenApiParameter(
-                name="context_id",
-                type=int,
-                location=OpenApiParameter.QUERY,
-                required=True,
-                description="The ID of the context record (e.g., OnBoarding ID, Employee ID)",
-            ),
-        ],
-        responses={
-            200: GenerateDocumentResponseSerializer,
-            404: {"description": "Template or context record not found"},
-        },
-        description="Fetches placeholders for a document template with pre-filled values based on context",
-    )
     def get(self, request, template_id):
         template = get_object_or_404(DocumentTemplate, pk=template_id)
         template_placeholders = template.placeholders or []
@@ -454,6 +471,11 @@ class GenerateDocumentView(BaseDocumentView):
                     else ""
                 ),
                 "date": str(datetime.now().date()),
+                "employee_job_title": (
+                    onboarding.application.job_position_advert.job_position.name
+                    if onboarding.application and onboarding.application.job_position_advert
+                    else ""
+                )
             }
         elif context == "employee":
             employee = get_object_or_404(Employee, pk=context_id)
@@ -463,6 +485,9 @@ class GenerateDocumentView(BaseDocumentView):
                 ),
                 "salary": str(employee.salary) if hasattr(employee, "salary") else "",
                 "date": str(datetime.now().date()),
+                "employee_job_title": (
+                    employee.position.name if hasattr(employee, "position") else ""
+                )
             }
         elif context == "leave":
             leave = get_object_or_404(Leave, pk=context_id)
@@ -485,22 +510,6 @@ class GenerateDocumentView(BaseDocumentView):
         )
         return Response(serializer.data)
 
-    @extend_schema(
-        tags=["Document Generation"],
-        request=GenerateDocumentRequestSerializer,
-        responses={
-            201: {
-                "description": "Document created successfully",
-                "properties": {
-                    "status": {"type": "string"},
-                    "document_id": {"type": "integer"},
-                },
-            },
-            400: {"description": "Invalid input or missing required placeholders"},
-            404: {"description": "Template or context record not found"},
-        },
-        description="Creates a new document with provided placeholder values and updates OnBoarding status to contract_review if context is onboarding",
-    )
     def post(self, request, template_id):
         template = get_object_or_404(DocumentTemplate, pk=template_id)
         serializer = GenerateDocumentRequestSerializer(data=request.data)
@@ -511,9 +520,15 @@ class GenerateDocumentView(BaseDocumentView):
         context = serializer.validated_data.get("context")
         context_id = serializer.validated_data.get("context_id")
 
+        html_content = self._replace_placeholders(template.content, placeholder_values)
+        word_file = None
+        if template.template_type == "word":
+            word_file = self.generate_word_document(template, placeholder_values)
+
         document = Document.objects.create(
             document_template=template,
             placeholder_values=placeholder_values,
+            content=html_content,
             status="pending",
         )
 
@@ -528,10 +543,15 @@ class GenerateDocumentView(BaseDocumentView):
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
-        return Response(
-            {"status": "success", "document_id": document.pk},
-            status=status.HTTP_201_CREATED,
-        )
+        response_data = {
+            "status": "success",
+            "document_id": document.pk,
+            "html_content": html_content,
+        }
+        if word_file:
+            response_data["word_file"] = word_file
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 class DocumentContentPreviewView(BaseDocumentView):
     @extend_schema(
@@ -554,7 +574,6 @@ class DocumentContentPreviewView(BaseDocumentView):
 
 class DocumentStatusUpdateView(BaseDocumentView):
     def _generate_pdf(self, content, placeholder_values):
-        """Generate a PDF from HTML content using weasyprint, preserving template formatting."""
         logger.debug(f"Generating PDF with content length: {len(content)}")
         rendered_content = self._replace_placeholders(content, placeholder_values)
 
@@ -565,16 +584,15 @@ class DocumentStatusUpdateView(BaseDocumentView):
             <meta charset="utf-8" />
             <title>Document</title>
             <style>
-            body {{
-                font-family: Arial, sans-serif;
-                font-size: 12pt;
-                margin: 35px;
-            }}
-            h1 {{
-                font-size: 14pt;
-                font-weight: bold;
-                margin: 10px 0;
-            }}
+                body {{
+                    margin: 1in;
+                }}
+                h1, h2, h3, h4, h5, h6, p, li, span {{
+                    margin: 0.5em 0;
+                }}
+                ul, ol {{
+                    margin-left: 1.5em;
+                }}
             </style>
         </head>
         <body>
@@ -592,10 +610,10 @@ class DocumentStatusUpdateView(BaseDocumentView):
             raise
 
     def _get_email_values(self, placeholder_values, context, context_obj):
-        """Derive email values based on context and context object."""
         email_values = {
             "due_date": str(datetime.now().date() + timedelta(days=7)),
             "hr_email": getattr(settings, "HR_EMAIL", settings.DEFAULT_FROM_EMAIL),
+            "word_attachment": context_obj.document_template.template_type == "word" if hasattr(context_obj, "document_template") else False,
         }
 
         if context == "onboarding":
@@ -662,7 +680,6 @@ class DocumentStatusUpdateView(BaseDocumentView):
         return email_values
 
     def _get_context_object(self, context, context_id):
-        """Retrieve the context object based on context type and ID."""
         if context == "onboarding":
             return get_object_or_404(OnBoarding, pk=context_id)
         elif context == "employee":
@@ -671,33 +688,6 @@ class DocumentStatusUpdateView(BaseDocumentView):
             return get_object_or_404(Leave, pk=context_id)
         raise ValueError("Invalid context")
 
-    @extend_schema(
-        tags=["Document Generation"],
-        parameters=[
-            OpenApiParameter(
-                name="context",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                required=True,
-                enum=["onboarding", "employee", "leave"],
-                description="The context for document generation",
-            ),
-            OpenApiParameter(
-                name="context_id",
-                type=int,
-                location=OpenApiParameter.QUERY,
-                required=True,
-                description="The ID of the context record",
-            ),
-        ],
-        request=DocumentStatusUpdateSerializer,
-        responses={
-            200: DocumentContentPreviewSerializer,
-            400: {"description": "Invalid input or missing required placeholders"},
-            404: {"description": "Document or context record not found"},
-        },
-        description="Updates document status, sends PDF email, and creates context-specific records if status is reviewed",
-    )
     def patch(self, request, document_id):
         context = request.query_params.get("context")
         context_id = request.query_params.get("context_id")
@@ -763,6 +753,12 @@ class DocumentStatusUpdateView(BaseDocumentView):
                 pdf_filename = f"document_{context}_{document.pk}.pdf"
                 document_file = ContentFile(pdf_content, name=pdf_filename)
 
+                word_file = None
+                word_filename = None
+                if template.template_type == "word":
+                    word_file = self.generate_word_document(template, placeholder_values)
+                    word_filename = f"document_{context}_{document.pk}.docx"
+
                 if context == "onboarding":
                     employee_contract = EmployeeContract.objects.create(
                         applicant=context_obj.application,
@@ -776,7 +772,6 @@ class DocumentStatusUpdateView(BaseDocumentView):
                         employee=context_obj,
                         is_active=False,
                         original_contract=document_file,
-                        
                     )
                     context_obj.status = "issued_contract"
                     context_obj.save()
@@ -809,6 +804,9 @@ class DocumentStatusUpdateView(BaseDocumentView):
                         )
                         email.attach_alternative(html_message, "text/html")
                         email.attach(pdf_filename, pdf_content, "application/pdf")
+                        if word_file:
+                            with open(word_file, "rb") as f:
+                                email.attach(word_filename, f.read(), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
                         email.send(fail_silently=False)
                         logger.info(f"Email sent to {recipient_email}")
                     except Exception as e:

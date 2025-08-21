@@ -32,23 +32,28 @@ class DocumentType(UtilityBaseModel):
 
 
 class DocumentTemplate(UtilityBaseModel):
-    document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE)
+    document_type = models.ForeignKey('DocumentType', on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     template_type = models.CharField(max_length=50, choices=[
         ('pdf', 'PDF'),
         ('word', 'Word Document'),
-        ('text', 'Text'),      
+        ('text', 'Text'),
     ])
     file = models.FileField(upload_to='document_templates/', null=True, blank=True)
     content = RichTextUploadingField(
         blank=True,
         null=True,
-        help_text="Rich text content for the template with formatting and placeholders (e.g., {{caregiver_name}}, {{date}}).",
-        config_name='default'  # Reference the CKEditor config
+        help_text="Rich text content for the template with formatting and placeholders.",
+        config_name='default'
+    )
+    raw_content = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Raw content of the uploaded file (e.g., Word document text or XML) to preserve original formatting."
     )
     placeholders = models.JSONField(
         default=list,
-        help_text="List of placeholders used in the template, e.g. ['{{employee_name}}', '{{date}}']",
+        help_text="List of placeholders used in the template, e.g., ['{{employee_name}}', '{{date}}'].",
         null=True,
         blank=True,
     )
@@ -62,6 +67,10 @@ class Document(models.Model):
     placeholder_values = models.JSONField(
         default=dict,
         help_text="Values for the placeholders defined in the template, e.g. {'employee_name': 'John Doe', 'date': '2023-10-01'}",
+    )
+    content = models.TextField(
+        blank=True,
+        null=True
     )
     status = models.CharField(
         max_length=20,
