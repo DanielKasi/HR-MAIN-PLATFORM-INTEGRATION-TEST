@@ -186,6 +186,7 @@ export default function DepartmentDetailView() {
       const employees = allEmployees ?? []
       setAllEmployees(employees.results)
 
+
       const filteredEmployees = employees.results.filter((emp: IEmployee) => {
         const empDepartmentId = getDepartmentId(emp)
         const empDepartmentName = getDepartmentName(emp)
@@ -777,7 +778,7 @@ export default function DepartmentDetailView() {
                               <RichTextDisplay className="text-sm text-muted-foreground max-w-[200px] truncate" htmlContent={position.description || ""} />
                             </TableCell>
                             <TableCell>
-                              <p className="font-medium">UGX {formatCurrency(position.salary_min || 0)} - {formatCurrency(position.salary_max || 0)}</p>
+                              <p className="font-medium">{formatCurrency(position.salary_min || 0)} - {formatCurrency(position.salary_max || 0)}</p>
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
