@@ -158,7 +158,7 @@ const AssetRequestsComponent = () => {
             </div>
             <Button
               onClick={() => setIsCreateDialogOpen(true)}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
+              className=""
             >
               <Plus className="h-4 w-4 mr-2" />
               New Request

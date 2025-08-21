@@ -231,31 +231,31 @@ class VerifyOTPAPIView(APIView):
         try:
             user = CustomUser.objects.get(email=email)
 
-            success, message = verify_otp(user_id, received_otp=otp)
+            success, message = verify_otp(user.id, received_otp=otp)
 
             if success:
                 user.is_active = True
                 user.is_email_verified = True
                 user.save()
 
-                logger.info(f"User {user_id} verified and activated successfully")
+                logger.info(f"User {user.id} verified and activated successfully")
                 return Response(
                     {"message": "OTP verified successfully. Account activated."},
                     status=status.HTTP_200_OK,
                 )
             else:
-                logger.warning(f"OTP verification failed for user {user_id}: {message}")
+                logger.warning(f"OTP verification failed for user {user.id}: {message}")
                 return Response(
                     {"message": message}, status=status.HTTP_400_BAD_REQUEST
                 )
 
         except CustomUser.DoesNotExist:
-            logger.error(f"User {user_id} not found during OTP verification")
+            logger.error(f"User {user.id} not found during OTP verification")
             return Response(
                 {"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            logger.error(f"Error during OTP verification for user {user_id}: {str(e)}")
+            logger.error(f"Error during OTP verification for user {user.id}: {str(e)}")
             return Response(
                 {"detail": "An error occurred during verification"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,

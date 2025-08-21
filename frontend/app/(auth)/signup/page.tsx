@@ -114,7 +114,7 @@ export default function SignupPage() {
 
       if (response.status === 201) {
         const user_id = response.data.id;
-        router.push(`verify-otp?user_id=${encodeURIComponent(user_id)}`);
+        router.push(`verify-otp?email=${encodeURIComponent(email)}`);
       }
     } catch (error: any) {
       handleApiError(error);

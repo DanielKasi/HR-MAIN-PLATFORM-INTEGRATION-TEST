@@ -166,7 +166,6 @@ const DeductionTypesComponent = () => {
         >
           {({data, loading, refresh}) => {
         
-            
             if (loading) {
               return (
                 <div className="space-y-4">

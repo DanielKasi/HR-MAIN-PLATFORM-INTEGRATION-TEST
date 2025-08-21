@@ -219,9 +219,8 @@ export default function EmployeeAllowancesPage() {
             footerClassName="pt-4"
           >
             {({data, loading, refresh}) => {
-              // Store the refresh function for use in success handlers
-          
-              
+        
+            // setRefreshFunction(refresh)
               if (loading) {
                 return <TableSkeleton rows={10} columns={8} />;
               }

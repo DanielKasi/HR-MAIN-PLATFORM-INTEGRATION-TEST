@@ -19,7 +19,7 @@ interface DeleteAllowanceTypeDialogProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   allowanceType: IAllowanceType | null
-  onSuccess: (deletedId: number) => void
+  onSuccess: () => void
 }
 
 export function DeleteAllowanceTypeDialog({
@@ -38,7 +38,7 @@ export function DeleteAllowanceTypeDialog({
       const success = await deleteAllowanceType(allowanceType.id)
 
       if (success) {
-        onSuccess(allowanceType.id)
+        onSuccess()
         toast.success("Allowance type deleted successfully")
         onOpenChange(false)
       } else {

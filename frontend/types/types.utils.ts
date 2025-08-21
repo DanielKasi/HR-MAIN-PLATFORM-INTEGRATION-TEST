@@ -633,6 +633,7 @@ export interface ICreateEmployeeForm {
   fullname: string;
   email: string;
   phone_number: string;
+  phone_number_country_code?:string;
   position: number;
   department: number;
   work_type: number; // Added
@@ -651,6 +652,7 @@ export interface ICreateEmployeeForm {
   selected_branches: number[]; // Added for multi-branch selection
   emergency_contact_name: string;
   emergency_contact_phone: string;
+  emergency_contact_phone_country_code?:string
   emergency_contact_relationship: string;
   marital_status: string;
   children_count: number;

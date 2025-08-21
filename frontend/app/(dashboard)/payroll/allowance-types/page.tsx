@@ -132,7 +132,11 @@ const AllowanceTypesComponent = () => {
             <div className="flex items-center gap-2">
               <CreateAllowanceTypeDialog
                 institutionId={selectedInstitution?.id || 0}
-                onSuccess={handleCreateSuccess}
+                onSuccess={(newAllowanceType) =>{
+                  handleCreateSuccess(newAllowanceType); 
+                  
+                }
+              }
                 disabled={!selectedInstitution?.id}
               />
             </div>
@@ -201,6 +205,7 @@ const AllowanceTypesComponent = () => {
             }
 
             return (
+              <>
               <div className="overflow-x-auto">
                 <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
                   <TableHeader className="bg-gray-50/50">
@@ -278,21 +283,14 @@ const AllowanceTypesComponent = () => {
                   </TableBody>
                 </Table>
               </div>
-            );
-          }}
-        </PaginatedTableWrapper>
-        </div>
-      </div>
 
-    
-
-      {/* Dialogs */}
+                    {/* Dialogs */}
       {editingAllowanceType && (
         <EditAllowanceTypeDialog
           isOpen={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
           allowanceType={editingAllowanceType}
-          onSuccess={handleUpdateSuccess}
+          onSuccess={refresh}
         />
       )}
 
@@ -301,9 +299,17 @@ const AllowanceTypesComponent = () => {
           isOpen={isDeleteDialogOpen}
           onOpenChange={setIsDeleteDialogOpen}
           allowanceType={deletingAllowanceType}
-          onSuccess={handleDeleteSuccess}
+          onSuccess={refresh}
         />
       )}
+              </>
+            );
+          }}
+        </PaginatedTableWrapper>
+        </div>
+      </div>
+
+    
     </div>
   );
 };
