@@ -28,6 +28,15 @@ from decimal import Decimal
 from django.db.models import Prefetch
 
 
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_RIGHT, TA_LEFT, TA_CENTER
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from collections import defaultdict
+from reportlab.lib.units import cm
+
+
 DAY_CODE_TO_WEEKDAY = {
     "MON": 0,
     "TUE": 1,
@@ -882,3 +891,170 @@ def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
     wb.save(output)
     output.seek(0)
     return output
+
+
+
+def generate_payslip_pdf(payslip):
+    """
+    Generates a PDF payslip using ReportLab based on the Payslip model instance.
+    """
+    buffer = BytesIO()
+
+    # PDF setup
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40
+    )
+    elements = []
+    styles = getSampleStyleSheet()
+
+    # Custom styles
+    right_aligned_style = ParagraphStyle(
+        'RightAligned',
+        parent=styles['Normal'],
+        alignment=TA_RIGHT,
+    )
+    centered_style = ParagraphStyle(
+        'Centered',
+        parent=styles['Normal'],
+        alignment=TA_CENTER,
+    )
+    bold_style = ParagraphStyle(
+        'Bold',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+    )
+    
+    # --- Header Section ---
+    institution_name = payslip.employee.department.institution.institution_name
+    elements.append(Paragraph(f"<b>{institution_name}</b>", styles["Title"]))
+    elements.append(Spacer(1, 0.5 * cm))
+    elements.append(Paragraph("<b>Payslip</b>", centered_style))
+    elements.append(Spacer(1, 0.3 * cm))
+    elements.append(Paragraph(
+        f"For the period: <b>{payslip.payroll_period.start_date.strftime('%B %d, %Y')} - {payslip.payroll_period.end_date.strftime('%B %d, %Y')}</b>",
+        styles["Normal"]
+    ))
+    elements.append(Spacer(1, 1 * cm))
+
+    # --- Employee Details Table ---
+    employee_details_data = [
+        [
+            Paragraph("<b>Employee Name:</b>", bold_style),
+            Paragraph(payslip.employee.user.fullname, styles['Normal'])
+        ],
+        [
+            Paragraph("<b>Employee ID:</b>", bold_style),
+            Paragraph(payslip.employee.employee_id, styles['Normal'])
+        ],
+        [
+            Paragraph("<b>Department:</b>", bold_style),
+            Paragraph(payslip.employee.department.name, styles['Normal'])
+        ],
+        [
+            Paragraph("<b>Position:</b>", bold_style),
+            Paragraph(payslip.employee.position.name if payslip.employee.position else 'N/A', styles['Normal'])
+        ],
+        [
+            Paragraph("<b>Days Worked:</b>", bold_style),
+            Paragraph(str(payslip.days_worked), styles['Normal'])
+        ],
+        [
+            Paragraph("<b>Payment Date:</b>", bold_style),
+            Paragraph(payslip.paid_date.strftime('%B %d, %Y') if payslip.paid_date else 'N/A', styles['Normal'])
+        ],
+        [
+            Paragraph("<b>Bank:</b>", bold_style),
+            Paragraph(payslip.employee.bank or 'N/A', styles['Normal'])
+        ],
+        [
+            Paragraph("<b>Account Number:</b>", bold_style),
+            Paragraph(payslip.employee.bank_account_number or 'N/A', styles['Normal'])
+        ],
+    ]
+    employee_details_table = Table(employee_details_data, colWidths=[100, 350])
+    employee_details_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(employee_details_table)
+    elements.append(Spacer(1, 1 * cm))
+    
+    # --- Earnings Section ---
+    elements.append(Paragraph("<b>Earnings</b>", styles["Heading3"]))
+    elements.append(Spacer(1, 0.2 * cm))
+    earnings_data = [["Description", "Amount (UGX)"]]
+    
+    # Basic salary entry
+    earnings_data.append(["Basic Salary", f"{payslip.basic_salary:,.2f}"])
+    
+    allowance_items = payslip.items.filter(item_type='allowance')
+    for item in allowance_items:
+        earnings_data.append([item.name, f"{item.amount:,.2f}"])
+
+    overtime_items = payslip.items.filter(item_type='overtime')
+    for item in overtime_items:
+        earnings_data.append([f"{item.name} ({item.description})", f"{item.amount:,.2f}"])
+
+    earnings_table = Table(earnings_data, colWidths=[400, 150])
+    earnings_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f0f0f0')),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e0e0e0')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (1, 1), (1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+    ]))
+    elements.append(earnings_table)
+    elements.append(Spacer(1, 0.5 * cm))
+
+    # --- Deductions Section ---
+    elements.append(Paragraph("<b>Deductions</b>", styles["Heading3"]))
+    elements.append(Spacer(1, 0.2 * cm))
+    deductions_data = [["Description", "Amount (UGX)"]]
+    
+    deduction_items = payslip.items.filter(item_type='deduction')
+    for item in deduction_items:
+        # Use description for more detail if available
+        description = item.description or item.name
+        deductions_data.append([description, f"{item.amount:,.2f}"])
+        
+    deductions_table = Table(deductions_data, colWidths=[400, 150])
+    deductions_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f0f0f0')),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e0e0e0')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (1, 1), (1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+    ]))
+    elements.append(deductions_table)
+    elements.append(Spacer(1, 1 * cm))
+    
+    # --- Summary Totals Section ---
+    summary_data = [
+        ["Total Allowances:", f"{payslip.total_allowances:,.2f}"],
+        ["Gross Salary:", f"{payslip.gross_salary:,.2f}"],
+        ["Total Deductions:", f"{payslip.total_deductions:,.2f}"],
+        ["", ""],  # Spacer row
+        ["Net Salary:", f"{payslip.net_salary:,.2f}"],
+    ]
+    summary_table = Table(summary_data, colWidths=[400, 150])
+    summary_table.setStyle(TableStyle([
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#d9ead3')),  # Light green for net salary row
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e0e0e0')),
+    ]))
+    elements.append(summary_table)
+
+    # --- Footer ---
+    elements.append(Spacer(1, 2 * cm))
+    elements.append(Paragraph("<i>This is a computer-generated document and does not require a signature.</i>", styles["Italic"]))
+
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer

@@ -74,4 +74,10 @@ urlpatterns = [
         PayrollPeriodPayslipsExcelReportAPIView.as_view(),
         name="export-passlips-report-2-excel",
     ),
+    path(
+        "payslips/<int:payslip_id>/download/",
+        DownloadPayslipPDFView.as_view(),
+        name="payslip-pdf-download",
+    ),
+
 ]

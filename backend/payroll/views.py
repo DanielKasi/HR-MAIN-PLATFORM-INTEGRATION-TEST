@@ -36,6 +36,7 @@ from django.http import HttpResponse
 from django.utils.encoding import escape_uri_path
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from institution.models import Institution
+from payroll.utils import generate_payslip_pdf
 
 
 class ExportEFTExcelView(APIView):
@@ -707,5 +708,61 @@ class PayrollPeriodPayslipsExcelReportAPIView(APIView):
                 {
                     "error": "An internal server error occurred while generating the Excel."
                 },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class DownloadPayslipPDFView(APIView):
+    """
+    API endpoint to generate and download a single payslip as a PDF using ReportLab.
+    """
+    @extend_schema(
+        summary="Download a single payslip as a PDF",
+        responses={
+            200: {'description': 'PDF file of the payslip'},
+            404: {'description': 'Payslip not found'},
+            500: {'description': 'Internal server error'},
+        },
+        parameters=[
+            OpenApiParameter(
+                name="payslip_id",
+                type=str,
+                location=OpenApiParameter.PATH,
+                description="ID of the payslip to download",
+                required=True,
+            ),
+        ],
+        tags=["Payslip Operations"],
+    )
+    def get(self, request, payslip_id):
+        try:
+            payslip = get_object_or_404(Payslip.objects.select_related(
+                'employee__user',
+                'employee__department__institution',
+                'employee__position',
+                'payroll_period'
+            ).prefetch_related('items'), id=payslip_id)
+        except ValueError:
+            return Response(
+                {"error": "Invalid payslip ID format."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        try:
+            pdf_buffer = generate_payslip_pdf(payslip)
+
+            # Create the HTTP response with the PDF data
+            response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+            
+            # Set the file name for the download
+            filename = f"Payslip_{payslip.employee.user.fullname}_{payslip.payroll_period.name}.pdf".replace(" ", "_")
+            response['Content-Disposition'] = f'attachment; filename="{escape_uri_path(filename)}"'
+
+            return response
+
+        except Exception as e:
+            print(f"Error generating PDF for payslip {payslip_id}: {e}")
+            return Response(
+                {"error": "An internal server error occurred while generating the PDF."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
