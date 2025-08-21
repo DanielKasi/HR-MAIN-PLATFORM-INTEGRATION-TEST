@@ -324,7 +324,7 @@ const LeaveApplicationComponent = () => {
 
       try {
         const fetchedEmployees = await getAllEmployees({institutionId: selectedInstitution?.id});
-          setEmployees(fetchedEmployees);
+          setEmployees(fetchedEmployees.results || []);
       } catch (error) {
         setEmployees([]);
       } finally {

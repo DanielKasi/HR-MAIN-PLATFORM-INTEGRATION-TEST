@@ -1,7 +1,7 @@
 "use client";
 
 import {useState} from "react";
-import {Edit, Eye, MoreVertical, Search, Trash2} from "lucide-react";
+import {ChevronDown, Edit, Eye, MoreVertical, Plus, Search, Trash2, Upload, UserPlus} from "lucide-react";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
@@ -28,6 +28,8 @@ import {AlertDialogHeader, AlertDialogFooter,  AlertDialog,
   AlertDialogAction,} from "@/components/ui/alert-dialog";
 
 import Link from "next/link";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useRouter } from "next/navigation";
 
 const getFullName = (employee: IEmployee) => {
   return employee.user?.fullname || "Unknown Employee";
@@ -71,6 +73,8 @@ export function EmployeesTable({
     setStatusFilter("all");
   };
 
+  const router = useRouter();
+
   const getStatusBadge = (isActive: boolean) => {
     return isActive ? (
       <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Active</Badge>
@@ -82,19 +86,32 @@ export function EmployeesTable({
   return (
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <CardHeader className="space-y-4">
-        <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <span className="text-2xl font-bold">Employees</span>
-          <BulkUploadEmployeesDialog
-            isOpen={isBulkUploadDialogOpen}
-            onClose={() => setIsBulkUploadDialogOpen(false)}
-            onUploadSuccess={() => {
-              setIsBulkUploadDialogOpen(false);
-            }}
-          />
+        <CardTitle className="flex flex-row items-center justify-between gap-4">
+          <h1 className="text-xl md:text-2xl font-bold">Employees</h1>
+          <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="">
+                  <Plus className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">Add Employee</span>
+                  <UserPlus className="md:hidden"/>
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => router.push("/employees/add-employee")}>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Add Single Employee
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsBulkUploadDialogOpen(true)}>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Bulk Upload Employees
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
         </CardTitle>
 
         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center mt-12">
-          <div className="relative flex-1 lg:flex-[0.4]">
+          <div className="relative w-full md:max-w-lg lg:max-w-xl ">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search employees, departments, positions, or emails..."
@@ -102,6 +119,36 @@ export function EmployeesTable({
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 text-sm"
             />
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 flex-1 lg:flex-[0.4]">
+            <div className="flex flex-col sm:flex-row gap-3 flex-1">
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[140px] lg:w-[160px] text-xs sm:text-sm">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {(searchTerm || departmentFilter !== "all" || statusFilter !== "all") && (
+              <Button
+                variant="outline"
+                onClick={clearFilters}
+                className="flex items-center gap-2 w-full sm:w-auto text-xs sm:text-sm bg-transparent"
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
+
+          {/* Add Employee Dropdown */}
+          <div className="flex-shrink-0 lg:flex-[0.2]">
+
           </div>
         </div>
       </CardHeader>
@@ -249,6 +296,13 @@ export function EmployeesTable({
         </PaginatedTableWrapper>
       </CardContent>
 
+      <BulkUploadEmployeesDialog
+            isOpen={isBulkUploadDialogOpen}
+            onClose={() => setIsBulkUploadDialogOpen(false)}
+            onUploadSuccess={() => {
+              setIsBulkUploadDialogOpen(false);
+            }}
+          />
       
     </div>
   );

@@ -94,10 +94,10 @@ export default function EmployeeLeaveBalanceDetails() {
           getLeaveTypes({ institutionId: selectedInstitution.id })
         ]);
 
-        setEmployees(allEmployees || []);
+        setEmployees(allEmployees.results || []);
         setLeaveTypes(allLeaveTypes || []);
 
-        const foundEmployee = allEmployees?.find(emp => emp.id === employeeIdNum);
+        const foundEmployee = allEmployees.results?.find(emp => emp.id === employeeIdNum);
         
         setEmployee(foundEmployee || null);
 
