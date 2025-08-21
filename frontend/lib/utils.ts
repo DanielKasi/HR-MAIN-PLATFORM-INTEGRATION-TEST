@@ -100,6 +100,7 @@ import {
   IAssetReturnFormData,
   AttendanceResponse,
   IEmployeeTaxFormData,
+  IEmployeeTax,
 } from "@/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -577,6 +578,53 @@ export const getJobPositionAdverts = async ({
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-advert/`);
     return response.data as IPaginatedResponse<JobPositionAdvert>;
   } catch (error) {
+    throw error;
+  }
+};
+
+export const getPaginatedJobAdverts = async ({
+  institutionId,
+  page = 1,
+  search,
+  status,
+  branch
+}: {
+  institutionId: number,
+  page?: number;
+  search?: string;
+  status?: string;
+  branch?: string;
+}): Promise<IPaginatedResponse<JobPositionAdvert>> => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    if (status && status !== "all") {
+      params.append("status", status);
+    }
+    if (branch && branch !== "all") {
+      params.append("branch", branch);
+    }
+
+    const endpoint = `recruitment/institution/${institutionId}/job-advert/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<JobPositionAdvert>;
+  } catch (error) {
+    console.error("Error fetching paginated job adverts:", error);
+    throw error;
+  }
+};
+
+export const getPaginatedJobAdvertsFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<JobPositionAdvert>> => {
+  try {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<JobPositionAdvert>;
+  } catch (error) {
+    console.error("Error fetching paginated job adverts from URL:", error);
     throw error;
   }
 };
@@ -2034,6 +2082,48 @@ export const getAllowanceTypes = async (
   }
 };
 
+export const getPaginatedAllowanceTypes = async ({ 
+  institutionId, 
+  page = 1, 
+  search, 
+  status 
+}: { 
+  institutionId: number, 
+  page?: number;
+  search?: string;
+  status?: string;
+}): Promise<IPaginatedResponse<IAllowanceType>> => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    if (status && status !== "all") {
+      params.append("is_active", status === "active" ? "true" : "false");
+    }
+    
+    const endpoint = `payroll/${institutionId}/allowance-types/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IAllowanceType>;
+  } catch (error) {
+    console.error("Error fetching paginated allowance types:", error);
+    throw error;
+  }
+};
+
+export const getPaginatedAllowanceTypesFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IAllowanceType>> => {
+  try {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IAllowanceType>;
+  } catch (error) {
+    console.error("Error fetching allowance types from URL:", error);
+    throw error;
+  }
+};
+
 // Get all leave balances for an institution
 export const getAllLeaveBalances = async ({ institutionId }: { institutionId: number }) => {
   try {
@@ -2187,6 +2277,48 @@ export const getDeductionTypes = async (
   }
 };
 
+export const getPaginatedDeductionTypes = async ({ 
+  institutionId, 
+  page = 1, 
+  search, 
+  status 
+}: { 
+  institutionId: number, 
+  page?: number;
+  search?: string;
+  status?: string;
+}): Promise<IPaginatedResponse<IDeductionType>> => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    if (status && status !== "all") {
+      params.append("is_active", status === "active" ? "true" : "false");
+    }
+    
+    const endpoint = `payroll/${institutionId}/deduction-types/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IDeductionType>;
+  } catch (error) {
+    console.error("Error fetching paginated deduction types:", error);
+    throw error;
+  }
+};
+
+export const getPaginatedDeductionTypesFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IDeductionType>> => {
+  try {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IDeductionType>;
+  } catch (error) {
+    console.error("Error fetching deduction types from URL:", error);
+    throw error;
+  }
+};
+
 export const getDeductionType = async (id: number): Promise<IDeductionType | null> => {
   try {
     const response = await apiRequest.get(`payroll/deduction-types/${id}/`);
@@ -2259,6 +2391,53 @@ export const getEmployeeAllowances = async (
     return response.data.results as IEmployeeAllowance[];
   } catch (error) {
     // console.error("Failed to get employee allowances:", error);
+    throw error;
+  }
+};
+
+export const getPaginatedEmployeeAllowances = async ({ 
+  institutionId, 
+  page = 1, 
+  search, 
+  status,
+  method 
+}: { 
+  institutionId: number, 
+  page?: number;
+  search?: string;
+  status?: string;
+  method?: string;
+}): Promise<IPaginatedResponse<IEmployeeAllowance>> => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    if (status && status !== "all") {
+      params.append("is_active", status === "active" ? "true" : "false");
+    }
+    if (method && method !== "all") {
+      params.append("calculation_method", method);
+    }
+    
+    const endpoint = `payroll/${institutionId}/employee-allowances/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IEmployeeAllowance>;
+  } catch (error) {
+    console.error("Error fetching paginated employee allowances:", error);
+    throw error;
+  }
+};
+
+export const getPaginatedEmployeeAllowancesFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IEmployeeAllowance>> => {
+  try {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IEmployeeAllowance>;
+  } catch (error) {
+    console.error("Error fetching employee allowances from URL:", error);
     throw error;
   }
 };
@@ -2384,6 +2563,49 @@ export const getEmployeeDeductions = async (
     return response.data.results as IEmployeeDeduction[];
   } catch (error) {
     // console.error("Failed to get employee deductions:", error);
+    throw error;
+  }
+};
+
+export const getPaginatedEmployeeDeductions = async ({
+  institutionId,
+  page = 1,
+  search,
+  status,
+  method,
+}: {
+  institutionId: number;
+  page?: number;
+  search?: string;
+  status?: string;
+  method?: string;
+}): Promise<IPaginatedResponse<IEmployeeDeduction>> => {
+  try {
+    const params = new URLSearchParams({ page: page.toString() });
+    if (search) {
+      params.append("search", search);
+    }
+    if (status && status !== "all") {
+      params.append("is_active", status === "active" ? "true" : "false");
+    }
+    if (method && method !== "all") {
+      params.append("calculation_method", method);
+    }
+    const endpoint = `payroll/${institutionId}/employee-deductions/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IEmployeeDeduction>;
+  } catch (error) {
+    console.error("Error fetching paginated employee deductions:", error);
+    throw error;
+  }
+};
+
+export const getPaginatedEmployeeDeductionsFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IEmployeeDeduction>> => {
+  try {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IEmployeeDeduction>;
+  } catch (error) {
+    console.error("Error fetching employee deductions from URL:", error);
     throw error;
   }
 };
@@ -2609,6 +2831,48 @@ export const getPayrollPeriods = async (
     return data.results;
   } catch (error) {
     // console.error("Failed to get payroll periods:", error);
+    throw error;
+  }
+};
+
+export const getPaginatedPayrollPeriods = async ({
+  institutionId,
+  page = 1,
+  search,
+  status
+}: {
+  institutionId: number,
+  page?: number;
+  search?: string;
+  status?: string;
+}): Promise<IPaginatedResponse<IPayrollPeriod>> => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    if (status && status !== "all") {
+      params.append("is_processed", status === "processed" ? "true" : "false");
+    }
+
+    const endpoint = `payroll/${institutionId}/payroll-periods/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IPayrollPeriod>;
+  } catch (error) {
+    console.error("Error fetching paginated payroll periods:", error);
+    throw error;
+  }
+};
+
+export const getPaginatedPayrollPeriodsFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IPayrollPeriod>> => {
+  try {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IPayrollPeriod>;
+  } catch (error) {
+    console.error("Error fetching paginated payroll periods from URL:", error);
     throw error;
   }
 };
@@ -3930,6 +4194,51 @@ export const taxAPI = {
       return response.data as IPaginatedResponse<Itax>
   },
 
+  getPaginatedEmployeeTaxes: async ({
+    institutionId,
+    page = 1,
+    search,
+    status
+  }: {
+    institutionId: number,
+    page?: number;
+    search?: string;
+    status?: string;
+  }): Promise<IPaginatedResponse<IEmployeeTax>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+      if (status && status !== "all") {
+        // Handle status filtering based on effective dates
+        // This would need backend support for proper filtering
+        // For now, we'll just pass the status parameter
+        params.append("status", status);
+      }
+
+      const endpoint = `/payroll/employee-taxes/?${params.toString()}`;
+      const response = await apiRequest.get(endpoint);
+      return response.data as IPaginatedResponse<IEmployeeTax>;
+    } catch (error) {
+      console.error("Error fetching paginated employee taxes:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedEmployeeTaxesFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IEmployeeTax>> => {
+    try {
+      const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<IEmployeeTax>;
+    } catch (error) {
+      console.error("Error fetching paginated employee taxes from URL:", error);
+      throw error;
+    }
+  },
+
   createEmployeeTaxes: async ({data}:{data:IEmployeeTaxFormData}) => {
       const response = await apiRequest.post("/payroll/employee-taxes/", data)
       return response.data as Itax
@@ -3963,6 +4272,48 @@ export const assetCategoriesAPI = {
       return response.data.results || response.data;
     } catch (error) {
       console.error("Error fetching asset categories:", error);
+      throw error;
+    }
+  },
+
+  getPaginated: async ({ 
+    institutionId, 
+    page = 1, 
+    search, 
+    status 
+  }: { 
+    institutionId: number, 
+    page?: number;
+    search?: string;
+    status?: string;
+  }): Promise<IPaginatedResponse<IAssetCategory>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+      if (status && status !== "all") {
+        params.append("is_active", status === "active" ? "true" : "false");
+      }
+      
+      const endpoint = `/assets/asset-categories/?${params.toString()}`;
+      const response = await apiRequest.get(endpoint);
+      return response.data as IPaginatedResponse<IAssetCategory>;
+    } catch (error) {
+      console.error("Error fetching paginated asset categories:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAssetCategory>> => {
+    try {
+      const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<IAssetCategory>;
+    } catch (error) {
+      console.error("Error fetching asset categories from URL:", error);
       throw error;
     }
   },
@@ -4020,6 +4371,53 @@ export const assetsAPI = {
     }
   },
 
+  getPaginated: async ({ 
+    institutionId, 
+    page = 1, 
+    search, 
+    status, 
+    category 
+  }: { 
+    institutionId: number, 
+    page?: number;
+    search?: string;
+    status?: string;
+    category?: string;
+  }): Promise<IPaginatedResponse<IAsset>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+      if (status && status !== "all") {
+        params.append("status", status);
+      }
+      if (category && category !== "all") {
+        params.append("category", category);
+      }
+      
+      const endpoint = `/assets/?${params.toString()}`;
+      const response = await apiRequest.get(endpoint);
+      return response.data as IPaginatedResponse<IAsset>;
+    } catch (error) {
+      console.error("Error fetching paginated assets:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAsset>> => {
+    try {
+      const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<IAsset>;
+    } catch (error) {
+      console.error("Error fetching assets from URL:", error);
+      throw error;
+    }
+  },
+
   getById: async (id: number): Promise<IAsset> => {
     try {
       const response = await apiRequest.get(`/assets/${id}/`);
@@ -4071,6 +4469,48 @@ export const assetsAPI = {
     }
   },
 
+  getPaginatedAssetRequests: async ({ 
+    institutionId, 
+    page = 1, 
+    search, 
+    status 
+  }: { 
+    institutionId: number, 
+    page?: number;
+    search?: string;
+    status?: string;
+  }): Promise<IPaginatedResponse<IAssetRequest>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+      if (status && status !== "all") {
+        params.append("asset_request_status", status);
+      }
+      
+      const endpoint = `/assets/asset-requests/?${params.toString()}`;
+      const response = await apiRequest.get(endpoint);
+      return response.data as IPaginatedResponse<IAssetRequest>;
+    } catch (error) {
+      console.error("Error fetching paginated asset requests:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedAssetRequestsFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAssetRequest>> => {
+    try {
+      const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<IAssetRequest>;
+    } catch (error) {
+      console.error("Error fetching asset requests from URL:", error);
+      throw error;
+    }
+  },
+
   getAssetRequestById: async (id: number): Promise<IAssetRequest> => {
     try {
       const response = await apiRequest.get(`/assets/asset-requests/${id}/`);
@@ -4118,6 +4558,48 @@ export const assetsAPI = {
       return response.data.results || response.data;
     } catch (error) {
       console.error("Error fetching asset allocations:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedAssetAllocations: async ({ 
+    institutionId, 
+    page = 1, 
+    search, 
+    status 
+  }: { 
+    institutionId: number, 
+    page?: number;
+    search?: string;
+    status?: string;
+  }): Promise<IPaginatedResponse<IAssetAllocation>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+      if (status && status !== "all") {
+        params.append("allocation_status", status);
+      }
+      
+      const endpoint = `/assets/asset-allocations/?${params.toString()}`;
+      const response = await apiRequest.get(endpoint);
+      return response.data as IPaginatedResponse<IAssetAllocation>;
+    } catch (error) {
+      console.error("Error fetching paginated asset allocations:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedAssetAllocationsFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAssetAllocation>> => {
+    try {
+      const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<IAssetAllocation>;
+    } catch (error) {
+      console.error("Error fetching asset allocations from URL:", error);
       throw error;
     }
   },
@@ -4199,6 +4681,48 @@ export const assetsAPI = {
       return response.data.results || response.data;
     } catch (error) {
       console.error("Error fetching asset returns:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedAssetReturns: async ({ 
+    institutionId, 
+    page = 1, 
+    search, 
+    condition 
+  }: { 
+    institutionId: number, 
+    page?: number;
+    search?: string;
+    condition?: string;
+  }): Promise<IPaginatedResponse<IAssetReturn>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+      if (condition && condition !== "all") {
+        params.append("condition", condition);
+      }
+      
+      const endpoint = `/assets/asset-returns/?${params.toString()}`;
+      const response = await apiRequest.get(endpoint);
+      return response.data as IPaginatedResponse<IAssetReturn>;
+    } catch (error) {
+      console.error("Error fetching paginated asset returns:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedAssetReturnsFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAssetReturn>> => {
+    try {
+      const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<IAssetReturn>;
+    } catch (error) {
+      console.error("Error fetching asset returns from URL:", error);
       throw error;
     }
   },
@@ -4312,7 +4836,7 @@ export const calendarAPI = {
     department?: string;
     specific_employees?: string[];
   }) => {
-    const response = await apiRequest.put(`calendar/events/${eventId}/`, eventData);
+    const response = await apiRequest.patch(`calendar/events/${eventId}/`, eventData);
     if (response.status === 200) {
       return response.data;
     } else {
@@ -4374,7 +4898,7 @@ export const calendarAPI = {
     title?: string;
     date?: string;
   }) => {
-    const response = await apiRequest.put(`calendar/public-holidays/${holidayId}/`, holidayData);
+    const response = await apiRequest.patch(`calendar/public-holidays/${holidayId}/`, holidayData);
     if (response.status === 200) {
       return response.data;
     } else {

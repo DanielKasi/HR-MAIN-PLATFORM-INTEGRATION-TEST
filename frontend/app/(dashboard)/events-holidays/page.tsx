@@ -7,31 +7,14 @@ import { Calendar } from "lucide-react"
 import Link from "next/link"
 import { calendarAPI } from "@/lib/utils"
 import { Icon } from "@iconify/react"
+import { EditEventModal } from "@/components/events-holidays/edit-event-modal"
+import { EditHolidayModal } from "@/components/events-holidays/edit-holiday-modal"
+import { IEvent, IPublicHoliday } from "@/types/types.utils"
 
 // Define types inline to avoid import issues
 interface ICalendarEvent {
   id: number
   public_holidays: IPublicHoliday[]
-}
-
-interface IEvent {
-  id: number
-  title: string
-  description: string
-  date: string // YYYY-MM-DD format
-  event_mode: "physical" | "online" | "hybrid"
-  target_audience: "students" | "staff" | "parents" | "public"
-  created_at?: string
-  updated_at?: string
-}
-
-interface IPublicHoliday {
-  id: number
-  title: string
-  date: string // YYYY-MM-DD format
-  description?: string
-  created_at?: string
-  updated_at?: string
 }
 
 const MONTHS = [
@@ -66,6 +49,12 @@ export default function EventsCalendarPage() {
   const [selectedItem, setSelectedItem] = useState<{ type: "event" | "holiday"; data: any } | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [popoverPosition, setPopoverPosition] = useState({ x: 0, y: 0 })
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<IEvent | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [showEditHolidayModal, setShowEditHolidayModal] = useState(false)
+  const [editingHoliday, setEditingHoliday] = useState<IPublicHoliday | null>(null)
+  const [isEditingHoliday, setIsEditingHoliday] = useState(false)
 
   const selectedInstitution = useMemo(
     () => ({
@@ -111,6 +100,72 @@ export default function EventsCalendarPage() {
       setLoading(false)
     }
   }, [])
+
+  const openEditModal = (event: IEvent) => {
+    setEditingEvent(event)
+    setShowEditModal(true)
+  }
+
+  const openEditHolidayModal = (holiday: IPublicHoliday) => {
+    setEditingHoliday(holiday)
+    setShowEditHolidayModal(true)
+  }
+
+  const handleSaveEvent = async (eventId: number, updatedData: Partial<IEvent>) => {
+    setIsEditing(true)
+    try {
+      // Make API call to update the event in the database
+      const response = await calendarAPI.updateEvent(eventId, updatedData)
+      
+      // Update local state with the response from the API
+      setEvents(prev => prev.map(event => 
+        event.id === eventId 
+          ? { ...event, ...response }
+          : event
+      ))
+      
+      setShowEditModal(false)
+      setEditingEvent(null)
+      
+      // You can add a success toast here
+      console.log("Event updated successfully:", response)
+    } catch (error) {
+      console.error("Error updating event:", error)
+      // You can add an error toast here
+      // Don't close the modal on error so user can retry
+      throw error // Re-throw to let the modal handle the error display
+    } finally {
+      setIsEditing(false)
+    }
+  }
+
+  const handleSaveHoliday = async (holidayId: number, updatedData: Partial<IPublicHoliday>) => {
+    setIsEditingHoliday(true)
+    try {
+      // Make API call to update the holiday in the database
+      const response = await calendarAPI.updatePublicHoliday(holidayId, updatedData)
+      
+      // Update local state with the response from the API
+      setPublicHolidays(prev => prev.map(holiday => 
+        holiday.id === holidayId 
+          ? { ...holiday, ...response }
+          : holiday
+      ))
+      
+      setShowEditHolidayModal(false)
+      setEditingHoliday(null)
+      
+      // You can add a success toast here
+      console.log("Holiday updated successfully:", response)
+    } catch (error) {
+      console.error("Error updating holiday:", error)
+      // You can add an error toast here
+      // Don't close the modal on error so user can retry
+      throw error // Re-throw to let the modal handle the error display
+    } finally {
+      setIsEditingHoliday(false)
+    }
+  }
 
   const fetchEvents = useCallback(async () => {
     if (!selectedInstitution) return
@@ -804,6 +859,17 @@ export default function EventsCalendarPage() {
                           <div className="mt-2 text-xs text-muted-foreground">
                             Audience: {event.target_audience.replace("_", " ")}
                           </div>
+                          
+                          {/* Edit Event Button */}
+                          <div className="mt-3 pt-2 border-t border-border">
+                            <Button 
+                              onClick={() => openEditModal(event)}
+                              className="w-full text-xs py-1 bg-primary text-white"
+                            >
+                              <Icon icon="hugeicons:edit-04" className="w-3 h-3 mr-1" />
+                              Edit Event
+                            </Button>
+                          </div>
                         </div>
                       ))
                     })()}
@@ -876,17 +942,30 @@ export default function EventsCalendarPage() {
                       return filteredHolidays.slice(0, 3).map((holiday, idx) => (
                         <div
                           key={`holiday-${holiday.id || holiday.date}-${idx}`}
-                          className="flex items-center justify-between p-2 bg-green-50 rounded-lg border border-green-200"
+                          className="flex flex-col p-2 bg-green-50 rounded-lg border border-green-200"
                         >
-                          <span className="text-xs sm:text-sm font-medium text-green-800 flex-1 mr-2 truncate">
-                            {holiday.title}
-                          </span>
-                          <span className="text-xs text-green-600 flex-shrink-0">
-                            {new Date(holiday.date).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </span>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs sm:text-sm font-medium text-green-800 flex-1 mr-2 truncate">
+                              {holiday.title}
+                            </span>
+                            <span className="text-xs text-green-600 flex-shrink-0">
+                              {new Date(holiday.date).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </span>
+                          </div>
+                          
+                          {/* Edit Holiday Button */}
+                          <div className="mt-2 pt-2 border-t border-green-200">
+                            <Button 
+                              className="w-full text-xs py-1 bg-primary text-white"
+                              onClick={() => openEditHolidayModal(holiday)}
+                            >
+                              <Icon icon="hugeicons:edit-04" className="w-3 h-3 mr-1" />
+                              Edit Holiday
+                            </Button>
+                          </div>
                         </div>
                       ))
                     })()}
@@ -1007,6 +1086,26 @@ export default function EventsCalendarPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Edit Event Modal */}
+      {showEditModal && editingEvent && (
+        <EditEventModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          event={editingEvent}
+          onSave={handleSaveEvent}
+        />
+      )}
+
+      {/* Edit Holiday Modal */}
+      {showEditHolidayModal && editingHoliday && (
+        <EditHolidayModal
+          isOpen={showEditHolidayModal}
+          onClose={() => setShowEditHolidayModal(false)}
+          holiday={editingHoliday}
+          onSave={handleSaveHoliday}
+        />
       )}
     </div>
   )

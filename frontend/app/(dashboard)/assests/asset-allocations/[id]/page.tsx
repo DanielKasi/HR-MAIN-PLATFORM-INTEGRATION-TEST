@@ -346,8 +346,8 @@ const AssetAllocationDetailPage = () => {
                         {task.status === 'pending' && (
                           <div className="flex flex-col sm:flex-row gap-2 mt-3">
                             <Button 
-                              size="sm" 
-                              className="bg-green-600 hover:bg-green-700 text-white w-full text-xs lg:text-sm"
+                              
+                              className="bg-green-600 hover:bg-green-700 text-white w-full text-xs !w-[100px] !h-[20px] !rounded-full"
                               onClick={() => handleApproval(task.id, 'completed')}
                               disabled={isApproving}
                             >
@@ -361,9 +361,9 @@ const AssetAllocationDetailPage = () => {
                               )}
                             </Button>
                             <Button 
-                              size="sm" 
+                              
                               variant="outline" 
-                              className="text-red-600 border-red-300 text-xs lg:text-sm w-full"
+                              className="text-red-600 border-red-300 text-xs !w-[100px] !h-[20px] !rounded-full"
                               onClick={() => handleApproval(task.id, 'rejected')}
                               disabled={isApproving}
                             >

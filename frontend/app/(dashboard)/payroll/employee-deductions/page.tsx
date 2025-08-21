@@ -1,32 +1,26 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Users } from 'lucide-react'
+import { Plus, MoreVertical, Edit, Trash2, Search, X } from 'lucide-react'
 import { useSelector } from "react-redux"
 import { Button } from "@/components/ui/button"
-import { Card, CardHeader } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import {
-  getEmployeeDeductions,
-  updateEmployeeDeduction,
+  getPaginatedEmployeeDeductions,
+  getPaginatedEmployeeDeductionsFromUrl,
   deleteEmployeeDeduction,
-  getAllEmployees,
   getDeductionTypes,
 } from "@/lib/utils"
-import {
-  IDeductionType,
-  IDepartment,
-  IEmployee,
-  IEmployeeDeduction,
-} from "@/types/types.utils"
+import { IDeductionType, IEmployeeDeduction } from "@/types/types.utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { TableSkeleton } from "@/components/common/table-skeleton"
-import { CreateDeductionTypeDialog } from "@/components/deduction-types/create-deduction-type-dialog"
 import { EmployeeDeductionFormDialog } from "@/components/employee-deductions/employee-deduction-form-dialog"
-import { DeductionStatsCards } from "@/components/employee-deductions/deduction-stats-cards"
-import { DeductionFilters } from "@/components/employee-deductions/deduction-filters"
-import { DeductionExportMenu } from "@/components/employee-deductions/deduction-export-menu"
-import { DeductionTable } from "@/components/employee-deductions/deduction-table"
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 
 
@@ -36,14 +30,9 @@ interface ILocalEmployeeDeduction extends IEmployeeDeduction {
 }
 
 export default function EmployeeDeductionsRefactored() {
-  const [deductions, setDeductions] = useState<IEmployeeDeduction[]>([])
-  const [employees, setEmployees] = useState<IEmployee[]>([])
   const [deductionTypes, setDeductionTypes] = useState<IDeductionType[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false)
-  const [editingDeduction, setEditingDeduction] = useState<ILocalEmployeeDeduction | null>(null)
-  
-  // Filter states
+  const [editingDeduction, setEditingDeduction] = useState<IEmployeeDeduction | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
   const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all")
@@ -51,60 +40,18 @@ export default function EmployeeDeductionsRefactored() {
   const selectedInstitution = useSelector(selectSelectedInstitution)
 
   useEffect(() => {
-    if (selectedInstitution?.id) {
-      fetchData()
-    }
-  }, [selectedInstitution])
-
-  const fetchData = async () => {
-    if (!selectedInstitution?.id) return
-
-    setIsLoading(true)
-    try {
-      await Promise.all([
-        fetchDeductions(),
-        fetchEmployees(),
-        fetchDeductionTypes(),
-      ])
-    } catch (error) {
-      toast.error("Failed to load data")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const fetchDeductions = async () => {
-    if (!selectedInstitution?.id) return
-    try {
-      const deductionsData = await getEmployeeDeductions(selectedInstitution.id)
-      setDeductions(deductionsData)
-    } catch (error) {
-      setDeductions([])
-      toast.error("Failed to load deductions")
-    }
-  }
-
-  const fetchEmployees = async () => {
-    if (!selectedInstitution?.id) return
-    try {
-      const fetchedEmployees = await getAllEmployees({ institutionId: selectedInstitution.id })
-      setEmployees(fetchedEmployees)
-    } catch (error: any) {
-      setEmployees([])
-      toast.error(error?.detail || error?.message || "Failed to load employees")
-    }
-  }
-
-  const fetchDeductionTypes = async () => {
+    const fetchDeductionTypes = async () => {
     if (!selectedInstitution?.id) return
     try {
       const types = await getDeductionTypes(selectedInstitution.id)
-        setDeductionTypes(types)
+      setDeductionTypes(types)
     } catch (error) {
       setDeductionTypes([])
       toast.error("Failed to load deduction types")
     }
-  }
+    }
+    fetchDeductionTypes()
+  }, [selectedInstitution?.id])
 
   const getCalculatedAmount = (deduction: IEmployeeDeduction): number => {
     if (deduction.calculation_method === "percentage" && deduction.employee.salary) {
@@ -114,7 +61,7 @@ export default function EmployeeDeductionsRefactored() {
   }
 
   const handleEdit = (deduction: IEmployeeDeduction) => {
-    setEditingDeduction(deduction as ILocalEmployeeDeduction)
+    setEditingDeduction(deduction)
     setIsFormDialogOpen(true)
   }
 
@@ -122,7 +69,6 @@ export default function EmployeeDeductionsRefactored() {
     try {
       const success = await deleteEmployeeDeduction(id)
       if (success) {
-        setDeductions((prev) => prev.filter((d) => d.id !== id))
         toast.success("Deduction deleted successfully")
       } else {
         toast.error("Failed to delete deduction")
@@ -133,16 +79,8 @@ export default function EmployeeDeductionsRefactored() {
   }
 
   const handleFormSuccess = (deduction: any, isEdit: boolean) => {
-    if (isEdit) {
-      setDeductions((prev) =>
-        prev.map((d) => (d.id === deduction.id ? deduction : d))
-      )
-      toast.success("Deduction updated successfully")
-    } else {
-      setDeductions((prev) => [...prev, deduction])
-      toast.success("Deduction created successfully")
-    }
     setEditingDeduction(null)
+    toast.success(isEdit ? "Deduction updated successfully" : "Deduction created successfully")
   }
 
   const handleDeductionTypeCreated = (newType: IDeductionType) => {
@@ -153,21 +91,6 @@ export default function EmployeeDeductionsRefactored() {
     setEditingDeduction(null)
     setIsFormDialogOpen(true)
   }
-
-  const filteredDeductions = deductions.filter((deduction) => {
-    const matchesSearch = deduction.employee.user?.fullname
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "active" && deduction.is_active) ||
-      (statusFilter === "inactive" && !deduction.is_active)
-
-    const matchesMethod = methodFilter === "all" || deduction.calculation_method === methodFilter
-
-    return matchesSearch && matchesStatus && matchesMethod
-  })
 
   const clearAllFilters = () => {
     setSearchTerm("")
@@ -183,90 +106,231 @@ export default function EmployeeDeductionsRefactored() {
     )
   }
 
-  if (isLoading) {
-    return (
-      <div className="p-2 space-y-6">
-        <Card className="h-[calc(100vh-2rem)] shadow-lg">
-          <CardHeader className="border-b">
-            <div className="flex justify-between gap-8 items-center">
-              <div className="flex items-center justify-start gap-4">
-                <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
-                <div className="space-y-2">
-                  <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-                  <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg border shadow-sm">
+        <div className="p-6 border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Employee Deductions</h1>
+            </div>
+          </div>
+        </div>
+        <div className="p-6 border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4 justify-between">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search employee deductions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
             </div>
-          </CardHeader>
-          <TableSkeleton rows={10} columns={8} />
-        </Card>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
-      {/* Header Section */}
-      <div className="mb-8 px-2">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Employee Deductions</h1>
-            <p className="text-gray-600">
-              Manage employee-specific deductions and their calculation methods
-            </p>
+            <div className="flex items-center gap-4">
+              <Select value={statusFilter} onValueChange={(value: string) => setStatusFilter(value as "all" | "active" | "inactive")}>
+                <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={methodFilter} onValueChange={(value: string) => setMethodFilter(value as "all" | "fixed" | "percentage")}>
+                <SelectTrigger className="w-full sm:w-[140px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+                  <SelectValue placeholder="All Methods" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Methods</SelectItem>
+                  <SelectItem value="fixed">Fixed Amount</SelectItem>
+                  <SelectItem value="percentage">Percentage</SelectItem>
+                </SelectContent>
+              </Select>
+              
+            </div>
+            <div className="flex items-center gap-2">
+                <Button onClick={openNewDeductionDialog} disabled={!selectedInstitution?.id}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Deduction
+                </Button>
+              </div>
           </div>
-          <div className="flex gap-3">
-            <DeductionExportMenu
-              deductions={filteredDeductions}
-              getCalculatedAmount={getCalculatedAmount}
-              disabled={filteredDeductions.length === 0}
-            />
+          
+        
+        </div>
+        <div className="p-6">
+          <PaginatedTableWrapper<IEmployeeDeduction>
+            fetchFirstPage={async () => {
+              if (!selectedInstitution) throw new Error("No institution selected");
+              return await getPaginatedEmployeeDeductions({
+                institutionId: selectedInstitution.id,
+                page: 1,
+                search: searchTerm || undefined,
+              });
+            }}
+            fetchFromUrl={getPaginatedEmployeeDeductionsFromUrl}
+            deps={[selectedInstitution?.id, searchTerm]}
+            className="space-y-4"
+            footerClassName="pt-4"
+          >
+            {({data, loading, refresh}) => {
+              if (loading) {
+                return <TableSkeleton rows={10} columns={8} />;
+              }
+              if (!data || data.results.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-500">
+                    {searchTerm ? "No deductions found matching your search criteria" : "No employee deductions found"}
+                  </div>
+                );
+              }
 
+              // Apply client-side filters (status and method filters)
+              const filteredResults = data.results.filter((deduction) => {
+                const matchesStatus = statusFilter === "all" || 
+                  (statusFilter === "active" && deduction.is_active) ||
+                  (statusFilter === "inactive" && !deduction.is_active);
+                
+                const matchesMethod = methodFilter === "all" || 
+                  deduction.calculation_method === methodFilter;
+                
+                return matchesStatus && matchesMethod;
+              });
 
-            <Button
-              onClick={openNewDeductionDialog}
-              disabled={!selectedInstitution?.id}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Deduction
-            </Button>
-          </div>
+              if (filteredResults.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-500">
+                    No deductions found matching the selected filters.
+                  </div>
+                );
+              }
+              return (
+                <>
+                  <div className="hidden sm:block rounded-md">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Employee</TableHead>
+                          <TableHead>Deduction Type</TableHead>
+                          <TableHead>Method</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Created Date</TableHead>
+                          <TableHead className="w-12">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredResults.map((deduction) => (
+                          <TableRow key={deduction.id}>
+                            <TableCell className="font-medium">
+                              {deduction.employee.user?.fullname || 'Unknown Employee'}
+                            </TableCell>
+                            <TableCell>{deduction.deduction_type.name}</TableCell>
+                            <TableCell>
+                              <Badge className={
+                                deduction.calculation_method === "percentage" 
+                                  ? "bg-blue-100 text-blue-800 border-blue-200" 
+                                  : "bg-purple-100 text-purple-800 border-purple-200"
+                              }>
+                                {deduction.calculation_method === "percentage" ? "Percentage" : "Fixed Amount"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {deduction.calculation_method === "percentage" 
+                                ? `${deduction.percentage}%`
+                                : `$${Number.parseFloat(deduction.amount).toFixed(2)}`}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={
+                                deduction.is_active 
+                                  ? "bg-green-100 text-green-800 border-green-200" 
+                                  : "bg-gray-100 text-gray-800 border-gray-200"
+                              }>
+                                {deduction.is_active ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(deduction.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleEdit(deduction)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleDelete(deduction.id)} className="text-red-600">
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="sm:hidden space-y-3">
+                    {filteredResults.map((deduction) => (
+                      <div key={deduction.id} className="bg-gray-50 rounded-lg p-4 border">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 mb-1">
+                              {deduction.employee.user?.fullname || 'Unknown Employee'}
+                            </h3>
+                            <p className="text-sm text-gray-600">Type: {deduction.deduction_type.name}</p>
+                            <p className="text-sm text-gray-600">Method: {deduction.calculation_method === "percentage" ? "Percentage" : "Fixed Amount"}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge className={
+                                deduction.is_active ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"
+                              }>
+                                {deduction.is_active ? "Active" : "Inactive"}
+                              </Badge>
+                              <span className="text-sm text-gray-500">
+                                Created: {new Date(deduction.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                              </span>
+                            </div>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEdit(deduction)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDelete(deduction.id)} className="text-red-600">
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              );
+            }}
+          </PaginatedTableWrapper>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <DeductionStatsCards
-        deductions={filteredDeductions}
-        getCalculatedAmount={getCalculatedAmount}
-      />
+     
 
-      {/* Search and Filters */}
-      <DeductionFilters
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        methodFilter={methodFilter}
-        onMethodFilterChange={setMethodFilter}
-        onClearFilters={clearAllFilters}
-      />
-
-      {/* Results Table */}
-      <DeductionTable
-        deductions={filteredDeductions}
-        totalDeductions={deductions.length}
-        getCalculatedAmount={getCalculatedAmount}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onClearFilters={clearAllFilters}
-      />
-
-      {/* Form Dialog */}
       <EmployeeDeductionFormDialog
         isOpen={isFormDialogOpen}
         onOpenChange={setIsFormDialogOpen}
