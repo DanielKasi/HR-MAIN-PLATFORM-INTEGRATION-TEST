@@ -232,7 +232,7 @@ export default function AddEmployeeForm() {
       setPositions(Array.isArray(positionsData) ? positionsData : []);
       setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
       setWorkTypes(workTypesData.results || []);
-      setEmployeeTypes(Array.isArray(employeeTypesData) ? employeeTypesData : []);
+      setEmployeeTypes(Array.isArray(employeeTypesData.results) ? employeeTypesData.results : []);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
