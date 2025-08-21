@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { 
   MoreVertical, 
@@ -33,6 +33,7 @@ import { useRouter } from "next/navigation";
 import { assetCategoriesAPI, assetsAPI } from "@/lib/utils";
 import type { IAssetCategory, IAsset } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
+ 
 
 const getStatusColor = (status: boolean) => {
   return status
@@ -60,6 +61,7 @@ const AssetCategoriesComponent = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
+   const refreshTableRef = useRef<(() => void) | null>(null);
 
   // Fetch assets from API for counting
   const fetchAssets = useCallback(async () => {
@@ -85,24 +87,24 @@ const AssetCategoriesComponent = () => {
 
   const handleCreateSuccess = (newAssetCategory: IAssetCategory) => {
     toast.success("Asset category created successfully");
+    refreshTableRef.current?.();
   };
 
   const handleUpdateSuccess = (updatedAssetCategory: IAssetCategory) => {
     setIsEditDialogOpen(false);
     setEditingAssetCategory(null);
     toast.success("Asset category updated successfully");
+    refreshTableRef.current?.();
   };
 
   const handleDeleteSuccess = (deletedId: number) => {
     setIsDeleteDialogOpen(false);
     setDeletingAssetCategory(null);
     toast.success("Asset category deleted successfully");
+    refreshTableRef.current?.();
   };
 
-  const clearFilters = () => {
-    setSearchTerm("");
-    setStatusFilter("all");
-  };
+ 
 
   const handleEditAssetCategory = (assetCategory: IAssetCategory) => {
     setEditingAssetCategory(assetCategory);
@@ -135,7 +137,7 @@ const AssetCategoriesComponent = () => {
         </div>
         <div className="p-6 border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+            <div className="flex sm:flex-row sm:items-center gap-4 flex-1">
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
@@ -145,8 +147,11 @@ const AssetCategoriesComponent = () => {
                   className="pl-10"
                 />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+              
+           
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[180px] border-none shadow-none">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -155,8 +160,6 @@ const AssetCategoriesComponent = () => {
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
-           
-            </div>
             <div className="flex items-center gap-2">
               <CreateAssetCategoryDialog
                 onSuccess={handleCreateSuccess}
@@ -181,9 +184,15 @@ const AssetCategoriesComponent = () => {
             footerClassName="pt-4"
           >
             {({data, loading, refresh}) => {
+              // Store refresh function in ref when component mounts/updates
+              useEffect(() => {
+                refreshTableRef.current = refresh;
+              }, [refresh]);
+
               if (loading) {
                 return <TableSkeleton rows={10} columns={5} />;
               }
+              
 
               if (!data || data.results.length === 0) {
                 return (

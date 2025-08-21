@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Plus, MoreVertical, Edit, Trash2, Search, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -41,6 +41,7 @@ export default function EmployeeAllowancesPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
   const [employees, setEmployees] = useState<IEmployee[]>([]);
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
@@ -93,12 +94,13 @@ export default function EmployeeAllowancesPage() {
     return Number.parseFloat(allowance.amount) || 0
   }
 
-    const handleFormSuccess = (allowance: any, isEdit: boolean) => {
+  const handleFormSuccess = (allowance: any, isEdit: boolean) => {
     setEditingAllowance(null)
     if (refreshFunction) {
       refreshFunction();
     }
     toast.success(isEdit ? "Allowance updated successfully" : "Allowance created successfully")
+    refreshTableRef.current?.();
   }
 
   const handleAllowanceTypeCreated = (newType: IAllowanceType) => {
@@ -142,7 +144,7 @@ export default function EmployeeAllowancesPage() {
     )
   }
 
-  return (
+    return (
     <div className="space-y-6">
       {/* Header and Filters */}
       <div className="bg-white rounded-lg border shadow-sm">
@@ -152,8 +154,8 @@ export default function EmployeeAllowancesPage() {
               <h1 className="text-3xl font-bold text-gray-900">Employee Allowances</h1>
               
             </div>
-          </div>
-        </div>
+                </div>
+              </div>
         <div className="p-6 border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4 justify-between">
@@ -191,16 +193,16 @@ export default function EmployeeAllowancesPage() {
               
             </div>
             <div className="flex items-center gap-2">
-                <Button
-                  onClick={openNewAllowanceDialog}
-                  disabled={!selectedInstitution.id}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Allowance
-                </Button>
-              </div>
+              <Button
+                onClick={openNewAllowanceDialog}
+                disabled={!selectedInstitution.id}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Allowance
+              </Button>
+            </div>
           </div>
-          
+
          
         </div>
         <div className="p-6">
@@ -219,6 +221,10 @@ export default function EmployeeAllowancesPage() {
             footerClassName="pt-4"
           >
             {({data, loading, refresh}) => {
+
+              useEffect(() => {
+                refreshTableRef.current = refresh;
+              }, [refresh]);
         
             // setRefreshFunction(refresh)
               if (loading) {
@@ -406,16 +412,16 @@ export default function EmployeeAllowancesPage() {
 
      
 
-      {/* Form Dialog */}
-      <EmployeeAllowanceFormDialog
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        editingAllowance={editingAllowance}
-        allowanceTypes={allowanceTypes}
-        institutionId={selectedInstitution.id}
-        onSuccess={handleFormSuccess}
-        onAllowanceTypeCreated={handleAllowanceTypeCreated}
-      />
-    </div>
+        {/* Form Dialog */}
+        <EmployeeAllowanceFormDialog
+          isOpen={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          editingAllowance={editingAllowance}
+          allowanceTypes={allowanceTypes}
+          institutionId={selectedInstitution.id}
+          onSuccess={handleFormSuccess}
+          onAllowanceTypeCreated={handleAllowanceTypeCreated}
+        />
+      </div>
   );
 };

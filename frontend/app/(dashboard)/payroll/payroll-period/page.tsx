@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,6 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {Badge} from "@/components/ui/badge";
 import {
@@ -35,17 +34,13 @@ import {
   Search,
   Edit,
   Trash2,
-  Calendar,
   CheckCircle,
   Clock,
-  Coins,
   Loader2,
   Info,
   AlertTriangle,
   Eye,
-  MoreHorizontal,
-  Filter,
-  RefreshCw,
+
   Settings,
   MoreVertical,
   X
@@ -54,14 +49,10 @@ import {toast} from "sonner";
 import Link from "next/link";
 import {
   createPayrollPeriod,
-  getPayrollPeriods,
   updatePayrollPeriod,
   deletePayrollPeriod,
   generatePeriodName,
   checkPeriodOverlap,
-  getAllEmployees,
-  getPayslips,
-  createBulkPayslips,
   getPaginatedPayrollPeriods,
   getPaginatedPayrollPeriodsFromUrl
 } from "@/lib/utils";
@@ -97,6 +88,7 @@ export default function PayrollPeriods() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const selectedInstitution = useSelector(selectSelectedInstitution);
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
   // Auto-generate period name
   useEffect(() => {
@@ -217,6 +209,7 @@ export default function PayrollPeriods() {
         });
         if (updatedPeriod) {
           toast.success("Payroll period updated successfully");
+          refreshTableRef.current?.();
         }
       } else {
         const newPeriod = await createPayrollPeriod({
@@ -225,6 +218,7 @@ export default function PayrollPeriods() {
         });
         if (newPeriod) {
           toast.success("Payroll period created successfully");
+          refreshTableRef.current?.();
         }
       }
       setIsModalOpen(false);
@@ -253,6 +247,7 @@ export default function PayrollPeriods() {
       const success = await deletePayrollPeriod(id);
       if (success) {
         toast.success("Payroll period deleted successfully");
+        refreshTableRef.current?.();
       } else {
         toast.error("Failed to delete payroll period");
       }
@@ -493,6 +488,11 @@ export default function PayrollPeriods() {
             footerClassName="pt-4"
           >
             {({data, loading, refresh}) => {
+              // Store refresh function in ref when component mounts/updates
+              useEffect(() => {
+                refreshTableRef.current = refresh;
+              }, [refresh]);
+
               if (loading) {
                 return (
                   <div className="space-y-4">

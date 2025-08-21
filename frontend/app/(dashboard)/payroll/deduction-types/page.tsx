@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useSelector } from "react-redux"
 import { MoreVertical, Edit, Trash2, Search, Settings, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
@@ -54,29 +54,24 @@ const DeductionTypesComponent = () => {
   const [deletingDeductionType, setDeletingDeductionType] = useState<IDeductionType | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [refreshFunction, setRefreshFunction] = useState<(() => void) | null>(null)
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
 
   const handleCreateSuccess = (newDeductionType: IDeductionType) => {
-    if (refreshFunction) {
-      refreshFunction();
-    }
+    refreshTableRef.current?.();
   }
 
   const handleUpdateSuccess = (updatedDeductionType: IDeductionType) => {
     setEditingDeductionType(null)
-    if (refreshFunction) {
-      refreshFunction();
-    }
+    refreshTableRef.current?.();
+     
   }
 
   const handleDeleteSuccess = (deletedId: number) => {
     setDeletingDeductionType(null)
-    if (refreshFunction) {
-      refreshFunction();
-    }
+    refreshTableRef.current?.();
   }
 
   const handleEditDeductionType = (deductionType: IDeductionType) => {
@@ -165,6 +160,10 @@ const DeductionTypesComponent = () => {
           footerClassName="pt-4"
         >
           {({data, loading, refresh}) => {
+
+            useEffect(() => {
+              refreshTableRef.current = refresh;
+            }, [refresh]);
         
             if (loading) {
               return (
