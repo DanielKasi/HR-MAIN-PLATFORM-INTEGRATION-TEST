@@ -4,6 +4,7 @@ async-timeout==5.0.1
 attrs==25.3.0
 autobahn==24.4.2
 Automat==25.4.16
+babel==2.17.0
 beautifulsoup4==4.13.4
 Brotli==1.1.0
 cachetools==5.5.2
@@ -32,6 +33,9 @@ django-jsignature==0.12
 django-markdownx==4.0.9
 djangorestframework==3.16.0
 djangorestframework_simplejwt==5.5.0
+docx2pdf==0.1.8
+docxcompose==1.4.0
+docxtpl==0.20.1
 drf-spectacular==0.28.0
 et_xmlfile==2.0.0
 fonttools==4.59.0
@@ -49,14 +53,16 @@ idna==3.10
 incremental==24.7.2
 inflection==0.5.1
 isort==6.0.1
+Jinja2==3.1.6
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
 lxml==6.0.0
 mammoth==1.9.1
 Markdown==3.8.2
+MarkupSafe==3.0.2
 mccabe==0.7.0
 msgpack==1.1.1
-numpy
+numpy==2.2.6
 oauthlib==3.3.0
 openpyxl==3.1.5
 packaging==24.2
@@ -91,7 +97,6 @@ requests-oauthlib==2.0.0
 rpds-py==0.24.0
 rsa==4.9.1
 service-identity==24.2.0
-setuptools==80.9.0
 six==1.17.0
 soupsieve==2.7
 sqlparse==0.5.3
@@ -100,6 +105,7 @@ tinycss2==1.4.0
 tinyhtml5==2.0.0
 tomli==2.2.1
 tomlkit==0.13.3
+tqdm==4.67.1
 Twisted==25.5.0
 txaio==23.1.1
 typing_extensions==4.13.0
