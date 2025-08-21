@@ -44,7 +44,7 @@ urlpatterns = [
         "template/", EmployeeTemplateDownloadAPIView.as_view(), name="employee-template"
     ),
     path(
-        "<int:employee_id>/delete/",
+        "<int:institution_id>/<int:employee_id>/delete/",
         EmployeeDeleteAPIView.as_view(),
         name="delete-employee",
     ),

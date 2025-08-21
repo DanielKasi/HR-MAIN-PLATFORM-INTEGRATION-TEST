@@ -144,7 +144,7 @@ export const apiRequest = async (
     return response;
   } else {
     const err: CustomApiRequestError = {
-      message: response.data?.detail || null,
+      message: Array.isArray(response?.data?.error) ? response?.data?.error[0] : typeof(response?.data?.error) === "string" ? response?.data?.error  : response.data?.detail || null,
       status: response.status,
       custom_code: response.data?.custom_code || null,
     };

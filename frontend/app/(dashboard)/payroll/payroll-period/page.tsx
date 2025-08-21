@@ -21,20 +21,9 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Badge} from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,7 +50,7 @@ import {
   MoreVertical,
   X
 } from "lucide-react";
-import { toast } from "sonner";
+import {toast} from "sonner";
 import Link from "next/link";
 import {
   createPayrollPeriod,
@@ -76,8 +65,8 @@ import {
   getPaginatedPayrollPeriods,
   getPaginatedPayrollPeriodsFromUrl
 } from "@/lib/utils";
-import { IPayrollPeriod, IPayrollPeriodFormData, IEmployee, IPayslip, } from "@/types/types.utils";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
+import {IPayrollPeriod, IPayrollPeriodFormData, IEmployee, IPayslip} from "@/types/types.utils";
+import {selectSelectedInstitution, selectAccessToken} from "@/store/auth/selectors";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/types/types.utils";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
@@ -113,8 +102,11 @@ export default function PayrollPeriods() {
   useEffect(() => {
     if (formData.start_date && formData.end_date && !editingPeriod) {
       const generatedName = generatePeriodName(formData.start_date, formData.end_date);
-      if (formData.name === "" || formData.name === generatePeriodName(formData.start_date, formData.end_date)) {
-        setFormData((prev) => ({ ...prev, name: generatedName }));
+      if (
+        formData.name === "" ||
+        formData.name === generatePeriodName(formData.start_date, formData.end_date)
+      ) {
+        setFormData((prev) => ({...prev, name: generatedName}));
       }
     }
   }, [formData.start_date, formData.end_date, editingPeriod]);
@@ -139,10 +131,11 @@ export default function PayrollPeriods() {
       if (formData.start_date && formData.end_date) {
         const duration = Math.ceil(
           (new Date(formData.end_date).getTime() - new Date(formData.start_date).getTime()) /
-          (1000 * 60 * 60 * 24)
+            (1000 * 60 * 60 * 24),
         );
         if (duration > 365) {
-          errors.warning = "This period is longer than a year. Please verify the dates are correct.";
+          errors.warning =
+            "This period is longer than a year. Please verify the dates are correct.";
         } else if (duration < 1) {
           errors.end_date = "Period must be at least 1 day long";
         }

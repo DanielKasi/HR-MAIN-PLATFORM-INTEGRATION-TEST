@@ -45,15 +45,15 @@ class InstitutionDocumentSerializer(serializers.ModelSerializer):
         if value:
             # Check file size (10MB limit)
             if value.document_size > 10 * 1024 * 1024:
-                raise serializers.ValidationError("File size cannot exceed 10MB.")
+                raise serializers.ValidationError({"error": f"File size cannot exceed 10MB."})
 
             # Check file extension
             allowed_extensions = [".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png"]
             ext = os.path.splitext(value.document_title)[1].lower()
             if ext not in allowed_extensions:
                 raise serializers.ValidationError(
-                    f"File type {ext} not allowed. Allowed types: {', '.join(allowed_extensions)}"
-                )
+                    {"error": f"File type {ext} not allowed. Allowed types: {', '.join(allowed_extensions)}"
+                })
         return value
 
 
@@ -106,7 +106,7 @@ class InstitutionSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             raise serializers.ValidationError(
-                "User must be authenticated to create an Institution."
+                {"error": "User must be authenticated to create an Institution."}
             )
 
         institution_owner = validated_data.pop("institution_owner_id")
@@ -204,13 +204,13 @@ class InstitutionBankTypeSerializer(serializers.ModelSerializer):
 
         if not user:
             raise serializers.ValidationError(
-                "User must be authenticated to create a bank type."
+                {"error": "User must be authenticated to create a bank type."}
             )
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
-            raise serializers.ValidationError("Institution not found.")
+            raise serializers.ValidationError({"error": "Institution not found."})
 
         validated_data["institution"] = institution
         return super().create(validated_data)
@@ -292,19 +292,19 @@ class InstitutionWorkingDaysSerializer(serializers.ModelSerializer):
         user = request.user.profile if request.user else None
 
         if not user:
-            raise serializers.ValidationError("User has not profile")
+            raise serializers.ValidationError({"error": "User has not profile"})
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
-            raise serializers.ValidationError("Institution not found.")
+            raise serializers.ValidationError({"error": "Institution not found."})
 
         try:
             existing_working_days = InstitutionWorkingDays.objects.get(
                 institution=institution
             )
             raise serializers.ValidationError(
-                "Working days already exist for this institution."
+                {"error": "Working days already exist for this institution."}
             )
         except InstitutionWorkingDays.DoesNotExist:
             pass
@@ -324,7 +324,7 @@ class InstitutionWorkingDaysSerializer(serializers.ModelSerializer):
 
         if not user:
             raise serializers.ValidationError(
-                "User must be authenticated to update working days."
+                {"error": "User must be authenticated to update working days."}
             )
 
         instance.days.set(validated_data.get("days", instance.days.all()))
@@ -371,12 +371,12 @@ class InstitutionTaxSerializer(serializers.ModelSerializer):
         user = request.user.profile if request.user else None
 
         if not user:
-            raise serializers.ValidationError("User has no profile.")
+            raise serializers.ValidationError({"error": "User has no profile."})
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
-            raise serializers.ValidationError("Institution not found.")
+            raise serializers.ValidationError({"error": "Institution not found."})
 
         validated_data["institution"] = institution
         validated_data["created_by"] = request.user
@@ -387,7 +387,7 @@ class InstitutionTaxSerializer(serializers.ModelSerializer):
         user = request.user.profile if request.user else None
 
         if not user:
-            raise serializers.ValidationError("User has no profile.")
+            raise serializers.ValidationError({"error": "User has no profile."})
 
         instance.updated_by = request.user
 
@@ -445,12 +445,12 @@ class InstitutionTaxRuleSerializer(serializers.ModelSerializer):
 
         if not tax_rule_percentage and not tax_rule_fixed_amount:
             raise serializers.ValidationError(
-                "Either tax_rule_percentage or tax_rule_fixed_amount must be provided."
+                {"error": "Either tax_rule_percentage or tax_rule_fixed_amount must be provided."}
             )
 
         if tax_rule_percentage and tax_rule_fixed_amount:
             raise serializers.ValidationError(
-                "Only one of tax_rule_percentage or tax_rule_fixed_amount can be provided."
+                {"error": "Only one of tax_rule_percentage or tax_rule_fixed_amount can be provided."}
             )
 
         return attrs
@@ -460,11 +460,11 @@ class InstitutionTaxRuleSerializer(serializers.ModelSerializer):
         user = request.user.profile if request.user else None
 
         if not user:
-            raise serializers.ValidationError("User has no profile.")
+            raise serializers.ValidationError({"error": "User has no profile."})
 
         institution_tax = validated_data.get("institution_tax")
         if not institution_tax:
-            raise serializers.ValidationError("Institution tax is required.")
+            raise serializers.ValidationError({"error": "Institution tax is required."})
 
         validated_data["created_by"] = request.user
         return super().create(validated_data)
@@ -474,7 +474,7 @@ class InstitutionTaxRuleSerializer(serializers.ModelSerializer):
         user = request.user.profile if request.user else None
 
         if not user:
-            raise serializers.ValidationError("User has no profile.")
+            raise serializers.ValidationError({"error": "User has no profile."})
 
         instance.updated_by = request.user
 
@@ -540,7 +540,7 @@ class BranchSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             raise serializers.ValidationError(
-                "User must be authenticated to create a branch."
+                {"error": "User must be authenticated to create a branch."}
             )
         validated_data["created_by"] = request.user
         return super().create(validated_data)
@@ -586,7 +586,7 @@ class UserBranchSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             raise serializers.ValidationError(
-                "User must be authenticated to create a user branch."
+                {"error": "User must be authenticated to create a user branch."}
             )
         return UserBranch.objects.create(created_by=request.user, **validated_data)
 

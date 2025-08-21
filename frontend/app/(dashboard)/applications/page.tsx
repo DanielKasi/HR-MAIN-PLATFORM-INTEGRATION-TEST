@@ -72,7 +72,7 @@ import type {
   JobApplication,
   JobApplicationFormData,
   JobPositionAdvert,
-  PaginatedResponse,
+  IPaginatedResponse,
 } from "@/types/types.utils";
 import { selectUser, selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { selectApplicationForm } from "@/store/miscellaneous/selectors";
@@ -474,6 +474,13 @@ export default function ApplicationsPage() {
 
   const [jobPositionAdverts, setJobPositionAdverts] = useState<JobPositionAdvert[]>([]);
   const [isLoadingAdverts, setIsLoadingAdverts] = useState(false);
+  const [applicationLocation, setApplicationLocation] = useState<{
+    latitude: string;
+    longitude: string;
+  }>({
+    latitude: "",
+    longitude: "",
+  });
 
   // Load saved application form data from Redux on component mount
   useEffect(() => {
@@ -499,6 +506,23 @@ export default function ApplicationsPage() {
       });
     }
   }, [savedApplicationForm, userData]);
+
+  useEffect(()=>{
+    if (applicationLocation.latitude && applicationLocation.longitude) {
+      setFormData((prev) => ({
+        ...prev,
+        address_latitude: applicationLocation.latitude,
+        address_longitude: applicationLocation.longitude,
+      }));
+
+      const updatedFormData = {
+      ...formData,
+      address_latitude: applicationLocation.latitude,
+      address_longitude: applicationLocation.latitude,
+    };
+    dispatch(saveApplicationForm(updatedFormData));
+    }
+  }, [applicationLocation])
 
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
@@ -676,6 +700,7 @@ export default function ApplicationsPage() {
     };
     setFormData(updatedFormData);
     
+    console.log("\n\n Updated form data:", updatedFormData);
     // Save to Redux for persistence
     dispatch(saveApplicationForm(updatedFormData));
   };
@@ -692,15 +717,7 @@ export default function ApplicationsPage() {
   };
 
   const handleAddressCoordinatesChange = (lat: string, lon: string) => {
-    const updatedFormData = {
-      ...formData,
-      address_latitude: lat,
-      address_longitude: lon,
-    };
-    setFormData(updatedFormData);
-    
-    // Save to Redux for persistence
-    dispatch(saveApplicationForm(updatedFormData));
+    setApplicationLocation({ latitude: lat, longitude: lon });
   };
 
   const handleClearForm = () => {
@@ -2073,14 +2090,14 @@ export default function ApplicationsPage() {
                 Address *
               </label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground z-10" />
+                {/* <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground z-10" /> */}
                 <LocationAutocomplete
                   value={formData.address}
                   onChange={(value) => handleInputChange("address", value)}
                   onCoordinatesChange={handleAddressCoordinatesChange}
                   placeholder="Search for applicant's address..."
                   showCurrentLocationButton={true}
-                  className="w-full pl-9 bg-white border-gray-300"
+                  className="w-full bg-white border-gray-300"
                 />
               </div>
               {/* Hidden coordinate fields */}
@@ -2180,8 +2197,8 @@ export default function ApplicationsPage() {
                   required
                 />
                 <label htmlFor="cv-upload" className="flex flex-col items-center cursor-pointer">
-                  <Upload className="h-10 w-10 text-orange-500 mb-2" />
-                  <span className="text-sm font-medium text-orange-500">Click to Upload or drag and drop</span>
+                  <Upload className="h-10 w-10 text-primary mb-2" />
+                  <span className="text-sm font-medium text-primary">Click to Upload or drag and drop</span>
                   <span className="text-xs text-gray-500">(Max. File size: 25 MB)</span>
                 </label>
                 {formData.resume && (
@@ -2207,8 +2224,8 @@ export default function ApplicationsPage() {
                   onChange={(e) => handleFileChange("cover_letter", e.target.files?.[0] || null)}
                 />
                 <label htmlFor="cover-letter-upload" className="flex flex-col items-center cursor-pointer">
-                  <Upload className="h-10 w-10 text-orange-500 mb-2" />
-                  <span className="text-sm font-medium text-orange-500">Click to Upload or drag and drop</span>
+                  <Upload className="h-10 w-10 text-primary mb-2" />
+                  <span className="text-sm font-medium text-primary">Click to Upload or drag and drop</span>
                   <span className="text-xs text-gray-500">(Max. File size: 25 MB)</span>
                 </label>
                 {formData.cover_letter && (
@@ -2228,7 +2245,6 @@ export default function ApplicationsPage() {
         <Button 
           type="submit" 
           disabled={isSubmitting}
-          className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-8 shadow-md transition-colors duration-200 text-lg"
         >
           {isSubmitting ? "Creating..." : "Add Application"}
         </Button>
@@ -2236,7 +2252,7 @@ export default function ApplicationsPage() {
           type="button" 
           variant="outline" 
           onClick={handleClearForm}
-          className="border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold py-3 px-8 transition-colors duration-200 text-lg"
+          
         >
           Clear Form
         </Button>
@@ -2244,7 +2260,7 @@ export default function ApplicationsPage() {
           type="button" 
           variant="outline" 
           onClick={() => setIsCreateDialogOpen(false)}
-          className="border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold py-3 px-8 transition-colors duration-200 text-lg"
+          
         >
           Cancel
         </Button>

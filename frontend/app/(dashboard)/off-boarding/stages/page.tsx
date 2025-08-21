@@ -48,6 +48,7 @@ import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { cn, OffboardingStagesAPI } from "@/lib/utils"
 import { IOffboardingStage } from "@/types/types.utils"
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
 
 
 const formSchema = z.object({

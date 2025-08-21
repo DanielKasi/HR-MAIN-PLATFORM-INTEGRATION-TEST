@@ -752,7 +752,7 @@ export default function PayrollPeriodDetails() {
                     disabled={!selectedInstitution?.id}
                   >
                     <Download className="w-4 h-4 mr-2" />
-                    Download
+                    Download EFT
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">

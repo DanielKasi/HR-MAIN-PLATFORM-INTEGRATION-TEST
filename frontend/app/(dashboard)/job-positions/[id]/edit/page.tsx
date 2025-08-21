@@ -414,7 +414,8 @@ export default function EditJobPositionPage() {
     department: null,
     reports_to: null,
     offer_letter_template: null,
-    salary: "",
+    salary_min: "",
+    salary_max: "",
     job_position_status: "inactive",
   })
   const [departments, setDepartments] = useState<IDepartment[]>([])
@@ -467,15 +468,17 @@ export default function EditJobPositionPage() {
 
       if (fetchedJobPosition) {
         setJobPosition(fetchedJobPosition)
-        const salaryValue = fetchedJobPosition.salary?.toString() || "0"
-        setOriginalSalary(salaryValue)
+        const salaryMinValue = fetchedJobPosition.salary_min?.toString() || "0"
+        const salaryMaxValue = fetchedJobPosition.salary_max?.toString() || "0"
+        setOriginalSalary(salaryMinValue)
         setFormData({
           name: fetchedJobPosition.name,
           description: fetchedJobPosition.description || "",
           department: fetchedJobPosition.department,
           reports_to: fetchedJobPosition.reports_to || null,
           offer_letter_template: null,
-          salary: salaryValue,
+          salary_min: salaryMinValue,
+          salary_max: salaryMaxValue,
           job_position_status: "inactive"
         })
       } else {
@@ -563,12 +566,19 @@ export default function EditJobPositionPage() {
     setFormData((prev) => ({ ...prev, [field]: value }))
 
     // Track salary changes
-    if (field === "salary") {
-      const salaryChanged = value !== originalSalary && value.trim() !== ""
+    if (field === "salary_min" || field === "salary_max") {
+      const currentMin = formData.salary_min || originalSalary
+      const currentMax = formData.salary_max || originalSalary
+      const newMin = field === "salary_min" ? value : currentMin
+      const newMax = field === "salary_max" ? value : currentMax
+      
+      const salaryChanged = (newMin !== originalSalary || newMax !== originalSalary) && 
+                           (newMin.trim() !== "" || newMax.trim() !== "")
       setIsSalaryChanged(salaryChanged)
 
       // Only auto-clear employee selection if reverting to original or empty
-      if (value === originalSalary || value.trim() === "") {
+      if ((newMin === originalSalary && newMax === originalSalary) || 
+          (newMin.trim() === "" && newMax.trim() === "")) {
         clearEmployeeSelection()
         setShowEmployeeModal(false)
       }
@@ -580,7 +590,8 @@ export default function EditJobPositionPage() {
   }
 
   const revertSalaryToOriginal = () => {
-    updateFormData("salary", originalSalary)
+    updateFormData("salary_min", originalSalary)
+    updateFormData("salary_max", originalSalary)
     setIsSalaryChanged(false)
     clearEmployeeSelection()
     setShowEmployeeModal(false)
@@ -610,10 +621,20 @@ export default function EditJobPositionPage() {
       newErrors.department = "Please select a department"
     }
 
-    if (!formData.salary.trim()) {
-      newErrors.salary = "Salary is required"
-    } else if (isNaN(Number(formData.salary)) || Number(formData.salary) <= 0) {
-      newErrors.salary = "Please enter a valid salary amount"
+    if (!formData.salary_min.trim()) {
+      newErrors.salary_min = "Minimum salary is required"
+    } else if (isNaN(Number(formData.salary_min)) || Number(formData.salary_min) <= 0) {
+      newErrors.salary_min = "Please enter a valid minimum salary amount"
+    }
+
+    if (!formData.salary_max.trim()) {
+      newErrors.salary_max = "Maximum salary is required"
+    } else if (isNaN(Number(formData.salary_max)) || Number(formData.salary_max) <= 0) {
+      newErrors.salary_max = "Please enter a valid maximum salary amount"
+    }
+
+    if (formData.salary_min && formData.salary_max && Number(formData.salary_min) > Number(formData.salary_max)) {
+      newErrors.salary_max = "Maximum salary must be greater than minimum salary"
     }
 
     // Removed mandatory employee selection validation - now optional
@@ -642,7 +663,8 @@ export default function EditJobPositionPage() {
         name: formData.name.trim(),
         description: formData.description.trim(),
         department: formData.department!,
-        salary: Number(formData.salary),
+        salary_min: Number(formData.salary_min),
+        salary_max: Number(formData.salary_max),
         affected_employees: [],
         job_position_status: "active"
       }
@@ -794,33 +816,110 @@ export default function EditJobPositionPage() {
                   {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
                 </div>
 
-                {/* Salary with Employee Selection */}
-                <div className="space-y-2">
-                  <Label htmlFor="salary" className="text-sm font-medium">
-                    Salary scale * {isSalaryChanged && <span className="text-xs text-amber-600">(Changed - Select employees)</span>}
+                {/* <div className="space-y-2">
+                  <Label htmlFor="salary_min" className="text-sm font-medium">
+                    Salary Range *
                   </Label>
-                  <div className="relative">
-                    <Input
-                      id="salary"
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="50,000"
-                      value={
-                        formData.salary !== undefined && formData.salary !== null
-                          ? Number(formData.salary).toLocaleString("en-US")
-                          : ""
-                      }
-                      onChange={(e) => {
-                        const rawValue = e.target.value.replace(/,/g, "")
-                        if (/^\d*$/.test(rawValue)) {
-                          updateFormData("salary", rawValue)
-                        }
-                      }}
-                      className={`pr-10 ${errors.salary ? "border-destructive" : ""} ${isSalaryChanged ? "border-amber-300 bg-amber-50" : ""
-                        }`}
-                    />
-                    <Coins className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <div className="grid grid-cols-2 gap-2">
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">From UGX</span>
+                  <Input
+                    id="salary_min"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="50,000"
+                    value={salaryMinDisplay}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const numeric = unformat(raw);
+
+                      if (!/^\d*$/.test(numeric)) return;
+
+                      setSalaryMinDisplay(formatWithCommas(numeric));
+                      updateFormData("salary_min", numeric);
+                    }}
+                    className={errors.salary_min ? "border-destructive" : ""}
+                  />
+                  {errors.salary_min && <p className="text-sm text-destructive">{errors.salary_min}</p>}
                   </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">To UGX</span>
+                    <Input
+                    id="salary_max"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="75,000"
+                    value={salaryMaxDisplay}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const numeric = unformat(raw);
+
+                      if (!/^\d*$/.test(numeric)) return;
+
+                      setSalaryMaxDisplay(formatWithCommas(numeric));
+                      updateFormData("salary_max", numeric);
+                    }}
+                    className={errors.salary_max ? "border-destructive" : ""}
+                  />
+                  {errors.salary_max && <p className="text-sm text-destructive">{errors.salary_max}</p>}
+                  </div>
+                  </div>
+                  
+                </div> */}
+                {/* Salary Range with Employee Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="salary_min" className="text-sm font-medium">
+                    Salary Range * {isSalaryChanged && <span className="text-xs text-amber-600">(Changed - Select employees)</span>}
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="relative flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">From UGX</span>
+                      <Input
+                        id="salary_min"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="50,000"
+                        value={
+                          formData.salary_min !== undefined && formData.salary_min !== null
+                            ? Number(formData.salary_min).toLocaleString("en-US")
+                            : ""
+                        }
+                        onChange={(e) => {
+                          const rawValue = e.target.value.replace(/,/g, "")
+                          if (/^\d*$/.test(rawValue)) {
+                            updateFormData("salary_min", rawValue)
+                          }
+                        }}
+                        className={`pr-10 ${errors.salary_min ? "border-destructive" : ""} ${isSalaryChanged ? "border-amber-300 bg-amber-50" : ""
+                          }`}
+                      />
+                      
+                    </div>
+                    <div className="relative flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">To UGX</span>
+                      <Input
+                        id="salary_max"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="75,000"
+                        value={
+                          formData.salary_max !== undefined && formData.salary_max !== null
+                            ? Number(formData.salary_max).toLocaleString("en-US")
+                            : ""
+                        }
+                        onChange={(e) => {
+                          const rawValue = e.target.value.replace(/,/g, "")
+                          if (/^\d*$/.test(rawValue)) {
+                            updateFormData("salary_max", rawValue)
+                          }
+                        }}
+                        className={`pr-10 ${errors.salary_max ? "border-destructive" : ""} ${isSalaryChanged ? "border-amber-300 bg-amber-50" : ""
+                          }`}
+                      />
+                    </div>
+                  </div>
+                          
 
                   {/* Simple Salary Update Detection */}
                   {isSalaryChanged && (
@@ -890,11 +989,12 @@ export default function EditJobPositionPage() {
                   {/* Show original salary when unchanged */}
                   {!isSalaryChanged && originalSalary && (
                     <p className="text-xs text-muted-foreground">
-                      Current salary: ${Number(originalSalary).toLocaleString()}
+                      Current salary range: ${Number(originalSalary).toLocaleString()} - ${Number(formData.salary_max || originalSalary).toLocaleString()}
                     </p>
                   )}
 
-                  {errors.salary && <p className="text-sm text-destructive">{errors.salary}</p>}
+                  {errors.salary_min && <p className="text-sm text-destructive">{errors.salary_min}</p>}
+                  {errors.salary_max && <p className="text-sm text-destructive">{errors.salary_max}</p>}
                 </div>
 
                 {/* Department */}

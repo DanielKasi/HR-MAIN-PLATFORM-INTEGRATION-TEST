@@ -212,7 +212,7 @@ class Employee(UtilityBaseModel):
                 existing = existing.exclude(pk=self.pk)
             if existing.exists():
                 raise ValidationError(
-                    "An employee with this phone number already exists."
+                    {"error": f"An employee with this phone number already exists."}
                 )
 
         # ✅ Validate minimum age of 18 years
@@ -228,12 +228,12 @@ class Employee(UtilityBaseModel):
             )
             if age < 18:
                 raise ValidationError(
-                    f"Employee must be at least 18 years old. Current age: {age} years."
+                    {"error": f"Employee must be at least 18 years old. Current age: {age} years."}
                 )
 
         # Prevent future date of birth
         if self.date_of_birth and self.date_of_birth > date.today():
-            raise ValidationError("Date of birth cannot be in the future.")
+            raise ValidationError({"error": f"Date of birth cannot be in the future."})
 
     @property
     def age(self):
@@ -286,7 +286,7 @@ class Employee(UtilityBaseModel):
             self.payroll_branch = self.get_default_branch()
 
         if self.position and hasattr(self.position, "salary"):
-            self.salary = self.position.salary
+            self.salary = self.position.salary_min
 
         if not self.employee_id:
             self.employee_id = self.generate_employee_id()
@@ -639,70 +639,39 @@ class EmployeeAttendance(UtilityBaseModel):
                 return True
         return False
 
-    def clean(self):
-        super().clean()
+    # def clean(self):
+    #     super().clean()
 
-        # Validate check-in location if provided
-        # if self.check_in_time and (
-        #     self.check_in_latitude is not None or self.check_in_longitude is not None
-        # ):
-        #     if self.check_in_latitude is None or self.check_in_longitude is None:
-        #         raise ValidationError(
-        #             "Both check-in latitude and longitude must be provided if one is set."
-        #         )
-        #     if not self._is_location_valid(
-        #         self.check_in_latitude, self.check_in_longitude
-        #     ):
-        #         raise ValidationError(
-        #             "Check-in location does not match any attached branch location."
-        #         )
+    #     Validate check-in location if provided
+    #     if self.check_in_time and (
+    #         self.check_in_latitude is not None or self.check_in_longitude is not None
+    #     ):
+    #         if self.check_in_latitude is None or self.check_in_longitude is None:
+    #             raise ValidationError(
+    #                 {"error": f"Both check-in latitude and longitude must be provided if one is set."}
+    #             )
+    #         if not self._is_location_valid(
+    #             self.check_in_latitude, self.check_in_longitude
+    #         ):
+    #             raise ValidationError(
+    #                 {"error": f"Check-in location does not match any attached branch location."}
+    #             )
 
-        # # Validate check-out location if provided
-        # if self.check_out_time and (
-        #     self.check_out_latitude is not None or self.check_out_longitude is not None
-        # ):
-        #     if self.check_out_latitude is None or self.check_out_longitude is None:
-        #         raise ValidationError(
-        #             "Both check-out latitude and longitude must be provided if one is set."
-        #         )
-        #     if not self._is_location_valid(
-        #         self.check_out_latitude, self.check_out_longitude
-        #     ):
-        #         raise ValidationError(
-        #             "Check-out location does not match any attached branch location."
-        #         )
+    #     # Validate check-out location if provided
+    #     if self.check_out_time and (
+    #         self.check_out_latitude is not None or self.check_out_longitude is not None
+    #     ):
+    #         if self.check_out_latitude is None or self.check_out_longitude is None:
+    #             raise ValidationError(
+    #                 {"error": f"Both check-out latitude and longitude must be provided if one is set."}
+    #             )
+    #         if not self._is_location_valid(
+    #             self.check_out_latitude, self.check_out_longitude
+    #         ):
+    #             raise ValidationError(
+    #                 {"error": f"Check-out location does not match any attached branch location."}
+    #             )
         
-        errors = {}
-
-        # Validate check-in location if provided
-        if self.check_in_time and (self.check_in_latitude is not None or self.check_in_longitude is not None):
-            if self.check_in_latitude is None or self.check_in_longitude is None:
-                # Use a specific field error for incomplete location data
-                errors.setdefault('check_in_latitude', []).append("Both check-in latitude and longitude must be provided if one is set.")
-                errors.setdefault('check_in_longitude', []).append("Both check-in latitude and longitude must be provided if one is set.")
-            else:
-                if not self._is_location_valid(self.check_in_latitude, self.check_in_longitude):
-                    # Change this to a specific field error
-                    error_message = "Check-in location does not match any attached branch location."
-                    errors.setdefault('check_in_latitude', []).append(error_message)
-                    errors.setdefault('check_in_longitude', []).append(error_message)
-
-        # Validate check-out location if provided
-        if self.check_out_time and (self.check_out_latitude is not None or self.check_out_longitude is not None):
-            if self.check_out_latitude is None or self.check_out_longitude is None:
-                # Use a specific field error for incomplete location data
-                errors.setdefault('check_out_latitude', []).append("Both check-out latitude and longitude must be provided if one is set.")
-                errors.setdefault('check_out_longitude', []).append("Both check-out latitude and longitude must be provided if one is set.")
-            else:
-                if not self._is_location_valid(self.check_out_latitude, self.check_out_longitude):
-                    # Change this to a specific field error
-                    error_message = "Check-out location does not match any attached branch location."
-                    errors.setdefault('check_out_latitude', []).append(error_message)
-                    errors.setdefault('check_out_longitude', []).append(error_message)
-
-        # If there are any errors collected, raise the ValidationError
-        if errors:
-            raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
 
@@ -809,7 +778,7 @@ class EmployeeContract(UtilityBaseModel):
                 pages_text.append(normalized_text)
             return pages_text
         except Exception as e:
-            raise ValidationError(f"OCR failed: {str(e)}")
+            raise ValidationError({"error": f"OCR failed: {str(e)}"})
 
     def compare_contracts(self):
         """Compare original_contract and signed_contract, setting status."""
@@ -832,7 +801,7 @@ class EmployeeContract(UtilityBaseModel):
                 original_pages = self.extract_text_with_ocr(original_content)
             if not any(original_pages):
                 self.status = "NOT_MATCHED_NEEDS_REVIEW"
-                raise ValidationError("Cannot extract text from original contract.")
+                raise ValidationError({"error": f"Cannot extract text from original contract."})
 
             # Extract text from signed_contract
             signed_pages = self.extract_text_from_pdf(signed_content)
@@ -842,7 +811,7 @@ class EmployeeContract(UtilityBaseModel):
             if not any(signed_pages):
 
                 self.status = "NOT_MATCHED_NEEDS_REVIEW"
-                raise ValidationError("Cannot extract text from signed contract.")
+                raise ValidationError({"error": f"Cannot extract text from signed contract."})
 
             # Compare number of pages
             if len(original_pages) != len(signed_pages):
@@ -898,7 +867,7 @@ class EmployeeContract(UtilityBaseModel):
             raise e
         except Exception as e:
             self.status = "NOT_MATCHED_NEEDS_REVIEW"
-            raise ValidationError(f"Error comparing contracts: {str(e)}")
+            raise ValidationError({"error": f"Error comparing contracts: {str(e)}"})
 
     def save(self, *args, **kwargs):
         if not self.contract_reference:

@@ -449,8 +449,8 @@ class GenerateDocumentView(BaseDocumentView):
                     else ""
                 ),
                 "salary": (
-                    str(onboarding.application.job_position_advert.job_position.salary)
-                    if onboarding.application.job_position_advert.job_position.salary
+                    str(onboarding.application.job_position_advert.job_position.salary_min)
+                    if onboarding.application.job_position_advert.job_position.salary_min
                     else ""
                 ),
                 "date": str(datetime.now().date()),

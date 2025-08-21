@@ -24,6 +24,7 @@ import {CUSTOM_CODES} from "@/types/types.utils";
 import {selectUser, selectAuthError, selectUserLoading} from "@/store/auth/selectors";
 import {clearAuthError, loginStart} from "@/store/auth/actions";
 import FixedLoader from "@/components/fixed-loader";
+import { showErrorToast } from "@/lib/utils";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -125,7 +126,8 @@ export default function LoginPage() {
 
         router.push(`verify-otp?user_id=${encodeURIComponent(user_id)}`);
       } catch (error: any) {
-        setErrorMessage(error.message);
+        showErrorToast({error, defaultMessage:"Failed to send OTP "})
+        // setErrorMessage(error?.message);
       }
     } else if (code == CUSTOM_CODES.ADMIN_CREATED_UNVERIFIED) {
       try {

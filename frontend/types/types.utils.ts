@@ -267,12 +267,12 @@ export interface IDepartment {
   job_positions?: {id: number; name: string; description: string; department_id: number}[];
 }
 
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
+// export interface IPaginatedResponse<T> {
+//   count: number;
+//   next: string | null;
+//   previous: string | null;
+//   results: T[];
+// }
 
 // export interface IUser {
 //   id: number;
@@ -331,7 +331,8 @@ export interface IJobPosition {
   reports_to_details?: IReportsToDetails | null;
   contract_template?: string | null;
   offer_letter_template?: string | null;
-  salary: number | null;
+  salary_min: string | null;
+  salary_max: string | null;
   employees: IEmployee[];
   tasks: ITask[];
   job_position_status: "active" | "inactive";
@@ -344,7 +345,8 @@ export interface JobPositionFormData {
   reports_to: number | null;
   job_position_status: "active" | "inactive";
   offer_letter_template: File | null;
-  salary: string;
+  salary_min: string;
+  salary_max: string;
 }
 
 export interface CreateJobPositionData {
@@ -355,7 +357,8 @@ export interface CreateJobPositionData {
   reports_to?: number;
   job_position_status: "active" | "inactive";
   offer_letter_template?: File;
-  salary: number;
+  salary_min: number;
+  salary_max: number;
 }
 
 export interface JobApplication {

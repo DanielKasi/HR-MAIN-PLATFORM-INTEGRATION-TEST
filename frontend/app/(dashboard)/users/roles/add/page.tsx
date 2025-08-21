@@ -24,7 +24,7 @@ interface PermissionsByCategory {
   };
 }
 
-interface PaginatedResponse {
+interface IPaginatedResponse {
   count: number;
   next: string | null;
   previous: string | null;
@@ -53,7 +53,7 @@ export default function AddRolePage() {
         
         while (nextUrl) {
           const response = await apiGet(nextUrl);
-          const data = response.data as PaginatedResponse;
+          const data = response.data as IPaginatedResponse;
           
           allPermissions = [...allPermissions, ...data.results];
           

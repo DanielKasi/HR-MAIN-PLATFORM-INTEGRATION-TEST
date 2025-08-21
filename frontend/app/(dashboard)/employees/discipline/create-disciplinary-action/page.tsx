@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { createDisciplinaryAction, createDisciplineType, getDisciplineTypes, getAllEmployees } from "@/lib/utils";
@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
 import { IUserInstitution } from "@/types";
-import { DisciplineTypeForm, DisciplinaryActionForm } from "@/types/types.utils";
+import { DisciplineTypeForm, DisciplinaryActionForm, IEmployee } from "@/types/types.utils";
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select";
 
 
@@ -74,14 +74,7 @@ export default function DisciplinaryForm() {
     }>
   >([]);
 
-  const [employees, setEmployees] = useState<
-    Array<{
-      id: string;
-      name: string;
-      department: string;
-      email: string;
-    }>
-  >([]);
+  const [employees, setEmployees] = useState<IEmployee[]>([]);
 
   useEffect(() => {
     if (selectedInstitution) {
@@ -98,18 +91,7 @@ export default function DisciplinaryForm() {
       setIsLoadingEmployees(true);
       try {
         const fetchedEmployees = await getAllEmployees({ institutionId });
-
-        if (fetchedEmployees && Array.isArray(fetchedEmployees)) {
-          const formattedEmployees: typeof employees = fetchedEmployees.map((emp: any) => ({
-            id: emp.id.toString(),
-            name: emp.user?.fullname || emp.email || "Unknown Employee",
-            department: emp.department || "",
-            email: emp.email || "",
-          }));
-          setEmployees(formattedEmployees);
-        } else {
-          setEmployees([]);
-        }
+          setEmployees(fetchedEmployees.results);
       } catch (error) {
         toast.error("Failed to load employees");
         setEmployees([]);
@@ -305,12 +287,26 @@ export default function DisciplinaryForm() {
     router.push("/employees/discipline");
   };
 
+  const handleBack = () => {  
+    router.back();
+  }
+
   return (
-    <div className="min-h-screen w-full bg-gray-50 p-6">
-      <div className="max-w-full mx-auto">
-        <Card className="w-full">
+    <div className="min-h-screen w-full bg-gray-50 rounded-lg">
+
+        <Card className="w-full border-none shadow-none p-0 bg-transparent">
           <CardHeader>
+            <div className="flex items-center justify-start gap-4">
+            <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleBack}
+            className="rounded-full h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10"
+          >
+            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+          </Button>
             <CardTitle>Create Disciplinary Action</CardTitle>
+            </div>
             <CardDescription>Record a new disciplinary action against an employee</CardDescription>
           </CardHeader>
           <CardContent>
@@ -622,7 +618,7 @@ export default function DisciplinaryForm() {
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-8 pt-6">
+              <div className="flex items-center justify-end gap-4 md:gap-8 pt-6">
                 <Button type="button" variant="outline" className="px-6" onClick={handleDisciplinaryActionCancel} disabled={isSubmitting}>
                   Cancel
                 </Button>
@@ -640,7 +636,6 @@ export default function DisciplinaryForm() {
             </form>
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }

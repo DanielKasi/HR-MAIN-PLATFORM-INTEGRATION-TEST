@@ -135,7 +135,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
                 UserRole.objects.create(user=user, role=role)
             except Role.DoesNotExist:
                 raise serializers.ValidationError(
-                    f"Role with id {role_id} does not exist."
+                    {"error": f"Role with id {role_id} does not exist."}
                 )
         return user
 
@@ -156,7 +156,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
                 UserRole.objects.create(user=instance, role=role)
             except Role.DoesNotExist:
                 raise serializers.ValidationError(
-                    f"Role with id {role_id} does not exist."
+                    {"error": f"Role with id {role_id} does not exist."}
                 )
 
         return instance
@@ -195,12 +195,12 @@ class UserOTPVerificationSerializer(serializers.Serializer):
 
     def validate_otp(self, value):
         if not value.isdigit():
-            raise serializers.ValidationError("OTP must contain only digits")
+            raise serializers.ValidationError({"error": "OTP must contain only digits"})
         return value
 
 
 class ResendOTPSerializer(serializers.Serializer):
-    user_id = serializers.IntegerField()
+    email = serializers.EmailField()
 
 
 class UserPasswordResetSerializer(serializers.Serializer):

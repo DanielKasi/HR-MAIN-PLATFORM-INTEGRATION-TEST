@@ -700,11 +700,11 @@ export default function CreateOrganisationWizard() {
               </div>
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid gap-4 my-2">
               <Label htmlFor="searchDepartments" className="text-sm font-medium">
                 Search Departments and Positions
               </Label>
-              <div className="relative">
+              <div className="relative w-full max-w-md md:max-w-lg lg:max-w-xl mb-4">
                 <Input
                   id="searchDepartments"
                   type="text"
@@ -745,16 +745,16 @@ export default function CreateOrganisationWizard() {
                 </p>
               </div>
             ) : (
-              <div className="w-full space-y-3 max-h-[60svh] lg:max-h-[50svh] overflow-y-auto">
+              <div className="w-full grid grid-cols-1 md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60svh] lg:max-h-[50svh] overflow-y-auto place-content-start justify-start items-start place-items-start py-8 pr-4">
                 {filteredDepartments.map((dept, deptIndex) => (
-                  <div key={dept.name} className="w-full border rounded-lg p-4 space-y-3 bg-card">
+                  <div key={dept.name} className="w-full border rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                           <Users className="h-4 w-4 text-primary" />
                         </div>
                         <div>
-                          <Badge className="mb-1">Department {deptIndex + 1}</Badge>
+                          {/* <Badge className="mb-1">Department {deptIndex + 1}</Badge> */}
                           <h4 className="font-medium">{dept.name}</h4>
                           <p className="text-xs text-muted-foreground">{dept.description}</p>
                         </div>
@@ -812,7 +812,7 @@ export default function CreateOrganisationWizard() {
   const progress = (currentStep / STEPS.length) * 100;
 
   return (
-    <div className="min-h-[90vh] w-full p-4">
+    <div className="max-h-[calc(100svh-6rem)] overflow-y-auto h-full w-full">
       <form
         encType="multipart/form-data"
         onSubmit={(e) => {
@@ -824,7 +824,7 @@ export default function CreateOrganisationWizard() {
           }
         }}
       >
-        <Card className="w-full border-none shadow-none overflow-hidden flex flex-col h-full">
+        <Card className="w-full border-none shadow-none overflow-hidden flex flex-col h-full py-4">
           <CardHeader className="py-3 px-4 space-y-2 border-b">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">

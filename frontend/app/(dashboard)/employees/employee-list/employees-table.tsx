@@ -47,15 +47,8 @@ const getPositionName = (employee: IEmployee) => {
   return "Unknown Position";
 };
 
-// const getRoleNames = (employee: IEmployee) => {
-//   if (employee.roles && employee.roles.length > 0) {
-//     return employee.roles.map((role) => role.name).join(", ");
-//   }
-//   return "No roles assigned";
-// };
-
 interface EmployeesTableProps {
-  onDelete: (id: number) => void;
+  onDelete: (id: number, refreshCallback?: ()=>void) => void;
   isBulkUploadDialogOpen: boolean;
   setIsBulkUploadDialogOpen: (open: boolean) => void;
   selectedInstitution: {id: number} | null;
@@ -143,10 +136,11 @@ export function EmployeesTable({
               }) || [];
 
             if (loading) {
-              return <TableSkeleton rows={10} columns={8} />;
+              return <TableSkeleton rows={data?.results.length || 10} columns={6} />;
             }
 
             return (
+              <>
               <div className="w-full max-w-full overflow-x-auto bg-white">
                 <Table>
                   <TableHeader>
@@ -220,12 +214,7 @@ export function EmployeesTable({
                   </TableBody>
                 </Table>
               </div>
-            );
-          }}
-        </PaginatedTableWrapper>
-      </CardContent>
-
-      {employeeToDelete && (
+              {employeeToDelete && (
         <AlertDialog
           open={!!employeeToDelete}
           onOpenChange={(open) => {
@@ -245,7 +234,7 @@ export function EmployeesTable({
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => employeeToDelete.id && onDelete(employeeToDelete.id)}
+                onClick={() => employeeToDelete.id && onDelete(employeeToDelete.id, refresh)}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 Delete
@@ -254,6 +243,13 @@ export function EmployeesTable({
           </AlertDialogContent>
         </AlertDialog>
       )}
+              </>
+            );
+          }}
+        </PaginatedTableWrapper>
+      </CardContent>
+
+      
     </div>
   );
 }
