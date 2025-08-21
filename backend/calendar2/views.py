@@ -16,6 +16,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_view
 from datetime import datetime
+from django.db.models import Q
 
 
 class PublicHolidayListCreateView(APIView):
@@ -36,10 +37,15 @@ class PublicHolidayListCreateView(APIView):
         tags=["Calendar"],
     )
     def get(self, request):
+        search_query = request.query_params.get("search", None)
         institution = get_object_or_404(
             Institution, id=request.user.profile.institution.id
         )
         public_holidays = PublicHoliday.objects.filter(institution=institution)
+        if search_query:
+            public_holidays = public_holidays.filter(
+                Q(title__icontains=search_query) | Q(date__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginated_holidays = paginator.paginate_queryset(public_holidays, request)
         serializer = PublicHolidaySerializer(paginated_holidays, many=True)

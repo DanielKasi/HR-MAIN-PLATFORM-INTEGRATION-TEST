@@ -32,7 +32,8 @@ from drf_spectacular.utils import extend_schema_view
 from users.models import Profile, CustomUser, UserRole
 from django.contrib.contenttypes.models import ContentType
 from workflows.models import ApprovalTask, InstitutionApprovalStepApprovorRole, InstitutionApprovalStepApprovorUser
-import Q
+from django.db.models import Q
+from employee.models import Employee
 
 
 class AssetCategoryListCreateView(APIView):
@@ -350,8 +351,6 @@ class AssetRequestListCreateView(APIView):
         search_query = request.query_params.get("search", None)
         requester_id = request.query_params.get("requester_id", None)
 
-            
-
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
@@ -359,27 +358,64 @@ class AssetRequestListCreateView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        
         asset_requests = AssetRequest.objects.filter(asset__institution=institution)
 
         if employee_id:
-            asset_requests = asset_requests.filter(
-                requester__user__employees__employee_id=employee_id
-            )
+
+            try:
+                employee = Employee.objects.get(employee_id=employee_id)
+
+            except Employee.DoesNotExist:
+                return Response(
+                    {"detail": f"Employee with ID {employee_id} not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            
+            # Step 2: Check if employee has a user
+            if not employee.user:
+                return Response(
+                    {"detail": f"Employee {employee_id} has no associated user."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            # Step 3: Check if user has a profile
+            try:
+                profile = employee.user.profile
+            except Profile.DoesNotExist:
+                print("DEBUG: User has no profile")
+                return Response(
+                    {"detail": f"User for employee {employee_id} has no profile."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            # Step 4: Filter asset requests by this profile
+            employee_asset_requests = asset_requests.filter(requester=profile)
+            
+            # Step 5: Let's also check all asset requests for this institution to see what we have
+            all_requests = AssetRequest.objects.filter(asset__institution=institution)
+
+            
+            # Step 6: Let's see the requester info for all requests
+            for req in all_requests[:5]:  # Just first 5 for debugging
+            
+            asset_requests = employee_asset_requests
 
         if requester_id:
-            asset_requests = asset_requests.filter(requester__id=requester_id)    
+            asset_requests = asset_requests.filter(requester__id=requester_id)
 
         if search_query:
-        asset_requests = asset_requests.filter(
-            Q(request_reference_code__icontains=search_query) |
-            Q(asset_request_status__icontains=search_query) |
-            Q(notes__icontains=search_query) |
-            Q(asset__asset_name__icontains=search_query) |
-            Q(asset__batch_number__icontains=search_query) |
-            Q(requester__user__fullname__icontains=search_query) |
-            Q(requester__user__email__icontains=search_query)
-        )
+            asset_requests = asset_requests.filter(
+                Q(request_reference_code__icontains=search_query) |
+                Q(asset_request_status__icontains=search_query) |
+                Q(notes__icontains=search_query) |
+                Q(asset__asset_name__icontains=search_query) |
+                Q(asset__batch_number__icontains=search_query) |
+                Q(requester__user__fullname__icontains=search_query) |
+                Q(requester__user__email__icontains=search_query)
+            )
 
+        
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_requests, request)
         serializer = AssetRequestWorkflowSerializer(paginated_qs, many=True)
@@ -923,7 +959,16 @@ class AssetHistoryListView(APIView):
         tags=["Asset Mgt"],
     )
     def get(self, request):
+        search_query = request.query_params.get("search", None)
         asset_histories = AssetHistory.objects.all()
+
+        if search_query:
+            asset_histories = asset_histories.filter(
+                Q(asset__asset_name__icontains=search_query) |
+                Q(performed_by__user__fullname__icontains=search_query) |
+                Q(affected_user__user__fullname__icontains=search_query) |
+                Q(event_type__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_histories, request)
         serializer = AssetHistorySerializer(paginated_qs, many=True)
