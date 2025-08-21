@@ -406,6 +406,11 @@
       "code": "can_manage_compensation_policies",
       "name": "Can Manage Compensation Policies",
       "description": "Allows managing compensation policies"
+    },
+    {
+      "code": "can_download_payslips",
+      "name": "Can Download Payslips",
+      "description": "Allows downloading employee payslips"
     }
   ],
 
