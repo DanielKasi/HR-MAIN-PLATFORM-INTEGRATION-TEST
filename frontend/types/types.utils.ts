@@ -961,6 +961,26 @@ export function convertDisciplineTypeFormToApiRequest(
   };
 }
 
+ export interface DisciplinaryAction {
+  id: string;
+  employee_name: string;
+  employee_department: string;
+  discipline_type: string;
+  discipline_severity: "low" | "medium" | "high" | "critical";
+  incident_date: string;
+  reported_date: string;
+  description: string;
+  evidence: string;
+  reported_by: string;
+  assigned_to: string;
+  status: "pending" | "in_progress" | "completed" | "dismissed";
+  action_taken: string;
+  resolution_date: string;
+  follow_up_required: boolean;
+  follow_up_date: string;
+  notes: string;
+}
+
 export interface DisciplinaryActionAPIResponse {
   id: number;
   discipline_type: {
