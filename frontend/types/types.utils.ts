@@ -521,8 +521,8 @@ export interface IEmployee {
   marital_status: string;
   children_count: number;
   employee_profile_picture: string | null;
-  employee_type: number;
-  work_type: number;
+  employee_type: number | IEmployeeType;
+  work_type: number | IWorkType;
   payroll_branch: Branch | null;
   gender: string;
   salary: string;

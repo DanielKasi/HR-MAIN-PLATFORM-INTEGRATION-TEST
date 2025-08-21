@@ -134,9 +134,13 @@ class EmployeeAllowanceAPIView(APIView):
         responses=EmployeeAllowanceSerializer(many=True),
     )
     def get(self, request, institution_id):
+        employee_id = request.query_params.get("employee_id")
         allowances = EmployeeAllowance.objects.filter(
             employee__department__institution_id=institution_id
         ).order_by("-created_at")
+
+        if employee_id:
+            allowances = allowances.filter(employee_id=employee_id)
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(allowances, request)
@@ -257,9 +261,14 @@ class EmployeeDeductionAPIView(APIView):
         responses=EmployeeDeductionSerializer(many=True),
     )
     def get(self, request, institution_id):
+        employee_id = request.query_params.get("employee_id")
         deductions = EmployeeDeduction.objects.filter(
             employee__department__institution_id=institution_id
         ).order_by("-created_at")
+
+        if employee_id:
+            deductions = deductions.filter(employee_id=employee_id)
+
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(deductions, request)
         serializer = EmployeeDeductionSerializer(paginated_qs, many=True)
@@ -457,6 +466,7 @@ class EmployeeTaxListAPIView(APIView):
     )
     def get(self, request):
         user = request.user.profile
+        employee_id = request.query_params.get("employee_id")
 
         if not user:
             return Response(
@@ -475,6 +485,9 @@ class EmployeeTaxListAPIView(APIView):
         employee_taxes = EmployeeTax.objects.filter(
             employee__department__institution_id=institution_id
         ).order_by("-created_at")
+
+        if employee_id:
+            employee_taxes = employee_taxes.filter(employee_id=employee_id)
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(employee_taxes, request)
         serializer = EmployeeTaxSerializer(paginated_qs, many=True)
@@ -538,9 +551,13 @@ class PayslipAPIView(APIView):
         responses=PayslipSerializer(many=True),
     )
     def get(self, request, institution_id):
+        employee_id = request.query_params.get("employee_id")
         payslips = Payslip.objects.filter(
             employee__department__institution_id=institution_id
         ).order_by("-created_at")
+
+        if employee_id:
+            payslips = payslips.filter(employee_id=employee_id)
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(payslips, request)
