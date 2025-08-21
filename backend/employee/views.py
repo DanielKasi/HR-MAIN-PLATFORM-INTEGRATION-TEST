@@ -1425,18 +1425,19 @@ class EmployeeAttendanceListCreateAPIView(APIView):
 
     @extend_schema(
         responses=EmployeeAttendanceSerializer(many=True),
-        description="Retrieve all attendance records or for a specific employee if employee_id is provided as a query param.",
+        description="Retrieve all attendance records or for a specific employee if employee_id is provided either in path or query param.",
     )
-    def get(self, request):
-        # Get query parameters
-        employee_id = request.query_params.get("employee_id")  
+    def get(self, request, employee_id=None):
+        # If employee_id is not in path, try query param
+        employee_id = employee_id or request.query_params.get("employee_id")
+
         date = request.query_params.get("date")
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
 
         records = EmployeeAttendance.objects.all()
 
-        # Filter by employee if employee_id is provided
+        # Filter by employee if provided
         if employee_id:
             records = records.filter(employee_id=employee_id)
 
