@@ -93,6 +93,7 @@ export default function AddEmployeeForm() {
   const [employeeTypes, setEmployeeTypes] = useState<IEmployeeType[]>([]);
   const [loadingData, setLoadingData] = useState(false);
   const [employeeProfilePicture, setEmployeeProfilePicture] = useState<File | null>(null);
+  const [phoneError, setPhoneError] = useState<string|null>(null);
 
   const [isWorkTypeModalOpen, setIsWorkTypeModalOpen] = useState(false);
   const [isEmployeeTypeModalOpen, setIsEmployeeTypeModalOpen] = useState(false);
@@ -111,7 +112,7 @@ export default function AddEmployeeForm() {
     code: "",
   });
 
-  const [formData, setFormData] = useState<ICreateEmployeeForm>({
+  const [formData, setFormData] = useState<Omit<ICreateEmployeeForm, "phone_number_country_code"|"emergency_contact_phone_country_code">>({
     fullname: "",
     email: "",
     phone_number: "",
@@ -145,7 +146,7 @@ export default function AddEmployeeForm() {
     if (!formData.department || formData.department === 0) {
       return positions; // Show all positions if no department is selected
     }
-    return positions.filter(position => position.department === formData.department);
+    return positions.filter((position) => position.department === formData.department);
   }, [positions, formData.department]);
 
   const [previewUrl, setPreviewUrl] = useState<string>("");
@@ -169,7 +170,6 @@ export default function AddEmployeeForm() {
   }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
 
   const dispatch = useDispatch();
-  console.log("Error", submitError)
 
   const showErrorToast = (message: string) => {
     toast.error(message);
@@ -187,31 +187,29 @@ export default function AddEmployeeForm() {
   useEffect(() => {
     if (currentEmployeeCreationForm && !formData.fullname) {
       setFormData(currentEmployeeCreationForm);
-      
-      // Initialize phone input states from saved data
+
       if (currentEmployeeCreationForm.phone_number) {
-        setPhoneInput(prev => ({
+        setPhoneInput((prev) => ({
           ...prev,
           phoneNumber: currentEmployeeCreationForm.phone_number,
-          countryCode: ""
+          countryCode: currentEmployeeCreationForm.phone_number_country_code || "" ,
         }));
       }
-      
+
       if (currentEmployeeCreationForm.country) {
-        setSelectedCountry({ name: { common: currentEmployeeCreationForm.country } } as ICountry);
+        setSelectedCountry({name: {common: currentEmployeeCreationForm.country}} as ICountry);
       }
-      
+
       if (currentEmployeeCreationForm.emergency_contact_phone) {
-        setEmergencyPhoneInput(prev => ({
+        setEmergencyPhoneInput((prev) => ({
           ...prev,
           phoneNumber: currentEmployeeCreationForm.emergency_contact_phone,
-          countryCode: ""
+          countryCode: currentEmployeeCreationForm.emergency_contact_phone_country_code || "",
         }));
       }
     }
+    console.log("\n\n Store data loaded with: ", currentEmployeeCreationForm)
   }, [currentEmployeeCreationForm, formData.fullname]);
-
-
 
   useEffect(() => {
     setFormData((prev) => ({...prev, selected_branches: branches.map((br) => br.id)}));
@@ -251,7 +249,7 @@ export default function AddEmployeeForm() {
   const handleClearLocalEmployeeCreateForm = () => {
     // Clear from Redux
     dispatch(clearEmployeeForm());
-    
+
     // Clear local form state
     setFormData({
       fullname: "",
@@ -281,19 +279,19 @@ export default function AddEmployeeForm() {
       marital_status: "single",
       children_count: 0,
     });
-    
+
     // Clear profile picture
     setEmployeeProfilePicture(null);
     setPreviewUrl("");
     setUploadError(null);
     setUploadSuccess(null);
-    
+
     // Reset to first step
     setCurrentStep(1);
-    
+
     // Clear any errors
     setSubmitError(null);
-    
+
     toast.success("Form cleared successfully");
   };
 
@@ -314,7 +312,7 @@ export default function AddEmployeeForm() {
       }
     } else if (field === "department") {
       // Clear position when department changes
-      const departmentValue = typeof value === 'number' ? value : Number(value);
+      const departmentValue = typeof value === "number" ? value : Number(value);
       const updatedFormData = {
         ...formData,
         department: departmentValue,
@@ -334,9 +332,9 @@ export default function AddEmployeeForm() {
 
   const handleProflePictureChange = (value: File | null) => {
     setEmployeeProfilePicture(value);
-    
+
     // Also save the updated form data to Redux (without the profile picture)
-    const updatedFormData = { ...formData };
+    const updatedFormData = {...formData};
     setFormData(updatedFormData);
     handleSaveLocalEmployeeCreateForm(updatedFormData);
   };
@@ -396,9 +394,9 @@ export default function AddEmployeeForm() {
     if (fileInput) {
       fileInput.value = "";
     }
-    
+
     // Save the updated form data to Redux after removing image
-    const updatedFormData = { ...formData };
+    const updatedFormData = {...formData};
     setFormData(updatedFormData);
     handleSaveLocalEmployeeCreateForm(updatedFormData);
   };
@@ -490,8 +488,8 @@ export default function AddEmployeeForm() {
 
     for (const field of requiredFields) {
       if (
-        !formData[field as keyof ICreateEmployeeForm] ||
-        formData[field as keyof ICreateEmployeeForm] === 0
+        !formData[field as keyof typeof  formData] ||
+        formData[field as keyof typeof  formData] === 0
       ) {
         setSubmitError(`Please fill in the ${field.replace("_", " ")} field`);
         return false;
@@ -503,7 +501,7 @@ export default function AddEmployeeForm() {
       setSubmitError("Please enter a valid email address");
       return false;
     }
-
+    setSubmitError(null);
     return true;
   };
 
@@ -514,7 +512,7 @@ export default function AddEmployeeForm() {
       case 1: // Personal Information
         const personalRequiredFields = ["fullname", "email"];
         for (const field of personalRequiredFields) {
-          if (!formData[field as keyof ICreateEmployeeForm]) {
+          if (!formData[field as keyof typeof formData]) {
             setSubmitError(`Please fill in the ${field.replace("_", " ")} field`);
             return false;
           }
@@ -531,7 +529,7 @@ export default function AddEmployeeForm() {
       case 2: // Work Information
         const workRequiredFields = ["position", "department", "date_of_joining"];
         for (const field of workRequiredFields) {
-          const value = formData[field as keyof ICreateEmployeeForm];
+          const value = formData[field as keyof typeof formData];
           if (!value || value === 0) {
             setSubmitError(`Please fill in the ${field.replace("_", " ")} field`);
             return false;
@@ -554,7 +552,7 @@ export default function AddEmployeeForm() {
       case 1: // Personal Information
         const personalRequiredFields = ["fullname", "email"];
         for (const field of personalRequiredFields) {
-          if (!formData[field as keyof ICreateEmployeeForm]) {
+          if (!formData[field as keyof typeof  formData]) {
             return false;
           }
         }
@@ -568,7 +566,7 @@ export default function AddEmployeeForm() {
       case 2: // Work Information
         const workRequiredFields = ["position", "department", "date_of_joining"];
         for (const field of workRequiredFields) {
-          const value = formData[field as keyof ICreateEmployeeForm];
+          const value = formData[field as keyof typeof  formData];
           if (!value || value === 0) {
             return false;
           }
@@ -668,7 +666,7 @@ export default function AddEmployeeForm() {
         error instanceof Error
           ? error.message
           : "An unknown error occurred while creating the employee.";
-      
+
       showErrorToast(errorMessage);
       setSubmitError(errorMessage);
     } finally {
@@ -678,33 +676,35 @@ export default function AddEmployeeForm() {
 
   // Sync main phone and country to formData
   useEffect(() => {
-    // Only update if there are actual changes to prevent infinite loops
-    const newPhoneNumber = phoneInput.countryCode && phoneInput.phoneNumber
-      ? `${phoneInput.phoneNumber}`
-      : formData.phone_number;
-    
+    const newPhoneNumber =
+      phoneInput.countryCode && phoneInput.phoneNumber
+        ? `${phoneInput.phoneNumber}`
+        : formData.phone_number;
+
     const newCountry = selectedCountry?.name?.common || formData.country;
-    
-    const newEmergencyPhone = emergencyPhoneInput.countryCode && emergencyPhoneInput.phoneNumber
-      ? `${emergencyPhoneInput.phoneNumber}`
-      : formData.emergency_contact_phone;
-    
+
+    const newEmergencyPhone =
+      emergencyPhoneInput.countryCode && emergencyPhoneInput.phoneNumber
+        ? `${emergencyPhoneInput.phoneNumber}`
+        : formData.emergency_contact_phone;
+
     // Check if any values actually changed
-    if (newPhoneNumber !== formData.phone_number || 
-        newCountry !== formData.country || 
-        newEmergencyPhone !== formData.emergency_contact_phone) {
-      
+    if (
+      newPhoneNumber !== formData.phone_number ||
+      newCountry !== formData.country ||
+      newEmergencyPhone !== formData.emergency_contact_phone
+    ) {
       const updatedFormData = {
         ...formData,
         phone_number: newPhoneNumber,
         country: newCountry,
         emergency_contact_phone: newEmergencyPhone,
       };
-      
+
       setFormData(updatedFormData);
-      handleSaveLocalEmployeeCreateForm(updatedFormData);
+    handleSaveLocalEmployeeCreateForm({...updatedFormData, phone_number_country_code:phoneInput.countryCode, emergency_contact_phone_country_code:emergencyPhoneInput.countryCode});
     }
-  }, [phoneInput.countryCode, phoneInput.phoneNumber, selectedCountry?.name?.common, emergencyPhoneInput.countryCode, emergencyPhoneInput.phoneNumber]);
+  }, [phoneInput, selectedCountry?.name?.common, emergencyPhoneInput]);
 
   const renderStep = () => {
     switch (currentStep) {
@@ -741,10 +741,12 @@ export default function AddEmployeeForm() {
                 <div className="space-y-2">
                   <PhoneNumberInput
                     label="Phone Number"
-                    value={formData.phone_number|| ""}
+                    required
+                    value={formData.phone_number || ""}
                     country={phoneInput.country}
                     onChange={setPhoneInput}
-                    setError={setSubmitError}
+                    defaultCountryCode={currentEmployeeCreationForm?.phone_number_country_code}
+                    setError={setPhoneError}
                   />
                 </div>
                 <div className="space-y-2">
@@ -847,10 +849,12 @@ export default function AddEmployeeForm() {
                 <div className="space-y-2">
                   <PhoneNumberInput
                     label="Contact Phone"
+                    required
                     value={formData.emergency_contact_phone || ""}
                     country={emergencyPhoneInput.country}
                     onChange={setEmergencyPhoneInput}
-                    setError={setSubmitError}
+                    setError={setPhoneError}
+                    defaultCountryCode={currentEmployeeCreationForm?.emergency_contact_phone_country_code}
                   />
                 </div>
                 <div className="space-y-2">
@@ -873,11 +877,13 @@ export default function AddEmployeeForm() {
           <div className="space-y-6">
             <h3 className="text-lg font-semibold">Work Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+              <div className="space-y-2">
                 <Label htmlFor="department">Department *</Label>
                 <Select
                   value={formData.department > 0 ? formData.department.toString() : ""}
-                  onValueChange={(value: string) => handleInputChange("department", Number.parseInt(value))}
+                  onValueChange={(value: string) =>
+                    handleInputChange("department", Number.parseInt(value))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select department" />
@@ -899,10 +905,12 @@ export default function AddEmployeeForm() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="position">Position *</Label>
-                
+
                 <Select
                   value={formData.position > 0 ? formData.position.toString() : ""}
-                  onValueChange={(value: string) => handleInputChange("position", Number.parseInt(value))}
+                  onValueChange={(value: string) =>
+                    handleInputChange("position", Number.parseInt(value))
+                  }
                   disabled={formData.department === 0}
                 >
                   <SelectTrigger>
@@ -917,15 +925,15 @@ export default function AddEmployeeForm() {
                       ))
                     ) : (
                       <div className="px-2 py-1.5 text-sm text-gray-500">
-                        {formData.department > 0 
-                          ? "No positions available for this department" 
+                        {formData.department > 0
+                          ? "No positions available for this department"
                           : "Please select a department first"}
                       </div>
                     )}
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="workType">Work Type</Label>
                 <div className="flex gap-2">
@@ -1273,11 +1281,11 @@ export default function AddEmployeeForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-full mx-auto">
-        <Card className="bg-white shadow-lg">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-full">
+        <Card className="!p-0 md:!p-0">
           <CardHeader>
-            <CardTitle className="text-2xl">Add New Employee</CardTitle>
+            <CardTitle className="text-xl md:text-2xl">Add New Employee</CardTitle>
             <CardDescription>
               Fill in the employee details to add them to the system
             </CardDescription>
@@ -1313,11 +1321,21 @@ export default function AddEmployeeForm() {
           </CardHeader>
 
           <CardContent className="p-6">
-            {submitError && (
+            {submitError ? (
               <div className="mb-6 p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
                 {submitError}
               </div>
+            ) : (
+              <></>
             )}
+            {phoneError ? (
+              <div className="mb-6 p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
+                {phoneError}
+              </div>
+            ) : (
+              <></>
+            )}
+
 
             <form onSubmit={handleSubmit} className="space-y-8 w-full">
               {/* Profile Picture Upload */}
@@ -1400,7 +1418,6 @@ export default function AddEmployeeForm() {
                   >
                     Clear Form
                   </Button>
-
                 </div>
 
                 <div className="flex gap-2">

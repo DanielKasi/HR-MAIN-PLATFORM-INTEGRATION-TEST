@@ -21,6 +21,7 @@ interface PhoneNumberInputProps {
   error?: string | null;
   setError?: (error: string | null) => void;
   defaultCountry?: ICountry | null;
+  defaultCountryCode?:string|null;
   disabled?: boolean;
 }
 
@@ -34,14 +35,17 @@ export default function PhoneNumberInput({
   setError,
   defaultCountry = null,
   disabled = false,
+  defaultCountryCode=null
 }: PhoneNumberInputProps) {
   const [countries, setCountries] = useState<ICountry[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<ICountry | null>(
     country || defaultCountry,
   );
   const [phoneNumber, setPhoneNumber] = useState<string>(value || "");
-  const [phoneError, setPhoneError] = useState<string | null>(error || null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [isLoadingCountries, setIsLoadingCountries] = useState(true);
+  const [passedDefaultCountryCode, setPassedDefaultCountryCode] = useState<string|null>(null)
+
 
   useEffect(() => {
     setIsLoadingCountries(true);
@@ -50,11 +54,15 @@ export default function PhoneNumberInput({
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setCountries(data);
-          // Default to Uganda if not set
-          if (!selectedCountry) {
+          if(passedDefaultCountryCode){
+            const match = data.find((c) => c.idd?.root === passedDefaultCountryCode);
+            if(match){setSelectedCountry(match)}
+          }
+          else if (!selectedCountry) {
             const ug = data.find((c) => c.cca2 === "UG" || c.name.common === "Uganda");
             if (ug) setSelectedCountry(ug);
           }
+          
         } else {
           toast.error("Failed to load countries data");
         }
@@ -69,12 +77,25 @@ export default function PhoneNumberInput({
     setSelectedCountry(country || defaultCountry || null);
   }, [country, defaultCountry]);
 
-  useEffect(() => {
-    setPhoneNumber(value);
-  }, [value]);
 
   useEffect(() => {
-    if (phoneError && setError) {
+    console.log("\n\n Passed in value for phone number as : ", value)
+    if(value && value != phoneNumber){
+      setPhoneNumber(value);
+    }
+    if(defaultCountryCode && value){
+      setPassedDefaultCountryCode(defaultCountryCode)
+      if(!isValidPhoneNumber(defaultCountryCode+value, defaultCountryCode as CountryCode)){
+        console.log("\n\n Checking validity of number : ", defaultCountryCode+value , "With country code : ", defaultCountryCode)
+        setPhoneError("Invalid phone number");
+      }else{
+        setPhoneError(null)
+      }
+    }
+  }, [value, defaultCountryCode]);
+
+  useEffect(() => {
+    if (setError) {
       setError(phoneError);
     }
   }, [phoneError]);
@@ -103,16 +124,18 @@ export default function PhoneNumberInput({
     });
   };
 
-  const handlePhoneChange = (value: string) => {
-    // Remove all non-digit characters and any country code if present
+  const cleanPhoneNUmber = (value: string) => {
     let sanitizedValue = value.replace(/\D/g, "");
     const countryCode = getCountryCode().replace(/\D/g, "");
 
-    // If the input starts with the country code, remove it
     if (sanitizedValue.startsWith(countryCode)) {
       sanitizedValue = sanitizedValue.slice(countryCode.length);
     }
+    return sanitizedValue
+  }
 
+  const handlePhoneChange = (value: string) => {
+    let sanitizedValue = cleanPhoneNUmber(value)
     setPhoneNumber(sanitizedValue);
 
     if (selectedCountry && sanitizedValue) {
