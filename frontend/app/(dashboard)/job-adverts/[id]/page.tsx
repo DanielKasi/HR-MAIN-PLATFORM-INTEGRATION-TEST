@@ -320,11 +320,14 @@ export default function JobAdvertDetailsPage() {
                   </h3>
                   <div className="bg-muted/50 p-4 rounded-lg space-y-3">
                     <div className="flex items-center justify-between">
-                      {/* <h4 className="text-xl font-semibold">{jobPosition.name}</h4> */}
+                      {
+                        jobPosition.salary_max || jobPosition.salary_min ? (
                       <div className="flex items-center gap-1 text-lg font-bold text-green-600">
                         UGX {" "}
                         {formatCurrency(jobPosition.salary_min || 0)} - {formatCurrency(jobPosition.salary_max || 0)}
                       </div>
+                        ):<> </>
+                      }
                     </div>
                     {jobPosition.description && (
                       <RichTextDisplay className="text-sm text-muted-foreground leading-relaxed" htmlContent={jobPosition.description} />
