@@ -577,7 +577,7 @@ export default function LandingPage() {
                   Transform Your HR Operations
                 </h2>
                 <p className="text-lg text-muted-foreground md:text-xl/relaxed">
-                  Join thousands of companies that trust BAIFAM to streamline their HR processes and drive business growth
+                  Join thousands of companies that trust PERACOSOFT to streamline their HR processes and drive business growth
                 </p>
               </div>
             </motion.div>

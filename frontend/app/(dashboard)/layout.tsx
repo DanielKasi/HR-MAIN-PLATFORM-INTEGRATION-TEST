@@ -128,7 +128,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
 
   const InstitutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
   const [InstitutionLogo, setInstitutionLogo] = useState<string | null>(null);
-  const [InstitutionName, setInstitutionName] = useState("BAIFAM HR");
+  const [InstitutionName, setInstitutionName] = useState("PERACOSOFT");
   const [filteredNavItems, setFilteredNavItems] = useState<NavItem[]>([]);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
