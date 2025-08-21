@@ -9,7 +9,11 @@ import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Button} from "@/components/ui/button";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import type {IAttendance} from "@/types/types.utils";
-
+import EmployeeLeaveBalances from "@/components/employee/employee-leave-balances";
+import EmployeeLeaveApplications from "@/components/employee/employee-leave-applications";
+import EmployeeDiscipline from "@/components/employee/employee-discipline";
+import AssetRequests from "@/components/employee/asset-request";
+import EmployeeAssetAllocations from "@/components/employee/asset-allocation";
 import {DocumentGenerationDialog} from "@/components/document-generation-dialog";
 import {
   Mail,
@@ -37,13 +41,15 @@ export default function EmployeeProfile() {
   const [error, setError] = useState<string | null>(null);
   const [showDocumentDialog, setShowDocumentDialog] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "attendance" | "payroll" | "assets" | "projects" | "documents" | "discipline"
+    "attendance" | "payroll" | "assets" | "projects" | "documents" | "discipline" | "leave"
   >("attendance");
   const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
   const [attendancePage, setAttendancePage] = useState(1);
   const [totalAttendanceRecords, setTotalAttendanceRecords] = useState(0);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [leaveSubTab, setLeaveSubTab] = useState<"balances" | "applications">("balances");
+  const [assetSubTab, setAssetSubTab] = useState<"requests" | "allocations">("requests");
   const [statusFilter, setStatusFilter] = useState("all");
   const ATTENDANCE_PAGE_SIZE = 10;
 
@@ -551,11 +557,13 @@ export default function EmployeeProfile() {
                     <div className="flex gap-2 md:gap-4 lg:gap-8 min-w-max">
                       {[
                         {id: "attendance", label: "Attendance"},
-                        {id: "payroll", label: "Payroll & Finance"},
-                        {id: "assets", label: "Assets Assigned"},
-                        {id: "projects", label: "Projects Assigned"},
-                        {id: "documents", label: "Documents"},
                         {id: "discipline", label: "Discipline"},
+                        {id: "leave", label: "Leave"},
+                        {id: "assets", label: "Assets"},
+                        //{id: "payroll", label: "Payroll & Finance"},
+                        // {id: "assets", label: "Assets Assigned"},
+                        // {id: "projects", label: "Projects Assigned"},
+                        // {id: "documents", label: "Documents"},
                       ].map((tab) => (
                         <button
                           key={tab.id}
@@ -738,12 +746,139 @@ export default function EmployeeProfile() {
                       </div>
                     </div>
                   )}
+                  {activeTab === "discipline" && (
+                    <EmployeeDiscipline
+                      employeeId={employeeId}
+                      institutionId={selectedInstitution?.id || 0}
+                    />
+                  )}
 
-                  {activeTab !== "attendance" && (
+                  {activeTab === "leave" && (
+                    <div className="space-y-6">
+                      {/* Leave Sub-tabs */}
+                      <div className="border-b border-[#e8e8f2]">
+                        <div className="flex gap-8">
+                          <button
+                            onClick={() => setLeaveSubTab("balances")}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${
+                              leaveSubTab === "balances"
+                                ? "text-[#162032] font-semibold"
+                                : "text-[#848496] hover:text-[#162032]"
+                            }`}
+                          >
+                            Leave Balances
+                            {leaveSubTab === "balances" && (
+                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => setLeaveSubTab("applications")}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${
+                              leaveSubTab === "applications"
+                                ? "text-[#162032] font-semibold"
+                                : "text-[#848496] hover:text-[#162032]"
+                            }`}
+                          >
+                            Leave Applications
+                            {leaveSubTab === "applications" && (
+                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Leave Sub-tab Content */}
+                      {leaveSubTab === "balances" && (
+                        <EmployeeLeaveBalances
+                          employeeId={employeeId}
+                          institutionId={selectedInstitution?.id || 0}
+                        />
+                      )}
+
+                      {leaveSubTab === "applications" && (
+                        <EmployeeLeaveApplications
+                          employeeId={employeeId}
+                          institutionId={selectedInstitution?.id || 0}
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === "payroll" && (
                     <div className="text-center py-12">
                       <p className="text-[#848496]">
-                        Content for {activeTab} tab will be implemented here.
+                        Payroll & Finance content will be implemented here.
                       </p>
+                    </div>
+                  )}
+                  {activeTab === "assets" && (
+                    <div className="space-y-6">
+                      {/* Asset Sub-tabs */}
+                      <div className="border-b border-[#e8e8f2]">
+                        <div className="flex gap-8">
+                          <button
+                            onClick={() => setAssetSubTab("requests")}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${
+                              assetSubTab === "requests"
+                                ? "text-[#162032] font-semibold"
+                                : "text-[#848496] hover:text-[#162032]"
+                            }`}
+                          >
+                            Asset Requests
+                            {assetSubTab === "requests" && (
+                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => setAssetSubTab("allocations")}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${
+                              assetSubTab === "allocations"
+                                ? "text-[#162032] font-semibold"
+                                : "text-[#848496] hover:text-[#162032]"
+                            }`}
+                          >
+                            Asset Allocations
+                            {assetSubTab === "allocations" && (
+                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Asset Sub-tab Content */}
+                      {assetSubTab === "requests" && (
+                        <AssetRequests
+                          employeeId={employee.employee_id}
+                          isEmployeeView={true}
+                          showHeader={true}
+                          showCreateButton={true}
+                          showStats={true}
+                          compact={true}
+                        />
+                      )}
+
+                      {assetSubTab === "allocations" && (
+                        <EmployeeAssetAllocations
+                          employeeId={employee.employee_id}
+                          institutionId={selectedInstitution?.id}
+                          showHeader={false}
+                          showStats={true}
+                          compact={false}
+                        />
+                      )}
+                    </div>
+                  )}
+                  {activeTab === "projects" && (
+                    <div className="text-center py-12">
+                      <p className="text-[#848496]">
+                        Projects Assigned content will be implemented here.
+                      </p>
+                    </div>
+                  )}
+
+                  {activeTab === "documents" && (
+                    <div className="text-center py-12">
+                      <p className="text-[#848496]">Documents content will be implemented here.</p>
                     </div>
                   )}
                 </CardContent>

@@ -1639,10 +1639,12 @@ export const getDisciplinaryActions = async ({
   institutionId,
   page = 1,
   search,
+  employeeId, 
 }: {
   institutionId?: number;
   page?: number;
   search?: string;
+  employeeId?: string;
 }): Promise<IPaginatedResponse<DisciplinaryActionAPIResponse>> => {
   try {
     const params = new URLSearchParams({
@@ -1650,6 +1652,9 @@ export const getDisciplinaryActions = async ({
     });
     if (search) {
       params.append("search", search);
+    }
+    if (employeeId) {
+      params.append("employee_id", employeeId);
     }
     const response = await apiRequest.get(`discipline/disciplinary-actions/?institution=${institutionId}&${params.toString()}`);
     return response.data as IPaginatedResponse<DisciplinaryActionAPIResponse>;
@@ -1900,15 +1905,22 @@ export const createLeaveApplication = async ({
 
 export const getLeaveApplications = async ({
   institutionId,
+  employeeId, 
 }: {
   institutionId: number;
+  employeeId?: string; 
 }): Promise<ILeaveRequest[]> => {
   try {
-    const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-applications/`);
+    let endpoint = `leave-mgt/${institutionId}/leave-applications/`;
+    
+    if (employeeId) {
+      endpoint += `?employee_id=${employeeId}`;
+    }
+    
+    const response = await apiRequest.get(endpoint);
     return (response.data as IPaginatedResponse<ILeaveRequest>).results;
   } catch (error) {
-    // console.error("Failed to fetch leave applications:", error);
-    throw error
+    throw error;
   }
 };
 
@@ -2218,21 +2230,31 @@ export const getPaginatedAllowanceTypesFromUrl = async ({ url }: { url: string }
   }
 };
 
-// Get all leave balances for an institution
-export const getAllLeaveBalances = async ({ institutionId }: { institutionId: number }) => {
-  try {
-    const endpoint = `leave-mgt/${institutionId}/leave-balances/`;
-    const response = await apiRequest.get(endpoint);
-    const data = response.data as IPaginatedResponse<ILeaveBalance>;
 
-    // Return the results array instead of the entire response
-    return data.results;
-  } catch (error) {
-    throw error;
-  }
+export const getAllLeaveBalances = async ({ 
+  institutionId, 
+  employeeId 
+}: { 
+  institutionId: number;
+  employeeId?: string; 
+}) => {   
+  try {     
+    let endpoint = `leave-mgt/${institutionId}/leave-balances/`;
+    
+    if (employeeId) {
+      endpoint += `?employee_id=${employeeId}`;
+    }
+    
+    const response = await apiRequest.get(endpoint);     
+    const data = response.data as IPaginatedResponse<ILeaveBalance>;      
+  
+    return data.results;   
+  } catch (error) {     
+    throw error;   
+  } 
 };
 
-// Create a new leave balance
+
 export const createLeaveBalance = async ({
   institutionId,
   leaveBalanceData,
@@ -4567,36 +4589,45 @@ export const assetsAPI = {
   },
 
   getPaginatedAssetRequests: async ({ 
-    institutionId, 
-    page = 1, 
-    search, 
-    status 
-  }: { 
-    institutionId: number, 
-    page?: number;
-    search?: string;
-    status?: string;
-  }): Promise<IPaginatedResponse<IAssetRequest>> => {
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-      });
+  institutionId, 
+  page = 1, 
+  search, 
+  employeeId,
+  status 
+}: { 
+  institutionId: number, 
+  page?: number;
+  search?: string;
+  status?: string;
+  employeeId?: string; 
+}): Promise<IPaginatedResponse<IAssetRequest>> => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
 
-      if (search) {
-        params.append("search", search);
-      }
-      if (status && status !== "all") {
-        params.append("asset_request_status", status);
-      }
-      
-      const endpoint = `/assets/asset-requests/?${params.toString()}`;
-      const response = await apiRequest.get(endpoint);
-      return response.data as IPaginatedResponse<IAssetRequest>;
-    } catch (error) {
-      console.error("Error fetching paginated asset requests:", error);
-      throw error;
+    if (search) {
+      params.append("search", search);
     }
-  },
+    if (status && status !== "all") {
+      params.append("asset_request_status", status);
+    }
+    if (employeeId) {
+      params.append("employee_id", employeeId);
+    }
+    
+    const endpoint = `/assets/asset-requests/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IAssetRequest>;
+  } catch (error: any) {
+    if (error?.response?.data?.detail?.includes("has no profile") || 
+        error?.detail?.includes("has no profile") || 
+        error?.message?.includes("has no profile")) {
+    }
+    
+    throw error;
+  }
+},
 
   getPaginatedAssetRequestsFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAssetRequest>> => {
     try {
@@ -4659,37 +4690,42 @@ export const assetsAPI = {
     }
   },
 
-  getPaginatedAssetAllocations: async ({ 
-    institutionId, 
-    page = 1, 
-    search, 
-    status 
-  }: { 
-    institutionId: number, 
-    page?: number;
-    search?: string;
-    status?: string;
-  }): Promise<IPaginatedResponse<IAssetAllocation>> => {
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-      });
+ getPaginatedAssetAllocations: async ({ 
+  institutionId, 
+  page = 1, 
+  search, 
+  status,
+  employeeId 
+}: { 
+  institutionId: number, 
+  page?: number;
+  search?: string;
+  status?: string;
+  employeeId?: string;
+}): Promise<IPaginatedResponse<IAssetAllocation>> => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
 
-      if (search) {
-        params.append("search", search);
-      }
-      if (status && status !== "all") {
-        params.append("allocation_status", status);
-      }
-      
-      const endpoint = `/assets/asset-allocations/?${params.toString()}`;
-      const response = await apiRequest.get(endpoint);
-      return response.data as IPaginatedResponse<IAssetAllocation>;
-    } catch (error) {
-      console.error("Error fetching paginated asset allocations:", error);
-      throw error;
+    if (search) {
+      params.append("search", search);
     }
-  },
+    if (status && status !== "all") {
+      params.append("allocation_status", status);
+    }
+    if (employeeId) {
+      params.append("employee_id", employeeId);
+    }
+    
+    const endpoint = `/assets/asset-allocations/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IAssetAllocation>;
+  } catch (error) {
+    console.error("Error fetching paginated asset allocations:", error);
+    throw error;
+  }
+},
 
   getPaginatedAssetAllocationsFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAssetAllocation>> => {
     try {

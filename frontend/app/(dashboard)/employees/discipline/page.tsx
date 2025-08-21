@@ -45,34 +45,22 @@ import {
   Loader2,
   MoreVertical,
 } from "lucide-react";
-import {getDisciplinaryActions, deleteDisciplinaryAction, getPaginatedDisciplinaryActionsFromUrl} from "@/lib/utils";
-import {transformDisciplinaryActionData, PERMISSION_CODES} from "@/types/types.utils";
+import {
+  getDisciplinaryActions,
+  deleteDisciplinaryAction,
+  getPaginatedDisciplinaryActionsFromUrl,
+} from "@/lib/utils";
+import {
+  transformDisciplinaryActionData,
+  PERMISSION_CODES,
+  DisciplinaryAction,
+} from "@/types/types.utils";
 import {toast} from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import {TableSkeleton} from "@/components/common/table-skeleton";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-
-interface DisciplinaryAction {
-  id: string;
-  employee_name: string;
-  employee_department: string;
-  discipline_type: string;
-  discipline_severity: "low" | "medium" | "high" | "critical";
-  incident_date: string;
-  reported_date: string;
-  description: string;
-  evidence: string;
-  reported_by: string;
-  assigned_to: string;
-  status: "pending" | "in_progress" | "completed" | "dismissed";
-  action_taken: string;
-  resolution_date: string;
-  follow_up_required: boolean;
-  follow_up_date: string;
-  notes: string;
-}
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
 
 export default function DisciplinaryActionsPage() {
   const router = useRouter();
@@ -147,7 +135,9 @@ export default function DisciplinaryActionsPage() {
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900">Disciplinary Actions</h1>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900">
+            Disciplinary Actions
+          </h1>
           <Button onClick={handleAddNewAction} className="">
             <Plus className="h-4 w-4 mr-2" />
             <span className="hidden md:inline">Add New Action</span>
@@ -200,7 +190,7 @@ export default function DisciplinaryActionsPage() {
         </div>
       </div>
 
-      <PaginatedTableWrapper<any, { institutionId?: number; search?: string }>
+      <PaginatedTableWrapper<any, {institutionId?: number; search?: string}>
         fetchFirstPage={async (query) => {
           const res = await getDisciplinaryActions({
             institutionId: selectedInstitution?.id,
@@ -209,10 +199,10 @@ export default function DisciplinaryActionsPage() {
           });
           return res;
         }}
-        fetchFromUrl={async ({ url }) => await getPaginatedDisciplinaryActionsFromUrl({ url })}
+        fetchFromUrl={async ({url}) => await getPaginatedDisciplinaryActionsFromUrl({url})}
         deps={[selectedInstitution?.id, searchTerm]}
       >
-        {({ data, loading, refresh }) => {
+        {({data, loading, refresh}) => {
           const apiResults = data?.results || [];
           const disciplinaryActions = transformDisciplinaryActionData(apiResults);
 
@@ -220,9 +210,11 @@ export default function DisciplinaryActionsPage() {
             const matchesSearch =
               action.employee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
               action.discipline_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              (action.employee_department && action.employee_department.toLowerCase().includes(searchTerm.toLowerCase()));
+              (action.employee_department &&
+                action.employee_department.toLowerCase().includes(searchTerm.toLowerCase()));
             const matchesStatus = statusFilter === "all" || action.status === statusFilter;
-            const matchesSeverity = severityFilter === "all" || action.discipline_severity === severityFilter;
+            const matchesSeverity =
+              severityFilter === "all" || action.discipline_severity === severityFilter;
             return matchesSearch && matchesStatus && matchesSeverity;
           });
 
@@ -295,15 +287,21 @@ export default function DisciplinaryActionsPage() {
                             <TableCell>
                               <div>
                                 <div className="font-medium">{action.employee_name}</div>
-                                {action.employee_department && action.employee_department.trim() && (
-                                  <div className="text-sm text-muted-foreground">{action.employee_department}</div>
-                                )}
+                                {action.employee_department &&
+                                  action.employee_department.trim() && (
+                                    <div className="text-sm text-muted-foreground">
+                                      {action.employee_department}
+                                    </div>
+                                  )}
                               </div>
                             </TableCell>
                             <TableCell>
                               <div className="space-y-1">
                                 <div className="font-medium">{action.discipline_type}</div>
-                                <Badge variant="outline" className={getSeverityColor(action.discipline_severity)}>
+                                <Badge
+                                  variant="outline"
+                                  className={getSeverityColor(action.discipline_severity)}
+                                >
                                   {action.discipline_severity.toUpperCase()}
                                 </Badge>
                               </div>
@@ -315,7 +313,10 @@ export default function DisciplinaryActionsPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline" className={`${getStatusColor(action.status)} flex items-center gap-1 w-fit`}>
+                              <Badge
+                                variant="outline"
+                                className={`${getStatusColor(action.status)} flex items-center gap-1 w-fit`}
+                              >
                                 {getStatusIcon(action.status)}
                                 {action.status.replace("_", " ").toUpperCase()}
                               </Badge>
@@ -328,8 +329,13 @@ export default function DisciplinaryActionsPage() {
                             </TableCell>
                             <TableCell>
                               {action.follow_up_required ? (
-                                <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">
-                                  {action.follow_up_date ? new Date(action.follow_up_date).toLocaleDateString() : "Required"}
+                                <Badge
+                                  variant="outline"
+                                  className="bg-orange-100 text-orange-800 border-orange-200"
+                                >
+                                  {action.follow_up_date
+                                    ? new Date(action.follow_up_date).toLocaleDateString()
+                                    : "Required"}
                                 </Badge>
                               ) : (
                                 <span className="text-muted-foreground">None</span>
@@ -343,20 +349,32 @@ export default function DisciplinaryActionsPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DISCIPLINE_CASES}>
+                                  <ProtectedComponent
+                                    permissionCode={PERMISSION_CODES.CAN_VIEW_DISCIPLINE_CASES}
+                                  >
                                     <DropdownMenuItem onClick={() => setSelectedAction(action)}>
                                       <Eye className="mr-2 h-4 w-4" />
                                       View Details
                                     </DropdownMenuItem>
                                   </ProtectedComponent>
-                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_DISCIPLINE_CASES}>
+                                  <ProtectedComponent
+                                    permissionCode={PERMISSION_CODES.CAN_EDIT_DISCIPLINE_CASES}
+                                  >
                                     <DropdownMenuItem onClick={() => handleEditAction(action.id)}>
                                       <Edit className="mr-2 h-4 w-4" />
                                       Edit
                                     </DropdownMenuItem>
                                   </ProtectedComponent>
-                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_DISCIPLINE_CASES}>
-                                    <DropdownMenuItem onClick={() => { setActionToDelete(action.id); setIsDeleteDialogOpen(true); }} className="text-red-600">
+                                  <ProtectedComponent
+                                    permissionCode={PERMISSION_CODES.CAN_DELETE_DISCIPLINE_CASES}
+                                  >
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setActionToDelete(action.id);
+                                        setIsDeleteDialogOpen(true);
+                                      }}
+                                      className="text-red-600"
+                                    >
                                       <Trash2 className="mr-2 h-4 w-4" />
                                       Delete
                                     </DropdownMenuItem>
@@ -383,10 +401,15 @@ export default function DisciplinaryActionsPage() {
                   <DialogHeader>
                     <DialogTitle>Confirm Deletion</DialogTitle>
                     <DialogDescription>
-                      Are you sure you want to delete the disciplinary action for {" "}
-                      {(actionToDelete && filteredActions.find((action) => action.id === actionToDelete)?.employee_name) ||
+                      Are you sure you want to delete the disciplinary action for{" "}
+                      {(actionToDelete &&
+                        filteredActions.find((action) => action.id === actionToDelete)
+                          ?.employee_name) ||
                         "this employee"}{" "}
-                      ({(actionToDelete && filteredActions.find((action) => action.id === actionToDelete)?.discipline_type) ||
+                      (
+                      {(actionToDelete &&
+                        filteredActions.find((action) => action.id === actionToDelete)
+                          ?.discipline_type) ||
                         "this type"}
                       )? This action cannot be undone.
                     </DialogDescription>
@@ -435,22 +458,33 @@ export default function DisciplinaryActionsPage() {
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Employee</Label>
                   <p className="text-lg font-semibold">{selectedAction.employee_name}</p>
-                  {selectedAction.employee_department && selectedAction.employee_department.trim() && (
-                    <p className="text-sm text-muted-foreground">{selectedAction.employee_department}</p>
-                  )}
+                  {selectedAction.employee_department &&
+                    selectedAction.employee_department.trim() && (
+                      <p className="text-sm text-muted-foreground">
+                        {selectedAction.employee_department}
+                      </p>
+                    )}
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Discipline Type</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Discipline Type
+                  </Label>
                   <div className="flex items-center gap-2 mt-1">
                     <p className="font-medium">{selectedAction.discipline_type}</p>
-                    <Badge variant="outline" className={getSeverityColor(selectedAction.discipline_severity)}>
+                    <Badge
+                      variant="outline"
+                      className={getSeverityColor(selectedAction.discipline_severity)}
+                    >
                       {selectedAction.discipline_severity.toUpperCase()}
                     </Badge>
                   </div>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Status</Label>
-                  <Badge variant="outline" className={`${getStatusColor(selectedAction.status)} flex items-center gap-1 w-fit mt-1`}>
+                  <Badge
+                    variant="outline"
+                    className={`${getStatusColor(selectedAction.status)} flex items-center gap-1 w-fit mt-1`}
+                  >
                     {getStatusIcon(selectedAction.status)}
                     {selectedAction.status.replace("_", " ").toUpperCase()}
                   </Badge>
@@ -459,7 +493,9 @@ export default function DisciplinaryActionsPage() {
               <div className="space-y-4">
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Incident Date</Label>
-                  <p className="font-medium">{new Date(selectedAction.incident_date).toLocaleDateString()}</p>
+                  <p className="font-medium">
+                    {new Date(selectedAction.incident_date).toLocaleDateString()}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Reported By</Label>
@@ -483,8 +519,12 @@ export default function DisciplinaryActionsPage() {
                 )}
                 {selectedAction.action_taken && (
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Action Taken</Label>
-                    <p className="mt-1 p-3 bg-green-50 rounded-md border border-green-200">{selectedAction.action_taken}</p>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Action Taken
+                    </Label>
+                    <p className="mt-1 p-3 bg-green-50 rounded-md border border-green-200">
+                      {selectedAction.action_taken}
+                    </p>
                   </div>
                 )}
                 {selectedAction.notes && (
