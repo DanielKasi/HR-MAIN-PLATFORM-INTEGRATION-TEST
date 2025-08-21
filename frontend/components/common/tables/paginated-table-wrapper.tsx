@@ -108,7 +108,7 @@ export function PaginatedTableWrapper<T, Q = unknown>({
       {showFooter && data && (
         <div className={cn("flex items-center justify-between pt-2", footerClassName)}>
           <p className="text-sm text-gray-500">
-            Showing {data.results.length} results of {data.count} total
+            Showing {data.results?.length} results of {data.count} total
           </p>
           <div className="flex items-center gap-2">
             <Button

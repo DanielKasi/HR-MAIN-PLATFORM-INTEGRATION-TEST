@@ -67,6 +67,8 @@ import {
   getJobApplications,
   getJobPositionAdverts,
   updateJobApplicationStatus,
+  getPaginatedJobApplications,
+  getPaginatedJobApplicationsFromUrl,
 } from "@/lib/utils";
 import type {
   JobApplication,
@@ -102,6 +104,7 @@ import type {
 } from "@/types/types.utils";
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select";
 import { TableSkeleton } from "@/components/common/table-skeleton";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
@@ -173,6 +176,9 @@ export default function ApplicationsPage() {
   });
 
   const [interviewErrors, setInterviewErrors] = useState<any>({});
+
+  // Add refresh function for PaginatedTableWrapper
+  const [refreshFunction, setRefreshFunction] = useState<(() => void) | null>(null);
 
   // Add these helper functions
   const updateStageFormData = (field: string, value: any) => {
@@ -1534,376 +1540,435 @@ export default function ApplicationsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {safeFilteredApplications.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">
-                {searchTerm ||
-                  statusFilter !== "all" ||
-                  jobFilter !== "all" ||
-                  dateFilter.startDate ||
-                  dateFilter.endDate
-                  ? "No applications match your current filters."
-                  : isLoading
-                    ? "Loading applications..."
-                    : "No applications have been submitted yet."}
-              </p>
-              {applications.length > 0 && !isLoading && (
-                <Button variant="outline" onClick={clearAllFilters} className="mt-2">
-                  Clear Filters
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div>
-              <Table className="min-w-full">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <div className="flex items-center">
-                        <Checkbox
-                          checked={
-                            currentApplications.length > 0 &&
-                            (() => {
-                              // Count different statuses on current page
-                              const statusCounts = currentApplications.reduce(
-                                (acc, a) => {
-                                  acc[a.status] = (acc[a.status] || 0) + 1;
-                                  return acc;
-                                },
-                                {} as Record<string, number>,
-                              );
+          <PaginatedTableWrapper<JobApplication>
+            fetchFirstPage={async () => {
+              if (!selectedInstitution) throw new Error("No institution selected");
+              return await getPaginatedJobApplications({
+                institutionId: selectedInstitution.id,
+                page: 1,
+                search: searchTerm || undefined,
+                status: statusFilter !== "all" ? statusFilter : undefined,
+                jobPositionAdvert: jobFilter !== "all" ? jobFilter : undefined,
+              });
+            }}
+            fetchFromUrl={async (args: { url: string }) => getPaginatedJobApplicationsFromUrl(args.url)}
+            deps={[selectedInstitution?.id, searchTerm, statusFilter, jobFilter]}
+            className="space-y-4"
+            footerClassName="pt-4"
+          >
+            {({data, loading, refresh}) => {
+              if (loading) {
+                return <TableSkeleton rows={10} columns={10} />;
+              }
 
-                              const hasShortlisted = statusCounts.shortlisted > 0;
-                              const hasNewOrReviewed =
-                                (statusCounts.new || 0) + (statusCounts.reviewed || 0) > 0;
+              if (!data || data.results.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-500">
+                    {searchTerm || statusFilter !== "all" || jobFilter !== "all" || dateFilter.startDate || dateFilter.endDate
+                      ? "No applications match your current filters."
+                      : "No applications have been submitted yet."}
+                  </div>
+                );
+              }
 
-                              let selectableApps: typeof currentApplications = [];
+              // Apply client-side filters (date filter and sorting)
+              let filteredResults = data.results.filter((application) => {
+                if (dateFilter.startDate || dateFilter.endDate) {
+                  const appDate = new Date(application.application_date);
+                  const startDate = dateFilter.startDate ? new Date(dateFilter.startDate) : null;
+                  const endDate = dateFilter.endDate ? new Date(dateFilter.endDate) : null;
 
-                              // Determine which apps should be selectable based on the mix
-                              if (hasShortlisted && !hasNewOrReviewed) {
-                                // Only shortlisted apps
-                                selectableApps = currentApplications.filter(
-                                  (app) => app.status === "shortlisted",
-                                );
-                              } else if (!hasShortlisted && hasNewOrReviewed) {
-                                // Only new/reviewed apps
-                                selectableApps = currentApplications.filter(
-                                  (app) => app.status === "new" || app.status === "reviewed",
-                                );
-                              } else if (hasShortlisted && hasNewOrReviewed) {
-                                // Mixed: only select new/reviewed (protect shortlisted)
-                                selectableApps = currentApplications.filter(
-                                  (app) => app.status === "new" || app.status === "reviewed",
-                                );
-                              }
+                  if (startDate && appDate < startDate) return false;
+                  if (endDate && appDate > endDate) return false;
+                }
 
-                              // Check if all selectable apps are selected
-                              return (
-                                selectableApps.length > 0 &&
-                                selectableApps.every((app) => selectedApplications.includes(app.id))
-                              );
-                            })()
-                          }
-                          onCheckedChange={handleSelectAll}
-                          title={(() => {
-                            const statusCounts = currentApplications.reduce(
-                              (acc, a) => {
-                                acc[a.status] = (acc[a.status] || 0) + 1;
-                                return acc;
-                              },
-                              {} as Record<string, number>,
-                            );
+                if (statusFilter !== "all") {
+                  if (application.status !== statusFilter) return false;
+                }
+                return true;
+              });
 
-                            const hasShortlisted = statusCounts.shortlisted > 0;
-                            const hasNewOrReviewed =
-                              (statusCounts.new || 0) + (statusCounts.reviewed || 0) > 0;
+              // Apply sorting
+              const sortedResults = [...filteredResults].sort((a, b) => {
+                let aValue: string, bValue: string;
 
-                            if (hasShortlisted && !hasNewOrReviewed) {
-                              return "Select all shortlisted applications";
-                            } else if (!hasShortlisted && hasNewOrReviewed) {
-                              return "Select all new and reviewed applications";
-                            } else if (hasShortlisted && hasNewOrReviewed) {
-                              return "Select new and reviewed applications (protecting shortlisted)";
-                            }
-                            return "Select applications";
-                          })()}
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead>Applicant</TableHead>
-                    <TableHead>Job Position/ Title </TableHead>
-                    <TableHead
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort("posted_date")}
-                    >
-                      <div className="flex items-center gap-1">
-                        Posted Date
-                        {sortField === "posted_date" &&
-                          (sortDirection === "asc" ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          ))}
-                      </div>
-                    </TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort("application_date")}
-                    >
-                      <div className="flex items-center gap-1">
-                        Applied
-                        {sortField === "application_date" &&
-                          (sortDirection === "asc" ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          ))}
-                      </div>
-                    </TableHead>
-                    <TableHead>Documents</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentApplications.map((application) => (
-                    <TableRow key={application.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedApplications.includes(application.id)}
-                          onCheckedChange={(checked: any) =>
-                            handleSelectApplication(application.id, checked as boolean)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-medium">{application.applicant_name}</div>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <User className="mr-1 h-3 w-3" />
-                            {application.gender}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-medium">
-                            {application.job_position_advert_job_details?.name ||
-                              `Advert #${application.job_position_advert}`}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center text-sm">
-                          <Calendar className="mr-1 h-3 w-3" />
-                          {formatDate(application.job_position_advert_job_details.job_posted_date)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center text-sm">
-                            <Mail className="mr-1 h-3 w-3" />
-                            {application.applicant_email}
-                          </div>
-                          {application.applicant_phone && (
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Phone className="mr-1 h-3 w-3" />
-                              {application.applicant_phone}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center text-sm">
-                            <MapPin className="mr-1 h-3 w-3" />
-                            {application.country}
-                          </div>
-                          {application.state && (
-                            <div className="text-sm text-muted-foreground">{application.state}</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[application.status]}>
-                          {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">{sourceLabels[application.source]}</span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center text-sm">
-                          <Calendar className="mr-1 h-3 w-3" />
-                          {formatDate(application.application_date)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="py-1 flex flex-col gap-2 items-start">
-                          <Button variant="link" size="sm" className="h-auto p-0" asChild>
-                            <a
-                              href={`${process.env.NEXT_PUBLIC_BASE_URL}${application.resume}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              Resume
-                            </a>
-                          </Button>
-                          {application.cover_letter && (
-                            <Button variant="link" size="sm" className="h-auto p-0" asChild>
-                              <a
-                                href={`${process.env.NEXT_PUBLIC_BASE_URL}${application.cover_letter}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                Cover Letter
-                              </a>
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="!bg-white shadow-md shadow-black/20 rounded-md border border-black/20"
-                          >
-                            <DropdownMenuItem onClick={() => handleViewApplication(application.id)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditApplication(application.id)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Application
-                            </DropdownMenuItem>
+                if (sortField === "application_date") {
+                  aValue = a.application_date;
+                  bValue = b.application_date;
+                } else {
+                  aValue = a.job_position_advert_job_details?.job_posted_date || "";
+                  bValue = b.job_position_advert_job_details?.job_posted_date || "";
+                }
 
-                            {/* Review option - only for new applications */}
-                            {application.status === "new" && (
-                              <DropdownMenuItem
-                                onClick={() => handleIndividualAction(application.id, "reviewed")}
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                Mark as Reviewed
-                              </DropdownMenuItem>
-                            )}
+                const comparison = new Date(aValue).getTime() - new Date(bValue).getTime();
+                return sortDirection === "asc" ? comparison : -comparison;
+              });
 
-                            {/* Shortlist option - only for reviewed applications */}
-                            {application.status === "reviewed" && (
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleIndividualAction(application.id, "shortlisted")
+              if (sortedResults.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-500">
+                    No applications found matching the selected date filters.
+                  </div>
+                );
+              }
+
+              return (
+                <>
+                  {/* Desktop Table */}
+                  <div className="hidden sm:block">
+                    <Table className="min-w-full">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12">
+                            <div className="flex items-center">
+                              <Checkbox
+                                checked={
+                                  sortedResults.length > 0 &&
+                                  (() => {
+                                    // Count different statuses on current page
+                                    const statusCounts = sortedResults.reduce(
+                                      (acc, a) => {
+                                        acc[a.status] = (acc[a.status] || 0) + 1;
+                                        return acc;
+                                      },
+                                      {} as Record<string, number>,
+                                    );
+
+                                    const hasShortlisted = statusCounts.shortlisted > 0;
+                                    const hasNewOrReviewed =
+                                      (statusCounts.new || 0) + (statusCounts.reviewed || 0) > 0;
+
+                                    let selectableApps: typeof sortedResults = [];
+
+                                    // Determine which apps should be selectable based on the mix
+                                    if (hasShortlisted && !hasNewOrReviewed) {
+                                      // Only shortlisted apps
+                                      selectableApps = sortedResults.filter(
+                                        (app) => app.status === "shortlisted",
+                                      );
+                                    } else if (!hasShortlisted && hasNewOrReviewed) {
+                                      // Only new/reviewed apps
+                                      selectableApps = sortedResults.filter(
+                                        (app) => app.status === "new" || app.status === "reviewed",
+                                      );
+                                    } else if (hasShortlisted && hasNewOrReviewed) {
+                                      // Mixed: only select new/reviewed (protect shortlisted)
+                                      selectableApps = sortedResults.filter(
+                                        (app) => app.status === "new" || app.status === "reviewed",
+                                      );
+                                    }
+
+                                    // Check if all selectable apps are selected
+                                    return (
+                                      selectableApps.length > 0 &&
+                                      selectableApps.every((app) => selectedApplications.includes(app.id))
+                                    );
+                                  })()
                                 }
-                                disabled={individualLoadingStates[application.id]}
-                              >
-                                {individualLoadingStates[application.id] ? (
-                                  <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2" />
-                                    Shortlisting...
-                                  </>
+                                onCheckedChange={handleSelectAll}
+                                title={(() => {
+                                  const statusCounts = sortedResults.reduce(
+                                    (acc, a) => {
+                                      acc[a.status] = (acc[a.status] || 0) + 1;
+                                      return acc;
+                                    },
+                                    {} as Record<string, number>,
+                                  );
+
+                                  const hasShortlisted = statusCounts.shortlisted > 0;
+                                  const hasNewOrReviewed =
+                                    (statusCounts.new || 0) + (statusCounts.reviewed || 0) > 0;
+
+                                  if (hasShortlisted && !hasNewOrReviewed) {
+                                    return "Select all shortlisted applications";
+                                  } else if (!hasShortlisted && hasNewOrReviewed) {
+                                    return "Select new and reviewed applications (protecting shortlisted)";
+                                  } else if (hasShortlisted && hasNewOrReviewed) {
+                                    return "Select new and reviewed applications (protecting shortlisted)";
+                                  }
+                                  return "Select applications";
+                                })()}
+                              />
+                            </div>
+                          </TableHead>
+                          <TableHead>Applicant</TableHead>
+                          <TableHead>Job Position/ Title </TableHead>
+                          <TableHead
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleSort("posted_date")}
+                          >
+                            <div className="flex items-center gap-1">
+                              Posted Date
+                              {sortField === "posted_date" &&
+                                (sortDirection === "asc" ? (
+                                  <ChevronUp className="h-4 w-4" />
                                 ) : (
-                                  <>
+                                  <ChevronDown className="h-4 w-4" />
+                                ))}
+                            </div>
+                          </TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Location</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Source</TableHead>
+                          <TableHead
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleSort("application_date")}
+                          >
+                            <div className="flex items-center gap-1">
+                              Applied
+                              {sortField === "application_date" &&
+                                (sortDirection === "asc" ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                ))}
+                            </div>
+                          </TableHead>
+                          <TableHead>Documents</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sortedResults.map((application) => (
+                          <TableRow key={application.id}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedApplications.includes(application.id)}
+                                onCheckedChange={(checked: any) =>
+                                  handleSelectApplication(application.id, checked as boolean)
+                                }
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="font-medium">{application.applicant_name}</div>
+                                <div className="flex items-center text-sm text-muted-foreground">
+                                  <User className="mr-1 h-3 w-3" />
+                                  {application.gender}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="font-medium">
+                                  {application.job_position_advert_job_details?.name ||
+                                    `Advert #${application.job_position_advert}`}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center text-sm">
+                                <Calendar className="mr-1 h-3 w-3" />
+                                {formatDate(application.job_position_advert_job_details.job_posted_date)}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="flex items-center text-sm">
+                                  <Mail className="mr-1 h-3 w-3" />
+                                  {application.applicant_email}
+                                </div>
+                                {application.applicant_phone && (
+                                  <div className="flex items-center text-sm text-muted-foreground">
+                                    <Phone className="mr-1 h-3 w-3" />
+                                    {application.applicant_phone}
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="flex items-center text-sm">
+                                  <MapPin className="mr-1 h-3 w-3" />
+                                  {application.country}
+                                </div>
+                                {application.state && (
+                                  <div className="text-sm text-muted-foreground">{application.state}</div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={statusColors[application.status]}>
+                                {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm">{sourceLabels[application.source]}</span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center text-sm">
+                                <Calendar className="mr-1 h-3 w-3" />
+                                {formatDate(application.application_date)}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="py-1 flex flex-col gap-2 items-start">
+                                <Button variant="link" size="sm" className="h-auto p-0" asChild>
+                                  <a
+                                    href={application.resume}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                                  >
+                                    <FileText className="h-3 w-3" />
+                                    Resume
+                                  </a>
+                                </Button>
+                                {application.cover_letter && (
+                                  <Button variant="link" size="sm" className="h-auto p-0" asChild>
+                                    <a
+                                      href={application.cover_letter}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                                    >
+                                      <FileText className="h-3 w-3" />
+                                      Cover Letter
+                                    </a>
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="!h-4 !w-4 text-dark" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleViewApplication(application.id)}>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEditApplication(application.id)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleOpenScheduleInterview(application)}
+                                    disabled={application.status !== "shortlisted"}
+                                  >
+                                    <Calendar className="h-4 w-4 mr-2" />
+                                    Schedule Interview
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleIndividualAction(application.id, "reviewed")}
+                                    disabled={application.status !== "new"}
+                                  >
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    Mark as Reviewed
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleIndividualAction(application.id, "shortlisted")}
+                                    disabled={application.status !== "reviewed"}
+                                  >
                                     <Check className="h-4 w-4 mr-2" />
                                     Shortlist
-                                  </>
-                                )}
-                              </DropdownMenuItem>
-                            )}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleIndividualAction(application.id, "rejected")}
+                                    disabled={application.status !== "new" && application.status !== "reviewed"}
+                                  >
+                                    <X className="h-4 w-4 mr-2" />
+                                    Reject
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
 
-                            {/* Schedule Interview option - only for shortlisted applications */}
-                            {application.status === "shortlisted" && (
+                  {/* Mobile Cards */}
+                  <div className="sm:hidden space-y-3">
+                    {sortedResults.map((application) => (
+                      <div key={application.id} className="bg-gray-50 rounded-lg p-4 border">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <User className="h-4 w-4 text-gray-500" />
+                              <h3 className="font-semibold text-gray-900">
+                                {application.applicant_name}
+                              </h3>
+                            </div>
+                            <div className="space-y-1 mb-2">
+                              <p className="text-sm text-gray-600">
+                                {application.job_position_advert_job_details?.name ||
+                                  `Advert #${application.job_position_advert}`}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {application.applicant_email}
+                              </p>
+                              {application.applicant_phone && (
+                                <p className="text-sm text-gray-600">{application.applicant_phone}</p>
+                              )}
+                              <div className="flex items-center gap-2">
+                                <Badge className={statusColors[application.status]}>
+                                  {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                                </Badge>
+                                <span className="text-sm text-gray-500">
+                                  Applied: {formatDate(application.application_date)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleViewApplication(application.id)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditApplication(application.id)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleOpenScheduleInterview(application)}
+                                disabled={application.status !== "shortlisted"}
                               >
                                 <Calendar className="h-4 w-4 mr-2" />
                                 Schedule Interview
                               </DropdownMenuItem>
-                            )}
-
-                            {/* Reject option - only for new and reviewed applications */}
-                            {(application.status === "new" ||
-                              application.status === "reviewed") && (
-                                <DropdownMenuItem
-                                  onClick={() => handleIndividualAction(application.id, "rejected")}
-                                >
-                                  <X className="h-4 w-4 mr-2" />
-                                  Reject
-                                </DropdownMenuItem>
-                              )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-muted-foreground">
-                Showing {startIndex + 1} to {Math.min(endIndex, safeFilteredApplications.length)} of{" "}
-                {safeFilteredApplications.length} applications
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNumber;
-                    if (totalPages <= 5) {
-                      pageNumber = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNumber = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNumber = totalPages - 4 + i;
-                    } else {
-                      pageNumber = currentPage - 2 + i;
-                    }
-
-                    return (
-                      <Button
-                        key={pageNumber}
-                        variant={currentPage === pageNumber ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCurrentPage(pageNumber)}
-                        className="w-8 h-8 p-0"
-                      >
-                        {pageNumber}
-                      </Button>
-                    );
-                  })}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+                              <DropdownMenuItem
+                                onClick={() => handleIndividualAction(application.id, "reviewed")}
+                                disabled={application.status !== "new"}
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                Mark as Reviewed
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleIndividualAction(application.id, "shortlisted")}
+                                disabled={application.status !== "reviewed"}
+                              >
+                                <Check className="h-4 w-4 mr-2" />
+                                Shortlist
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleIndividualAction(application.id, "rejected")}
+                                disabled={application.status !== "new" && application.status !== "reviewed"}
+                              >
+                                <X className="h-4 w-4 mr-2" />
+                                Reject
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              );
+            }}
+          </PaginatedTableWrapper>
         </CardContent>
       </Card>
 

@@ -1,10 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector, useDispatch } from "react-redux"
-import { Plus, Trash2, ArrowLeft, CalendarDays, X } from "lucide-react"
+import { Plus, Trash2, ArrowLeft, CalendarDays, X, Search, Loader2 } from "lucide-react"
+import apiRequest from "@/lib/apiRequest"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -154,6 +155,18 @@ export default function JobAdvertsPage() {
 
   useDocumentTitle("JOB OPENINGS")
 
+  // Infinite-scroll job position dropdown state
+  const [jpFilterText, setJpFilterText] = useState("")
+  const [jobPositionOptions, setJobPositionOptions] = useState<IJobPosition[]>([])
+  const [isLoadingJobPositions, setIsLoadingJobPositions] = useState(false)
+  const [hasMoreJobPositions, setHasMoreJobPositions] = useState(true)
+  const [jobPositionPage, setJobPositionPage] = useState(1)
+  const [jobPositionDropdownOpen, setJobPositionDropdownOpen] = useState(false)
+  const [jobPositionInitiallyLoaded, setJobPositionInitiallyLoaded] = useState(false)
+  const jobPositionDropdownRef = useRef<HTMLDivElement | null>(null)
+  const jobPositionContainerRef = useRef<HTMLDivElement | null>(null)
+  const jobPositionSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
   // Load saved form data from Redux on component mount
   useEffect(() => {
     if (savedJobAdvertForm) {
@@ -202,6 +215,94 @@ export default function JobAdvertsPage() {
     fetchJobPositions()
   }, [selectedInstitution, selectedBranch, router])
 
+  // Helper to format job position label
+  const getPositionLabel = useCallback((position: IJobPosition): string => {
+    return `${position.name} - ${position.department_details?.name ?? ""}`.trim()
+  }, [])
+
+  // Fetch job positions paginated with optional server-side search
+  const fetchJobPositionsPaged = useCallback(
+    async (searchTerm: string = "", page: number = 1, reset: boolean = false) => {
+      if (!selectedInstitution) return
+      try {
+        setIsLoadingJobPositions(true)
+        const params = new URLSearchParams({ page: String(page) })
+        if (searchTerm.trim()) params.append("search", searchTerm.trim())
+        const res = await apiRequest.get(
+          `recruitment/institution/${selectedInstitution.id}/job-position/?${params.toString()}`,
+        )
+        const results = Array.isArray(res.data?.results) ? (res.data.results as IJobPosition[]) : []
+        if (reset || page === 1) {
+          setJobPositionOptions(results)
+        } else {
+          setJobPositionOptions((prev) => [...prev, ...results])
+        }
+        setHasMoreJobPositions(Boolean(res.data?.next))
+        setJobPositionPage(page)
+      } catch (e) {
+        if (reset) setJobPositionOptions([])
+        setHasMoreJobPositions(false)
+      } finally {
+        setIsLoadingJobPositions(false)
+      }
+    },
+    [selectedInstitution],
+  )
+
+  // Debounced search for job positions
+  useEffect(() => {
+    if (!jobPositionDropdownOpen) return
+    if (jobPositionSearchTimeoutRef.current) {
+      clearTimeout(jobPositionSearchTimeoutRef.current)
+    }
+    jobPositionSearchTimeoutRef.current = setTimeout(() => {
+      fetchJobPositionsPaged(jpFilterText, 1, true)
+    }, 300)
+    return () => {
+      if (jobPositionSearchTimeoutRef.current) {
+        clearTimeout(jobPositionSearchTimeoutRef.current)
+      }
+    }
+  }, [jpFilterText, jobPositionDropdownOpen, fetchJobPositionsPaged])
+
+  // Open dropdown and load first page if needed
+  const handleJobPositionInputFocus = useCallback(() => {
+    setJobPositionDropdownOpen(true)
+    if (!jobPositionInitiallyLoaded) {
+      setJobPositionInitiallyLoaded(true)
+      fetchJobPositionsPaged("", 1, true)
+    }
+  }, [jobPositionInitiallyLoaded, fetchJobPositionsPaged])
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const container = jobPositionContainerRef.current
+      if (container && !container.contains(e.target as Node)) {
+        setJobPositionDropdownOpen(false)
+      }
+    }
+    if (jobPositionDropdownOpen) {
+      document.addEventListener("mousedown", handler)
+    }
+    return () => document.removeEventListener("mousedown", handler)
+  }, [jobPositionDropdownOpen])
+
+  // Scroll handler to load more
+  const handleJobPositionDropdownScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
+      if (
+        scrollHeight - scrollTop <= clientHeight + 50 &&
+        hasMoreJobPositions &&
+        !isLoadingJobPositions
+      ) {
+        fetchJobPositionsPaged(jpFilterText.trim(), jobPositionPage + 1, false)
+      }
+    },
+    [hasMoreJobPositions, isLoadingJobPositions, jpFilterText, jobPositionPage, fetchJobPositionsPaged],
+  )
+
   const fetchJobPositions = async () => {
     if (!selectedInstitution) return
 
@@ -211,6 +312,7 @@ export default function JobAdvertsPage() {
         getJobPositions({ institutionId: selectedInstitution.id }),
         fetchEmployees({ institutionId: selectedInstitution.id }),
       ])
+      console.log("Fetched job positions:", fetchedJobPositions)
 
       if (fetchedJobPositions) {
         setJobPositions(fetchedJobPositions)
@@ -969,20 +1071,64 @@ export default function JobAdvertsPage() {
                   Job Position / Title *
                 </label>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <div className="flex-grow min-w-0">
-                    <SearchableSelect
-                      items={jobPositionItems}
-                      selectedItems={formData.job_position ? [formData.job_position] : []}
-                      placeholder="Select Job Position / Title"
-                      searchPlaceholder="Search job positions..."
-                      emptyMessage="No job positions found."
-                      onSelect={(itemId) => updateFormData("job_position", Number(itemId))}
-                      multiple={false}
-                      triggerClassName={`w-full bg-white border border-gray-300 rounded-md px-2 sm:px-3 py-2 text-xs sm:text-sm ${
-                        errors.advert_type ? "border-destructive" : ""
-                      }`}
-                      popoverClassName="w-[280px] sm:w-[320px] md:w-[380px] lg:w-[420px]"
-                    />
+                  <div className="flex-grow min-w-0" ref={jobPositionContainerRef}>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        className={`pl-9 bg-white border-gray-300 rounded-md text-xs sm:text-sm ${
+                          errors.job_position ? "border-destructive" : ""
+                        }`}
+                        placeholder="Search or select job position"
+                        type="text"
+                        value={jpFilterText}
+                        onChange={(e) => {
+                          setJpFilterText(e.target.value)
+                          setJobPositionDropdownOpen(true)
+                        }}
+                        onFocus={handleJobPositionInputFocus}
+                      />
+                      {jobPositionDropdownOpen && (
+                        <div
+                          className="absolute top-full mt-2 left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto"
+                          ref={jobPositionDropdownRef}
+                          onScroll={handleJobPositionDropdownScroll}
+                        >
+                          {jobPositionOptions.length > 0 ? (
+                            <>
+                              {jobPositionOptions.map((position) => (
+                                <div
+                                  key={position.id}
+                                  className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                  onClick={() => {
+                                    updateFormData("job_position", Number(position.id))
+                                    setJpFilterText(getPositionLabel(position))
+                                    setJobPositionDropdownOpen(false)
+                                  }}
+                                >
+                                  <div className="font-medium text-sm">{getPositionLabel(position)}</div>
+                                </div>
+                              ))}
+                              {isLoadingJobPositions && (
+                                <div className="flex items-center justify-center py-3 text-sm text-gray-500">
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading more...
+                                </div>
+                              )}
+                              {!hasMoreJobPositions && (
+                                <div className="text-center py-3 text-gray-500 text-sm">No more positions</div>
+                              )}
+                            </>
+                          ) : isLoadingJobPositions ? (
+                            <div className="flex items-center justify-center py-8 text-sm text-gray-500">
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading positions...
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-gray-500 text-sm">
+                              {jpFilterText ? `No positions found for "${jpFilterText}"` : "No positions available"}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <CreateJobPositionDialog
                     trigger={

@@ -135,7 +135,7 @@ const AssetCategoriesComponent = () => {
         </div>
         <div className="p-6 border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+            <div className="flex sm:flex-row sm:items-center gap-4 flex-1">
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
@@ -145,8 +145,11 @@ const AssetCategoriesComponent = () => {
                   className="pl-10"
                 />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+              
+           
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[180px] border-none shadow-none">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -155,8 +158,6 @@ const AssetCategoriesComponent = () => {
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
-           
-            </div>
             <div className="flex items-center gap-2">
               <CreateAssetCategoryDialog
                 onSuccess={handleCreateSuccess}

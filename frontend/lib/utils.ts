@@ -282,6 +282,7 @@ export const getDepartments = async ({ institutionId }: { institutionId: number 
 export const getJobPositions = async ({ institutionId }: { institutionId: number }) => {
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`);
+    console.log("Response data:", response.data);
     const data = response.data as IPaginatedResponse<IJobPosition>;
     return data.results;
   } catch (error) {
@@ -444,6 +445,48 @@ export const getJobApplications = async ({
     return response.data as IPaginatedResponse<JobApplication>;
   } catch (error) {
     // console.error("Failed to fetch job applications", error);
+    throw error;
+  }
+};
+
+// Fetch paginated job applications for a specific institution
+export const getPaginatedJobApplications = async ({
+  institutionId,
+  page = 1,
+  search,
+  status,
+  jobPositionAdvert,
+}: {
+  institutionId: number;
+  page?: number;
+  search?: string;
+  status?: string;
+  jobPositionAdvert?: string;
+}): Promise<IPaginatedResponse<JobApplication>> => {
+  try {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    if (search) params.append('search', search);
+    if (status && status !== 'all') params.append('status', status);
+    if (jobPositionAdvert && jobPositionAdvert !== 'all') params.append('job_position_advert', jobPositionAdvert);
+
+    const response = await apiRequest.get(
+      `recruitment/institution/${institutionId}/job-application/?${params.toString()}`,
+    );
+    return response.data as IPaginatedResponse<JobApplication>;
+  } catch (error) {
+    // console.error("Failed to fetch paginated job applications", error);
+    throw error;
+  }
+};
+
+// Fetch paginated job applications from URL (for direct navigation)
+export const getPaginatedJobApplicationsFromUrl = async (url: string): Promise<IPaginatedResponse<JobApplication>> => {
+  try {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<JobApplication>;
+  } catch (error) {
+    // console.error("Failed to fetch paginated job applications from URL", error);
     throw error;
   }
 };
@@ -677,6 +720,49 @@ export const getInterviews = async ({ institutionId }: { institutionId: number }
     return response.data as IInterview[];
   } catch (error) {
     // console.error("Error fetching job interviews:", error);
+    throw error;
+  }
+};
+
+
+export const getPaginatedInterviews = async ({ 
+  institutionId, 
+  page = 1, 
+  search, 
+  status 
+}: { 
+  institutionId: number, 
+  page?: number;
+  search?: string;
+  status?: string;
+}): Promise<IPaginatedResponse<IInterview>> => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) { 
+      params.append("search", search);
+    }
+    if (status && status !== "all") {
+      params.append("status", status);
+    }
+    
+    const endpoint = `recruitment/institution/${institutionId}/job-interview/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IInterview>;
+  } catch (error) {
+    console.error("Error fetching paginated interviews:", error);
+    throw error;
+  }
+};
+
+export const getPaginatedInterviewsFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IInterview>> => {
+  try {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IInterview>;
+  } catch (error) {
+    console.error("Error fetching interviews from URL:", error);
     throw error;
   }
 };
@@ -3804,6 +3890,9 @@ export const OffboardingStagesAPI = {
     }
   },
 };
+
+
+ 
 
 export const AttendanceAPI = {
   createAttendanceRecord: async (data: IAttendanceFormData) => {

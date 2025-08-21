@@ -43,7 +43,6 @@ import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/types/types.utils";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import RichTextDisplay from "@/components/common/rich-text-display";
-import { TableSkeleton } from "@/components/common/table-skeleton";
 import { formatCurrency } from "@/lib/helpers";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 
