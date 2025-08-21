@@ -37,7 +37,7 @@ import {
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { getJobPositionAdverts, updateJobPositionAdvert, getPaginatedJobAdverts, getPaginatedJobAdvertsFromUrl } from "@/lib/utils";
-import type { JobPositionAdvert, JobAdvertStatus, PaginatedResponse } from "@/types/types.utils";
+import type { JobPositionAdvert, JobAdvertStatus } from "@/types/types.utils";
 import { toast } from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/types/types.utils";
