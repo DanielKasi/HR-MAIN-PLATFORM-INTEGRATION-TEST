@@ -383,23 +383,18 @@ class AssetRequestListCreateView(APIView):
             try:
                 profile = employee.user.profile
             except Profile.DoesNotExist:
-                print("DEBUG: User has no profile")
+  
                 return Response(
                     {"detail": f"User for employee {employee_id} has no profile."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            
-            # Step 4: Filter asset requests by this profile
             employee_asset_requests = asset_requests.filter(requester=profile)
             
-            # Step 5: Let's also check all asset requests for this institution to see what we have
             all_requests = AssetRequest.objects.filter(asset__institution=institution)
 
-            
-            # Step 6: Let's see the requester info for all requests
             for req in all_requests[:5]:  # Just first 5 for debugging
             
-            asset_requests = employee_asset_requests
+                asset_requests = employee_asset_requests
 
         if requester_id:
             asset_requests = asset_requests.filter(requester__id=requester_id)
@@ -640,7 +635,36 @@ class AssetAllocationListCreateView(APIView):
     )
     def get(self, request):
         search_query = request.query_params.get('search', None)
+        employee_id = request.query_params.get("employee_id")
         asset_allocations = AssetAllocation.objects.all()
+
+        if employee_id:
+            try:
+                employee = Employee.objects.get(employee_id=employee_id)
+
+            except Employee.DoesNotExist:
+                return Response(
+                    {"detail": f"Employee with ID {employee_id} not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            
+            # Step 2: Check if employee has a user
+            if not employee.user:
+                return Response(
+                    {"detail": f"Employee {employee_id} has no associated user."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            # Step 3: Check if user has a profile
+            try:
+                profile = employee.user.profile
+            except Profile.DoesNotExist:
+  
+                return Response(
+                    {"detail": f"User for employee {employee_id} has no profile."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            employee_asset_allocations = asset_allocations.filter(allocated_to=profile)        
 
         if search_query:
             asset_allocations = asset_allocations.filter(
