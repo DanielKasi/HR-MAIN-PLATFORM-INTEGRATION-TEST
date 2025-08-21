@@ -183,10 +183,11 @@ export default function DepartmentDetailView() {
       setDepartment(currentDepartment)
 
       const allEmployees = await getAllEmployees({ institutionId: selectedInstitution.id })
-      const employees = allEmployees.results ?? []
-      setAllEmployees(employees)
+      const employees = allEmployees ?? []
+      setAllEmployees(employees.results)
 
-      const filteredEmployees = employees.filter((emp: IEmployee) => {
+
+      const filteredEmployees = employees.results.filter((emp: IEmployee) => {
         const empDepartmentId = getDepartmentId(emp)
         const empDepartmentName = getDepartmentName(emp)
         return empDepartmentId === currentDepartment.id
