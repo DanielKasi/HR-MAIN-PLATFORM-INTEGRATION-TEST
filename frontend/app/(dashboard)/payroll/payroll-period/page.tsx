@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useSelector } from "react-redux";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {useState, useEffect, useRef} from "react";
+import {useSelector} from "react-redux";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -43,7 +43,8 @@ import {
 
   Settings,
   MoreVertical,
-  X
+  X,
+  Download,
 } from "lucide-react";
 import {toast} from "sonner";
 import Link from "next/link";
@@ -54,13 +55,17 @@ import {
   generatePeriodName,
   checkPeriodOverlap,
   getPaginatedPayrollPeriods,
-  getPaginatedPayrollPeriodsFromUrl
+  getPaginatedPayrollPeriodsFromUrl,
+  downloadPayrollPasslipsReport,
+  showErrorToast,
 } from "@/lib/utils";
 import {IPayrollPeriod, IPayrollPeriodFormData, IEmployee, IPayslip} from "@/types/types.utils";
 import {selectSelectedInstitution, selectAccessToken} from "@/store/auth/selectors";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/types/types.utils";
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import {PERMISSION_CODES} from "@/types/types.utils";
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import {TableSkeleton} from "@/components/common/table-skeleton";
+import {Card, CardHeader} from "@/components/ui/card";
 
 interface ValidationResult {
   name?: string;
@@ -80,15 +85,49 @@ export default function PayrollPeriods() {
   });
 
   const [saving, setSaving] = useState(false);
+  const [payrollPeriods, setPayrollPeriods] = useState<IPayrollPeriod[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<IPayrollPeriod | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationResult>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "processed" | "pending">("all");
-  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const refreshTableRef = useRef<(() => void) | null>(null);
+  const accessToken = useSelector(selectAccessToken);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isExcelPayslipsReportDownloading, setIsExcelPayslipsReportDownloading] = useState(false);
+  const [periodToDelete, setPeriodToDelete] = useState<IPayrollPeriod | null>(null);
+
+  // const fetchPayrollPeriods = useCallback(async () => {
+  //   if (!selectedInstitution?.id) {
+  //     setPayrollPeriods([]);
+  //     return;
+  //   }
+
+  //   try {
+  //     setIsLoading(true);
+  //     setIsRefreshing(true);
+  //     const periodsData = await getPayrollPeriods(selectedInstitution.id);
+  //     if (periodsData && Array.isArray(periodsData)) {
+  //       setPayrollPeriods(periodsData);
+  //     } else {
+  //       setPayrollPeriods([]);
+  //       toast.error("No payroll periods found");
+  //     }
+  //   } catch (error: any) {
+  //     console.error("Error fetching payroll periods:", error);
+  //     setPayrollPeriods([]);
+  //     toast.error(error.message || "Failed to load payroll periods");
+  //   } finally {
+  //     setIsRefreshing(false);
+  //     setIsLoading(false);
+  //   }
+  // }, [selectedInstitution?.id]);
+
+  // useEffect(() => {
+  //   fetchPayrollPeriods();
+  // }, [fetchPayrollPeriods]);
 
   // Auto-generate period name
   useEffect(() => {
@@ -162,8 +201,7 @@ export default function PayrollPeriods() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (refreshCallback: () => void) => {
     if (!selectedInstitution?.id) {
       toast.error("Institution not selected");
       return;
@@ -244,18 +282,13 @@ export default function PayrollPeriods() {
 
   const handleDelete = async (id: number) => {
     try {
-      const success = await deletePayrollPeriod(id);
-      if (success) {
-        toast.success("Payroll period deleted successfully");
+      await deletePayrollPeriod(id);
+      toast.success("Payroll period deleted successfully");
         refreshTableRef.current?.();
-      } else {
-        toast.error("Failed to delete payroll period");
-      }
     } catch (error: any) {
-      console.error("Failed to delete payroll period:", error);
-      toast.error(error.message || "An error occurred while deleting the payroll period");
+      showErrorToast({error, defaultMessage: "Failed to delete payroll period"});
     }
-    setDeleteConfirmId(null);
+    setPeriodToDelete(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -279,19 +312,41 @@ export default function PayrollPeriods() {
     setFilterStatus("all");
   };
 
-  if (!selectedInstitution?.id) {
+  const exportPayslipsReport = async (period_id: number) => {
+    setIsExcelPayslipsReportDownloading(true);
+
+    try {
+      toast.loading("Downloading payroll passlips report...");
+      await downloadPayrollPasslipsReport({accessToken, period_id});
+    } catch (error) {
+      showErrorToast({error, defaultMessage: "Failed to download payroll passlips report."});
+    } finally {
+      setIsExcelPayslipsReportDownloading(false);
+    }
+  };
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4 text-center">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
-            <Settings className="w-6 h-6 text-orange-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-gray-800">No Institution Selected</h3>
-            <p className="text-gray-600">Please select an institution to manage payroll periods.</p>
-          </div>
-        </div>
+      <div className="p-2 space-y-6">
+        <Card className="h-[calc(100vh-2rem)] shadow-lg">
+          <CardHeader className="border-b">
+            <div className="flex justify-between gap-8 items-center">
+              <div className="flex items-center justify-start gap-4">
+                <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="space-y-2">
+                  <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+          </CardHeader>
+          <TableSkeleton rows={10} columns={8} />
+        </Card>
       </div>
     );
   }
@@ -321,7 +376,12 @@ export default function PayrollPeriods() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <Select value={filterStatus} onValueChange={(value: string) => setFilterStatus(value as "all" | "processed" | "pending")}>
+              <Select
+                value={filterStatus}
+                onValueChange={(value: string) =>
+                  setFilterStatus(value as "all" | "processed" | "pending")
+                }
+              >
                 <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
@@ -334,143 +394,19 @@ export default function PayrollPeriods() {
             </div>
             <div className="flex items-center gap-2">
               <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_PAYROLL_PERIODS}>
-                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                  <DialogTrigger asChild>
-                    <Button onClick={resetForm}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Period
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[650px] rounded-2xl border-0 shadow-2xl">
-                    <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
-                      <DialogTitle className="text-2xl font-bold text-gray-900">
-                        {editingPeriod ? "Edit Payroll Period" : "Add New Payroll Period"}
-                      </DialogTitle>
-                      <DialogDescription className="text-gray-600 text-base">
-                        Configure payroll period details and dates
-                      </DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
-                      <div className="space-y-3">
-                        <Label htmlFor="name" className="text-sm font-semibold text-gray-800">
-                          Period Name *
-                        </Label>
-                        <Input
-                          id="name"
-                          type="text"
-                          placeholder="Enter period name"
-                          value={formData.name}
-                          onChange={(e) => handleInputChange("name", e.target.value)}
-                          disabled={saving}
-                          className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.name ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                            }`}
-                        />
-                        {validationErrors.name && (
-                          <p className="text-xs text-red-500 mt-1 flex items-center">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            {validationErrors.name}
-                          </p>
-                        )}
-                      </div>
-                      <div className="space-y-3">
-                        <Label htmlFor="start_date" className="text-sm font-semibold text-gray-800">
-                          Start Date *
-                        </Label>
-                        <Input
-                          id="start_date"
-                          type="date"
-                          value={formData.start_date}
-                          onChange={(e) => handleInputChange("start_date", e.target.value)}
-                          disabled={saving}
-                          className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.start_date ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                            }`}
-                        />
-                        {validationErrors.start_date && (
-                          <p className="text-xs text-red-500 mt-1 flex items-center">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            {validationErrors.name}
-                          </p>
-                        )}
-                      </div>
-                      <div className="space-y-3">
-                        <Label htmlFor="end_date" className="text-sm font-semibold text-gray-800">
-                          End Date *
-                        </Label>
-                        <Input
-                          id="end_date"
-                          type="date"
-                          value={formData.end_date}
-                          onChange={(e) => handleInputChange("end_date", e.target.value)}
-                          disabled={saving}
-                          min={formData.start_date}
-                          className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.end_date ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                            }`}
-                        />
-                        {validationErrors.end_date && (
-                          <p className="text-xs text-red-500 mt-1 flex items-center">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            {validationErrors.end_date}
-                          </p>
-                        )}
-                      </div>
-                      <div className="space-y-3">
-                        <Label htmlFor="pay_date" className="text-sm font-semibold text-gray-800">
-                          Pay Date *
-                        </Label>
-                        <Input
-                          id="pay_date"
-                          type="date"
-                          value={formData.pay_date}
-                          onChange={(e) => handleInputChange("pay_date", e.target.value)}
-                          disabled={saving}
-                          className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.pay_date ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
-                            }`}
-                        />
-                        {validationErrors.pay_date && (
-                          <p className="text-xs text-red-500 mt-1 flex items-center">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            {validationErrors.pay_date}
-                          </p>
-                        )}
-                      </div>
-                      {validationErrors.warning && (
-                        <div className="md:col-span-2 bg-amber-50 rounded-xl p-4">
-                          <div className="flex items-start gap-2">
-                            <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                            <p className="text-sm font-medium text-amber-800">{validationErrors.warning}</p>
-                          </div>
-                        </div>
-                      )}
-                    </form>
-                    <DialogFooter>
-                      <Button
-                        variant="outline"
-                        onClick={() => setIsModalOpen(false)}
-                        disabled={saving}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={handleSubmit}
-                        disabled={saving || hasValidationErrors()}
-                      >
-                        {saving ? (
-                          <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            {editingPeriod ? "Updating..." : "Creating..."}
-                          </>
-                        ) : (
-                          editingPeriod ? "Update Period" : "Create Period"
-                        )}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                <Button
+                  onClick={() => {
+                    resetForm();
+                    setIsModalOpen(true);
+                  }}
+                  disabled={saving}
+                >
+                  <Plus className="md:mr-2 h-4 w-4" />
+                  <span className="hidden md:inline">Add Period</span>
+                </Button>
               </ProtectedComponent>
             </div>
           </div>
-          
-         
         </div>
         <div className="p-6">
           <PaginatedTableWrapper<IPayrollPeriod>
@@ -509,7 +445,9 @@ export default function PayrollPeriods() {
                     <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No payroll periods found</h3>
                     <p className="text-muted-foreground mb-4">
-                      {searchTerm ? "No payroll periods match your search criteria." : "Get started by creating your first payroll period."}
+                      {searchTerm
+                        ? "No payroll periods match your search criteria."
+                        : "Get started by creating your first payroll period."}
                     </p>
                   </div>
                 );
@@ -517,10 +455,11 @@ export default function PayrollPeriods() {
 
               // Apply client-side filters (status filter)
               const filteredResults = data.results.filter((period) => {
-                const matchesStatus = filterStatus === "all" || 
+                const matchesStatus =
+                  filterStatus === "all" ||
                   (filterStatus === "processed" && period.is_processed) ||
                   (filterStatus === "pending" && !period.is_processed);
-                
+
                 return matchesStatus;
               });
 
@@ -537,142 +476,326 @@ export default function PayrollPeriods() {
               }
 
               return (
-                <div className="overflow-x-auto">
-                  <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-                    <TableHeader className="bg-gray-50/50">
-                      <TableRow>
-                        <TableHead>Period Name</TableHead>
-                        <TableHead>Period Dates</TableHead>
-                        <TableHead>Pay Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Days to Pay</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredResults.map((period) => (
-                        <TableRow key={period.id}>
-                          <TableCell className="font-medium">
-                            <div className="font-medium text-gray-900">{period.name}</div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="text-sm font-medium text-gray-900">
-                                {formatDate(period.start_date)} - {formatDate(period.end_date)}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {Math.ceil(
-                                  (new Date(period.end_date).getTime() - new Date(period.start_date).getTime()) /
-                                  (1000 * 60 * 60 * 24)
-                                )}{" "}
-                                days
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-semibold text-gray-900">{formatDate(period.pay_date)}</div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              className={`font-medium px-3 py-1 ${period.is_processed
-                                ? "bg-green-100 text-green-800 border-green-200"
-                                : "bg-yellow-100 text-yellow-800 border-yellow-200"
-                                }`}
-                            >
-                              <div className="flex items-center gap-1">
-                                {period.is_processed ? (
-                                  <CheckCircle className="w-3 h-3" />
-                                ) : (
-                                  <Clock className="w-3 h-3" />
-                                )}
-                                {period.is_processed ? "Processed" : "Pending"}
-                              </div>
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-semibold text-gray-700">
-                              {(() => {
-                                const daysRemaining = getDaysRemaining(period.pay_date);
-                                return daysRemaining < 0
-                                  ? `${Math.abs(daysRemaining)} days ago`
-                                  : daysRemaining === 0
-                                    ? "Today"
-                                    : `${daysRemaining} days`;
-                              })()}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full">
-                                  <MoreVertical className="h-5 w-5 text-gray-600" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
-                                  <Link href={`/payroll/payroll-period/${period.id}`} className="flex items-center w-full">
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View Details
-                                  </Link>
-                                </DropdownMenuItem>
-                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_PAYROLL_PERIODS}>
-                                  <DropdownMenuItem onClick={() => handleEdit(period)} className="flex items-center">
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => setDeleteConfirmId(period.id)}
-                                    className="flex items-center text-red-600 focus:text-red-700"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </ProtectedComponent>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            {/* Delete Confirmation Dialog */}
-                            <Dialog
-                              open={deleteConfirmId === period.id}
-                              onOpenChange={(open) => !open && setDeleteConfirmId(null)}
-                            >
-                              <DialogContent className="sm:max-w-[500px] rounded-2xl border-0 shadow-2xl">
-                                <DialogHeader className="space-y-4 pb-6">
-                                  <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto">
-                                    <Trash2 className="w-8 h-8 text-red-600" />
-                                  </div>
-                                  <DialogTitle className="text-2xl font-bold text-gray-900 text-center">
-                                    Delete Payroll Period
-                                  </DialogTitle>
-                                  <DialogDescription className="text-gray-600 text-center text-base leading-relaxed">
-                                    Are you sure you want to delete the payroll period{" "}
-                                    <span className="font-semibold text-gray-900">"{period.name}"</span>? This action cannot be
-                                    undone.
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <DialogFooter>
-                                  <Button variant="outline" onClick={() => setDeleteConfirmId(null)} disabled={saving}>
-                                    Cancel
-                                  </Button>
-                                  <Button variant="destructive" onClick={() => handleDelete(period.id)} disabled={saving}>
-                                    {saving ? (
-                                      <>
-                                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                        Deleting...
-                                      </>
-                                    ) : (
-                                      "Delete Permanently"
-                                    )}
-                                  </Button>
-                                </DialogFooter>
-                              </DialogContent>
-                            </Dialog>
-                          </TableCell>
+                <>
+                  <div className="overflow-x-auto">
+                    <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                      <TableHeader className="bg-gray-50/50">
+                        <TableRow>
+                          <TableHead>Period Name</TableHead>
+                          <TableHead>Period Dates</TableHead>
+                          <TableHead>Pay Date</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Days to Pay</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredResults.map((period) => (
+                          <TableRow key={period.id}>
+                            <TableCell className="font-medium">
+                              <div className="font-medium text-gray-900">{period.name}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {formatDate(period.start_date)} - {formatDate(period.end_date)}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {Math.ceil(
+                                    (new Date(period.end_date).getTime() -
+                                      new Date(period.start_date).getTime()) /
+                                      (1000 * 60 * 60 * 24),
+                                  )}{" "}
+                                  days
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-semibold text-gray-900">
+                                {formatDate(period.pay_date)}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                className={`font-medium px-3 py-1 ${
+                                  period.is_processed
+                                    ? "bg-green-100 text-green-800 border-green-200"
+                                    : "bg-yellow-100 text-yellow-800 border-yellow-200"
+                                }`}
+                              >
+                                <div className="flex items-center gap-1">
+                                  {period.is_processed ? (
+                                    <CheckCircle className="w-3 h-3" />
+                                  ) : (
+                                    <Clock className="w-3 h-3" />
+                                  )}
+                                  {period.is_processed ? "Processed" : "Pending"}
+                                </div>
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-semibold text-gray-700">
+                                {(() => {
+                                  const daysRemaining = getDaysRemaining(period.pay_date);
+                                  return daysRemaining < 0
+                                    ? `${Math.abs(daysRemaining)} days ago`
+                                    : daysRemaining === 0
+                                      ? "Today"
+                                      : `${daysRemaining} days`;
+                                })()}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
+                                  >
+                                    <MoreVertical className="h-5 w-5 text-gray-600" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem>
+                                    <Link
+                                      href={`/payroll/payroll-period/${period.id}`}
+                                      className="flex items-center w-full"
+                                    >
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      View Details
+                                    </Link>
+                                  </DropdownMenuItem>
+                                  <ProtectedComponent
+                                    permissionCode={PERMISSION_CODES.CAN_MANAGE_PAYROLL_PERIODS}
+                                  >
+                                    <DropdownMenuItem
+                                      onClick={() => handleEdit(period)}
+                                      className="flex items-center"
+                                    >
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => setPeriodToDelete(period)}
+                                      className="flex items-center text-red-600 focus:text-red-700"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => exportPayslipsReport(period.id)}
+                                      className="flex items-center w-full"
+                                    >
+                                      <Download className="h-4 w-4 mr-2" />
+                                      Download Payslips' Report
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                    <DialogTrigger asChild></DialogTrigger>
+                    <DialogContent className="sm:max-w-[650px] rounded-2xl border-0 shadow-2xl">
+                      <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
+                        <DialogTitle className="text-2xl font-bold text-gray-900">
+                          {editingPeriod ? "Edit Payroll Period" : "Add New Payroll Period"}
+                        </DialogTitle>
+                        <DialogDescription className="text-gray-600 text-base">
+                          Configure payroll period details and dates
+                        </DialogDescription>
+                      </DialogHeader>
+                      <form className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+                        <div className="space-y-3">
+                          <Label htmlFor="name" className="text-sm font-semibold text-gray-800">
+                            Period Name *
+                          </Label>
+                          <Input
+                            id="name"
+                            type="text"
+                            placeholder="Enter period name"
+                            value={formData.name}
+                            onChange={(e) => handleInputChange("name", e.target.value)}
+                            disabled={saving}
+                            className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
+                              validationErrors.name
+                                ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                : ""
+                            }`}
+                          />
+                          {validationErrors.name && (
+                            <p className="text-xs text-red-500 mt-1 flex items-center">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              {validationErrors.name}
+                            </p>
+                          )}
+                        </div>
+                        <div className="space-y-3">
+                          <Label
+                            htmlFor="start_date"
+                            className="text-sm font-semibold text-gray-800"
+                          >
+                            Start Date *
+                          </Label>
+                          <Input
+                            id="start_date"
+                            type="date"
+                            value={formData.start_date}
+                            onChange={(e) => handleInputChange("start_date", e.target.value)}
+                            disabled={saving}
+                            className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
+                              validationErrors.start_date
+                                ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                : ""
+                            }`}
+                          />
+                          {validationErrors.start_date && (
+                            <p className="text-xs text-red-500 mt-1 flex items-center">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              {validationErrors.name}
+                            </p>
+                          )}
+                        </div>
+                        <div className="space-y-3">
+                          <Label htmlFor="end_date" className="text-sm font-semibold text-gray-800">
+                            End Date *
+                          </Label>
+                          <Input
+                            id="end_date"
+                            type="date"
+                            value={formData.end_date}
+                            onChange={(e) => handleInputChange("end_date", e.target.value)}
+                            disabled={saving}
+                            min={formData.start_date}
+                            className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
+                              validationErrors.end_date
+                                ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                : ""
+                            }`}
+                          />
+                          {validationErrors.end_date && (
+                            <p className="text-xs text-red-500 mt-1 flex items-center">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              {validationErrors.end_date}
+                            </p>
+                          )}
+                        </div>
+                        <div className="space-y-3">
+                          <Label htmlFor="pay_date" className="text-sm font-semibold text-gray-800">
+                            Pay Date *
+                          </Label>
+                          <Input
+                            id="pay_date"
+                            type="date"
+                            value={formData.pay_date}
+                            onChange={(e) => handleInputChange("pay_date", e.target.value)}
+                            disabled={saving}
+                            className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
+                              validationErrors.pay_date
+                                ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                : ""
+                            }`}
+                          />
+                          {validationErrors.pay_date && (
+                            <p className="text-xs text-red-500 mt-1 flex items-center">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              {validationErrors.pay_date}
+                            </p>
+                          )}
+                        </div>
+                        {validationErrors.warning && (
+                          <div className="md:col-span-2 bg-amber-50 rounded-xl p-4">
+                            <div className="flex items-start gap-2">
+                              <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                              <p className="text-sm font-medium text-amber-800">
+                                {validationErrors.warning}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </form>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsModalOpen(false)}
+                          disabled={saving}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={() => handleSubmit(refresh)}
+                          disabled={saving || hasValidationErrors()}
+                        >
+                          {saving ? (
+                            <>
+                              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                              {editingPeriod ? "Updating..." : "Creating..."}
+                            </>
+                          ) : editingPeriod ? (
+                            "Update Period"
+                          ) : (
+                            "Create Period"
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Delete Confirmation Dialog */}
+                  {periodToDelete &&
+                  <Dialog
+                    open={!!periodToDelete}
+                    onOpenChange={(open) => !open && setPeriodToDelete(null)}
+                  >
+                    <DialogContent className="sm:max-w-[500px] rounded-2xl border-0 shadow-2xl">
+                      <DialogHeader className="space-y-4 pb-6">
+                        <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto">
+                          <Trash2 className="w-8 h-8 text-red-600" />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold text-gray-900 text-center">
+                          Delete Payroll Period
+                        </DialogTitle>
+                        <DialogDescription className="text-gray-600 text-center text-base leading-relaxed">
+                          Are you sure you want to delete the payroll period{" "}
+                          <span className="font-semibold text-gray-900">"{periodToDelete.name}"</span>? This
+                          action cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => setPeriodToDelete(null)}
+                          disabled={saving}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            handleDelete(periodToDelete.id);
+                            refresh();
+                          }}
+                          disabled={saving}
+                        >
+                          {saving ? (
+                            <>
+                              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                              Deleting...
+                            </>
+                          ) : (
+                            "Delete Permanently"
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  }
+                </>
               );
             }}
           </PaginatedTableWrapper>

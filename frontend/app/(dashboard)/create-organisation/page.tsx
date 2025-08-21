@@ -7,8 +7,8 @@ import {
   Store,
   Building2,
   Mail,
-  Badge,
   Check,
+  Edit,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -47,6 +47,9 @@ import PhoneNumberInput from "@/components/phone-number-input";
 import type { ICountry } from "@/types/types.utils";
 import type { IDepartment } from "@/types/types.utils";
 import { getDefaultData } from "@/lib/utils";
+import DepartmentEditorDialog from "@/components/common/dialogs/setup-department-edit-dialog";
+import JobEditorDialog from "@/components/common/dialogs/setup-job-edit-dialog";
+import { DeleteConfirmationDialog } from "@/components/common/dialogs/delete-confirmation-dialog";
 
 interface DocumentFile {
   id: string;
@@ -102,7 +105,15 @@ export default function CreateOrganisationWizard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [userId, setUserId] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState(""); // Moved useState to top level
+  const [searchQuery, setSearchQuery] = useState(""); 
+  const [editingDepartmentIndex, setEditingDepartmentIndex] = useState<number | null>(null);
+  const [editingJob, setEditingJob] = useState<{ deptIndex: number; jobIndex: number } | null>(
+    null,
+  );
+  const [openDepartmentDialog, setOpenDepartmentDialog] = useState(false);
+  const [openJobDialog, setOpenJobDialog] = useState(false);
+  const [activeDeptForJob, setActiveDeptForJob] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "dept" | "job"; deptIndex: number; jobIndex?: number, name:string } | null>(null);
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -153,11 +164,12 @@ export default function CreateOrganisationWizard() {
   }, [userData, router]);
 
   useEffect(() => {
+    // If a selected institution exists, redirect to dashboard — this wizard is only for users without an institution.
     if (selectedInstitution) {
       router.push("/dashboard");
-    } else {
-      setIsLoading(false);
+      return;
     }
+    setIsLoading(false);
   }, [router, selectedInstitution]);
 
   useEffect(() => {
@@ -245,6 +257,90 @@ export default function CreateOrganisationWizard() {
       ),
     }));
   };
+
+  // Add a new department and open it for editing
+  const addDepartment = () => {
+  setEditingDepartmentIndex(null);
+  setOpenDepartmentDialog(true);
+  };
+
+  const updateDepartmentField = (index: number, field: keyof any, value: any) => {
+    setFormData((prev) => {
+      const departments = [...prev.departments];
+      departments[index] = { ...departments[index], [field]: value };
+      return { ...prev, departments };
+    });
+  };
+
+  const addJobPositionToDepartment = (deptIndex: number) => {
+    setEditingJob(null);
+    setActiveDeptForJob(deptIndex);
+    setOpenJobDialog(true);
+  };
+
+  const updateJobField = (deptIndex: number, jobIndex: number, field: keyof any, value: any) => {
+    setFormData((prev) => {
+      const departments = [...prev.departments];
+      const dept = { ...departments[deptIndex] };
+      const jobs = [...(dept.job_positions ?? [])];
+      jobs[jobIndex] = { ...jobs[jobIndex], [field]: value };
+      dept.job_positions = jobs;
+      departments[deptIndex] = dept;
+      return { ...prev, departments };
+    });
+  };
+
+  // Dialog save handlers
+  const handleSaveDepartment = (dept: { id?: number; name: string; description?: string | null }) => {
+    setFormData((prev) => {
+      const departments = [...prev.departments];
+      if (editingDepartmentIndex !== null && editingDepartmentIndex >= 0 && editingDepartmentIndex < departments.length) {
+        departments[editingDepartmentIndex] = { ...departments[editingDepartmentIndex], name: dept.name, description: dept.description } as any;
+      } else {
+        departments.push({ id: 0, name: dept.name, description: dept.description ?? "", institution: 0, institution_details: null, job_positions: [] } as any);
+      }
+      return { ...prev, departments };
+    });
+    setEditingDepartmentIndex(null);
+    setOpenDepartmentDialog(false);
+  };
+
+  const handleSaveJob = (job: { id?: number; name: string; description?: string | null }) => {
+    setFormData((prev) => {
+      const departments = [...prev.departments];
+      const deptIndex = editingJob ? editingJob.deptIndex : activeDeptForJob ?? departments.length - 1;
+      if (deptIndex < 0 || deptIndex >= departments.length) return prev;
+      const dept = { ...departments[deptIndex] };
+      const jobs = [...(dept.job_positions ?? [])];
+      if (editingJob) {
+        jobs[editingJob.jobIndex] = { ...jobs[editingJob.jobIndex], name: job.name ?? "", description: job.description ?? "" };
+      } else {
+        jobs.push({ id: 0, name: job.name ?? "", description: job.description ?? "", department_id: 0 });
+      }
+      dept.job_positions = jobs;
+      departments[deptIndex] = dept;
+      return { ...prev, departments };
+    });
+    setEditingJob(null);
+    setActiveDeptForJob(null);
+    setOpenJobDialog(false);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    const { type, deptIndex, jobIndex } = deleteTarget;
+    if (type === "dept") {
+      const name = formData.departments[deptIndex]?.name;
+      if (name) removeDepartment(name);
+    } else {
+      const dept = formData.departments[deptIndex];
+      const job = dept?.job_positions?.[jobIndex ?? 0];
+      if (dept && job) removeJobPosition(dept.name, job.name);
+    }
+    setDeleteTarget(null);
+  };
+
+  const handleCancelDelete = () => setDeleteTarget(null);
 
   const validateStep = (step: number): boolean => {
     switch (step) {
@@ -567,14 +663,13 @@ export default function CreateOrganisationWizard() {
             {formData.documents.length === 0 ? (
               <div className="w-full border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
                 <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                <h3 className="text-base font-medium mb-2">No documents uploaded</h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Documents are optional. You can add them later from your dashboard.
-                </p>
-                <Button type="button" onClick={addDocument} className="flex items-center gap-2">
-                  <Upload className="h-4 w-4" />
-                  Upload First Document
-                </Button>
+                <h3 className="text-base font-medium mb-2">No documents added</h3>
+                <p className="text-sm text-muted-foreground mb-3">Documents are optional. You can add them later from your dashboard.</p>
+                <div>
+                  <Button type="button" onClick={addDocument} className="mt-4">
+                    Add Document
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="w-full space-y-3">
@@ -586,7 +681,6 @@ export default function CreateOrganisationWizard() {
                           <FileText className="h-4 w-4 text-primary" />
                         </div>
                         <div>
-                          <Badge className="mb-1">Document {index + 1}</Badge>
                           <p className="text-xs text-muted-foreground">
                             {doc.fileName || "No file selected"}
                           </p>
@@ -743,64 +837,108 @@ export default function CreateOrganisationWizard() {
                     ? "Try adjusting your search query."
                     : "Please select at least one department to proceed."}
                 </p>
+                <div>
+                  <Button type="button" onClick={addDepartment} className="mt-4">
+                    Add Department
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="w-full grid grid-cols-1 md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60svh] lg:max-h-[50svh] overflow-y-auto place-content-start justify-start items-start place-items-start py-8 pr-4">
                 {filteredDepartments.map((dept, deptIndex) => (
-                  <div key={dept.name} className="w-full border rounded-lg p-4 space-y-3">
+                  <div key={deptIndex} className="w-full border rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                           <Users className="h-4 w-4 text-primary" />
                         </div>
                         <div>
-                          {/* <Badge className="mb-1">Department {deptIndex + 1}</Badge> */}
-                          <h4 className="font-medium">{dept.name}</h4>
-                          <p className="text-xs text-muted-foreground">{dept.description}</p>
+                          <>
+                            <h4 className="font-medium">{dept.name}</h4>
+                            <p className="text-xs text-muted-foreground">{dept.description}</p>
+                          </>
                         </div>
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeDepartment(dept.name)}
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setEditingDepartmentIndex(deptIndex); setOpenDepartmentDialog(true); }}
+                          className="h-8 w-8 p-0"
+                        >
+                          {editingDepartmentIndex === deptIndex ? <Check className="h-4 w-4 text-green-600" /> : <Edit className="h-4 w-4" />}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteTarget({ type: "dept", deptIndex, name: dept.name })}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
 
                     <div className="space-y-2">
+                      <>
                       <Label className="text-sm font-medium">Job Positions</Label>
                       {(dept.job_positions?.length ?? 0) === 0 ? (
-                        <p className="text-xs text-muted-foreground">No job positions selected</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-muted-foreground">No job positions selected</p>
+                        </div>
                       ) : (
-                        dept.job_positions?.map((job, jobIndex) => (
-                          <div
-                            key={job.name}
-                            className="flex items-center justify-between bg-muted/50 p-2 rounded-md"
-                          >
-                            <div>
-                              <p className="text-sm font-medium">{job.name}</p>
-                              <p className="text-xs text-muted-foreground">{job.description}</p>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeJobPosition(dept.name, job.name)}
-                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        <div className="space-y-2">
+                          {dept.job_positions?.map((job, jobIndex) => (
+                            <div
+                              key={`${deptIndex}-${jobIndex}`}
+                              className="flex items-center justify-between bg-muted/50 p-2 rounded-md"
                             >
-                              <X className="h-4 w-4" />
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">{job.name}</p>
+                                <p className="text-xs text-muted-foreground">{job.description}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => { setEditingJob({ deptIndex, jobIndex }); setOpenJobDialog(true); }}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setDeleteTarget({ type: "job", deptIndex, jobIndex, name: job.name })}
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                          <div>
+                            <Button type="button" size="sm" onClick={() => addJobPositionToDepartment(deptIndex)}>
+                              Add Job
                             </Button>
                           </div>
-                        ))
-                      )}
+                      </>
                     </div>
                   </div>
                 ))}
+
               </div>
             )}
+            <div className="w-full">
+                  <Button type="button" onClick={addDepartment}>Add Department</Button>
+            </div>
           </div>
         );
 
@@ -912,6 +1050,29 @@ export default function CreateOrganisationWizard() {
           </CardFooter>
         </Card>
       </form>
+      
+      {/* Dialogs */}
+      <DepartmentEditorDialog
+        open={openDepartmentDialog}
+        initial={editingDepartmentIndex !== null ? formData.departments[editingDepartmentIndex] : null}
+        onClose={() => { setOpenDepartmentDialog(false); setEditingDepartmentIndex(null); }}
+        onSave={handleSaveDepartment}
+      />
+      <JobEditorDialog
+        open={openJobDialog}
+        departmentName={activeDeptForJob !== null ? formData.departments[activeDeptForJob].name : ""}
+        initial={editingJob ? formData.departments[editingJob.deptIndex]?.job_positions?.[editingJob.jobIndex] : null}
+        onClose={() => { setOpenJobDialog(false); setEditingJob(null); setActiveDeptForJob(null); }}
+        onSave={handleSaveJob}
+      />
+      <DeleteConfirmationDialog
+        isOpen={!!deleteTarget}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title={(deleteTarget?.type === "dept" ? "Delete Department" : "Delete Job Position") + ` ${deleteTarget?.name || ""}`}
+        description={deleteTarget?.type === "dept" ? `Are you sure you want to delete department ${deleteTarget.name}?` : `Are you sure you want to delete job position ${deleteTarget?.name || ""} ?`}
+        isDeleting={false}
+      />
     </div>
   );
 }

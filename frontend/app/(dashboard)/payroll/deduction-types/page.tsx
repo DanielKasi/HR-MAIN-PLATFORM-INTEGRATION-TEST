@@ -24,6 +24,7 @@ import { EditDeductionTypeDialog } from "@/components/deduction-types/edit-deduc
 import { DeleteDeductionTypeDialog } from "@/components/deduction-types/delete-deduction-type-dialog"
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
 import { ALLOWANCE_FREQUENCIES } from "@/types/types.utils"
+import { useMobile } from "@/hooks/use-mobile"
 
 
 
@@ -54,7 +55,8 @@ const DeductionTypesComponent = () => {
   const [deletingDeductionType, setDeletingDeductionType] = useState<IDeductionType | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const refreshTableRef = useRef<(() => void) | null>(null);
+  const refreshTableRef = useRef<(() => void) | null>(null);;
+  const isMobile = useMobile()
 
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
@@ -109,9 +111,9 @@ const DeductionTypesComponent = () => {
 
 
         <div className="p-6 border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex w-full flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4 justify-between">
-              <div className="relative flex-1 max-w-sm">
+              <div className="relative w-full min-w-max max-w-md md:w-lg lg:w-xl">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="Search deduction types..."
@@ -120,7 +122,6 @@ const DeductionTypesComponent = () => {
                   className="pl-10"
                 />
               </div>
-            </div>
             <div className="flex items-center gap-4">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
@@ -132,6 +133,7 @@ const DeductionTypesComponent = () => {
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
             </div>
             <div className="flex items-center gap-2">
               <CreateDeductionTypeDialog
