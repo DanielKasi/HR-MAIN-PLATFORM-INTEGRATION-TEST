@@ -262,28 +262,11 @@ export interface IDepartment {
   id: number;
   name: string;
   description?: string | null;
-  institution: number; // ForeignKey as ID
-  institution_details?: IUserInstitution | null; // Embedded serializer
+  institution: number; 
+  institution_details?: IUserInstitution | null; 
   job_positions?: {id: number; name: string; description: string; department_id: number}[];
 }
 
-// export interface IPaginatedResponse<T> {
-//   count: number;
-//   next: string | null;
-//   previous: string | null;
-//   results: T[];
-// }
-
-// export interface IUser {
-//   id: number;
-//   fullname: string;
-//   email: string;
-//   is_active: boolean;
-//   is_staff: boolean;
-//   roles: Role[];
-//   branches: Branch[];
-//   gender: USER_GENDER
-// }
 
 export interface PaginatedEmployeeResponse {
   count: number;

@@ -109,6 +109,7 @@ import { AxiosError, AxiosRequestConfig } from "axios";
 import { toast } from "sonner";
 import { error } from "console";
 import { Role } from "@/types";
+import { ca } from "date-fns/locale";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -299,13 +300,8 @@ export const getPaginatedJobPositionsFromUrl = async (url: string) => {
 
 
 export const getDefaultData = async (): Promise<IDepartment[] | null> => {
-  try {
     const response = await apiRequest.get("institution/default-data/");
     return response.data as IDepartment[];
-  } catch (error) {
-    // console.error("Failed to fetch default departments", error);
-    throw error;
-  }
 };
 
 
@@ -998,6 +994,47 @@ export const downloadEmployeesTemplate = async ({
   } catch (error) {
     throw error;
   }
+};
+
+export const downloadPayrollPasslipsReport = async ({
+  accessToken,
+  period_id,
+}: {
+  accessToken: string;
+  period_id: string | number;
+}): Promise<void> => {
+  const payload = {
+    period_id: period_id,
+  };
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/payroll/export-passlips-report2excel/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `excel-payslips-report-${period_id}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }
+      else {
+        const errorText = await response.text();
+        //// console.error("Download error response:", errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+      }   
 };
 
 export const downloadPayrollDocument = async ({
@@ -3026,14 +3063,8 @@ export const updatePayrollPeriod = async ({
   }
 };
 
-export const deletePayrollPeriod = async (id: number): Promise<boolean> => {
-  try {
-    await apiRequest.delete(`payroll/payroll-periods/${id}/`);
-    return true;
-  } catch (error) {
-    // console.error("Failed to delete payroll period:", error);
-    return false;
-  }
+export const deletePayrollPeriod = async (id: number)=>{
+  await apiRequest.delete(`payroll/payroll-periods/${id}/`);
 };
 
 export const getCurrentPayrollPeriod = async (
