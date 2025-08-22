@@ -37,6 +37,8 @@ from django.utils.encoding import escape_uri_path
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from institution.models import Institution
 from payroll.utils import generate_payslip_pdf
+from django.utils import timezone
+
 
 
 class ExportEFTExcelView(APIView):
@@ -758,7 +760,7 @@ class DownloadPayslipPDFView(APIView):
                 'employee__department__institution',
                 'employee__position',
                 'payroll_period'
-            ).prefetch_related('items'), id=payslip_id)
+            ), id=payslip_id)
         except ValueError:
             return Response(
                 {"error": "Invalid payslip ID format."},

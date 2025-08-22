@@ -26,7 +26,10 @@ from collections import defaultdict
 from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
 from decimal import Decimal
 from django.db.models import Prefetch
-
+import django.db.models as models
+from datetime import timedelta
+from dateutil.relativedelta import relativedelta
+from django.utils import timezone
 from io import BytesIO
 from weasyprint import HTML
 from decimal import Decimal
@@ -892,10 +895,12 @@ def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
 
 def generate_payslip_pdf(payslip):
     """
-    Generates a structured payslip PDF with a detailed breakdown of all possible
-    allowances and deductions, displaying zero if not applicable,
-    and a prominent summary section at the top.
+    Generates a structured payslip PDF with a detailed breakdown of the employee's
+    specific allowances, deductions, and taxes, only including items applicable to the employee.
     """
+    from decimal import Decimal
+    from collections import defaultdict
+
     # Safely get institution and company name
     institution = None
     company_name = 'N/A'
@@ -907,27 +912,73 @@ def generate_payslip_pdf(payslip):
         if hasattr(institution, 'currency') and institution.currency:
             currency = institution.currency
 
-    # Get all possible allowance and deduction types for the institution
-    all_allowance_types = AllowanceType.objects.filter(institution=institution).order_by('name')
-    all_deduction_types = DeductionType.objects.filter(institution=institution).order_by('name')
-    
-    # Get all actual payslip items and map them for easy lookup
-    payslip_items_map = {item.name: item for item in payslip.items.all()}
+    # Get the employee's specific allowances, deductions, and taxes
+    employee = payslip.employee
 
-    # Prepare data for allowances, including those with zero amount
+
+    # Fetch relevant allowances
+    allowances = (
+        employee.allowances.filter(is_active=True)
+        .filter(
+            effective_from__lte=payslip.payroll_period.end_date,
+        )
+        .filter(
+            models.Q(effective_to__gte=payslip.payroll_period.start_date)
+            | models.Q(effective_to__isnull=True)
+        )
+    )
     allowances_data = []
-    for allowance_type in all_allowance_types:
-        item = payslip_items_map.get(allowance_type.name)
-        amount = item.amount if item else Decimal('0.00')
-        allowances_data.append({'name': allowance_type.name, 'amount': amount})
+    for allowance in allowances:
+        recurrence = allowance.get_recurrence_count(payslip.payroll_period)
+        amount = allowance.get_calculated_amount() * recurrence
+        allowances_data.append({'name': allowance.allowance_type.name, 'amount': amount})
 
-    # Prepare data for deductions, including those with zero amount
-    deductions_data = []
-    for deduction_type in all_deduction_types:
-        item = payslip_items_map.get(deduction_type.name)
-        amount = item.amount if item else Decimal('0.00')
-        deductions_data.append({'name': deduction_type.name, 'amount': amount})
-        
+    # Fetch regular deductions (excluding attendance penalties)
+    deductions = (
+        employee.deductions.filter(is_active=True)
+        .exclude(deduction_type__attendance_penalty_for__in=["late", "absentism"])
+        .filter(
+            effective_from__lte=payslip.payroll_period.end_date,
+        )
+        .filter(
+            models.Q(effective_to__gte=payslip.payroll_period.start_date)
+            | models.Q(effective_to__isnull=True)
+        )
+    )
+    regular_deductions = []
+    for deduction in deductions:
+        recurrence = deduction.get_recurrence_count(payslip.payroll_period)
+        amount = deduction.get_calculated_amount() * recurrence
+        regular_deductions.append({'name': deduction.deduction_type.name, 'amount': amount})
+
+    # Fetch attendance deductions
+    attendance_total, deduction_items = payslip.get_attendance_deductions()
+    attendance_ded_group = defaultdict(Decimal)
+    for item in deduction_items:
+        attendance_ded_group[item['name']] += item['amount']
+    attendance_deductions = [{'name': name, 'amount': amt} for name, amt in attendance_ded_group.items()]
+
+    # Fetch relevant taxes
+    taxes = employee.taxes.filter(
+        effective_from__lte=payslip.payroll_period.end_date,
+    ).filter(
+        models.Q(effective_to__gte=payslip.payroll_period.start_date)
+        | models.Q(effective_to__isnull=True)
+    )
+    taxes_data = []
+    for tax in taxes:
+        amount = tax.get_tax_amount()
+        taxes_data.append({'name': tax.institution_tax.tax_name, 'amount': amount})
+
+    # Combine all deductions
+    deductions_data = regular_deductions + attendance_deductions + taxes_data
+    # Sort deductions by name for better presentation
+    deductions_data.sort(key=lambda x: x['name'])
+
+    # Filter out zero-amount items if desired (optional; comment out if you want to include zeros)
+    allowances_data = [item for item in allowances_data if item['amount'] > 0]
+    deductions_data = [item for item in deductions_data if item['amount'] > 0]
+
     # Get the month and year for the header
     pay_period_month = payslip.payroll_period.start_date.strftime('%B %Y')
 
