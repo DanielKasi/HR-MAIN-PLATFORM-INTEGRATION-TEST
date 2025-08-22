@@ -413,11 +413,11 @@ export type JobAdvertStatus =
   | "inactive"
   | "pending_approval";
 
-export type JobAdvertTypes = "internal" | "external";
+export type JobAdvertTypes = "internal" | "external" | "both";
 
 export interface JobPositionAdvert {
   data: any;
-  job_position_details: any;
+  job_position_details: IJobPosition;
   id: number;
   job_position: number; // Foreign key to JobPosition
   job_position_advert_status: JobAdvertStatus;

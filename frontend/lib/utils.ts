@@ -899,7 +899,7 @@ export const createInterviewStage = async ({
   institutionId: number;
   stageData: IInterviewStageFormData;
 }): Promise<IInterviewStage | null> => {
-  try {
+
     const formData = new FormData();
     formData.append("name", stageData.name);
     formData.append("level", stageData.level.toString());
@@ -914,10 +914,30 @@ export const createInterviewStage = async ({
       formData,
     );
     return response.data as IInterviewStage;
-  } catch (error) {
-    // console.error("Failed to create interview stage:", error);
-    throw error;
-  }
+
+};
+
+export const upddateInterviewStage = async ({
+  stageId,
+  stageData,
+}: {
+  stageId: number;
+  stageData: IInterviewStageFormData;
+}): Promise<IInterviewStage | null> => {
+    const formData = new FormData();
+    formData.append("name", stageData.name);
+    formData.append("level", stageData.level.toString());
+    formData.append("job_position_advert", stageData.job_position_advert.toString());
+
+    stageData.interviewers.forEach((interviewerId) => {
+      formData.append("interviewers", interviewerId.toString());
+    });
+
+    const response = await apiRequest.post(
+      `recruitment/interview-stage/${stageId}/`,
+      formData,
+    );
+    return response.data as IInterviewStage;
 };
 
 export const createInterviewStageJSON = async ({
