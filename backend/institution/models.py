@@ -338,7 +338,7 @@ class InstitutionBankAccount(UtilityBaseModel):
         return f"{self.account_name} - {self.institution_bank.bank_fullname} - {self.institution_bank.institution.institution_name}"
 
 
-class InstitutionWorkingDays(models.Model):
+class InstitutionWorkingDays(UtilityBaseModel):
     institution = models.OneToOneField(
         Institution, related_name="working_days", on_delete=models.CASCADE
     )
@@ -349,8 +349,7 @@ class InstitutionWorkingDays(models.Model):
         blank=True,
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+
     created_by = models.ForeignKey(
         "users.CustomUser",
         related_name="created_institution_working_days",

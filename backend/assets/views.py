@@ -637,6 +637,7 @@ class AssetAllocationListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def get(self, request):
+        user = request.user.profile
         search_query = request.query_params.get('search', None)
         employee_id = request.query_params.get("employee_id")
         user  = request.user
