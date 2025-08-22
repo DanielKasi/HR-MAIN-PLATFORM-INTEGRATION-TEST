@@ -132,7 +132,7 @@ export default function JobPositionsPage() {
       const end = Math.min(start + rangeSize, maxSalary);
       ranges.push({
         id: `${start}-${end}`,
-        label: `UGX ${formatCurrency(start)} - ${formatCurrency(end)}`,
+        label: ` ${formatCurrency(start)} - ${formatCurrency(end)}`,
         min: start,
         max: end
       });
@@ -410,7 +410,7 @@ export default function JobPositionsPage() {
                   <TableCell>
                     {position?.salary_min && position?.salary_max ? (
                       <span>
-                        UGX {formatCurrency(position.salary_min)} - {formatCurrency(position.salary_max)}
+                         {formatCurrency(position.salary_min)} - {formatCurrency(position.salary_max)}
                       </span>
                     ) : (
                       <span className="text-muted-foreground">Not set</span>

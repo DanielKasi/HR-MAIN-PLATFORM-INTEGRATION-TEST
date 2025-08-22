@@ -285,7 +285,8 @@ class Employee(UtilityBaseModel):
         if self.user and not self.payroll_branch:
             self.payroll_branch = self.get_default_branch()
 
-        if self.position and hasattr(self.position, "salary"):
+        # 🔧 FIX: Check for salary_min instead of salary, and ensure it's not already set
+        if self.position and hasattr(self.position, "salary_min") and not self.salary:
             self.salary = self.position.salary_min
 
         if not self.employee_id:
@@ -639,38 +640,6 @@ class EmployeeAttendance(UtilityBaseModel):
                 return True
         return False
 
-    # def clean(self):
-    #     super().clean()
-
-    #     Validate check-in location if provided
-    #     if self.check_in_time and (
-    #         self.check_in_latitude is not None or self.check_in_longitude is not None
-    #     ):
-    #         if self.check_in_latitude is None or self.check_in_longitude is None:
-    #             raise ValidationError(
-    #                 {"error": f"Both check-in latitude and longitude must be provided if one is set."}
-    #             )
-    #         if not self._is_location_valid(
-    #             self.check_in_latitude, self.check_in_longitude
-    #         ):
-    #             raise ValidationError(
-    #                 {"error": f"Check-in location does not match any attached branch location."}
-    #             )
-
-    #     # Validate check-out location if provided
-    #     if self.check_out_time and (
-    #         self.check_out_latitude is not None or self.check_out_longitude is not None
-    #     ):
-    #         if self.check_out_latitude is None or self.check_out_longitude is None:
-    #             raise ValidationError(
-    #                 {"error": f"Both check-out latitude and longitude must be provided if one is set."}
-    #             )
-    #         if not self._is_location_valid(
-    #             self.check_out_latitude, self.check_out_longitude
-    #         ):
-    #             raise ValidationError(
-    #                 {"error": f"Check-out location does not match any attached branch location."}
-    #             )
         
 
     def save(self, *args, **kwargs):

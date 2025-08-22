@@ -376,7 +376,7 @@ class EmployeeCreateAPIView(APIView):
                             {
                                 "row": idx + 2,
                                 "errors": {
-                                    "user.email": f"Email '{df.loc[idx, 'user.email']}' is duplicated in the file"
+                                    "user.email": {"error": f"Email '{df.loc[idx, 'user.email']}' is duplicated in the file"}
                                 },
                             }
                             for idx in duplicate_rows
@@ -400,7 +400,7 @@ class EmployeeCreateAPIView(APIView):
                             {
                                 "row": idx + 2,
                                 "errors": {
-                                    "user.email": f"Email '{df.loc[idx, 'user.email']}' already exists"
+                                    "user.email": {"error": f"Email '{df.loc[idx, 'user.email']}' already exists"}
                                 },
                             }
                             for idx in duplicate_rows
@@ -429,7 +429,7 @@ class EmployeeCreateAPIView(APIView):
                     batch_errors = []
 
                     for index, row in batch.iterrows():
-                        row_errors = {}  # Dict of field: [msgs] per row
+                        row_errors = {}  # Dict of field: {"error": "msg"} per row
                         employee_data = {}
                         user_data = {
                             "fullname": str(row["user.fullname"]).strip(),
@@ -445,9 +445,9 @@ class EmployeeCreateAPIView(APIView):
 
                         # Basic validation for user data
                         if not user_data["fullname"]:
-                            row_errors["user.fullname"] = ["This field is required."]
+                            row_errors["user.fullname"] = {"error": "This field is required."}
                         if not user_data["email"]:
-                            row_errors["user.email"] = ["This field is required."]
+                            row_errors["user.email"] = {"error": "This field is required."}
 
                         for column in df.columns:
                             if column not in ["user.fullname", "user.email"]:
@@ -460,25 +460,19 @@ class EmployeeCreateAPIView(APIView):
                                     mapping = instance_mappings.get(column, {})
                                     instance = mapping.get(value.lower())
                                     if instance is None:
-                                        row_errors.setdefault(column, []).append(
-                                            f'"{value}" does not exist.'
-                                        )
+                                        row_errors[column] = {"error": f'"{value}" does not exist.'}
                                     else:
                                         employee_data[column] = instance
                                 elif column == "gender" and value:
                                     mapped = gender_map.get(value)
                                     if mapped is None:
-                                        row_errors.setdefault("gender", []).append(
-                                            f'"{value}" is not a valid choice.'
-                                        )
+                                        row_errors["gender"] = {"error": f'"{value}" is not a valid choice.'}
                                     else:
                                         employee_data[column] = mapped
                                 elif column == "marital_status" and value:
                                     mapped = marital_status_map.get(value)
                                     if mapped is None:
-                                        row_errors.setdefault(
-                                            "marital_status", []
-                                        ).append(f'"{value}" is not a valid choice.')
+                                        row_errors["marital_status"] = {"error": f'"{value}" is not a valid choice.'}
                                     else:
                                         employee_data[column] = mapped
                                 else:
@@ -493,57 +487,41 @@ class EmployeeCreateAPIView(APIView):
                             )
 
                         # Additional per-row validations (to mimic model/serializer)
-                        if (
-                            "date_of_birth" in employee_data
-                            and employee_data["date_of_birth"]
-                        ):
+                        if "date_of_birth" in employee_data and employee_data["date_of_birth"]:
                             try:
-                                dob = datetime.strptime(
-                                    employee_data["date_of_birth"], "%Y-%m-%d"
-                                ).date()
+                                dob = datetime.strptime(employee_data["date_of_birth"], "%Y-%m-%d").date()
+                                msgs = []
+                                if dob > date.today():
+                                    msgs.append("Date of birth cannot be in the future.")
                                 age = (date.today() - dob).days // 365
                                 if age < 18:
-                                    row_errors.setdefault("date_of_birth", []).append(
+                                    msgs.append(
                                         f"Employee must be at least 18 years old. Current age: {age}."
                                     )
-                                if dob > date.today():
-                                    row_errors.setdefault("date_of_birth", []).append(
-                                        "Date of birth cannot be in the future."
-                                    )
-                                employee_data["date_of_birth"] = (
-                                    dob  # Convert to date object
-                                )
+                                if msgs:
+                                    row_errors["date_of_birth"] = {"error": " ".join(msgs)}
+                                employee_data["date_of_birth"] = dob  # Convert to date object
                             except ValueError:
-                                row_errors.setdefault("date_of_birth", []).append(
-                                    "Invalid date format. Use YYYY-MM-DD."
-                                )
-                        if (
-                            "date_of_joining" in employee_data
-                            and employee_data["date_of_joining"]
-                        ):
+                                row_errors["date_of_birth"] = {"error": "Invalid date format. Use YYYY-MM-DD."}
+
+                        if "date_of_joining" in employee_data and employee_data["date_of_joining"]:
                             try:
                                 employee_data["date_of_joining"] = datetime.strptime(
                                     employee_data["date_of_joining"], "%Y-%m-%d"
                                 ).date()
                             except ValueError:
-                                row_errors.setdefault("date_of_joining", []).append(
-                                    "Invalid date format. Use YYYY-MM-DD."
-                                )
+                                row_errors["date_of_joining"] = {"error": "Invalid date format. Use YYYY-MM-DD."}
+
                         for field in ["experience", "children_count"]:
                             if field in employee_data and employee_data[field]:
                                 try:
                                     employee_data[field] = int(
-                                        float(
-                                            str(employee_data[field]).replace(
-                                                " years", ""
-                                            )
-                                        )  # Handle "11 years"
+                                        float(str(employee_data[field]).replace(" years", ""))  # Handle "11 years"
                                     )
                                 except (ValueError, TypeError):
-                                    row_errors.setdefault(field, []).append(
-                                        "Must be a valid number."
-                                    )
+                                    row_errors[field] = {"error": "Must be a valid number."}
                                     employee_data[field] = 0
+
 
                         if row_errors:
                             batch_errors.append(
@@ -576,7 +554,7 @@ class EmployeeCreateAPIView(APIView):
                     except Exception as e:
                         print(f"Error bulk creating users: {str(e)}")
                         errors.append(
-                            {"non_field_errors": f"Error creating users: {str(e)}"}
+                            {"non_field_errors": {"error": f"Error creating users: {str(e)}"}}
                         )
                         continue
 
@@ -591,7 +569,7 @@ class EmployeeCreateAPIView(APIView):
                     except Exception as e:
                         print(f"Error bulk creating profiles: {str(e)}")
                         errors.append(
-                            {"non_field_errors": f"Error creating profiles: {str(e)}"}
+                            {"non_field_errors": {"error": f"Error creating profiles: {str(e)}"}}
                         )
                         # Optionally rollback or continue, but since atomic, it will rollback on failure
 
@@ -605,7 +583,7 @@ class EmployeeCreateAPIView(APIView):
                     except Exception as e:
                         print(f"Error bulk creating user roles: {str(e)}")
                         errors.append(
-                            {"non_field_errors": f"Error creating user roles: {str(e)}"}
+                            {"non_field_errors": {"error": f"Error creating user roles: {str(e)}"}}
                         )
 
                     # Create Employee instances with actual CustomUser objects
@@ -627,7 +605,7 @@ class EmployeeCreateAPIView(APIView):
                     except Exception as e:
                         print(f"Error bulk creating employees: {str(e)}")
                         errors.append(
-                            {"non_field_errors": f"Error creating employees: {str(e)}"}
+                            {"non_field_errors": {"error": f"Error creating employees: {str(e)}"}}
                         )
                         continue
 
@@ -650,7 +628,7 @@ class EmployeeCreateAPIView(APIView):
                         last_number += 1
                         employee.employee_id = f"{prefix}{last_number:05d}"
 
-                        if employee.position and hasattr(employee.position, "salary"):
+                        if employee.position and hasattr(employee.position, "salary_min") and not employee.salary:
                             employee.salary = employee.position.salary_min
 
                         if employee.user and not employee.payroll_branch:
@@ -670,11 +648,11 @@ class EmployeeCreateAPIView(APIView):
                     except Exception as e:
                         print(f"Error bulk updating employees: {str(e)}")
                         errors.append(
-                            {"non_field_errors": f"Error updating employees: {str(e)}"}
+                            {"non_field_errors": {"error": f"Error updating employees: {str(e)}"}}
                         )
 
                     # Send password setup emails (non-blocking)
-                    for employee in created_employees:
+                    for idx, employee in enumerate(created_employees):
                         try:
                             employee.setup_employee_password(request)
                         except Exception as e:
@@ -683,9 +661,9 @@ class EmployeeCreateAPIView(APIView):
                             )
                             errors.append(
                                 {
-                                    "row": start_idx + index + 2,
+                                    "row": start_idx + idx + 2,
                                     "errors": {
-                                        "non_field_errors": f"Error sending password email: {str(e)}"
+                                        "non_field_errors": {"error": f"Error sending password email: {str(e)}"}
                                     },
                                 }
                             )
@@ -1478,15 +1456,28 @@ class EmployeeAttendanceListCreateAPIView(APIView):
             employee=employee, date=date
         ).first()
 
+        # Prepare the context to pass to the serializer
+        context = {'request': request}
+
         if existing:
-            serializer = EmployeeAttendanceSerializer(existing, data=data, partial=True)
+            # Pass context to the serializer for updates
+            serializer = EmployeeAttendanceSerializer(
+                existing, 
+                data=data, 
+                partial=True, 
+                context=context
+            )
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
-            serializer = EmployeeAttendanceSerializer(data=data)
+            # Pass context to the serializer for creation
+            serializer = EmployeeAttendanceSerializer(
+                data=data, 
+                context=context
+            )
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
