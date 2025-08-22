@@ -95,7 +95,7 @@ const AllowanceTypesComponent = () => {
   return (
     <div className="space-y-6">
       {/* Header and Filters */}
-      <div className="bg-white rounded-lg border shadow-sm">
+      <div className="bg-white rounded-lg border shadow-sm min-h-screen">
         <div className="p-6 border-gray-200">
 
             <div className="flex items-center gap-4 justify-between">

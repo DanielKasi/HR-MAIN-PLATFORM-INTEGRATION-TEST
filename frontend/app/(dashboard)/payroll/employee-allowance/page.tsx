@@ -149,7 +149,7 @@ export default function EmployeeAllowancesPage() {
     return (
     <div className="space-y-6">
       {/* Header and Filters */}
-      <div className="bg-white rounded-lg border shadow-sm">
+      <div className="bg-white rounded-lg border shadow-sm min-h-screen">
         <div className="p-6 border-gray-200">
           <div className="flex items-center justify-between gap-4">
             <h1 className="text-xl md:text-3xl font-bold text-gray-900">Employee Allowances</h1>

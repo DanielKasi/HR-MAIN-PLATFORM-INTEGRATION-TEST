@@ -159,7 +159,7 @@ const AssetAllocationsComponent = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg border shadow-sm">
+      <div className="bg-white rounded-lg border shadow-sm min-h-screen">
         <div className="p-6 ">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>

@@ -282,7 +282,7 @@ export default function WorkTypesPage() {
   }
 
   return (
-    <div className="flex flex-col w-full h-full bg-white p-2 md:p-6 rounded-lg py-8">
+    <div className="flex flex-col w-full h-full bg-white p-2 md:p-6 rounded-lg py-8 min-h-screen">
       {/* Work Types List */}
       <div className="w-full ">
         <div className="mb-6">
