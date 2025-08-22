@@ -432,7 +432,7 @@ export default function EmployeeProfile() {
                       <div className="text-center lg:text-left">
                         <div className="text-xs text-[#848496] mb-1">Monthly Salary</div>
                         <div className="font-bold text-lg text-[#162032]">
-                          UGX {Number(employee.salary).toLocaleString()}
+                           {Number(employee.salary).toLocaleString()}
                         </div>
                       </div>
                     )}

@@ -1128,7 +1128,7 @@ export default function PayrollPeriodDetails() {
                                 <div className="grid grid-cols-2 gap-4 py-4">
                                   <div className="space-y-2">
                                     <label htmlFor="basic_salary" className="text-sm font-medium">
-                                      Basic Salary (UGX)
+                                      Basic Salary
                                     </label>
                                     <Input
                                       id="basic_salary"
@@ -1169,7 +1169,7 @@ export default function PayrollPeriodDetails() {
                                       htmlFor="total_allowances"
                                       className="text-sm font-medium"
                                     >
-                                      Total Allowances (UGX)
+                                      Total Allowances 
                                     </label>
                                     <Input
                                       id="total_allowances"
@@ -1191,7 +1191,7 @@ export default function PayrollPeriodDetails() {
                                       htmlFor="total_deductions"
                                       className="text-sm font-medium"
                                     >
-                                      Total Deductions (UGX)
+                                      Total Deductions 
                                     </label>
                                     <Input
                                       id="total_deductions"
@@ -1216,7 +1216,7 @@ export default function PayrollPeriodDetails() {
                                     <div>
                                       <span className="text-gray-600">Gross Salary:</span>
                                       <span className="ml-2 font-medium">
-                                        UGX{" "}
+                                        {" "}
                                         {formatCurrency(
                                           Number(editFormData.basic_salary || 0) +
                                             Number(editFormData.total_allowances || 0),
@@ -1226,7 +1226,7 @@ export default function PayrollPeriodDetails() {
                                     <div>
                                       <span className="text-gray-600">Net Salary:</span>
                                       <span className="ml-2 font-medium text-green-600">
-                                        UGX{" "}
+                                        {" "}
                                         {formatCurrency(
                                           Number(editFormData.basic_salary || 0) +
                                             Number(editFormData.total_allowances || 0) -

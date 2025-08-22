@@ -309,7 +309,7 @@ export default function DepartmentDetailView() {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount
     return new Intl.NumberFormat('en-UG', {
       style: 'currency',
-      currency: 'UGX',
+      currency: '',
       minimumFractionDigits: 0
     }).format(num)
   }
