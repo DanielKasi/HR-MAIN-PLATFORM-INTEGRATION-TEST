@@ -1,11 +1,12 @@
 "use client";
 
-import {useState, useEffect} from "react";
+import {useState, useEffect, useRef} from "react";
 import Link from "next/link";
 import {Plus, Search, Eye, Edit, Trash2, MoreHorizontal, MoreVertical} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
+import {Input} from "@/components/ui/input";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 
 import {
@@ -17,7 +18,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {ISeparationPolicy} from "@/types/types.utils";
-import apiRequest from "@/lib/apiRequest";
+import { SeparationPoliciesAPI } from "@/lib/utils";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { TableSkeleton } from "@/components/common/table-skeleton";
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,8 +32,6 @@ import {
 import { useRouter } from "next/navigation";
 
 export default function SeparationPoliciesPage() {
-  const [separationPolicies, setSeparationPolicies] = useState<ISeparationPolicy[]>([]);
-  const [loading, setLoading] = useState(true);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     policy: ISeparationPolicy | null;
@@ -36,133 +39,180 @@ export default function SeparationPoliciesPage() {
     open: false,
     policy: null,
   });
+  const [searchTerm, setSearchTerm] = useState("");
+  const refreshTableRef = useRef<(() => void) | null>(null);
+  const selectedInstitution = useSelector(selectSelectedInstitution);
 
   const router = useRouter();
 
-  const fetchPolicies = async () => {
-    setLoading(true);
-    try {
-      const response = await apiRequest.get("/on-boarding/separation-policies/");
-      if (response.status !== 200) {
-        throw new Error("Failed to fetch separation policies");
-      }
-      const data = await response.data.results;
-      setSeparationPolicies(data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+  const handleDeleteSuccess = (deletedId: number) => {
+    setDeleteDialog({open: false, policy: null});
+    refreshTableRef.current?.();
   };
 
   const handleDelete = async (policy: ISeparationPolicy) => {
     try {
-      await apiRequest.delete(`/on-boarding/separation-policies/${policy.id}/`);
-      setDeleteDialog({open: false, policy: null});
-      fetchPolicies();
+      await SeparationPoliciesAPI.delete(policy.id);
+      handleDeleteSuccess(policy.id);
     } catch (error) {
       console.error(error);
     }
   };
 
-  useEffect(() => {
-    fetchPolicies();
-  }, []);
+  const clearFilters = () => {
+    setSearchTerm("");
+  };
+
+  const hasFilters = searchTerm;
 
   return (
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 -ml-2">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
+        <div className="mb-6">
           <h1 className="text-3xl font-bold">Separation Policies</h1>
-          <p className="text-muted-foreground">Manage institutional separation policies</p>
+         
         </div>
-        <Link href="/off-boarding/separation-policy/add">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Policy
-          </Button>
-        </Link>
+        
       </div>
 
-      <div className="-ml-4 mt-4">
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg">
+        <div className=" border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4 justify-between">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Input
+                  placeholder="Search policies..."
+                  value={searchTerm}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasFilters && (
+                <Button variant="outline" onClick={clearFilters}>
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+            <Link href="/off-boarding/separation-policy/add">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Policy
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="-ml-4">
         <CardHeader>
-          <CardTitle>Policies ({separationPolicies.length})</CardTitle>
+          
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : separationPolicies.length === 0 ? (
-            <div className="flex items-center justify-center py-8 text-muted-foreground">
-              No policies found.
-            </div>
-          ) : (
-            <div className="overflow-x-auto mt-10 -ml-2">
-            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-                <TableHeader className="bg-gray-50/50">
-                <TableRow>
-                  <TableHead>Policy Name</TableHead>
-                  <TableHead>Separation Type</TableHead>
-                  <TableHead>Notice Period</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Enforcement</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {separationPolicies.map((policy) => (
-                  <TableRow key={policy.id}>
-                    <TableCell>{policy.policy_name || "N/A"}</TableCell>
-                    <TableCell>{policy.separation_type?.separation_type || "N/A"}</TableCell>
-                    <TableCell>
-                      {policy.min_notice_days} - {policy.max_notice_days} days
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={policy.is_active ? "default" : "secondary"}>
-                        {policy.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={policy.enforce_policy ? "destructive" : "outline"}>
-                        {policy.enforce_policy ? "Enforced" : "Not Enforced"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
-                          >
-                            <MoreVertical className="h-4 w-4 text-gray-600" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-48 bg-white border border-gray-200 shadow-lg"
-                        >
-                          <DropdownMenuItem onClick={()=>{router.push(`/off-boarding/separation-policy/${policy.id}`)}} className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer">
-                                <Eye className="h-4 w-4" /> View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={()=>{router.push(`/off-boarding/separation-policy/edit/${policy.id}/`)}} className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer">
-                                <Edit className="h-4 w-4" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setDeleteDialog({open: true, policy})} className="flex items-center px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer">
+          <PaginatedTableWrapper<ISeparationPolicy>
+            fetchFirstPage={async () => {
+              if (!selectedInstitution) throw new Error("No institution selected")
+              return await SeparationPoliciesAPI.getPaginated({
+                institutionId: selectedInstitution.id,
+                page: 1,
+                search: searchTerm || undefined,
+              })
+            }}
+            fetchFromUrl={SeparationPoliciesAPI.getPaginatedFromUrl}
+            deps={[selectedInstitution?.id, searchTerm]}
+            className="space-y-4"
+            footerClassName="pt-4"
+          >
+            {({data, loading, refresh}) => {
+              // Store refresh function in ref when component mounts/updates
+              useEffect(() => {
+                refreshTableRef.current = refresh
+              }, [refresh])
 
-                              <Trash2 className="h-4 w-4" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+              if (loading) {
+                return <TableSkeleton rows={10} columns={6} />
+              }
 
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            </div>
-          )}
+              if (!data || data.results.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-500">
+                    {searchTerm ? "No policies found matching your search criteria" : "No policies found."}
+                  </div>
+                )
+              }
+
+              return (
+                <div className="overflow-x-auto mt-10 -ml-2">
+                  <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                    <TableHeader className="bg-gray-50/50">
+                      <TableRow>
+                        <TableHead>Policy Name</TableHead>
+                        <TableHead>Separation Type</TableHead>
+                        <TableHead>Notice Period</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Enforcement</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.results.map((policy) => (
+                        <TableRow key={policy.id}>
+                          <TableCell>{policy.policy_name || "N/A"}</TableCell>
+                          <TableCell>{policy.separation_type?.separation_type || "N/A"}</TableCell>
+                          <TableCell>
+                            {policy.min_notice_days} - {policy.max_notice_days} days
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={policy.is_active ? "default" : "secondary"}>
+                              {policy.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={policy.enforce_policy ? "destructive" : "outline"}>
+                              {policy.enforce_policy ? "Enforced" : "Not Enforced"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
+                                >
+                                  <MoreVertical className="h-4 w-4 text-gray-600" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                className="w-48 bg-white border border-gray-200 shadow-lg"
+                              >
+                                <DropdownMenuItem onClick={()=>{router.push(`/off-boarding/separation-policy/${policy.id}`)}} className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer">
+                                      <Eye className="h-4 w-4" /> View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={()=>{router.push(`/off-boarding/separation-policy/edit/${policy.id}/`)}} className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer">
+                                      <Edit className="h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setDeleteDialog({open: true, policy})} className="flex items-center px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer">
+
+                                    <Trash2 className="h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )
+            }}
+          </PaginatedTableWrapper>
         </CardContent>
       </div>
 
