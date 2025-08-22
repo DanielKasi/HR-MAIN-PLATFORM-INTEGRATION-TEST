@@ -892,7 +892,7 @@ def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
     output.seek(0)
     return output
 
-
+#TODO: Ensure that decimals are not just formatted since there is a possibility of them being null and we cause issues
 def generate_payslip_pdf(payslip):
     """
     Generates a structured payslip PDF with a detailed breakdown of the employee's
@@ -1122,19 +1122,19 @@ def generate_payslip_pdf(payslip):
             <tbody>
                 <tr>
                     <td class="label">Gross Salary:</td>
-                    <td>{payslip.gross_salary:,.2f}</td>
+                    <td>{payslip.gross_salary}</td>
                 </tr>
                 <tr>
                     <td class="label">Total Allowances:</td>
-                    <td>{payslip.total_allowances:,.2f}</td>
+                    <td>{payslip.total_allowances}</td>
                 </tr>
                 <tr>
                     <td class="label">Total Deductions:</td>
-                    <td>{payslip.total_deductions:,.2f}</td>
+                    <td>{payslip.total_deductions}</td>
                 </tr>
                 <tr>
                     <td class="label">Net Salary:</td>
-                    <td>{payslip.net_salary:,.2f}</td>
+                    <td>{payslip.net_salary}</td>
                 </tr>
             </tbody>
         </table>
@@ -1150,12 +1150,12 @@ def generate_payslip_pdf(payslip):
             <tbody>
                 <tr>
                     <td>Basic Salary</td>
-                    <td>{payslip.basic_salary:,.2f}</td>
+                    <td>{payslip.basic_salary}</td>
                 </tr>
                 {"".join(f"""
                 <tr>
                     <td>{item['name']}</td>
-                    <td>{item['amount']:,.2f}</td>
+                    <td>{item['amount']}</td>
                 </tr>""" for item in allowances_data)}
             </tbody>
         </table>
@@ -1172,7 +1172,7 @@ def generate_payslip_pdf(payslip):
                 {"".join(f"""
                 <tr>
                     <td>{item['name']}</td>
-                    <td>{item['amount']:,.2f}</td>
+                    <td>{item['amount']}</td>
                 </tr>""" for item in deductions_data)}
             </tbody>
         </table>
