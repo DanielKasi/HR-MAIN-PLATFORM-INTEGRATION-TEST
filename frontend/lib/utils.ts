@@ -71,6 +71,7 @@ import {
   IOffboardingStage,
   ISeparationType,
   ISeparationTypeFormData,
+  ISeparationPolicy,
   ITermination,
   ITerminationFormData,
   IAttendance,
@@ -3744,6 +3745,43 @@ export const TerminationInitiationsAPI = {
     }
   },
 
+  getPaginated: async ({ 
+    institutionId, 
+    page = 1, 
+    search 
+  }: { 
+    institutionId: number, 
+    page?: number;
+    search?: string;
+  }): Promise<IPaginatedResponse<ITermination>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+      
+      const endpoint = `on-boarding/termination-initiations/?${params.toString()}`;
+      const response = await apiRequest.get(endpoint);
+      return response.data as IPaginatedResponse<ITermination>;
+    } catch (error) {
+      console.error("Error fetching paginated termination initiations:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ITermination>> => {
+    try {
+      const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<ITermination>;
+    } catch (error) {
+      console.error("Error fetching termination initiations from URL:", error);
+      throw error;
+    }
+  },
+
   update: async ({
     terminationId,
     terminationData,
@@ -3835,6 +3873,43 @@ export const SeparationPolicyTypesAPI = {
     }
   },
 
+  getPaginated: async ({ 
+    institutionId, 
+    page = 1, 
+    search 
+  }: { 
+    institutionId: number, 
+    page?: number;
+    search?: string;
+  }): Promise<IPaginatedResponse<ISeparationType>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+      
+      const endpoint = `on-boarding/separation-types/?${params.toString()}`;
+      const response = await apiRequest.get(endpoint);
+      return response.data as IPaginatedResponse<ISeparationType>;
+    } catch (error) {
+      console.error("Error fetching paginated separation policy types:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ISeparationType>> => {
+    try {
+      const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<ISeparationType>;
+    } catch (error) {
+      console.error("Error fetching separation policy types from URL:", error);
+      throw error;
+    }
+  },
+
   getById: async (policyTypeId: number): Promise<ISeparationType | null> => {
     try {
       const response = await apiRequest.get(`on-boarding/separation-types/${policyTypeId}/`);
@@ -3898,6 +3973,43 @@ export const OffboardingStagesAPI = {
       const response = await apiRequest.get(`on-boarding/offboarding-stages/?${searchParams}`);
       return response.data as IPaginatedResponse<IOffboardingStage>;
     } catch (error) {
+      throw error;
+    }
+  },
+
+  getPaginated: async ({ 
+    institutionId, 
+    page = 1, 
+    search 
+  }: { 
+    institutionId: number, 
+    page?: number;
+    search?: string;
+  }): Promise<IPaginatedResponse<IOffboardingStage>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+      
+      const endpoint = `on-boarding/offboarding-stages/?${params.toString()}`;
+      const response = await apiRequest.get(endpoint);
+      return response.data as IPaginatedResponse<IOffboardingStage>;
+    } catch (error) {
+      console.error("Error fetching paginated offboarding stages:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IOffboardingStage>> => {
+    try {
+      const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<IOffboardingStage>;
+    } catch (error) {
+      console.error("Error fetching offboarding stages from URL:", error);
       throw error;
     }
   },
@@ -5096,6 +5208,109 @@ export const calendarAPI = {
   },
 };
 
+// Separation Policies API Namespace
+export const SeparationPoliciesAPI = {
+  getAll: async ({
+    institutionId,
+    searchParams,
+  }: {
+    institutionId: number;
+    searchParams?: URLSearchParams;
+  }): Promise<IPaginatedResponse<ISeparationPolicy>> => {
+    try {
+      const response = await apiRequest.get(`on-boarding/separation-policies/?${searchParams}`);
+      return response.data as IPaginatedResponse<ISeparationPolicy>;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getPaginated: async ({ 
+    institutionId, 
+    page = 1, 
+    search 
+  }: { 
+    institutionId: number, 
+    page?: number;
+    search?: string;
+  }): Promise<IPaginatedResponse<ISeparationPolicy>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+      
+      const endpoint = `on-boarding/separation-policies/?${params.toString()}`;
+      const response = await apiRequest.get(endpoint);
+      return response.data as IPaginatedResponse<ISeparationPolicy>;
+    } catch (error) {
+      console.error("Error fetching paginated separation policies:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ISeparationPolicy>> => {
+    try {
+      const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<ISeparationPolicy>;
+    } catch (error) {
+      console.error("Error fetching separation policies from URL:", error);
+      throw error;
+    }
+  },
+
+  getById: async (policyId: number): Promise<ISeparationPolicy | null> => {
+    try {
+      const response = await apiRequest.get(`on-boarding/separation-policies/${policyId}/`);
+      return response.data as ISeparationPolicy;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  create: async ({
+    policyData,
+  }: {
+    policyData: Partial<ISeparationPolicy>;
+  }): Promise<ISeparationPolicy | null> => {
+    try {
+      const response = await apiRequest.post("on-boarding/separation-policies/", policyData);
+      return response.data as ISeparationPolicy;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  update: async ({
+    policyId,
+    policyData,
+  }: {
+    policyId: number;
+    policyData: Partial<ISeparationPolicy>;
+  }): Promise<ISeparationPolicy | null> => {
+    try {
+      const response = await apiRequest.patch(
+        `on-boarding/separation-policies/${policyId}/`,
+        policyData,
+      );
+      return response.data as ISeparationPolicy;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  delete: async (policyId: number): Promise<boolean> => {
+    try {
+      await apiRequest.delete(`on-boarding/separation-policies/${policyId}/`);
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
 
 export async function fetchAttendanceData(
   startDate?: string,
