@@ -70,12 +70,15 @@ class DefaultDataAPIView(APIView):
             {
                 "id": str(uuid.uuid4()),
                 "name": dept["name"],
+            
                 "description": dept["description"],
                 "job_positions": [
                     {
                         "id": str(uuid.uuid4()),
                         "name": job["name"],
                         "description": job["description"],
+                        "salary_min": job["salary_min"],
+                        "salary_max": job["salary_max"],
                     }
                     for job in dept["job_positions"]
                 ],

@@ -27,7 +27,12 @@ default_data = [
         "name": "Information Technology Department",
         "description": "Manages technology infrastructure and support",
         "job_positions": [
-            {"name": "IT Manager", "description": "Oversees IT operations"},
+            {
+                "name": "IT Manager",
+                "description": "Oversees IT operations",
+                "salary_min": 50000,
+                "salary_max": 100000,
+            },
             {
                 "name": "System Administrator",
                 "description": "Maintains network and servers",

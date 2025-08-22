@@ -72,10 +72,15 @@ class EmployeeSerializer(serializers.ModelSerializer):
         """
         if value:
             today = date.today()
+            msgs = []
+            if value > today:
+                msgs.append("Date of birth cannot be in the future.")
             age = relativedelta(today, value).years
             if age < 18:
+                msgs.append(f"Employee must be at least 18 years old. Current age: {age}.")
+            if msgs:
                 raise serializers.ValidationError(
-                    {"error": f"Employee must be at least 18 years old."}
+                    {"error": " ".join(msgs)}
                 )
         return value
 
@@ -141,7 +146,6 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-
         print("==> Validated data passed to update():", validated_data)
         user_data = validated_data.pop("user", None)
 
@@ -152,17 +156,24 @@ class EmployeeSerializer(serializers.ModelSerializer):
             user_serializer.is_valid(raise_exception=True)
             user_serializer.save()
 
-        # Update employee fields
+        # 🔧 FIX: Handle salary logic before updating other fields
         salary_value = validated_data.pop("salary", None)
+        position_changed = "position" in validated_data and validated_data["position"] != instance.position
 
+        # Update employee fields
         print(f"\n\n\n{validated_data}")
         for attr, value in validated_data.items():
             print(f"Setting {attr} = {value}")
             setattr(instance, attr, value)
-        instance.save()
+        
+        # 🔧 FIX: If position changed and no explicit salary provided, use position's salary_min
+        if position_changed and salary_value is None and instance.position:
+            if hasattr(instance.position, "salary_min"):
+                instance.salary = instance.position.salary_min
+        elif salary_value is not None:
+            instance.salary = salary_value
 
-        if salary_value is not None:
-            Employee.objects.filter(id=instance.id).update(salary=salary_value)
+        instance.save()
 
         instance.refresh_from_db()
         print("\n\nFinal employee salary in memory:", instance.salary)
@@ -303,28 +314,69 @@ class EmployeeAttendanceSerializer(serializers.ModelSerializer):
         model = EmployeeAttendance
         fields = "__all__"
 
+    def __init__(self, *args, **kwargs):
+        # Extract the request context to get the logged-in user
+        self.request = kwargs.get('context', {}).get('request')
+        super().__init__(*args, **kwargs)
+
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         rep["employee"] = EmployeeSerializer(instance.employee).data
         return rep
 
+    def _should_validate_location(self, employee_data):
+        """
+        Check if location validation should be performed.
+        Only validate location when the logged-in user is checking in/out for themselves.
+        """
+        if not self.request or not self.request.user:
+            return False
+        
+        try:
+            # Get the logged-in user's employee record
+            logged_in_employee = Employee.objects.get(user=self.request.user)
+            # Compare with the employee in the attendance record
+            return logged_in_employee.id == employee_data.id
+        except Employee.DoesNotExist:
+            # If logged-in user is not an employee, skip location validation
+            return False
+
     def validate(self, data):
+        employee = data.get('employee')
+        if not employee:
+            raise serializers.ValidationError({"employee": "Employee is required."})
+        
+        # Check if we should validate location for this user
+        should_validate_location = self._should_validate_location(employee)
+        
         # Temporarily instantiate the model to run your custom validation logic
         instance = EmployeeAttendance(**data)
-        # Manually call your validation methods (adapt as needed)
-        if data.get('check_in_time') and (data.get('check_in_latitude') is not None or data.get('check_in_longitude') is not None):
-            if data.get('check_in_latitude') is None or data.get('check_in_longitude') is None:
-                raise serializers.ValidationError({"error": "Both check-in latitude and longitude must be provided if one is set."})
-            if not instance._is_location_valid(data['check_in_latitude'], data['check_in_longitude']):
-                raise serializers.ValidationError({"error": "Check-in location does not match any attached branch location."})
         
-        if data.get('check_out_time') and (data.get('check_out_latitude') is not None or data.get('check_out_longitude') is not None):
-            if data.get('check_out_latitude') is None or data.get('check_out_longitude') is None:
-                raise serializers.ValidationError({"error": "Both check-out latitude and longitude must be provided if one is set."})
-            if not instance._is_location_valid(data['check_out_latitude'], data['check_out_longitude']):
-                raise serializers.ValidationError({"error": "Check-out location does not match any attached branch location."})
+        # Only validate location if the user is checking in/out for themselves
+        if should_validate_location:
+            # Check-in location validation
+            if data.get('check_in_time') and (data.get('check_in_latitude') is not None or data.get('check_in_longitude') is not None):
+                if data.get('check_in_latitude') is None or data.get('check_in_longitude') is None:
+                    raise serializers.ValidationError({
+                        "error": "Both check-in latitude and longitude must be provided if one is set."
+                    })
+                if not instance._is_location_valid(data['check_in_latitude'], data['check_in_longitude']):
+                    raise serializers.ValidationError({
+                        "error": "Check-in location does not match any attached branch location."
+                    })
+            
+            # Check-out location validation
+            if data.get('check_out_time') and (data.get('check_out_latitude') is not None or data.get('check_out_longitude') is not None):
+                if data.get('check_out_latitude') is None or data.get('check_out_longitude') is None:
+                    raise serializers.ValidationError({
+                        "error": "Both check-out latitude and longitude must be provided if one is set."
+                    })
+                if not instance._is_location_valid(data['check_out_latitude'], data['check_out_longitude']):
+                    raise serializers.ValidationError({
+                        "error": "Check-out location does not match any attached branch location."
+                    })
         
-        return data    
+        return data
 
 
 class EmployeeActivationSerializer(serializers.Serializer):
