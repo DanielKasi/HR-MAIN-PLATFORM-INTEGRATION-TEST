@@ -45,7 +45,7 @@ import {
 import {useBranches} from "@/hooks/use-branches";
 import {MultiSelectBranches} from "@/components/multi-select-branches";
 import type {
-  EmployeeFormData,
+  IEmployeeFormData,
   ICreateEmployeeForm,
   IDepartment,
   IJobPosition,
@@ -59,6 +59,7 @@ import {toast} from "sonner";
 import {selectEmployeeCreationForm} from "@/store/miscellaneous/selectors";
 import {useDispatch} from "react-redux";
 import {clearEmployeeForm, saveEmployeeForm} from "@/store/miscellaneous/actions";
+import { set } from "date-fns";
 
 
 const maritalStatusOptions = [
@@ -104,13 +105,27 @@ export default function AddEmployeeForm() {
     name: "",
     description: "",
     code: "",
+    institution: selectedInstitution ? selectedInstitution.id : 0,
   });
 
   const [employeeTypeFormData, setEmployeeTypeFormData] = useState<IEmployeeTypeFormData>({
     name: "",
     description: "",
     code: "",
+    institution: selectedInstitution ? selectedInstitution.id : 0,
   });
+
+  useEffect(()=>{
+    setWorkTypeFormData((prev) => ({
+      ...prev,
+      institution: selectedInstitution ? selectedInstitution.id : 0,
+    }));
+    setEmployeeTypeFormData((prev) => ({
+      ...prev,
+      institution: selectedInstitution ? selectedInstitution.id : 0,
+    }));
+
+  }, [selectedInstitution]);
 
   const [formData, setFormData] = useState<Omit<ICreateEmployeeForm, "phone_number_country_code"|"emergency_contact_phone_country_code">>({
     fullname: "",
@@ -429,7 +444,7 @@ export default function AddEmployeeForm() {
       if (newWorkType) {
         setWorkTypes((prev) => [...prev, newWorkType]);
         setFormData((prev) => ({...prev, work_type: newWorkType.id}));
-        setWorkTypeFormData({name: "", description: "", code: ""});
+        setWorkTypeFormData(prev => ({...prev, name: "", description: "", code: ""}));
         setIsWorkTypeModalOpen(false);
         showSuccessToast("Work type added successfully");
       } else {
@@ -466,7 +481,7 @@ export default function AddEmployeeForm() {
       if (newEmployeeType) {
         setEmployeeTypes((prev) => [...prev, newEmployeeType]);
         setFormData((prev) => ({...prev, employee_type: newEmployeeType.id}));
-        setEmployeeTypeFormData({name: "", description: "", code: ""});
+                setEmployeeTypeFormData(prev => ({...prev, name: "", description: "", code: ""}));
         setIsEmployeeTypeModalOpen(false);
         showSuccessToast("Employee type name added successfully");
       } else {
@@ -619,7 +634,7 @@ export default function AddEmployeeForm() {
     setSubmitError(null);
 
     try {
-      const dataToSubmit: EmployeeFormData = {
+      const dataToSubmit: IEmployeeFormData = {
         id: 0,
         user: {
           fullname: formData.fullname,
@@ -1025,7 +1040,7 @@ export default function AddEmployeeForm() {
                           variant="outline"
                           onClick={() => {
                             setIsWorkTypeModalOpen(false);
-                            setWorkTypeFormData({name: "", description: "", code: ""});
+                                    setWorkTypeFormData(prev => ({...prev, name: "", description: "", code: ""}));
                           }}
                           disabled={isAddingWorkType}
                         >
@@ -1141,7 +1156,7 @@ export default function AddEmployeeForm() {
                           variant="outline"
                           onClick={() => {
                             setIsEmployeeTypeModalOpen(false);
-                            setEmployeeTypeFormData({name: "", description: "", code: ""});
+                                    setEmployeeTypeFormData(prev => ({...prev, name: "", description: "", code: ""}));
                           }}
                           disabled={isAddingEmployeeType}
                         >

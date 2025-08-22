@@ -8,7 +8,7 @@ import {Input} from "@/components/ui/input";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {TableSkeleton} from "@/components/common/table-skeleton";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {type IEmployee, type EmployeeFormData, PERMISSION_CODES} from "@/types/types.utils";
+import {type IEmployee, type IEmployeeFormData, PERMISSION_CODES} from "@/types/types.utils";
 import {BulkUploadEmployeesDialog} from "@/components/dialogs/bulk-upload-employees-dialog";
 import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
 import {getAllEmployees, getPaginatedEmployeesFromUrl} from "@/lib/utils";

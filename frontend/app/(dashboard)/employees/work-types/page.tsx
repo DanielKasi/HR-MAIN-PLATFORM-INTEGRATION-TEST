@@ -23,7 +23,7 @@ import {
 import { toast } from "sonner"
 
 
-import { getWorkTypes, getPaginatedWorkTypesFromUrl, updateWorkType, deleteWorkType, createWorkType, showErrorToast } from "@/lib/utils"
+import { getWorkTypes, getPaginatedWorkTypesFromUrl, updateWorkType, deleteWorkType, createWorkType } from "@/lib/utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import type { IWorkType, IWorkTypeFormData } from "@/types/types.utils"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
@@ -41,10 +41,12 @@ interface WorkTypeModalProps {
 
 
 function WorkTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting, existingTypes }: WorkTypeModalProps) {
+  const selectedInstitution = useSelector(selectSelectedInstitution);
   const [formData, setFormData] = useState<IWorkTypeFormData>({
     name: "",
     description: "",
     code: "",
+    institution: selectedInstitution?.id || 0,
   })
 
   const [errors, setErrors] = useState<Partial<Record<keyof IWorkTypeFormData, string>>>({})
@@ -56,13 +58,18 @@ function WorkTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting, exi
           name: editingType.name,
           description: editingType.description || "",
           code: editingType.code || "",
+          institution: editingType.institution || selectedInstitution?.id || 0,
         })
-      } else {
-        setFormData({ name: "", description: "", code: "" })
-      }
+      } 
       setErrors({})
     }
   }, [isOpen, editingType])
+
+  useEffect(() => {
+    if (selectedInstitution) {
+      setFormData((prev) => ({ ...prev, institution: selectedInstitution.id }))
+    }
+  }, [selectedInstitution])
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof IWorkTypeFormData, string>> = {}

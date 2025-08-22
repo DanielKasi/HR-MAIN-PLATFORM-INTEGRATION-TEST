@@ -276,7 +276,7 @@ export default function EmployeeProfile() {
           <p className="text-[#e21732] mb-4">{error || "Employee not found"}</p>
           <div className="space-y-2">
             <Link href="/employees/employee-list">
-              <Button className="bg-[#4426da] hover:bg-[#4426da]/90 text-white w-full md:w-auto">
+              <Button className="text-white w-full md:w-auto">
                 Back to Employees
               </Button>
             </Link>

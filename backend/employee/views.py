@@ -1632,7 +1632,7 @@ class WorkTypeListCreateAPIView(APIView):
         responses=WorkTypeSerializer(many=True),
         description="Get list of all work types",
     )
-    def get(self, request):
+    def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
         user = request.user.profile
         
