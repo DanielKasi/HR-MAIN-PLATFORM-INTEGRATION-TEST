@@ -253,7 +253,7 @@ export default function EmployeeTypeManagement() {
   }
 
   return (
-    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 min-h-screen">
       <div className="w-full bg-white">
         <CardHeader className="space-y-4 p-0 mb-6">
           <CardTitle className="flex flex-row items-start md:items-center justify-between gap-4">

@@ -909,6 +909,8 @@ class AssetReturnListCreateView(APIView):
     )
     def get(self, request):
         search_query = request.query_params.get("search", None)
+        user = request.user.profile if request and hasattr(request, "user") else None
+        
 
         try:
             institution = Institution.objects.get(id=user.institution.id)

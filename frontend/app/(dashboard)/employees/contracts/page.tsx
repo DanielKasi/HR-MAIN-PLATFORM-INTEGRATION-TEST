@@ -70,7 +70,7 @@ export default function ContractsPage() {
   }, [isDifferenceDialogShwown])
 
   return (
-    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 min-h-screen">
       <CardHeader className="space-y-4 p-0">
         <CardTitle className="flex flex-col items-start justify-start gap-4">
           <span className="text-2xl font-bold">Contract Management</span>

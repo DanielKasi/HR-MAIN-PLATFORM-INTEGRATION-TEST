@@ -1767,6 +1767,145 @@ export const getDisciplinaryActionById = async (
   }
 };
 
+// Leave Types API Namespace
+export const LeaveTypesAPI = {
+  getAll: async ({
+    institutionId,
+    searchParams,
+  }: {
+    institutionId: number;
+    searchParams?: URLSearchParams;
+  }): Promise<IPaginatedResponse<ILeaveType>> => {
+    try {
+      const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-types/?${searchParams}`);
+      return response.data as IPaginatedResponse<ILeaveType>;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getPaginated: async ({
+    institutionId,
+    page = 1,
+    search,
+    status,
+    category,
+  }: {
+    institutionId: number;
+    page?: number;
+    search?: string;
+    status?: string;
+    category?: string;
+  }): Promise<IPaginatedResponse<ILeaveType>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+
+      if (status && status !== "all") {
+        params.append("is_active", status === "active" ? "true" : "false");
+      }
+
+      if (category && category !== "all") {
+        params.append("category", category);
+      }
+
+      const endpoint = `leave-mgt/${institutionId}/leave-types/?${params.toString()}`;
+      const response = await apiRequest.get(endpoint);
+      return response.data as IPaginatedResponse<ILeaveType>;
+    } catch (error) {
+      console.error("Error fetching paginated leave types:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ILeaveType>> => {
+    try {
+      const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<ILeaveType>;
+    } catch (error) {
+      console.error("Error fetching leave types from URL:", error);
+      throw error;
+    }
+  },
+
+  getById: async (leaveTypeId: number): Promise<ILeaveType | null> => {
+    try {
+      const response = await apiRequest.get(`leave-mgt/leave-types/${leaveTypeId}/`);
+      return response.data as ILeaveType;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  create: async ({
+    institutionId,
+    leaveTypeData,
+  }: {
+    institutionId: number;
+    leaveTypeData: ILeaveTypeFormData;
+  }): Promise<ILeaveType | null> => {
+    try {
+      const formData = new FormData();
+
+      // Add institution to the form data
+      formData.append("institution", institutionId.toString());
+
+      Object.entries(leaveTypeData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          formData.append(key, value.toString());
+        }
+      });
+
+      const response = await apiRequest.post(`leave-mgt/${institutionId}/leave-types/`, formData);
+      return response.data as ILeaveType;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  update: async ({
+    leaveTypeId,
+    leaveTypeData,
+  }: {
+    leaveTypeId: string | number;
+    leaveTypeData: ILeaveTypeFormData;
+  }): Promise<ILeaveType | null> => {
+    try {
+      const formData = new FormData();
+      Object.entries(leaveTypeData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          formData.append(key, value.toString());
+        }
+      });
+
+      const response = await apiRequest.patch(`leave-mgt/leave-types/${leaveTypeId}/`, formData);
+      return response.data as ILeaveType;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  delete: async (leaveTypeId: string | number): Promise<boolean> => {
+    try {
+      const response = await apiRequest.delete(`leave-mgt/leave-types/${leaveTypeId}/`);
+
+      // Check if deletion was successful (status 200, 201, 204, etc.)
+      if (response.status >= 200 && response.status < 300) {
+        return true;
+      }
+      return false;
+    } catch (error) {
+      return false;
+    }
+  },
+};
+
+// Legacy function for backward compatibility
 export const getLeaveTypes = async ({
   institutionId,
 }: {
@@ -1928,6 +2067,82 @@ export const deleteLeavePolicy = async ({
     // console.error("Failed to delete leave policy:", error);
     return false;
   }
+};
+
+// Leave Policies API Namespace
+export const LeavePoliciesAPI = {
+  getAll: async ({ institutionId }: { institutionId: number }): Promise<ILeavePolicy[]> => {
+    return getLeavePolicies({ institutionId });
+  },
+
+  getPaginated: async ({
+    institutionId,
+    page = 1,
+    search,
+  }: {
+    institutionId: number;
+    page?: number;
+    search?: string;
+  }): Promise<IPaginatedResponse<ILeavePolicy>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+      
+      if (search) {
+        params.append('search', search);
+      }
+
+      const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-policies/?${params.toString()}`);
+      return response.data as IPaginatedResponse<ILeavePolicy>;
+    } catch (error) {
+      console.error("Error fetching paginated leave policies:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ILeavePolicy>> => {
+    try {
+      const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<ILeavePolicy>;
+    } catch (error) {
+      console.error("Error fetching leave policies from URL:", error);
+      throw error;
+    }
+  },
+
+  getById: async (policyId: number): Promise<ILeavePolicy | null> => {
+    try {
+      const response = await apiRequest.get(`leave-mgt/leave-policies/${policyId}/`);
+      return response.data as ILeavePolicy;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  create: async ({
+    institutionId,
+    leavePolicyData,
+  }: {
+    institutionId: number;
+    leavePolicyData: ILeavePolicyFormData;
+  }): Promise<ILeavePolicy | null> => {
+    return createLeavePolicy({ institutionId, leavePolicyData });
+  },
+
+  update: async ({
+    leavePolicyId,
+    leavePolicyData,
+  }: {
+    leavePolicyId: string | number;
+    leavePolicyData: ILeavePolicyFormData;
+  }): Promise<ILeavePolicy | null> => {
+    return updateLeavePolicy({ leavePolicyId, leavePolicyData });
+  },
+
+  delete: async (leavePolicyId: string | number): Promise<boolean> => {
+    return deleteLeavePolicy({ leavePolicyId });
+  },
 };
 
 export const createLeaveApplication = async ({
@@ -2204,6 +2419,131 @@ export const bulkApproveRejectLeaveApplications = async ({
   }
 };
 
+// Leave Applications API Namespace
+export const LeaveApplicationsAPI = {
+  getAll: async ({ institutionId, employeeId }: { institutionId: number; employeeId?: string }): Promise<ILeaveRequest[]> => {
+    return getLeaveApplications({ institutionId, employeeId });
+  },
+
+  getPaginated: async ({
+    institutionId,
+    page = 1,
+    search,
+    status,
+    leaveType,
+  }: {
+    institutionId: number;
+    page?: number;
+    search?: string;
+    status?: string;
+    leaveType?: string;
+  }): Promise<IPaginatedResponse<ILeaveRequest>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+      
+      if (search) {
+        params.append('search', search);
+      }
+      if (status && status !== 'all') {
+        params.append('status', status);
+      }
+      if (leaveType && leaveType !== 'all') {
+        params.append('leave_type_id', leaveType);
+      }
+
+      const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-applications/?${params.toString()}`);
+      return response.data as IPaginatedResponse<ILeaveRequest>;
+    } catch (error) {
+      console.error("Error fetching paginated leave applications:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ILeaveRequest>> => {
+    try {
+      const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<ILeaveRequest>;
+    } catch (error) {
+      console.error("Error fetching leave applications from URL:", error);
+      throw error;
+    }
+  },
+
+  getById: async (applicationId: number): Promise<ILeaveRequest | null> => {
+    try {
+      const response = await apiRequest.get(`leave-mgt/leave-applications/${applicationId}/`);
+      return response.data as ILeaveRequest;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  create: async ({
+    institutionId,
+    leaveApplicationData,
+  }: {
+    institutionId: number;
+    leaveApplicationData: ILeaveRequestFormData;
+  }): Promise<ILeaveRequest | null> => {
+    return createLeaveApplication({ institutionId, leaveApplicationData });
+  },
+
+  update: async ({
+    leaveApplicationId,
+    leaveApplicationData,
+  }: {
+    leaveApplicationId: number | string;
+    leaveApplicationData: Partial<ILeaveRequestFormData>;
+  }): Promise<ILeaveRequest | null> => {
+    return updateLeaveApplication({ leaveApplicationId, leaveApplicationData });
+  },
+
+  delete: async (applicationId: number | string): Promise<boolean> => {
+    try {
+      const response = await apiRequest.delete(`leave-mgt/leave-applications/${applicationId}/`);
+      return response.status === 204;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  approve: async ({
+    leaveApplicationId,
+    institutionId,
+    rejectionReason,
+  }: {
+    leaveApplicationId: number | string;
+    institutionId: number;
+    rejectionReason?: string;
+  }): Promise<ILeaveRequest | null> => {
+    return approveRejectLeaveApplication({
+      leaveApplicationId,
+      institutionId,
+      action: 'approve',
+      rejectionReason,
+    });
+  },
+
+  reject: async ({
+    leaveApplicationId,
+    institutionId,
+    rejectionReason,
+  }: {
+    leaveApplicationId: number | string;
+    institutionId: number;
+    rejectionReason?: string;
+  }): Promise<ILeaveRequest | null> => {
+    return approveRejectLeaveApplication({
+      leaveApplicationId,
+      institutionId,
+      action: 'reject',
+      rejectionReason,
+    });
+  },
+};
+
 export const createAllowanceType = async ({
   institutionId,
   allowanceTypeData,
@@ -2365,6 +2705,87 @@ export const deleteLeaveBalance = async ({ id }: { id: number }) => {
   } catch (error) {
     throw error;
   }
+};
+
+// Leave Balances API Namespace
+export const LeaveBalancesAPI = {
+  getAll: async ({ institutionId, employeeId }: { institutionId: number; employeeId?: string }): Promise<ILeaveBalance[]> => {
+    return getAllLeaveBalances({ institutionId, employeeId });
+  },
+
+  getPaginated: async ({
+    institutionId,
+    page = 1,
+    search,
+  }: {
+    institutionId: number;
+    page?: number;
+    search?: string;
+  }): Promise<IPaginatedResponse<ILeaveBalance>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+      
+      if (search) {
+        params.append('search', search);
+      }
+
+      const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-balances/?${params.toString()}`);
+      return response.data as IPaginatedResponse<ILeaveBalance>;
+    } catch (error) {
+      console.error("Error fetching paginated leave balances:", error);
+      throw error;
+    }
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ILeaveBalance>> => {
+    try {
+      const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<ILeaveBalance>;
+    } catch (error) {
+      console.error("Error fetching leave balances from URL:", error);
+      throw error;
+    }
+  },
+
+  getById: async (balanceId: number): Promise<ILeaveBalance | null> => {
+    try {
+      const response = await apiRequest.get(`leave-mgt/leave-balances/${balanceId}/`);
+      return response.data as ILeaveBalance;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  create: async ({
+    institutionId,
+    leaveBalanceData,
+  }: {
+    institutionId: number;
+    leaveBalanceData: Partial<ILeaveBalance>;
+  }): Promise<ILeaveBalance | null> => {
+    return createLeaveBalance({ institutionId, leaveBalanceData });
+  },
+
+  update: async ({
+    balanceId,
+    leaveBalanceData,
+  }: {
+    balanceId: number;
+    leaveBalanceData: Partial<ILeaveBalance>;
+  }): Promise<ILeaveBalance | null> => {
+    return updateLeaveBalance({ id: balanceId, leaveBalanceData });
+  },
+
+  delete: async (balanceId: number): Promise<boolean> => {
+    try {
+      await deleteLeaveBalance({ id: balanceId });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  },
 };
 
 export const getAllowanceType = async (id: number): Promise<IAllowanceType | null> => {

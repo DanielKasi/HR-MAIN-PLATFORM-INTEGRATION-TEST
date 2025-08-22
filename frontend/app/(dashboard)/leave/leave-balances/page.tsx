@@ -1,27 +1,19 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import {
   Plus,
   Search,
-  Edit,
   Trash2,
   Eye,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  RefreshCw,
-  Filter,
   User,
   Settings,
   Loader2,
   MoreVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -57,10 +49,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import {
-  getAllLeaveBalances,
-  createLeaveBalance,
-  updateLeaveBalance,
-  deleteLeaveBalance,
+  LeaveBalancesAPI,
   getAllEmployees,
   getLeaveTypes,
 } from "@/lib/utils";
@@ -69,10 +58,10 @@ import { ILeaveBalance, IEmployee, ILeaveType } from "@/types/types.utils";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/types/types.utils";
 import { TableSkeleton } from "@/components/common/table-skeleton";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { Icon } from "@iconify/react";
 
-// Pagination constants
-const PAGE_SIZES = [10, 25, 50, 100];
-const DEFAULT_PAGE_SIZE = 10;
+
 
 // Define grouped employee interface
 interface GroupedEmployee {
@@ -109,7 +98,6 @@ export default function LeaveBalanceComponent() {
   const router = useRouter();
 
   // State management
-  const [data, setData] = useState<ILeaveBalance[]>([]);
   const [employees, setEmployees] = useState<IEmployee[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -120,11 +108,8 @@ export default function LeaveBalanceComponent() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ILeaveBalance | null>(null);
   const [deletingEmployee, setDeletingEmployee] = useState<GroupedEmployee | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
   const [formData, setFormData] = useState({
     employee: "",
@@ -145,49 +130,49 @@ export default function LeaveBalanceComponent() {
     return allocated + carriedForward - used - pending;
   };
 
-  // Optimized data fetching
-  const fetchAllData = useCallback(
-    async (showRefreshLoader = false) => {
+  // Success handlers
+  const handleCreateSuccess = (newBalance: ILeaveBalance) => {
+    toast.success("Leave balance created successfully");
+    refreshTableRef.current?.();
+  };
+
+  const handleUpdateSuccess = (updatedBalance: ILeaveBalance) => {
+    toast.success("Leave balance updated successfully");
+    refreshTableRef.current?.();
+  };
+
+  const handleDeleteSuccess = () => {
+    toast.success("Leave balance deleted successfully");
+    refreshTableRef.current?.();
+  };
+
+  // Fetch employees and leave types when institution changes
+  useEffect(() => {
+    const fetchData = async () => {
       if (!selectedInstitution?.id) {
-        setData([]);
         setEmployees([]);
         setLeaveTypes([]);
         return;
       }
 
       try {
-        if (showRefreshLoader) {
-          setIsRefreshing(true);
-        } else {
-          setIsLoading(true);
-        }
-
-        const [balances, employeeData, types] = await Promise.all([
-          getAllLeaveBalances({ institutionId: selectedInstitution.id }),
+        const [employeesData, leaveTypesData] = await Promise.all([
           getAllEmployees({ institutionId: selectedInstitution.id }),
           getLeaveTypes({ institutionId: selectedInstitution.id }),
         ]);
 
-        setData(balances);
-        setEmployees(employeeData.results);
-        setLeaveTypes(types.filter((type) => type.is_active !== false));
+        setEmployees(employeesData.results);
+        setLeaveTypes(leaveTypesData.filter((type) => type.is_active !== false));
       } catch (error: any) {
         console.error("Error fetching data:", error);
         toast.error(error.message || "Failed to load data");
-        setData([]);
         setEmployees([]);
         setLeaveTypes([]);
-      } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
       }
-    },
-    [selectedInstitution?.id]
-  );
+    };
 
-  useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
+    fetchData();
+  }, [selectedInstitution?.id]);
 
   // Memoized helper functions
   const getEmployeeName = useCallback(
@@ -232,106 +217,34 @@ export default function LeaveBalanceComponent() {
     return typeof leaveType === "object" ? leaveType.id : leaveType;
   };
 
-  // Group employees with their leave balances
-  const groupedEmployees = useMemo((): GroupedEmployee[] => {
-    const filtered = data.filter((item) => {
-      const employeeName = getEmployeeName(item.employee);
-      const employeeCode = getEmployeeCode(item.employee);
-      const leaveTypeName = getLeaveTypeName(item.leave_type);
-
-      const matchesSearch =
-        !searchTerm.trim() ||
-        employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       ((employeeCode ?? '') as string).toLowerCase().includes(searchTerm.toLowerCase())
-        leaveTypeName.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = filterType === "all" || leaveTypeName === filterType;
-      const matchesYear = filterYear === "all" || item.year.toString() === filterYear;
-      return matchesSearch && matchesType && matchesYear;
-    });
-
-    const grouped = new Map<number, GroupedEmployee>();
-
-    filtered.forEach((item) => {
-      const employeeId = getEmployeeId(item.employee);
-      const employeeName = getEmployeeName(item.employee);
-      const employeeCode = getEmployeeCode(item.employee);
-
-      if (!grouped.has(employeeId)) {
-        grouped.set(employeeId, {
-          employeeId,
-          employeeName,
-          employeeCode,
-          leaveBalances: [],
-          totalAvailable: 0,
-          status: "good",
-        });
-      }
-
-      const group = grouped.get(employeeId)!;
-      group.leaveBalances.push(item);
-    });
-
-    return Array.from(grouped.values()).map((group) => {
-      const totalAvailable = group.leaveBalances.reduce((sum, balance) => {
-        const available = typeof balance.available_days === "string"
-          ? parseFloat(balance.available_days)
-          : balance.available_days || 0;
-        return sum + available;
-      }, 0);
-
-      let status: "good" | "low" | "overused" = "good";
-      if (totalAvailable < 0) {
-        status = "overused";
-      } else if (totalAvailable <= 5) {
-        status = "low";
-      }
-
-      return {
-        ...group,
-        totalAvailable,
-        status,
-      };
-    });
-  }, [data, searchTerm, filterType, filterYear, getEmployeeName, getEmployeeCode, getLeaveTypeName]);
-
-  // Stats calculations
-  const totalEmployees = useMemo(() => groupedEmployees.length, [groupedEmployees]);
-  const lowBalanceEmployees = useMemo(
-    () => groupedEmployees.filter((g) => g.status === "low").length,
-    [groupedEmployees]
-  );
-  const overusedBalanceEmployees = useMemo(
-    () => groupedEmployees.filter((g) => g.status === "overused").length,
-    [groupedEmployees]
-  );
-  const totalLeaveTypes = useMemo(
-    () => new Set(groupedEmployees.flatMap((g) => g.leaveBalances.map((b) => getLeaveTypeId(b.leave_type)))).size,
-    [groupedEmployees, getLeaveTypeId]
-  );
-
-  // Pagination
-  const totalPages = Math.ceil(groupedEmployees.length / pageSize);
-  const paginatedEmployees = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    return groupedEmployees.slice(start, end);
-  }, [groupedEmployees, currentPage, pageSize]);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handlePageSizeChange = (newPageSize: string) => {
-    setPageSize(parseInt(newPageSize));
-    setCurrentPage(1);
-  };
-
+  // Clear filters function
   const clearFilters = () => {
     setSearchTerm("");
     setFilterType("all");
     setFilterYear("all");
-    setCurrentPage(1);
   };
+
+  // Check if filters are applied
+  const hasFilters = searchTerm.trim() !== "" || filterType !== "all" || filterYear !== "all";
+
+  // Fetch functions for PaginatedTableWrapper
+  const fetchFirstPage = async (search?: string) => {
+    if (!selectedInstitution?.id) {
+      return { results: [], count: 0, next: null, previous: null };
+    }
+
+    return LeaveBalancesAPI.getPaginated({
+      institutionId: selectedInstitution.id,
+      page: 1,
+      search,
+    });
+  };
+
+  const fetchFromUrl = async ({ url }: { url: string }) => {
+    return LeaveBalancesAPI.getPaginatedFromUrl({ url });
+  };
+
+
 
   // Form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -361,28 +274,22 @@ export default function LeaveBalanceComponent() {
     };
 
       if (editingItem) {
-        const updatedBalance = await updateLeaveBalance({
-          id: editingItem.id,
+        const updatedBalance = await LeaveBalancesAPI.update({
+          balanceId: editingItem.id,
           leaveBalanceData,
         });
         if (updatedBalance) {
-          setData((prev) =>
-            prev.map((item) =>
-              item.id === editingItem.id ? { ...item, ...updatedBalance } : item
-            )
-          );
-          toast.success("Leave balance updated successfully");
+          handleUpdateSuccess(updatedBalance);
         } else {
           toast.error("Failed to update leave balance");
         }
       } else {
-        const newBalance = await createLeaveBalance({
+        const newBalance = await LeaveBalancesAPI.create({
           institutionId: selectedInstitution.id,
           leaveBalanceData,
         });
         if (newBalance) {
-          setData((prev) => [...prev, newBalance]);
-          toast.success("Leave balance created successfully");
+          handleCreateSuccess(newBalance);
         } else {
           toast.error("Failed to create leave balance");
         }
@@ -440,50 +347,31 @@ export default function LeaveBalanceComponent() {
     try {
       await Promise.all(
         deletingEmployee.leaveBalances.map((balance) =>
-          deleteLeaveBalance({ id: balance.id })
+          LeaveBalancesAPI.delete(balance.id)
         )
       );
-      setData((prev) =>
-        prev.filter((item) => getEmployeeId(item.employee) !== deletingEmployee.employeeId)
-      );
-      toast.success("Leave balances deleted successfully");
+      handleDeleteSuccess();
       setIsDeleteDialogOpen(false);
       setDeletingEmployee(null);
     } catch (error: any) {
       console.error("Error deleting leave balances:", error);
       toast.error(error.message || "Failed to delete leave balances");
-      await fetchAllData();
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleRefresh = () => {
-    fetchAllData(true);
-    setCurrentPage(1);
-  };
 
-  // Get unique years and leave types
+
+  // Get unique years and leave types from static data
   const availableYears = useMemo(() => {
-    const years = new Set<number>(data.map((item) => item.year));
-    return Array.from(years).sort((a, b) => b - a);
-  }, [data]);
+    const currentYear = new Date().getFullYear();
+    return [currentYear, currentYear - 1, currentYear - 2, currentYear + 1];
+  }, []);
 
   const uniqueLeaveTypes = useMemo(() => {
-    const types = new Set<string>(
-      data
-        .map((item) => getLeaveTypeName(item.leave_type))
-        .filter((type) => type !== "Unknown Leave Type")
-    );
-    return Array.from(types);
-  }, [data, getLeaveTypeName]);
-
-  // Set default filter year to the most recent year
-  useEffect(() => {
-    if (availableYears.length > 0 && filterYear === "all") {
-      setFilterYear(availableYears[0].toString());
-    }
-  }, [availableYears, filterYear]);
+    return leaveTypes.map(type => type.name);
+  }, [leaveTypes]);
 
   if (!selectedInstitution?.id) {
     return (
@@ -503,61 +391,67 @@ export default function LeaveBalanceComponent() {
   }
 
 
-    if (isLoading) {
-      return (
-        <div className="p-2 space-y-6">
-          <Card className="h-[calc(100vh-2rem)] shadow-lg">
-            <CardHeader className="border-b">
-              <div className="flex justify-between gap-8 items-center">
-                <div className="flex items-center justify-start gap-4">
-                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
-                  <div className="space-y-2">
-                    <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
-                </div>
-              </div>
-            </CardHeader>
-            <TableSkeleton rows={10} columns={8} />
-          </Card>
-        </div>
-      )
-    }
+
 
   return (
-    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
+    <div className="flex flex-col w-full min-h-screen bg-white">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Leave Balances</h1>
-          <p className="text-muted-foreground">
-            Manage employee leave balances for {selectedInstitution?.institution_name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                {/* <Button className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Leave Balance
-                </Button> */}
-              </DialogTrigger>
+      <div className="flex flex-col gap-6 p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Leave Balances</h1>
+          </div>
+          
+      </div>
+
+        {/* Search and Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-center justify-between">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search leave balances..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Select value={filterType} onValueChange={(value: string) => setFilterType(value)}>
+              <SelectTrigger className="w-full sm:w-[180px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+                <SelectValue placeholder="All Leave Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-sm sm:text-base">All Leave Types</SelectItem>
+                {uniqueLeaveTypes.map((type) => (
+                  <SelectItem key={type} value={type} className="text-sm sm:text-base">
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterYear} onValueChange={(value: string) => setFilterYear(value)}>
+              <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+                <SelectValue placeholder="All Years" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-sm sm:text-base">All Years</SelectItem>
+                {availableYears.map((year) => (
+                  <SelectItem key={year} value={year.toString()} className="text-sm sm:text-base">
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}>
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="flex items-center gap-2 rounded-[12px]">
+                    <Plus className="h-4 w-4" />
+                    Add Leave Balance
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="sm:max-w-[650px] rounded-2xl border-0 shadow-2xl">
                 <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
                   <DialogTitle className="text-2xl font-bold text-gray-900">
@@ -723,315 +617,198 @@ export default function LeaveBalanceComponent() {
             </Dialog>
           </ProtectedComponent>
         </div>
+        </div>
       </div>
 
-        {/* Stats Cards */}
-      {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-8">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-blue-600">{totalEmployees}</div>
-              <p className="text-xs text-muted-foreground">Total Employees</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">{totalLeaveTypes}</div>
-              <p className="text-xs text-muted-foreground">Leave Types</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-yellow-600">{lowBalanceEmployees}</div>
-              <p className="text-xs text-muted-foreground">Low Balances</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-red-600">{overusedBalanceEmployees}</div>
-              <p className="text-xs text-muted-foreground">Overused Balances</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Table Content */}
+      <div className="flex-1 px-6 pb-6 min-h-0">
+        <PaginatedTableWrapper
+          fetchFirstPage={() => fetchFirstPage(searchTerm)}
+          fetchFromUrl={fetchFromUrl}
+          deps={[selectedInstitution?.id, searchTerm]}
+        >
+          {({ data, loading, refresh }) => {
+            // Store refresh function in ref when component mounts/updates
+            useEffect(() => {
+              refreshTableRef.current = refresh;
+            }, [refresh]);
+            if (loading) return <TableSkeleton rows={10} columns={6} />;
+            if (!data?.results?.length) {
+              return (
+                <div className="text-center py-12">
+                  <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No leave balances found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {searchTerm ? "No leave balances match your search." : "Get started by adding your first leave balance."}
+                  </p>
+                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}>
+                    <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Add First Leave Balance
+                    </Button>
+                  </ProtectedComponent>
+                </div>
+              );
+            }
 
+            // Apply client-side filtering
+            const filteredResults = data.results.filter((balance) => {
+              const leaveTypeName = getLeaveTypeName(balance.leave_type);
+              const matchesType = filterType === "all" || leaveTypeName === filterType;
+              const matchesYear = filterYear === "all" || balance.year.toString() === filterYear;
+              return matchesType && matchesYear;
+            });
 
-      {/* Search and Filters */}
-<div className="flex flex-wrap items-center justify-between gap-2 mt-12">
-  {/* Search Bar */}
-  <div className="relative w-full sm:w-[450px]">
-    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-    <Input
-      placeholder="Search by name, employee code, or leave type..."
-      value={searchTerm}
-      onChange={(e) => setSearchTerm(e.target.value)}
-      className="pl-10 h-10 text-sm"
-    />
-  </div>
+            // Group by employee
+            const groupedEmployees = filteredResults.reduce((acc, balance) => {
+              const employeeId = getEmployeeId(balance.employee);
+              if (!acc[employeeId]) {
+                acc[employeeId] = {
+                  employeeId,
+                  employeeName: getEmployeeName(balance.employee),
+                  employeeCode: getEmployeeCode(balance.employee),
+                  leaveBalances: [],
+                  totalAvailable: 0,
+                  status: "good" as const,
+                };
+              }
+              acc[employeeId].leaveBalances.push(balance);
+              return acc;
+            }, {} as Record<number, GroupedEmployee>);
 
-  {/* Filters + Rows per Page */}
-  <div className="flex flex-wrap justify-center items-center gap-4 mx-auto">
-    {/* Leave Type Filter */}
-    <Select value={filterType} onValueChange={setFilterType}>
-      <SelectTrigger className="w-[180px] h-10 text-sm px-4">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4" />
-          <SelectValue placeholder="Leave type" />
-        </div>
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All Leave Types</SelectItem>
-        {uniqueLeaveTypes.map((type) => (
-          <SelectItem key={type} value={type}>
-            {type}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+            // Calculate totals and status for each group
+            const groupedArray = Object.values(groupedEmployees).map((group) => {
+              const totalAvailable = group.leaveBalances.reduce((sum, balance) => {
+                const available = typeof balance.available_days === "string"
+                  ? parseFloat(balance.available_days)
+                  : balance.available_days || 0;
+                return sum + available;
+              }, 0);
 
-    {/* Year Filter */}
-    <Select value={filterYear} onValueChange={setFilterYear}>
-      <SelectTrigger className="w-[140px] h-10 text-sm px-4">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4" />
-          <SelectValue placeholder="Year" />
-        </div>
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All Years</SelectItem>
-        {availableYears.map((year) => (
-          <SelectItem key={year} value={year.toString()}>
-            {year}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+              let status: "good" | "low" | "overused" = "good";
+              if (totalAvailable < 0) {
+                status = "overused";
+              } else if (totalAvailable <= 5) {
+                status = "low";
+              }
 
-    {/* Rows per Page */}
-    <div className="flex items-center gap-2">
-      <span className="text-sm text-muted-foreground">Rows per page:</span>
-      <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-        <SelectTrigger className="w-[70px] h-8 text-sm">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {PAGE_SIZES.map((size) => (
-            <SelectItem key={size} value={size.toString()}>
-              {size}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  </div>
-</div>
- 
-    
-    
-      {/* Leave Balances Table */}
-      {isLoading ? (
-        <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="w-full h-12 bg-muted/10 rounded-md animate-pulse" />
-          ))}
-        </div>
-      ) : groupedEmployees.length === 0 ? (
-        <div className="p-12 text-center">
-          <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No leave balances found</h3>
-          <p className="text-muted-foreground mb-4">
-            {searchTerm || filterType !== "all" || filterYear !== "all"
-              ? "No leave balances match your filter criteria."
-              : "Get started by creating your first leave balance."}
-          </p>
-          {searchTerm || filterType !== "all" || filterYear !== "all" ? (
-            <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
-              //Clear Filters
-            </Button>
-          ) : (
-            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}>
-              <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Create First Leave Balance
-              </Button>
-            </ProtectedComponent>
-          )}
-        </div>
-      ) : (
-        <div className="overflow-x-auto mt-10">
-         <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead className="text-center">Leave Types</TableHead>
-                <TableHead className="text-center">Total Available</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-center">Last Updated</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedEmployees.map((group) => (
-                <TableRow key={group.employeeId}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`h-8 w-8 rounded-full ${
-                          group.status === "good"
-                            ? "bg-green-50"
-                            : group.status === "low"
-                            ? "bg-yellow-50"
-                            : "bg-red-50"
-                        } flex items-center justify-center`}
-                      >
-                        <User
-                          className={`h-4 w-4 ${
-                            group.status === "good"
-                              ? "text-green-600"
+              return {
+                ...group,
+                totalAvailable,
+                status,
+              };
+            });
+
+            return (
+              <div className="space-y-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Employee</TableHead>
+                      <TableHead className="text-center">Leave Types</TableHead>
+                      <TableHead className="text-center">Total Available</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="text-center">Last Updated</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {groupedArray.map((group) => (
+                      <TableRow key={group.employeeId}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`h-8 w-8 rounded-full ${
+                                group.status === "good"
+                                  ? "bg-green-50"
+                                  : group.status === "low"
+                                  ? "bg-yellow-50"
+                                  : "bg-red-50"
+                              } flex items-center justify-center`}
+                            >
+                              <User
+                                className={`h-4 w-4 ${
+                                  group.status === "good"
+                                    ? "text-green-600"
+                                    : group.status === "low"
+                                    ? "text-yellow-600"
+                                    : "text-red-600"
+                                }`}
+                              />
+                            </div>
+                            <div>
+                              <div className="font-medium">{group.employeeName}</div>
+                              <div className="text-sm text-muted-foreground">{group.employeeCode}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                            {group.leaveBalances.length} {group.leaveBalances.length === 1 ? "Type" : "Types"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell
+                          className={`text-center font-bold text-lg ${
+                            group.status === "overused"
+                              ? "text-red-600"
                               : group.status === "low"
                               ? "text-yellow-600"
-                              : "text-red-600"
+                              : "text-green-600"
                           }`}
-                        />
-                      </div>
-                      <div>
-                        <div className="font-medium">{group.employeeName}</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                      {group.leaveBalances.length} {group.leaveBalances.length === 1 ? "Type" : "Types"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell
-                    className={`text-center font-bold text-lg ${
-                      group.status === "overused"
-                        ? "text-red-600"
-                        : group.status === "low"
-                        ? "text-yellow-600"
-                        : "text-green-600"
-                    }`}
-                  >
-                    {group.totalAvailable}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge className={getStatusColor(group.status)}>
-                      {group.status.charAt(0).toUpperCase() + group.status.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {formatDate(
-                      group.leaveBalances.reduce((latest, balance) =>
-                        new Date(balance.updated_at) > new Date(latest.updated_at) ? balance : latest
-                      ).updated_at
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleView(group.employeeId)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View
-                        </DropdownMenuItem>
-                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}>
-                          {/* <DropdownMenuItem onClick={() => handleEdit(group)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem> */}
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setDeletingEmployee(group);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </ProtectedComponent>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+                        >
+                          {group.totalAvailable}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge className={getStatusColor(group.status)}>
+                            {group.status.charAt(0).toUpperCase() + group.status.slice(1)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {formatDate(
+                            group.leaveBalances.reduce((latest, balance) =>
+                              new Date(balance.updated_at) > new Date(latest.updated_at) ? balance : latest
+                            ).updated_at
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleView(group.employeeId)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View
+                              </DropdownMenuItem>
+                              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setDeletingEmployee(group);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </ProtectedComponent>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            );
+          }}
+        </PaginatedTableWrapper>
+      </div>
 
 
-      {/* Results Summary */}
-      {!isLoading && (
-        <div className="text-sm text-muted-foreground">
-          Showing {groupedEmployees.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to{" "}
-          {Math.min(currentPage * pageSize, groupedEmployees.length)} of {groupedEmployees.length} employees
-          {(searchTerm || filterType !== "all" || filterYear !== "all") &&
-            ` (filtered from ${new Set(data.map((item) => getEmployeeId(item.employee))).size} total)`}
-        </div>
-      )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronsLeft className="h-4 w-4" />
-            First
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </Button>
-          <Select
-            value={currentPage.toString()}
-            onValueChange={(value) => handlePageChange(parseInt(value))}
-          >
-            <SelectTrigger className="w-[70px] h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <SelectItem key={page} value={page.toString()}>
-                  {page}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(totalPages)}
-            disabled={currentPage === totalPages}
-          >
-            Last
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
 
       {/* Edit Dialog */}
       <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}>

@@ -1396,15 +1396,13 @@ export default function ApplicationsPage() {
     
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 w-full h-full bg-white p-3 sm:p-4 lg:p-8 gap-4 rounded-lg">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 w-full h-full bg-white p-3 sm:p-4 lg:p-8 gap-4 rounded-lg min-h-screen">
      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div className="flex flex-col">
         <h1 className="text-lg sm:text-2xl md:text-3xl font-bold whitespace-nowrap">
           Job Applications
         </h1>
-        <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-xs sm:max-w-none">
-          Manage and track all job applications for {selectedBranch.branch_name} -
-        </p>
+         
       </div>
       <Button onClick={() => setIsCreateDialogOpen(true)} className="flex items-center sm:mt-15 lg:mt-0">
         <Plus className="mr-2 h-4 w-4" />

@@ -153,7 +153,9 @@ class LeaveBalanceDetailAPIView(APIView):
     @extend_schema(summary="Delete a leave balance", responses={204: None})
     def delete(self, request, pk):
         balance = get_object_or_404(LeaveBalance, pk=pk)
+        print("Deleting balance:", balance)
         balance.delete()
+        print("Balance deleted")
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
