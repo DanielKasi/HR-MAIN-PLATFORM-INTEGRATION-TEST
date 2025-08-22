@@ -142,6 +142,8 @@ class InstitutionSerializer(serializers.ModelSerializer):
                         department=department,
                         job_position_status="active",
                         created_at=timezone.now(),
+                        salary_min=job_data.get("salary_min", 50000),
+                        salary_max=job_data.get("salary_max", 100000),
                     )
 
             # Create InstitutionDocuments

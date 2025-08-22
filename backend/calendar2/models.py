@@ -2,9 +2,10 @@ from django.db import models
 from datetime import timedelta, date
 from dateutil.relativedelta import relativedelta
 from utilities.holiday_manager import HolidayManager
+from utilities.utility_base_model import UtilityBaseModel
 
 
-class PublicHoliday(models.Model):
+class PublicHoliday(UtilityBaseModel):
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
@@ -13,8 +14,6 @@ class PublicHoliday(models.Model):
     title = models.CharField(max_length=100)
     date = models.DateField()
 
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
-    updated_at = models.DateTimeField(auto_now=True, blank=True, null=True)
 
     def __str__(self):
         return f"{self.title} on {self.date}"
@@ -46,7 +45,7 @@ class PublicHoliday(models.Model):
 
 
 # Preferably Zoom
-class OnlineMeeting(models.Model):
+class OnlineMeeting(UtilityBaseModel):
     event = models.OneToOneField(
         "Event", on_delete=models.CASCADE, related_name="online_event_details"
     )
@@ -56,13 +55,13 @@ class OnlineMeeting(models.Model):
     topic = models.CharField(max_length=200, blank=True, null=True)
     join_url = models.URLField()
     start_url = models.URLField()
-    created_at = models.DateTimeField(auto_now_add=True)
+
 
     def __str__(self):
         return f"Online Meeting for {self.topic} at {self.start_time}"
 
 
-class Event(models.Model):
+class Event(UtilityBaseModel):
     TARGET_AUDIENCE_CHOICES = [
         ("all", "All Employees"),
         ("department", "Specific Department"),
@@ -124,8 +123,6 @@ class Event(models.Model):
         help_text="If frequency is set, event will repeat until this date",
     )
 
-    created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
     created_by = models.ForeignKey(
         "users.Profile",
@@ -261,7 +258,7 @@ class EventOccurrence(models.Model):
         return f"{self.event.title} on {self.date}"
 
 
-class Calendar(models.Model):
+class Calendar(UtilityBaseModel):
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
@@ -280,8 +277,7 @@ class Calendar(models.Model):
         related_name="calendars",
         blank=True,
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+
 
     def __str__(self):
         return f"Calendar for {self.institution.institution_name} - {self.year}"

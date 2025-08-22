@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import {useState, useEffect, useMemo} from "react";
+import {useState, useEffect, useMemo, useRef} from "react";
 import {useRouter} from "next/navigation";
 import {useSelector} from "react-redux";
 import {
@@ -51,7 +51,7 @@ import {
 } from "@/components/ui/select";
 
 import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
-import {getInterviews, bulkCreateOnBoarding} from "@/lib/utils";
+import {getInterviews, bulkCreateOnBoarding, getPaginatedInterviews, getPaginatedInterviewsFromUrl} from "@/lib/utils";
 import type {IInterview} from "@/types/types.utils";
 import {PERMISSION_CODES} from "@/types/types.utils";
 import {toast} from "sonner";
@@ -59,10 +59,7 @@ import ProtectedComponent from "@/components/ProtectedComponent";
 import {formatCurrency} from "@/lib/helpers";
 import {useDocumentTitle} from "@/hooks/use-document-title";
 import {TableSkeleton} from "@/components/common/table-skeleton";
-
-// Pagination constants
-const PAGE_SIZES = [10, 25, 50, 100];
-const DEFAULT_PAGE_SIZE = 10;
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
 
 // Status options for filtering
 const STATUS_OPTIONS = [
@@ -89,12 +86,11 @@ export default function InterviewsPage() {
     to: null,
   });
   const [jobPositionFilter, setJobPositionFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const router = useRouter();
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const selectedBranch = useSelector(selectSelectedBranch);
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
   useDocumentTitle("JOB INTERVIEWS");
 
@@ -136,11 +132,6 @@ export default function InterviewsPage() {
 
     fetchInterviews();
   }, [selectedBranch, selectedInstitution, router]);
-
-  // Reset pagination when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter, interviewerFilter, jobPositionFilter, dateRange]);
 
   const fetchInterviews = async (showRefreshLoader = false) => {
     if (!selectedInstitution) return;
@@ -232,15 +223,6 @@ export default function InterviewsPage() {
     return filtered;
   }, [interviews, searchTerm, statusFilter, interviewerFilter, dateRange]);
 
-  // Pagination logic
-  const paginatedInterviews = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return filteredInterviews.slice(startIndex, endIndex);
-  }, [filteredInterviews, currentPage, pageSize]);
-
-  const totalPages = Math.ceil(filteredInterviews.length / pageSize);
-
   const handleCreateInterview = () => {
     router.push("/job-interviews/create");
   };
@@ -252,6 +234,7 @@ export default function InterviewsPage() {
   const handleDeleteInterview = (interviewId: number) => {
     // TODO: Implement delete functionality
     toast.success("Interview deletion would be implemented here");
+    refreshTableRef.current?.();
   };
 
   const handleViewInterview = (interviewId: number) => {
@@ -314,15 +297,17 @@ export default function InterviewsPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const completedInterviews = paginatedInterviews
+      const completedInterviews = filteredInterviews
         .filter((interview) => interview.status === "completed")
         .map((interview) => interview.id);
       setSelectedInterviews((prev) => [...new Set([...prev, ...completedInterviews])]);
     } else {
-      const completedInterviewIds = paginatedInterviews
+      const completedInterviewIds = filteredInterviews
         .filter((interview) => interview.status === "completed")
         .map((interview) => interview.id);
-      setSelectedInterviews((prev) => prev.filter((id) => !completedInterviewIds.includes(id)));
+      setSelectedInterviews((prev) =>
+        prev.filter((id) => !completedInterviewIds.includes(id)),
+      );
     }
   };
 
@@ -354,6 +339,7 @@ export default function InterviewsPage() {
       if (result) {
         toast.success(`Successfully onboarded ${applicationIds.length} candidates`);
         setSelectedInterviews([]);
+        refreshTableRef.current?.();
         router.push("/on-boarding");
       } else {
         toast.error("Failed to onboard candidates");
@@ -365,23 +351,12 @@ export default function InterviewsPage() {
     }
   };
 
-  // Pagination handlers
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handlePageSizeChange = (newPageSize: string) => {
-    setPageSize(parseInt(newPageSize));
-    setCurrentPage(1);
-  };
-
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("all");
     setInterviewerFilter("all");
     setJobPositionFilter("all");
     setDateRange({from: null, to: null});
-    setCurrentPage(1);
   };
 
   if (!selectedInstitution || !selectedBranch) {
@@ -567,38 +542,6 @@ export default function InterviewsPage() {
         </div>
       </div>
 
-      {/* Results Summary */}
-      {!isLoading && (
-        <div className="flex justify-between items-center text-sm text-muted-foreground">
-          <div>
-            Showing {filteredInterviews.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to{" "}
-            {Math.min(currentPage * pageSize, filteredInterviews.length)} of{" "}
-            {filteredInterviews.length} interviews
-            {(searchTerm ||
-              statusFilter !== "all" ||
-              interviewerFilter !== "all" ||
-              dateRange.from ||
-              dateRange.to) &&
-              ` (filtered from ${interviews.length} total)`}
-          </div>
-          <div className="flex items-center gap-2 mt-6">
-            <span>Rows per page:</span>
-            <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-              <SelectTrigger className="w-[70px] h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PAGE_SIZES.map((size) => (
-                  <SelectItem key={size} value={size.toString()}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      )}
-
       {/* Error Message */}
       {error && (
         <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
@@ -630,54 +573,118 @@ export default function InterviewsPage() {
               <TableSkeleton rows={10} columns={6} />
             </Card>
           </div>
-        ) : filteredInterviews.length === 0 ? (
-          <div className="p-12 text-center">
-            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No interviews found</h3>
-            <p className="text-muted-foreground mb-4">
-              {searchTerm ||
-              statusFilter !== "all" ||
-              interviewerFilter !== "all" ||
-              dateRange.from ||
-              dateRange.to
-                ? "No interviews match your search criteria."
-                : "Get started by scheduling your first interview."}
-            </p>
-            {searchTerm ||
-            statusFilter !== "all" ||
-            interviewerFilter !== "all" ||
-            dateRange.from ||
-            dateRange.to ? (
-              <Button onClick={clearFilters} variant="outline" className="flex items-center gap-2">
-                Clear Filters
-              </Button>
-            ) : (
-              <Button onClick={handleCreateInterview} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Schedule First Interview
-              </Button>
-            )}
-          </div>
         ) : (
           <>
-            <div className="overflow-x-auto mt-8 -ml-16">
-              <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-                <TableHeader className="bg-gray-50/50">
-                  <TableRow>
-                    <TableHead className="w-[50px]"></TableHead>
-                    <TableHead>Applicant</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Total</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Object.entries(
-                    paginatedInterviews.reduce(
+            <div className="overflow-x-auto mt-8">
+              <PaginatedTableWrapper<IInterview>
+                fetchFirstPage={async () => {
+                  if (!selectedInstitution) throw new Error("No institution selected");
+                  return await getPaginatedInterviews({
+                    institutionId: selectedInstitution.id,
+                    page: 1,
+                    search: searchTerm || undefined,
+                    status: statusFilter !== "all" ? statusFilter : undefined,
+                  });
+                }}
+                fetchFromUrl={getPaginatedInterviewsFromUrl}
+                deps={[selectedInstitution?.id, searchTerm, statusFilter, interviewerFilter, jobPositionFilter, dateRange.from, dateRange.to]}
+                className="space-y-4"
+                footerClassName="pt-4"
+              >
+                {({data, loading, refresh}: {data: any, loading: boolean, refresh: () => void}) => {
+                  useEffect(() => {
+                    refreshTableRef.current = refresh;
+                  }, [refresh]);
+                  if (loading) {
+                    return <TableSkeleton rows={10} columns={6} />;
+                  }
+
+                  // Handle both array and paginated response formats
+                  let interviews: IInterview[] = [];
+                  if (Array.isArray(data)) {
+                    // Direct array response
+                    interviews = data;
+                  } else if (data?.results && Array.isArray(data.results)) {
+                    // Paginated response format
+                    interviews = data.results;
+                  } else {
+                    return (
+                      <div className="text-center py-8 text-gray-500">
+                        Unexpected data format received from server.
+                      </div>
+                    );
+                  }
+
+                  if (!interviews || interviews.length === 0) {
+                    return (
+                      <div className="text-center py-8 text-gray-500">
+                        {searchTerm || statusFilter !== "all" || interviewerFilter !== "all" || jobPositionFilter !== "all" || dateRange.from || dateRange.to
+                          ? "No interviews match your current filters."
+                          : "No interviews have been scheduled yet."}
+                      </div>
+                    );
+                  }
+
+                  // Apply client-side filters (interviewer, job position, date range)
+                  let filteredResults = interviews.filter((interview) => {
+                    // Apply status filter
+                    if (statusFilter !== "all") {
+                      const interviewStatus = interview.status?.toLowerCase().trim();
+                      const filterStatus = statusFilter.toLowerCase().trim();
+                      if (interviewStatus !== filterStatus) {
+                        return false;
+                      }
+                    }
+
+                    // Apply interviewer filter
+                    if (interviewerFilter !== "all") {
+                      const hasInterviewer = interview.interview_stage_details?.interviewers_details?.some(
+                        (employee: any) => `${employee.first_name} ${employee.last_name}` === interviewerFilter
+                      );
+                      if (!hasInterviewer) return false;
+                    }
+
+                    // Apply job position filter
+                    if (jobPositionFilter !== "all") {
+                      const positionName = interview.job_position_application_details?.job_position_advert_job_details?.name;
+                      if (positionName !== jobPositionFilter) return false;
+                    }
+
+                    // Apply date range filter
+                    if (dateRange.from || dateRange.to) {
+                      const interviewDate = new Date(interview.interview_date).getTime();
+                      const fromDate = dateRange.from ? new Date(dateRange.from).getTime() : -Infinity;
+                      const toDate = dateRange.to ? new Date(dateRange.to).getTime() : Infinity;
+                      if (interviewDate < fromDate || interviewDate > toDate) return false;
+                    }
+
+                    return true;
+                  });
+
+                  // Ensure filteredResults is always defined
+                  if (!filteredResults) {
+                    filteredResults = [];
+                  }
+
+                  // Group interviews by applicant
+                  if (!filteredResults || filteredResults.length === 0) {
+                    return (
+                      <div className="text-center py-8 text-gray-500">
+                        {searchTerm || statusFilter !== "all" || interviewerFilter !== "all" || jobPositionFilter !== "all" || dateRange.from || dateRange.to
+                          ? "No interviews match your current filters."
+                          : "No interviews have been scheduled yet."}
+                      </div>
+                    );
+                  }
+
+                  // Fallback: If grouping fails, show raw data
+                  let groupedInterviews: [string, {interviews: IInterview[]; contact: any}][];
+                  try {
+                    groupedInterviews = Object.entries(
+                      filteredResults.reduce(
                       (groups, interview) => {
                         const applicantName =
-                          interview.job_position_application_details?.applicant_name || "Unknown";
+                            interview.job_position_application_details?.applicant_name || "Unknown Applicant";
                         if (!groups[applicantName]) {
                           groups[applicantName] = {
                             interviews: [],
@@ -692,9 +699,59 @@ export default function InterviewsPage() {
                         groups[applicantName].interviews.push(interview);
                         return groups;
                       },
-                      {} as Record<string, {interviews: IInterview[]; contact: any}>,
-                    ),
-                  ).map(([applicantName, data]) => (
+                        {} as Record<string, {interviews: IInterview[]; contact: any}>
+                      )
+                    );
+                  } catch (error) {
+                    console.error("Error grouping interviews:", error);
+                    // Fallback: show raw data without grouping
+                    return (
+                      <div className="space-y-4">
+                        <div className="text-center py-4 text-muted-foreground">
+                          Showing raw interview data (grouping failed)
+                        </div>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>ID</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Applicant</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredResults.map((interview) => (
+                              <TableRow key={interview.id}>
+                                <TableCell>{interview.id}</TableCell>
+                                <TableCell>{interview.status}</TableCell>
+                                <TableCell>{interview.interview_date}</TableCell>
+                                <TableCell>
+                                  {interview.job_position_application_details?.applicant_name || "Unknown"}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <>
+                      <div className="overflow-x-auto">
+                        <Table className="min-w-full [&_th]:border-0 [&_td]:border-0">
+                          <TableHeader className="bg-gray-50/50">
+                            <TableRow>
+                              <TableHead className="w-[50px]"></TableHead>
+                              <TableHead>Applicant</TableHead>
+                              <TableHead>Contact</TableHead>
+                              <TableHead>Total</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {groupedInterviews.map(([applicantName, data]) => (
                     <React.Fragment key={applicantName}>
                       <TableRow className="hover:bg-muted/50">
                         <TableCell>
@@ -709,7 +766,9 @@ export default function InterviewsPage() {
                                   : [...prev, applicantName],
                               );
                             }}
-                          ></Button>
+                                    >
+                                      <ChevronDown className="h-4 w-4" />
+                                    </Button>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -770,32 +829,28 @@ export default function InterviewsPage() {
                                 {interview.interview_stage_details?.name}
                               </Badge>
                             </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1 text-sm">
-                                <Calendar className="h-3 w-3 text-muted-foreground" />
+                                      <TableCell className="pl-11">
+                                        <div className="text-sm text-muted-foreground">
                                 {formatDate(interview.interview_date)}
                               </div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {interview.location}
+                              </div>
                             </TableCell>
-                            <TableCell>-</TableCell>
-                            <TableCell>
-                              <div className="space-y-2">
+                                      <TableCell className="pl-11">
+                                        <div className="flex items-center gap-2">
+                                          {interview.rating && getRatingStars(interview.rating)}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="pl-11">
                                 <div className="flex items-center gap-2">
                                   {getStatusIcon(interview.status)}
                                   <Badge variant={getStatusBadgeVariant(interview.status)}>
                                     {interview.status}
                                   </Badge>
-                                </div>
-                                {interview.rating && (
-                                  <div className="flex items-center gap-1">
-                                    <div className="flex">
-                                      {getRatingStars(Math.round(interview.rating / 2))}
-                                    </div>
-                                    <span className="text-xs ml-1">{interview.rating}/10</span>
-                                  </div>
-                                )}
                               </div>
                             </TableCell>
-                            <TableCell>
+                                      <TableCell className="pl-11">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -803,15 +858,11 @@ export default function InterviewsPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() => handleViewInterview(interview.id)}
-                                  >
+                                            <DropdownMenuItem onClick={() => handleViewInterview(interview.id)}>
                                     <Eye className="h-4 w-4 mr-2" />
-                                    View Details
+                                              View
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleEditInterview(interview.id)}
-                                  >
+                                            <DropdownMenuItem onClick={() => handleEditInterview(interview.id)}>
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit
                                   </DropdownMenuItem>
@@ -832,70 +883,11 @@ export default function InterviewsPage() {
                 </TableBody>
               </Table>
             </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t">
-                <div className="text-sm text-muted-foreground">
-                  Showing {(currentPage - 1) * pageSize + 1} to{" "}
-                  {Math.min(currentPage * pageSize, filteredInterviews.length)} of{" "}
-                  {filteredInterviews.length} interviews
+                    </>
+                  );
+                }}
+              </PaginatedTableWrapper>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(1)}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronsLeft className="h-4 w-4" />
-                    First
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  <Select
-                    value={currentPage.toString()}
-                    onValueChange={(value) => handlePageChange(parseInt(value))}
-                  >
-                    <SelectTrigger className="w-[70px] h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
-                        <SelectItem key={page} value={page.toString()}>
-                          {page}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(totalPages)}
-                    disabled={currentPage === totalPages}
-                  >
-                    Last
-                    <ChevronsRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
           </>
         )}
       </div>

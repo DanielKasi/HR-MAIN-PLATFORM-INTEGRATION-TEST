@@ -262,28 +262,11 @@ export interface IDepartment {
   id: number;
   name: string;
   description?: string | null;
-  institution: number; // ForeignKey as ID
-  institution_details?: IUserInstitution | null; // Embedded serializer
+  institution: number; 
+  institution_details?: IUserInstitution | null; 
   job_positions?: {id: number; name: string; description: string; department_id: number}[];
 }
 
-// export interface IPaginatedResponse<T> {
-//   count: number;
-//   next: string | null;
-//   previous: string | null;
-//   results: T[];
-// }
-
-// export interface IUser {
-//   id: number;
-//   fullname: string;
-//   email: string;
-//   is_active: boolean;
-//   is_staff: boolean;
-//   roles: Role[];
-//   branches: Branch[];
-//   gender: USER_GENDER
-// }
 
 export interface PaginatedEmployeeResponse {
   count: number;
@@ -430,11 +413,11 @@ export type JobAdvertStatus =
   | "inactive"
   | "pending_approval";
 
-export type JobAdvertTypes = "internal" | "external";
+export type JobAdvertTypes = "internal" | "external" | "both";
 
 export interface JobPositionAdvert {
   data: any;
-  job_position_details: any;
+  job_position_details: IJobPosition;
   id: number;
   job_position: number; // Foreign key to JobPosition
   job_position_advert_status: JobAdvertStatus;
@@ -633,6 +616,7 @@ export interface ICreateEmployeeForm {
   fullname: string;
   email: string;
   phone_number: string;
+  phone_number_country_code?:string;
   position: number;
   department: number;
   work_type: number; // Added
@@ -651,6 +635,7 @@ export interface ICreateEmployeeForm {
   selected_branches: number[]; // Added for multi-branch selection
   emergency_contact_name: string;
   emergency_contact_phone: string;
+  emergency_contact_phone_country_code?:string
   emergency_contact_relationship: string;
   marital_status: string;
   children_count: number;
@@ -957,6 +942,26 @@ export function convertDisciplineTypeFormToApiRequest(
     severity: formData.severity,
     is_active: formData.is_active,
   };
+}
+
+ export interface DisciplinaryAction {
+  id: string;
+  employee_name: string;
+  employee_department: string;
+  discipline_type: string;
+  discipline_severity: "low" | "medium" | "high" | "critical";
+  incident_date: string;
+  reported_date: string;
+  description: string;
+  evidence: string;
+  reported_by: string;
+  assigned_to: string;
+  status: "pending" | "in_progress" | "completed" | "dismissed";
+  action_taken: string;
+  resolution_date: string;
+  follow_up_required: boolean;
+  follow_up_date: string;
+  notes: string;
 }
 
 export interface DisciplinaryActionAPIResponse {

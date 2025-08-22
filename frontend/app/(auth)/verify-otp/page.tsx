@@ -17,7 +17,7 @@ import {showErrorToast} from "@/lib/utils";
 export default function VerifyOTPPage() {
   const searchParams = useSearchParams();
   const [emailValue, setEmailValue] = useState<string | null>(null);
-  const user_email = searchParams.get("u_e") || "";
+  const user_email = searchParams.get("email") || "";
   const [otp, setOTP] = useState<string[]>(Array(6).fill(""));
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -91,9 +91,9 @@ export default function VerifyOTPPage() {
       await apiRequest.post("user/resend-otp/", {email: emailValue});
       setErrorMessage("");
       setOTP(Array(6).fill(""));
-      toast.success("A new verification code has been sent to your email.");
+      toast.success(`A new verification code has been sent to ${emailValue}`);
     } catch (error: any) {
-      handleApiError(error);
+      showErrorToast({error, defaultMessage:"Failed to verify your OTP"})
       setResendDisabled(false);
       setResendCountdown(0);
     } finally {
@@ -116,7 +116,7 @@ export default function VerifyOTPPage() {
           </div>
           <CardTitle className="text-2xl text-center">Verify Your Account</CardTitle>
           <p className="text-center text-sm text-muted-foreground">
-            Enter the 6-digit code sent to your email
+            Enter the 6-digit code sent to <b>{emailValue}</b>
           </p>
         </CardHeader>
         <form onSubmit={handleVerify}>

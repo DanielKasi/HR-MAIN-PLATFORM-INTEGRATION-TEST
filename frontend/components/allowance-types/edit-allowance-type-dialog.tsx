@@ -23,7 +23,7 @@ interface EditAllowanceTypeDialogProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   allowanceType: IAllowanceType | null
-  onSuccess: (updatedAllowanceType: IAllowanceType) => void
+  onSuccess: () => void
 }
 
 export function EditAllowanceTypeDialog({
@@ -101,7 +101,7 @@ export function EditAllowanceTypeDialog({
       })
 
       if (updatedAllowanceType) {
-        onSuccess(updatedAllowanceType)
+        onSuccess()
         toast.success("Allowance type updated successfully")
         onOpenChange(false)
       } else {

@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Plus, Pencil, Trash2, CheckCircle2, XCircle, MoreHorizontal, MoreVertical } from "lucide-react"
+import { Plus, Pencil, Trash2, CheckCircle2, XCircle, MoreHorizontal, MoreVertical, Search } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -48,7 +48,8 @@ import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { cn, OffboardingStagesAPI } from "@/lib/utils"
 import { IOffboardingStage } from "@/types/types.utils"
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
+import { TableSkeleton } from "@/components/common/table-skeleton"
 
 
 const formSchema = z.object({
@@ -58,17 +59,12 @@ const formSchema = z.object({
 })
 
 export default function OffboardingStagesPage() {
-  const [stages, setStages] = useState<IOffboardingStage[]>([])
-  const [loading, setLoading] = useState(true)
   const [editingStage, setEditingStage] = useState<IOffboardingStage | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [stageToDelete, setStageToDelete] = useState<IOffboardingStage | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalItems, setTotalItems] = useState(0)
-  const pageSize = 10
+  const [searchTerm, setSearchTerm] = useState("")
+  const refreshTableRef = useRef<(() => void) | null>(null)
   const selectedInstitution = useSelector(selectSelectedInstitution)
-  const institutionId = selectedInstitution?.id
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -79,80 +75,22 @@ export default function OffboardingStagesPage() {
     },
   })
 
-  const fetchStages = async (page = currentPage) => {
-    if (!institutionId) return
-    setLoading(true)
-    const paginationParams = new URLSearchParams();
-    paginationParams.append("page", page.toString())
-    try {
-      const data = await OffboardingStagesAPI.getAll({ 
-        institutionId,
-        searchParams:paginationParams
-      })
-      setStages(data.results)
-      setTotalItems(data.count)
-      setTotalPages(Math.ceil(data.count / pageSize))
-    } catch (error) {
-      toast.error("Failed to fetch offboarding stages")
-    }
-    setLoading(false)
+  const handleCreateSuccess = (newStage: IOffboardingStage) => {
+    toast.success("Stage created successfully")
+    refreshTableRef.current?.()
   }
 
-  useEffect(() => {
-    fetchStages(1)
-  }, [institutionId])
-  
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage)
-    fetchStages(newPage)
+  const handleUpdateSuccess = (updatedStage: IOffboardingStage) => {
+    setIsEditDialogOpen(false)
+    setEditingStage(null)
+    toast.success("Stage updated successfully")
+    refreshTableRef.current?.()
   }
 
-  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    if(!selectedInstitution){return}
-    try {
-      if (editingStage) {
-        await OffboardingStagesAPI.update({
-          stageId: editingStage.id,
-          stageData: values,
-        })
-        toast.success("Stage updated successfully")
-        // Stay on current page when editing
-        fetchStages(currentPage)
-      } else {
-        await OffboardingStagesAPI.create({
-          stageData: {...values, institution:selectedInstitution.id},
-        })
-        toast.success("Stage created successfully")
-        // Go to first page when creating new stage
-        setCurrentPage(1)
-        fetchStages(1)
-      }
-      form.reset()
-      setEditingStage(null);
-      setIsEditDialogOpen(false)
-    } catch (error) {
-      toast.error(editingStage ? "Failed to update stage" : "Failed to create stage")
-    }
-  }
-
-  const handleDelete = async (stage: IOffboardingStage) => {
-    try {
-      await OffboardingStagesAPI.delete(stage.id)
-      toast.success("Stage deleted successfully")
-      setStageToDelete(null)
-      
-      // If we're on the last page and it's now empty, go to previous page
-      if (stages.length === 1 && currentPage > 1) {
-        const newPage = currentPage - 1
-        setCurrentPage(newPage)
-        fetchStages(newPage)
-      } else {
-        // Stay on current page
-        fetchStages(currentPage)
-      }
-    } catch (error) {
-      toast.error("Failed to delete stage")
-    }
+  const handleDeleteSuccess = (deletedId: number) => {
+    setStageToDelete(null)
+    toast.success("Stage deleted successfully")
+    refreshTableRef.current?.()
   }
 
   const handleEdit = (stage: IOffboardingStage) => {
@@ -165,72 +103,231 @@ export default function OffboardingStagesPage() {
     setIsEditDialogOpen(true)
   }
 
-  if (loading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading stages...</div>
-        </div>
-      </div>
-    )
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+    if(!selectedInstitution){return}
+    try {
+      if (editingStage) {
+        await OffboardingStagesAPI.update({
+          stageId: editingStage.id,
+          stageData: values,
+        })
+        handleUpdateSuccess(editingStage)
+      } else {
+        await OffboardingStagesAPI.create({
+          stageData: {...values, institution:selectedInstitution.id},
+        })
+        handleCreateSuccess({} as IOffboardingStage) // We don't have the created stage here, but the refresh will show it
+      }
+      form.reset()
+      setEditingStage(null)
+      setIsEditDialogOpen(false)
+    } catch (error) {
+      toast.error(editingStage ? "Failed to update stage" : "Failed to create stage")
+    }
   }
+
+  const handleDelete = async (stage: IOffboardingStage) => {
+    try {
+      await OffboardingStagesAPI.delete(stage.id)
+      handleDeleteSuccess(stage.id)
+    } catch (error) {
+      toast.error("Failed to delete stage")
+    }
+  }
+
+  const clearFilters = () => {
+    setSearchTerm("")
+  }
+
+  const hasFilters = searchTerm
 
   return (
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Offboarding Stages</h1>
-          <p className="text-muted-foreground mt-2">Manage offboarding stages for employee exits</p>
+          
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Stage
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Stage</DialogTitle>
-              <DialogDescription>
-                Create a new stage for the offboarding process
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="stage_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Stage Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter stage name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+        
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg mb-6">
+        <div className="border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4 justify-between">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Input
+                  placeholder="Search stages..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
                 />
-                <FormField
-                  control={form.control}
-                  name="stage_description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Enter stage description" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter>
-                  <Button type="submit">Create Stage</Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasFilters && (
+                <Button variant="outline" onClick={clearFilters}>
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Stage
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Stage</DialogTitle>
+                  <DialogDescription>
+                    Create a new stage for the offboarding process
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="stage_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Stage Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter stage name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="stage_description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="Enter stage description" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <DialogFooter >
+                      <Button type="submit" className="w-full">Create Stage</Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="-ml-2 mt-4">
+        <CardContent className="p-0">
+          <PaginatedTableWrapper<IOffboardingStage>
+            fetchFirstPage={async () => {
+              if (!selectedInstitution) throw new Error("No institution selected")
+              return await OffboardingStagesAPI.getPaginated({
+                institutionId: selectedInstitution.id,
+                page: 1,
+                search: searchTerm || undefined,
+              })
+            }}
+            fetchFromUrl={OffboardingStagesAPI.getPaginatedFromUrl}
+            deps={[selectedInstitution?.id, searchTerm]}
+            className="space-y-4"
+            footerClassName="pt-4"
+          >
+            {({data, loading, refresh}) => {
+              // Store refresh function in ref when component mounts/updates
+              useEffect(() => {
+                refreshTableRef.current = refresh
+              }, [refresh])
+
+              if (loading) {
+                return <TableSkeleton rows={10} columns={5} />
+              }
+
+              if (!data || data.results.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-500">
+                    {searchTerm ? "No stages found matching your search criteria" : "No offboarding stages found. Create one to get started."}
+                  </div>
+                )
+              }
+
+              return (
+                <div className="overflow-x-auto mt-10">
+                  <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                    <TableHeader className="bg-gray-50/50">
+                      <TableRow>
+                        <TableHead>Stage Name</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Created At</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.results.map((stage) => (
+                        <TableRow key={stage.id}>
+                          <TableCell className="font-medium">{stage.stage_name}</TableCell>
+                          <TableCell className="text-muted-foreground">{stage.stage_description}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={stage.is_active ? "default" : "secondary"}
+                              className={cn(
+                                "flex w-fit items-center gap-1",
+                                stage.is_active ? "bg-green-100 text-green-800 hover:bg-green-200" : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                              )}
+                            >
+                              {stage.is_active ? (
+                                <CheckCircle2 className="h-3 w-3" />
+                              ) : (
+                                <XCircle className="h-3 w-3" />
+                              )}
+                              {stage.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {new Date(stage.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEdit(stage)}>
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => setStageToDelete(stage)}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )
+            }}
+          </PaginatedTableWrapper>
+        </CardContent>
       </div>
 
       {/* Edit Dialog */}
@@ -303,116 +400,6 @@ export default function OffboardingStagesPage() {
           </Form>
         </DialogContent>
       </Dialog>
-
-      <div className="-ml-2 mt-4">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto mt-10">
-            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-              <TableHeader className="bg-gray-50/50">
-                <TableRow>
-                  <TableHead>Stage Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created At</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {stages.map((stage) => (
-                  <TableRow key={stage.id}>
-                    <TableCell className="font-medium">{stage.stage_name}</TableCell>
-                    <TableCell className="text-muted-foreground">{stage.stage_description}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={stage.is_active ? "default" : "secondary"}
-                        className={cn(
-                          "flex w-fit items-center gap-1",
-                          stage.is_active ? "bg-green-100 text-green-800 hover:bg-green-200" : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-                        )}
-                      >
-                        {stage.is_active ? (
-                          <CheckCircle2 className="h-3 w-3" />
-                        ) : (
-                          <XCircle className="h-3 w-3" />
-                        )}
-                        {stage.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(stage.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(stage)}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => setStageToDelete(stage)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {stages.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      No offboarding stages found. Create one to get started.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-4 border-t">
-              <div className="text-sm text-muted-foreground">
-                Showing {((currentPage - 1) * pageSize) + 1}-
-                {Math.min(currentPage * pageSize, totalItems)} of {totalItems} stages
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handlePageChange(page)}
-                  >
-                    {page}
-                  </Button>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </div>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!stageToDelete} onOpenChange={(open) => !open && setStageToDelete(null)}>

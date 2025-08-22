@@ -82,6 +82,7 @@ export function EmployeeAllowanceFormDialog({
   const [selectedContext, setSelectedContext] = useState<
     "employee" | "department" | "job_position" | ""
   >("");
+  const [isCreateAllowanceTypeDialogOpen, setIsCreateAllowanceTypeDialogOpen] = useState(false);
   const [selectedContextItems, setSelectedContextItems] = useState<ContextItem[]>([]);
 
   const [formData, setFormData] = useState({
@@ -263,7 +264,9 @@ export function EmployeeAllowanceFormDialog({
 
       onOpenChange(false);
     } catch (error: any) {
-      toast.error(error?.message || error?.detail || "An error occurred while saving the allowance");
+      toast.error(
+        error?.message || error?.detail || "An error occurred while saving the allowance",
+      );
     } finally {
       setSaving(false);
     }
@@ -282,277 +285,289 @@ export function EmployeeAllowanceFormDialog({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-[32rem] md:max-w-[42rem]">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
-            {editingAllowance ? "Edit Allowance" : "Add New Allowance"}
-          </DialogTitle>
-          <DialogDescription>
-            Configure allowance details, target group, and calculation method.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid grid-cols-1 gap-6 py-4 max-h-[70vh] overflow-y-auto">
-          {/* Context Selector */}
-          <div className="space-y-4">
-            <ContextSelector
-              selectedContext={selectedContext}
-              onContextChange={setSelectedContext}
-              selectedItems={selectedContextItems}
-              onItemsChange={setSelectedContextItems}
-              disabled={saving}
-            />
-            {validationErrors.context && (
-              <p className="text-xs text-red-500 mt-1 flex items-center">
-                <AlertTriangle className="h-3 w-3 mr-1" />
-                {validationErrors.context}
-              </p>
-            )}
-            {validationErrors.context_ids && (
-              <p className="text-xs text-red-500 mt-1 flex items-center">
-                <AlertTriangle className="h-3 w-3 mr-1" />
-                {validationErrors.context_ids}
-              </p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-4">
-            {/* Allowance Type */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between h-8">
-                <Label htmlFor="allowance_type" className="text-sm font-medium">
-                  Allowance Type *
-                </Label>
-                <CreateAllowanceTypeDialog
-                  institutionId={institutionId}
-                  onSuccess={handleAllowanceTypeSuccess}
-                  disabled={saving}
-                  isEmbeded
-                />
-              </div>
-              <Select
-                value={formData.allowance_type}
-                onValueChange={(value) => setFormData({...formData, allowance_type: value})}
+    <>
+      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+        <DialogContent className="max-w-[32rem] md:max-w-[42rem]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">
+              {editingAllowance ? "Edit Allowance" : "Add New Allowance"}
+            </DialogTitle>
+            <DialogDescription>
+              Configure allowance details, target group, and calculation method.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-6 py-4 max-h-[70vh] overflow-y-auto">
+            {/* Context Selector */}
+            <div className="space-y-4">
+              <ContextSelector
+                selectedContext={selectedContext}
+                onContextChange={setSelectedContext}
+                selectedItems={selectedContextItems}
+                onItemsChange={setSelectedContextItems}
                 disabled={saving}
-              >
-                <SelectTrigger
-                  className={`focus:ring-orange-500 focus:border-orange-500 ${
-                    validationErrors.allowance_type
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                      : ""
-                  }`}
+              />
+              {validationErrors.context && (
+                <p className="text-xs text-red-500 mt-1 flex items-center">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  {validationErrors.context}
+                </p>
+              )}
+              {validationErrors.context_ids && (
+                <p className="text-xs text-red-500 mt-1 flex items-center">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  {validationErrors.context_ids}
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-4">
+              {/* Allowance Type */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between h-8">
+                  <Label htmlFor="allowance_type" className="text-sm font-medium">
+                    Allowance Type *
+                  </Label>
+                  <Button
+                    variant={"outline"}
+                    className="flex items-center gap-2"
+                    disabled={saving}
+                    onClick={() => setIsCreateAllowanceTypeDialogOpen(true)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Select
+                  value={formData.allowance_type}
+                  onValueChange={(value) => setFormData({...formData, allowance_type: value})}
+                  disabled={saving}
                 >
-                  <SelectValue placeholder="Please select an allowance type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allowanceTypes.length > 0 ? (
-                    allowanceTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id.toString()}>
-                        {type.name}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <div className="px-2 py-1.5 text-sm text-gray-500">
-                      No allowance types available
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
-              {allowanceTypes.length === 0 && (
-                <p className="text-xs text-red-500 mt-1">
-                  No allowance types found. Please create allowance types first.
-                </p>
-              )}
-            </div>
-
-            {/* Calculation Method */}
-            <div className="space-y-2">
-              <Label htmlFor="calculation_method" className="text-sm font-medium">
-                Calculation Method *
-              </Label>
-              <Select
-                value={formData.calculation_method}
-                onValueChange={(value: "fixed" | "percentage") =>
-                  setFormData({...formData, calculation_method: value})
-                }
-                disabled={saving}
-              >
-                <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fixed">Fixed Amount</SelectItem>
-                  <SelectItem value="percentage">Percentage of Salary</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Amount/Percentage Fields */}
-            {formData.calculation_method === "fixed" ? (
-              <div className="space-y-2">
-                <Label htmlFor="amount" className="text-sm font-medium">
-                  Fixed Amount *
-                </Label>
-                <Input
-                  id="amount"
-                  type="text"
-                  placeholder="0.00"
-                  value={formData.amount ? formatCurrency(formData.amount) : ""}
-                  onChange={(e) => {
-                    const rawValue = e.target.value.replace(/[,$]/g, "");
-                    if (
-                      rawValue === "" ||
-                      (!Number.isNaN(Number.parseFloat(rawValue)) &&
-                        Number.isFinite(Number.parseFloat(rawValue)))
-                    ) {
-                      setFormData({...formData, amount: rawValue});
-                    }
-                  }}
-                  disabled={saving}
-                  className={`focus:ring-orange-500 focus:border-orange-500 ${
-                    validationErrors.amount
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                      : ""
-                  }`}
-                />
-                {validationErrors.amount ? (
-                  <p className="text-xs text-red-500 mt-1 flex items-center">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    {validationErrors.amount}
+                  <SelectTrigger
+                    className={`focus:ring-orange-500 focus:border-orange-500 ${
+                      validationErrors.allowance_type
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : ""
+                    }`}
+                  >
+                    <SelectValue placeholder="Please select an allowance type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allowanceTypes.length > 0 ? (
+                      allowanceTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.id.toString()}>
+                          {type.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="px-2 py-1.5 text-sm text-gray-500">
+                        No allowance types available
+                      </div>
+                    )}
+                  </SelectContent>
+                </Select>
+                {allowanceTypes.length === 0 && (
+                  <p className="text-xs text-red-500 mt-1">
+                    No allowance types found. Please create allowance types first.
                   </p>
-                ) : (
-                  <p className="text-xs text-gray-500">Enter the fixed allowance amount</p>
                 )}
               </div>
-            ) : (
+
+              {/* Calculation Method */}
               <div className="space-y-2">
-                <Label htmlFor="percentage" className="text-sm font-medium">
-                  Percentage *
+                <Label htmlFor="calculation_method" className="text-sm font-medium">
+                  Calculation Method *
+                </Label>
+                <Select
+                  value={formData.calculation_method}
+                  onValueChange={(value: "fixed" | "percentage") =>
+                    setFormData({...formData, calculation_method: value})
+                  }
+                  disabled={saving}
+                >
+                  <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fixed">Fixed Amount</SelectItem>
+                    <SelectItem value="percentage">Percentage of Salary</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Amount/Percentage Fields */}
+              {formData.calculation_method === "fixed" ? (
+                <div className="space-y-2">
+                  <Label htmlFor="amount" className="text-sm font-medium">
+                    Fixed Amount *
+                  </Label>
+                  <Input
+                    id="amount"
+                    type="text"
+                    placeholder="0.00"
+                    value={formData.amount ? formatCurrency(formData.amount) : ""}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/[,$]/g, "");
+                      if (
+                        rawValue === "" ||
+                        (!Number.isNaN(Number.parseFloat(rawValue)) &&
+                          Number.isFinite(Number.parseFloat(rawValue)))
+                      ) {
+                        setFormData({...formData, amount: rawValue});
+                      }
+                    }}
+                    disabled={saving}
+                    className={`focus:ring-orange-500 focus:border-orange-500 ${
+                      validationErrors.amount
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : ""
+                    }`}
+                  />
+                  {validationErrors.amount ? (
+                    <p className="text-xs text-red-500 mt-1 flex items-center">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      {validationErrors.amount}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500">Enter the fixed allowance amount</p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="percentage" className="text-sm font-medium">
+                    Percentage *
+                  </Label>
+                  <Input
+                    id="percentage"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    placeholder="0.00"
+                    value={formData.percentage}
+                    onChange={(e) => setFormData({...formData, percentage: e.target.value})}
+                    disabled={saving}
+                    className={`focus:ring-orange-500 focus:border-orange-500 ${
+                      validationErrors.percentage
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : ""
+                    }`}
+                  />
+                  {validationErrors.percentage ? (
+                    <p className="text-xs text-red-500 mt-1 flex items-center">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      {validationErrors.percentage}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500">Percentage of base salary (0-100)</p>
+                  )}
+                </div>
+              )}
+
+              {/* Effective From */}
+              <div className="space-y-2">
+                <Label htmlFor="effective_from" className="text-sm font-medium">
+                  Effective From *
                 </Label>
                 <Input
-                  id="percentage"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  placeholder="0.00"
-                  value={formData.percentage}
-                  onChange={(e) => setFormData({...formData, percentage: e.target.value})}
-                  disabled={saving}
+                  id="effective_from"
+                  type="date"
+                  value={formData.effective_from}
+                  onChange={(e) => setFormData({...formData, effective_from: e.target.value})}
                   className={`focus:ring-orange-500 focus:border-orange-500 ${
-                    validationErrors.percentage
+                    validationErrors.effective_from
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                       : ""
                   }`}
+                  disabled={saving}
                 />
-                {validationErrors.percentage ? (
+                {validationErrors.effective_from && (
                   <p className="text-xs text-red-500 mt-1 flex items-center">
                     <AlertTriangle className="h-3 w-3 mr-1" />
-                    {validationErrors.percentage}
+                    {validationErrors.effective_from}
                   </p>
-                ) : (
-                  <p className="text-xs text-gray-500">Percentage of base salary (0-100)</p>
                 )}
+              </div>
+
+              {/* Effective To */}
+              <div className="space-y-2">
+                <Label htmlFor="effective_to" className="text-sm font-medium">
+                  Effective To (Optional)
+                </Label>
+                <Input
+                  id="effective_to"
+                  type="date"
+                  value={formData.effective_to}
+                  onChange={(e) => setFormData({...formData, effective_to: e.target.value})}
+                  className={`focus:ring-orange-500 focus:border-orange-500 ${
+                    validationErrors.effective_to
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                      : ""
+                  }`}
+                  disabled={saving}
+                  min={formData.effective_from}
+                />
+                {validationErrors.effective_to && (
+                  <p className="text-xs text-red-500 mt-1 flex items-center">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    {validationErrors.effective_to}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Active Status */}
+            <div className="space-y-2">
+              <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <Label className="text-base font-medium">Active Status</Label>
+                  <p className="text-sm text-gray-500">Enable or disable this allowance</p>
+                </div>
+                <Switch
+                  checked={formData.is_active}
+                  onCheckedChange={(checked) => setFormData({...formData, is_active: checked})}
+                  className="data-[state=checked]:bg-orange-600"
+                  disabled={saving}
+                />
+              </div>
+            </div>
+
+            {/* Warning message for high percentage */}
+            {validationErrors.warning && (
+              <div className="space-y-2">
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                  <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm font-medium text-amber-800">{validationErrors.warning}</p>
+                </div>
               </div>
             )}
-
-            {/* Effective From */}
-            <div className="space-y-2">
-              <Label htmlFor="effective_from" className="text-sm font-medium">
-                Effective From *
-              </Label>
-              <Input
-                id="effective_from"
-                type="date"
-                value={formData.effective_from}
-                onChange={(e) => setFormData({...formData, effective_from: e.target.value})}
-                className={`focus:ring-orange-500 focus:border-orange-500 ${
-                  validationErrors.effective_from
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                    : ""
-                }`}
-                disabled={saving}
-              />
-              {validationErrors.effective_from && (
-                <p className="text-xs text-red-500 mt-1 flex items-center">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  {validationErrors.effective_from}
-                </p>
-              )}
-            </div>
-
-            {/* Effective To */}
-            <div className="space-y-2">
-              <Label htmlFor="effective_to" className="text-sm font-medium">
-                Effective To (Optional)
-              </Label>
-              <Input
-                id="effective_to"
-                type="date"
-                value={formData.effective_to}
-                onChange={(e) => setFormData({...formData, effective_to: e.target.value})}
-                className={`focus:ring-orange-500 focus:border-orange-500 ${
-                  validationErrors.effective_to
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                    : ""
-                }`}
-                disabled={saving}
-                min={formData.effective_from}
-              />
-              {validationErrors.effective_to && (
-                <p className="text-xs text-red-500 mt-1 flex items-center">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  {validationErrors.effective_to}
-                </p>
-              )}
-            </div>
           </div>
 
-          {/* Active Status */}
-          <div className="space-y-2">
-            <div className="flex flex-row items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <Label className="text-base font-medium">Active Status</Label>
-                <p className="text-sm text-gray-500">Enable or disable this allowance</p>
-              </div>
-              <Switch
-                checked={formData.is_active}
-                onCheckedChange={(checked) => setFormData({...formData, is_active: checked})}
-                className="data-[state=checked]:bg-orange-600"
-                disabled={saving}
-              />
-            </div>
-          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={saving || !allowanceTypes.length || hasValidationErrors()}
+            >
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {saving ? "Saving..." : editingAllowance ? "Update" : "Create"} Allowance
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-          {/* Warning message for high percentage */}
-          {validationErrors.warning && (
-            <div className="space-y-2">
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
-                <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                <p className="text-sm font-medium text-amber-800">{validationErrors.warning}</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={saving}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={saving || !allowanceTypes.length || hasValidationErrors()}
-          >
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {saving ? "Saving..." : editingAllowance ? "Update" : "Create"} Allowance
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <CreateAllowanceTypeDialog
+        isOpen={isCreateAllowanceTypeDialogOpen}
+        onOpenChange={setIsCreateAllowanceTypeDialogOpen}
+        onSuccess={handleAllowanceTypeSuccess}
+        disabled={saving}
+        isEmbeded
+      />
+    </>
   );
 }

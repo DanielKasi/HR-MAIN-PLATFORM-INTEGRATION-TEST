@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSelector } from "react-redux";
@@ -43,9 +43,9 @@ import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/types/types.utils";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import RichTextDisplay from "@/components/common/rich-text-display";
-import { TableSkeleton } from "@/components/common/table-skeleton";
 import { formatCurrency } from "@/lib/helpers";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { TableSkeleton } from "@/components/common/table-skeleton";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -101,7 +101,7 @@ export default function JobAdvertsPage() {
     next: string | null;
     previous: string | null;
   }>({ count: 0, next: null, previous: null });
-  const [isLoading, setIsLoading] = useState(true);
+  // const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -111,6 +111,7 @@ export default function JobAdvertsPage() {
   const [closingAdvertId, setClosingAdvertId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
   const router = useRouter();
   const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -145,7 +146,7 @@ export default function JobAdvertsPage() {
 
         if (updatedAdvert) {
           toast.success("Job advert closed successfully!");
-          
+          refreshTableRef.current?.(); // Add refresh call
         } else {
           toast.error("Failed to close job openings");
         }
@@ -153,7 +154,7 @@ export default function JobAdvertsPage() {
         toast.error("Failed to close job openings");
       } finally {
         setIsClosing(false);
-        setClosingAdvertId(null); // Reset the closing advert ID
+        setClosingAdvertId(null);
       }
     },
     []
@@ -184,10 +185,10 @@ export default function JobAdvertsPage() {
     event.preventDefault();
     setIsRefreshing(true);
     setError("");
-    // Just reload the page to trigger data refetch
-    router.refresh?.(); // Next.js 13+ navigation refresh
+    refreshTableRef.current?.(); // Use the ref instead of router.refresh
     setTimeout(() => setIsRefreshing(false), 1000);
   }
+
   return (
     <div className="space-y-6">
       {/* Header and Filters */}
@@ -230,7 +231,7 @@ export default function JobAdvertsPage() {
               <Button
                 onClick={() => router.push("/job-adverts/create")}
                 disabled={!selectedInstitution?.id}
-                className="rounded-[12px]"
+                className=""
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Create Job Advert
@@ -255,17 +256,12 @@ export default function JobAdvertsPage() {
             footerClassName="pt-4"
           >
             {({data, loading, refresh}) => {
-              if (loading) {
-                return (
-                  <div className="space-y-4">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="w-full h-12 bg-muted/10 rounded-md animate-pulse" />
-                    ))}
-                  </div>
-                );
-              }
+              // Store refresh function in ref when component mounts/updates
+              useEffect(() => {
+                refreshTableRef.current = refresh;
+              }, [refresh]);
 
-              if (!data || data.results.length === 0) {
+              if (((!data || data.results.length === 0) && !loading)) {
                 return (
                   <div className="text-center py-8 text-gray-500">
                     {searchTerm 
@@ -276,12 +272,12 @@ export default function JobAdvertsPage() {
               }
 
               // Apply client-side filters (status filter)
-              const filteredResults = data.results.filter((advert) => {
+              const filteredResults = data?.results.filter((advert) => {
                 const matchesStatus = statusFilter === "all" || advert.job_position_advert_status === statusFilter;
                 return matchesStatus;
               });
 
-              if (filteredResults.length === 0) {
+              if (filteredResults?.length === 0) {
                 return (
                   <div className="text-center py-8 text-gray-500">
                     No job advertisements match the selected status filter
@@ -291,7 +287,8 @@ export default function JobAdvertsPage() {
 
               return (
                 <div className="overflow-x-auto">
-                  <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                  { !loading ?
+                  (<Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
                     <TableHeader className="bg-gray-50/50">
                       <TableRow>
                         <TableHead>Job Position</TableHead>
@@ -304,8 +301,8 @@ export default function JobAdvertsPage() {
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
-                      {filteredResults.map((advert) => (
+                      <TableBody>
+                      {filteredResults?.map((advert) => (
                         <TableRow key={advert.id}>
                           <TableCell className="font-medium">
                             <div className="font-medium text-gray-900">
@@ -361,6 +358,8 @@ export default function JobAdvertsPage() {
                                     open={closingAdvertId === advert.id}
                                     onOpenChange={(open: boolean) => setClosingAdvertId(open ? advert.id : null)}
                                   >
+                                    {
+                                      advert.job_position_advert_status !== "closed" &&
                                     <DialogTrigger asChild>
                                       <DropdownMenuItem
                                         onSelect={(e) => e.preventDefault()}
@@ -371,9 +370,10 @@ export default function JobAdvertsPage() {
                                         Close
                                       </DropdownMenuItem>
                                     </DialogTrigger>
+                                    }
                                     <DialogContent className="sm:max-w-[425px]">
                                       <DialogHeader>
-                                        <DialogTitle>Are you sure you want to close this job opening?</DialogTitle>
+                                        <DialogTitle>Are you sure you want to close <span className="ml-2">"{advert.job_position_details.name}"?</span> </DialogTitle>
                                         <DialogDescription>
                                           Closing this job advert will change its status to "closed" and prevent further applications. This action cannot be undone.
                                         </DialogDescription>
@@ -404,7 +404,9 @@ export default function JobAdvertsPage() {
                         </TableRow>
                       ))}
                     </TableBody>
-                  </Table>
+                  </Table>):
+                   <TableSkeleton hasHeader={false} columns={8} rows={5} />
+                  }
                 </div>
               );
             }}

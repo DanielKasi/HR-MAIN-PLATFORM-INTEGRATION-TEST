@@ -662,30 +662,6 @@ class Payslip(UtilityBaseModel):
         self.gross_salary = gross
         self.net_salary = net
 
-        print("\n\n\nPayslip Totals:")
-        print(f"Employee: {self.employee}")
-        print(f"Payroll Period: {self.payroll_period}")
-        print(f"Gross Salary: {self.gross_salary}")
-        print(f"Net Salary: {self.net_salary}")
-        print(f"Total Allowances: {self.total_allowances}")
-        print(f"Total Deductions: {self.total_deductions}")
-        print(
-            (
-                (
-                    (
-                        (
-                            (
-                                (self.total_allowances + self.basic_salary)
-                                - self.total_deductions
-                            )
-                            - tax_total
-                        )
-                        + non_taxable_allowances
-                    )
-                )
-            )
-        )
-
         self.save()
 
     class Meta:

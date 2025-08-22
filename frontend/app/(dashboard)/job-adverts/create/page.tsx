@@ -1,10 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector, useDispatch } from "react-redux"
-import { Plus, Trash2, ArrowLeft, CalendarDays, X } from "lucide-react"
+import { Plus, Trash2, ArrowLeft, CalendarDays, X, Search, Loader2, Edit } from "lucide-react"
+import apiRequest from "@/lib/apiRequest"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,35 +15,19 @@ import { Badge } from "@/components/ui/badge"
 import { selectSelectedInstitution, selectSelectedBranch, selectUser } from "@/store/auth/selectors"
 import { selectJobAdvertForm } from "@/store/miscellaneous/selectors"
 import { saveJobAdvertForm, clearJobAdvertForm } from "@/store/miscellaneous/actions"
-import {
-  getJobPositionAdverts,
-  updateJobPositionAdvert,
-  getJobPositions,
-  createJobPositionAdvert,
-  fetchEmployees,
-  createInterviewStage,
-} from "@/lib/utils"
-import type {
-  JobPositionAdvert,
-  JobAdvertStatus,
-  IPaginatedResponse,
-  JobPositionAdvertFormData,
-  JobAdvertCompleteFormData,
-  IJobPosition,
-  JobAdvertTypes,
-  IEmployee,
-  IInterviewStage,
-  IInterviewStageFormData,
-} from "@/types/types.utils"
-import { toast } from "sonner"
-import { useDocumentTitle } from "@/hooks/use-document-title"
+
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { CreateJobPositionDialog } from "@/components/dialogs/create-job-position-dialog"
 import { SearchableSelect, type SearchableSelectItem } from "@/components/searchable-select"
 import { RichEditorField } from "@/components/common/rich-editor"
+import { DialogContent, DialogDescription, DialogHeader, DialogTitle, Dialog } from "@/components/ui/dialog"
+import InterviewStageEditorDialog from "@/components/common/dialogs/interview-stage-editor-dialog"
+import { createInterviewStage, createJobPositionAdvert, fetchEmployees, getJobPositions, showErrorToast, upddateInterviewStage } from "@/lib/utils"
+import { toast } from "sonner"
+import { IEmployee, IInterviewStage, IInterviewStageFormData, IJobPosition, JobAdvertCompleteFormData, JobAdvertStatus, JobAdvertTypes, JobPositionAdvert, JobPositionAdvertFormData } from "@/types/types.utils"
+import { useDocumentTitle } from "@/hooks/use-document-title"
 
-// Pagination constants
-const PAGE_SIZES = [10, 25, 50, 100]
+
 const DEFAULT_PAGE_SIZE = 10
 
 type Interviewer = {
@@ -120,12 +105,12 @@ export default function JobAdvertsPage() {
   })
 
   // Separate form data for interview stages
-  const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
-    name: "",
-    level: 1,
-    interviewers: [],
-    job_position_advert: 0,
-  })
+  // const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
+  //   name: "",
+  //   level: 1,
+  //   interviewers: [],
+  //   job_position_advert: 0,
+  // })
 
   const [jobPositions, setJobPositions] = useState<IJobPosition[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -140,10 +125,14 @@ export default function JobAdvertsPage() {
   const [newFeedbackFieldName, setNewFeedbackFieldName] = useState("")
   const [newFeedbackFieldType, setNewFeedbackFieldType] = useState("Number")
   const [employees, setEmployees] = useState<IEmployee[]>([])
-  const [isCreatingStage, setIsCreatingStage] = useState(false)
+  const [isCreatingStage, setIsCreatingStage] = useState(false);
+  const [createdJobOpening, setCreatedJobOpening] = useState<JobPositionAdvert | null>(null);
+  const [editingIntreviewStage, setEditingInterviewStage] = useState<IInterviewStage | null>(null)
+  const [isStageEditorOpen, setIsStageEditorOpen] = useState(false)
+  // const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
-  const [stageErrors, setStageErrors] = useState<Partial<Record<keyof IInterviewStageFormData, string>>>({})
-  const [isCreateStageDialogOpen, setIsCreateStageDialogOpen] = useState(false)
+  // const [stageErrors, setStageErrors] = useState<Partial<Record<keyof IInterviewStageFormData, string>>>({})
+  // const [isEditStageDialogOpen, setIsEditStageDialogOpen] = useState(false);
 
   const userData = useSelector(selectUser)
   const router = useRouter()
@@ -153,6 +142,19 @@ export default function JobAdvertsPage() {
   const savedJobAdvertForm = useSelector(selectJobAdvertForm)
 
   useDocumentTitle("JOB OPENINGS")
+
+  // Infinite-scroll job position dropdown state
+  const [jpFilterText, setJpFilterText] = useState("")
+  const [jobPositionOptions, setJobPositionOptions] = useState<IJobPosition[]>([])
+  const [isLoadingJobPositions, setIsLoadingJobPositions] = useState(false)
+  const [hasMoreJobPositions, setHasMoreJobPositions] = useState(true)
+  const [jobPositionPage, setJobPositionPage] = useState(1)
+  const [jobPositionDropdownOpen, setJobPositionDropdownOpen] = useState(false)
+  const [jobPositionInitiallyLoaded, setJobPositionInitiallyLoaded] = useState(false)
+  const jobPositionDropdownRef = useRef<HTMLDivElement | null>(null)
+  const jobPositionContainerRef = useRef<HTMLDivElement | null>(null)
+  const jobPositionSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  // const jobPOsitionsIntersectionObserverRef = useRef<IntersectionObserver | null>(null)
 
   // Load saved form data from Redux on component mount
   useEffect(() => {
@@ -186,14 +188,6 @@ export default function JobAdvertsPage() {
     }
   }, [savedJobAdvertForm])
 
-  // Cleanup: Clear form data when component unmounts (optional - uncomment if you want to clear on navigation)
-  // useEffect(() => {
-  //   return () => {
-  //     // Only clear if user navigates away without submitting
-  //     // This is optional and depends on your UX requirements
-  //   }
-  // }, [])
-
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
       router.push("/dashboard")
@@ -201,6 +195,94 @@ export default function JobAdvertsPage() {
     }
     fetchJobPositions()
   }, [selectedInstitution, selectedBranch, router])
+
+  // Helper to format job position label
+  const getPositionLabel = useCallback((position: IJobPosition): string => {
+    return `${position.name} - ${position.department_details?.name ?? ""}`.trim()
+  }, [])
+
+  // Fetch job positions paginated with optional server-side search
+  const fetchJobPositionsPaged = useCallback(
+    async (searchTerm: string = "", page: number = 1, reset: boolean = false) => {
+      if (!selectedInstitution) return
+      try {
+        setIsLoadingJobPositions(true)
+        const params = new URLSearchParams({ page: String(page) })
+        if (searchTerm.trim()) params.append("search", searchTerm.trim())
+        const res = await apiRequest.get(
+          `recruitment/institution/${selectedInstitution.id}/job-position/?${params.toString()}`,
+        )
+        const results = Array.isArray(res.data?.results) ? (res.data.results as IJobPosition[]) : []
+        if (reset || page === 1) {
+          setJobPositionOptions(results)
+        } else {
+          setJobPositionOptions((prev) => [...prev, ...results])
+        }
+        setHasMoreJobPositions(Boolean(res.data?.next))
+        setJobPositionPage(page)
+      } catch (e) {
+        if (reset) setJobPositionOptions([])
+        setHasMoreJobPositions(false)
+      } finally {
+        setIsLoadingJobPositions(false)
+      }
+    },
+    [selectedInstitution],
+  )
+
+  // Debounced search for job positions
+  useEffect(() => {
+    if (!jobPositionDropdownOpen) return
+    if (jobPositionSearchTimeoutRef.current) {
+      clearTimeout(jobPositionSearchTimeoutRef.current)
+    }
+    jobPositionSearchTimeoutRef.current = setTimeout(() => {
+      fetchJobPositionsPaged(jpFilterText, 1, true)
+    }, 300)
+    return () => {
+      if (jobPositionSearchTimeoutRef.current) {
+        clearTimeout(jobPositionSearchTimeoutRef.current)
+      }
+    }
+  }, [jpFilterText, jobPositionDropdownOpen, fetchJobPositionsPaged])
+
+  // Open dropdown and load first page if needed
+  const handleJobPositionInputFocus = useCallback(() => {
+    setJobPositionDropdownOpen(true)
+    if (!jobPositionInitiallyLoaded) {
+      setJobPositionInitiallyLoaded(true)
+      fetchJobPositionsPaged("", 1, true)
+    }
+  }, [jobPositionInitiallyLoaded, fetchJobPositionsPaged])
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const container = jobPositionContainerRef.current
+      if (container && !container.contains(e.target as Node)) {
+        setJobPositionDropdownOpen(false)
+      }
+    }
+    if (jobPositionDropdownOpen) {
+      document.addEventListener("mousedown", handler)
+    }
+    return () => document.removeEventListener("mousedown", handler)
+  }, [jobPositionDropdownOpen])
+
+  // Scroll handler to load more
+  const handleJobPositionDropdownScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
+      if (
+        scrollHeight - scrollTop <= clientHeight + 50 &&
+        hasMoreJobPositions &&
+        !isLoadingJobPositions
+      ) {
+        fetchJobPositionsPaged(jpFilterText.trim(), jobPositionPage + 1, false)
+      }
+    },
+    [hasMoreJobPositions, isLoadingJobPositions, jpFilterText, jobPositionPage, fetchJobPositionsPaged],
+  )
 
   const fetchJobPositions = async () => {
     if (!selectedInstitution) return
@@ -211,6 +293,7 @@ export default function JobAdvertsPage() {
         getJobPositions({ institutionId: selectedInstitution.id }),
         fetchEmployees({ institutionId: selectedInstitution.id }),
       ])
+      console.log("Fetched job positions:", fetchedJobPositions)
 
       if (fetchedJobPositions) {
         setJobPositions(fetchedJobPositions)
@@ -262,17 +345,17 @@ export default function JobAdvertsPage() {
   }
 
   // Function to save complete form data to Redux
-  const saveCompleteFormToRedux = () => {
-    const completeFormData: JobAdvertCompleteFormData = {
-      ...formData,
-      stages,
-      newStageName,
-      selectedInterviewers,
-      newFeedbackFieldName,
-      newFeedbackFieldType,
-    }
-    dispatch(saveJobAdvertForm(completeFormData))
-  }
+  // const saveCompleteFormToRedux = () => {
+  //   const completeFormData: JobAdvertCompleteFormData = {
+  //     ...formData,
+  //     stages,
+  //     newStageName,
+  //     selectedInterviewers,
+  //     newFeedbackFieldName,
+  //     newFeedbackFieldType,
+  //   }
+  //   dispatch(saveJobAdvertForm(completeFormData))
+  // }
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof JobPositionAdvertFormData, string>> = {}
@@ -304,8 +387,7 @@ export default function JobAdvertsPage() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
 
     if (!selectedInstitution || !selectedBranch) {
       toast.error("Missing organization or branch information")
@@ -336,22 +418,20 @@ export default function JobAdvertsPage() {
         level: formData.level,
         interviewers: formData.interviewers,
       }
-      await createJobPositionAdvert({
+
+      const jobOpeningResponse = await createJobPositionAdvert({
         institutionId: selectedInstitution.id,
         advertData: createData,
-      })
+      });
+      setCreatedJobOpening(jobOpeningResponse);
 
-      toast.success("Job opening created successfully!")
-      
-      // Clear the saved form data from Redux on successful submission
-      dispatch(clearJobAdvertForm())
-      
-      router.push("/job-adverts")
+      toast.success("Job opening created successfully!");
+      setStep(2);
     } catch (error: any) {
-      const errorMessage = error?.detail || error?.message || "Failed to create job opening. Please try again."
-      toast.error(errorMessage)
+      showErrorToast({error, defaultMessage:"Failed to create job opening. Please try again."})
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
+      dispatch(clearJobAdvertForm())
     }
   }
 
@@ -403,8 +483,6 @@ export default function JobAdvertsPage() {
       return
     }
 
-    // We need the job position advert ID to create the stage
-    // Since we're creating a new job opening, we need to create it first
     if (!formData.job_position || formData.job_position === 0) {
       toast.error("Please select a job position first before adding stages")
       return
@@ -413,29 +491,8 @@ export default function JobAdvertsPage() {
     setIsCreatingStage(true)
 
     try {
-      // First, let's create the job opening to get the advert ID
-      const createData: JobPositionAdvertFormData = {
-        job_position: formData.job_position,
-        job_position_advert_status: formData.job_position_advert_status,
-        expiry_date: formData.expiry_date,
-        number_of_employees_expected: formData.number_of_employees_expected || undefined,
-        extra_information: formData.extra_information || undefined,
-        advert_type: formData.advert_type,
-        level: formData.level,
-        interviewers: formData.interviewers,
-      }
 
-      const createdJobOpening = await createJobPositionAdvert({
-        institutionId: selectedInstitution.id,
-        advertData: createData,
-      })
-
-      let jobOpeningId
-      if (createdJobOpening && typeof createdJobOpening === "object") {
-        jobOpeningId = createdJobOpening.id || createdJobOpening.data?.id || createdJobOpening.job_position_details?.id
-      }
-
-      if (!jobOpeningId) {
+      if (!createdJobOpening) {
         throw new Error("Failed to get job opening ID")
       }
 
@@ -444,7 +501,7 @@ export default function JobAdvertsPage() {
         name: newStageName,
         level: stages.length + 1,
         interviewers: selectedInterviewers.map((interviewer) => Number(interviewer.id)),
-        job_position_advert: Number(jobOpeningId),
+        job_position_advert: Number(createdJobOpening.id),
       }
 
       const newStage = await createInterviewStage({
@@ -467,31 +524,23 @@ export default function JobAdvertsPage() {
         setSelectedInterviewers([])
 
         // Save updated stages to Redux before clearing
-        const completeFormData: JobAdvertCompleteFormData = {
-          ...formData,
-          stages: updatedStages,
-          newStageName: "",
-          selectedInterviewers: [],
-          newFeedbackFieldName,
-          newFeedbackFieldType,
-        }
-        dispatch(saveJobAdvertForm(completeFormData))
+        // const completeFormData: JobAdvertCompleteFormData = {
+        //   ...formData,
+        //   stages: updatedStages,
+        //   newStageName: "",
+        //   selectedInterviewers: [],
+        //   newFeedbackFieldName,
+        //   newFeedbackFieldType,
+        // }
+        // dispatch(saveJobAdvertForm(completeFormData))
 
-        toast.success("Job opening and interview stage created successfully!")
+        toast.success("Interview stage created successfully!")
 
         // Clear the saved form data from Redux on successful creation
         dispatch(clearJobAdvertForm())
 
-        // Redirect to job adverts since job opening is now created
-        setTimeout(() => {
-          router.push("/job-adverts")
-        }, 2000)
-      } else {
-        toast.error("Job opening created but failed to create interview stage")
-        setTimeout(() => {
-          router.push("/job-adverts")
-        }, 2000)
-      }
+      } 
+
     } catch (error: any) {
       const errorMessage = error?.detail || error?.message || "Failed to create job opening and stage"
       toast.error(errorMessage)
@@ -587,82 +636,81 @@ export default function JobAdvertsPage() {
     dispatch(saveJobAdvertForm(completeFormData))
   }
 
-  const handleCreateStage = async (e: React.FormEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  // const handleCreateStage = async (e: React.FormEvent) => {
+  //   e.preventDefault()
+  //   e.stopPropagation()
 
-    if (!selectedInstitution) {
-      toast.error("Missing organization information")
-      return
-    }
+  //   if (!selectedInstitution) {
+  //     toast.error("Missing organization information")
+  //     return
+  //   }
 
-    const newStageErrors: Partial<Record<keyof IInterviewStageFormData, string>> = {}
-    if (!stageFormData.name.trim()) {
-      newStageErrors.name = "Stage name is required"
-    }
-    if (!stageFormData.interviewers || stageFormData.interviewers.length === 0) {
-      newStageErrors.interviewers = "Please select at least one interviewer"
-    }
+  //   const newStageErrors: Partial<Record<keyof IInterviewStageFormData, string>> = {}
+  //   if (!stageFormData.name.trim()) {
+  //     newStageErrors.name = "Stage name is required"
+  //   }
+  //   if (!stageFormData.interviewers || stageFormData.interviewers.length === 0) {
+  //     newStageErrors.interviewers = "Please select at least one interviewer"
+  //   }
 
-    if (stageFormData.level < 1) {
-      newStageErrors.level = "Level must be at least 1"
-    }
+  //   if (stageFormData.level < 1) {
+  //     newStageErrors.level = "Level must be at least 1"
+  //   }
 
-    if (Object.keys(newStageErrors).length > 0) {
-      setStageErrors(newStageErrors)
-      return
-    }
+  //   if (Object.keys(newStageErrors).length > 0) {
+  //     setStageErrors(newStageErrors)
+  //     return
+  //   }
 
-    setIsCreatingStage(true)
+  //   setIsCreatingStage(true)
 
-    try {
-      const newStage = await createInterviewStage({
-        institutionId: selectedInstitution.id,
-        stageData: stageFormData,
-      })
+  //   try {
+  //     const newStage = await createInterviewStage({
+  //       institutionId: selectedInstitution.id,
+  //       stageData: stageFormData,
+  //     })
 
-      if (newStage) {
-        setInterviewStages((prev) => [...prev, newStage])
-        const localStage: Stage = {
-          id: newStage.id.toString(),
-          name: newStage.name,
-          interviewers: stageFormData.interviewers.map((empId) => {
-            const emp = employees.find((e) => e.id === empId)
-            return {
-              id: empId.toString(),
-              name: emp?.user?.fullname || `Employee ${empId}`,
-              role: emp?.user?.user_type || "Staff",
-            }
-          }),
-          feedbackFields: [],
-        }
+  //     if (newStage) {
+  //       setInterviewStages((prev) => [...prev, newStage])
+  //       const localStage: Stage = {
+  //         id: newStage.id.toString(),
+  //         name: newStage.name,
+  //         interviewers: stageFormData.interviewers.map((empId) => {
+  //           const emp = employees.find((e) => e.id === empId)
+  //           return {
+  //             id: empId.toString(),
+  //             name: emp?.user?.fullname || `Employee ${empId}`,
+  //             role: emp?.user?.user_type || "Staff",
+  //           }
+  //         }),
+  //         feedbackFields: [],
+  //       }
 
-        setStages((prev) => [...prev, localStage])
-        setStageFormData({
-          name: "",
-          level: stageFormData.level + 1,
-          interviewers: [],
-          job_position_advert: 0,
-        })
-        setStageErrors({})
-        setIsCreateStageDialogOpen(false)
-        toast.success("Interview stage created successfully!")
-      } else {
-        toast.error("Failed to create interview stage")
-      }
-    } catch (error) {
-      toast.error("Failed to create interview stage")
-    } finally {
-      setIsCreatingStage(false)
-    }
-  }
+  //       setStages((prev) => [...prev, localStage])
+  //       setStageFormData({
+  //         name: "",
+  //         level: stageFormData.level + 1,
+  //         interviewers: [],
+  //         job_position_advert: 0,
+  //       })
+  //       setStageErrors({})
+  //       toast.success("Interview stage created successfully!")
+  //     } else {
+  //       toast.error("Failed to create interview stage")
+  //     }
+  //   } catch (error) {
+  //     toast.error("Failed to create interview stage")
+  //   } finally {
+  //     setIsCreatingStage(false)
+  //   }
+  // }
 
-  const updateStageFormData = (field: keyof IInterviewStageFormData, value: any) => {
-    setStageFormData((prev) => ({ ...prev, [field]: value }))
-    if (stageErrors[field]) {
-      setStageErrors((prev) => ({ ...prev, [field]: undefined }))
-    }
-  }
+  // const updateStageFormData = (field: keyof IInterviewStageFormData, value: any) => {
+  //   setStageFormData((prev) => ({ ...prev, [field]: value }))
+  //   if (stageErrors[field]) {
+  //     setStageErrors((prev) => ({ ...prev, [field]: undefined }))
+  //   }
+  // }
 
   useEffect(() => {
     if (!formData.expiry_date) {
@@ -675,11 +723,11 @@ export default function JobAdvertsPage() {
     }
   }, [formData.expiry_date])
 
-  const jobPositionItems: SearchableSelectItem[] = jobPositions.map((position) => ({
-    id: position.id,
-    label: `${position.name} - ${position.department_details?.name}`,
-    value: `${position.name} ${position.department_details?.name}`.toLowerCase(),
-  }))
+  // const jobPositionItems: SearchableSelectItem[] = jobPositions.map((position) => ({
+  //   id: position.id,
+  //   label: `${position.name} - ${position.department_details?.name}`,
+  //   value: `${position.name} ${position.department_details?.name}`.toLowerCase(),
+  // }))
 
   const advertTypeItems: SearchableSelectItem[] = [
     { id: "external", label: "External", value: "external" },
@@ -687,198 +735,197 @@ export default function JobAdvertsPage() {
     { id: "both", label: "Both Internal and External", value: "both internal external" },
   ]
 
-  const fetchJobAdverts = useCallback(
-    async (showRefreshLoader = false, page = 1, size = DEFAULT_PAGE_SIZE) => {
-      if (!selectedInstitution) return
+  // const fetchJobAdverts = useCallback(
+  //   async (showRefreshLoader = false, page = 1, size = DEFAULT_PAGE_SIZE) => {
+  //     if (!selectedInstitution) return
 
-      try {
-        if (showRefreshLoader) {
-          setIsRefreshing(true)
-        } else {
-          setIsLoading(true)
-        }
-        setError("")
+  //     try {
+  //       if (showRefreshLoader) {
+  //         setIsRefreshing(true)
+  //       } else {
+  //         setIsLoading(true)
+  //       }
+  //       setError("")
 
-        const response: IPaginatedResponse<JobPositionAdvert> = await getJobPositionAdverts({
-          institutionId: selectedInstitution.id,
-        })
+  //       const response: IPaginatedResponse<JobPositionAdvert> = await getJobPositionAdverts({
+  //         institutionId: selectedInstitution.id,
+  //       })
 
-        let advertsArray: JobPositionAdvert[] = []
-        let pagination: { count: number; next: string | null; previous: string | null } = {
-          count: 0,
-          next: null,
-          previous: null,
-        }
+  //       let advertsArray: JobPositionAdvert[] = []
+  //       let pagination: { count: number; next: string | null; previous: string | null } = {
+  //         count: 0,
+  //         next: null,
+  //         previous: null,
+  //       }
 
-        if (response && "results" in response && Array.isArray(response.results)) {
-          advertsArray = response.results
-          pagination = {
-            count: response.count || 0,
-            next: response.next || null,
-            previous: response.previous || null,
-          }
-        } else if (response === null) {
-          advertsArray = []
-        }
+  //       if (response && "results" in response && Array.isArray(response.results)) {
+  //         advertsArray = response.results
+  //         pagination = {
+  //           count: response.count || 0,
+  //           next: response.next || null,
+  //           previous: response.previous || null,
+  //         }
+  //       } else if (response === null) {
+  //         advertsArray = []
+  //       }
 
-        setJobAdverts(advertsArray)
-        setPaginationInfo(pagination)
-      } catch (err) {
-        setJobAdverts([])
-        setError(`Failed to fetch job openings: ${err instanceof Error ? err.message : "Unknown error"}`)
-        toast.error("Failed to load job openings")
-      } finally {
-        setIsLoading(false)
-        setIsRefreshing(false)
-      }
-    },
-    [selectedInstitution],
-  )
+  //       // setJobAdverts(advertsArray)
+  //       setPaginationInfo(pagination)
+  //     } catch (err) {
+  //       // setJobAdverts([])
+  //       setError(`Failed to fetch job openings: ${err instanceof Error ? err.message : "Unknown error"}`)
+  //       toast.error("Failed to load job openings")
+  //     } finally {
+  //       setIsLoading(false)
+  //       setIsRefreshing(false)
+  //     }
+  //   },
+  //   [selectedInstitution],
+  // )
 
-  const [jobAdverts, setJobAdverts] = useState<JobPositionAdvert[]>([])
-  const [paginationInfo, setPaginationInfo] = useState<{
-    count: number
-    next: string | null
-    previous: string | null
-  }>({ count: 0, next: null, previous: null })
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [dateRange, setDateRange] = useState<{ from: string | null; to: string | null }>({ from: null, to: null })
-  const [error, setError] = useState("")
-  const [isClosing, setIsClosing] = useState(false)
-  const [closingAdvertId, setClosingAdvertId] = useState<number | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  // const [jobAdverts, setJobAdverts] = useState<JobPositionAdvert[]>([])
+  // const [paginationInfo, setPaginationInfo] = useState<{
+  //   count: number
+  //   next: string | null
+  //   previous: string | null
+  // }>({ count: 0, next: null, previous: null })
+  // const [isRefreshing, setIsRefreshing] = useState(false)
+  // const [searchTerm, setSearchTerm] = useState("")
+  // const [statusFilter, setStatusFilter] = useState<string>("all")
+  // const [dateRange, setDateRange] = useState<{ from: string | null; to: string | null }>({ from: null, to: null })
+  // const [error, setError] = useState("")
+  // const [isClosing, setIsClosing] = useState(false)
+  // const [closingAdvertId, setClosingAdvertId] = useState<number | null>(null)
+  // const [currentPage, setCurrentPage] = useState(1)
 
-  useEffect(() => {
-    if (!selectedInstitution || !selectedBranch) {
-      router.push("/dashboard")
-      return
-    }
-    fetchJobAdverts(false, currentPage, pageSize)
-  }, [selectedInstitution, selectedBranch, currentPage, pageSize])
+  // useEffect(() => {
+  //   if (!selectedInstitution || !selectedBranch) {
+  //     router.push("/dashboard")
+  //     return
+  //   }
+  //   fetchJobAdverts(false, currentPage, pageSize)
+  // }, [selectedInstitution, selectedBranch, currentPage, pageSize])
 
-  const handleRefresh = useCallback(() => {
-    fetchJobAdverts(true, 1, pageSize)
-    setCurrentPage(1)
-  }, [fetchJobAdverts, pageSize])
+  // const handleRefresh = useCallback(() => {
+  //   fetchJobAdverts(true, 1, pageSize)
+  //   setCurrentPage(1)
+  // }, [fetchJobAdverts, pageSize])
 
-  const filteredJobAdverts = useMemo(() => {
-    if (!Array.isArray(jobAdverts)) {
-      return []
-    }
+  // const filteredJobAdverts = useMemo(() => {
+  //   if (!Array.isArray(jobAdverts)) {
+  //     return []
+  //   }
 
-    return jobAdverts.filter((advert) => {
-      const matchesSearch = !searchTerm.trim()
-        ? true
-        : advert.job_position_details?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          advert.extra_information?.toLowerCase().includes(searchTerm.toLowerCase())
+  //   return jobAdverts.filter((advert) => {
+  //     const matchesSearch = !searchTerm.trim()
+  //       ? true
+  //       : advert.job_position_details?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //         advert.extra_information?.toLowerCase().includes(searchTerm.toLowerCase())
 
-      const matchesStatus = statusFilter === "all" || advert.job_position_advert_status === statusFilter
+  //     const matchesStatus = statusFilter === "all" || advert.job_position_advert_status === statusFilter
 
-      const matchesDateRange =
-        !dateRange.from && !dateRange.to
-          ? true
-          : (() => {
-              const publishedDate = new Date(advert.published_date).getTime()
-              const fromDate = dateRange.from ? new Date(dateRange.from).getTime() : Number.NEGATIVE_INFINITY
-              const toDate = dateRange.to ? new Date(dateRange.to).getTime() : Number.POSITIVE_INFINITY
-              return publishedDate >= fromDate && publishedDate <= toDate
-            })()
+  //     const matchesDateRange =
+  //       !dateRange.from && !dateRange.to
+  //         ? true
+  //         : (() => {
+  //             const publishedDate = new Date(advert.published_date).getTime()
+  //             const fromDate = dateRange.from ? new Date(dateRange.from).getTime() : Number.NEGATIVE_INFINITY
+  //             const toDate = dateRange.to ? new Date(dateRange.to).getTime() : Number.POSITIVE_INFINITY
+  //             return publishedDate >= fromDate && publishedDate <= toDate
+  //           })()
 
-      return matchesSearch && matchesStatus && matchesDateRange
-    })
-  }, [jobAdverts, searchTerm, statusFilter, dateRange])
+  //     return matchesSearch && matchesStatus && matchesDateRange
+  //   })
+  // }, [jobAdverts, searchTerm, statusFilter, dateRange])
 
-  const publishedAdverts = useMemo(
-    () =>
-      Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.job_position_advert_status === "active") : [],
-    [jobAdverts],
-  )
+  // const publishedAdverts = useMemo(
+  //   () =>
+  //     Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.job_position_advert_status === "active") : [],
+  //   [jobAdverts],
+  // )
 
-  const draftAdverts = useMemo(
-    () =>
-      Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.job_position_advert_status === "archived") : [],
-    [jobAdverts],
-  )
+  // const draftAdverts = useMemo(
+  //   () =>
+  //     Array.isArray(jobAdverts) ? jobAdverts.filter((advert) => advert.job_position_advert_status === "archived") : [],
+  //   [jobAdverts],
+  // )
 
-  const expiredAdverts = useMemo(
-    () =>
-      Array.isArray(jobAdverts)
-        ? jobAdverts.filter(
-            (advert) => advert.job_position_advert_status === "expired" || isExpired(advert.expiry_date),
-          )
-        : [],
-    [jobAdverts],
-  )
+  // const expiredAdverts = useMemo(
+  //   () =>
+  //     Array.isArray(jobAdverts)
+  //       ? jobAdverts.filter(
+  //           (advert) => advert.job_position_advert_status === "expired" || isExpired(advert.expiry_date),
+  //         )
+  //       : [],
+  //   [jobAdverts],
+  // )
 
-  const handleCreateJobAdvert = useCallback(() => {
-    router.push("/job-adverts/create")
-  }, [router])
+  // const handleCreateJobAdvert = useCallback(() => {
+  //   router.push("/job-adverts/create")
+  // }, [router])
 
-  const handleEditJobAdvert = useCallback(
-    (advertId: number) => {
-      router.push(`/job-adverts/${advertId}/edit`)
-    },
-    [router],
-  )
+  // const handleEditJobAdvert = useCallback(
+  //   (advertId: number) => {
+  //     router.push(`/job-adverts/${advertId}/edit`)
+  //   },
+  //   [router],
+  // )
 
-  const handleArchiveJobAdvert = useCallback((advertId: number) => {
-    toast.success("Job advert archiving would be implemented here")
-  }, [])
+  // const handleArchiveJobAdvert = useCallback((advertId: number) => {
+  //   toast.success("Job advert archiving would be implemented here")
+  // }, [])
 
-  const handleCloseJobAdvert = useCallback(
-    async (advertId: number) => {
-      if (!advertId) return
+  // const handleCloseJobAdvert = useCallback(
+  //   async (advertId: number) => {
+  //     if (!advertId) return
 
-      try {
-        setIsClosing(true)
-        const updatedAdvert = await updateJobPositionAdvert({
-          advertId: advertId,
-          advertData: { job_position_advert_status: "closed" },
-        })
+  //     try {
+  //       setIsClosing(true)
+  //       const updatedAdvert = await updateJobPositionAdvert({
+  //         advertId: advertId,
+  //         advertData: { job_position_advert_status: "closed" },
+  //       })
 
-        if (updatedAdvert) {
-          toast.success("Job advert closed successfully!")
-          fetchJobAdverts(true, currentPage, pageSize)
-        } else {
-          toast.error("Failed to close job openings")
-        }
-      } catch (error) {
-        toast.error("Failed to close job openings")
-      } finally {
-        setIsClosing(false)
-        setClosingAdvertId(null) // Reset the closing advert ID
-      }
-    },
-    [fetchJobAdverts, currentPage, pageSize],
-  )
+  //       if (updatedAdvert) {
+  //         toast.success("Job advert closed successfully!")
+  //         fetchJobAdverts(true, currentPage, pageSize)
+  //       } else {
+  //         toast.error("Failed to close job openings")
+  //       }
+  //     } catch (error) {
+  //       toast.error("Failed to close job openings")
+  //     } finally {
+  //       setIsClosing(false)
+  //       setClosingAdvertId(null) // Reset the closing advert ID
+  //     }
+  //   },
+  //   [fetchJobAdverts, currentPage, pageSize],
+  // )
 
-  const handleViewJobAdvert = useCallback(
-    (advertId: number) => {
-      router.push(`/job-adverts/${advertId}`)
-    },
-    [router],
-  )
+  // const handleViewJobAdvert = useCallback(
+  //   (advertId: number) => {
+  //     router.push(`/job-adverts/${advertId}`)
+  //   },
+  //   [router],
+  // )
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-  }
+  // const handlePageChange = (page: number) => {
+  //   setCurrentPage(page)
+  // }
 
-  const handlePageSizeChange = (newPageSize: string) => {
-    setPageSize(Number.parseInt(newPageSize))
-    setCurrentPage(1)
-  }
+  // const handlePageSizeChange = (newPageSize: string) => {
+  //   setPageSize(Number.parseInt(newPageSize))
+  //   setCurrentPage(1)
+  // }
 
-  const clearFilters = () => {
-    setSearchTerm("")
-    setStatusFilter("all")
-    setDateRange({ from: null, to: null })
-    setCurrentPage(1)
-  }
+  // const clearFilters = () => {
+  //   setSearchTerm("")
+  //   setStatusFilter("all")
+  //   setDateRange({ from: null, to: null })
+  //   setCurrentPage(1)
+  // }
 
-  const totalPages = Math.ceil(paginationInfo.count / pageSize)
+  // const totalPages = Math.ceil(paginationInfo.count / pageSize)
 
   if (!selectedInstitution || !selectedBranch) {
     return <div>Loading...</div>
@@ -969,20 +1016,64 @@ export default function JobAdvertsPage() {
                   Job Position / Title *
                 </label>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <div className="flex-grow min-w-0">
-                    <SearchableSelect
-                      items={jobPositionItems}
-                      selectedItems={formData.job_position ? [formData.job_position] : []}
-                      placeholder="Select Job Position / Title"
-                      searchPlaceholder="Search job positions..."
-                      emptyMessage="No job positions found."
-                      onSelect={(itemId) => updateFormData("job_position", Number(itemId))}
-                      multiple={false}
-                      triggerClassName={`w-full bg-white border border-gray-300 rounded-md px-2 sm:px-3 py-2 text-xs sm:text-sm ${
-                        errors.advert_type ? "border-destructive" : ""
-                      }`}
-                      popoverClassName="w-[280px] sm:w-[320px] md:w-[380px] lg:w-[420px]"
-                    />
+                  <div className="flex-grow min-w-0" ref={jobPositionContainerRef}>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        className={`pl-9 bg-white border-gray-300 rounded-md text-xs sm:text-sm ${
+                          errors.job_position ? "border-destructive" : ""
+                        }`}
+                        placeholder="Search or select job position"
+                        type="text"
+                        value={jpFilterText}
+                        onChange={(e) => {
+                          setJpFilterText(e.target.value)
+                          setJobPositionDropdownOpen(true)
+                        }}
+                        onFocus={handleJobPositionInputFocus}
+                      />
+                      {jobPositionDropdownOpen && (
+                        <div
+                          className="absolute top-full mt-2 left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto"
+                          ref={jobPositionDropdownRef}
+                          onScroll={handleJobPositionDropdownScroll}
+                        >
+                          {jobPositionOptions.length > 0 ? (
+                            <>
+                              {jobPositionOptions.map((position) => (
+                                <div
+                                  key={position.id}
+                                  className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                  onClick={() => {
+                                    updateFormData("job_position", Number(position.id))
+                                    setJpFilterText(getPositionLabel(position))
+                                    setJobPositionDropdownOpen(false)
+                                  }}
+                                >
+                                  <div className="font-medium text-sm">{getPositionLabel(position)}</div>
+                                </div>
+                              ))}
+                              {isLoadingJobPositions && (
+                                <div className="flex items-center justify-center py-3 text-sm text-gray-500">
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading more...
+                                </div>
+                              )}
+                              {!hasMoreJobPositions && (
+                                <div className="text-center py-3 text-gray-500 text-sm">No more positions</div>
+                              )}
+                            </>
+                          ) : isLoadingJobPositions ? (
+                            <div className="flex items-center justify-center py-8 text-sm text-gray-500">
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading positions...
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-gray-500 text-sm">
+                              {jpFilterText ? `No positions found for "${jpFilterText}"` : "No positions available"}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <CreateJobPositionDialog
                     trigger={
@@ -1100,17 +1191,13 @@ export default function JobAdvertsPage() {
             <div className="mt-8 flex justify-start gap-4">
               <Button
                 className="flex items-center gap-2 px-6 lg:px-8 "
-                onClick={() => {
-                  // Save current form state before moving to next step
-                  saveCompleteFormToRedux()
-                  setStep(2)
-                }}
+                onClick={handleSubmit}
               >
                 Next
               </Button>
               <Button
                 variant="outline"
-                className="flex items-center gap-2 px-6 lg:px-8"
+                className="flex items-center gap-2 px-6 lg:px-8 "
                 onClick={handleClearForm}
               >
                 Clear Form
@@ -1188,7 +1275,7 @@ export default function JobAdvertsPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <p className="text-xs sm:text-sm md:text-base font-medium text-gray-800">
                     Feedback Fields (Optional)
                   </p>
@@ -1213,10 +1300,11 @@ export default function JobAdvertsPage() {
                       <Plus className="h-3 w-3 sm:h-4 sm:w-4" /> Add Field
                     </Button>
                   </div>
-                </div>
+                </div> */}
                 <Button
                   className="flex items-center gap-2 px-4 sm:px-6 py-2 text-xs sm:text-sm md:text-base"
                   onClick={handleAddStage}
+                  type="button"
                   disabled={isCreatingStage}
                 >
                   {isCreatingStage ? (
@@ -1245,7 +1333,7 @@ export default function JobAdvertsPage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-4 sm:space-y-6">
+              <div className="space-y-4 sm:space-y-6 px-4 md:px-6">
                 {stages.map((stage, index) => (
                   <Card key={stage.id} className="border-gray-200 shadow-sm">
                     <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-2 gap-2 sm:gap-0">
@@ -1257,6 +1345,22 @@ export default function JobAdvertsPage() {
                           {stage.name}
                         </CardTitle>
                       </div>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-auto"
+                        onClick={() => {
+                          const stageMatch = interviewStages.find((s) => s.id.toString() === stage.id)
+                          if (stageMatch) {
+                            setEditingInterviewStage(stageMatch)
+                            setIsStageEditorOpen(true)
+                          }
+                        }}
+                      >
+                        <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                        Edit
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1317,41 +1421,77 @@ export default function JobAdvertsPage() {
 
             {/* Previous and Submit Buttons */}
             <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-start gap-2 sm:gap-4">
-              <Button
+              {/* <Button
                 className="flex items-center gap-2 px-4 sm:px-6 py-2 text-xs sm:text-sm md:text-base"
                 onClick={() => {
                   // Save current form state before moving to previous step
-                  saveCompleteFormToRedux()
+                  // saveCompleteFormToRedux()
                   setStep(1)
                 }}
               >
                 Previous
-              </Button>
+              </Button> */}
               <Button
                 className="flex items-center gap-2 px-4 sm:px-6 py-2 text-xs sm:text-sm md:text-base"
-                onClick={handleSubmit}
+                onClick={() => {router.push("/job-adverts/")}}
                 disabled={isSubmitting}
+                type="button"
               >
-                {isSubmitting ? (
+                Finish
+                {/* {isSubmitting ? (
                   <>
                     <div className="h-3 w-3 sm:h-4 sm:w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     Creating...
                   </>
                 ) : (
-                  "Create Job Opening"
-                )}
+                  "Finish"
+                )} */}
               </Button>
-              <Button
+              {/* <Button
                 variant="outline"
                 className="flex items-center gap-2 px-4 sm:px-6 py-2 text-xs sm:text-sm md:text-base"
                 onClick={handleClearForm}
               >
                 Clear Form
-              </Button>
+              </Button> */}
             </div>
           </div>
         )}
+        {/* Stage editor dialog - placed inside return so it has access to component state */}
+        <InterviewStageEditorDialog
+          open={isStageEditorOpen}
+          initial={editingIntreviewStage ? { id: editingIntreviewStage.id, name: editingIntreviewStage.name } : undefined}
+          onClose={() => { setIsStageEditorOpen(false); setEditingInterviewStage(null); }}
+          onSave={async ({ name }) => {
+            if (!editingIntreviewStage) return
+            try {
+              const interviewersIds = (editingIntreviewStage.interviewers ?? []).map((it: any) => {
+                if (typeof it === "number") return it
+                if (typeof it === "string") return Number(it)
+                if (it && (it as any).id) return Number((it as any).id)
+                return null
+              }).filter(Boolean) as number[]
+
+              const stageData = {
+                name,
+                level: (editingIntreviewStage as any).level ?? 1,
+                interviewers: interviewersIds,
+                job_position_advert: (editingIntreviewStage as any).job_position_advert ?? (createdJobOpening?.id ?? 0),
+              }
+
+              const updated = await upddateInterviewStage({ stageId: Number(editingIntreviewStage.id), stageData })
+
+              setInterviewStages((prev) => prev.map((s) => (s.id === editingIntreviewStage.id ? { ...s, name: updated?.name ?? name } : s)))
+              setStages((prev) => prev.map((s) => (s.id === editingIntreviewStage.id.toString() ? { ...s, name } : s)))
+              toast.success("Interview stage updated")
+            } catch (err) {
+              toast.error("Failed to update interview stage")
+            }
+          }}
+        />
+
       </div>
     </div>
   )
 }
+

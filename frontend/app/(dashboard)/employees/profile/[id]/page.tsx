@@ -1,6 +1,6 @@
 "use client";
 
-import {useState, useEffect} from "react";
+import {useState, useEffect, useCallback, useMemo} from "react";
 import {useParams} from "next/navigation";
 import {useSelector} from "react-redux";
 import {Card, CardContent, CardHeader} from "@/components/ui/card";
@@ -9,7 +9,11 @@ import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Button} from "@/components/ui/button";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import type {IAttendance} from "@/types/types.utils";
-
+import EmployeeLeaveBalances from "@/components/employee/employee-leave-balances";
+import EmployeeLeaveApplications from "@/components/employee/employee-leave-applications";
+import EmployeeDiscipline from "@/components/employee/employee-discipline";
+import AssetRequests from "@/components/employee/asset-request";
+import EmployeeAssetAllocations from "@/components/employee/asset-allocation";
 import {DocumentGenerationDialog} from "@/components/document-generation-dialog";
 import {
   Mail,
@@ -37,28 +41,35 @@ export default function EmployeeProfile() {
   const [error, setError] = useState<string | null>(null);
   const [showDocumentDialog, setShowDocumentDialog] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "attendance" | "payroll" | "assets" | "projects" | "documents" | "discipline"
+    "attendance" | "payroll" | "assets" | "projects" | "documents" | "discipline" | "leave"
   >("attendance");
   const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
   const [attendancePage, setAttendancePage] = useState(1);
   const [totalAttendanceRecords, setTotalAttendanceRecords] = useState(0);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [leaveSubTab, setLeaveSubTab] = useState<"balances" | "applications">("balances");
+  const [assetSubTab, setAssetSubTab] = useState<"requests" | "allocations">("requests");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Cache for tab data to prevent re-fetching
+  const [tabDataCache, setTabDataCache] = useState<Record<string, any>>({});
+
   const ATTENDANCE_PAGE_SIZE = 10;
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  const formatDate = (dateString: string | null) => {
+  // Memoized utility functions
+  const formatDate = useCallback((dateString: string | null) => {
     if (!dateString) return null;
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
-  };
+  }, []);
 
-  const getMaritalStatusLabel = (status: string | null) => {
+  const getMaritalStatusLabel = useCallback((status: string | null) => {
     if (!status) return null;
     const statusMap: {[key: string]: string} = {
       single: "Single",
@@ -67,9 +78,9 @@ export default function EmployeeProfile() {
       widowed: "Widowed",
     };
     return statusMap[status] || status;
-  };
+  }, []);
 
-  const getProfilePictureUrl = (employee: IEmployee) => {
+  const getProfilePictureUrl = useCallback((employee: IEmployee) => {
     const pictureStr = employee.employee_profile_picture || "";
     if (!pictureStr) return null;
 
@@ -87,9 +98,9 @@ export default function EmployeeProfile() {
       return `${baseUrl}/media/${pictureStr}`;
     }
     return null;
-  };
+  }, []);
 
-  const getEmployeeInitials = (employee: IEmployee) => {
+  const getEmployeeInitials = useCallback((employee: IEmployee) => {
     if (employee.user?.fullname) {
       const names = employee.user.fullname.split(" ").filter((name) => name.length > 0);
       if (names.length >= 2) {
@@ -99,17 +110,17 @@ export default function EmployeeProfile() {
       }
     }
     return employee.email?.[0]?.toUpperCase() || "E";
-  };
+  }, []);
 
-  const formatTime = (timeString: string) => {
+  const formatTime = useCallback((timeString: string) => {
     if (!timeString) return "N/A";
     return new Date(`2000-01-01T${timeString}`).toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
+  }, []);
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = useCallback((status: string) => {
     const statusConfig = {
       present: {label: "Present", className: "bg-[#e1faec] text-[#3cb371] border-[#3cb371]"},
       absent: {label: "Absent", className: "bg-[#fcdee2] text-[#e21732] border-[#e21732]"},
@@ -127,28 +138,72 @@ export default function EmployeeProfile() {
         {config.label}
       </Badge>
     );
-  };
+  }, []);
 
-  useEffect(() => {
-    fetchEmployee();
-  }, [selectedInstitution, employeeId]);
+  // Memoized filtered attendance records
+  const filteredAttendanceRecords = useMemo(() => {
+    return attendanceRecords.filter((record) => {
+      const matchesSearch =
+        searchTerm === "" ||
+        formatDate(record.date)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        record.status.toLowerCase().includes(searchTerm.toLowerCase());
 
-  useEffect(() => {
-    if (activeTab === "attendance") {
-      fetchAttendanceRecords();
+      const matchesStatus = statusFilter === "all" || record.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [attendanceRecords, searchTerm, statusFilter, formatDate]);
+
+  const attendanceSummary = useMemo(() => {
+    return {
+      totalWorkDays: attendanceRecords.length,
+      daysAbsent: attendanceRecords.filter((record) => record.status === "absent").length,
+      lateArrivals: attendanceRecords.filter((record) => record.status === "late").length,
+      leaveBalance: 0,
+    };
+  }, [attendanceRecords]);
+
+  const handleTabChange = useCallback(
+    (newTab: typeof activeTab) => {
+      if (newTab === activeTab) return;
+
+      setActiveTab(newTab);
+
+      if (newTab === "attendance" && !tabDataCache.attendance) {
+        fetchAttendanceRecords();
+      }
+    },
+    [activeTab, tabDataCache],
+  );
+
+  const fetchAttendanceRecords = useCallback(async () => {
+    if (!employeeId || loadingAttendance) return;
+
+    // Check cache first
+    if (tabDataCache.attendance) {
+      setAttendanceRecords(tabDataCache.attendance.records);
+      setTotalAttendanceRecords(tabDataCache.attendance.total);
+      return;
     }
-  }, [activeTab, attendancePage, employeeId]);
-
-  const fetchAttendanceRecords = async () => {
-    if (!employeeId) return;
 
     setLoadingAttendance(true);
     try {
       const response = await AttendanceAPI.fetchEmployeeAttendanceRecords(employeeId);
 
       if (response) {
-        setAttendanceRecords(response.results);
-        setTotalAttendanceRecords(response.count);
+        const attendanceData = {
+          records: response.results,
+          total: response.count,
+        };
+
+        setAttendanceRecords(attendanceData.records);
+        setTotalAttendanceRecords(attendanceData.total);
+
+        // Cache the data
+        setTabDataCache((prev) => ({
+          ...prev,
+          attendance: attendanceData,
+        }));
       }
     } catch (error: any) {
       let errorMessage = "Failed to fetch employee attendance records";
@@ -159,9 +214,9 @@ export default function EmployeeProfile() {
     } finally {
       setLoadingAttendance(false);
     }
-  };
+  }, [employeeId, loadingAttendance, tabDataCache.attendance]);
 
-  const fetchEmployee = async () => {
+  const fetchEmployee = useCallback(async () => {
     if (!selectedInstitution || !employeeId) {
       return;
     }
@@ -180,7 +235,28 @@ export default function EmployeeProfile() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedInstitution, employeeId]);
+
+  useEffect(() => {
+    fetchEmployee();
+  }, [fetchEmployee]);
+
+  useEffect(() => {
+    if (activeTab === "attendance" && !tabDataCache.attendance) {
+      fetchAttendanceRecords();
+    }
+  }, [activeTab, fetchAttendanceRecords, tabDataCache.attendance]);
+
+  // Tab configuration with lazy loading indicators
+  const tabConfig = useMemo(
+    () => [
+      {id: "attendance", label: "Attendance", hasData: !!tabDataCache.attendance},
+      {id: "discipline", label: "Discipline", hasData: true}, // Component handles own loading
+      {id: "leave", label: "Leave", hasData: true}, // Component handles own loading
+      {id: "assets", label: "Assets", hasData: true}, // Component handles own loading
+    ],
+    [tabDataCache],
+  );
 
   if (loading) {
     return (
@@ -219,24 +295,6 @@ export default function EmployeeProfile() {
       </div>
     );
   }
-
-  const filteredAttendanceRecords = attendanceRecords.filter((record) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      formatDate(record.date)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.status.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus = statusFilter === "all" || record.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const attendanceSummary = {
-    totalWorkDays: attendanceRecords.length,
-    daysAbsent: attendanceRecords.filter((record) => record.status === "absent").length,
-    lateArrivals: attendanceRecords.filter((record) => record.status === "late").length,
-    leaveBalance: 0, // This should come from API
-  };
 
   return (
     <div className="min-h-screen bg-[#f7f7fb]">
@@ -318,9 +376,9 @@ export default function EmployeeProfile() {
                           </span>
                         )}
                       </h2>
-                      <p className="text-[#9ca3af] text-sm font-medium mb-2">
+                      {/* <p className="text-[#9ca3af] text-sm font-medium mb-2">
                         {employee.employee_id}
-                      </p>
+                      </p> */}
 
                       <div className="flex items-center justify-center md:justify-start gap-2">
                         <Building className="w-4 h-4 text-[#9ca3af]" />
@@ -374,7 +432,7 @@ export default function EmployeeProfile() {
                       <div className="text-center lg:text-left">
                         <div className="text-xs text-[#848496] mb-1">Monthly Salary</div>
                         <div className="font-bold text-lg text-[#162032]">
-                          UGX {Number(employee.salary).toLocaleString()}
+                           {Number(employee.salary).toLocaleString()}
                         </div>
                       </div>
                     )}
@@ -405,12 +463,6 @@ export default function EmployeeProfile() {
                   <div>
                     <h3 className="text-lg font-semibold text-[#162032] mb-4">Additional Info</h3>
                     <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-[#848496]">Employee ID</label>
-                        <p className="text-[#162032] font-medium break-all">
-                          {employee.employee_id}
-                        </p>
-                      </div>
                       {employee.date_of_joining && (
                         <div>
                           <label className="text-sm font-medium text-[#848496]">
@@ -549,17 +601,10 @@ export default function EmployeeProfile() {
                 <CardHeader className="border-b border-[#e8e8f2] pb-0">
                   <div className="flex gap-2 md:gap-4 lg:gap-8 relative overflow-x-auto scrollbar-hide">
                     <div className="flex gap-2 md:gap-4 lg:gap-8 min-w-max">
-                      {[
-                        {id: "attendance", label: "Attendance"},
-                        {id: "payroll", label: "Payroll & Finance"},
-                        {id: "assets", label: "Assets Assigned"},
-                        {id: "projects", label: "Projects Assigned"},
-                        {id: "documents", label: "Documents"},
-                        {id: "discipline", label: "Discipline"},
-                      ].map((tab) => (
+                      {tabConfig.map((tab) => (
                         <button
                           key={tab.id}
-                          onClick={() => setActiveTab(tab.id as any)}
+                          onClick={() => handleTabChange(tab.id as any)}
                           className={`pb-4 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
                             activeTab === tab.id
                               ? "text-[#162032] font-semibold"
@@ -688,7 +733,10 @@ export default function EmployeeProfile() {
                                 </TableRow>
                               ) : (
                                 filteredAttendanceRecords.map((record, index) => (
-                                  <TableRow key={index} className="hover:bg-[#f7f7fb]/50">
+                                  <TableRow
+                                    key={`${record.date}-${index}`}
+                                    className="hover:bg-[#f7f7fb]/50"
+                                  >
                                     <TableCell className="font-medium text-[#162032] py-3 md:py-4 px-2 md:px-6 text-xs md:text-sm">
                                       <div className="min-w-0">
                                         <div className="md:hidden">
@@ -739,11 +787,119 @@ export default function EmployeeProfile() {
                     </div>
                   )}
 
-                  {activeTab !== "attendance" && (
-                    <div className="text-center py-12">
-                      <p className="text-[#848496]">
-                        Content for {activeTab} tab will be implemented here.
-                      </p>
+                  {activeTab === "discipline" && (
+                    <EmployeeDiscipline
+                      employeeId={employeeId}
+                      institutionId={selectedInstitution?.id || 0}
+                    />
+                  )}
+
+                  {activeTab === "leave" && (
+                    <div className="space-y-6">
+                      {/* Leave Sub-tabs */}
+                      <div className="border-b border-[#e8e8f2]">
+                        <div className="flex gap-8">
+                          <button
+                            onClick={() => setLeaveSubTab("balances")}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${
+                              leaveSubTab === "balances"
+                                ? "text-[#162032] font-semibold"
+                                : "text-[#848496] hover:text-[#162032]"
+                            }`}
+                          >
+                            Leave Balances
+                            {leaveSubTab === "balances" && (
+                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => setLeaveSubTab("applications")}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${
+                              leaveSubTab === "applications"
+                                ? "text-[#162032] font-semibold"
+                                : "text-[#848496] hover:text-[#162032]"
+                            }`}
+                          >
+                            Leave Applications
+                            {leaveSubTab === "applications" && (
+                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Leave Sub-tab Content */}
+                      {leaveSubTab === "balances" && (
+                        <EmployeeLeaveBalances
+                          employeeId={employeeId}
+                          institutionId={selectedInstitution?.id || 0}
+                        />
+                      )}
+
+                      {leaveSubTab === "applications" && (
+                        <EmployeeLeaveApplications
+                          employeeId={employeeId}
+                          institutionId={selectedInstitution?.id || 0}
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === "assets" && (
+                    <div className="space-y-6">
+                      {/* Asset Sub-tabs */}
+                      <div className="border-b border-[#e8e8f2]">
+                        <div className="flex gap-8">
+                          <button
+                            onClick={() => setAssetSubTab("requests")}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${
+                              assetSubTab === "requests"
+                                ? "text-[#162032] font-semibold"
+                                : "text-[#848496] hover:text-[#162032]"
+                            }`}
+                          >
+                            Asset Requests
+                            {assetSubTab === "requests" && (
+                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => setAssetSubTab("allocations")}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${
+                              assetSubTab === "allocations"
+                                ? "text-[#162032] font-semibold"
+                                : "text-[#848496] hover:text-[#162032]"
+                            }`}
+                          >
+                            Asset Allocations
+                            {assetSubTab === "allocations" && (
+                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Asset Sub-tab Content */}
+                      {assetSubTab === "requests" && (
+                        <AssetRequests
+                          employeeId={employee.employee_id}
+                          isEmployeeView={true}
+                          showHeader={true}
+                          showCreateButton={true}
+                          showStats={true}
+                          compact={true}
+                        />
+                      )}
+
+                      {assetSubTab === "allocations" && (
+                        <EmployeeAssetAllocations
+                          employeeId={employee.employee_id}
+                          institutionId={selectedInstitution?.id}
+                          showHeader={false}
+                          showStats={true}
+                          compact={false}
+                        />
+                      )}
                     </div>
                   )}
                 </CardContent>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Plus, MoreVertical, Edit, Trash2, Search, X } from 'lucide-react'
 import { useSelector } from "react-redux"
 import { Button } from "@/components/ui/button"
@@ -21,6 +21,7 @@ import { PaginatedTableWrapper } from "@/components/common/tables/paginated-tabl
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ref } from "process"
 
 
 
@@ -36,6 +37,7 @@ export default function EmployeeDeductionsRefactored() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
   const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all")
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
 
@@ -81,6 +83,7 @@ export default function EmployeeDeductionsRefactored() {
   const handleFormSuccess = (deduction: any, isEdit: boolean) => {
     setEditingDeduction(null)
     toast.success(isEdit ? "Deduction updated successfully" : "Deduction created successfully")
+    refreshTableRef.current?.()
   }
 
   const handleDeductionTypeCreated = (newType: IDeductionType) => {
@@ -119,7 +122,7 @@ export default function EmployeeDeductionsRefactored() {
         <div className="p-6 border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4 justify-between">
-              <div className="relative flex-1 max-w-sm">
+              <div className="relative w-full max-w-md md:max-w-lg lg:max-w-xl">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="Search employee deductions..."
@@ -178,6 +181,9 @@ export default function EmployeeDeductionsRefactored() {
             footerClassName="pt-4"
           >
             {({data, loading, refresh}) => {
+              useEffect(() => {
+                refreshTableRef.current = refresh;
+              }, [refresh]);
               if (loading) {
                 return <TableSkeleton rows={10} columns={8} />;
               }

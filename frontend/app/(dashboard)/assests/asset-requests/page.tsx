@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSelector } from "react-redux";
 import { 
   MoreVertical, 
@@ -15,30 +15,36 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  FileText
-} from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+  FileText,
+} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Badge} from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { TableSkeleton } from "@/components/common/table-skeleton";
-import { CreateAssetRequestDialog } from "@/components/asset-requests/create-asset-request-dialog";
-import { EditAssetRequestDialog } from "@/components/asset-requests/edit-asset-request-dialog";
-import { DeleteAssetRequestDialog } from "@/components/asset-requests/delete-asset-request-dialog";
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { useRouter } from "next/navigation";
-import { assetsAPI } from "@/lib/utils";
-import type { IAssetRequest } from "@/types/types.utils";
-import { useMobile } from "@/hooks/use-mobile";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {toast} from "sonner";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {TableSkeleton} from "@/components/common/table-skeleton";
+import {CreateAssetRequestDialog} from "@/components/asset-requests/create-asset-request-dialog";
+import {EditAssetRequestDialog} from "@/components/asset-requests/edit-asset-request-dialog";
+import {DeleteAssetRequestDialog} from "@/components/asset-requests/delete-asset-request-dialog";
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import {useRouter} from "next/navigation";
+import {assetsAPI} from "@/lib/utils";
+import type {IAssetRequest} from "@/types/types.utils";
+import {useMobile} from "@/hooks/use-mobile";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -105,22 +111,26 @@ const AssetRequestsComponent = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
   const handleCreateSuccess = (newRequest: IAssetRequest) => {
     setIsCreateDialogOpen(false);
     toast.success("Asset request created successfully");
+    refreshTableRef.current?.();
   };
 
   const handleUpdateSuccess = (updatedRequest: IAssetRequest) => {
     setIsEditDialogOpen(false);
     setEditingRequest(null);
     toast.success("Asset request updated successfully");
+    refreshTableRef.current?.();
   };
 
   const handleDeleteSuccess = (deletedId: number) => {
     setIsDeleteDialogOpen(false);
     setDeletingRequest(null);
     toast.success("Asset request deleted successfully");
+    refreshTableRef.current?.();
   };
 
   const handleEditRequest = (request: IAssetRequest) => {
@@ -158,7 +168,7 @@ const AssetRequestsComponent = () => {
             </div>
             <Button
               onClick={() => setIsCreateDialogOpen(true)}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
+              className=""
             >
               <Plus className="h-4 w-4 mr-2" />
               New Request
@@ -192,10 +202,7 @@ const AssetRequestsComponent = () => {
                 </SelectContent>
               </Select>
             </div>
-          
           </div>
-          
-
         </div>
 
         {/* Content */}
@@ -215,6 +222,11 @@ const AssetRequestsComponent = () => {
             footerClassName="pt-4"
           >
             {({data, loading, refresh}) => {
+              // Store refresh function in ref when component mounts/updates
+              useEffect(() => {
+                refreshTableRef.current = refresh;
+              }, [refresh]);
+
               if (loading) {
                 return <TableSkeleton rows={10} columns={7} />;
               }
@@ -222,14 +234,17 @@ const AssetRequestsComponent = () => {
               if (!data || data.results.length === 0) {
                 return (
                   <div className="text-center py-8 text-gray-500">
-                    {searchTerm ? "No requests found matching your search criteria" : "No asset requests found"}
+                    {searchTerm
+                      ? "No requests found matching your search criteria"
+                      : "No asset requests found"}
                   </div>
                 );
               }
 
               // Apply client-side filters (status filter)
               const filteredResults = data.results.filter((request) => {
-                const matchesStatus = statusFilter === "all" || request.asset_request_status === statusFilter;
+                const matchesStatus =
+                  statusFilter === "all" || request.asset_request_status === statusFilter;
                 return matchesStatus;
               });
 
@@ -249,10 +264,7 @@ const AssetRequestsComponent = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-12">
-                            <input
-                              type="checkbox"
-                              className="rounded border-gray-300"
-                            />
+                            <input type="checkbox" className="rounded border-gray-300" />
                           </TableHead>
                           <TableHead>Reference</TableHead>
                           <TableHead>Asset</TableHead>
@@ -266,19 +278,16 @@ const AssetRequestsComponent = () => {
                         {filteredResults.map((request) => (
                           <TableRow key={request.id}>
                             <TableCell>
-                              <input
-                                type="checkbox"
-                                className="rounded border-gray-300"
-                              />
+                              <input type="checkbox" className="rounded border-gray-300" />
                             </TableCell>
                             <TableCell className="font-mono text-sm">
                               {request.request_reference_code}
                             </TableCell>
                             <TableCell className="font-medium">
-                              {request.asset?.asset_name || 'Unknown Asset'}
+                              {request.asset?.asset_name || "Unknown Asset"}
                             </TableCell>
                             <TableCell>
-                              {request.requester?.fullname || 'Unknown User'}
+                              {request.requester?.user?.fullname || "Unknown User"}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-2">
@@ -297,7 +306,9 @@ const AssetRequestsComponent = () => {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleViewRequestDetails(request)}>
+                                  <DropdownMenuItem
+                                    onClick={() => handleViewRequestDetails(request)}
+                                  >
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
@@ -305,7 +316,7 @@ const AssetRequestsComponent = () => {
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem 
+                                  <DropdownMenuItem
                                     onClick={() => handleDeleteRequest(request)}
                                     className="text-red-600"
                                   >
@@ -330,7 +341,7 @@ const AssetRequestsComponent = () => {
                             <div className="flex items-center gap-2 mb-2">
                               <Package className="h-4 w-4 text-gray-500" />
                               <h3 className="font-semibold text-gray-900">
-                                {request.asset?.asset_name || 'Unknown Asset'}
+                                {request.asset?.asset_name || "Unknown Asset"}
                               </h3>
                             </div>
                             <div className="space-y-1 mb-2">
@@ -338,7 +349,7 @@ const AssetRequestsComponent = () => {
                                 Ref: {request.request_reference_code}
                               </p>
                               <p className="text-sm text-gray-600">
-                                Requester: {request.requester?.fullname || 'Unknown User'}
+                                Requester: {request.requester?.user?.fullname || "Unknown User"}
                               </p>
                               <div className="flex items-center gap-2">
                                 <div className="flex items-center space-x-2">
@@ -352,9 +363,7 @@ const AssetRequestsComponent = () => {
                                 </span>
                               </div>
                               {request.notes && (
-                                <p className="text-sm text-gray-600 mt-1">
-                                  {request.notes}
-                                </p>
+                                <p className="text-sm text-gray-600 mt-1">{request.notes}</p>
                               )}
                             </div>
                           </div>
@@ -373,7 +382,7 @@ const AssetRequestsComponent = () => {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => handleDeleteRequest(request)}
                                 className="text-red-600"
                               >

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { 
   MoreVertical, 
@@ -102,6 +102,7 @@ const AssetReturnsComponent = () => {
   const [deletingAssetReturn, setDeletingAssetReturn] = useState<IAssetReturn | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [conditionFilter, setConditionFilter] = useState<string>("all");
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -128,16 +129,20 @@ const AssetReturnsComponent = () => {
     setIsEditDialogOpen(false);
     setEditingAssetReturn(null);
     toast.success("Asset return updated successfully");
+    refreshTableRef.current?.();
   };
 
   const handleDeleteSuccess = () => {
     setIsDeleteDialogOpen(false);
     setDeletingAssetReturn(null);
     toast.success("Asset return deleted successfully");
+    refreshTableRef.current?.();
   };
 
   const handleCreateSuccess = () => {
+    setIsCreateDialogOpen(false);
     toast.success("Asset return created successfully");
+    refreshTableRef.current?.();
   };
 
   const hasFilters = searchTerm || conditionFilter !== "all";
@@ -206,6 +211,11 @@ const AssetReturnsComponent = () => {
             footerClassName="pt-4"
           >
             {({data, loading, refresh}) => {
+              // Store refresh function in ref when component mounts/updates
+              useEffect(() => {
+                refreshTableRef.current = refresh;
+              }, [refresh]);
+
               if (loading) {
                 return <TableSkeleton rows={10} columns={5} />;
               }

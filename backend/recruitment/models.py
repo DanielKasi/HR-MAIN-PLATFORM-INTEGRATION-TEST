@@ -81,7 +81,7 @@ class JobPosition(UtilityBaseModel):
     job_position_status = models.CharField(
         max_length=20,
         choices=JOB_POSITION_STATUS_CHOICES,
-        default="inactive",
+        default="active",
     )
     required_documents = GenericRelation(RequiredDocument, on_delete=models.CASCADE)
 
@@ -435,6 +435,7 @@ class InterviewStage(models.Model):
         "employee.Employee",
         related_name="interview_stages",
     )
+    feedback_fields = models.JSONField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
 

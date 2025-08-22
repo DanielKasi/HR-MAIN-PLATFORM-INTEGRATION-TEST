@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { 
   MoreVertical, 
@@ -107,6 +107,7 @@ const AssetAllocationsComponent = () => {
   const [deletingAllocation, setDeletingAllocation] = useState<IAssetAllocation | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
 
 
@@ -117,18 +118,21 @@ const AssetAllocationsComponent = () => {
   const handleCreateSuccess = (newAllocation: IAssetAllocation) => {
     setIsCreateDialogOpen(false);
     toast.success("Asset allocation created successfully");
+    refreshTableRef.current?.();
   };
 
   const handleUpdateSuccess = (updatedAllocation: IAssetAllocation) => {
     setIsEditDialogOpen(false);
     setEditingAllocation(null);
     toast.success("Asset allocation updated successfully");
+    refreshTableRef.current?.();
   };
 
   const handleDeleteSuccess = (deletedId: number) => {
     setIsDeleteDialogOpen(false);
     setDeletingAllocation(null);
     toast.success("Asset allocation deleted successfully");
+    refreshTableRef.current?.();
   };
 
   const handleEditAllocation = (allocation: IAssetAllocation) => {
@@ -221,6 +225,9 @@ const AssetAllocationsComponent = () => {
             footerClassName="pt-4"
           >
             {({data, loading, refresh}) => {
+              useEffect(() => {
+                refreshTableRef.current = refresh;
+              }, [refresh]);
               if (loading) {
                 return <TableSkeleton rows={10} columns={6} />;
               }
