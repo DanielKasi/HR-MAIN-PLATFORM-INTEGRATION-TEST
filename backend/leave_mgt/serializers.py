@@ -127,7 +127,7 @@ class LeaveApplicationSerializer(serializers.ModelSerializer):
         # Validate leave policy constraints
         if employee and leave_type and start_date:
             try:
-                policy = LeavePolicy.objects.get(leave_type=leave_type, is_active=True)
+                policy = LeavePolicy.objects.filter(leave_type=leave_type, is_active=True).first()
                 
                 # Check minimum notice period
                 notice_days = (start_date - timezone.now().date()).days

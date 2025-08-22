@@ -240,7 +240,6 @@ class AssetListCreateView(APIView):
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(assets, request)
         serializer = AssetSerializer(paginated_qs, many=True)
-        print(f"Paginated assets: {paginated_qs}")  # Debugging line
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -324,7 +323,6 @@ class AssetRequestListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def post(self, request):
-        print(f"request {request.data}")
         serializer = AssetRequestSerializer(
             data=request.data, context={"request": request}
         )

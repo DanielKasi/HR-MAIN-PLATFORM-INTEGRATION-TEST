@@ -29,6 +29,7 @@ from django.core.files.base import ContentFile
 from weasyprint import HTML
 from employee.models import EmployeeContract, Employee
 import logging
+from django.db.models import Q
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -41,9 +42,19 @@ class DocumentTypeListCreateAPIView(APIView):
         responses={200: DocumentTypeSerializer(many=True)},
     )
     def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
         queryset = DocumentType.objects.filter(
-            institution_id=institution_id, is_active=True
+            institution_id=institution_id, 
+            is_active=True,
+            deleted_at__isnull=True,
         ).order_by("-created_at")
+
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) | Q(code__icontains=search_query) | 
+                Q(description__icontains=search_query)
+            )
+
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = DocumentTypeSerializer(paginated_qs, many=True)
@@ -164,6 +175,7 @@ class DocumentTemplateListCreateAPIView(APIView):
         tags=["Document Templates"],
     )
     def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
         try:
             Institution.objects.get(pk=institution_id)
         except Institution.DoesNotExist:
@@ -172,8 +184,17 @@ class DocumentTemplateListCreateAPIView(APIView):
             )
 
         templates = DocumentTemplate.objects.filter(
-            document_type__institution=institution_id
+            document_type__institution=institution_id,
+            is_active=True,
+            deleted_at__isnull=True
         ).order_by("-created_at")
+
+        if search_query:    
+            templates = templates.filter(
+                Q(document_type__name__icontains=search_query) |
+                Q(name__icontains=search_query) |
+                Q(template_type__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginated_templates = paginator.paginate_queryset(templates, request)
         serializer = DocumentTemplateSerializer(

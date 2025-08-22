@@ -201,7 +201,7 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = os.getenv("EMAIL_HOST")
 EMAIL_HOST_USER = os.getenv("RESPONSE_EMAIL")
 EMAIL_HOST_PASSWORD = os.getenv("RESPONSE_EMAIL_PASSWORD")
-EMAIL_PORT = 587
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))  
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.getenv("RESPONSE_EMAIL")
 

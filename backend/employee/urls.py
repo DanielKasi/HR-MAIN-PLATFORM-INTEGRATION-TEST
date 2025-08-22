@@ -74,7 +74,7 @@ urlpatterns = [
         name="attendance-detail",
     ),
     path(
-        "employee-types/",
+        "employee-types/<int:institution_id>/",
         EmployeeTypeListCreateAPIView.as_view(),
         name="employee-type-list-create",
     ),
@@ -84,7 +84,7 @@ urlpatterns = [
         name="employee-type-detail",
     ),
     path(
-        "work-types/", WorkTypeListCreateAPIView.as_view(), name="work-type-list-create"
+        "work-types/<int:institution_id>/", WorkTypeListCreateAPIView.as_view(), name="work-type-list-create"
     ),
     path(
         "work-types/<int:pk>/", WorkTypeDetailAPIView.as_view(), name="work-type-detail"
