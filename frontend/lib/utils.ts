@@ -4753,7 +4753,6 @@ export const assetsAPI = {
     const response = await apiRequest.get(endpoint);
     return response.data as IPaginatedResponse<IAssetAllocation>;
   } catch (error) {
-    console.error("Error fetching paginated asset allocations:", error);
     throw error;
   }
 },

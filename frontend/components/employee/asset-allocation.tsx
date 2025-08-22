@@ -85,6 +85,8 @@ const EmployeeAssetAllocations: React.FC<EmployeeAssetAllocationsProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [hasNoProfile, setHasNoProfile] = useState(false);
+  const [hasShownToast, setHasShownToast] = useState(false);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const institutionToUse = institutionId || selectedInstitution?.id;
@@ -101,45 +103,48 @@ const EmployeeAssetAllocations: React.FC<EmployeeAssetAllocationsProps> = ({
 
     setLoading(true);
     setError(null);
+    setHasNoProfile(false);
 
     try {
-      console.log("Fetching asset allocations with params:", {
-        institutionId: institutionToUse,
-        page: 1,
-        employeeId: employeeId,
-      });
-
       const response = await assetsAPI.getPaginatedAssetAllocations({
         institutionId: institutionToUse,
         page: 1,
         employeeId: employeeId,
       });
 
-      console.log("Asset allocations response:", response);
-
-      // Ensure response.results is an array
       const results = Array.isArray(response?.results) ? response.results : [];
       setAllocations(results);
       setHasInitialized(true);
     } catch (error: any) {
-      console.error("Asset allocations error details:", {
-        message: error?.message,
-        status: error?.status,
-        data: error?.response?.data,
-        error: error,
-      });
+      const errorMessage =
+        error?.message ||
+        error?.detail ||
+        error?.response?.data?.detail ||
+        "Failed to fetch asset allocations";
 
-      const errorMessage = error?.message || error?.detail || "Failed to fetch asset allocations";
-      setError(errorMessage);
+      // Check if it's the "no profile" error specifically
+      const isNoProfileError = errorMessage.includes("has no profile");
 
-      // Only show toast if component is still mounted and error is significant
-      if (errorMessage !== "Failed to fetch asset allocations") {
-        toast.error(errorMessage);
+      if (isNoProfileError) {
+        setHasNoProfile(true);
+        // Show toast only once per component instance
+        if (!hasShownToast) {
+          toast.error(errorMessage);
+          setHasShownToast(true);
+        }
+      } else {
+        // Show toast for other errors (but not generic ones)
+        if (errorMessage !== "Failed to fetch asset allocations") {
+          toast.error(errorMessage);
+        }
       }
+
+      setError(errorMessage);
+      setHasInitialized(true);
     } finally {
       setLoading(false);
     }
-  }, [institutionToUse, employeeId, loading, hasInitialized]);
+  }, [institutionToUse, employeeId, hasInitialized]);
 
   // Optimized effect with proper dependencies
   useEffect(() => {
@@ -197,23 +202,33 @@ const EmployeeAssetAllocations: React.FC<EmployeeAssetAllocationsProps> = ({
             <h3 className="text-lg font-semibold text-[#162032]">Asset Allocations</h3>
           </div>
         )}
-        <div className="text-center py-8 text-red-600">
-          <p>{error}</p>
-          <button
-            onClick={() => {
-              setError(null);
-              setHasInitialized(false);
-            }}
-            className="mt-2 text-sm text-blue-600 hover:underline"
-          >
-            Try Again
-          </button>
+        <div className="text-center py-8">
+          <div className={`text-center ${hasNoProfile ? "text-orange-600" : "text-red-600"}`}>
+            <Package
+              className={`h-12 w-12 mx-auto mb-4 opacity-50 ${hasNoProfile ? "text-orange-400" : "text-red-400"}`}
+            />
+            <p className="font-medium mb-2">
+              {hasNoProfile ? "Employee Profile Not Found" : "Error Loading Asset Allocations"}
+            </p>
+            <p className="text-sm text-gray-600">{error}</p>
+            {!hasNoProfile && (
+              <button
+                onClick={() => {
+                  setError(null);
+                  setHasInitialized(false);
+                  setHasShownToast(false); // Reset toast flag for retry
+                }}
+                className="mt-3 text-sm text-blue-600 hover:underline"
+              >
+                Try Again
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
   }
 
-  // Safe check for allocations array
   const safeAllocations = Array.isArray(allocations) ? allocations : [];
 
   return (
@@ -265,7 +280,7 @@ const EmployeeAssetAllocations: React.FC<EmployeeAssetAllocationsProps> = ({
         </div>
       )}
 
-      {safeAllocations.length === 0 ? (
+      {safeAllocations.length === 0 && !error ? (
         <div className="text-center py-8 text-[#848496]">
           <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p>No asset allocations found for this employee</p>
