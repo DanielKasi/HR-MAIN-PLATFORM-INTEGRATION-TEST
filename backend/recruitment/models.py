@@ -435,6 +435,7 @@ class InterviewStage(models.Model):
         "employee.Employee",
         related_name="interview_stages",
     )
+    feedback_fields = models.JSONField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
 
