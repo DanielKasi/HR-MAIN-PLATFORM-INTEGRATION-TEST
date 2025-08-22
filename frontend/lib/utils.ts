@@ -4101,7 +4101,7 @@ export const AttendanceAPI = {
 
   // Update an attendance record by ID
   updateAttendanceRecord: async (id: number, data: Partial<IAttendanceFormData>) => {
-    const response = await apiRequest.put(`/employee/attendance/${id}/`, data);
+    const response = await apiRequest.patch(`/employee/attendance/${id}/`, data);
     return response.data;
   },
 
