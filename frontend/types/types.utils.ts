@@ -904,7 +904,7 @@ export function convertFormToApiRequest(
   };
 }
 
-export interface DisciplineType {
+export interface IDisciplineType {
   id?: number;
   name: string;
   description: string;
@@ -913,29 +913,29 @@ export interface DisciplineType {
   created_at?: string;
 }
 
-export interface DisciplineTypeForm {
+export interface IDisciplineTypeFormData {
   name: string;
   description: string;
   severity: "low" | "medium" | "high" | "critical";
   is_active: boolean;
 }
 
-export interface DisciplineTypeRequest {
+export interface IDisciplineTypeRequest {
   name: string;
   description: string;
   severity: "low" | "medium" | "high" | "critical";
   is_active: boolean;
 }
 
-export interface DisciplineTypeResponse extends DisciplineTypeRequest {
+export interface DisciplineTypeResponse extends IDisciplineTypeRequest {
   id: number;
   created_at: string;
   updated_at: string;
 }
 
 export function convertDisciplineTypeFormToApiRequest(
-  formData: DisciplineTypeForm,
-): DisciplineTypeRequest {
+  formData: IDisciplineTypeFormData,
+): IDisciplineTypeRequest {
   return {
     name: formData.name,
     description: formData.description,
@@ -944,165 +944,39 @@ export function convertDisciplineTypeFormToApiRequest(
   };
 }
 
- export interface DisciplinaryAction {
-  id: string;
-  employee_name: string;
-  employee_department: string;
-  discipline_type: string;
-  discipline_severity: "low" | "medium" | "high" | "critical";
-  incident_date: string;
-  reported_date: string;
-  description: string;
-  evidence: string;
-  reported_by: string;
-  assigned_to: string;
-  status: "pending" | "in_progress" | "completed" | "dismissed";
-  action_taken: string;
-  resolution_date: string;
-  follow_up_required: boolean;
-  follow_up_date: string;
-  notes: string;
-}
+//  export interface IDisciplinaryAction {
+//   id: string;
+//   employee_name: string;
+//   employee_department: string;
+//   discipline_type: string;
+//   discipline_severity: "low" | "medium" | "high" | "critical";
+//   incident_date: string;
+//   reported_date: string;
+//   description: string;
+//   evidence: string;
+//   reported_by: string;
+//   assigned_to: string;
+//   status: "pending" | "in_progress" | "completed" | "dismissed";
+//   action_taken: string;
+//   resolution_date: string;
+//   follow_up_required: boolean;
+//   follow_up_date: string;
+//   notes: string;
+// }
 
-export interface DisciplinaryActionAPIResponse {
+export interface IDisciplinaryAction {
   id: number;
-  discipline_type: {
+  discipline_type?: {
     id: number;
     name: string;
     description: string;
     severity: "low" | "medium" | "high" | "critical";
     is_active: boolean;
     created_at: string;
-  };
-  employee: {
-    id: number;
-    user: {
-      id: number;
-      email: string;
-      fullname: string;
-      is_active: boolean;
-      is_email_verified: boolean;
-      is_password_verified: boolean;
-      is_staff: boolean;
-      roles: any[];
-      branches: any[];
-      permissions: any[];
-    };
-    email: string;
-    phone_number: string;
-    position: {
-      id: number;
-      name: string;
-      department_id: number;
-    };
-    department: {
-      id: number;
-      name: string;
-      institution_id: number;
-    };
-    roles: any[];
-    date_of_birth: string | null;
-    date_of_joining: string;
-    address: string;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-    experience: number;
-    qualifications: string | null;
-    skills: string | null;
-    emergency_contact_name: string | null;
-    emergency_contact_phone: string | null;
-    emergency_contact_relationship: string | null;
-    marital_status: string;
-    children_count: number;
-    employee_profile_picture: string | null;
-  };
-  reported_by: {
-    id: number;
-    user: {
-      id: number;
-      email: string;
-      fullname: string;
-      is_active: boolean;
-      is_email_verified: boolean;
-      is_password_verified: boolean;
-      is_staff: boolean;
-      roles: any[];
-      branches: any[];
-      permissions: any[];
-    };
-    email: string;
-    phone_number: string;
-    position: {
-      id: number;
-      name: string;
-      department_id: number;
-    };
-    department: {
-      id: number;
-      name: string;
-      institution_id: number;
-    };
-    roles: any[];
-    date_of_birth: string | null;
-    date_of_joining: string;
-    address: string;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-    experience: number;
-    qualifications: string | null;
-    skills: string | null;
-    emergency_contact_name: string | null;
-    emergency_contact_phone: string | null;
-    emergency_contact_relationship: string | null;
-    marital_status: string;
-    children_count: number;
-    employee_profile_picture: string | null;
-  };
-  assigned_to: {
-    id: number;
-    user: {
-      id: number;
-      email: string;
-      fullname: string;
-      is_active: boolean;
-      is_email_verified: boolean;
-      is_password_verified: boolean;
-      is_staff: boolean;
-      roles: any[];
-      branches: any[];
-      permissions: any[];
-    };
-    email: string;
-    phone_number: string;
-    position: {
-      id: number;
-      name: string;
-      department_id: number;
-    };
-    department: {
-      id: number;
-      name: string;
-      institution_id: number;
-    };
-    roles: any[];
-    date_of_birth: string | null;
-    date_of_joining: string;
-    address: string;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-    experience: number;
-    qualifications: string | null;
-    skills: string | null;
-    emergency_contact_name: string | null;
-    emergency_contact_phone: string | null;
-    emergency_contact_relationship: string | null;
-    marital_status: string;
-    children_count: number;
-    employee_profile_picture: string | null;
-  } | null;
+  }|null;
+  employee: IEmployee;
+  reported_by: IEmployee;
+  assigned_to: IEmployee| null;
   incident_date: string;
   reported_date: string;
   description: string;
@@ -1118,7 +992,7 @@ export interface DisciplinaryActionAPIResponse {
 }
 
 export const transformDisciplinaryActionData = (
-  apiData: DisciplinaryActionAPIResponse[] | null,
+  apiData: IDisciplinaryAction[] | null,
 ) => {
   if (!apiData) return [];
 
@@ -1171,17 +1045,7 @@ export const transformDisciplinaryActionData = (
   });
 };
 
-export interface LeaveType {
-  name: string;
-  category: "annual" | "sick" | "personal" | "maternity" | "paternity" | "emergency" | "unpaid";
-  description: string;
-  max_days_per_year: number;
-  carry_forward_allowed: boolean;
-  max_carry_forward_days: number;
-  is_active: boolean;
-  requires_document: boolean;
-  gender_specific: "male" | "female" | "all" | null;
-}
+
 
 export interface ILeaveTypeFormData {
   name: string;
@@ -1195,32 +1059,25 @@ export interface ILeaveTypeFormData {
   gender_specific: "male" | "female" | "all" | null;
 }
 
-export interface ILeaveType extends LeaveType {
+export interface ILeaveType {
   id: number;
   created_at?: string;
   updated_at?: string;
+    name: string;
+  category: "annual" | "sick" | "personal" | "maternity" | "paternity" | "emergency" | "unpaid";
+  description: string;
+  max_days_per_year: number;
+  carry_forward_allowed: boolean;
+  max_carry_forward_days: number;
+  is_active: boolean;
+  requires_document: boolean;
+  gender_specific: "male" | "female" | "all" | null;
 }
 
 export interface ILeaveBalance {
   id: number;
-  employee:
-    | number
-    | {
-        id: number;
-        user: {
-          id: number;
-          fullname?: string;
-          first_name?: string;
-          last_name?: string;
-        };
-        employee_id: string;
-      };
-  leave_type:
-    | number
-    | {
-        id: number;
-        name: string;
-      };
+  employee:IEmployee;
+  leave_type:ILeaveType;
   available_days: string | number;
   institution: number;
   year: number;

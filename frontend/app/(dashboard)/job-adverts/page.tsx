@@ -405,7 +405,7 @@ export default function JobAdvertsPage() {
                       ))}
                     </TableBody>
                   </Table>):
-                   <TableSkeleton hasHeader={false} columns={8} rows={5} />
+                   <TableSkeleton columns={8} rows={5} />
                   }
                 </div>
               );

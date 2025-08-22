@@ -456,7 +456,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
     <div className="space-y-4">
       {/* Header with Add Button */}
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-[#162032]">Leave Applications</h3>
+        <h3 className="text-lg font-semibold text-gray-800">Leave Applications</h3>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="hidden sm:flex items-center gap-2">
@@ -465,12 +465,12 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
             </Button>
 
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-full sm:max-w-lg md:max-w-lg lg:max-w-xl">
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold">New Leave Application</DialogTitle>
               <DialogDescription>Submit a new leave application request.</DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-h-[80vh] lg:max-h-[70svh] overflow-y-auto">
               <div className="space-y-2">
                 <Label htmlFor="leave_type" className="text-sm font-medium">
                   Leave Type *
@@ -600,7 +600,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <div className="bg-[#f0f0f6] border-[#e8e8f2] rounded-lg p-3">
           <div className="text-xs text-[#848496] mb-1">Total</div>
-          <div className="text-lg font-bold text-[#162032]">{applications.length}</div>
+          <div className="text-lg font-bold text-gray-800">{applications.length}</div>
         </div>
         <div className="bg-[#f0f0f6] border-[#e8e8f2] rounded-lg p-3">
           <div className="text-xs text-[#848496] mb-1">Pending</div>
@@ -620,7 +620,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
       {applications.length === 0 ? (
         <div className="text-center py-6">
           <FileText className="h-8 w-8 text-[#848496] mx-auto mb-2" />
-          <h3 className="text-sm font-medium text-[#162032] mb-1">No Leave Applications</h3>
+          <h3 className="text-sm font-medium text-gray-800 mb-1">No Leave Applications</h3>
           <p className="text-xs text-[#848496]">No leave applications found for this employee.</p>
         </div>
       ) : (
@@ -629,19 +629,19 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
             <Table className="[&_th]:border-0 [&_td]:border-0">
               <TableHeader>
                 <TableRow className="bg-[#f7f7fb] hover:bg-[#f7f7fb]">
-                  <TableHead className="font-semibold text-[#162032] py-3 px-4 text-xs">
+                  <TableHead className="font-semibold text-gray-800 py-3 px-4 text-xs">
                     Leave Type
                   </TableHead>
-                  <TableHead className="font-semibold text-[#162032] py-3 px-4 text-xs">
+                  <TableHead className="font-semibold text-gray-800 py-3 px-4 text-xs">
                     Dates
                   </TableHead>
-                  <TableHead className="font-semibold text-[#162032] text-center py-3 px-4 text-xs">
+                  <TableHead className="font-semibold text-gray-800 text-center py-3 px-4 text-xs">
                     Days
                   </TableHead>
-                  <TableHead className="font-semibold text-[#162032] py-3 px-4 text-xs">
+                  <TableHead className="font-semibold text-gray-800 py-3 px-4 text-xs">
                     Status
                   </TableHead>
-                  <TableHead className="font-semibold text-[#162032] py-3 px-4 text-xs">
+                  <TableHead className="font-semibold text-gray-800 py-3 px-4 text-xs">
                     Reason
                   </TableHead>
                 </TableRow>
@@ -651,7 +651,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
                   <TableRow key={application.id} className="hover:bg-[#f7f7fb]/50">
                     <TableCell className="py-3 px-4">
                       <div className="space-y-1">
-                        <div className="font-medium text-[#162032] text-xs">
+                        <div className="font-medium text-gray-800 text-xs">
                           {getLeaveTypeName(application.leave_type)}
                         </div>
                         <Badge
@@ -663,7 +663,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
                       </div>
                     </TableCell>
                     <TableCell className="py-3 px-4">
-                      <div className="text-xs text-[#162032]">
+                      <div className="text-xs text-gray-800">
                         <div>{new Date(application.start_date).toLocaleDateString()}</div>
                         <div className="text-[#848496]">
                           to {new Date(application.end_date).toLocaleDateString()}
@@ -671,7 +671,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
                       </div>
                     </TableCell>
                     <TableCell className="text-center py-3 px-4">
-                      <span className="text-xs font-medium text-[#162032]">
+                      <span className="text-xs font-medium text-gray-800">
                         {calculateDaysBetween(application.start_date, application.end_date)}
                       </span>
                     </TableCell>
@@ -687,7 +687,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
                     <TableCell className="py-3 px-4">
                       <div className="max-w-xs">
                         <p
-                          className="text-xs text-[#162032] line-clamp-2 truncate"
+                          className="text-xs text-gray-800 line-clamp-2 truncate"
                           title={application.reason}
                         >
                           {application.reason}

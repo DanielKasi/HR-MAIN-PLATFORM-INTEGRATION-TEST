@@ -95,14 +95,16 @@ const formatDate = (dateString: string) => {
   });
 };
 
-interface LeaveType extends ILeaveType {}
+
 
 const LeaveTypesPage = () => {
+  const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editingLeaveType, setEditingLeaveType] = useState<LeaveType | null>(null);
-  const [deletingLeaveType, setDeletingLeaveType] = useState<LeaveType | null>(null);
+  const [editingLeaveType, setEditingLeaveType] = useState<ILeaveType | null>(null);
+  const [deletingLeaveType, setDeletingLeaveType] = useState<ILeaveType | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -272,7 +274,7 @@ const LeaveTypesPage = () => {
     }
   };
 
-  const handleEditLeaveType = (leaveType: LeaveType) => {
+  const handleEditLeaveType = (leaveType: ILeaveType) => {
     setEditingLeaveType(leaveType);
     setFormData({
       name: leaveType.name,
