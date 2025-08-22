@@ -85,7 +85,11 @@ class AssetCategoryListCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        categories = AssetCategory.objects.filter(institution=institution)
+        categories = AssetCategory.objects.filter(
+            institution=institution,
+            is_active=True,
+            deleted_at__isnull=True
+            )
 
         if search_query:
             categories = categories.filter(
@@ -207,13 +211,6 @@ class AssetListCreateView(APIView):
         user = request.user.profile if request and hasattr(request, "user") else None
 
         search_query = request.query_params.get('search', None)
-
-        if search_query:
-            assets = assets.filter(
-                Q(asset_name__icontains=search_query) | 
-                Q(batch_number__icontains=search_query) |
-                Q(serial_number__icontains=search_query)
-            )
         
         if not user:
             return Response(
@@ -227,7 +224,11 @@ class AssetListCreateView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        assets = Asset.objects.filter(institution=institution)
+        assets = Asset.objects.filter(
+            institution=institution,
+            is_active=True,
+            deleted_at__isnull=True
+            )
 
         if search_query:
             assets = assets.filter(
@@ -359,7 +360,11 @@ class AssetRequestListCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         
-        asset_requests = AssetRequest.objects.filter(asset__institution=institution)
+        asset_requests = AssetRequest.objects.filter(
+            asset__institution=institution,
+            is_active=True,
+            deleted_at__isnull=True,
+        )
 
         if employee_id:
 
@@ -636,7 +641,19 @@ class AssetAllocationListCreateView(APIView):
     def get(self, request):
         search_query = request.query_params.get('search', None)
         employee_id = request.query_params.get("employee_id")
-        asset_allocations = AssetAllocation.objects.all()
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        asset_allocations = AssetAllocation.objects.filter(
+            asset__institution=institution,
+            is_active=True,
+            deleted_at__isnull=True
+        )
 
         if employee_id:
             try:
@@ -894,7 +911,20 @@ class AssetReturnListCreateView(APIView):
     )
     def get(self, request):
         search_query = request.query_params.get("search", None)
-        asset_returns = AssetReturn.objects.all()
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        asset_returns = AssetReturn.objects.filter(
+            asset__institution=institution,
+            is_active=True,
+            deleted_at__isnull=True
+        )
+
         if search_query:
             asset_returns = asset_returns.filter(
                 Q(asset__asset_name__icontains=search_query) | 
@@ -984,7 +1014,18 @@ class AssetHistoryListView(APIView):
     )
     def get(self, request):
         search_query = request.query_params.get("search", None)
-        asset_histories = AssetHistory.objects.all()
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        asset_histories = AssetHistory.objects.filter(
+            asset__institution=institution,
+            is_active=True,
+            deleted_at__is_null=True
+        )
 
         if search_query:
             asset_histories = asset_histories.filter(
