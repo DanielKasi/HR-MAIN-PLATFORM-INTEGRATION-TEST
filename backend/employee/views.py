@@ -628,7 +628,7 @@ class EmployeeCreateAPIView(APIView):
                         last_number += 1
                         employee.employee_id = f"{prefix}{last_number:05d}"
 
-                        if employee.position and hasattr(employee.position, "salary"):
+                        if employee.position and hasattr(employee.position, "salary_min") and not employee.salary:
                             employee.salary = employee.position.salary_min
 
                         if employee.user and not employee.payroll_branch:
