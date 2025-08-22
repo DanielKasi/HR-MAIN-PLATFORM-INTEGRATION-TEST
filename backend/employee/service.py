@@ -3,7 +3,7 @@ from .models import UserBranch, Branch
 from employee.models import Employee
 import logging
 from datetime import timedelta
-from payroll.utils import get_employee_attendance_status_for_date
+# from payroll.utils import get_employee_attendance_status_for_date
 
 logger = logging.getLogger(__name__)
 
@@ -261,9 +261,10 @@ def build_attendance_report_data(start_date, end_date, context, institution):
 
         for current_date in date_list:
             try:
-                status = get_employee_attendance_status_for_date(
-                    employee.id, current_date
-                )
+                # status = get_employee_attendance_status_for_date(
+                #     employee.id, current_date
+                # )
+                status = []
             except Exception:
                 status = "ERR"
 
