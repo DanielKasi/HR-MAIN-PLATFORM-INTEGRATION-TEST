@@ -13,6 +13,7 @@ from .models import (
     EmployeeType,
     WorkType,
     EmployeeWorkingDays,
+    EmployeeContract,
 )
 from .serializers import (
     EmployeeAttendanceSerializer,
@@ -23,13 +24,6 @@ from .serializers import (
     EmployeeWorkingDaysSerializer,
     AttendanceReportSerializer,
     AttendanceQueryParamsSerializer,
-)
-from .models import (
-    Employee,
-    EmployeeAttendance,
-    EmployeeType,
-    WorkType,
-    EmployeeContract,
 )
 from rest_framework.parsers import MultiPartParser, FormParser
 from institution.utils import generate_compliant_password
@@ -72,7 +66,7 @@ from django.utils.dateparse import parse_date
 from .service import build_attendance_report_data
 from institution.models import Institution
 from utilities.helpers import get_or_create_default_role_with_permissions
-
+from django.db.models import Q
 
 
 class EmployeeListAPIView(APIView):
@@ -89,9 +83,12 @@ class EmployeeListAPIView(APIView):
         Retrieve a list of employees for a specific institution,
         with optional filtering via query parameters.
         """
+        search_query = request.query_params.get('search', None)
         try:
             employees = Employee.objects.filter(
-                department__institution_id=institution_id
+                department__institution_id=institution_id,
+                is_active=True,
+                deleted_at__isnull=True
             )
 
             query_params = request.query_params.dict()
@@ -107,6 +104,16 @@ class EmployeeListAPIView(APIView):
                 employees = employees.filter(**filters)
 
             employees = employees.order_by("-created_at")
+            if search_query:
+                employees = employees.filter(
+                    Q(employee_id__icontains=search_query) |
+                    Q(user__fullname__icontains=search_query) |
+                    Q(work_type__name__icontains=search_query) |
+                    Q(employee_type__name__icontains=search_query) |
+                    Q(position__name__icontains=search_query) |
+                    Q(user__email__icontains=search_query) |
+                    Q(department__name__icontains=search_query)
+                )
 
             paginator = CustomPageNumberPagination()
             paginated_qs = paginator.paginate_queryset(employees, request)
@@ -1405,30 +1412,44 @@ class EmployeeAttendanceListCreateAPIView(APIView):
         description="Retrieve all attendance records or for a specific employee if employee_id is provided either in path or query param.",
     )
     def get(self, request, employee_id=None):
-        # If employee_id is not in path, try query param
+        user = request.user.profile
+        search_query = request.query_params.get('search', None)
         employee_id = employee_id or request.query_params.get("employee_id")
 
         date = request.query_params.get("date")
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
 
-        records = EmployeeAttendance.objects.all()
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )    
+        records = EmployeeAttendance.objects.filter(
+            employee__department__institution=institution,
+            is_active=True,
+            deleted_at__isnull=True
+        ).order_by("date")
 
-        # Filter by employee if provided
         if employee_id:
             records = records.filter(employee_id=employee_id)
 
-        # Filter by specific date
         if date:
             records = records.filter(date=date)
 
-        # Filter by date range
         if start_date:
             records = records.filter(date__gte=start_date)
         if end_date:
             records = records.filter(date__lte=end_date)
 
-        records = records.order_by("date")
+        if search_query:
+            records = records.filter(
+                Q(employee__user__fullname__icontains=search_query) |
+                Q(employee__user__email__icontains=search_query) |
+                Q(date__icontains=search_query)
+            )    
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(records, request)
@@ -1531,8 +1552,26 @@ class EmployeeTypeListCreateAPIView(APIView):
         responses=EmployeeTypeSerializer(many=True),
         description="Get list of all employee types",
     )
-    def get(self, request):
-        data = EmployeeType.objects.all().order_by("-created_at")
+    def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
+        user = request.user.profile
+        
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        data = EmployeeType.objects.filter(institution_id=institution_id, is_active=True, deleted_at__isnull=True).order_by(
+            "-created_at"
+        )
+
+        if search_query:
+            data = data.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(data, request)
@@ -1544,7 +1583,9 @@ class EmployeeTypeListCreateAPIView(APIView):
         responses=EmployeeTypeSerializer,
         description="Create a new employee type",
     )
-    def post(self, request):
+    def post(self, request, institution_id):
+        data = request.data.copy()
+        data["institution"] = institution_id
         serializer = EmployeeTypeSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -1592,7 +1633,23 @@ class WorkTypeListCreateAPIView(APIView):
         description="Get list of all work types",
     )
     def get(self, request):
-        data = WorkType.objects.all().order_by("-created_at")
+        search_query = request.query_params.get('search', None)
+        user = request.user.profile
+        
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        data = WorkType.objects.filter(institution=institution, is_active=True, deleted_at__isnull=True).order_by("-created_at")
+
+        if search_query:
+            data = data.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(data, request)
@@ -1604,7 +1661,9 @@ class WorkTypeListCreateAPIView(APIView):
         responses=WorkTypeSerializer,
         description="Create a new work type",
     )
-    def post(self, request):
+    def post(self, request, institution_id):
+        data = request.data.copy()
+        data["institution"] = institution_id
         serializer = WorkTypeSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -1768,7 +1827,30 @@ class EmployeeContractListAPIView(APIView):
         tags=["Employee Contract"],
     )
     def get(self, request):
-        contracts = EmployeeContract.objects.all().order_by("-created_at")
+        user = request.user.profile
+        search_query = request.query_params.get('search', None)
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        contracts = EmployeeContract.objects.filter(
+            Q(employee__department__institution=institution) |
+            Q(applicant__job_position_advert__job_position__department__institution=institution),
+            is_active=True,
+            deleted_at__isnull=True,
+        ).order_by("-created_at")
+
+        if search_query:
+            contracts = contracts.filter(
+                Q(applicant__applicant_name__icontains=search_query) |
+                Q(employee__user__fullname__icontains=search_query) |
+                Q(contract_reference__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(contracts, request)
         serializer = EmployeeContractSerializer(paginated_qs, many=True)

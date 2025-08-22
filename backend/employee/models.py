@@ -32,9 +32,11 @@ import re
 from django.db.models import UniqueConstraint, Q
 import math
 from utilities.utility_base_model import UtilityBaseModel
+from institution.models import Institution
 
 
 class EmployeeType(UtilityBaseModel):
+    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     code = models.CharField(max_length=10, blank=True, null=True)
@@ -58,6 +60,7 @@ class EmployeeType(UtilityBaseModel):
 
 
 class WorkType(UtilityBaseModel):
+    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     code = models.CharField(max_length=10, blank=True, null=True)
@@ -530,7 +533,7 @@ class Employee(UtilityBaseModel):
             return {"success": False, "error": str(e)}
 
 
-class EmployeeWorkingDays(models.Model):
+class EmployeeWorkingDays(UtilityBaseModel):
     employee = models.OneToOneField(
         Employee, on_delete=models.CASCADE, related_name="custom_working_days"
     )
@@ -540,8 +543,6 @@ class EmployeeWorkingDays(models.Model):
         related_name="employee_working_days",
         help_text="Must be selected from institution's working days",
     )
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.employee.user.fullname} - Custom Working Days"
