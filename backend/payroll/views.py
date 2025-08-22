@@ -36,7 +36,7 @@ from django.http import HttpResponse
 from django.utils.encoding import escape_uri_path
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from institution.models import Institution
-from payroll.utils import generate_payslip_pdf
+# from payroll.utils import generate_payslip_pdf
 from django.utils import timezone
 
 
@@ -768,7 +768,9 @@ class DownloadPayslipPDFView(APIView):
             )
         
         try:
-            pdf_buffer = generate_payslip_pdf(payslip)
+            # TODO: Correct this
+            # pdf_buffer = generate_payslip_pdf(payslip)
+            pdf_buffer = None
 
             # Create the HTTP response with the PDF data
             response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
