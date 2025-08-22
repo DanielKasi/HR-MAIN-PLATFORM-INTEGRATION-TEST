@@ -201,7 +201,7 @@ const AssetAllocationDetailPage = () => {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <p className="text-[#162032] text-lg md:text-[24px] break-all">{allocation.alloc_code}</p>
+            <p className="text-gray-800 text-lg md:text-[24px] break-all">{allocation.alloc_code}</p>
           </div>
         </div>
       </div>
@@ -347,7 +347,7 @@ const AssetAllocationDetailPage = () => {
                           <div className="flex flex-col sm:flex-row gap-2 mt-3">
                             <Button 
                               
-                              className="bg-green-600 hover:bg-green-700 text-white w-full text-xs !w-[100px] !h-[20px] !rounded-full"
+                              className="bg-green-600 hover:bg-green-700 text-white w-full text-xs !max-w-[100px] !h-[20px] !rounded-full"
                               onClick={() => handleApproval(task.id, 'completed')}
                               disabled={isApproving}
                             >

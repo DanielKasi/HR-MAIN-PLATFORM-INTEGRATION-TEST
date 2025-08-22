@@ -639,9 +639,9 @@ class AssetAllocationListCreateView(APIView):
     def get(self, request):
         search_query = request.query_params.get('search', None)
         employee_id = request.query_params.get("employee_id")
-
+        user  = request.user
         try:
-            institution = Institution.objects.get(id=user.institution.id)
+            institution = Institution.objects.get(id=user.profile.institution.id)
         except Institution.DoesNotExist:
             return Response(
                 {"detail": "Institution not found."},

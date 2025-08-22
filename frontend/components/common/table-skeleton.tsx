@@ -2,11 +2,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 interface TableSkeletonProps {
   rows?: number
-  columns?: number,
-  hasHeader?: boolean
+  columns?: number
 }
 
-export function TableSkeleton({ rows = 5, columns = 8, hasHeader=true}: TableSkeletonProps) {
+export function TableSkeleton({ rows = 5, columns = 8}: TableSkeletonProps) {
   return (
     <div className="animate-pulse">
       {/* Header skeleton */}
@@ -34,7 +33,6 @@ export function TableSkeleton({ rows = 5, columns = 8, hasHeader=true}: TableSke
           </div>
         </div>
 
-      { hasHeader ?
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50">
@@ -80,45 +78,7 @@ export function TableSkeleton({ rows = 5, columns = 8, hasHeader=true}: TableSke
             ))}
           </TableBody>
         </Table>
-        :
-        <>
-                  <TableBody>
-            {Array.from({ length: rows }).map((_, rowIndex) => (
-              <TableRow key={rowIndex} className={rowIndex % 2 === 0 ? "bg-white" : "bg-gray-50/30"}>
-                {/* Employee column with avatar */}
-                <TableCell className="py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-32"></div>
-                      <div className="h-3 bg-gray-200 rounded w-24"></div>
-                    </div>
-                  </div>
-                </TableCell>
 
-                {/* Other columns */}
-                {Array.from({ length: columns - 1 }).map((_, colIndex) => (
-                  <TableCell key={colIndex}>
-                    {colIndex === columns - 2 ? (
-                      // Status column with badge-like skeleton
-                      <div className="h-6 bg-gray-200 rounded-full w-16"></div>
-                    ) : colIndex === columns - 3 ? (
-                      // Actions column with button skeleton
-                      <div className="flex justify-center">
-                        <div className="h-8 w-8 bg-gray-200 rounded-full"></div>
-                      </div>
-                    ) : (
-                      // Regular data columns
-                      <div className="h-4 bg-gray-200 rounded w-20"></div>
-                    )}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </>
-
-      }
 
         {/* Pagination skeleton */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white">

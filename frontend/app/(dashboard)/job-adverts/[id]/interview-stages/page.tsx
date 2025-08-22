@@ -1918,7 +1918,7 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
   const finalStageCount = processedStages[processedStages.length - 1]?.count || 0
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 bg-white rounded-xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -1934,7 +1934,7 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
         </div>
         <Dialog open={isCreateStageDialogOpen} onOpenChange={setIsCreateStageDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600">
+            <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Add Interview Stage
             </Button>

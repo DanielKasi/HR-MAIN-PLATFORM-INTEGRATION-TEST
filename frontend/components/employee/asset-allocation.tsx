@@ -8,9 +8,10 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/c
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {TableSkeleton} from "@/components/common/table-skeleton";
-import {assetsAPI} from "@/lib/utils";
+import {assetsAPI, showErrorToast} from "@/lib/utils";
 import type {IAssetAllocation} from "@/types/types.utils";
 import {toast} from "sonner";
+import {PaginatedTableWrapper} from "../common/tables/paginated-table-wrapper";
 
 interface EmployeeAssetAllocationsProps {
   employeeId: string;
@@ -82,78 +83,10 @@ const EmployeeAssetAllocations: React.FC<EmployeeAssetAllocationsProps> = ({
   compact = false,
 }) => {
   const [allocations, setAllocations] = useState<IAssetAllocation[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasInitialized, setHasInitialized] = useState(false);
-  const [hasNoProfile, setHasNoProfile] = useState(false);
-  const [hasShownToast, setHasShownToast] = useState(false);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
-  const institutionToUse = institutionId || selectedInstitution?.id;
 
-  // Memoized fetch function to prevent unnecessary recreation
-  const fetchEmployeeAllocations = useCallback(async () => {
-    if (!institutionToUse || !employeeId) {
-      setLoading(false);
-      return;
-    }
-
-    // Prevent multiple simultaneous requests
-    if (loading && hasInitialized) return;
-
-    setLoading(true);
-    setError(null);
-    setHasNoProfile(false);
-
-    try {
-      const response = await assetsAPI.getPaginatedAssetAllocations({
-        institutionId: institutionToUse,
-        page: 1,
-        employeeId: employeeId,
-      });
-
-      const results = Array.isArray(response?.results) ? response.results : [];
-      setAllocations(results);
-      setHasInitialized(true);
-    } catch (error: any) {
-      const errorMessage =
-        error?.message ||
-        error?.detail ||
-        error?.response?.data?.detail ||
-        "Failed to fetch asset allocations";
-
-      // Check if it's the "no profile" error specifically
-      const isNoProfileError = errorMessage.includes("has no profile");
-
-      if (isNoProfileError) {
-        setHasNoProfile(true);
-        // Show toast only once per component instance
-        if (!hasShownToast) {
-          toast.error(errorMessage);
-          setHasShownToast(true);
-        }
-      } else {
-        // Show toast for other errors (but not generic ones)
-        if (errorMessage !== "Failed to fetch asset allocations") {
-          toast.error(errorMessage);
-        }
-      }
-
-      setError(errorMessage);
-      setHasInitialized(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [institutionToUse, employeeId, hasInitialized]);
-
-  // Optimized effect with proper dependencies
-  useEffect(() => {
-    if (institutionToUse && employeeId && !hasInitialized) {
-      fetchEmployeeAllocations();
-    }
-  }, [institutionToUse, employeeId, hasInitialized, fetchEmployeeAllocations]);
-
-  // Memoized stats calculation to prevent recalculation on every render
   const stats = useMemo(() => {
     if (!Array.isArray(allocations)) {
       return {total: 0, allocated: 0, pending: 0, rejected: 0};
@@ -178,74 +111,25 @@ const EmployeeAssetAllocations: React.FC<EmployeeAssetAllocationsProps> = ({
     [],
   );
 
-  // Early returns for loading and error states
-  if (loading && !hasInitialized) {
-    return (
-      <div className="space-y-4">
-        {showHeader && (
-          <div className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-[#162032]" />
-            <h3 className="text-lg font-semibold text-[#162032]">Asset Allocations</h3>
-          </div>
-        )}
-        <TableSkeleton rows={5} columns={4} />
-      </div>
-    );
-  }
 
-  if (error) {
-    return (
-      <div className="space-y-4">
-        {showHeader && (
-          <div className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-[#162032]" />
-            <h3 className="text-lg font-semibold text-[#162032]">Asset Allocations</h3>
-          </div>
-        )}
-        <div className="text-center py-8">
-          <div className={`text-center ${hasNoProfile ? "text-orange-600" : "text-red-600"}`}>
-            <Package
-              className={`h-12 w-12 mx-auto mb-4 opacity-50 ${hasNoProfile ? "text-orange-400" : "text-red-400"}`}
-            />
-            <p className="font-medium mb-2">
-              {hasNoProfile ? "Employee Profile Not Found" : "Error Loading Asset Allocations"}
-            </p>
-            <p className="text-sm text-gray-600">{error}</p>
-            {!hasNoProfile && (
-              <button
-                onClick={() => {
-                  setError(null);
-                  setHasInitialized(false);
-                  setHasShownToast(false); // Reset toast flag for retry
-                }}
-                className="mt-3 text-sm text-blue-600 hover:underline"
-              >
-                Try Again
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
-  const safeAllocations = Array.isArray(allocations) ? allocations : [];
+  // const safeAllocations = Array.isArray(allocations) ? allocations : [];
 
   return (
     <div className="space-y-6">
       {showHeader && (
         <div className="flex items-center gap-2">
-          <Package className="h-5 w-5 text-[#162032]" />
-          <h3 className="text-lg font-semibold text-[#162032]">Asset Allocations</h3>
+          <Package className="h-5 w-5 text-gray-800" />
+          <h3 className="text-lg font-semibold text-gray-800">Asset Allocations</h3>
         </div>
       )}
 
-      {showStats && safeAllocations.length > 0 && (
+      {showStats && allocations.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="bg-[#f0f0f6] border-[#e8e8f2]">
             <CardContent className={compact ? "p-3" : "p-4"}>
               <div className={`text-${compact ? "xs" : "sm"} text-[#848496] mb-1`}>Total</div>
-              <div className={`text-${compact ? "lg" : "2xl"} font-bold text-[#162032]`}>
+              <div className={`text-${compact ? "lg" : "2xl"} font-bold text-gray-800`}>
                 {stats.total}
               </div>
             </CardContent>
@@ -280,92 +164,98 @@ const EmployeeAssetAllocations: React.FC<EmployeeAssetAllocationsProps> = ({
         </div>
       )}
 
-      {safeAllocations.length === 0 && !error ? (
-        <div className="text-center py-8 text-[#848496]">
-          <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>No asset allocations found for this employee</p>
-        </div>
-      ) : (
         <>
-          {/* Desktop Table */}
+
           <div className="hidden sm:block">
-            <div className="bg-white rounded-lg overflow-hidden border border-[#e8e8f2]">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-[#f7f7fb] hover:bg-[#f7f7fb]">
-                    <TableHead className="font-semibold text-[#162032]">Allocation Code</TableHead>
-                    <TableHead className="font-semibold text-[#162032]">Asset</TableHead>
-                    <TableHead className="font-semibold text-[#162032]">Allocated By</TableHead>
-                    <TableHead className="font-semibold text-[#162032]">Date</TableHead>
-                    <TableHead className="font-semibold text-[#162032]">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {safeAllocations.map((allocation) => (
-                    <TableRow key={allocation.id} className="hover:bg-[#f7f7fb]/50">
-                      <TableCell className="font-mono text-sm">
-                        {allocation.alloc_code || "N/A"}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {allocation.asset?.asset_name || "Unknown Asset"}
-                      </TableCell>
-                      <TableCell>
-                        {allocation.allocated_by?.user?.fullname || "Unknown User"}
-                      </TableCell>
-                      <TableCell className="text-[#848496]">
-                        {allocation.created_at ? formatDate(allocation.created_at) : "N/A"}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={allocation.allocation_status || "unknown"} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+            <PaginatedTableWrapper<IAssetAllocation>
+              fetchFirstPage={async () => {
+                if (!selectedInstitution || !employeeId) {
+                  throw new Error("No employee or Institution Found");
+                }
+                return await assetsAPI.getPaginatedAssetAllocations({
+                  institutionId: selectedInstitution.id,
+                  page: 1,
+                  employeeId: employeeId,
+                });
+              }}
+              fetchFromUrl={(args: {url: string}) =>
+                assetsAPI.getPaginatedAssetAllocationsFromUrl({url: args.url})
+              }
+              deps={[selectedInstitution, employeeId]}
+              onError={(err) => {
+                showErrorToast({error: err, defaultMessage: "Failed to fetch asset allocations"});
+                setError("Failed to fetch asset allocations");
+              }}
+              className="space-y-4"
+              footerClassName="pt-4"
+            >
+              {({data, loading, refresh}) => {
 
-          {/* Mobile Cards */}
-          <div className="sm:hidden space-y-3">
-            {safeAllocations.map((allocation) => (
-              <Card key={allocation.id} className="bg-gray-50 border-[#e8e8f2]">
-                <CardContent className="p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-[#162032] mb-1">
-                          {allocation.asset?.asset_name || "Unknown Asset"}
-                        </h4>
-                        <p className="text-sm text-[#848496] font-mono mb-2">
-                          Code: {allocation.alloc_code || "N/A"}
-                        </p>
-                      </div>
-                      <StatusBadge status={allocation.allocation_status || "unknown"} />
-                    </div>
+                useEffect(()=>{
+                  if(data?.results){
+                    setAllocations(prev => ([...prev.filter(prevAlloc => !data.results.some(alloc => alloc.id === prevAlloc.id)), ...data.results]))
+                  }
+                }, [data?.results])
 
-                    <div className="space-y-1 text-sm">
-                      <p className="text-[#848496]">
-                        <span className="text-[#162032] font-medium">Allocated by:</span>{" "}
-                        {allocation.allocated_by?.user?.fullname || "Unknown User"}
-                      </p>
-                      <p className="text-[#848496]">
-                        <span className="text-[#162032] font-medium">Date:</span>{" "}
-                        {allocation.created_at ? formatDate(allocation.created_at) : "N/A"}
-                      </p>
-                    </div>
+                if (loading) {
+                  return <TableSkeleton rows={10} columns={10} />;
+                }
+
+                return (
+                  <div className="bg-white rounded-lg overflow-hidden border border-[#e8e8f2]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-[#f7f7fb] hover:bg-[#f7f7fb]">
+                          <TableHead className="font-semibold text-gray-800">
+                            Allocation Code
+                          </TableHead>
+                          <TableHead className="font-semibold text-gray-800">Asset</TableHead>
+                          <TableHead className="font-semibold text-gray-800">
+                            Allocated By
+                          </TableHead>
+                          <TableHead className="font-semibold text-gray-800">Date</TableHead>
+                          <TableHead className="font-semibold text-gray-800">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {!data || !data.results.length ? (
+                          <TableRow>
+                            <TableCell className="col-span-full">
+                              <div className="text-center py-8 text-[#848496]">
+                                <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <p>No asset allocations found for this employee</p>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          data?.results.map((allocation) => (
+                            <TableRow key={allocation.id} className="hover:bg-[#f7f7fb]/50">
+                              <TableCell className="font-mono text-sm">
+                                {allocation.alloc_code || "N/A"}
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {allocation.asset?.asset_name || "Unknown Asset"}
+                              </TableCell>
+                              <TableCell>
+                                {allocation.allocated_by?.user?.fullname || "Unknown User"}
+                              </TableCell>
+                              <TableCell className="text-[#848496]">
+                                {allocation.created_at ? formatDate(allocation.created_at) : "N/A"}
+                              </TableCell>
+                              <TableCell>
+                                <StatusBadge status={allocation.allocation_status || "unknown"} />
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                );
+              }}
+            </PaginatedTableWrapper>
           </div>
         </>
-      )}
-
-      {loading && hasInitialized && (
-        <div className="text-center py-4">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#4426da] mx-auto"></div>
-        </div>
-      )}
     </div>
   );
 };

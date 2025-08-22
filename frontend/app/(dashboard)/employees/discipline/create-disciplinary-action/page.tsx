@@ -18,11 +18,11 @@ import { toast } from "sonner";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
 import { IUserInstitution } from "@/types";
-import { DisciplineTypeForm, DisciplinaryActionForm, IEmployee } from "@/types/types.utils";
+import { IDisciplineTypeFormData, DisciplinaryActionForm, IEmployee } from "@/types/types.utils";
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select";
 
 
-interface DisciplineType {
+interface IDisciplineType {
   id?: number;
   name: string;
   description: string;
@@ -43,7 +43,7 @@ export default function DisciplinaryForm() {
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(true);
   const [institutionId, setInstitutionId] = useState<number | null>(null);
 
-  const [disciplineType, setDisciplineType] = useState<DisciplineTypeForm>({
+  const [disciplineType, setDisciplineType] = useState<IDisciplineTypeFormData>({
     name: "",
     description: "",
     severity: "low",

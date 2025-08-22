@@ -57,7 +57,7 @@ import {SimpleCalendarWidget} from "@/components/calendar-widget";
 import { TasksCards } from "@/components/dashboard_components/tasks-cards";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
-import { IDepartment, IEmployee, IInterview, ILeaveRequest, JobPositionAdvert } from "@/types/types.utils";
+import { IDepartment, IEmployee, IInterview, ILeaveRequest, ILeaveType, JobPositionAdvert } from "@/types/types.utils";
 import { formatCurrency } from "@/lib/helpers";
 
 
@@ -108,13 +108,7 @@ interface JobAdvert {
 }
 
 
-interface LeaveType {
-  id: number;
-  name: string;
-  category: string;
-  max_days_per_year: number;
-  is_active: boolean;
-}
+
 
 
 interface LeavePolicy {
@@ -178,7 +172,7 @@ const StatsCards = ({
   leaveApplications: ILeaveRequest[];
   jobAdverts: JobPositionAdvert[];
   interviews: IInterview[];
-  leaveTypes: LeaveType[];
+  leaveTypes: ILeaveType[];
   leavePolicies: LeavePolicy[];
   departments: IDepartment[];
 }) => {
@@ -991,7 +985,7 @@ export default function HRDashboard() {
   const [leaveApplications, setLeaveApplications] = useState<ILeaveRequest[]>([]);
   const [jobAdverts, setJobAdverts] = useState<JobPositionAdvert[]>([]);
   const [interviews, setInterviews] = useState<IInterview[]>([]);
-  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([]);
   const [departments, setDepartments] = useState<IDepartment[]>([]);
   const [leavePolicies, setLeavePolicies] = useState<LeavePolicy[]>([]);
   const [error, setError] = useState<string | null>(null);

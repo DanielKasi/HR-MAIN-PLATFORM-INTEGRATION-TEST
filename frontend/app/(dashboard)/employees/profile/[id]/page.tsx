@@ -307,13 +307,13 @@ export default function EmployeeProfile() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-[#848496] hover:text-[#162032] rounded-full p-2"
+                  className="text-[#848496] hover:text-gray-800 rounded-full p-2"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
               </Link>
 
-              <h1 className="text-xl md:text-2xl font-bold text-[#162032] flex items-center justify-start gap-2 md:gap-3">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center justify-start gap-2 md:gap-3">
                 <span>{employee.user?.fullname || "Unknown Employee"}</span>
                 <Badge className="bg-[#e1faec] text-[#3cb371] border-[#3cb371] font-medium self-start md:self-auto">
                   {employee.is_active ? "Active" : "Inactive"}
@@ -362,13 +362,13 @@ export default function EmployeeProfile() {
                         alt="Profile picture"
                         className="object-cover"
                       />
-                      <AvatarFallback className="text-lg md:text-xl bg-[#f0f0f6] text-[#162032]">
+                      <AvatarFallback className="text-lg md:text-xl bg-[#f0f0f6] text-gray-800">
                         {getEmployeeInitials(employee)}
                       </AvatarFallback>
                     </Avatar>
 
                     <div className="flex flex-col text-center md:text-left">
-                      <h2 className="text-lg md:text-xl font-bold text-[#162032] mb-1">
+                      <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-1">
                         {employee.user?.fullname || "Unknown Employee"}
                         {employee.user?.gender && (
                           <span className="block md:inline text-[#9ca3af] text-sm font-normal md:ml-2">
@@ -382,7 +382,7 @@ export default function EmployeeProfile() {
 
                       <div className="flex items-center justify-center md:justify-start gap-2">
                         <Building className="w-4 h-4 text-[#9ca3af]" />
-                        <span className="text-[#162032] font-medium">
+                        <span className="text-gray-800 font-medium">
                           {employee.position?.name || "No Position"}
                         </span>
                       </div>
@@ -393,18 +393,18 @@ export default function EmployeeProfile() {
                   <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 text-sm">
                     <div className="flex items-center justify-center md:justify-start gap-2">
                       <Mail className="w-4 h-4 text-[#9ca3af] flex-shrink-0" />
-                      <span className="text-[#162032] break-all">{employee.email}</span>
+                      <span className="text-gray-800 break-all">{employee.email}</span>
                     </div>
                     {employee.phone_number && (
                       <div className="flex items-center justify-center md:justify-start gap-2">
                         <Phone className="w-4 h-4 text-[#9ca3af] flex-shrink-0" />
-                        <span className="text-[#162032]">{employee.phone_number}</span>
+                        <span className="text-gray-800">{employee.phone_number}</span>
                       </div>
                     )}
                     {employee.address && (
                       <div className="flex items-center justify-center md:justify-start gap-2">
                         <MapPin className="w-4 h-4 text-[#9ca3af] flex-shrink-0" />
-                        <span className="text-[#162032] text-center md:text-left">
+                        <span className="text-gray-800 text-center md:text-left">
                           {employee.address}
                         </span>
                       </div>
@@ -419,7 +419,7 @@ export default function EmployeeProfile() {
 
                   <div className="flex flex-col items-center lg:items-start gap-3">
                     <div className="text-center lg:text-left">
-                      <div className="font-semibold text-sm text-[#162032]">
+                      <div className="font-semibold text-sm text-gray-800">
                         {employee.position?.name || "No Position"}
                       </div>
                       <div className="text-xs text-[#848496]">
@@ -431,7 +431,7 @@ export default function EmployeeProfile() {
                     {employee.salary && (
                       <div className="text-center lg:text-left">
                         <div className="text-xs text-[#848496] mb-1">Monthly Salary</div>
-                        <div className="font-bold text-lg text-[#162032]">
+                        <div className="font-bold text-lg text-gray-800">
                            {Number(employee.salary).toLocaleString()}
                         </div>
                       </div>
@@ -461,14 +461,14 @@ export default function EmployeeProfile() {
               <Card className="bg-white border-[#e8e8f2]">
                 <CardContent className="p-4 md:p-6 space-y-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-[#162032] mb-4">Additional Info</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Additional Info</h3>
                     <div className="space-y-4">
                       {employee.date_of_joining && (
                         <div>
                           <label className="text-sm font-medium text-[#848496]">
                             Date of Joining
                           </label>
-                          <p className="text-[#162032] font-medium">
+                          <p className="text-gray-800 font-medium">
                             {formatDate(employee.date_of_joining)}
                           </p>
                         </div>
@@ -476,7 +476,7 @@ export default function EmployeeProfile() {
                       {employee.date_of_birth && (
                         <div>
                           <label className="text-sm font-medium text-[#848496]">B.O.D</label>
-                          <p className="text-[#162032] font-medium">
+                          <p className="text-gray-800 font-medium">
                             {formatDate(employee.date_of_birth)}
                           </p>
                         </div>
@@ -484,19 +484,19 @@ export default function EmployeeProfile() {
                       {employee.nin && (
                         <div>
                           <label className="text-sm font-medium text-[#848496]">NIN</label>
-                          <p className="text-[#162032] font-medium break-all">{employee.nin}</p>
+                          <p className="text-gray-800 font-medium break-all">{employee.nin}</p>
                         </div>
                       )}
                       {employee.tin && (
                         <div>
                           <label className="text-sm font-medium text-[#848496]">TIN</label>
-                          <p className="text-[#162032] font-medium break-all">{employee.tin}</p>
+                          <p className="text-gray-800 font-medium break-all">{employee.tin}</p>
                         </div>
                       )}
                       {employee.nssf_no && (
                         <div>
                           <label className="text-sm font-medium text-[#848496]">NSSF No.</label>
-                          <p className="text-[#162032] font-medium break-all">{employee.nssf_no}</p>
+                          <p className="text-gray-800 font-medium break-all">{employee.nssf_no}</p>
                         </div>
                       )}
                       {(employee.marital_status || employee.children_count > 0) && (
@@ -504,7 +504,7 @@ export default function EmployeeProfile() {
                           <label className="text-sm font-medium text-[#848496]">
                             Marital Status
                           </label>
-                          <p className="text-[#162032] font-medium">
+                          <p className="text-gray-800 font-medium">
                             {getMaritalStatusLabel(employee.marital_status)}
                             {employee.children_count &&
                               employee.children_count > 0 &&
@@ -518,7 +518,7 @@ export default function EmployeeProfile() {
                             Emergency Contact
                           </label>
                           {employee.emergency_contact_name && (
-                            <p className="text-[#162032] font-medium break-words">
+                            <p className="text-gray-800 font-medium break-words">
                               {employee.emergency_contact_name}{" "}
                               {employee.emergency_contact_relationship && (
                                 <span className="text-[#848496]">
@@ -538,7 +538,7 @@ export default function EmployeeProfile() {
                         <div>
                           <label className="text-sm font-medium text-[#848496]">Bank Details</label>
                           {employee.bank && (
-                            <p className="text-[#162032] font-medium break-words">
+                            <p className="text-gray-800 font-medium break-words">
                               {employee.bank}
                             </p>
                           )}
@@ -552,7 +552,7 @@ export default function EmployeeProfile() {
                       {employee.country && (
                         <div>
                           <label className="text-sm font-medium text-[#848496]">Country</label>
-                          <p className="text-[#162032] font-medium">{employee.country}</p>
+                          <p className="text-gray-800 font-medium">{employee.country}</p>
                         </div>
                       )}
                     </div>
@@ -560,7 +560,7 @@ export default function EmployeeProfile() {
 
                   {(employee.qualifications || employee.experience > 0 || employee.skills) && (
                     <div className="border-t border-[#e8e8f2] pt-6">
-                      <h3 className="text-lg font-semibold text-[#162032] flex items-center gap-2 mb-4">
+                      <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
                         <GraduationCap className="w-5 h-5" />
                         Qualifications & Experience
                       </h3>
@@ -568,24 +568,24 @@ export default function EmployeeProfile() {
                         {employee.qualifications && (
                           <div>
                             <label className="text-xs text-[#848496]">Education</label>
-                            <p className="text-[#162032] font-medium">{employee.qualifications}</p>
+                            <p className="text-gray-800 font-medium">{employee.qualifications}</p>
                           </div>
                         )}
                         {employee.experience > 0 && (
                           <div>
                             <label className="text-xs text-[#848496]">Years of Experience</label>
-                            <p className="text-[#162032] font-medium">
+                            <p className="text-gray-800 font-medium">
                               {employee.experience} years
                             </p>
                           </div>
                         )}
                         {employee.skills && (
                           <div>
-                            <h4 className="text-lg font-semibold text-[#162032] flex items-center gap-2 mb-2">
+                            <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-2">
                               <Award className="w-5 h-5" />
                               Skills
                             </h4>
-                            <p className="text-[#162032]">{employee.skills}</p>
+                            <p className="text-gray-800">{employee.skills}</p>
                           </div>
                         )}
                       </div>
@@ -607,8 +607,8 @@ export default function EmployeeProfile() {
                           onClick={() => handleTabChange(tab.id as any)}
                           className={`pb-4 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
                             activeTab === tab.id
-                              ? "text-[#162032] font-semibold"
-                              : "text-[#848496] hover:text-[#162032]"
+                              ? "text-gray-800 font-semibold"
+                              : "text-[#848496] hover:text-gray-800"
                           }`}
                         >
                           {tab.label}
@@ -625,13 +625,13 @@ export default function EmployeeProfile() {
                   {activeTab === "attendance" && (
                     <div className="space-y-6">
                       {/* Stats cards - responsive grid */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                         <Card className="bg-[#f0f0f6] border-[#e8e8f2]">
                           <CardContent className="p-3 md:p-4">
                             <div className="text-xs md:text-sm text-[#848496] mb-1">
                               Total Work Days
                             </div>
-                            <div className="text-lg md:text-2xl font-bold text-[#162032]">
+                            <div className="text-lg md:text-2xl font-bold text-gray-800">
                               {attendanceSummary.totalWorkDays}{" "}
                               <span className="text-[#848496] font-normal text-xs md:text-base">
                                 Days
@@ -680,32 +680,32 @@ export default function EmployeeProfile() {
                             </CardContent>
                           </Card>
                         )}
-                      </div>
+                      </div> */}
 
-                      <h3 className="text-lg md:text-xl font-semibold text-[#162032] mb-4">
+                      {/* <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-4">
                         Attendance Records
-                      </h3>
+                      </h3> */}
 
                       {/* Mobile-optimized table with horizontal scroll */}
-                      <div className="bg-white rounded-lg overflow-hidden border border-[#e8e8f2]">
+                      <div className="bg-white rounded-lg overflow-hidden ">
                         <div className="overflow-x-auto">
                           <Table>
                             <TableHeader>
                               <TableRow className="bg-[#f7f7fb] hover:bg-[#f7f7fb]">
-                                <TableHead className="font-semibold text-[#162032] py-3 md:py-4 px-2 md:px-6 min-w-[100px] text-xs md:text-sm">
+                                <TableHead className="font-semibold text-gray-800 py-3 md:py-4 px-2 md:px-6 min-w-[100px] text-xs md:text-sm">
                                   Date
                                 </TableHead>
-                                <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[80px] text-xs md:text-sm">
+                                <TableHead className="font-semibold text-gray-800 px-2 md:px-6 min-w-[80px] text-xs md:text-sm">
                                   Day
                                 </TableHead>
-                                <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[70px] text-xs md:text-sm">
+                                <TableHead className="font-semibold text-gray-800 px-2 md:px-6 min-w-[70px] text-xs md:text-sm">
                                   Time In
                                 </TableHead>
-                                <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[80px] text-xs md:text-sm">
-                                  Status
-                                </TableHead>
-                                <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[70px] text-xs md:text-sm">
+                                <TableHead className="font-semibold text-gray-800 px-2 md:px-6 min-w-[70px] text-xs md:text-sm">
                                   Time Out
+                                </TableHead>
+                                <TableHead className="font-semibold text-gray-800 px-2 md:px-6 min-w-[80px] text-xs md:text-sm">
+                                  Status
                                 </TableHead>
                               </TableRow>
                             </TableHeader>
@@ -737,7 +737,7 @@ export default function EmployeeProfile() {
                                     key={`${record.date}-${index}`}
                                     className="hover:bg-[#f7f7fb]/50"
                                   >
-                                    <TableCell className="font-medium text-[#162032] py-3 md:py-4 px-2 md:px-6 text-xs md:text-sm">
+                                    <TableCell className="font-medium text-gray-800 py-3 md:py-4 px-2 md:px-6 text-xs md:text-sm">
                                       <div className="min-w-0">
                                         <div className="md:hidden">
                                           {new Date(record.date).toLocaleDateString("en-US", {
@@ -750,7 +750,7 @@ export default function EmployeeProfile() {
                                         </div>
                                       </div>
                                     </TableCell>
-                                    <TableCell className="text-[#162032] px-2 md:px-6 text-xs md:text-sm">
+                                    <TableCell className="text-gray-800 px-2 md:px-6 text-xs md:text-sm">
                                       <div className="md:hidden">
                                         {new Date(record.date).toLocaleDateString("en-US", {
                                           weekday: "short",
@@ -762,20 +762,20 @@ export default function EmployeeProfile() {
                                         })}
                                       </div>
                                     </TableCell>
-                                    <TableCell className="text-[#162032] px-2 md:px-6 text-xs md:text-sm">
+                                    <TableCell className="text-gray-800 px-2 md:px-6 text-xs md:text-sm">
                                       {record.check_in_time
                                         ? formatTime(record.check_in_time)
                                         : "-"}
                                     </TableCell>
-                                    <TableCell className="px-2 md:px-6">
-                                      <div className="flex justify-center md:justify-start">
-                                        {getStatusBadge(record.status)}
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-[#162032] px-2 md:px-6 text-xs md:text-sm">
+                                    <TableCell className="text-gray-800 px-2 md:px-6 text-xs md:text-sm">
                                       {record.check_out_time
                                         ? formatTime(record.check_out_time)
                                         : "-"}
+                                    </TableCell>
+                                                                        <TableCell className="px-2 md:px-6">
+                                      <div className="flex justify-center md:justify-start">
+                                        {getStatusBadge(record.status)}
+                                      </div>
                                     </TableCell>
                                   </TableRow>
                                 ))
@@ -803,8 +803,8 @@ export default function EmployeeProfile() {
                             onClick={() => setLeaveSubTab("balances")}
                             className={`pb-3 text-sm font-medium transition-colors relative ${
                               leaveSubTab === "balances"
-                                ? "text-[#162032] font-semibold"
-                                : "text-[#848496] hover:text-[#162032]"
+                                ? "text-gray-800 font-semibold"
+                                : "text-[#848496] hover:text-gray-800"
                             }`}
                           >
                             Leave Balances
@@ -816,8 +816,8 @@ export default function EmployeeProfile() {
                             onClick={() => setLeaveSubTab("applications")}
                             className={`pb-3 text-sm font-medium transition-colors relative ${
                               leaveSubTab === "applications"
-                                ? "text-[#162032] font-semibold"
-                                : "text-[#848496] hover:text-[#162032]"
+                                ? "text-gray-800 font-semibold"
+                                : "text-[#848496] hover:text-gray-800"
                             }`}
                           >
                             Leave Applications
@@ -854,8 +854,8 @@ export default function EmployeeProfile() {
                             onClick={() => setAssetSubTab("requests")}
                             className={`pb-3 text-sm font-medium transition-colors relative ${
                               assetSubTab === "requests"
-                                ? "text-[#162032] font-semibold"
-                                : "text-[#848496] hover:text-[#162032]"
+                                ? "text-gray-800 font-semibold"
+                                : "text-[#848496] hover:text-gray-800"
                             }`}
                           >
                             Asset Requests
@@ -867,8 +867,8 @@ export default function EmployeeProfile() {
                             onClick={() => setAssetSubTab("allocations")}
                             className={`pb-3 text-sm font-medium transition-colors relative ${
                               assetSubTab === "allocations"
-                                ? "text-[#162032] font-semibold"
-                                : "text-[#848496] hover:text-[#162032]"
+                                ? "text-gray-800 font-semibold"
+                                : "text-[#848496] hover:text-gray-800"
                             }`}
                           >
                             Asset Allocations

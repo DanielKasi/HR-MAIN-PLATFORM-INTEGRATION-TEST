@@ -4,10 +4,11 @@ import {useState, useEffect} from "react";
 import {Card, CardContent} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {getDisciplinaryActions} from "@/lib/utils";
-import {transformDisciplinaryActionData, DisciplinaryAction} from "@/types/types.utils";
+import {getDisciplinaryActions, getPaginatedDisciplinaryActionsFromUrl} from "@/lib/utils";
+import {IDisciplinaryAction} from "@/types/types.utils";
 import {Calendar, User, AlertCircle, CheckCircle, Clock, XCircle} from "lucide-react";
 import {toast} from "sonner";
+import { PaginatedTableWrapper } from "../common/tables/paginated-table-wrapper";
 
 interface EmployeeDisciplineProps {
   employeeId: string;
@@ -15,31 +16,16 @@ interface EmployeeDisciplineProps {
 }
 
 export default function EmployeeDiscipline({employeeId, institutionId}: EmployeeDisciplineProps) {
-  const [disciplinaryActions, setDisciplinaryActions] = useState<DisciplinaryAction[]>([]);
+  const [disciplinaryActions, setDisciplinaryActions] = useState<IDisciplinaryAction[]>([]);
   const [loadingDiscipline, setLoadingDiscipline] = useState(false);
 
-  const fetchDisciplinaryActions = async () => {
-    if (!employeeId || !institutionId) return;
-
-    setLoadingDiscipline(true);
-    try {
-      const response = await getDisciplinaryActions({
+  const fetchDisciplinaryActionsFirstPage = async () => {
+    if (!employeeId || !institutionId) throw new Error("No employee or Institution Found !");
+    return await getDisciplinaryActions({
         institutionId: institutionId,
-        employeeId: employeeId, // Pass employeeId to let backend filter
+        employeeId: employeeId,
         page: 1,
       });
-
-      if (response?.results) {
-        // Backend already filters by employeeId, so we can use the data directly
-        const transformedData = transformDisciplinaryActionData(response.results);
-        setDisciplinaryActions(transformedData);
-      }
-    } catch (error: any) {
-      toast.error("Failed to fetch disciplinary actions");
-      console.error("Error fetching disciplinary actions:", error);
-    } finally {
-      setLoadingDiscipline(false);
-    }
   };
 
   const getSeverityColor = (severity: string) => {
@@ -88,9 +74,9 @@ export default function EmployeeDiscipline({employeeId, institutionId}: Employee
     }
   };
 
-  useEffect(() => {
-    fetchDisciplinaryActions();
-  }, [employeeId, institutionId]);
+  // useEffect(() => {
+  //   fetchDisciplinaryActions();
+  // }, [employeeId, institutionId]);
 
   return (
     <div className="space-y-6">
@@ -99,7 +85,7 @@ export default function EmployeeDiscipline({employeeId, institutionId}: Employee
         <Card className="bg-[#f0f0f6] border-[#e8e8f2]">
           <CardContent className="p-3 md:p-4">
             <div className="text-xs md:text-sm text-[#848496] mb-1">Total Cases</div>
-            <div className="text-lg md:text-2xl font-bold text-[#162032]">
+            <div className="text-lg md:text-2xl font-bold text-gray-800">
               {disciplinaryActions.length}
             </div>
           </CardContent>
@@ -130,36 +116,53 @@ export default function EmployeeDiscipline({employeeId, institutionId}: Employee
         </Card>
       </div>
 
-      <h3 className="text-lg md:text-xl font-semibold text-[#162032] mb-4">Disciplinary Actions</h3>
+      <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-4">Disciplinary Actions</h3>
 
       {/* Disciplinary Actions Table */}
-      <div className="bg-white rounded-lg overflow-hidden border border-[#e8e8f2]">
+      <div className="bg-white overflow-hidden">
+        
+        <PaginatedTableWrapper<IDisciplinaryAction>
+          fetchFirstPage={fetchDisciplinaryActionsFirstPage}
+          fetchFromUrl={async (args: {url:string}) => getPaginatedDisciplinaryActionsFromUrl({url:args.url})}
+          deps={[institutionId]}
+          className="space-y-4"
+          footerClassName="pt-4"
+        >
+          {({data, loading, refresh}) => {
+
+            useEffect(()=>{
+              if(data?.results){
+                setDisciplinaryActions(prev => [...prev.filter(prevAction => data.results.some(action => action.id !== prevAction.id)), ...data.results])
+              }
+            }, [data?.results])
+
+            return (
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-[#f7f7fb] hover:bg-[#f7f7fb]">
-                <TableHead className="font-semibold text-[#162032] py-3 md:py-4 px-2 md:px-6 min-w-[120px] text-xs md:text-sm">
+              <TableRow className="bg-gray-50 hover:bg-[#f7f7fb]">
+                <TableHead className="font-semibold text-gray-800 py-3 md:py-4 px-2 md:px-6 min-w-[120px] text-xs md:text-sm">
                   Type & Severity
                 </TableHead>
-                <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[100px] text-xs md:text-sm">
+                <TableHead className="font-semibold text-gray-800 px-2 md:px-6 min-w-[100px] text-xs md:text-sm">
                   Incident Date
                 </TableHead>
-                <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[80px] text-xs md:text-sm">
+                <TableHead className="font-semibold text-gray-800 px-2 md:px-6 min-w-[80px] text-xs md:text-sm">
                   Status
                 </TableHead>
-                <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[100px] text-xs md:text-sm">
+                <TableHead className="font-semibold text-gray-800 px-2 md:px-6 min-w-[100px] text-xs md:text-sm">
                   Assigned To
                 </TableHead>
-                <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[80px] text-xs md:text-sm">
+                <TableHead className="font-semibold text-gray-800 px-2 md:px-6 min-w-[80px] text-xs md:text-sm">
                   Follow-up
                 </TableHead>
-                <TableHead className="font-semibold text-[#162032] px-2 md:px-6 min-w-[150px] text-xs md:text-sm">
+                <TableHead className="font-semibold text-gray-800 px-2 md:px-6 min-w-[150px] text-xs md:text-sm">
                   Description
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loadingDiscipline ? (
+              {loading ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8">
                     <div className="flex items-center justify-center space-x-2">
@@ -170,7 +173,7 @@ export default function EmployeeDiscipline({employeeId, institutionId}: Employee
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : disciplinaryActions.length === 0 ? (
+              ) : data?.results.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8">
                     <div className="text-[#848496] text-xs md:text-sm">
@@ -179,22 +182,22 @@ export default function EmployeeDiscipline({employeeId, institutionId}: Employee
                   </TableCell>
                 </TableRow>
               ) : (
-                disciplinaryActions.map((action) => (
+                data?.results.map((action) => (
                   <TableRow key={action.id} className="hover:bg-[#f7f7fb]/50">
                     <TableCell className="py-3 md:py-4 px-2 md:px-6">
                       <div className="space-y-1">
-                        <div className="font-medium text-[#162032] text-xs md:text-sm">
-                          {action.discipline_type}
+                        <div className="font-medium text-gray-800 text-xs md:text-sm">
+                          {action.discipline_type?.name || ""}
                         </div>
                         <Badge
                           variant="outline"
-                          className={getSeverityColor(action.discipline_severity)}
+                          className={getSeverityColor(action.discipline_type?.severity || "Low")}
                         >
-                          {action.discipline_severity.toUpperCase()}
+                          {action.discipline_type?.severity.toUpperCase()}
                         </Badge>
                       </div>
                     </TableCell>
-                    <TableCell className="text-[#162032] px-2 md:px-6 text-xs md:text-sm">
+                    <TableCell className="text-gray-800 px-2 md:px-6 text-xs md:text-sm">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         {new Date(action.incident_date).toLocaleDateString()}
@@ -209,10 +212,10 @@ export default function EmployeeDiscipline({employeeId, institutionId}: Employee
                         {action.status.replace("_", " ").toUpperCase()}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-[#162032] px-2 md:px-6 text-xs md:text-sm">
+                    <TableCell className="text-gray-800 px-2 md:px-6 text-xs md:text-sm">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        {action.assigned_to}
+                        {action.assigned_to?.user?.fullname || ""}
                       </div>
                     </TableCell>
                     <TableCell className="px-2 md:px-6 text-xs md:text-sm">
@@ -229,7 +232,7 @@ export default function EmployeeDiscipline({employeeId, institutionId}: Employee
                         <span className="text-muted-foreground">None</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-[#162032] px-2 md:px-6 text-xs md:text-sm max-w-[200px]">
+                    <TableCell className="text-gray-800 px-2 md:px-6 text-xs md:text-sm max-w-[200px]">
                       <div className="truncate" title={action.description}>
                         {action.description}
                       </div>
@@ -240,6 +243,10 @@ export default function EmployeeDiscipline({employeeId, institutionId}: Employee
             </TableBody>
           </Table>
         </div>
+            )
+          }}
+
+        </PaginatedTableWrapper>
       </div>
 
       {/* Show Action Taken and Notes for Completed Actions */}
@@ -247,7 +254,7 @@ export default function EmployeeDiscipline({employeeId, institutionId}: Employee
         (action) => action.status === "completed" && (action.action_taken || action.notes),
       ) && (
         <div className="space-y-4">
-          <h4 className="text-lg font-semibold text-[#162032]">Completed Actions</h4>
+          <h4 className="text-lg font-semibold text-gray-800">Completed Actions</h4>
           {disciplinaryActions
             .filter(
               (action) => action.status === "completed" && (action.action_taken || action.notes),
@@ -256,7 +263,7 @@ export default function EmployeeDiscipline({employeeId, institutionId}: Employee
               <Card key={`completed-${action.id}`} className="bg-green-50 border-green-200">
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <h5 className="font-medium text-[#162032]">{action.discipline_type}</h5>
+                    <h5 className="font-medium text-gray-800">{action.discipline_type?.name}</h5>
                     <Badge className="bg-green-100 text-green-800 border-green-200">
                       {new Date(action.incident_date).toLocaleDateString()}
                     </Badge>
@@ -264,13 +271,13 @@ export default function EmployeeDiscipline({employeeId, institutionId}: Employee
                   {action.action_taken && (
                     <div className="mb-2">
                       <span className="text-sm font-medium text-[#848496]">Action Taken: </span>
-                      <span className="text-sm text-[#162032]">{action.action_taken}</span>
+                      <span className="text-sm text-gray-800">{action.action_taken}</span>
                     </div>
                   )}
                   {action.notes && (
                     <div>
                       <span className="text-sm font-medium text-[#848496]">Notes: </span>
-                      <span className="text-sm text-[#162032]">{action.notes}</span>
+                      <span className="text-sm text-gray-800">{action.notes}</span>
                     </div>
                   )}
                 </CardContent>

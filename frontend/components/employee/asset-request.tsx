@@ -260,7 +260,7 @@ const AssetRequests: React.FC<AssetRequestsProps> = ({
       {/* Header - Employee View */}
       {showHeader && isEmployeeView && (
         <div className="flex justify-between items-center w-full mb-4">
-          <h3 className="text-lg font-semibold text-[#162032]">Asset Requests</h3>
+          <h3 className="text-lg font-semibold text-gray-800">Asset Requests</h3>
           <Button
             onClick={() => setIsCreateDialogOpen(true)}
           >
@@ -384,7 +384,7 @@ const AssetRequests: React.FC<AssetRequestsProps> = ({
                         Total
                       </div>
                       <div
-                        className={`font-bold ${isEmployeeView ? "text-lg text-[#162032]" : "text-2xl text-gray-900"}`}
+                        className={`font-bold ${isEmployeeView ? "text-lg text-gray-800" : "text-2xl text-gray-900"}`}
                       >
                         {stats.total}
                       </div>
@@ -467,14 +467,14 @@ const AssetRequests: React.FC<AssetRequestsProps> = ({
                           )}
                           <TableHead
                             className={
-                              isEmployeeView ? "font-semibold text-[#162032] py-3 px-4 text-xs" : ""
+                              isEmployeeView ? "font-semibold text-gray-800 py-3 px-4 text-xs" : ""
                             }
                           >
                             Reference
                           </TableHead>
                           <TableHead
                             className={
-                              isEmployeeView ? "font-semibold text-[#162032] py-3 px-4 text-xs" : ""
+                              isEmployeeView ? "font-semibold text-gray-800 py-3 px-4 text-xs" : ""
                             }
                           >
                             Asset
@@ -482,14 +482,14 @@ const AssetRequests: React.FC<AssetRequestsProps> = ({
                           {!isEmployeeView && <TableHead>Requester</TableHead>}
                           <TableHead
                             className={
-                              isEmployeeView ? "font-semibold text-[#162032] py-3 px-4 text-xs" : ""
+                              isEmployeeView ? "font-semibold text-gray-800 py-3 px-4 text-xs" : ""
                             }
                           >
                             Status
                           </TableHead>
                           <TableHead
                             className={
-                              isEmployeeView ? "font-semibold text-[#162032] py-3 px-4 text-xs" : ""
+                              isEmployeeView ? "font-semibold text-gray-800 py-3 px-4 text-xs" : ""
                             }
                           >
                             Created
@@ -512,7 +512,7 @@ const AssetRequests: React.FC<AssetRequestsProps> = ({
                               className={isEmployeeView ? "py-3 px-4" : "font-mono text-sm"}
                             >
                               <span
-                                className={isEmployeeView ? "font-mono text-xs text-[#162032]" : ""}
+                                className={isEmployeeView ? "font-mono text-xs text-gray-800" : ""}
                               >
                                 {request.request_reference_code || 'N/A'}
                               </span>
@@ -520,7 +520,7 @@ const AssetRequests: React.FC<AssetRequestsProps> = ({
                             <TableCell className={isEmployeeView ? "py-3 px-4" : "font-medium"}>
                               <span
                                 className={
-                                  isEmployeeView ? "font-medium text-[#162032] text-xs" : ""
+                                  isEmployeeView ? "font-medium text-gray-800 text-xs" : ""
                                 }
                               >
                                 {request.asset?.asset_name || "Unknown Asset"}
@@ -535,7 +535,7 @@ const AssetRequests: React.FC<AssetRequestsProps> = ({
                               <StatusBadge status={request.asset_request_status} isEmployeeView={isEmployeeView} />
                             </TableCell>
                             <TableCell className={isEmployeeView ? "py-3 px-4" : ""}>
-                              <span className={isEmployeeView ? "text-xs text-[#162032]" : ""}>
+                              <span className={isEmployeeView ? "text-xs text-gray-800" : ""}>
                                 {formatDate(request.created_at)}
                               </span>
                             </TableCell>
@@ -592,7 +592,7 @@ const AssetRequests: React.FC<AssetRequestsProps> = ({
                           <div className="flex items-center gap-2 mb-2">
                             <Package className="h-4 w-4 text-gray-500" />
                             <h3
-                              className={`font-semibold ${isEmployeeView ? "text-[#162032] text-sm" : "text-gray-900"}`}
+                              className={`font-semibold ${isEmployeeView ? "text-gray-800 text-sm" : "text-gray-900"}`}
                             >
                               {request.asset?.asset_name || "Unknown Asset"}
                             </h3>

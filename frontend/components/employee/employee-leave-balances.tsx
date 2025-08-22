@@ -5,9 +5,18 @@ import {Card, CardContent} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {Loader2, Calendar, TrendingUp, TrendingDown, Minus} from "lucide-react";
-import {getAllLeaveBalances, getLeaveTypes} from "@/lib/utils";
+import {
+  getAllLeaveBalances,
+  getLeaveTypes,
+  getPaginatedLeaveBalances,
+  getPaginatedLeaveBalancesFromUrl,
+  showErrorToast,
+} from "@/lib/utils";
 import {ILeaveBalance, ILeaveType} from "@/types/types.utils";
 import {toast} from "sonner";
+import {formatCurrency} from "@/lib/helpers";
+import {PaginatedTableWrapper} from "../common/tables/paginated-table-wrapper";
+import {TableSkeleton} from "../common/table-skeleton";
 
 interface EmployeeLeaveBalancesProps {
   employeeId: string;
@@ -19,24 +28,6 @@ const EmployeeLeaveBalances: React.FC<EmployeeLeaveBalancesProps> = ({
   institutionId,
 }) => {
   const [leaveBalances, setLeaveBalances] = useState<ILeaveBalance[]>([]);
-  const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const getLeaveTypeName = (leaveType: any): string => {
-    if (typeof leaveType === "object" && leaveType?.name) {
-      return leaveType.name;
-    }
-    const type = leaveTypes.find((type) => type.id === leaveType);
-    return type?.name || "Unknown Leave Type";
-  };
-
-  const getLeaveTypeCategory = (leaveType: any): string => {
-    if (typeof leaveType === "object" && leaveType?.category) {
-      return leaveType.category;
-    }
-    const type = leaveTypes.find((type) => type.id === leaveType);
-    return type?.category || "annual";
-  };
 
   const getCategoryColor = (category: string) => {
     const colors = {
@@ -57,49 +48,37 @@ const EmployeeLeaveBalances: React.FC<EmployeeLeaveBalancesProps> = ({
     return {status: "low", icon: TrendingDown, color: "text-red-600"};
   };
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [balances, types] = await Promise.all([
-        getAllLeaveBalances({institutionId, employeeId}),
-        getLeaveTypes({institutionId}),
-      ]);
-
-      // Backend already filters by employeeId, so we can use the data directly
-      setLeaveBalances(balances);
-      setLeaveTypes(types.filter((type) => type.is_active !== false));
-    } catch (error: any) {
-      toast.error("Failed to fetch leave balances");
-      console.error("Error fetching leave balances:", error);
-    } finally {
-      setLoading(false);
+  const fetchFirstLeaveBalances = async () => {
+    if (!institutionId) {
+      throw new Error("No Institution found !");
     }
+    return await getPaginatedLeaveBalances({institutionId, employeeId});
   };
 
-  useEffect(() => {
-    if (employeeId && institutionId) {
-      fetchData();
-    }
-  }, [employeeId, institutionId]);
+  // useEffect(() => {
+  //   if (employeeId && institutionId) {
+  //     fetchFirstLeaveBalances();
+  //   }
+  // }, [employeeId, institutionId]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin mr-2" />
-        <span className="text-sm text-gray-600">Loading leave balances...</span>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center py-8">
+  //       <Loader2 className="h-6 w-6 animate-spin mr-2" />
+  //       <span className="text-sm text-gray-600">Loading leave balances...</span>
+  //     </div>
+  //   );
+  // }
 
-  if (leaveBalances.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No Leave Balances</h3>
-        <p className="text-gray-600">No leave balance records found for this employee.</p>
-      </div>
-    );
-  }
+  // if (leaveBalances.length === 0) {
+  //   return (
+  //     <div className="text-center py-8">
+  //       <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+  //       <h3 className="text-lg font-medium text-gray-900 mb-2">No Leave Balances</h3>
+  //       <p className="text-gray-600">No leave balance records found for this employee.</p>
+  //     </div>
+  //   );
+  // }
 
   // Calculate totals
   const totalAllocated = leaveBalances.reduce((sum, balance) => {
@@ -124,7 +103,7 @@ const EmployeeLeaveBalances: React.FC<EmployeeLeaveBalancesProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="bg-[#f0f0f6] border-[#e8e8f2] rounded-lg p-3">
           <div className="text-xs text-[#848496] mb-1">Total Allocated</div>
-          <div className="text-lg font-bold text-[#162032]">{totalAllocated} days</div>
+          <div className="text-lg font-bold text-gray-800">{totalAllocated} days</div>
         </div>
         <div className="bg-[#f0f0f6] border-[#e8e8f2] rounded-lg p-3">
           <div className="text-xs text-[#848496] mb-1">Used</div>
@@ -137,75 +116,98 @@ const EmployeeLeaveBalances: React.FC<EmployeeLeaveBalancesProps> = ({
       </div>
 
       {/* Compact Table - Profile Style */}
-      <div className="bg-white rounded-lg overflow-hidden border border-[#e8e8f2]">
-        <div className="overflow-x-auto">
-          <Table className="[&_th]:border-0 [&_td]:border-0">
-            <TableHeader>
-              <TableRow className="bg-[#f7f7fb] hover:bg-[#f7f7fb]">
-                <TableHead className="font-semibold text-[#162032] py-3 px-4 text-xs">
-                  Leave Type
-                </TableHead>
-                <TableHead className="font-semibold text-[#162032] text-center py-3 px-4 text-xs">
-                  Allocated
-                </TableHead>
-                <TableHead className="font-semibold text-[#162032] text-center py-3 px-4 text-xs">
-                  Used
-                </TableHead>
-                <TableHead className="font-semibold text-[#162032] text-center py-3 px-4 text-xs">
-                  Available
-                </TableHead>
-                <TableHead className="font-semibold text-[#162032] text-center py-3 px-4 text-xs">
-                  Status
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {leaveBalances.map((balance) => {
-                const available =
-                  typeof balance.available_days === "string"
-                    ? parseFloat(balance.available_days)
-                    : balance.available_days || 0;
-                const allocated = parseFloat(balance.allocated_days.toString()) || 0;
-                const balanceStatus = getBalanceStatus(available, allocated);
-                const StatusIcon = balanceStatus.icon;
+      <div className="bg-white overflow-hidden">
+        <PaginatedTableWrapper<ILeaveBalance>
+          fetchFirstPage={fetchFirstLeaveBalances}
+          fetchFromUrl={(args: {url: string}) => getPaginatedLeaveBalancesFromUrl({url: args.url})}
+          deps={[institutionId, employeeId]}
+          className="space-y-4"
+          footerClassName="pt-4"
+        >
+          {({data, loading, refresh}) => {
+            useEffect(() => {
+              if (data?.results) {
+                setLeaveBalances((prev) => [
+                  ...prev.filter((prevBal) => !data.results.some((bal) => bal.id === prevBal.id)),
+                ]);
+              }
+            }, [data?.results]);
 
-                return (
-                  <TableRow key={balance.id} className="hover:bg-[#f7f7fb]/50">
-                    <TableCell className="py-3 px-4">
-                      <div className="space-y-1">
-                        <div className="font-medium text-[#162032] text-xs">
-                          {getLeaveTypeName(balance.leave_type)}
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className={`${getCategoryColor(getLeaveTypeCategory(balance.leave_type))} text-xs px-2 py-0.5`}
-                        >
-                          {getLeaveTypeCategory(balance.leave_type)}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center font-medium py-3 px-4 text-xs">
-                      {balance.allocated_days}
-                    </TableCell>
-                    <TableCell className="text-center font-medium py-3 px-4 text-xs">
-                      {balance.used_days}
-                    </TableCell>
-                    <TableCell className="text-center py-3 px-4">
-                      <span className={`text-sm font-bold ${balanceStatus.color}`}>
-                        {available}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center py-3 px-4">
-                      <div className="flex items-center justify-center">
-                        <StatusIcon className={`h-3 w-3 ${balanceStatus.color}`} />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+            if (loading) {
+              return <TableSkeleton rows={10} columns={10} />;
+            }
+            return (
+              <div className="overflow-x-auto">
+                <Table className="[&_th]:border-0 [&_td]:border-0">
+                  <TableHeader>
+                    <TableRow className="bg-[#f7f7fb] hover:bg-[#f7f7fb]">
+                      <TableHead className="font-semibold text-gray-800 py-3 px-4 text-xs">
+                        Leave Type
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-800 text-center py-3 px-4 text-xs">
+                        Allocated
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-800 text-center py-3 px-4 text-xs">
+                        Used
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-800 text-center py-3 px-4 text-xs">
+                        Available
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-800 text-center py-3 px-4 text-xs">
+                        Status
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data?.results.map((balance) => {
+                      const available =
+                        typeof balance.available_days === "string"
+                          ? parseFloat(balance.available_days)
+                          : balance.available_days || 0;
+                      const allocated = parseFloat(balance.allocated_days.toString()) || 0;
+                      const balanceStatus = getBalanceStatus(available, allocated);
+                      const StatusIcon = balanceStatus.icon;
+
+                      return (
+                        <TableRow key={balance.id} className="hover:bg-[#f7f7fb]/50">
+                          <TableCell className="py-3 px-4">
+                            <div className="space-y-1">
+                              <div className="font-medium text-gray-800 text-xs">
+                                {balance.leave_type.name || ""}
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className={`${getCategoryColor(balance.leave_type.category)} text-xs px-2 py-0.5`}
+                              >
+                                {balance.leave_type.category || ""}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center font-medium py-3 px-4 text-xs">
+                            {formatCurrency(balance.allocated_days)}
+                          </TableCell>
+                          <TableCell className="text-center font-medium py-3 px-4 text-xs">
+                            {formatCurrency(balance.used_days)}
+                          </TableCell>
+                          <TableCell className="text-center py-3 px-4">
+                            <span className={`text-sm font-bold ${balanceStatus.color}`}>
+                              {formatCurrency(available)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center py-3 px-4">
+                            <div className="flex items-center justify-center">
+                              <StatusIcon className={`h-3 w-3 ${balanceStatus.color}`} />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            );
+          }}
+        </PaginatedTableWrapper>
       </div>
     </div>
   );

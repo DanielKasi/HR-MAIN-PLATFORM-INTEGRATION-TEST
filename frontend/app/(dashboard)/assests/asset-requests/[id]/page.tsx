@@ -188,7 +188,7 @@ const AssetRequestDetailPage = () => {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <p className="text-[#162032] text-lg md:text-[24px] break-all">{request.request_reference_code}</p>
+            <p className="text-gray-800 text-lg md:text-[24px] break-all">{request.request_reference_code}</p>
           </div>
         </div>
       </div>

@@ -31,14 +31,13 @@ import {
   DisciplinaryActionRequest,
   DisciplinaryActionResponse,
   convertFormToApiRequest,
-  DisciplineTypeForm,
+  IDisciplineTypeFormData,
   DisciplineTypeResponse,
   convertDisciplineTypeFormToApiRequest,
-  DisciplinaryActionAPIResponse,
+  IDisciplinaryAction,
   ILeaveRequest,
   ILeaveRequestFormData,
   LeaveRequestStatus,
-  LeaveType,
   ILeaveTypeFormData,
   ILeaveType,
   ILeavePolicy,
@@ -1629,7 +1628,7 @@ export const createDisciplinaryAction = async ({
 export const createDisciplineType = async ({
   disciplineTypeData,
 }: {
-  disciplineTypeData: DisciplineTypeForm;
+  disciplineTypeData: IDisciplineTypeFormData;
 }): Promise<DisciplineTypeResponse | null> => {
   try {
     const apiData = convertDisciplineTypeFormToApiRequest(disciplineTypeData);
@@ -1703,7 +1702,7 @@ export const getDisciplinaryActions = async ({
   page?: number;
   search?: string;
   employeeId?: string;
-}): Promise<IPaginatedResponse<DisciplinaryActionAPIResponse>> => {
+}): Promise<IPaginatedResponse<IDisciplinaryAction>> => {
   try {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -1715,7 +1714,7 @@ export const getDisciplinaryActions = async ({
       params.append("employee_id", employeeId);
     }
     const response = await apiRequest.get(`discipline/disciplinary-actions/?institution=${institutionId}&${params.toString()}`);
-    return response.data as IPaginatedResponse<DisciplinaryActionAPIResponse>;
+    return response.data as IPaginatedResponse<IDisciplinaryAction>;
   } catch (error) {
     throw error;
   }
@@ -1723,7 +1722,7 @@ export const getDisciplinaryActions = async ({
 
 export const getPaginatedDisciplinaryActionsFromUrl = async ({ url }: { url: string }) => {
   const response = await apiRequest.get(url);
-  return response.data as IPaginatedResponse<DisciplinaryActionAPIResponse>;
+  return response.data as IPaginatedResponse<IDisciplinaryAction>;
 };
 
 export const updateDisciplinaryAction = async ({
@@ -1732,7 +1731,7 @@ export const updateDisciplinaryAction = async ({
 }: {
   disciplinaryActionId: number | string;
   disciplinaryActionData: Partial<DisciplinaryActionRequest> | DisciplinaryActionForm;
-}): Promise<DisciplinaryActionAPIResponse | null> => {
+}): Promise<IDisciplinaryAction | null> => {
   try {
     const dataToSend =
       "discipline_type" in disciplinaryActionData &&
@@ -1745,7 +1744,7 @@ export const updateDisciplinaryAction = async ({
       dataToSend,
     );
 
-    return response.data as DisciplinaryActionAPIResponse;
+    return response.data as IDisciplinaryAction;
   } catch (error) {
     // console.error("Failed to update disciplinary action:", error);
     throw error;
@@ -1754,13 +1753,13 @@ export const updateDisciplinaryAction = async ({
 
 export const getDisciplinaryActionById = async (
   disciplinaryActionId: number | string,
-): Promise<DisciplinaryActionAPIResponse | null> => {
+): Promise<IDisciplinaryAction | null> => {
   try {
     const response = await apiRequest.get(
       `discipline/disciplinary-actions/${disciplinaryActionId}/`,
     );
 
-    return response.data as DisciplinaryActionAPIResponse;
+    return response.data as IDisciplinaryAction;
   } catch (error) {
     // console.error("Failed to retrieve disciplinary action:", error);
     throw error;
@@ -2650,6 +2649,40 @@ export const getAllLeaveBalances = async ({
   } catch (error) {     
     throw error;   
   } 
+};
+
+export const getPaginatedLeaveBalances = async ({ 
+  institutionId, 
+  employeeId,
+  page = 1,
+  search
+}: { 
+  institutionId: number;
+  employeeId?: string; 
+  page?:number;
+  search?:string
+}) => {       
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    
+    if (employeeId) {
+      params.append("employee_id", employeeId);
+    }
+    
+    const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-balances/?${params.toString()}`);     
+    return response.data as IPaginatedResponse<ILeaveBalance>;      
+    
+};
+
+
+export const getPaginatedLeaveBalancesFromUrl = async ({ url }: { url: string })=> {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<ILeaveBalance>;
 };
 
 
