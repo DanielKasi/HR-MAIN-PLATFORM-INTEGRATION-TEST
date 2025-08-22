@@ -3,7 +3,7 @@
 import {Button} from "@/components/ui/button";
 import {ChevronLeft, ChevronRight} from "lucide-react";
 import {type IPaginatedResponse} from "@/types/types.utils";
-import {cn} from "@/lib/utils";
+import {cn, showErrorToast} from "@/lib/utils";
 import {DependencyList, ReactNode, useCallback, useEffect, useState} from "react";
 
 type FetchFromUrlFn<T> = (args: {url: string}) => Promise<IPaginatedResponse<T>>|undefined;
@@ -55,7 +55,7 @@ export function PaginatedTableWrapper<T, Q = unknown>({
 
   const handleError = (err: unknown) => {
     if (onError) onError(err);
-    else console.error(err);
+    else showErrorToast({error: err, defaultMessage: "Failed to fetch data"});
   };
 
   const refresh = useCallback(async () => {

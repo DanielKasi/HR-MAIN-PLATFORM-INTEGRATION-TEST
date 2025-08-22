@@ -30,10 +30,12 @@ interface EmployeeTypeModalProps {
 }
 
 function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting, existingTypes }: EmployeeTypeModalProps) {
+  const selectedInstitution = useSelector(selectSelectedInstitution);
   const [formData, setFormData] = useState<IEmployeeTypeFormData>({
     name: "",
     description: "",
     code: "",
+    institution: selectedInstitution?.id || 0,
   })
   const [errors, setErrors] = useState<Partial<Record<keyof IEmployeeTypeFormData, string>>>({})
 
@@ -44,10 +46,9 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
           name: editingType.name,
           description: editingType.description || "",
           code: editingType.code || "",
+          institution : editingType.institution || selectedInstitution?.id || 0,
         })
-      } else {
-        setFormData({ name: "", description: "", code: "" })
-      }
+      } 
       setErrors({})
     }
   }, [isOpen, editingType])

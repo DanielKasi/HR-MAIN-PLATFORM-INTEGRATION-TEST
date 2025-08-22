@@ -128,12 +128,14 @@ export default function UpdateEmployeePage() {
     name: "",
     description: "",
     code: "",
+    institution:selectedInstitution?.id || 0
   });
 
   const [employeeTypeFormData, setEmployeeTypeFormData] = useState<IEmployeeTypeFormData>({
     name: "",
     description: "",
     code: "",
+        institution:selectedInstitution?.id || 0
   });
 
   const [formData, setFormData] = useState<EmployeeUpdateFormState>({
@@ -230,8 +232,8 @@ export default function UpdateEmployeePage() {
           phone_number: employeeData.phone_number || "",
           position: employeeData.position?.id || 0,
           department: employeeData.department?.id || 0,
-          work_type: employeeData.work_type || 0,
-          employee_type: employeeData.employee_type || 0,
+          work_type: employeeData.work_type.id || 0,
+          employee_type: employeeData.employee_type.id || 0,
           date_of_birth: employeeData.date_of_birth || "",
           date_of_joining: employeeData.date_of_joining || "",
           address: employeeData.address || "",
@@ -363,7 +365,7 @@ export default function UpdateEmployeePage() {
       if (newWorkType) {
         setWorkTypes((prev) => [...prev, newWorkType]);
         setFormData((prev) => ({ ...prev, work_type: newWorkType.id }));
-        setWorkTypeFormData({ name: "", description: "", code: "" });
+        setWorkTypeFormData({ name: "", description: "", code: "", institution: selectedInstitution?.id || 0 });
         setIsWorkTypeModalOpen(false);
         showSuccessToast("Work type added successfully");
       } else {
@@ -395,7 +397,7 @@ export default function UpdateEmployeePage() {
       if (newEmployeeType) {
         setEmployeeTypes((prev) => [...prev, newEmployeeType]);
         setFormData((prev) => ({ ...prev, employee_type: newEmployeeType.id }));
-        setEmployeeTypeFormData({ name: "", description: "", code: "" });
+        setEmployeeTypeFormData({ name: "", description: "", code: "", institution: selectedInstitution?.id || 0 });
         setIsEmployeeTypeModalOpen(false);
         showSuccessToast("Employee type name added successfully");
       } else {
@@ -917,7 +919,7 @@ export default function UpdateEmployeePage() {
                           variant="outline"
                           onClick={() => {
                             setIsWorkTypeModalOpen(false);
-                            setWorkTypeFormData({ name: "", description: "", code: "" });
+                            setWorkTypeFormData({ name: "", description: "", code: "" , institution: selectedInstitution?.id || 0});
                           }}
                           disabled={isAddingWorkType}
                         >
@@ -1031,7 +1033,7 @@ export default function UpdateEmployeePage() {
                           variant="outline"
                           onClick={() => {
                             setIsEmployeeTypeModalOpen(false);
-                            setEmployeeTypeFormData({ name: "", description: "", code: "" });
+                            setEmployeeTypeFormData({ name: "", description: "", code: "", institution: selectedInstitution?.id || 0 });
                           }}
                           disabled={isAddingEmployeeType}
                         >

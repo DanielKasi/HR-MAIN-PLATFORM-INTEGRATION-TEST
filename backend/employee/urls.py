@@ -79,7 +79,7 @@ urlpatterns = [
         name="employee-type-list-create",
     ),
     path(
-        "employee-types/<int:pk>/",
+        "employee-types/detail/<int:pk>/",
         EmployeeTypeDetailAPIView.as_view(),
         name="employee-type-detail",
     ),
@@ -87,7 +87,7 @@ urlpatterns = [
         "work-types/<int:institution_id>/", WorkTypeListCreateAPIView.as_view(), name="work-type-list-create"
     ),
     path(
-        "work-types/<int:pk>/", WorkTypeDetailAPIView.as_view(), name="work-type-detail"
+        "work-types/detail/<int:pk>/", WorkTypeDetailAPIView.as_view(), name="work-type-detail"
     ),
     path(
         "employee-contracts/<int:pk>/",

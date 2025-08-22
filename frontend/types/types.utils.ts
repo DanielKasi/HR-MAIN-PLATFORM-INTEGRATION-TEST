@@ -504,8 +504,8 @@ export interface IEmployee {
   marital_status: string;
   children_count: number;
   employee_profile_picture: string | null;
-  employee_type: number | IEmployeeType;
-  work_type: number | IWorkType;
+  employee_type: IEmployeeType;
+  work_type: IWorkType;
   payroll_branch: Branch | null;
   gender: string;
   salary: string;
@@ -579,7 +579,7 @@ export interface User {
   permissions?: string;
 }
 
-export interface EmployeeFormData {
+export interface IEmployeeFormData {
   user: Partial<User>;
   id: number;
   email: string;
@@ -776,18 +776,21 @@ export interface IWorkTypeFormData {
   name: string;
   code: string;
   description: string;
+  institution: number;
 }
 
 export interface IEmployeeTypeFormData {
   name: string;
   code: string;
   description: string;
+  institution: number;
 }
 
 // Response interfaces (what you get back from the API)
 export interface IWorkType {
   id: number;
   name: string;
+  institution: number;
   code?: string;
   description?: string;
   created_at?: string;
@@ -796,6 +799,7 @@ export interface IWorkType {
 
 export interface IEmployeeType {
   id: number;
+  institution: number;
   name: string;
   code?: string;
   description?: string;

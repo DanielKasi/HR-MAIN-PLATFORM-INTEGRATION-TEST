@@ -11,7 +11,7 @@ import {
   JobPositionAdvert,
   JobPositionAdvertFormData,
   IInterview,
-  EmployeeFormData,
+  IEmployeeFormData,
   User,
   IInterviewFormData,
   IInterviewStage,
@@ -1179,7 +1179,7 @@ export const createEmployee = async ({
   employeeData,
 }: {
   institutionId: number;
-  employeeData: EmployeeFormData;
+  employeeData: IEmployeeFormData;
 }): Promise<any | null> => {
   try {
     const formData = new FormData();
@@ -1304,11 +1304,11 @@ export const getEmployeeDetailId = async ({
 }: {
   applicationId: number;
   employeeId: number;
-}): Promise<EmployeeFormData | null> => {
-  // Changed return type from EmployeeFormData to Employee
+}): Promise<IEmployeeFormData | null> => {
+  // Changed return type from IEmployeeFormData to Employee
   try {
     const response = await apiRequest.get(`/employee/${employeeId}/${applicationId}/`);
-    return response.data as EmployeeFormData; // Changed casting
+    return response.data as IEmployeeFormData; // Changed casting
   } catch (error) {
     throw error;
   }
@@ -1417,7 +1417,7 @@ export const createWorkType = async ({
       }
     });
 
-    const response = await apiRequest.post(`employee/work-types/`, formData);
+    const response = await apiRequest.post(`employee/work-types/${institutionId}/`, formData);
     return response.data as IWorkType;
   } catch (error) {
     // console.error("Failed to create work type:", error);
@@ -1438,7 +1438,7 @@ export const getWorkTypes = async ({ institutionId, page = 1, search, }: {
     if (search) {
       params.append("search", search);
     }
-    const response = await apiRequest.get(`employee/work-types/?${params.toString()}`);
+    const response = await apiRequest.get(`employee/work-types/${institutionId}/?${params.toString()}`);
     const data = response.data as IPaginatedResponse<IWorkType>;
     return data
 };
@@ -1458,7 +1458,7 @@ export const updateWorkType = async ({
 }): Promise<IWorkType> => {
   try {
     const response = await apiRequest.patch(
-      `employee/work-types/${employeeTypeId}/`,
+      `employee/work-types/detail/${employeeTypeId}/`,
       employeeTypeData,
     );
     return response.data as IWorkType;
@@ -1474,7 +1474,7 @@ export const deleteWorkType = async ({
   workTypeId: number;
 }): Promise<void> => {
   try {
-    await apiRequest.delete(`employee/work-types/${workTypeId}/`);
+    await apiRequest.delete(`employee/work-types/detail/${workTypeId}/`);
   } catch (error) {
     throw error;
   }
@@ -1495,7 +1495,7 @@ export const createEmployeeType = async ({
       }
     });
 
-    const response = await apiRequest.post(`employee/employee-types/`, formData);
+    const response = await apiRequest.post(`employee/employee-types/${institutionId}/`, formData);
     return response.data as IEmployeeType;
   } catch (error) {
     throw error;
@@ -1518,7 +1518,7 @@ export const getEmployeeTypes = async ({
     if (search) {
       params.append("search", search);
     }
-    const response = await apiRequest.get(`employee/employee-types/?${params.toString()}`);
+    const response = await apiRequest.get(`employee/employee-types/${institutionId}/?${params.toString()}`);
     return response.data as IPaginatedResponse<IEmployeeType>;
   } catch (error) {
     throw error;
@@ -1540,7 +1540,7 @@ export const updateEmployeeType = async ({
 }): Promise<IEmployeeType> => {
   try {
     const response = await apiRequest.patch(
-      `employee/employee-types/${employeeTypeId}/`,
+      `employee/employee-types/detail/${employeeTypeId}/`,
       employeeTypeData,
     );
     return response.data as IEmployeeType;
@@ -1556,7 +1556,7 @@ export const deleteEmployeeType = async ({
   employeeTypeId: number;
 }): Promise<void> => {
   try {
-    await apiRequest.delete(`employee/employee-types/${employeeTypeId}/`);
+    await apiRequest.delete(`employee/employee-types/detail/${employeeTypeId}/`);
   } catch (error) {
     throw error;
   }
