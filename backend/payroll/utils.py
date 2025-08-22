@@ -27,14 +27,11 @@ from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
 from decimal import Decimal
 from django.db.models import Prefetch
 
+from io import BytesIO
+from weasyprint import HTML
+from decimal import Decimal
+from payroll.models import AllowanceType, DeductionType
 
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_RIGHT, TA_LEFT, TA_CENTER
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from collections import defaultdict
-from reportlab.lib.units import cm
 
 
 DAY_CODE_TO_WEEKDAY = {
@@ -893,168 +890,252 @@ def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
     return output
 
 
-
 def generate_payslip_pdf(payslip):
     """
-    Generates a PDF payslip using ReportLab based on the Payslip model instance.
+    Generates a structured payslip PDF with a detailed breakdown of all possible
+    allowances and deductions, displaying zero if not applicable,
+    and a prominent summary section at the top.
     """
-    buffer = BytesIO()
+    # Safely get institution and company name
+    institution = None
+    company_name = 'N/A'
+    currency = 'UGX'
+    if payslip.employee and payslip.employee.department and payslip.employee.department.institution:
+        institution = payslip.employee.department.institution
+        company_name = institution.institution_name
+        # Assuming the Institution model has a 'currency' field
+        if hasattr(institution, 'currency') and institution.currency:
+            currency = institution.currency
 
-    # PDF setup
-    doc = SimpleDocTemplate(
-        buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40
-    )
-    elements = []
-    styles = getSampleStyleSheet()
-
-    # Custom styles
-    right_aligned_style = ParagraphStyle(
-        'RightAligned',
-        parent=styles['Normal'],
-        alignment=TA_RIGHT,
-    )
-    centered_style = ParagraphStyle(
-        'Centered',
-        parent=styles['Normal'],
-        alignment=TA_CENTER,
-    )
-    bold_style = ParagraphStyle(
-        'Bold',
-        parent=styles['Normal'],
-        fontName='Helvetica-Bold',
-    )
+    # Get all possible allowance and deduction types for the institution
+    all_allowance_types = AllowanceType.objects.filter(institution=institution).order_by('name')
+    all_deduction_types = DeductionType.objects.filter(institution=institution).order_by('name')
     
-    # --- Header Section ---
-    institution_name = payslip.employee.department.institution.institution_name
-    elements.append(Paragraph(f"<b>{institution_name}</b>", styles["Title"]))
-    elements.append(Spacer(1, 0.5 * cm))
-    elements.append(Paragraph("<b>Payslip</b>", centered_style))
-    elements.append(Spacer(1, 0.3 * cm))
-    elements.append(Paragraph(
-        f"For the period: <b>{payslip.payroll_period.start_date.strftime('%B %d, %Y')} - {payslip.payroll_period.end_date.strftime('%B %d, %Y')}</b>",
-        styles["Normal"]
-    ))
-    elements.append(Spacer(1, 1 * cm))
+    # Get all actual payslip items and map them for easy lookup
+    payslip_items_map = {item.name: item for item in payslip.items.all()}
 
-    # --- Employee Details Table ---
-    employee_details_data = [
-        [
-            Paragraph("<b>Employee Name:</b>", bold_style),
-            Paragraph(payslip.employee.user.fullname, styles['Normal'])
-        ],
-        [
-            Paragraph("<b>Employee ID:</b>", bold_style),
-            Paragraph(payslip.employee.employee_id, styles['Normal'])
-        ],
-        [
-            Paragraph("<b>Department:</b>", bold_style),
-            Paragraph(payslip.employee.department.name, styles['Normal'])
-        ],
-        [
-            Paragraph("<b>Position:</b>", bold_style),
-            Paragraph(payslip.employee.position.name if payslip.employee.position else 'N/A', styles['Normal'])
-        ],
-        [
-            Paragraph("<b>Days Worked:</b>", bold_style),
-            Paragraph(str(payslip.days_worked), styles['Normal'])
-        ],
-        [
-            Paragraph("<b>Payment Date:</b>", bold_style),
-            Paragraph(payslip.paid_date.strftime('%B %d, %Y') if payslip.paid_date else 'N/A', styles['Normal'])
-        ],
-        [
-            Paragraph("<b>Bank:</b>", bold_style),
-            Paragraph(payslip.employee.bank or 'N/A', styles['Normal'])
-        ],
-        [
-            Paragraph("<b>Account Number:</b>", bold_style),
-            Paragraph(payslip.employee.bank_account_number or 'N/A', styles['Normal'])
-        ],
-    ]
-    employee_details_table = Table(employee_details_data, colWidths=[100, 350])
-    employee_details_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-    ]))
-    elements.append(employee_details_table)
-    elements.append(Spacer(1, 1 * cm))
-    
-    # --- Earnings Section ---
-    elements.append(Paragraph("<b>Earnings</b>", styles["Heading3"]))
-    elements.append(Spacer(1, 0.2 * cm))
-    earnings_data = [["Description", "Amount (UGX)"]]
-    
-    # Basic salary entry
-    earnings_data.append(["Basic Salary", f"{payslip.basic_salary:,.2f}"])
-    
-    allowance_items = payslip.items.filter(item_type='allowance')
-    for item in allowance_items:
-        earnings_data.append([item.name, f"{item.amount:,.2f}"])
+    # Prepare data for allowances, including those with zero amount
+    allowances_data = []
+    for allowance_type in all_allowance_types:
+        item = payslip_items_map.get(allowance_type.name)
+        amount = item.amount if item else Decimal('0.00')
+        allowances_data.append({'name': allowance_type.name, 'amount': amount})
 
-    overtime_items = payslip.items.filter(item_type='overtime')
-    for item in overtime_items:
-        earnings_data.append([f"{item.name} ({item.description})", f"{item.amount:,.2f}"])
-
-    earnings_table = Table(earnings_data, colWidths=[400, 150])
-    earnings_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f0f0f0')),
-        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e0e0e0')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('ALIGN', (1, 1), (1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-    ]))
-    elements.append(earnings_table)
-    elements.append(Spacer(1, 0.5 * cm))
-
-    # --- Deductions Section ---
-    elements.append(Paragraph("<b>Deductions</b>", styles["Heading3"]))
-    elements.append(Spacer(1, 0.2 * cm))
-    deductions_data = [["Description", "Amount (UGX)"]]
-    
-    deduction_items = payslip.items.filter(item_type='deduction')
-    for item in deduction_items:
-        # Use description for more detail if available
-        description = item.description or item.name
-        deductions_data.append([description, f"{item.amount:,.2f}"])
+    # Prepare data for deductions, including those with zero amount
+    deductions_data = []
+    for deduction_type in all_deduction_types:
+        item = payslip_items_map.get(deduction_type.name)
+        amount = item.amount if item else Decimal('0.00')
+        deductions_data.append({'name': deduction_type.name, 'amount': amount})
         
-    deductions_table = Table(deductions_data, colWidths=[400, 150])
-    deductions_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f0f0f0')),
-        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e0e0e0')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('ALIGN', (1, 1), (1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-    ]))
-    elements.append(deductions_table)
-    elements.append(Spacer(1, 1 * cm))
+    # Get the month and year for the header
+    pay_period_month = payslip.payroll_period.start_date.strftime('%B %Y')
+
+    # Safely get employee and position details
+    employee_name = payslip.employee.user.fullname if payslip.employee and payslip.employee.user else 'N/A'
+    employee_id = payslip.employee.employee_id if payslip.employee else 'N/A'
+    department_name = payslip.employee.department.name if payslip.employee and payslip.employee.department else 'N/A'
+    position_name = payslip.employee.position.name if payslip.employee and payslip.employee.position else 'N/A'
+
+    html_template = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Payslip</title>
+        <style>
+            @page {{
+                size: A4;
+                margin: 40px;
+            }}
+            body {{
+                font-family: Arial, sans-serif;
+                font-size: 10px;
+                line-height: 1.4;
+                color: #333;
+            }}
+            .header {{
+                text-align: center;
+                margin-bottom: 30px;
+            }}
+            .company-name {{
+                font-size: 24px;
+                font-weight: bold;
+                color: #2c3e50;
+            }}
+            .period-details {{
+                font-size: 12px;
+                color: #7f8c8d;
+            }}
+            h2 {{
+                font-size: 16px;
+                font-weight: bold;
+                border-bottom: 2px solid #34495e;
+                padding-bottom: 5px;
+                margin-top: 30px;
+                margin-bottom: 15px;
+            }}
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }}
+            .info-table td {{
+                padding: 5px;
+            }}
+            .info-table td:nth-child(odd) {{
+                font-weight: bold;
+                width: 30%;
+            }}
+            .financial-table {{
+                border: 1px solid #bdc3c7;
+            }}
+            .financial-table th {{
+                background-color: #ecf0f1;
+                font-weight: bold;
+                padding: 10px;
+                text-align: left;
+                border: 1px solid #bdc3c7;
+            }}
+            .financial-table td {{
+                padding: 8px 10px;
+                border: 1px solid #bdc3c7;
+            }}
+            .financial-table td:last-child {{
+                text-align: right;
+            }}
+            .summary-table {{
+                margin-top: 20px;
+                width: 100%;
+            }}
+            .summary-table td {{
+                padding: 8px 10px;
+                font-weight: bold;
+                border: 1px solid #bdc3c7;
+            }}
+            .summary-table tr:last-child {{
+                font-size: 14px;
+                background-color: #e0f2f1;
+            }}
+            .summary-table td:last-child {{
+                text-align: right;
+            }}
+            .summary-table .label {{
+                font-weight: normal;
+                width: 60%;
+            }}
+            .footer {{
+                clear: both;
+                padding-top: 20px;
+                text-align: center;
+                font-style: italic;
+                font-size: 9px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <div class="company-name">{company_name}</div>
+            <div class="period-details">
+                Payslip for {pay_period_month}
+            </div>
+            <div class="period-details">
+                Period: {payslip.payroll_period.start_date.strftime('%d-%b-%Y')} to {payslip.payroll_period.end_date.strftime('%d-%b-%Y')}
+            </div>
+        </div>
+
+        <h2>Employee Information</h2>
+        <table class="info-table">
+            <tr>
+                <td>Employee Name:</td>
+                <td>{employee_name}</td>
+                <td>Employee ID:</td>
+                <td>{employee_id}</td>
+            </tr>
+            <tr>
+                <td>Department:</td>
+                <td>{department_name}</td>
+                <td>Position:</td>
+                <td>{position_name}</td>
+            </tr>
+            <tr>
+                <td>Days Worked:</td>
+                <td>{payslip.days_worked}</td>
+                <td>Pay Date:</td>
+                <td>{payslip.payroll_period.pay_date.strftime('%d-%b-%Y')}</td>
+            </tr>
+        </table>
+        
+        <h2>Summary</h2>
+        <table class="summary-table">
+            <tbody>
+                <tr>
+                    <td class="label">Gross Salary:</td>
+                    <td>{payslip.gross_salary:,.2f}</td>
+                </tr>
+                <tr>
+                    <td class="label">Total Allowances:</td>
+                    <td>{payslip.total_allowances:,.2f}</td>
+                </tr>
+                <tr>
+                    <td class="label">Total Deductions:</td>
+                    <td>{payslip.total_deductions:,.2f}</td>
+                </tr>
+                <tr>
+                    <td class="label">Net Salary:</td>
+                    <td>{payslip.net_salary:,.2f}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Allowances</h2>
+        <table class="financial-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount ({currency})</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Basic Salary</td>
+                    <td>{payslip.basic_salary:,.2f}</td>
+                </tr>
+                {"".join(f"""
+                <tr>
+                    <td>{item['name']}</td>
+                    <td>{item['amount']:,.2f}</td>
+                </tr>""" for item in allowances_data)}
+            </tbody>
+        </table>
+
+        <h2>Deductions</h2>
+        <table class="financial-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount ({currency})</th>
+                </tr>
+            </thead>
+            <tbody>
+                {"".join(f"""
+                <tr>
+                    <td>{item['name']}</td>
+                    <td>{item['amount']:,.2f}</td>
+                </tr>""" for item in deductions_data)}
+            </tbody>
+        </table>
+        
+        <div class="footer">
+            This is a computer-generated document and does not require a signature.
+        </div>
+    </body>
+    </html>
+    """
     
-    # --- Summary Totals Section ---
-    summary_data = [
-        ["Total Allowances:", f"{payslip.total_allowances:,.2f}"],
-        ["Gross Salary:", f"{payslip.gross_salary:,.2f}"],
-        ["Total Deductions:", f"{payslip.total_deductions:,.2f}"],
-        ["", ""],  # Spacer row
-        ["Net Salary:", f"{payslip.net_salary:,.2f}"],
-    ]
-    summary_table = Table(summary_data, colWidths=[400, 150])
-    summary_table.setStyle(TableStyle([
-        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#d9ead3')),  # Light green for net salary row
-        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e0e0e0')),
-    ]))
-    elements.append(summary_table)
-
-    # --- Footer ---
-    elements.append(Spacer(1, 2 * cm))
-    elements.append(Paragraph("<i>This is a computer-generated document and does not require a signature.</i>", styles["Italic"]))
-
-    doc.build(elements)
-    buffer.seek(0)
-    return buffer
+    html_doc = HTML(string=html_template)
+    pdf_buffer = BytesIO()
+    html_doc.write_pdf(target=pdf_buffer)
+    pdf_buffer.seek(0)
+    
+    return pdf_buffer

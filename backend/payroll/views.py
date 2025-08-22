@@ -714,7 +714,7 @@ class PayrollPeriodPayslipsExcelReportAPIView(APIView):
 
 class DownloadPayslipPDFView(APIView):
     """
-    API endpoint to generate and download a single payslip as a PDF using ReportLab.
+    API endpoint to generate and download a single payslip as a PDF using WeasyPrint.
     """
     @extend_schema(
         summary="Download a single payslip as a PDF",
