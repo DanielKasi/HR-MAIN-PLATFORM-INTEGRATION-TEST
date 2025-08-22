@@ -88,7 +88,7 @@ interface PayslipPDFProps {
 
 const PayslipPDF = ({ payslip }: PayslipPDFProps) => {
   const formatCurrency = (amount: string | number) => 
-    `UGX ${parseFloat(amount.toString()).toLocaleString()}`;
+    ` ${parseFloat(amount.toString()).toLocaleString()}`;
 
   const currentInstitution = getCUrrentInstitution();
 

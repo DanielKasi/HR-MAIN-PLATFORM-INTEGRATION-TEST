@@ -823,7 +823,7 @@ export default function EditJobPositionPage() {
                   <div className="grid grid-cols-2 gap-2">
 
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">From UGX</span>
+                    <span className="text-sm text-muted-foreground">From </span>
                   <Input
                     id="salary_min"
                     type="text"
@@ -844,7 +844,7 @@ export default function EditJobPositionPage() {
                   {errors.salary_min && <p className="text-sm text-destructive">{errors.salary_min}</p>}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">To UGX</span>
+                    <span className="text-sm text-muted-foreground">To </span>
                     <Input
                     id="salary_max"
                     type="text"
@@ -874,7 +874,7 @@ export default function EditJobPositionPage() {
                   </Label>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="relative flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">From UGX</span>
+                      <span className="text-sm text-muted-foreground">From </span>
                       <Input
                         id="salary_min"
                         type="text"
@@ -897,7 +897,7 @@ export default function EditJobPositionPage() {
                       
                     </div>
                     <div className="relative flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">To UGX</span>
+                      <span className="text-sm text-muted-foreground">To </span>
                       <Input
                         id="salary_max"
                         type="text"

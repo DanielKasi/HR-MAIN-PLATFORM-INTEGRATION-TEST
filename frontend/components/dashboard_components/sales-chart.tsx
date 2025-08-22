@@ -51,7 +51,7 @@ const CustomTooltip = ({active, payload, label}: any) => {
         </div>
         <div className="flex items-center gap-1">
           <span className="text-gray-300">Amount:</span>
-          <span>UGX {payload[0].payload.formatted_amount}</span>
+          <span> {payload[0].payload.formatted_amount}</span>
         </div>
       </div>
     );
@@ -91,7 +91,7 @@ const CustomActiveDot = (props: any) => {
 // Sales Chart Component
 export function SalesChart({branchId}: {branchId: string | null}) {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-  const [totalSales, setTotalSales] = useState("UGX 0");
+  const [totalSales, setTotalSales] = useState(" 0");
   const [period, setPeriod] = useState("annually");
   const [isLoading, setIsLoading] = useState(true);
   const [previousPeriodChange, setPreviousPeriodChange] = useState<{
@@ -657,7 +657,7 @@ export function SalesChart({branchId}: {branchId: string | null}) {
 //                 </div>
 //                 <div className="flex items-center gap-1">
 //                   <span className="text-gray-300">Amount:</span>
-//                   <span>UGX {activePoint.amount}</span>
+//                   <span> {activePoint.amount}</span>
 //                 </div>
 //               </div>
 //             </foreignObject>
@@ -671,7 +671,7 @@ export function SalesChart({branchId}: {branchId: string | null}) {
 // // Sales Chart Component
 // export function SalesChart({ branchId }: { branchId: string | null }) {
 //   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-//   const [totalSales, setTotalSales] = useState("UGX 0");
+//   const [totalSales, setTotalSales] = useState(" 0");
 //   const [period, setPeriod] = useState("annually");
 //   const [isLoading, setIsLoading] = useState(true);
 //   const [previousPeriodChange, setPreviousPeriodChange] = useState<{
