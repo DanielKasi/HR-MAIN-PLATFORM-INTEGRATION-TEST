@@ -41,7 +41,9 @@ class PublicHolidayListCreateView(APIView):
         institution = get_object_or_404(
             Institution, id=request.user.profile.institution.id
         )
-        public_holidays = PublicHoliday.objects.filter(institution=institution)
+        public_holidays = PublicHoliday.objects.filter(
+            institution=institution, is_active=True, deleted_at__isnull=True
+        )
         if search_query:
             public_holidays = public_holidays.filter(
                 Q(title__icontains=search_query) | Q(date__icontains=search_query)
@@ -49,7 +51,7 @@ class PublicHolidayListCreateView(APIView):
         paginator = CustomPageNumberPagination()
         paginated_holidays = paginator.paginate_queryset(public_holidays, request)
         serializer = PublicHolidaySerializer(paginated_holidays, many=True)
-    
+
         return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
@@ -95,7 +97,7 @@ class PublicHolidayDetailView(APIView):
     def get(self, request, pk):
         public_holiday = get_object_or_404(PublicHoliday, pk=pk)
         serializer = PublicHolidaySerializer(public_holiday)
-        
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @extend_schema(
@@ -162,10 +164,19 @@ class EventListCreateView(APIView):
         tags=["Calendar"],
     )
     def get(self, request):
+        search_query = request.query_params.get('search', None)
         institution = get_object_or_404(
             Institution, id=request.user.profile.institution.id
         )
-        events = Event.objects.filter(institution=institution)
+        events = Event.objects.filter(
+            institution=institution, is_active=True, deleted_at__isnull=True
+        )
+        if search_query:
+            events = events.filter(
+                Q(title__icontains=search_query) | Q(description__icontains=search_query) |
+                Q(date__icontains=search_query) | Q(frequency__icontains=search_query) | 
+                Q(target_audience__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginated_events = paginator.paginate_queryset(events, request)
         serializer = EventSerializer(paginated_events, many=True)
@@ -279,13 +290,12 @@ class InstitutionCalendarView(APIView):
         tags=["Calendar"],
     )
     def get(self, request):
-        
+        search_query = request.query_params.get('search', None)
         institution = get_object_or_404(
             Institution, id=request.user.profile.institution.id
         )
 
         year = request.query_params.get("year", None)
-        print("Fetching institution calendar for user:", year)
         if year:
             try:
                 year = int(year)
@@ -297,7 +307,12 @@ class InstitutionCalendarView(APIView):
         else:
             year = datetime.now().year
 
-        calendar = Calendar.objects.filter(institution=institution, year=year).first()
+        calendar = Calendar.objects.filter(
+            institution=institution, 
+            year=year,
+            is_active=True,
+            deleted_at__isnull=True
+            ).first()
 
         if not calendar:
             return Response(
@@ -305,7 +320,10 @@ class InstitutionCalendarView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        
+        if search_query:
+            calendar = calendar.filter(
+                Q(year__icontains=search_query)
+            )    
 
         serializer = CalendarSerializer(calendar)
         return Response(serializer.data, status=status.HTTP_200_OK)
