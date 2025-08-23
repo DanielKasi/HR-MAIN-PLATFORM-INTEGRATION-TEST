@@ -1,7 +1,7 @@
 "use client";
 
-import {useState, useEffect, useRef, useCallback} from "react";
-import {Button} from "@/components/ui/button";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,9 +10,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {Label} from "@/components/ui/label";
-import {Input} from "@/components/ui/input";
-import {Textarea} from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -20,8 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Badge} from "@/components/ui/badge";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Search,
   Edit,
@@ -52,11 +52,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {toast} from "sonner";
+import { toast } from "sonner";
 import {
   LeaveApplicationsAPI,
   getLeaveTypes,
-  getAllEmployees,
+  getPaginatedEmployees,
   getLeavePolicies,
 } from "@/lib/utils";
 import {
@@ -68,37 +68,35 @@ import {
   ILeaveBalance,
   IEmployee,
 } from "@/types/types.utils";
-import {selectSelectedInstitution, selectAttachedInstitutions} from "@/store/auth/selectors";
-import {IUserInstitution} from "@/types";
-import {useSelector} from "react-redux";
-import {EmployeeSearchableSelect} from "@/components/ui/employee-searchable-select";
-import {handleDownload, getFileUrl, getFileName} from "@/lib/helpers";
-import {TableSkeleton} from "@/components/common/table-skeleton";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
+import { IUserInstitution } from "@/types";
+import { useSelector } from "react-redux";
+import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select";
+import { handleDownload, getFileUrl, getFileName } from "@/lib/helpers";
+import { TableSkeleton } from "@/components/common/table-skeleton";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import {PERMISSION_CODES} from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/types/types.utils";
 
 const STATUS_CHOICES = [
-  {value: "pending", label: "Pending"},
-  {value: "approved", label: "Approved"},
-  {value: "rejected", label: "Rejected"},
-  {value: "cancelled", label: "Cancelled"},
+  { value: "pending", label: "Pending" },
+  { value: "approved", label: "Approved" },
+  { value: "rejected", label: "Rejected" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
 const DURATION_TYPES = [
-  {value: "full_day", label: "Full Day"},
-  {value: "half_day_morning", label: "Half Day - Morning"},
-  {value: "half_day_afternoon", label: "Half Day - Afternoon"},
-  {value: "hourly", label: "Hourly"},
+  { value: "full_day", label: "Full Day" },
+  { value: "half_day_morning", label: "Half Day - Morning" },
+  { value: "half_day_afternoon", label: "Half Day - Afternoon" },
+  { value: "hourly", label: "Hourly" },
 ];
 
 const LeaveApplicationComponent = () => {
-  const [employees, setEmployees] = useState<IEmployee[]>([]);
   const [leavePolicies, setLeavePolicies] = useState<ILeavePolicy[]>([]);
   const [leaveBalances, setLeaveBalances] = useState<ILeaveBalance[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isLoadingEmployees, setIsLoadingEmployees] = useState(true);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [editingApplication, setEditingApplication] = useState<ILeaveRequest | null>(null);
   const [viewingApplication, setViewingApplication] = useState<ILeaveRequest | null>(null);
@@ -213,10 +211,6 @@ const LeaveApplicationComponent = () => {
     return diffDays;
   };
 
-  const getSelectedEmployee = () => {
-    if (!formData.employee) return null;
-    return employees.find((emp) => emp.id.toString() === formData.employee);
-  };
 
   const getSelectedLeaveType = () => {
     if (!formData.leave_type) return null;
@@ -334,27 +328,7 @@ const LeaveApplicationComponent = () => {
     };
   };
 
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      if (!selectedInstitution?.id) {
-        setIsLoadingEmployees(false);
-        return;
-      }
 
-      setIsLoadingEmployees(true);
-
-      try {
-        const fetchedEmployees = await getAllEmployees({institutionId: selectedInstitution?.id});
-          setEmployees(fetchedEmployees.results || []);
-      } catch (error) {
-        setEmployees([]);
-      } finally {
-        setIsLoadingEmployees(false);
-      }
-    };
-
-    fetchEmployees();
-  }, [selectedInstitution?.id]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -364,8 +338,8 @@ const LeaveApplicationComponent = () => {
 
       try {
         const [leaveTypesData, policiesData] = await Promise.all([
-          getLeaveTypes({institutionId: selectedInstitution.id}),
-          getLeavePolicies({institutionId: selectedInstitution.id}),
+          getLeaveTypes({ institutionId: selectedInstitution.id }),
+          getLeavePolicies({ institutionId: selectedInstitution.id }),
         ]);
 
         const activeLeaveTypes = leaveTypesData?.filter((type) => type.is_active !== false) || [];
@@ -500,17 +474,17 @@ const LeaveApplicationComponent = () => {
 
     setIsSubmitting(true);
     try {
-      const updatedApplication = action === 'approve' 
+      const updatedApplication = action === 'approve'
         ? await LeaveApplicationsAPI.approve({
-            leaveApplicationId: id,
-            institutionId: selectedInstitution?.id,
-            rejectionReason,
-          })
+          leaveApplicationId: id,
+          institutionId: selectedInstitution?.id,
+          rejectionReason,
+        })
         : await LeaveApplicationsAPI.reject({
-            leaveApplicationId: id,
-            institutionId: selectedInstitution?.id,
-            rejectionReason,
-          });
+          leaveApplicationId: id,
+          institutionId: selectedInstitution?.id,
+          rejectionReason,
+        });
 
       if (updatedApplication) {
         toast.success(`Application ${action}d successfully`);
@@ -525,7 +499,7 @@ const LeaveApplicationComponent = () => {
     } finally {
       setIsSubmitting(false);
     }
-    setConfirmDialog({isOpen: false, type: "approve", applicationId: "", applicationName: ""});
+    setConfirmDialog({ isOpen: false, type: "approve", applicationId: "", applicationName: "" });
   };
 
   const handleDeleteApplication = async (id: string | number) => {
@@ -559,7 +533,7 @@ const LeaveApplicationComponent = () => {
     } finally {
       setIsSubmitting(false);
     }
-    setConfirmDialog({isOpen: false, type: "delete", applicationId: "", applicationName: ""});
+    setConfirmDialog({ isOpen: false, type: "delete", applicationId: "", applicationName: "" });
   };
 
   const openConfirmDialog = (
@@ -686,7 +660,7 @@ const LeaveApplicationComponent = () => {
             id={isEdit ? "edit-start_date" : "start_date"}
             type="date"
             value={formData.start_date}
-            onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
             className="focus:ring-orange-500 focus:border-orange-500"
             disabled={isSubmitting}
             min={
@@ -711,7 +685,7 @@ const LeaveApplicationComponent = () => {
             id={isEdit ? "edit-end_date" : "end_date"}
             type="date"
             value={formData.end_date}
-            onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
             className="focus:ring-orange-500 focus:border-orange-500"
             disabled={isSubmitting}
             min={formData.start_date}
@@ -754,11 +728,10 @@ const LeaveApplicationComponent = () => {
             {validations.map((validation, index) => (
               <div
                 key={index}
-                className={`flex items-start gap-2 p-3 rounded-lg ${
-                  validation.type === "error"
-                    ? "bg-red-50 border border-red-200"
-                    : "bg-amber-50 border border-amber-200"
-                }`}
+                className={`flex items-start gap-2 p-3 rounded-lg ${validation.type === "error"
+                  ? "bg-red-50 border border-red-200"
+                  : "bg-amber-50 border border-amber-200"
+                  }`}
               >
                 {validation.type === "error" ? (
                   <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
@@ -766,9 +739,8 @@ const LeaveApplicationComponent = () => {
                   <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                 )}
                 <p
-                  className={`text-sm font-medium ${
-                    validation.type === "error" ? "text-red-800" : "text-amber-800"
-                  }`}
+                  className={`text-sm font-medium ${validation.type === "error" ? "text-red-800" : "text-amber-800"
+                    }`}
                 >
                   {validation.message}
                 </p>
@@ -797,7 +769,7 @@ const LeaveApplicationComponent = () => {
     );
   }
 
-    return (
+  return (
     <div className="flex flex-col w-full min-h-screen bg-white">
       {/* Header */}
       <div className="flex flex-col gap-6 p-6">
@@ -822,7 +794,7 @@ const LeaveApplicationComponent = () => {
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
                 <SelectValue placeholder="All Statuses" />
-               
+
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
@@ -836,7 +808,7 @@ const LeaveApplicationComponent = () => {
             <Select value={leaveTypeFilter} onValueChange={setLeaveTypeFilter}>
               <SelectTrigger className="w-full sm:w-[150px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
                 <SelectValue placeholder="All Leave Types" />
-               
+
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Leave Types</SelectItem>
@@ -870,23 +842,18 @@ const LeaveApplicationComponent = () => {
                         Employee *
                       </Label>
                       <EmployeeSearchableSelect
-                        employees={employees}
+
                         value={[formData.employee]}
                         onValueChange={(value) =>
-                          setFormData({...formData, employee: value.toString()})
+                          setFormData({ ...formData, employee: value.toString() })
                         }
-                        disabled={isSubmitting || isLoadingEmployees}
+                        disabled={isSubmitting}
                         placeholder="Search and select employee"
-                        isLoading={isLoadingEmployees}
+
                         showEmployeeId={true}
                         showDepartment={false}
                       />
-                      {!isLoadingEmployees && employees.length === 0 && (
-                        <p className="text-xs text-red-500 mt-1">
-                          No employees found. Please check if employees are registered for this
-                          institution.
-                        </p>
-                      )}
+
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="leave_type" className="text-sm font-medium">
@@ -894,7 +861,7 @@ const LeaveApplicationComponent = () => {
                       </Label>
                       <Select
                         value={formData.leave_type}
-                        onValueChange={(value) => setFormData({...formData, leave_type: value})}
+                        onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
                         disabled={isSubmitting}
                       >
                         <SelectTrigger className="">
@@ -929,7 +896,7 @@ const LeaveApplicationComponent = () => {
                       </Label>
                       <Select
                         value={formData.duration_type}
-                        onValueChange={(value) => setFormData({...formData, duration_type: value})}
+                        onValueChange={(value) => setFormData({ ...formData, duration_type: value })}
                         disabled={isSubmitting}
                       >
                         <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
@@ -951,7 +918,7 @@ const LeaveApplicationComponent = () => {
                       <Textarea
                         id="reason"
                         value={formData.reason}
-                        onChange={(e) => setFormData({...formData, reason: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                         rows={3}
                         className="focus:ring-orange-500 focus:border-orange-500"
                         disabled={isSubmitting}
@@ -964,7 +931,7 @@ const LeaveApplicationComponent = () => {
                       <Textarea
                         id="handover_notes"
                         value={formData.handover_notes}
-                        onChange={(e) => setFormData({...formData, handover_notes: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, handover_notes: e.target.value })}
                         rows={2}
                         placeholder="Work delegation and handover details..."
                         className="focus:ring-orange-500 focus:border-orange-500"
@@ -998,7 +965,6 @@ const LeaveApplicationComponent = () => {
                     onClick={handleAddApplication}
                     disabled={
                       isSubmitting ||
-                      !employees.length ||
                       !leaveTypes.length ||
                       validateLeaveApplication().filter((v) => v.type === "error").length > 0
                     }
@@ -1012,538 +978,536 @@ const LeaveApplicationComponent = () => {
           </div>
         </div>
 
-      {/* Table Content */}
-      <div className="flex-1 pb-6 min-h-0">
-        <PaginatedTableWrapper
-          fetchFirstPage={() => fetchFirstPage(searchTerm)}
-          fetchFromUrl={fetchFromUrl}
-          deps={[selectedInstitution?.id, searchTerm, statusFilter, leaveTypeFilter]}
-        >
-          {({ data, loading, refresh }) => {
-            useEffect(() => {
-              refreshTableRef.current = refresh;
-            }, [refresh]);
+        {/* Table Content */}
+        <div className="flex-1 pb-6 min-h-0">
+          <PaginatedTableWrapper
+            fetchFirstPage={() => fetchFirstPage(searchTerm)}
+            fetchFromUrl={fetchFromUrl}
+            deps={[selectedInstitution?.id, searchTerm, statusFilter, leaveTypeFilter]}
+          >
+            {({ data, loading, refresh }) => {
+              useEffect(() => {
+                refreshTableRef.current = refresh;
+              }, [refresh]);
 
-            if (loading) return <TableSkeleton rows={10} columns={8} />;
+              if (loading) return <TableSkeleton rows={10} columns={8} />;
 
-            if (!data?.results?.length) {
+              if (!data?.results?.length) {
+                return (
+                  <div className="text-center py-12">
+                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No leave applications found</h3>
+                    <p className="text-muted-foreground mb-4">
+                      {searchTerm ? "No leave applications match your search." : "Get started by creating your first leave application."}
+                    </p>
+
+                  </div>
+                );
+              }
+
+              // Apply client-side filtering
+              const filteredResults = data.results.filter((app) => {
+                const matchesStatus = statusFilter === "all" || app.status === statusFilter;
+                const matchesLeaveType = leaveTypeFilter === "all" ||
+                  (typeof app.leave_type === "object" && app.leave_type !== null
+                    ? (app.leave_type as any).id?.toString() === leaveTypeFilter
+                    : app.leave_type?.toString() === leaveTypeFilter);
+                return matchesStatus && matchesLeaveType;
+              });
+
               return (
-                <div className="text-center py-12">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No leave applications found</h3>
-                  <p className="text-muted-foreground mb-4">
-                    {searchTerm ? "No leave applications match your search." : "Get started by creating your first leave application."}
-                  </p>
-                 
+                <div className="rounded-lg border bg-white">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Employee</TableHead>
+                        <TableHead>Leave Type</TableHead>
+                        <TableHead>Start Date</TableHead>
+                        <TableHead>End Date</TableHead>
+                        <TableHead>Duration</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead className="w-[70px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredResults.map((application) => (
+                        <TableRow key={application.id?.toString() || Math.random()}>
+                          <TableCell>
+                            <div className="font-medium text-gray-900">
+                              {getEmployeeName(application.employee)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={`${getCategoryColor((application.leave_type as any)?.category || "annual")} border font-medium`}
+                            >
+                              {getLeaveTypeName(application.leave_type)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm font-medium text-gray-900">
+                              {new Date(application.start_date).toLocaleDateString()}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm font-medium text-gray-900">
+                              {new Date(application.end_date).toLocaleDateString()}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-gray-900">
+                              {DURATION_TYPES.find((d) => d.value === application.duration_type)?.label ||
+                                application.duration_type}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={`${getStatusColor(application.status)} border font-medium flex items-center gap-1 w-fit`}
+                            >
+                              {getStatusIcon(application.status)}
+                              {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="max-w-xs">
+                              <p className="text-sm text-gray-900 line-clamp-2">{application.reason}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {application.status === "pending" && (
+                                  <>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        openConfirmDialog(
+                                          "approve",
+                                          application.id?.toString() || "",
+                                          getEmployeeName(application.employee),
+                                        )
+                                      }
+                                      className="text-green-600"
+                                    >
+                                      <Check className="h-4 w-4 mr-2" />
+                                      Approve
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        openConfirmDialog(
+                                          "reject",
+                                          application.id?.toString() || "",
+                                          getEmployeeName(application.employee),
+                                        )
+                                      }
+                                      className="text-red-600"
+                                    >
+                                      <X className="h-4 w-4 mr-2" />
+                                      Reject
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => handleEditApplication(application)}
+                                    >
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        openConfirmDialog(
+                                          "delete",
+                                          application.id?.toString() || "",
+                                          getEmployeeName(application.employee),
+                                        )
+                                      }
+                                      className="text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                                <DropdownMenuItem
+                                  onClick={() => handleViewApplication(application)}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               );
-            }
-
-            // Apply client-side filtering
-            const filteredResults = data.results.filter((app) => {
-              const matchesStatus = statusFilter === "all" || app.status === statusFilter;
-              const matchesLeaveType = leaveTypeFilter === "all" || 
-                (typeof app.leave_type === "object" && app.leave_type !== null 
-                  ? (app.leave_type as any).id?.toString() === leaveTypeFilter 
-                  : app.leave_type?.toString() === leaveTypeFilter);
-              return matchesStatus && matchesLeaveType;
-            });
-
-            return (
-              <div className="rounded-lg border bg-white">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Employee</TableHead>
-                      <TableHead>Leave Type</TableHead>
-                      <TableHead>Start Date</TableHead>
-                      <TableHead>End Date</TableHead>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead className="w-[70px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredResults.map((application) => (
-                      <TableRow key={application.id?.toString() || Math.random()}>
-                        <TableCell>
-                          <div className="font-medium text-gray-900">
-                            {getEmployeeName(application.employee)}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            className={`${getCategoryColor((application.leave_type as any)?.category || "annual")} border font-medium`}
-                          >
-                            {getLeaveTypeName(application.leave_type)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm font-medium text-gray-900">
-                            {new Date(application.start_date).toLocaleDateString()}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm font-medium text-gray-900">
-                            {new Date(application.end_date).toLocaleDateString()}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-gray-900">
-                            {DURATION_TYPES.find((d) => d.value === application.duration_type)?.label ||
-                              application.duration_type}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            className={`${getStatusColor(application.status)} border font-medium flex items-center gap-1 w-fit`}
-                          >
-                            {getStatusIcon(application.status)}
-                            {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="max-w-xs">
-                            <p className="text-sm text-gray-900 line-clamp-2">{application.reason}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {application.status === "pending" && (
-                                <>
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      openConfirmDialog(
-                                        "approve",
-                                        application.id?.toString() || "",
-                                        getEmployeeName(application.employee),
-                                      )
-                                    }
-                                    className="text-green-600"
-                                  >
-                                    <Check className="h-4 w-4 mr-2" />
-                                    Approve
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      openConfirmDialog(
-                                        "reject",
-                                        application.id?.toString() || "",
-                                        getEmployeeName(application.employee),
-                                      )
-                                    }
-                                    className="text-red-600"
-                                  >
-                                    <X className="h-4 w-4 mr-2" />
-                                    Reject
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleEditApplication(application)}
-                                  >
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      openConfirmDialog(
-                                        "delete",
-                                        application.id?.toString() || "",
-                                        getEmployeeName(application.employee),
-                                      )
-                                    }
-                                    className="text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                              <DropdownMenuItem
-                                onClick={() => handleViewApplication(application)}
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            );
-          }}
-                </PaginatedTableWrapper>
+            }}
+          </PaginatedTableWrapper>
+        </div>
       </div>
-    </div>
 
-    {/* View Application Dialog */}
-        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-semibold">Leave Application Details</DialogTitle>
-              <DialogDescription>
-                Complete information about the leave application.
-              </DialogDescription>
-            </DialogHeader>
-            {viewingApplication && (
-              <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Employee</Label>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {getEmployeeName(viewingApplication.employee)}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Leave Type</Label>
-                    <Badge
-                      className={`${getCategoryColor(
-                        typeof viewingApplication.leave_type === "object" &&
-                          viewingApplication.leave_type !== null
-                          ? (viewingApplication.leave_type as ILeaveType).category
-                          : leaveTypes.find((type) => type.id === viewingApplication.leave_type)
-                              ?.category || "annual",
-                      )} border font-medium mt-1`}
-                    >
-                      {getLeaveTypeName(viewingApplication.leave_type)}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Start Date</Label>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {new Date(viewingApplication.start_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">End Date</Label>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {new Date(viewingApplication.end_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Duration Type</Label>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {DURATION_TYPES.find((d) => d.value === viewingApplication.duration_type)
-                        ?.label || viewingApplication.duration_type}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Total Days</Label>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {calculateDaysBetween(
-                        viewingApplication.start_date,
-                        viewingApplication.end_date,
-                      ) || "N/A"}
-                    </p>
-                  </div>
+      {/* View Application Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">Leave Application Details</DialogTitle>
+            <DialogDescription>
+              Complete information about the leave application.
+            </DialogDescription>
+          </DialogHeader>
+          {viewingApplication && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Employee</Label>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {getEmployeeName(viewingApplication.employee)}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-600">Status</Label>
+                  <Label className="text-sm font-medium text-gray-600">Leave Type</Label>
                   <Badge
-                    className={`${getStatusColor(viewingApplication.status)} border font-medium flex items-center gap-1 w-fit mt-1`}
+                    className={`${getCategoryColor(
+                      typeof viewingApplication.leave_type === "object" &&
+                        viewingApplication.leave_type !== null
+                        ? (viewingApplication.leave_type as ILeaveType).category
+                        : leaveTypes.find((type) => type.id === viewingApplication.leave_type)
+                          ?.category || "annual",
+                    )} border font-medium mt-1`}
                   >
-                    {getStatusIcon(viewingApplication.status)}
-                    {viewingApplication.status.charAt(0).toUpperCase() +
-                      viewingApplication.status.slice(1)}
+                    {getLeaveTypeName(viewingApplication.leave_type)}
                   </Badge>
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-600">Reason</Label>
-                  <p className="text-sm text-gray-900 mt-1">{viewingApplication.reason}</p>
+                  <Label className="text-sm font-medium text-gray-600">Start Date</Label>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {new Date(viewingApplication.start_date).toLocaleDateString()}
+                  </p>
                 </div>
-                {viewingApplication.handover_notes && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Handover Notes</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {viewingApplication.handover_notes}
-                    </p>
-                  </div>
-                )}
-                {viewingApplication?.supporting_document && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Supporting Document</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <FileText className="h-4 w-4 text-orange-600" />
-                      <span className="text-sm text-gray-900">
-                        {renderSupportingDocumentName(viewingApplication.supporting_document)}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-2 text-orange-600 hover:bg-orange-100"
-                        onClick={() =>
-                          handleDownload(
-                            getFileUrl(viewingApplication.supporting_document as string),
-                            getFileName(viewingApplication.supporting_document as string),
-                          )
-                        }
-                      >
-                        <Download className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                {viewingApplication.approved_by && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">
-                      {viewingApplication.status === "approved" ? "Approved by" : "Processed by"}
-                    </Label>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {getApproverName(viewingApplication.approved_by)}
-                    </p>
-                    {viewingApplication.approved_by && (
-                      <p className="text-xs text-gray-500">
-                        {new Date(viewingApplication.approved_by).toLocaleString()}
-                      </p>
-                    )}
-                  </div>
-                )}
-                {viewingApplication.rejection_reason && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Rejection Reason</Label>
-                    <p className="text-sm text-red-800 mt-1">
-                      {viewingApplication.rejection_reason}
-                    </p>
-                  </div>
-                )}
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">End Date</Label>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {new Date(viewingApplication.end_date).toLocaleDateString()}
+                  </p>
+                </div>
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Dialog */}
-        <Dialog
-          open={isEditDialogOpen}
-          onOpenChange={(open) => {
-            setIsEditDialogOpen(open);
-            if (!open) {
-              resetForm();
-            }
-          }}
-        >
-          <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-semibold">Edit Leave Application</DialogTitle>
-              <DialogDescription>Make changes to the leave application.</DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-employee" className="text-sm font-medium">
-                  Employee *
-                </Label>
-                <EmployeeSearchableSelect
-                  employees={employees}
-                  value={[formData.employee]}
-                  onValueChange={(value) => setFormData({...formData, employee: value.toString()})}
-                  disabled={isSubmitting}
-                  placeholder="Search and select employee"
-                  showEmployeeId={true}
-                  showDepartment={false}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Duration Type</Label>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {DURATION_TYPES.find((d) => d.value === viewingApplication.duration_type)
+                      ?.label || viewingApplication.duration_type}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Total Days</Label>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {calculateDaysBetween(
+                      viewingApplication.start_date,
+                      viewingApplication.end_date,
+                    ) || "N/A"}
+                  </p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-leave_type" className="text-sm font-medium">
-                  Leave Type *
-                </Label>
-                <Select
-                  value={formData.leave_type}
-                  onValueChange={(value) => setFormData({...formData, leave_type: value})}
-                  disabled={isSubmitting}
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Status</Label>
+                <Badge
+                  className={`${getStatusColor(viewingApplication.status)} border font-medium flex items-center gap-1 w-fit mt-1`}
                 >
-                  <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
-                    <SelectValue placeholder="Select leave type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {leaveTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id.toString()}>
-                        <div className="flex flex-col">
-                          <span>{type.name}</span>
-                          <span className="text-xs text-gray-500">
-                            {type.max_days_per_year} days/year • {type.category}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  {getStatusIcon(viewingApplication.status)}
+                  {viewingApplication.status.charAt(0).toUpperCase() +
+                    viewingApplication.status.slice(1)}
+                </Badge>
               </div>
-
-              {renderDateFields(true)}
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-duration_type" className="text-sm font-medium">
-                  Duration Type
-                </Label>
-                <Select
-                  value={formData.duration_type}
-                  onValueChange={(value) => setFormData({...formData, duration_type: value})}
-                  disabled={isSubmitting}
-                >
-                  <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
-                    <SelectValue placeholder="Select duration type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DURATION_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Reason</Label>
+                <p className="text-sm text-gray-900 mt-1">{viewingApplication.reason}</p>
               </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="edit-reason" className="text-sm font-medium">
-                  Reason *
-                </Label>
-                <Textarea
-                  id="edit-reason"
-                  value={formData.reason}
-                  onChange={(e) => setFormData({...formData, reason: e.target.value})}
-                  rows={3}
-                  className="focus:ring-orange-500 focus:border-orange-500"
-                  disabled={isSubmitting}
-                  placeholder="Enter reason for leave..."
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="edit-handover_notes" className="text-sm font-medium">
-                  Handover Notes
-                </Label>
-                <Textarea
-                  id="edit-handover_notes"
-                  value={formData.handover_notes}
-                  onChange={(e) => setFormData({...formData, handover_notes: e.target.value})}
-                  rows={2}
-                  className="focus:ring-orange-500 focus:border-orange-500"
-                  disabled={isSubmitting}
-                  placeholder="Work delegation and handover details..."
-                />
-              </div>
-              {getSelectedLeaveType()?.requires_document && (
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="edit-supporting_document" className="text-sm font-medium">
-                    Supporting Document {getSelectedLeaveType()?.requires_document ? "*" : ""}
-                  </Label>
-                  <Input
-                    id="edit-supporting_document"
-                    type="file"
-                    onChange={(e) =>
-                      setFormData({...formData, supporting_document: e.target.files?.[0] || null})
-                    }
-                    className="focus:ring-orange-500 focus:border-orange-500"
-                    disabled={isSubmitting}
-                  />
-                  <p className="text-xs text-gray-500">
-                    Upload a new document to replace the existing one (if any)
+              {viewingApplication.handover_notes && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Handover Notes</Label>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {viewingApplication.handover_notes}
                   </p>
                 </div>
               )}
-              {editingApplication?.supporting_document &&
-                getSelectedLeaveType()?.requires_document && (
-                  <div className="md:col-span-2">
-                    <div className="p-2 bg-gray-50 rounded-lg border">
-                      <Label className="text-xs font-medium text-gray-600">Current Document:</Label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <FileText className="h-4 w-4 text-gray-600" />
-                        <span className="text-sm text-gray-700">
-                          {renderSupportingDocumentName(editingApplication.supporting_document)}
+              {viewingApplication?.supporting_document && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Supporting Document</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <FileText className="h-4 w-4 text-orange-600" />
+                    <span className="text-sm text-gray-900">
+                      {renderSupportingDocumentName(viewingApplication.supporting_document)}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-orange-600 hover:bg-orange-100"
+                      onClick={() =>
+                        handleDownload(
+                          getFileUrl(viewingApplication.supporting_document as string),
+                          getFileName(viewingApplication.supporting_document as string),
+                        )
+                      }
+                    >
+                      <Download className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {viewingApplication.approved_by && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">
+                    {viewingApplication.status === "approved" ? "Approved by" : "Processed by"}
+                  </Label>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {getApproverName(viewingApplication.approved_by)}
+                  </p>
+                  {viewingApplication.approved_by && (
+                    <p className="text-xs text-gray-500">
+                      {new Date(viewingApplication.approved_by).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              )}
+              {viewingApplication.rejection_reason && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Rejection Reason</Label>
+                  <p className="text-sm text-red-800 mt-1">
+                    {viewingApplication.rejection_reason}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            resetForm();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">Edit Leave Application</DialogTitle>
+            <DialogDescription>Make changes to the leave application.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-employee" className="text-sm font-medium">
+                Employee *
+              </Label>
+              <EmployeeSearchableSelect
+                value={[formData.employee]}
+                onValueChange={(value) => setFormData({ ...formData, employee: value.toString() })}
+                disabled={isSubmitting}
+                placeholder="Search and select employee"
+                showEmployeeId={true}
+                showDepartment={false}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-leave_type" className="text-sm font-medium">
+                Leave Type *
+              </Label>
+              <Select
+                value={formData.leave_type}
+                onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
+                  <SelectValue placeholder="Select leave type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {leaveTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id.toString()}>
+                      <div className="flex flex-col">
+                        <span>{type.name}</span>
+                        <span className="text-xs text-gray-500">
+                          {type.max_days_per_year} days/year • {type.category}
                         </span>
                       </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {renderDateFields(true)}
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-duration_type" className="text-sm font-medium">
+                Duration Type
+              </Label>
+              <Select
+                value={formData.duration_type}
+                onValueChange={(value) => setFormData({ ...formData, duration_type: value })}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
+                  <SelectValue placeholder="Select duration type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DURATION_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="edit-reason" className="text-sm font-medium">
+                Reason *
+              </Label>
+              <Textarea
+                id="edit-reason"
+                value={formData.reason}
+                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                rows={3}
+                className="focus:ring-orange-500 focus:border-orange-500"
+                disabled={isSubmitting}
+                placeholder="Enter reason for leave..."
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="edit-handover_notes" className="text-sm font-medium">
+                Handover Notes
+              </Label>
+              <Textarea
+                id="edit-handover_notes"
+                value={formData.handover_notes}
+                onChange={(e) => setFormData({ ...formData, handover_notes: e.target.value })}
+                rows={2}
+                className="focus:ring-orange-500 focus:border-orange-500"
+                disabled={isSubmitting}
+                placeholder="Work delegation and handover details..."
+              />
+            </div>
+            {getSelectedLeaveType()?.requires_document && (
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="edit-supporting_document" className="text-sm font-medium">
+                  Supporting Document {getSelectedLeaveType()?.requires_document ? "*" : ""}
+                </Label>
+                <Input
+                  id="edit-supporting_document"
+                  type="file"
+                  onChange={(e) =>
+                    setFormData({ ...formData, supporting_document: e.target.files?.[0] || null })
+                  }
+                  className="focus:ring-orange-500 focus:border-orange-500"
+                  disabled={isSubmitting}
+                />
+                <p className="text-xs text-gray-500">
+                  Upload a new document to replace the existing one (if any)
+                </p>
+              </div>
+            )}
+            {editingApplication?.supporting_document &&
+              getSelectedLeaveType()?.requires_document && (
+                <div className="md:col-span-2">
+                  <div className="p-2 bg-gray-50 rounded-lg border">
+                    <Label className="text-xs font-medium text-gray-600">Current Document:</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <FileText className="h-4 w-4 text-gray-600" />
+                      <span className="text-sm text-gray-700">
+                        {renderSupportingDocumentName(editingApplication.supporting_document)}
+                      </span>
                     </div>
                   </div>
-                )}
-            </div>
+                </div>
+              )}
+          </div>
+          <Button
+            onClick={handleUpdateApplication}
+            disabled={
+              isSubmitting ||
+              validateLeaveApplication().filter((v) => v.type === "error").length > 0
+            }
+          >
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting ? "Updating..." : "Update Application"}
+          </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={confirmDialog.isOpen}
+        onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, isOpen: open })}
+      >
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">
+              {confirmDialog.type === "approve" && "Approve Application"}
+              {confirmDialog.type === "reject" && "Reject Application"}
+              {confirmDialog.type === "delete" && "Delete Application"}
+            </DialogTitle>
+            <DialogDescription>
+              {confirmDialog.type === "approve" &&
+                `Are you sure you want to approve ${confirmDialog.applicationName}'s leave application? This action cannot be undone.`}
+              {confirmDialog.type === "reject" &&
+                `Are you sure you want to reject ${confirmDialog.applicationName}'s leave application? This action cannot be undone.`}
+              {confirmDialog.type === "delete" &&
+                `Are you sure you want to delete ${confirmDialog.applicationName}'s leave application? Only pending applications can be deleted.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-6">
             <Button
-              onClick={handleUpdateApplication}
-              disabled={
-                isSubmitting ||
-                validateLeaveApplication().filter((v) => v.type === "error").length > 0
+              variant="outline"
+              onClick={() =>
+                setConfirmDialog({
+                  isOpen: false,
+                  type: "approve",
+                  applicationId: "",
+                  applicationName: "",
+                })
               }
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              className={`${confirmDialog.type === "approve"
+                ? "bg-green-600 hover:bg-green-700"
+                : confirmDialog.type === "reject"
+                  ? "bg-orange-600 hover:bg-orange-700"
+                  : "bg-red-600 hover:bg-red-700"
+                } text-white`}
+              onClick={handleConfirmAction}
+              disabled={isSubmitting}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSubmitting ? "Updating..." : "Update Application"}
+              {isSubmitting ? (
+                "Processing..."
+              ) : (
+                <>
+                  {confirmDialog.type === "approve" && "Yes, Approve"}
+                  {confirmDialog.type === "reject" && "Yes, Reject"}
+                  {confirmDialog.type === "delete" && "Yes, Delete"}
+                </>
+              )}
             </Button>
-          </DialogContent>
-        </Dialog>
-
-        {/* Confirmation Dialog */}
-        <Dialog
-          open={confirmDialog.isOpen}
-          onOpenChange={(open) => setConfirmDialog({...confirmDialog, isOpen: open})}
-        >
-          <DialogContent className="sm:max-w-[400px]">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-semibold">
-                {confirmDialog.type === "approve" && "Approve Application"}
-                {confirmDialog.type === "reject" && "Reject Application"}
-                {confirmDialog.type === "delete" && "Delete Application"}
-              </DialogTitle>
-              <DialogDescription>
-                {confirmDialog.type === "approve" &&
-                  `Are you sure you want to approve ${confirmDialog.applicationName}'s leave application? This action cannot be undone.`}
-                {confirmDialog.type === "reject" &&
-                  `Are you sure you want to reject ${confirmDialog.applicationName}'s leave application? This action cannot be undone.`}
-                {confirmDialog.type === "delete" &&
-                  `Are you sure you want to delete ${confirmDialog.applicationName}'s leave application? Only pending applications can be deleted.`}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end gap-3 mt-6">
-              <Button
-                variant="outline"
-                onClick={() =>
-                  setConfirmDialog({
-                    isOpen: false,
-                    type: "approve",
-                    applicationId: "",
-                    applicationName: "",
-                  })
-                }
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                className={`${
-                  confirmDialog.type === "approve"
-                    ? "bg-green-600 hover:bg-green-700"
-                    : confirmDialog.type === "reject"
-                      ? "bg-orange-600 hover:bg-orange-700"
-                      : "bg-red-600 hover:bg-red-700"
-                } text-white`}
-                onClick={handleConfirmAction}
-                disabled={isSubmitting}
-              >
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? (
-                  "Processing..."
-                ) : (
-                  <>
-                    {confirmDialog.type === "approve" && "Yes, Approve"}
-                    {confirmDialog.type === "reject" && "Yes, Reject"}
-                    {confirmDialog.type === "delete" && "Yes, Delete"}
-                  </>
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

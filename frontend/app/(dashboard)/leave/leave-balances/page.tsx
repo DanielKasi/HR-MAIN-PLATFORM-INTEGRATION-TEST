@@ -50,7 +50,7 @@ import {
 import { toast } from "sonner";
 import {
   LeaveBalancesAPI,
-  getAllEmployees,
+  getPaginatedEmployees,
   getLeaveTypes,
 } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
@@ -157,7 +157,7 @@ export default function LeaveBalanceComponent() {
 
       try {
         const [employeesData, leaveTypesData] = await Promise.all([
-          getAllEmployees({ institutionId: selectedInstitution.id }),
+          getPaginatedEmployees({ institutionId: selectedInstitution.id }),
           getLeaveTypes({ institutionId: selectedInstitution.id }),
         ]);
 
@@ -186,16 +186,16 @@ export default function LeaveBalanceComponent() {
     [employees]
   );
 
- const getEmployeeCode = useCallback(
-  (employee: any) => {
-    if (typeof employee === "object" && employee?.employee_id !== undefined) {
-      return employee.employee_id || "N/A";  // return here
-    }
-    const emp = employees.find((emp) => emp.id === employee);
-    return emp?.employee_id || "N/A";        // and here
-  },
-  [employees]
-);
+  const getEmployeeCode = useCallback(
+    (employee: any) => {
+      if (typeof employee === "object" && employee?.employee_id !== undefined) {
+        return employee.employee_id || "N/A";  // return here
+      }
+      const emp = employees.find((emp) => emp.id === employee);
+      return emp?.employee_id || "N/A";        // and here
+    },
+    [employees]
+  );
 
 
   const getLeaveTypeName = useCallback(
@@ -262,16 +262,16 @@ export default function LeaveBalanceComponent() {
 
     setIsSubmitting(true);
     try {
-     const leaveBalanceData: Partial<ILeaveBalance> = {
-      employee: parseInt(formData.employee),
-      leave_type: parseInt(formData.leave_type),
-      year: parseInt(formData.year),
-      institution: selectedInstitution.id,
-      allocated_days: (parseFloat(formData.allocated_days) || 0).toString(),
-      used_days: (parseFloat(formData.used_days) || 0).toString(),
-      pending_days: (parseFloat(formData.pending_days) || 0).toString(),
-      carried_forward_days: (parseFloat(formData.carried_forward_days) || 0).toString(),
-    };
+      const leaveBalanceData: Partial<ILeaveBalance> = {
+        employee: parseInt(formData.employee),
+        leave_type: parseInt(formData.leave_type),
+        year: parseInt(formData.year),
+        institution: selectedInstitution.id,
+        allocated_days: (parseFloat(formData.allocated_days) || 0).toString(),
+        used_days: (parseFloat(formData.used_days) || 0).toString(),
+        pending_days: (parseFloat(formData.pending_days) || 0).toString(),
+        carried_forward_days: (parseFloat(formData.carried_forward_days) || 0).toString(),
+      };
 
       if (editingItem) {
         const updatedBalance = await LeaveBalancesAPI.update({
@@ -401,8 +401,8 @@ export default function LeaveBalanceComponent() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Leave Balances</h1>
           </div>
-          
-      </div>
+
+        </div>
 
         {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-center justify-between">
@@ -452,171 +452,171 @@ export default function LeaveBalanceComponent() {
                     Add Leave Balance
                   </Button>
                 </DialogTrigger>
-              <DialogContent className="sm:max-w-[650px] rounded-2xl border-0 shadow-2xl">
-                <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
-                  <DialogTitle className="text-2xl font-bold text-gray-900">
-                    Add Leave Balance
-                  </DialogTitle>
-                  <DialogDescription className="text-gray-600 text-base">
-                    Create a new leave balance record for an employee.
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="employee" className="text-sm font-semibold text-gray-800">
-                      Employee *
-                    </Label>
-                    <Select
-                      value={formData.employee}
-                      onValueChange={(value) => setFormData({ ...formData, employee: value })}
-                      disabled={isSubmitting}
-                    >
-                      <SelectTrigger className="h-12 rounded-xl">
-                        <SelectValue placeholder="Select employee" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {employees.map((employee) => (
-                          <SelectItem key={employee.id} value={employee.id.toString()}>
-                            {employee.user?.fullname || "Unknown Employee"} ({employee.employee_id || "N/A"})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="leave_type" className="text-sm font-semibold text-gray-800">
-                      Leave Type *
-                    </Label>
-                    <Select
-                      value={formData.leave_type}
-                      onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
-                      disabled={isSubmitting}
-                    >
-                      <SelectTrigger className="h-12 rounded-xl">
-                        <SelectValue placeholder="Select leave type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {leaveTypes.map((type) => (
-                          <SelectItem key={type.id} value={type.id.toString()}>
-                            {type.name} ({type.max_days_per_year} days/year)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="year" className="text-sm font-semibold text-gray-800">
-                      Year *
-                    </Label>
-                    <Select
-                      value={formData.year}
-                      onValueChange={(value) => setFormData({ ...formData, year: value })}
-                      disabled={isSubmitting}
-                    >
-                      <SelectTrigger className="h-12 rounded-xl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableYears.map((year) => (
-                          <SelectItem key={year} value={year.toString()}>
-                            {year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="allocated_days" className="text-sm font-semibold text-gray-800">
-                      Allocated Days
-                    </Label>
-                    <Input
-                      id="allocated_days"
-                      type="number"
-                      step="0.01"
-                      value={formData.allocated_days}
-                      onChange={(e) => setFormData({ ...formData, allocated_days: e.target.value })}
-                      placeholder="e.g., 21"
-                      disabled={isSubmitting}
-                      className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="used_days" className="text-sm font-semibold text-gray-800">
-                      Used Days
-                    </Label>
-                    <Input
-                      id="used_days"
-                      type="number"
-                      step="0.01"
-                      value={formData.used_days}
-                      onChange={(e) => setFormData({ ...formData, used_days: e.target.value })}
-                      placeholder="e.g., 5"
-                      disabled={isSubmitting}
-                      className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="pending_days" className="text-sm font-semibold text-gray-800">
-                      Pending Days
-                    </Label>
-                    <Input
-                      id="pending_days"
-                      type="number"
-                      step="0.01"
-                      value={formData.pending_days}
-                      onChange={(e) => setFormData({ ...formData, pending_days: e.target.value })}
-                      placeholder="e.g., 2"
-                      disabled={isSubmitting}
-                      className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="carried_forward_days" className="text-sm font-semibold text-gray-800">
-                      Carried Forward Days
-                    </Label>
-                    <Input
-                      id="carried_forward_days"
-                      type="number"
-                      step="0.01"
-                      value={formData.carried_forward_days}
-                      onChange={(e) => setFormData({ ...formData, carried_forward_days: e.target.value })}
-                      placeholder="e.g., 3"
-                      disabled={isSubmitting}
-                      className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
-                    />
-                  </div>
-                  <div className="bg-gray-50 rounded-xl p-4 md:col-span-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-semibold text-gray-800">Available Days:</span>
-                      <span className="text-lg font-bold text-orange-600">{calculateAvailable(formData)}</span>
+                <DialogContent className="sm:max-w-[650px] rounded-2xl border-0 shadow-2xl">
+                  <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
+                    <DialogTitle className="text-2xl font-bold text-gray-900">
+                      Add Leave Balance
+                    </DialogTitle>
+                    <DialogDescription className="text-gray-600 text-base">
+                      Create a new leave balance record for an employee.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+                    <div className="space-y-3">
+                      <Label htmlFor="employee" className="text-sm font-semibold text-gray-800">
+                        Employee *
+                      </Label>
+                      <Select
+                        value={formData.employee}
+                        onValueChange={(value) => setFormData({ ...formData, employee: value })}
+                        disabled={isSubmitting}
+                      >
+                        <SelectTrigger className="h-12 rounded-xl">
+                          <SelectValue placeholder="Select employee" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {employees.map((employee) => (
+                            <SelectItem key={employee.id} value={employee.id.toString()}>
+                              {employee.user?.fullname || "Unknown Employee"} ({employee.employee_id || "N/A"})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </div>
-                </form>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsAddDialogOpen(false)}
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      "Create Leave Balance"
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </ProtectedComponent>
-        </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="leave_type" className="text-sm font-semibold text-gray-800">
+                        Leave Type *
+                      </Label>
+                      <Select
+                        value={formData.leave_type}
+                        onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
+                        disabled={isSubmitting}
+                      >
+                        <SelectTrigger className="h-12 rounded-xl">
+                          <SelectValue placeholder="Select leave type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {leaveTypes.map((type) => (
+                            <SelectItem key={type.id} value={type.id.toString()}>
+                              {type.name} ({type.max_days_per_year} days/year)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="year" className="text-sm font-semibold text-gray-800">
+                        Year *
+                      </Label>
+                      <Select
+                        value={formData.year}
+                        onValueChange={(value) => setFormData({ ...formData, year: value })}
+                        disabled={isSubmitting}
+                      >
+                        <SelectTrigger className="h-12 rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableYears.map((year) => (
+                            <SelectItem key={year} value={year.toString()}>
+                              {year}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="allocated_days" className="text-sm font-semibold text-gray-800">
+                        Allocated Days
+                      </Label>
+                      <Input
+                        id="allocated_days"
+                        type="number"
+                        step="0.01"
+                        value={formData.allocated_days}
+                        onChange={(e) => setFormData({ ...formData, allocated_days: e.target.value })}
+                        placeholder="e.g., 21"
+                        disabled={isSubmitting}
+                        className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="used_days" className="text-sm font-semibold text-gray-800">
+                        Used Days
+                      </Label>
+                      <Input
+                        id="used_days"
+                        type="number"
+                        step="0.01"
+                        value={formData.used_days}
+                        onChange={(e) => setFormData({ ...formData, used_days: e.target.value })}
+                        placeholder="e.g., 5"
+                        disabled={isSubmitting}
+                        className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="pending_days" className="text-sm font-semibold text-gray-800">
+                        Pending Days
+                      </Label>
+                      <Input
+                        id="pending_days"
+                        type="number"
+                        step="0.01"
+                        value={formData.pending_days}
+                        onChange={(e) => setFormData({ ...formData, pending_days: e.target.value })}
+                        placeholder="e.g., 2"
+                        disabled={isSubmitting}
+                        className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="carried_forward_days" className="text-sm font-semibold text-gray-800">
+                        Carried Forward Days
+                      </Label>
+                      <Input
+                        id="carried_forward_days"
+                        type="number"
+                        step="0.01"
+                        value={formData.carried_forward_days}
+                        onChange={(e) => setFormData({ ...formData, carried_forward_days: e.target.value })}
+                        placeholder="e.g., 3"
+                        disabled={isSubmitting}
+                        className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                      />
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-4 md:col-span-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-semibold text-gray-800">Available Days:</span>
+                        <span className="text-lg font-bold text-orange-600">{calculateAvailable(formData)}</span>
+                      </div>
+                    </div>
+                  </form>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsAddDialogOpen(false)}
+                      disabled={isSubmitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        "Create Leave Balance"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </ProtectedComponent>
+          </div>
         </div>
       </div>
 
@@ -718,22 +718,20 @@ export default function LeaveBalanceComponent() {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div
-                              className={`h-8 w-8 rounded-full ${
-                                group.status === "good"
+                              className={`h-8 w-8 rounded-full ${group.status === "good"
                                   ? "bg-green-50"
                                   : group.status === "low"
-                                  ? "bg-yellow-50"
-                                  : "bg-red-50"
-                              } flex items-center justify-center`}
+                                    ? "bg-yellow-50"
+                                    : "bg-red-50"
+                                } flex items-center justify-center`}
                             >
                               <User
-                                className={`h-4 w-4 ${
-                                  group.status === "good"
+                                className={`h-4 w-4 ${group.status === "good"
                                     ? "text-green-600"
                                     : group.status === "low"
-                                    ? "text-yellow-600"
-                                    : "text-red-600"
-                                }`}
+                                      ? "text-yellow-600"
+                                      : "text-red-600"
+                                  }`}
                               />
                             </div>
                             <div>
@@ -748,13 +746,12 @@ export default function LeaveBalanceComponent() {
                           </Badge>
                         </TableCell>
                         <TableCell
-                          className={`text-center font-bold text-lg ${
-                            group.status === "overused"
+                          className={`text-center font-bold text-lg ${group.status === "overused"
                               ? "text-red-600"
                               : group.status === "low"
-                              ? "text-yellow-600"
-                              : "text-green-600"
-                          }`}
+                                ? "text-yellow-600"
+                                : "text-green-600"
+                            }`}
                         >
                           {group.totalAvailable}
                         </TableCell>
@@ -981,7 +978,7 @@ export default function LeaveBalanceComponent() {
               <Button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                
+
               >
                 {isSubmitting ? (
                   <>

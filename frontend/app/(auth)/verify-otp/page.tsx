@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import apiRequest from "@/lib/apiRequest";
-import { handleApiError } from "@/lib/apiErrorHandler";
+import { Icon } from "@iconify/react";
 import { showErrorToast } from "@/lib/utils";
 
 export default function VerifyOTPPage() {
@@ -103,7 +103,9 @@ export default function VerifyOTPPage() {
     }
   };
 
-  const handleChangeEmail = async () => {
+  const handleChangeEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!emailValue || !newEmail) {
       setErrorMessage("Please enter a new email address");
       return;
@@ -124,6 +126,7 @@ export default function VerifyOTPPage() {
         setIsEditingEmail(false);
         setOTP(Array(6).fill(""));
         toast.success(`OTP sent to new email: ${newEmail}`);
+        router.push(`/verify-otp?email=${encodeURIComponent(newEmail)}`)
       }
     } catch (error: any) {
       showErrorToast({ error, defaultMessage: "Failed to change email and resend OTP" });
@@ -140,55 +143,60 @@ export default function VerifyOTPPage() {
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-muted/40">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md border-none md:border-1 shadow-none md:shadow-none">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-2">
-            <ShoppingCart className="h-10 w-10 text-primary" />
+            <Icon icon="hugeicons:user-check-01" className="!w-10 !h-10 text-primary" />
           </div>
           <CardTitle className="text-2xl text-center">Verify Your Account</CardTitle>
-          <p className="text-center text-sm text-muted-foreground">
+          <div className="py-4">
             {isEditingEmail ? (
-              <>
-                Enter new email to receive OTP
+              <form onSubmit={handleChangeEmail} className="flex flex-col gap-4">
+                <p className="text-base text-center w-full">Enter new email to receive OTP</p>
                 <Input
-                  className="mt-2 w-3/4 mx-auto"
+                  className="h-12 rounded-xl"
                   placeholder="new@example.com"
                   type="email"
+                  required
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                 />
-                <div className="flex justify-center gap-2 mt-2">
+                <div className="flex justify-between gap-4 mt-2">
                   <Button
                     variant="outline"
-                    size="sm"
+                    type="button"
+                    className="h-12 rounded-xl"
                     onClick={() => setIsEditingEmail(false)}
                     disabled={isSubmitting}
                   >
                     Cancel
                   </Button>
                   <Button
-                    size="sm"
-                    onClick={handleChangeEmail}
+                    type="submit"
+                    className="h-12 rounded-xl"
                     disabled={isSubmitting || !newEmail}
                   >
                     {isSubmitting ? "Sending..." : "Send OTP to New Email"}
                   </Button>
                 </div>
-              </>
+              </form>
             ) : (
               <>
-                Enter the 6-digit code sent to <b>{emailValue}</b>
-                <Button
-                  className="text-primary text-sm mt-2"
-                  variant="link"
-                  onClick={() => setIsEditingEmail(true)}
-                  disabled={isSubmitting}
-                >
-                  Wrong email? Change it
-                </Button>
+                <p className="w-full text-center">Enter the 6-digit code sent to <b>{emailValue}</b></p>
+                <div className="flex items-center justify-center w-full">
+
+                  <Button
+                    className="text-primary text-sm mt-2"
+                    variant="link"
+                    onClick={() => setIsEditingEmail(true)}
+                    disabled={isSubmitting}
+                  >
+                    Wrong email? Change it
+                  </Button>
+                </div>
               </>
             )}
-          </p>
+          </div>
         </CardHeader>
         {!isEditingEmail && (
           <form onSubmit={handleVerify}>

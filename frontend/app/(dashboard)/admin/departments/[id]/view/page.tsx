@@ -54,7 +54,7 @@ import {
 } from "lucide-react"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { getDepartments, getAllEmployees, getOnBoardings, getJobPositions } from "@/lib/utils"
+import { getDepartments, getPaginatedEmployees, getOnBoardings, getJobPositions } from "@/lib/utils"
 import type { IDepartment, IOnBoarding, IJobPosition, IEmployee } from "@/types/types.utils"
 import { toast } from "sonner"
 import RichTextDisplay from "@/components/common/rich-text-display"
@@ -182,7 +182,7 @@ export default function DepartmentDetailView() {
 
       setDepartment(currentDepartment)
 
-      const allEmployees = await getAllEmployees({ institutionId: selectedInstitution.id })
+      const allEmployees = await getPaginatedEmployees({ institutionId: selectedInstitution.id })
       const employees = allEmployees ?? []
       setAllEmployees(employees.results)
 
@@ -390,14 +390,14 @@ export default function DepartmentDetailView() {
         <div className="flex items-center gap-4">
           <div className="h-6 w-px bg-border" />
           <div className="flex items-center gap-3">
-                {/* Header */}
-              <Button
-                variant="ghost"
-                onClick={() => router.push("/admin/departments")}
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground rounded-full aspect-square"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
+            {/* Header */}
+            <Button
+              variant="ghost"
+              onClick={() => router.push("/admin/departments")}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground rounded-full aspect-square"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
               <Building2 className="h-5 w-5 text-primary" />
             </div>

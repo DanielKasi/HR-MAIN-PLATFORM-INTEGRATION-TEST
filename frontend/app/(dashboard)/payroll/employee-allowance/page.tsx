@@ -1,26 +1,26 @@
 "use client";
 
-import {useState, useEffect, useRef} from "react";
-import {Plus, MoreVertical, Edit, Trash2, Search, X} from "lucide-react";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Badge} from "@/components/ui/badge";
-import {toast} from "sonner";
-import {useSelector} from "react-redux";
-import {TableSkeleton} from "@/components/common/table-skeleton";
+import { useState, useEffect, useRef } from "react";
+import { Plus, MoreVertical, Edit, Trash2, Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+import { TableSkeleton } from "@/components/common/table-skeleton";
 import {
   getPaginatedEmployeeAllowances,
   getPaginatedEmployeeAllowancesFromUrl,
   deleteEmployeeAllowance,
   getAllowanceTypes,
-  getAllEmployees,
+  getPaginatedEmployees,
 } from "@/lib/utils";
-import type {IEmployeeAllowance, IAllowanceType, IEmployee} from "@/types/types.utils";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import {EmployeeAllowanceFormDialog} from "@/components/employee-allowances/employee-allowance-form-dialog";
+import type { IEmployeeAllowance, IAllowanceType, IEmployee } from "@/types/types.utils";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { EmployeeAllowanceFormDialog } from "@/components/employee-allowances/employee-allowance-form-dialog";
 
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -34,6 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { formatCurrency } from "@/lib/helpers";
 
 export default function EmployeeAllowancesPage() {
   const [allowanceTypes, setAllowanceTypes] = useState<IAllowanceType[]>([]);
@@ -42,11 +43,8 @@ export default function EmployeeAllowancesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all");
-  const [refreshFunction, setRefreshFunction] = useState<(() => void) | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
-  const [employees, setEmployees] = useState<IEmployee[]>([]);
-  const refreshTableRef = useRef<(() => void) | null>(null);
+  const refreshFunctionRef = useRef<(() => void) | null>(null);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
@@ -68,44 +66,15 @@ export default function EmployeeAllowancesPage() {
     fetchAllowanceTypes();
   }, [selectedInstitution?.id]);
 
-  useEffect(() => {
-    fetchEmployees();
-  }, [selectedInstitution]);
 
-  const fetchEmployees = async () => {
-    if (!selectedInstitution?.id) {
-      return;
-    }
-
-    setIsLoadingEmployees(true);
-    try {
-      const fetchedEmployees = await getAllEmployees({institutionId: selectedInstitution.id});
-      setEmployees(fetchedEmployees.results || []);
-    } catch (error: any) {
-      setEmployees([]);
-      toast.error(error?.message || error?.detail || "Failed to load employees");
-    } finally {
-      setIsLoadingEmployees(false);
-      setIsLoading(false);
-    }
-  };
-
-  const getCalculatedAmount = (allowance: IEmployeeAllowance): number => {
-    if (allowance.calculation_method === "percentage" && allowance.employee.salary) {
-      return (
-        (Number(allowance.employee.salary || 0) * Number.parseFloat(allowance.percentage)) / 100
-      );
-    }
-    return Number.parseFloat(allowance.amount) || 0;
-  };
 
   const handleFormSuccess = (allowance: any, isEdit: boolean) => {
     setEditingAllowance(null);
-    if (refreshFunction) {
-      refreshFunction();
+    if (refreshFunctionRef.current) {
+      refreshFunctionRef.current();
     }
     toast.success(isEdit ? "Allowance updated successfully" : "Allowance created successfully")
-    refreshTableRef.current?.();
+    refreshFunctionRef.current?.();
   }
 
   const handleAllowanceTypeCreated = (newType: IAllowanceType) => {
@@ -121,8 +90,8 @@ export default function EmployeeAllowancesPage() {
     try {
       const success = await deleteEmployeeAllowance(id);
       if (success) {
-        if (refreshFunction) {
-          refreshFunction();
+        if (refreshFunctionRef.current) {
+          refreshFunctionRef.current();
         }
         toast.success("Allowance deleted successfully");
       } else {
@@ -146,7 +115,7 @@ export default function EmployeeAllowancesPage() {
     );
   }
 
-    return (
+  return (
     <div className="space-y-6">
       {/* Header and Filters */}
       <div className="bg-white rounded-lg border shadow-sm min-h-screen">
@@ -169,42 +138,42 @@ export default function EmployeeAllowancesPage() {
               </div>
               <div className="flex lg:flex-1 items-center justify-between">
 
-              <div className="flex items-center gap-4">
-                <Select
-                  value={statusFilter}
-                  onValueChange={(value: string) =>
-                    setStatusFilter(value as "all" | "active" | "inactive")
-                  }
-                >
-                  <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
-                    <SelectValue placeholder="All Statuses" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={methodFilter}
-                  onValueChange={(value: string) =>
-                    setMethodFilter(value as "all" | "fixed" | "percentage")
-                  }
-                >
-                  <SelectTrigger className="w-full sm:w-[140px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
-                    <SelectValue placeholder="All Methods" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Methods</SelectItem>
-                    <SelectItem value="fixed">Fixed Amount</SelectItem>
-                    <SelectItem value="percentage">Percentage</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            <Button onClick={openNewAllowanceDialog} disabled={!selectedInstitution.id}>
-              <Plus className="md:mr-2 h-4 w-4" />
-              <span className="">Add Allowance</span>
-            </Button>
+                <div className="flex items-center gap-4">
+                  <Select
+                    value={statusFilter}
+                    onValueChange={(value: string) =>
+                      setStatusFilter(value as "all" | "active" | "inactive")
+                    }
+                  >
+                    <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+                      <SelectValue placeholder="All Statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={methodFilter}
+                    onValueChange={(value: string) =>
+                      setMethodFilter(value as "all" | "fixed" | "percentage")
+                    }
+                  >
+                    <SelectTrigger className="w-full sm:w-[140px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+                      <SelectValue placeholder="All Methods" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Methods</SelectItem>
+                      <SelectItem value="fixed">Fixed Amount</SelectItem>
+                      <SelectItem value="percentage">Percentage</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={openNewAllowanceDialog} disabled={!selectedInstitution.id}>
+                  <Plus className="md:mr-2 h-4 w-4" />
+                  <span className="">Add Allowance</span>
+                </Button>
               </div>
 
             </div>
@@ -225,13 +194,13 @@ export default function EmployeeAllowancesPage() {
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
 
               useEffect(() => {
-                refreshTableRef.current = refresh;
+                refreshFunctionRef.current = refresh;
               }, [refresh]);
-        
-            // setRefreshFunction(refresh)
+
+              // setRefreshFunction(refresh)
               if (loading) {
                 return <TableSkeleton rows={10} columns={8} />;
               }
@@ -304,9 +273,7 @@ export default function EmployeeAllowancesPage() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              {allowance.calculation_method === "percentage"
-                                ? `${allowance.percentage}%`
-                                : `$${Number.parseFloat(allowance.amount).toFixed(2)}`}
+                              {`${formatCurrency(allowance.amount)}`}
                             </TableCell>
                             <TableCell>
                               <Badge
@@ -362,16 +329,16 @@ export default function EmployeeAllowancesPage() {
         </div>
       </div>
 
-        {/* Form Dialog */}
-        <EmployeeAllowanceFormDialog
-          isOpen={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          editingAllowance={editingAllowance}
-          allowanceTypes={allowanceTypes}
-          institutionId={selectedInstitution.id}
-          onSuccess={handleFormSuccess}
-          onAllowanceTypeCreated={handleAllowanceTypeCreated}
-        />
-      </div>
+      {/* Form Dialog */}
+      <EmployeeAllowanceFormDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        editingAllowance={editingAllowance}
+        allowanceTypes={allowanceTypes}
+        institutionId={selectedInstitution.id}
+        onSuccess={handleFormSuccess}
+        onAllowanceTypeCreated={handleAllowanceTypeCreated}
+      />
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import  React, { useState, useEffect, use } from "react"
+import React, { useState, useEffect, use } from "react"
 import { useSelector } from "react-redux"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -169,7 +169,7 @@ const recalculateStageCandidateCounts = (
     const currentStage = interview.interview_stage;
 
     if (!candidateLatestStage.has(candidateId) ||
-        candidateLatestStage.get(candidateId)! < currentStage) {
+      candidateLatestStage.get(candidateId)! < currentStage) {
       candidateLatestStage.set(candidateId, currentStage);
     }
   });
@@ -255,8 +255,8 @@ const buildCandidateHistory = (
     const ratings = interview_history.filter(h => h.rating && h.rating > 0);
     const overall_rating = ratings.length > 0
       ? Math.round(
-          (ratings.reduce((sum, h) => sum + (h.rating || 0), 0) / ratings.length) * 10
-        ) / 10
+        (ratings.reduce((sum, h) => sum + (h.rating || 0), 0) / ratings.length) * 10
+      ) / 10
       : 0;
 
     // Completion rate
@@ -613,11 +613,10 @@ const CandidateHistoryDialog = ({
                           <div className="flex items-center gap-2">
                             <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                               <div
-                                className={`h-full rounded-full ${
-                                  entry.rating! >= 8 ? 'bg-green-500' :
+                                className={`h-full rounded-full ${entry.rating! >= 8 ? 'bg-green-500' :
                                   entry.rating! >= 6 ? 'bg-yellow-500' :
-                                  entry.rating! >= 4 ? 'bg-orange-500' : 'bg-red-500'
-                                }`}
+                                    entry.rating! >= 4 ? 'bg-orange-500' : 'bg-red-500'
+                                  }`}
                                 style={{ width: `${(entry.rating! / 10) * 100}%` }}
                               />
                             </div>
@@ -858,24 +857,24 @@ const FeedbackDialog = ({
                 </Button>
 
                 {nextStage && (
-  <Button
-    onClick={handleScheduleAndMove}
-    disabled={isSaving}
-    className="bg-green-600 hover:bg-green-700"
-  >
-    {isSaving && action === 'schedule' ? (
-      <>
-        <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-        Processing...
-      </>
-    ) : (
-      <>
-        <Calendar className="h-4 w-4 mr-2" />
-        Schedule & Move to {nextStage.name}
-      </>
-    )}
-  </Button>
-)}
+                  <Button
+                    onClick={handleScheduleAndMove}
+                    disabled={isSaving}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {isSaving && action === 'schedule' ? (
+                      <>
+                        <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Schedule & Move to {nextStage.name}
+                      </>
+                    )}
+                  </Button>
+                )}
 
               </div>
             </div>
@@ -1122,7 +1121,6 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
   const [jobPositionAdvert, setJobPositionAdvert] = useState<JobPositionAdvert | null>(null)
   const [processedStages, setProcessedStages] = useState<ProcessedStage[]>([])
   const [interviews, setInterviews] = useState<IInterview[]>([])
-  const [employees, setEmployees] = useState<IEmployee[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -1166,44 +1164,44 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
     ) : []
 
   // Helper functions for candidate validation
- const canCandidateBeSelected = (candidate: Candidate | CandidateWithHistory): boolean => {
-  // Cannot select cancelled candidates
-  if (candidate.interview_status === 'cancelled') {
-    return false;
+  const canCandidateBeSelected = (candidate: Candidate | CandidateWithHistory): boolean => {
+    // Cannot select cancelled candidates
+    if (candidate.interview_status === 'cancelled') {
+      return false;
+    }
+
+    // Only select candidates who DON'T have feedback yet (need action)
+    return !(candidate.feedback && candidate.rating && candidate.rating > 0) && !isCandidateAlreadyOnboarded(candidate)
   }
 
-  // Only select candidates who DON'T have feedback yet (need action)
-  return !(candidate.feedback && candidate.rating && candidate.rating > 0) && !isCandidateAlreadyOnboarded(candidate)
-}
+  const canCandidateBeMoved = (candidate: Candidate): boolean => {
+    // Cannot move cancelled candidates
+    if (candidate.interview_status === 'cancelled') {
+      return false;
+    }
 
-const canCandidateBeMoved = (candidate: Candidate): boolean => {
-  // Cannot move cancelled candidates
-  if (candidate.interview_status === 'cancelled') {
-    return false;
+    // Can only be moved if they have feedback and rating > 0 and interview status is still scheduled
+    return !!(candidate.feedback && candidate.rating && candidate.rating > 0 && candidate.interview_status === 'scheduled')
   }
 
-  // Can only be moved if they have feedback and rating > 0 and interview status is still scheduled
-  return !!(candidate.feedback && candidate.rating && candidate.rating > 0 && candidate.interview_status === 'scheduled')
-}
-
-const canCandidateBeOnboarded = (candidate: Candidate): boolean => {
-  // Cannot onboard cancelled candidates
-  if (candidate.interview_status === 'cancelled') {
-    return false;
+  const canCandidateBeOnboarded = (candidate: Candidate): boolean => {
+    // Cannot onboard cancelled candidates
+    if (candidate.interview_status === 'cancelled') {
+      return false;
+    }
+    // Can onboard if they have feedback, rating, and interview status is scheduled
+    return !!(candidate.feedback && candidate.rating && candidate.rating > 0 && candidate.interview_status === 'scheduled')
   }
-  // Can onboard if they have feedback, rating, and interview status is scheduled
-  return !!(candidate.feedback && candidate.rating && candidate.rating > 0 && candidate.interview_status === 'scheduled')
-}
 
-const isCandidateAlreadyOnboarded = (candidate: Candidate): boolean => {
-  // Check INTERVIEW status for completion
-  return candidate.interview_status === 'completed'
-}
+  const isCandidateAlreadyOnboarded = (candidate: Candidate): boolean => {
+    // Check INTERVIEW status for completion
+    return candidate.interview_status === 'completed'
+  }
 
-const isCandidateRejected = (candidate: Candidate | CandidateWithHistory): boolean => {
-  // Check INTERVIEW status for cancellation
-  return candidate.interview_status === 'cancelled'
-}
+  const isCandidateRejected = (candidate: Candidate | CandidateWithHistory): boolean => {
+    // Check INTERVIEW status for cancellation
+    return candidate.interview_status === 'cancelled'
+  }
   const selectableCandidates = filteredCandidates.filter(canCandidateBeSelected)
 
   // Filter candidates for bulk actions
@@ -1263,20 +1261,9 @@ const isCandidateRejected = (candidate: Candidate | CandidateWithHistory): boole
       setJobPositionAdvert(data as JobPositionAdvert)
 
       if (selectedInstitution?.id) {
-        const [fetchedInterviews, fetchedEmployees] = await Promise.all([
-          getInterviews({ institutionId: selectedInstitution.id }),
-          fetchEmployees({ institutionId: selectedInstitution.id })
-        ])
+        const fetchedInterviews = await getInterviews({ institutionId: selectedInstitution.id })
 
         setInterviews(fetchedInterviews || [])
-
-        let employeesArray: IEmployee[] = []
-        if (fetchedEmployees && 'results' in fetchedEmployees && Array.isArray(fetchedEmployees.results)) {
-          employeesArray = fetchedEmployees.results
-        } else if (Array.isArray(fetchedEmployees)) {
-          employeesArray = fetchedEmployees
-        }
-        setEmployees(employeesArray)
       }
     } catch (err) {
       setError(`Failed to load interview pipeline: ${err instanceof Error ? err.message : 'Unknown error'}`)
@@ -1286,89 +1273,89 @@ const isCandidateRejected = (candidate: Candidate | CandidateWithHistory): boole
   }
 
 
-useEffect(() => {
-  if (interviews.length >= 0 && jobPositionAdvert?.interview_stages) {
-    const interviewStages = jobPositionAdvert.interview_stages as unknown as IInterviewStage[]
+  useEffect(() => {
+    if (interviews.length >= 0 && jobPositionAdvert?.interview_stages) {
+      const interviewStages = jobPositionAdvert.interview_stages as unknown as IInterviewStage[]
 
-    // Filter interviews for this specific job position
-    const jobInterviews = interviews.filter(interview =>
-      interview.job_position_application_details?.job_position_advert === parseInt(resolvedParams.id)
-    );
+      // Filter interviews for this specific job position
+      const jobInterviews = interviews.filter(interview =>
+        interview.job_position_application_details?.job_position_advert === parseInt(resolvedParams.id)
+      );
 
-    const processed: ProcessedStage[] = interviewStages
-      .sort((a, b) => a.level - b.level)
-      .map((stage, index) => {
-        const colors = getStageColors(index)
+      const processed: ProcessedStage[] = interviewStages
+        .sort((a, b) => a.level - b.level)
+        .map((stage, index) => {
+          const colors = getStageColors(index)
 
-        // Find interviews for this specific stage
-        const stageInterviews = jobInterviews.filter(
-          interview => interview.interview_stage === stage.id
-        );
+          // Find interviews for this specific stage
+          const stageInterviews = jobInterviews.filter(
+            interview => interview.interview_stage === stage.id
+          );
 
-        // Convert interviews to candidates format - properly typed as Candidate[]
-        const candidates: Candidate[] = stageInterviews.map(interview => ({
-          id: interview.job_position_application,
-          job_position_advert: interview.job_position_application_details?.job_position_advert || parseInt(resolvedParams.id),
-          job_position_advert_job_details: interview.job_position_application_details?.job_position_advert_job_details || {
-            name: '',
-            description: '',
-            job_posted_date: ''
-          },
-          applicant_name: interview.job_position_application_details?.applicant_name || 'Unknown',
-          applicant_email: interview.job_position_application_details?.applicant_email || '',
-          applicant_phone: interview.job_position_application_details?.applicant_phone || '',
-          resume: interview.job_position_application_details?.resume || '',
-          cover_letter: interview.job_position_application_details?.cover_letter || '',
-          application_date: interview.job_position_application_details?.application_date || '',
-          status: interview.job_position_application_details?.status || '',
-          gender: interview.job_position_application_details?.gender || '',
-          state: interview.job_position_application_details?.state || '',
-          address: interview.job_position_application_details?.address || '',
-          country: interview.job_position_application_details?.country || '',
-          source: interview.job_position_application_details?.source || '',
-          positions: interview.job_position_application_details?.positions || 0,
-          // Interview-specific fields
-          feedback: interview.feedback || undefined,
-          rating: interview.rating || undefined,
-          interview_date: interview.interview_date,
-          interview_time: interview.interview_time,
-          location: interview.location,
-          interview_id: interview.id,
-          interview: interview,
-          interview_status: interview.status,
-        }));
+          // Convert interviews to candidates format - properly typed as Candidate[]
+          const candidates: Candidate[] = stageInterviews.map(interview => ({
+            id: interview.job_position_application,
+            job_position_advert: interview.job_position_application_details?.job_position_advert || parseInt(resolvedParams.id),
+            job_position_advert_job_details: interview.job_position_application_details?.job_position_advert_job_details || {
+              name: '',
+              description: '',
+              job_posted_date: ''
+            },
+            applicant_name: interview.job_position_application_details?.applicant_name || 'Unknown',
+            applicant_email: interview.job_position_application_details?.applicant_email || '',
+            applicant_phone: interview.job_position_application_details?.applicant_phone || '',
+            resume: interview.job_position_application_details?.resume || '',
+            cover_letter: interview.job_position_application_details?.cover_letter || '',
+            application_date: interview.job_position_application_details?.application_date || '',
+            status: interview.job_position_application_details?.status || '',
+            gender: interview.job_position_application_details?.gender || '',
+            state: interview.job_position_application_details?.state || '',
+            address: interview.job_position_application_details?.address || '',
+            country: interview.job_position_application_details?.country || '',
+            source: interview.job_position_application_details?.source || '',
+            positions: interview.job_position_application_details?.positions || 0,
+            // Interview-specific fields
+            feedback: interview.feedback || undefined,
+            rating: interview.rating || undefined,
+            interview_date: interview.interview_date,
+            interview_time: interview.interview_time,
+            location: interview.location,
+            interview_id: interview.id,
+            interview: interview,
+            interview_status: interview.status,
+          }));
 
-        // Count active candidates (exclude rejected/cancelled)
-        const activeCandidates = candidates.filter(candidate =>
-          candidate.interview_status !== 'rejected' &&
-          candidate.interview_status !== 'cancelled'
-        );
+          // Count active candidates (exclude rejected/cancelled)
+          const activeCandidates = candidates.filter(candidate =>
+            candidate.interview_status !== 'rejected' &&
+            candidate.interview_status !== 'cancelled'
+          );
 
-        const interviewerNames = stage.interviewers_details && Array.isArray(stage.interviewers_details)
-          ? stage.interviewers_details.map(emp => emp.user?.fullname || 'Unknown').join(', ')
-          : 'Not assigned'
+          const interviewerNames = stage.interviewers_details && Array.isArray(stage.interviewers_details)
+            ? stage.interviewers_details.map(emp => emp.user?.fullname || 'Unknown').join(', ')
+            : 'Not assigned'
 
-        return {
-          id: stage.id.toString(),
-          name: stage.name,
-          count: activeCandidates.length,
-          level: stage.level,
-          interviewer: interviewerNames,
-          icon: getStageIcon(stage.name, index),
-          candidates: candidates, // Now properly typed as Candidate[]
-          color: colors.color,
-          bgColor: colors.bgColor
-        }
-      })
+          return {
+            id: stage.id.toString(),
+            name: stage.name,
+            count: activeCandidates.length,
+            level: stage.level,
+            interviewer: interviewerNames,
+            icon: getStageIcon(stage.name, index),
+            candidates: candidates, // Now properly typed as Candidate[]
+            color: colors.color,
+            bgColor: colors.bgColor
+          }
+        })
 
-    setProcessedStages(processed)
+      setProcessedStages(processed)
 
-    // Set active stage to first stage if none selected
-    if (!activeStageId && processed.length > 0) {
-      setActiveStageId(processed[0].id)
+      // Set active stage to first stage if none selected
+      if (!activeStageId && processed.length > 0) {
+        setActiveStageId(processed[0].id)
+      }
     }
-  }
-}, [interviews, jobPositionAdvert, resolvedParams.id]) // Add resolvedParams.id to dependencies
+  }, [interviews, jobPositionAdvert, resolvedParams.id]) // Add resolvedParams.id to dependencies
 
 
   useEffect(() => {
@@ -1448,143 +1435,143 @@ useEffect(() => {
   }, [isCreateStageDialogOpen, processedStages])
 
   // Candidate management functions
- const handleSelectCandidate = (candidateId: number, checked: boolean) => {
-  const candidate = (viewMode === 'current' ? filteredCandidates : filteredHistoryCandidates).find(c => c.id === candidateId)
+  const handleSelectCandidate = (candidateId: number, checked: boolean) => {
+    const candidate = (viewMode === 'current' ? filteredCandidates : filteredHistoryCandidates).find(c => c.id === candidateId)
 
-  if (checked) {
-    if (!candidate) {
-      toast.error("Candidate not found")
-      return
-    }
-
-    // Check if candidate already has feedback and rating
-    if (candidate.feedback && candidate.rating && candidate.rating > 0) {
-      toast.error("This candidate already has feedback and rating. Use individual actions to onboard or move them.")
-      return
-    }
-
-    // Check if candidate is already onboarded
-    if (isCandidateAlreadyOnboarded(candidate)) {
-      toast.error("This candidate is already onboarded.")
-      return
-    }
-
-    // Only allow selection if candidate can be selected (needs action)
-    if (canCandidateBeSelected(candidate)) {
-      setSelectedCandidates((prev) => [...prev, candidateId])
-    } else {
-      toast.error("This candidate cannot be selected for bulk actions")
-    }
-  } else {
-    setSelectedCandidates((prev) => prev.filter((id) => id !== candidateId))
-  }
-}
-
-
-const handleSelectAll = (checked: boolean) => {
-  const candidatesToSelect = viewMode === 'current' ? selectableCandidates : filteredHistoryCandidates.filter(canCandidateBeSelected)
-
-  if (checked) {
-    if (candidatesToSelect.length === 0) {
-      if (viewMode === 'current') {
-        toast.info("No candidates need feedback. All candidates have already been reviewed or onboarded.")
-      } else {
-        toast.info("No candidates can be selected. All candidates have feedback/rating or are already onboarded.")
+    if (checked) {
+      if (!candidate) {
+        toast.error("Candidate not found")
+        return
       }
-      return
-    }
 
-    // Only select candidates who need action
-    setSelectedCandidates(candidatesToSelect.map((candidate) => candidate.id))
+      // Check if candidate already has feedback and rating
+      if (candidate.feedback && candidate.rating && candidate.rating > 0) {
+        toast.error("This candidate already has feedback and rating. Use individual actions to onboard or move them.")
+        return
+      }
 
-    const totalCandidates = viewMode === 'current' ? filteredCandidates.length : filteredHistoryCandidates.length
-    if (candidatesToSelect.length < totalCandidates) {
-      const skippedCount = totalCandidates - candidatesToSelect.length
-      toast.info(`Selected ${candidatesToSelect.length} candidates needing feedback. ${skippedCount} candidates skipped (already reviewed or onboarded).`)
+      // Check if candidate is already onboarded
+      if (isCandidateAlreadyOnboarded(candidate)) {
+        toast.error("This candidate is already onboarded.")
+        return
+      }
+
+      // Only allow selection if candidate can be selected (needs action)
+      if (canCandidateBeSelected(candidate)) {
+        setSelectedCandidates((prev) => [...prev, candidateId])
+      } else {
+        toast.error("This candidate cannot be selected for bulk actions")
+      }
     } else {
-      toast.success(`Selected ${candidatesToSelect.length} candidates for feedback.`)
+      setSelectedCandidates((prev) => prev.filter((id) => id !== candidateId))
     }
-  } else {
-    setSelectedCandidates([])
   }
-}
 
-const moveToNextStage = async (candidateId: number, targetStageId: number) => {
-  try {
-    const candidate = filteredCandidates.find(c => c.id === candidateId);
 
-    if (!candidate || !candidate.interview_id) {
-      throw new Error(`No interview found for candidate ${candidateId}`);
+  const handleSelectAll = (checked: boolean) => {
+    const candidatesToSelect = viewMode === 'current' ? selectableCandidates : filteredHistoryCandidates.filter(canCandidateBeSelected)
+
+    if (checked) {
+      if (candidatesToSelect.length === 0) {
+        if (viewMode === 'current') {
+          toast.info("No candidates need feedback. All candidates have already been reviewed or onboarded.")
+        } else {
+          toast.info("No candidates can be selected. All candidates have feedback/rating or are already onboarded.")
+        }
+        return
+      }
+
+      // Only select candidates who need action
+      setSelectedCandidates(candidatesToSelect.map((candidate) => candidate.id))
+
+      const totalCandidates = viewMode === 'current' ? filteredCandidates.length : filteredHistoryCandidates.length
+      if (candidatesToSelect.length < totalCandidates) {
+        const skippedCount = totalCandidates - candidatesToSelect.length
+        toast.info(`Selected ${candidatesToSelect.length} candidates needing feedback. ${skippedCount} candidates skipped (already reviewed or onboarded).`)
+      } else {
+        toast.success(`Selected ${candidatesToSelect.length} candidates for feedback.`)
+      }
+    } else {
+      setSelectedCandidates([])
     }
-
-    return { success: true, data: { message: 'Ready to schedule next stage' } };
-  } catch (error) {
-    throw error;
   }
-};
 
-const rejectCandidate = async (candidateId: number) => {
-  try {
-    const candidate = filteredCandidates.find(c => c.id === candidateId);
+  const moveToNextStage = async (candidateId: number, targetStageId: number) => {
+    try {
+      const candidate = filteredCandidates.find(c => c.id === candidateId);
 
-    if (!candidate || !candidate.interview_id) {
-      throw new Error(`No interview found for candidate ${candidateId}`);
+      if (!candidate || !candidate.interview_id) {
+        throw new Error(`No interview found for candidate ${candidateId}`);
+      }
+
+      return { success: true, data: { message: 'Ready to schedule next stage' } };
+    } catch (error) {
+      throw error;
     }
+  };
 
-    // Use "cancelled" instead of "rejected" - this matches your database
-    const interviewData = {
-      status: 'cancelled' // Database accepts "cancelled", not "rejected"
-    };
+  const rejectCandidate = async (candidateId: number) => {
+    try {
+      const candidate = filteredCandidates.find(c => c.id === candidateId);
 
-    const result = await updateInterview({
-      interviewId: candidate.interview_id,
-      interviewData: interviewData
-    });
+      if (!candidate || !candidate.interview_id) {
+        throw new Error(`No interview found for candidate ${candidateId}`);
+      }
 
-    if (!result) {
-      throw new Error('Failed to reject candidate');
+      // Use "cancelled" instead of "rejected" - this matches your database
+      const interviewData = {
+        status: 'cancelled' // Database accepts "cancelled", not "rejected"
+      };
+
+      const result = await updateInterview({
+        interviewId: candidate.interview_id,
+        interviewData: interviewData
+      });
+
+      if (!result) {
+        throw new Error('Failed to reject candidate');
+      }
+      return { success: true, data: result };
+    } catch (error) {
+      throw error;
     }
-    return { success: true, data: result };
-  } catch (error) {
-    throw error;
-  }
-};
+  };
 
-// ADD THIS STATUS DISPLAY FUNCTION:
-const getStatusBadge = (candidate: Candidate | CandidateWithHistory) => {
-  const status = candidate.interview_status?.toLowerCase() || 'unknown';
+  // ADD THIS STATUS DISPLAY FUNCTION:
+  const getStatusBadge = (candidate: Candidate | CandidateWithHistory) => {
+    const status = candidate.interview_status?.toLowerCase() || 'unknown';
 
-  switch (status) {
-    case 'scheduled':
-      return (
-        <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-          <Clock className="h-3 w-3 mr-1" />
-          Scheduled
-        </Badge>
-      );
-    case 'completed':
-      return (
-        <Badge variant="secondary" className="bg-green-100 text-green-700">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Completed/Onboarded
-        </Badge>
-      );
-    case 'cancelled':
-      return (
-        <Badge variant="secondary" className="bg-red-100 text-red-700">
-          <XCircle className="h-3 w-3 mr-1" />
-          Cancelled
-        </Badge>
-      );
-    default:
-      return (
-        <Badge variant="secondary" className="bg-gray-100 text-gray-500">
-          <Clock className="h-3 w-3 mr-1" />
-          {status.charAt(0).toUpperCase() + status.slice(1)}
-        </Badge>
-      );
+    switch (status) {
+      case 'scheduled':
+        return (
+          <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+            <Clock className="h-3 w-3 mr-1" />
+            Scheduled
+          </Badge>
+        );
+      case 'completed':
+        return (
+          <Badge variant="secondary" className="bg-green-100 text-green-700">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Completed/Onboarded
+          </Badge>
+        );
+      case 'cancelled':
+        return (
+          <Badge variant="secondary" className="bg-red-100 text-red-700">
+            <XCircle className="h-3 w-3 mr-1" />
+            Cancelled
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="secondary" className="bg-gray-100 text-gray-500">
+            <Clock className="h-3 w-3 mr-1" />
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </Badge>
+        );
+    }
   }
-}
 
 
 
@@ -1675,92 +1662,92 @@ const getStatusBadge = (candidate: Candidate | CandidateWithHistory) => {
     }
   };
 
-const handleUpdateFeedback = async (feedback: string, rating: number) => {
-  if (!selectedCandidate) return
+  const handleUpdateFeedback = async (feedback: string, rating: number) => {
+    if (!selectedCandidate) return
 
-  try {
-    const interviewId = selectedCandidate.interview_id;
+    try {
+      const interviewId = selectedCandidate.interview_id;
 
-    if (!interviewId) {
-      throw new Error('No interview found for this candidate');
-    }
-
-    // ONLY update feedback and rating, DO NOT change status
-    const interviewData = {
-      feedback: feedback,
-      rating: rating,
-      // DO NOT include status - it remains "scheduled"
-    }
-
-    const result = await updateInterview({
-      interviewId: interviewId,
-      interviewData: interviewData
-    });
-
-    if (!result) {
-      throw new Error('Failed to update interview feedback');
-    }
-
-    // Update local state - keep status as scheduled
-    setInterviews(prev =>
-      prev.map(interview => {
-        if (interview.id === interviewId) {
-          return {
-            ...interview,
-            feedback: result.feedback,
-            rating: result.rating,
-            // Keep original status (should be "scheduled")
-            status: interview.status
-          }
-        }
-        return interview
-      })
-    )
-
-    setSelectedCandidate(prev => {
-      if (!prev || prev.interview_id !== interviewId) return prev
-      return {
-        ...prev,
-        feedback: result.feedback || undefined,
-        rating: result.rating || undefined,
-        // Keep original interview_status (should be "scheduled")
-        interview_status: prev.interview_status
+      if (!interviewId) {
+        throw new Error('No interview found for this candidate');
       }
-    })
 
-    await fetchData()
-  } catch (error) {
-    throw error
-  }
-}
+      // ONLY update feedback and rating, DO NOT change status
+      const interviewData = {
+        feedback: feedback,
+        rating: rating,
+        // DO NOT include status - it remains "scheduled"
+      }
 
+      const result = await updateInterview({
+        interviewId: interviewId,
+        interviewData: interviewData
+      });
 
+      if (!result) {
+        throw new Error('Failed to update interview feedback');
+      }
 
-const handleScheduleAndMove = async (scheduleData: InterviewScheduleData) => {
-  setIsProcessingProgression(true)
+      // Update local state - keep status as scheduled
+      setInterviews(prev =>
+        prev.map(interview => {
+          if (interview.id === interviewId) {
+            return {
+              ...interview,
+              feedback: result.feedback,
+              rating: result.rating,
+              // Keep original status (should be "scheduled")
+              status: interview.status
+            }
+          }
+          return interview
+        })
+      )
 
-  try {
-    // Step 1: Schedule interviews for next stage
-    const scheduleResult = await scheduleInterviewsForNextStage(candidatesToSchedule, scheduleData)
-
-    if (scheduleResult.successCount > 0) {
-
-      toast.success(`Successfully scheduled interviews and moved ${candidatesToSchedule.length} candidates to ${nextStageForActive?.name}`)
-
-      setSelectedCandidates([])
-      setIsSchedulingDialogOpen(false)
-      setCandidatesToSchedule([])
+      setSelectedCandidate(prev => {
+        if (!prev || prev.interview_id !== interviewId) return prev
+        return {
+          ...prev,
+          feedback: result.feedback || undefined,
+          rating: result.rating || undefined,
+          // Keep original interview_status (should be "scheduled")
+          interview_status: prev.interview_status
+        }
+      })
 
       await fetchData()
-    } else {
-      toast.error('Failed to schedule interviews')
+    } catch (error) {
+      throw error
     }
-  } catch (error) {
-    toast.error('Failed to schedule interviews and move candidates')
-  } finally {
-    setIsProcessingProgression(false)
   }
-}
+
+
+
+  const handleScheduleAndMove = async (scheduleData: InterviewScheduleData) => {
+    setIsProcessingProgression(true)
+
+    try {
+      // Step 1: Schedule interviews for next stage
+      const scheduleResult = await scheduleInterviewsForNextStage(candidatesToSchedule, scheduleData)
+
+      if (scheduleResult.successCount > 0) {
+
+        toast.success(`Successfully scheduled interviews and moved ${candidatesToSchedule.length} candidates to ${nextStageForActive?.name}`)
+
+        setSelectedCandidates([])
+        setIsSchedulingDialogOpen(false)
+        setCandidatesToSchedule([])
+
+        await fetchData()
+      } else {
+        toast.error('Failed to schedule interviews')
+      }
+    } catch (error) {
+      toast.error('Failed to schedule interviews and move candidates')
+    } finally {
+      setIsProcessingProgression(false)
+    }
+  }
 
   const handleBulkOnboard = async () => {
     if (candidatesEligibleForOnboarding.length === 0) {
@@ -1799,75 +1786,75 @@ const handleScheduleAndMove = async (scheduleData: InterviewScheduleData) => {
     }
   }
 
-const handleIndividualOnboard = async (candidate: Candidate) => {
-  // Validation checks
-  if (!candidate.feedback || !candidate.rating || candidate.rating <= 0) {
-    return {
-      success: false,
-      alreadyOnboarded: false,
-      message: 'Candidate must have feedback and rating to be onboarded'
-    }
-  }
-
-  if (candidate.interview_status === 'cancelled') {
-    return {
-      success: false,
-      alreadyOnboarded: false,
-      message: 'Cannot onboard cancelled candidates'
-    }
-  }
-
-  if (candidate.interview_status === 'completed') {
-    return {
-      success: false,
-      alreadyOnboarded: true,
-      message: 'Candidate is already onboarded'
-    }
-  }
-
-  try {
-    const result = await bulkCreateOnBoarding({ applicationIds: [candidate.id] })
-
-    if (result) {
-      const createdCount = result.summary?.created_count || result.created?.length || 0
-
-      if (createdCount > 0) {
-        // Update interview status to "completed" after successful onboarding
-        try {
-          if (candidate.interview_id) {
-            await updateInterview({
-              interviewId: candidate.interview_id,
-              interviewData: { status: 'completed' }
-            })
-          }
-        } catch (statusUpdateError) {
-          console.error('Failed to update interview status after onboarding:', statusUpdateError)
-        }
-
-        await fetchData()
-        return { success: true }
-      } else {
-        return {
-          success: false,
-          alreadyOnboarded: true,
-          message: 'Candidate is already onboarded'
-        }
-      }
-    } else {
+  const handleIndividualOnboard = async (candidate: Candidate) => {
+    // Validation checks
+    if (!candidate.feedback || !candidate.rating || candidate.rating <= 0) {
       return {
         success: false,
         alreadyOnboarded: false,
-        message: 'Failed to onboard candidate - API returned no response'
+        message: 'Candidate must have feedback and rating to be onboarded'
       }
     }
-  } catch (error) {
-    return {
-      success: false,
-      alreadyOnboarded: false,
-      message: error instanceof Error ? error.message : 'Unknown error occurred'
+
+    if (candidate.interview_status === 'cancelled') {
+      return {
+        success: false,
+        alreadyOnboarded: false,
+        message: 'Cannot onboard cancelled candidates'
+      }
+    }
+
+    if (candidate.interview_status === 'completed') {
+      return {
+        success: false,
+        alreadyOnboarded: true,
+        message: 'Candidate is already onboarded'
+      }
+    }
+
+    try {
+      const result = await bulkCreateOnBoarding({ applicationIds: [candidate.id] })
+
+      if (result) {
+        const createdCount = result.summary?.created_count || result.created?.length || 0
+
+        if (createdCount > 0) {
+          // Update interview status to "completed" after successful onboarding
+          try {
+            if (candidate.interview_id) {
+              await updateInterview({
+                interviewId: candidate.interview_id,
+                interviewData: { status: 'completed' }
+              })
+            }
+          } catch (statusUpdateError) {
+            console.error('Failed to update interview status after onboarding:', statusUpdateError)
+          }
+
+          await fetchData()
+          return { success: true }
+        } else {
+          return {
+            success: false,
+            alreadyOnboarded: true,
+            message: 'Candidate is already onboarded'
+          }
+        }
+      } else {
+        return {
+          success: false,
+          alreadyOnboarded: false,
+          message: 'Failed to onboard candidate - API returned no response'
+        }
+      }
+    } catch (error) {
+      return {
+        success: false,
+        alreadyOnboarded: false,
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      }
     }
   }
-}
 
 
   // UI Event Handlers
@@ -1964,7 +1951,6 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
                 <Label htmlFor="stage_interviewer">Interviewers *</Label>
                 <div className="w-full max-w-full overflow-hidden">
                   <EmployeeSearchableSelect
-                    employees={employees as any}
                     value={stageFormData.interviewers.map(id => id.toString())}
                     onValueChange={(values) => {
                       const numberValues = Array.isArray(values)
@@ -1984,49 +1970,7 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
                   <p className="text-sm text-destructive">{stageErrors.interviewers}</p>
                 )}
 
-                {stageFormData.interviewers.length > 0 && (
-                  <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium text-gray-700">
-                        Selected Interviewers ({stageFormData.interviewers.length})
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => updateStageFormData("interviewers", [])}
-                        className="text-xs text-red-600 hover:text-red-800"
-                      >
-                        Clear all
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                      {stageFormData.interviewers.map((interviewerId) => {
-                        const employee = employees.find(emp => emp.id === interviewerId);
-                        const fullName = employee?.user?.fullname || `Employee ${interviewerId}`;
-                        const displayName = fullName.length > 30 ? `${fullName.substring(0, 30)}...` : fullName;
 
-                        return (
-                          <div
-                            key={interviewerId}
-                            className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm max-w-xs"
-                            title={fullName}
-                          >
-                            <span className="truncate flex-1 min-w-0">{displayName}</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newInterviewers = stageFormData.interviewers.filter(id => id !== interviewerId);
-                                updateStageFormData("interviewers", newInterviewers);
-                              }}
-                              className="flex-shrink-0 w-4 h-4 rounded-full bg-blue-200 text-blue-600 hover:bg-blue-300 flex items-center justify-center text-xs font-bold"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
@@ -2118,7 +2062,7 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
         </Card>
       ) : (
         /* Main interface with tabs for current view and history view */
-     <Tabs value={viewMode} onValueChange={(value: string) => {
+        <Tabs value={viewMode} onValueChange={(value: string) => {
           setViewMode(value as 'current' | 'history')
           setSelectedCandidates([])
           setSearchTerm('')
@@ -2152,11 +2096,10 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
                       {processedStages.map((stage) => (
                         <div
                           key={stage.id}
-                          className={`p-4 cursor-pointer transition-all duration-200 border-l-4 hover:bg-gray-50 ${
-                            activeStageId === stage.id
-                              ? 'bg-blue-50 border-l-blue-500 shadow-sm'
-                              : 'border-l-transparent hover:border-l-gray-300'
-                          }`}
+                          className={`p-4 cursor-pointer transition-all duration-200 border-l-4 hover:bg-gray-50 ${activeStageId === stage.id
+                            ? 'bg-blue-50 border-l-blue-500 shadow-sm'
+                            : 'border-l-transparent hover:border-l-gray-300'
+                            }`}
                           onClick={() => {
                             setActiveStageId(stage.id)
                             setSelectedCandidates([])
@@ -2175,9 +2118,8 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
                             </div>
                             <Badge
                               variant="secondary"
-                              className={`font-bold ${
-                                stage.count > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                              }`}
+                              className={`font-bold ${stage.count > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                                }`}
                             >
                               {stage.count}
                             </Badge>
@@ -2235,78 +2177,78 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
                       </div>
 
                       {/* Bulk Actions */}
-                        {selectedCandidates.length > 0 && (
-  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Users className="h-4 w-4 text-blue-600" />
-        <span className="text-sm font-medium text-blue-800">
-          {selectedCandidates.length} candidate(s) selected
-        </span>
-        {/* Show warning if any selected candidates need feedback first */}
-        {selectedCandidates.some(id => {
-          const candidate = (viewMode === 'current' ? filteredCandidates : filteredHistoryCandidates).find(c => c.id === id)
-          return candidate && !(candidate.feedback && candidate.rating && candidate.rating > 0)
-        }) && (
-          <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
-            Some candidates need feedback & rating first
-          </span>
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setSelectedCandidates([])}
-        >
-          Clear
-        </Button>
+                      {selectedCandidates.length > 0 && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4 text-blue-600" />
+                              <span className="text-sm font-medium text-blue-800">
+                                {selectedCandidates.length} candidate(s) selected
+                              </span>
+                              {/* Show warning if any selected candidates need feedback first */}
+                              {selectedCandidates.some(id => {
+                                const candidate = (viewMode === 'current' ? filteredCandidates : filteredHistoryCandidates).find(c => c.id === id)
+                                return candidate && !(candidate.feedback && candidate.rating && candidate.rating > 0)
+                              }) && (
+                                  <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
+                                    Some candidates need feedback & rating first
+                                  </span>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setSelectedCandidates([])}
+                              >
+                                Clear
+                              </Button>
 
-        {/* Only show onboard button if there are eligible candidates */}
-        {candidatesEligibleForOnboarding.length > 0 && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              const eligibleIds = candidatesEligibleForOnboarding.map(c => c.id)
-              setSelectedCandidates(eligibleIds)
-              handleBulkOnboard()
-            }}
-            className="text-purple-600 border-purple-200 hover:bg-purple-50"
-            title={`Onboard ${candidatesEligibleForOnboarding.length} eligible candidates`}
-          >
-            <Users className="h-4 w-4 mr-2" />
-            Onboard ({candidatesEligibleForOnboarding.length})
-          </Button>
-        )}
+                              {/* Only show onboard button if there are eligible candidates */}
+                              {candidatesEligibleForOnboarding.length > 0 && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const eligibleIds = candidatesEligibleForOnboarding.map(c => c.id)
+                                    setSelectedCandidates(eligibleIds)
+                                    handleBulkOnboard()
+                                  }}
+                                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                                  title={`Onboard ${candidatesEligibleForOnboarding.length} eligible candidates`}
+                                >
+                                  <Users className="h-4 w-4 mr-2" />
+                                  Onboard ({candidatesEligibleForOnboarding.length})
+                                </Button>
+                              )}
 
-        {/* Only show move button in current view if there are eligible candidates */}
-        {viewMode === 'current' && nextStageForActive && candidatesEligibleForMoving.length > 0 && (
-          <Button
-            size="sm"
-            onClick={() => {
-              const eligibleIds = candidatesEligibleForMoving.map(c => c.id)
-              setSelectedCandidates(eligibleIds)
-              handleBulkScheduleAndMove()
-            }}
-            className="bg-green-600 hover:bg-green-700"
-            title={`Move ${candidatesEligibleForMoving.length} candidates with feedback to ${nextStageForActive.name}`}
-          >
-            <Calendar className="h-4 w-4 mr-2" />
-            Move to {nextStageForActive.name} ({candidatesEligibleForMoving.length})
-          </Button>
-        )}
+                              {/* Only show move button in current view if there are eligible candidates */}
+                              {viewMode === 'current' && nextStageForActive && candidatesEligibleForMoving.length > 0 && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    const eligibleIds = candidatesEligibleForMoving.map(c => c.id)
+                                    setSelectedCandidates(eligibleIds)
+                                    handleBulkScheduleAndMove()
+                                  }}
+                                  className="bg-green-600 hover:bg-green-700"
+                                  title={`Move ${candidatesEligibleForMoving.length} candidates with feedback to ${nextStageForActive.name}`}
+                                >
+                                  <Calendar className="h-4 w-4 mr-2" />
+                                  Move to {nextStageForActive.name} ({candidatesEligibleForMoving.length})
+                                </Button>
+                              )}
 
-        {/* Show message when no candidates are eligible for any actions */}
-        {candidatesEligibleForOnboarding.length === 0 && candidatesEligibleForMoving.length === 0 && selectedCandidates.length > 0 && (
-          <div className="text-xs text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">
-            Please first provide feedback & rating, then schedule interviews before onboarding
-          </div>
-        )}
-      </div>
-    </div>
-  </div>
-)}
+                              {/* Show message when no candidates are eligible for any actions */}
+                              {candidatesEligibleForOnboarding.length === 0 && candidatesEligibleForMoving.length === 0 && selectedCandidates.length > 0 && (
+                                <div className="text-xs text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">
+                                  Please first provide feedback & rating, then schedule interviews before onboarding
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Candidates Table */}
                       <div className="border rounded-lg max-h-[400px] overflow-auto">
@@ -2325,16 +2267,16 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
                             <TableHeader>
                               <TableRow>
                                 <TableHead className="w-12">
-                                <Checkbox
-                                  checked={
-                                    selectableCandidates.length > 0 &&
-                                    selectedCandidates.length === selectableCandidates.length &&
-                                    selectableCandidates.every(c => selectedCandidates.includes(c.id))
-                                  }
-                                  onCheckedChange={handleSelectAll}
-                                  title={`Select ${selectableCandidates.length} candidates who need feedback`}
-                                />
-                              </TableHead>
+                                  <Checkbox
+                                    checked={
+                                      selectableCandidates.length > 0 &&
+                                      selectedCandidates.length === selectableCandidates.length &&
+                                      selectableCandidates.every(c => selectedCandidates.includes(c.id))
+                                    }
+                                    onCheckedChange={handleSelectAll}
+                                    title={`Select ${selectableCandidates.length} candidates who need feedback`}
+                                  />
+                                </TableHead>
                                 <TableHead>Candidate</TableHead>
                                 <TableHead>Contact</TableHead>
                                 <TableHead>Feedback</TableHead>
@@ -2346,23 +2288,23 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
                             <TableBody>
                               {filteredCandidates.map((candidate) => (
                                 <TableRow key={candidate.id}>
-                                 <TableCell>
-                                          <Checkbox
-                                            checked={selectedCandidates.includes(candidate.id)}
-                                            onCheckedChange={(checked: boolean) => handleSelectCandidate(candidate.id, checked as boolean)}
-                                            disabled={!canCandidateBeSelected(candidate)}
-                                            title={
-                                              canCandidateBeSelected(candidate)
-                                                ? viewMode === 'current' ? "Select for feedback" : "Select for onboarding"
-                                                : candidate.feedback && candidate.rating
-                                                  ? "Already has feedback and rating - use individual actions"
-                                                  : isCandidateAlreadyOnboarded(candidate)
-                                                    ? "Already onboarded"
-                                                    : "Cannot be selected"
-                                            }
-                                            className={!canCandidateBeSelected(candidate) ? "opacity-50" : ""}
-                                          />
-                                        </TableCell>
+                                  <TableCell>
+                                    <Checkbox
+                                      checked={selectedCandidates.includes(candidate.id)}
+                                      onCheckedChange={(checked: boolean) => handleSelectCandidate(candidate.id, checked as boolean)}
+                                      disabled={!canCandidateBeSelected(candidate)}
+                                      title={
+                                        canCandidateBeSelected(candidate)
+                                          ? viewMode === 'current' ? "Select for feedback" : "Select for onboarding"
+                                          : candidate.feedback && candidate.rating
+                                            ? "Already has feedback and rating - use individual actions"
+                                            : isCandidateAlreadyOnboarded(candidate)
+                                              ? "Already onboarded"
+                                              : "Cannot be selected"
+                                      }
+                                      className={!canCandidateBeSelected(candidate) ? "opacity-50" : ""}
+                                    />
+                                  </TableCell>
                                   <TableCell>
                                     <div className="space-y-1">
                                       <div className="font-medium">{candidate.applicant_name}</div>
@@ -2406,7 +2348,7 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
                                       )}
                                     </div>
                                   </TableCell>
-                                      <TableCell>
+                                  <TableCell>
                                     <div className="flex items-center">
                                       {getStatusBadge(candidate)}
                                     </div>
@@ -2615,16 +2557,16 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-12">
-                          <Checkbox
-                            checked={
-                              filteredHistoryCandidates.filter(canCandidateBeSelected).length > 0 &&
-                              selectedCandidates.length === filteredHistoryCandidates.filter(canCandidateBeSelected).length
-                            }
-                            onCheckedChange={handleSelectAll}
-                            title="Select candidates who can be onboarded"
-                          />
-                        </TableHead>
-                           <TableHead>Candidate</TableHead>
+                            <Checkbox
+                              checked={
+                                filteredHistoryCandidates.filter(canCandidateBeSelected).length > 0 &&
+                                selectedCandidates.length === filteredHistoryCandidates.filter(canCandidateBeSelected).length
+                              }
+                              onCheckedChange={handleSelectAll}
+                              title="Select candidates who can be onboarded"
+                            />
+                          </TableHead>
+                          <TableHead>Candidate</TableHead>
                           <TableHead>Contact</TableHead>
                           <TableHead>Current Stage</TableHead>
                           <TableHead>Overall Rating</TableHead>
@@ -2634,32 +2576,32 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
                       </TableHeader>
                       <TableBody>
                         {filteredHistoryCandidates.map((candidate) => (
-                          <TableRow  key={candidate.id}
-                                      className={
-                                        candidate.interview_status === 'cancelled'
+                          <TableRow key={candidate.id}
+                            className={
+                              candidate.interview_status === 'cancelled'
 
-                                          ? 'opacity-60 bg-red-50'
-                                          : ''
-                                      }>
+                                ? 'opacity-60 bg-red-50'
+                                : ''
+                            }>
                             <TableCell>
-                                <Checkbox
-                                  checked={selectedCandidates.includes(candidate.id)}
-                                  onCheckedChange={(checked: boolean) => handleSelectCandidate(candidate.id, checked as boolean)}
-                                  disabled={!canCandidateBeSelected(candidate) || isCandidateRejected(candidate)}
-                                  title={
-                                    isCandidateRejected(candidate)
-                                      ? "Candidate is rejected/cancelled"
-                                      : canCandidateBeSelected(candidate)
-                                        ? viewMode === 'current' ? "Select for feedback" : "Select for onboarding"
-                                        : candidate.feedback && candidate.rating
-                                          ? "Already has feedback and rating - use individual actions"
-                                          : isCandidateAlreadyOnboarded(candidate)
-                                            ? "Already onboarded"
-                                            : "Cannot be selected"
-                                  }
-                                  className={!canCandidateBeSelected(candidate) || isCandidateRejected(candidate) ? "opacity-50" : ""}
-                                />
-                              </TableCell>
+                              <Checkbox
+                                checked={selectedCandidates.includes(candidate.id)}
+                                onCheckedChange={(checked: boolean) => handleSelectCandidate(candidate.id, checked as boolean)}
+                                disabled={!canCandidateBeSelected(candidate) || isCandidateRejected(candidate)}
+                                title={
+                                  isCandidateRejected(candidate)
+                                    ? "Candidate is rejected/cancelled"
+                                    : canCandidateBeSelected(candidate)
+                                      ? viewMode === 'current' ? "Select for feedback" : "Select for onboarding"
+                                      : candidate.feedback && candidate.rating
+                                        ? "Already has feedback and rating - use individual actions"
+                                        : isCandidateAlreadyOnboarded(candidate)
+                                          ? "Already onboarded"
+                                          : "Cannot be selected"
+                                }
+                                className={!canCandidateBeSelected(candidate) || isCandidateRejected(candidate) ? "opacity-50" : ""}
+                              />
+                            </TableCell>
                             <TableCell>
                               <div className="space-y-1">
                                 <div className="font-medium">{candidate.applicant_name}</div>
@@ -2779,57 +2721,54 @@ const handleIndividualOnboard = async (candidate: Candidate) => {
       )}
 
       {/* Progress Indicator (only show in current view) */}
-    {processedStages.length > 0 && viewMode === 'current' && (
-  <div className="mt-6"> {/* Added margin-top to push it down */}
-    <Card>
-      <CardContent className="p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Pipeline Progress</h3>
-        <div className="flex items-center space-x-2 overflow-x-auto pb-4">
-          {processedStages.map((stage, index) => (
-            <div key={stage.id} className="flex items-center flex-shrink-0">
-              <div
-                className={`flex items-center justify-center w-12 h-12 rounded-full border-2 cursor-pointer transition-all ${
-                  stage.count > 0
-                    ? 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100'
-                    : 'border-gray-300 bg-gray-50 text-gray-400 hover:bg-gray-100'
-                } ${activeStageId === stage.id ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
-                onClick={() => setActiveStageId(stage.id)}
-                title={`Click to view ${stage.name}`}
-              >
-                <span className="text-sm font-bold">{stage.count}</span>
+      {processedStages.length > 0 && viewMode === 'current' && (
+        <div className="mt-6"> {/* Added margin-top to push it down */}
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Pipeline Progress</h3>
+              <div className="flex items-center space-x-2 overflow-x-auto pb-4">
+                {processedStages.map((stage, index) => (
+                  <div key={stage.id} className="flex items-center flex-shrink-0">
+                    <div
+                      className={`flex items-center justify-center w-12 h-12 rounded-full border-2 cursor-pointer transition-all ${stage.count > 0
+                        ? 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100'
+                        : 'border-gray-300 bg-gray-50 text-gray-400 hover:bg-gray-100'
+                        } ${activeStageId === stage.id ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
+                      onClick={() => setActiveStageId(stage.id)}
+                      title={`Click to view ${stage.name}`}
+                    >
+                      <span className="text-sm font-bold">{stage.count}</span>
+                    </div>
+                    {index < processedStages.length - 1 && (
+                      <div className={`h-0.5 w-8 mx-2 ${stage.count > 0 ? 'bg-green-500' : 'bg-gray-300'
+                        }`} />
+                    )}
+                  </div>
+                ))}
               </div>
-              {index < processedStages.length - 1 && (
-                <div className={`h-0.5 w-8 mx-2 ${
-                  stage.count > 0 ? 'bg-green-500' : 'bg-gray-300'
-                }`} />
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="flex items-center space-x-2 mt-2 overflow-x-auto">
-          {processedStages.map((stage, index) => (
-            <div key={stage.id} className="flex items-center flex-shrink-0">
-              <div className="w-12 text-center">
-                <span
-                  className={`text-xs font-medium truncate block cursor-pointer ${
-                    activeStageId === stage.id ? 'text-blue-600' : 'text-gray-600'
-                  }`}
-                  onClick={() => setActiveStageId(stage.id)}
-                  title={stage.name}
-                >
-                  {stage.name}
-                </span>
+              <div className="flex items-center space-x-2 mt-2 overflow-x-auto">
+                {processedStages.map((stage, index) => (
+                  <div key={stage.id} className="flex items-center flex-shrink-0">
+                    <div className="w-12 text-center">
+                      <span
+                        className={`text-xs font-medium truncate block cursor-pointer ${activeStageId === stage.id ? 'text-blue-600' : 'text-gray-600'
+                          }`}
+                        onClick={() => setActiveStageId(stage.id)}
+                        title={stage.name}
+                      >
+                        {stage.name}
+                      </span>
+                    </div>
+                    {index < processedStages.length - 1 && (
+                      <div className="w-8 mx-2" />
+                    )}
+                  </div>
+                ))}
               </div>
-              {index < processedStages.length - 1 && (
-                <div className="w-8 mx-2" />
-              )}
-            </div>
-          ))}
+            </CardContent>
+          </Card>
         </div>
-      </CardContent>
-    </Card>
-  </div>
-)}
+      )}
 
       {/* Dialogs */}
       <FeedbackDialog

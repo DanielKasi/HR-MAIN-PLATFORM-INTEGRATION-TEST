@@ -65,7 +65,6 @@ export default function CreateInterviewPage() {
   const [errors, setErrors] = useState<any>({})
   const [isCreateStageDialogOpen, setIsCreateStageDialogOpen] = useState(false)
   const [isCreatingStage, setIsCreatingStage] = useState(false)
-  const [employees, setEmployees] = useState<IEmployee[]>([])
   const [existingInterviews, setExistingInterviews] = useState<IInterview[]>([])
   const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
     name: "",
@@ -85,7 +84,7 @@ export default function CreateInterviewPage() {
     interview_date: "",
     location: "",
     interview_time: "",
-    interview_type: "",
+    interview_type: "in_person",
     status: "scheduled",
     feedback: "",
     rating: undefined,
@@ -185,12 +184,10 @@ export default function CreateInterviewPage() {
       const [
         fetchedApplicationsResponse,
         fetchedStagesResponse,
-        fetchedEmployeesResponse,
         fetchedInterviewsResponse,
       ] = await Promise.all([
         getJobApplications({ institutionId: selectedInstitution.id }),
         getInterviewStages({ institutionId: selectedInstitution.id }),
-        fetchEmployees({ institutionId: selectedInstitution.id }),
         getInterviews({ institutionId: selectedInstitution.id }),
       ])
 
@@ -221,18 +218,6 @@ export default function CreateInterviewPage() {
         stagesArray = fetchedStagesResponse
       }
       setInterviewStages(stagesArray)
-
-      let employeesArray: IEmployee[] = []
-      if (
-        fetchedEmployeesResponse &&
-        "results" in fetchedEmployeesResponse &&
-        Array.isArray(fetchedEmployeesResponse.results)
-      ) {
-        employeesArray = fetchedEmployeesResponse.results
-      } else if (Array.isArray(fetchedEmployeesResponse)) {
-        employeesArray = fetchedEmployeesResponse
-      }
-      setEmployees(employeesArray)
 
       let interviewsArray: IInterview[] = []
       if (
@@ -745,7 +730,6 @@ export default function CreateInterviewPage() {
                           <Label htmlFor="stage_interviewer">Interviewers *</Label>
                           <div className="w-full max-w-full overflow-hidden">
                             <EmployeeSearchableSelect
-                              employees={employees as any}
                               value={stageFormData.interviewers.map((id) => id.toString())}
                               onValueChange={(values) => {
                                 const numberValues = Array.isArray(values)
@@ -766,60 +750,6 @@ export default function CreateInterviewPage() {
                           </div>
                           {stageErrors.interviewers && (
                             <p className="text-sm text-destructive">{stageErrors.interviewers}</p>
-                          )}
-
-                          {stageFormData.interviewers.length > 0 && (
-                            <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
-                              <div className="flex items-center justify-between mb-2">
-                                <p className="text-sm font-medium text-gray-700">
-                                  Selected Interviewers ({stageFormData.interviewers.length})
-                                </p>
-                                <button
-                                  type="button"
-                                  onClick={() => updateStageFormData("interviewers", [])}
-                                  className="text-xs text-red-600 hover:text-red-800"
-                                >
-                                  Clear all
-                                </button>
-                              </div>
-                              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                                {stageFormData.interviewers.map((interviewerId) => {
-                                  const employee = employees.find(
-                                    (emp) => emp.id === interviewerId
-                                  )
-                                  const fullName =
-                                    employee?.user?.fullname || `Employee ${interviewerId}`
-                                  const displayName =
-                                    fullName.length > 30
-                                      ? `${fullName.substring(0, 30)}...`
-                                      : fullName
-
-                                  return (
-                                    <div
-                                      key={interviewerId}
-                                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm max-w-xs"
-                                      title={fullName}
-                                    >
-                                      <span className="truncate flex-1 min-w-0">
-                                        {displayName}
-                                      </span>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const newInterviewers = stageFormData.interviewers.filter(
-                                            (id) => id !== interviewerId
-                                          )
-                                          updateStageFormData("interviewers", newInterviewers)
-                                        }}
-                                        className="flex-shrink-0 w-4 h-4 rounded-full bg-blue-200 text-blue-600 hover:bg-blue-300 flex items-center justify-center text-xs font-bold"
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            </div>
                           )}
 
                           <p className="text-xs text-muted-foreground">
