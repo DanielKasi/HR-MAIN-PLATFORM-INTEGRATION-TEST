@@ -12,6 +12,7 @@ from institution.models import Institution
 from utilities.pagination import CustomPageNumberPagination
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
+from django.db.models import Q
 
 
 class ProjectListCreateView(APIView):
@@ -27,8 +28,14 @@ class ProjectListCreateView(APIView):
         tags=["Projects Mgt"],
     )
     def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
         institution = get_object_or_404(Institution, id=institution_id)
-        projects = Project.objects.filter(institution=institution)
+        projects = Project.objects.filter(institution=institution, deleted_at__isnull=True)
+
+        if search_query:
+            projects = projects.filter(
+                Q(project_name__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_projects = paginator.paginate_queryset(projects, request)
@@ -139,6 +146,7 @@ class TaskListCreateView(APIView):
         tags=["Projects Mgt"],
     )
     def get(self, request, project_id):
+        search_query = request.query_params.get('search', None)
         project = Project.objects.filter(id=project_id).first()
         if not project:
             return Response(
@@ -146,7 +154,12 @@ class TaskListCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        tasks = Task.objects.filter(project_id=project_id)
+        tasks = Task.objects.filter(project_id=project_id, deleted_at__isnull=True)
+
+        if search_query:
+            tasks = tasks.filter(
+                Q(task_name__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_tasks = paginator.paginate_queryset(tasks, request)

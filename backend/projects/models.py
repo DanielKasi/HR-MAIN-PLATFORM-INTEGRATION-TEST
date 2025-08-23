@@ -11,8 +11,6 @@ class BaseModel(models.Model):
         blank=True,
         related_name="%(class)s_created_by",
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(
         "users.Profile",
         on_delete=models.SET_NULL,
