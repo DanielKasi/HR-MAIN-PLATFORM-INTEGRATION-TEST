@@ -42,7 +42,7 @@ class PublicHolidayListCreateView(APIView):
             Institution, id=request.user.profile.institution.id
         )
         public_holidays = PublicHoliday.objects.filter(
-            institution=institution, is_active=True, deleted_at__isnull=True
+            institution=institution, deleted_at__isnull=True
         )
         if search_query:
             public_holidays = public_holidays.filter(
@@ -169,7 +169,7 @@ class EventListCreateView(APIView):
             Institution, id=request.user.profile.institution.id
         )
         events = Event.objects.filter(
-            institution=institution, is_active=True, deleted_at__isnull=True
+            institution=institution, deleted_at__isnull=True
         )
         if search_query:
             events = events.filter(
@@ -310,7 +310,6 @@ class InstitutionCalendarView(APIView):
         calendar = Calendar.objects.filter(
             institution=institution, 
             year=year,
-            is_active=True,
             deleted_at__isnull=True
             ).first()
 

@@ -36,7 +36,6 @@ class DisciplinaryActionAPIView(APIView):
 
         actions = DisciplinaryAction.objects.filter(
             employee__department__institution=institution,
-            is_active=True,
             deleted_at__isnull=True
         )
 

@@ -87,7 +87,6 @@ class AssetCategoryListCreateView(APIView):
 
         categories = AssetCategory.objects.filter(
             institution=institution,
-            is_active=True,
             deleted_at__isnull=True
             )
 
@@ -226,7 +225,6 @@ class AssetListCreateView(APIView):
             )
         assets = Asset.objects.filter(
             institution=institution,
-            is_active=True,
             deleted_at__isnull=True
             )
 
@@ -360,7 +358,6 @@ class AssetRequestListCreateView(APIView):
         
         asset_requests = AssetRequest.objects.filter(
             asset__institution=institution,
-            is_active=True,
             deleted_at__isnull=True,
         )
 
@@ -650,7 +647,6 @@ class AssetAllocationListCreateView(APIView):
             )
         asset_allocations = AssetAllocation.objects.filter(
             asset__institution=institution,
-            is_active=True,
             deleted_at__isnull=True
         )
 
@@ -922,7 +918,6 @@ class AssetReturnListCreateView(APIView):
             )
         asset_returns = AssetReturn.objects.filter(
             asset__institution=institution,
-            is_active=True,
             deleted_at__isnull=True
         )
 
@@ -1024,7 +1019,6 @@ class AssetHistoryListView(APIView):
             )
         asset_histories = AssetHistory.objects.filter(
             asset__institution=institution,
-            is_active=True,
             deleted_at__is_null=True
         )
 

@@ -45,7 +45,6 @@ class DocumentTypeListCreateAPIView(APIView):
         search_query = request.query_params.get('search', None)
         queryset = DocumentType.objects.filter(
             institution_id=institution_id, 
-            is_active=True,
             deleted_at__isnull=True,
         ).order_by("-created_at")
 
@@ -185,7 +184,6 @@ class DocumentTemplateListCreateAPIView(APIView):
 
         templates = DocumentTemplate.objects.filter(
             document_type__institution=institution_id,
-            is_active=True,
             deleted_at__isnull=True
         ).order_by("-created_at")
 
