@@ -713,10 +713,9 @@ def generate_attendance_excel(
 
         for col_offset, current_date in enumerate(date_list, start=len(headers) + 1):
             try:
-                # status = get_employee_attendance_status_for_date(
-                #     employee.id, current_date
-                # )
-                status = []
+                status = get_employee_attendance_status_for_date(
+                    employee.id, current_date
+                )
             except Exception:
                 status = "ERR"
 
@@ -893,301 +892,314 @@ def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
     output.seek(0)
     return output
 
-#TODO: Ensure that decimals are not just formatted since there is a possibility of them being null and we cause issues
-# def generate_payslip_pdf(payslip):
-#     """
-#     Generates a structured payslip PDF with a detailed breakdown of the employee's
-#     specific allowances, deductions, and taxes, only including items applicable to the employee.
-#     """
-#     from decimal import Decimal
-#     from collections import defaultdict
 
-#     # Safely get institution and company name
-#     institution = None
-#     company_name = 'N/A'
-#     currency = 'UGX'
-#     if payslip.employee and payslip.employee.department and payslip.employee.department.institution:
-#         institution = payslip.employee.department.institution
-#         company_name = institution.institution_name
-#         # Assuming the Institution model has a 'currency' field
-#         if hasattr(institution, 'currency') and institution.currency:
-#             currency = institution.currency
+def generate_payslip_pdf(payslip):
+    """
+    Generates a structured payslip PDF with a detailed breakdown of the employee's
+    specific allowances, deductions, and taxes, only including items applicable to the employee.
+    """
+    # from decimal import Decimal
+    # from collections import defaultdict
+    # from io import BytesIO
+    # from weasyprint import HTML
+    # from django import models
 
-#     # Get the employee's specific allowances, deductions, and taxes
-#     employee = payslip.employee
+    # Safely get institution and company name
+    institution = None
+    company_name = 'N/A'
+    currency = 'UGX'
+    if payslip.employee and payslip.employee.department and payslip.employee.department.institution:
+        institution = payslip.employee.department.institution
+        company_name = institution.institution_name
+        if hasattr(institution, 'currency') and institution.currency:
+            currency = institution.currency
 
+    # Get the employee's specific allowances, deductions, and taxes
+    employee = payslip.employee
 
-#     # Fetch relevant allowances
-#     allowances = (
-#         employee.allowances.filter(is_active=True)
-#         .filter(
-#             effective_from__lte=payslip.payroll_period.end_date,
-#         )
-#         .filter(
-#             models.Q(effective_to__gte=payslip.payroll_period.start_date)
-#             | models.Q(effective_to__isnull=True)
-#         )
-#     )
-#     allowances_data = []
-#     for allowance in allowances:
-#         recurrence = allowance.get_recurrence_count(payslip.payroll_period)
-#         amount = allowance.get_calculated_amount() * recurrence
-#         allowances_data.append({'name': allowance.allowance_type.name, 'amount': amount})
+    # Fetch relevant allowances
+    allowances = (
+        employee.allowances.filter(is_active=True)
+        .filter(
+            effective_from__lte=payslip.payroll_period.end_date,
+        )
+        .filter(
+            models.Q(effective_to__gte=payslip.payroll_period.start_date)
+            | models.Q(effective_to__isnull=True)
+        )
+    )
+    allowances_data = []
+    for allowance in allowances:
+        recurrence = allowance.get_recurrence_count(payslip.payroll_period)
+        amount = allowance.get_calculated_amount() * recurrence
+        if amount is not None and isinstance(amount, (Decimal, int, float)):
+            allowances_data.append({'name': allowance.allowance_type.name, 'amount': Decimal(str(amount))})
 
-#     # Fetch regular deductions (excluding attendance penalties)
-#     deductions = (
-#         employee.deductions.filter(is_active=True)
-#         .exclude(deduction_type__attendance_penalty_for__in=["late", "absentism"])
-#         .filter(
-#             effective_from__lte=payslip.payroll_period.end_date,
-#         )
-#         .filter(
-#             models.Q(effective_to__gte=payslip.payroll_period.start_date)
-#             | models.Q(effective_to__isnull=True)
-#         )
-#     )
-#     regular_deductions = []
-#     for deduction in deductions:
-#         recurrence = deduction.get_recurrence_count(payslip.payroll_period)
-#         amount = deduction.get_calculated_amount() * recurrence
-#         regular_deductions.append({'name': deduction.deduction_type.name, 'amount': amount})
+    # Fetch regular deductions (excluding attendance penalties)
+    deductions = (
+        employee.deductions.filter(is_active=True)
+        .exclude(deduction_type__attendance_penalty_for__in=["late", "absentism"])
+        .filter(
+            effective_from__lte=payslip.payroll_period.end_date,
+        )
+        .filter(
+            models.Q(effective_to__gte=payslip.payroll_period.start_date)
+            | models.Q(effective_to__isnull=True)
+        )
+    )
+    regular_deductions = []
+    for deduction in deductions:
+        recurrence = deduction.get_recurrence_count(payslip.payroll_period)
+        amount = deduction.get_calculated_amount() * recurrence
+        if amount is not None and isinstance(amount, (Decimal, int, float)):
+            regular_deductions.append({'name': deduction.deduction_type.name, 'amount': Decimal(str(amount))})
 
-#     # Fetch attendance deductions
-#     attendance_total, deduction_items = payslip.get_attendance_deductions()
-#     attendance_ded_group = defaultdict(Decimal)
-#     for item in deduction_items:
-#         attendance_ded_group[item['name']] += item['amount']
-#     attendance_deductions = [{'name': name, 'amount': amt} for name, amt in attendance_ded_group.items()]
+    # Fetch attendance deductions
+    attendance_total, deduction_items = payslip.get_attendance_deductions()
+    attendance_ded_group = defaultdict(Decimal)
+    for item in deduction_items:
+        if item['amount'] is not None and isinstance(item['amount'], (Decimal, int, float)):
+            attendance_ded_group[item['name']] += Decimal(str(item['amount']))
+    attendance_deductions = [{'name': name, 'amount': amt} for name, amt in attendance_ded_group.items()]
 
-#     # Fetch relevant taxes
-#     taxes = employee.taxes.filter(
-#         effective_from__lte=payslip.payroll_period.end_date,
-#     ).filter(
-#         models.Q(effective_to__gte=payslip.payroll_period.start_date)
-#         | models.Q(effective_to__isnull=True)
-#     )
-#     taxes_data = []
-#     for tax in taxes:
-#         amount = tax.get_tax_amount()
-#         taxes_data.append({'name': tax.institution_tax.tax_name, 'amount': amount})
+    # Fetch relevant taxes
+    taxes = employee.taxes.filter(
+        effective_from__lte=payslip.payroll_period.end_date,
+    ).filter(
+        models.Q(effective_to__gte=payslip.payroll_period.start_date)
+        | models.Q(effective_to__isnull=True)
+    )
+    taxes_data = []
+    for tax in taxes:
+        amount = tax.get_tax_amount()
+        if amount is not None and isinstance(amount, (Decimal, int, float)):
+            taxes_data.append({'name': tax.institution_tax.tax_name, 'amount': Decimal(str(amount))})
 
-#     # Combine all deductions
-#     deductions_data = regular_deductions + attendance_deductions + taxes_data
-#     # Sort deductions by name for better presentation
-#     deductions_data.sort(key=lambda x: x['name'])
+    # Combine all deductions
+    deductions_data = regular_deductions + attendance_deductions + taxes_data
+    deductions_data.sort(key=lambda x: x['name'])
 
-#     # Filter out zero-amount items if desired (optional; comment out if you want to include zeros)
-#     allowances_data = [item for item in allowances_data if item['amount'] > 0]
-#     deductions_data = [item for item in deductions_data if item['amount'] > 0]
+    # Filter out zero-amount items
+    allowances_data = [item for item in allowances_data if item['amount'] > 0]
+    deductions_data = [item for item in deductions_data if item['amount'] > 0]
 
-#     # Get the month and year for the header
-#     pay_period_month = payslip.payroll_period.start_date.strftime('%B %Y')
+    # Get the month and year for the header
+    pay_period_month = payslip.payroll_period.start_date.strftime('%B %Y')
 
-#     # Safely get employee and position details
-#     employee_name = payslip.employee.user.fullname if payslip.employee and payslip.employee.user else 'N/A'
-#     employee_id = payslip.employee.employee_id if payslip.employee else 'N/A'
-#     department_name = payslip.employee.department.name if payslip.employee and payslip.employee.department else 'N/A'
-#     position_name = payslip.employee.position.name if payslip.employee and payslip.employee.position else 'N/A'
+    # Safely get employee and position details
+    employee_name = payslip.employee.user.fullname if payslip.employee and payslip.employee.user else 'N/A'
+    employee_id = payslip.employee.employee_id if payslip.employee else 'N/A'
+    department_name = payslip.employee.department.name if payslip.employee and payslip.employee.department else 'N/A'
+    position_name = payslip.employee.position.name if payslip.employee and payslip.employee.position else 'N/A'
 
-#     html_template = f"""
-#     <!DOCTYPE html>
-#     <html lang="en">
-#     <head>
-#         <meta charset="UTF-8">
-#         <title>Payslip</title>
-#         <style>
-#             @page {{
-#                 size: A4;
-#                 margin: 40px;
-#             }}
-#             body {{
-#                 font-family: Arial, sans-serif;
-#                 font-size: 10px;
-#                 line-height: 1.4;
-#                 color: #333;
-#             }}
-#             .header {{
-#                 text-align: center;
-#                 margin-bottom: 30px;
-#             }}
-#             .company-name {{
-#                 font-size: 24px;
-#                 font-weight: bold;
-#                 color: #2c3e50;
-#             }}
-#             .period-details {{
-#                 font-size: 12px;
-#                 color: #7f8c8d;
-#             }}
-#             h2 {{
-#                 font-size: 16px;
-#                 font-weight: bold;
-#                 border-bottom: 2px solid #34495e;
-#                 padding-bottom: 5px;
-#                 margin-top: 30px;
-#                 margin-bottom: 15px;
-#             }}
-#             table {{
-#                 width: 100%;
-#                 border-collapse: collapse;
-#                 margin-bottom: 20px;
-#             }}
-#             .info-table td {{
-#                 padding: 5px;
-#             }}
-#             .info-table td:nth-child(odd) {{
-#                 font-weight: bold;
-#                 width: 30%;
-#             }}
-#             .financial-table {{
-#                 border: 1px solid #bdc3c7;
-#             }}
-#             .financial-table th {{
-#                 background-color: #ecf0f1;
-#                 font-weight: bold;
-#                 padding: 10px;
-#                 text-align: left;
-#                 border: 1px solid #bdc3c7;
-#             }}
-#             .financial-table td {{
-#                 padding: 8px 10px;
-#                 border: 1px solid #bdc3c7;
-#             }}
-#             .financial-table td:last-child {{
-#                 text-align: right;
-#             }}
-#             .summary-table {{
-#                 margin-top: 20px;
-#                 width: 100%;
-#             }}
-#             .summary-table td {{
-#                 padding: 8px 10px;
-#                 font-weight: bold;
-#                 border: 1px solid #bdc3c7;
-#             }}
-#             .summary-table tr:last-child {{
-#                 font-size: 14px;
-#                 background-color: #e0f2f1;
-#             }}
-#             .summary-table td:last-child {{
-#                 text-align: right;
-#             }}
-#             .summary-table .label {{
-#                 font-weight: normal;
-#                 width: 60%;
-#             }}
-#             .footer {{
-#                 clear: both;
-#                 padding-top: 20px;
-#                 text-align: center;
-#                 font-style: italic;
-#                 font-size: 9px;
-#             }}
-#         </style>
-#     </head>
-#     <body>
-#         <div class="header">
-#             <div class="company-name">{company_name}</div>
-#             <div class="period-details">
-#                 Payslip for {pay_period_month}
-#             </div>
-#             <div class="period-details">
-#                 Period: {payslip.payroll_period.start_date.strftime('%d-%b-%Y')} to {payslip.payroll_period.end_date.strftime('%d-%b-%Y')}
-#             </div>
-#         </div>
+    # Format decimal values for HTML
+    def format_currency(value):
+        if value is None or not isinstance(value, (Decimal, int, float)):
+            return "0"
+        # Convert to integer to remove decimals and format with commas
+        return f"{int(Decimal(str(value))):,}"
 
-#         <h2>Employee Information</h2>
-#         <table class="info-table">
-#             <tr>
-#                 <td>Employee Name:</td>
-#                 <td>{employee_name}</td>
-#                 <td>Employee ID:</td>
-#                 <td>{employee_id}</td>
-#             </tr>
-#             <tr>
-#                 <td>Department:</td>
-#                 <td>{department_name}</td>
-#                 <td>Position:</td>
-#                 <td>{position_name}</td>
-#             </tr>
-#             <tr>
-#                 <td>Days Worked:</td>
-#                 <td>{payslip.days_worked}</td>
-#                 <td>Pay Date:</td>
-#                 <td>{payslip.payroll_period.pay_date.strftime('%d-%b-%Y')}</td>
-#             </tr>
-#         </table>
+    # Generate HTML rows for allowances and deductions
+    allowances_rows = "".join([
+        f'<tr><td>{item["name"]}</td><td>{format_currency(item["amount"])}</td></tr>'
+        for item in allowances_data
+    ])
+    deductions_rows = "".join([
+        f'<tr><td>{item["name"]}</td><td>{format_currency(item["amount"])}</td></tr>'
+        for item in deductions_data
+    ])
+
+    html_template = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Payslip</title>
+        <style>
+            @page {{
+                size: A4;
+                margin: 40px;
+            }}
+            body {{
+                font-family: Arial, sans-serif;
+                font-size: 10px;
+                line-height: 1.4;
+                color: #333;
+            }}
+            .header {{
+                text-align: center;
+                margin-bottom: 30px;
+            }}
+            .company-name {{
+                font-size: 24px;
+                font-weight: bold;
+                color: #2c3e50;
+            }}
+            .period-details {{
+                font-size: 12px;
+                color: #7f8c8d;
+            }}
+            h2 {{
+                font-size: 16px;
+                font-weight: bold;
+                border-bottom: 2px solid #34495e;
+                padding-bottom: 5px;
+                margin-top: 30px;
+                margin-bottom: 15px;
+            }}
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }}
+            .info-table td {{
+                padding: 5px;
+            }}
+            .info-table td:nth-child(odd) {{
+                font-weight: bold;
+                width: 30%;
+            }}
+            .financial-table {{
+                border: 1px solid #bdc3c7;
+            }}
+            .financial-table th {{
+                background-color: #ecf0f1;
+                font-weight: bold;
+                padding: 10px;
+                text-align: left;
+                border: 1px solid #bdc3c7;
+            }}
+            .financial-table td {{
+                padding: 8px 10px;
+                border: 1px solid #bdc3c7;
+            }}
+            .financial-table td:last-child {{
+                text-align: right;
+            }}
+            .summary-table {{
+                margin-top: 20px;
+                width: 100%;
+            }}
+            .summary-table td {{
+                padding: 8px 10px;
+                font-weight: bold;
+                border: 1px solid #bdc3c7;
+            }}
+            .summary-table tr:last-child {{
+                font-size: 14px;
+                background-color: #e0f2f1;
+            }}
+            .summary-table td:last-child {{
+                text-align: right;
+            }}
+            .summary-table .label {{
+                font-weight: normal;
+                width: 60%;
+            }}
+            .footer {{
+                clear: both;
+                padding-top: 20px;
+                text-align: center;
+                font-style: italic;
+                font-size: 9px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <div class="company-name">{company_name}</div>
+            <div class="period-details">
+                Payslip for {pay_period_month}
+            </div>
+            <div class="period-details">
+                Period: {payslip.payroll_period.start_date.strftime('%d-%b-%Y')} to {payslip.payroll_period.end_date.strftime('%d-%b-%Y')}
+            </div>
+        </div>
+
+        <h2>Employee Information</h2>
+        <table class="info-table">
+            <tr>
+                <td>Employee Name:</td>
+                <td>{employee_name}</td>
+                <td>Employee ID:</td>
+                <td>{employee_id}</td>
+            </tr>
+            <tr>
+                <td>Department:</td>
+                <td>{department_name}</td>
+                <td>Position:</td>
+                <td>{position_name}</td>
+            </tr>
+            <tr>
+                <td>Days Worked:</td>
+                <td>{payslip.days_worked}</td>
+                <td>Pay Date:</td>
+                <td>{payslip.payroll_period.pay_date.strftime('%d-%b-%Y')}</td>
+            </tr>
+        </table>
         
-#         <h2>Summary</h2>
-#         <table class="summary-table">
-#             <tbody>
-#                 <tr>
-#                     <td class="label">Gross Salary:</td>
-#                     <td>{payslip.gross_salary}</td>
-#                 </tr>
-#                 <tr>
-#                     <td class="label">Total Allowances:</td>
-#                     <td>{payslip.total_allowances}</td>
-#                 </tr>
-#                 <tr>
-#                     <td class="label">Total Deductions:</td>
-#                     <td>{payslip.total_deductions}</td>
-#                 </tr>
-#                 <tr>
-#                     <td class="label">Net Salary:</td>
-#                     <td>{payslip.net_salary}</td>
-#                 </tr>
-#             </tbody>
-#         </table>
+        <h2>Summary</h2>
+        <table class="summary-table">
+            <tbody>
+                <tr>
+                    <td class="label">Gross Salary:</td>
+                    <td>{format_currency(payslip.gross_salary)}</td>
+                </tr>
+                <tr>
+                    <td class="label">Total Allowances:</td>
+                    <td>{format_currency(payslip.total_allowances)}</td>
+                </tr>
+                <tr>
+                    <td class="label">Total Deductions:</td>
+                    <td>{format_currency(payslip.total_deductions)}</td>
+                </tr>
+                <tr>
+                    <td class="label">Net Salary:</td>
+                    <td>{format_currency(payslip.net_salary)}</td>
+                </tr>
+            </tbody>
+        </table>
 
-#         <h2>Allowances</h2>
-#         <table class="financial-table">
-#             <thead>
-#                 <tr>
-#                     <th>Description</th>
-#                     <th>Amount ({currency})</th>
-#                 </tr>
-#             </thead>
-#             <tbody>
-#                 <tr>
-#                     <td>Basic Salary</td>
-#                     <td>{payslip.basic_salary}</td>
-#                 </tr>
-#                 {"".join(f"""
-#                 <tr>
-#                     <td>{item['name']}</td>
-#                     <td>{item['amount']}</td>
-#                 </tr>""" for item in allowances_data)}
-#             </tbody>
-#         </table>
+        <h2>Allowances</h2>
+        <table class="financial-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount ({currency})</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Basic Salary</td>
+                    <td>{format_currency(payslip.basic_salary)}</td>
+                </tr>
+                {allowances_rows}
+            </tbody>
+        </table>
 
-#         <h2>Deductions</h2>
-#         <table class="financial-table">
-#             <thead>
-#                 <tr>
-#                     <th>Description</th>
-#                     <th>Amount ({currency})</th>
-#                 </tr>
-#             </thead>
-#             <tbody>
-#                 {"".join(f"""
-#                 <tr>
-#                     <td>{item['name']}</td>
-#                     <td>{item['amount']}</td>
-#                 </tr>""" for item in deductions_data)}
-#             </tbody>
-#         </table>
+        <h2>Deductions</h2>
+        <table class="financial-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount ({currency})</th>
+                </tr>
+            </thead>
+            <tbody>
+                {deductions_rows}
+            </tbody>
+        </table>
         
-#         <div class="footer">
-#             This is a computer-generated document and does not require a signature.
-#         </div>
-#     </body>
-#     </html>
-#     """
+        <div class="footer">
+            This is a computer-generated document and does not require a signature.
+        </div>
+    </body>
+    </html>
+    """
     
-#     html_doc = HTML(string=html_template)
-#     pdf_buffer = BytesIO()
-#     html_doc.write_pdf(target=pdf_buffer)
-#     pdf_buffer.seek(0)
+    html_doc = HTML(string=html_template)
+    pdf_buffer = BytesIO()
+    html_doc.write_pdf(target=pdf_buffer)
+    pdf_buffer.seek(0)
     
-#     return pdf_buffer
+    return pdf_buffer  
