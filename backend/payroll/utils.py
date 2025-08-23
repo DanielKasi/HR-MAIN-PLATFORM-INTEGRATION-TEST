@@ -898,11 +898,7 @@ def generate_payslip_pdf(payslip):
     Generates a structured payslip PDF with a detailed breakdown of the employee's
     specific allowances, deductions, and taxes, only including items applicable to the employee.
     """
-    # from decimal import Decimal
-    # from collections import defaultdict
-    # from io import BytesIO
-    # from weasyprint import HTML
-    # from django import models
+
 
     # Safely get institution and company name
     institution = None
