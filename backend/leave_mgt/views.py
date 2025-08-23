@@ -482,7 +482,7 @@ class LeavePolicyListCreateAPIView(APIView):
             .order_by("-created_at")
         )
 
-        if serach_query:
+        if search_query:
             queryset = queryset.filter(
                 Q(name__icontains=search_query) |
                 Q(leave_type__name__icontains=search_query)
