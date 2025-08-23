@@ -1700,30 +1700,7 @@ class WorkTypeDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema(tags=["Employee Type"])
-class EmployeeTypeListCreateAPIView(APIView):
-    @extend_schema(
-        responses=EmployeeTypeSerializer(many=True),
-        description="Get list of all employee types",
-    )
-    def get(self, request):
-        data = EmployeeType.objects.all().order_by("-created_at")
-        paginator = CustomPageNumberPagination()
-        paginated_qs = paginator.paginate_queryset(data, request)
-        serializer = EmployeeTypeSerializer(paginated_qs, many=True)
-        return paginator.get_paginated_response(serializer.data)
 
-    @extend_schema(
-        request=EmployeeTypeSerializer,
-        responses=EmployeeTypeSerializer,
-        description="Create a new employee type",
-    )
-    def post(self, request):
-        serializer = EmployeeTypeSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(tags=["Employee Type"])
@@ -1759,30 +1736,7 @@ class EmployeeTypeDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema(tags=["Work Type"])
-class WorkTypeListCreateAPIView(APIView):
-    @extend_schema(
-        responses=WorkTypeSerializer(many=True),
-        description="Get list of all work types",
-    )
-    def get(self, request):
-        data = WorkType.objects.all().order_by("-created_at")
-        paginator = CustomPageNumberPagination()
-        paginated_qs = paginator.paginate_queryset(data, request)
-        serializer = WorkTypeSerializer(paginated_qs, many=True)
-        return paginator.get_paginated_response(serializer.data)
 
-    @extend_schema(
-        request=WorkTypeSerializer,
-        responses=WorkTypeSerializer,
-        description="Create a new work type",
-    )
-    def post(self, request):
-        serializer = WorkTypeSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(tags=["Work Type"])

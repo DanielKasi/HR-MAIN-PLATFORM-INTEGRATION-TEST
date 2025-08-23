@@ -552,7 +552,22 @@ class ResignationRequestListCreateView(APIView):
         tags=["Offboarding"],
     )
     def get(self, request):
-        queryset = ResignationRequest.objects.all().order_by("-created_at")
+        user = request.user.profile
+        search_query = request.query_params.get('search', None)
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        queryset = ResignationRequest.objects.filter(separation__employee__department__institution=institution, deleted_at__isnull=True).order_by("-created_at")
+
+        if search_query:
+            queryset = queryset.filter(
+                Q(separation__employee__user__fullname__icontains=search_query)
+            )
+
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = ResignationRequestSerializer(paginated_qs, many=True)
@@ -665,7 +680,21 @@ class TerminationInitiationListCreateView(APIView):
         tags=["Offboarding"],
     )
     def get(self, request):
-        queryset = TerminationInitiation.objects.all().order_by("-created_at")
+        user = request.user.profile
+        search_query = request.query_params.get('search', None)
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        queryset = TerminationInitiation.objects.filter(separation__employee_department__institution=institution).order_by("-created_at")
+
+        if search_query:
+            queryset = queryset.filter(
+                Q(separation__employee__user__fullname__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = TerminationInitiationSerializer(paginated_qs, many=True)
