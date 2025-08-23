@@ -28,7 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 import { selectSelectedInstitution, selectSelectedBranch, selectUser } from "@/store/auth/selectors"
-import { getJobApplicationById, updateJobApplication, getJobPositionAdverts } from "@/lib/utils"
+import { getJobApplicationById, updateJobApplication, getJobPositionAdverts, showErrorToast } from "@/lib/utils"
 import type { JobApplication, JobApplicationFormData, JobPositionAdvert } from "@/types/types.utils"
 import { toast } from "sonner"
 import { useDocumentTitle } from "@/hooks/use-document-title"
@@ -134,7 +134,7 @@ export default function EditApplicationPage() {
           currentResumeUrl: fetchedApplication.resume,
           currentCoverLetterUrl: fetchedApplication.cover_letter || undefined,
         })
-      } 
+      }
     } catch (err) {
       setError("Failed to fetch application details")
       toast.error("Failed to load application details")
@@ -222,22 +222,10 @@ export default function EditApplicationPage() {
         applicationId,
         applicationData: updateData,
       })
-
-      if (updatedApplication) {
-        clearFilters(),
-        toast.success("Application updated successfully")
-        router.push(`/applications/${applicationId}`)
-      } else {
-        setError("Failed to update application")
-      }
+      toast.success("Application updated successfully")
+      router.push(`/applications/${updatedApplication.id}`)
     } catch (err: any) {
-      let errorMessage = "An error occurred while updating the application"
-      if (err?.response?.data?.message) {
-        errorMessage = err.response.data.message
-      } else if (err?.message) {
-        errorMessage = err.message
-      }
-      setError(errorMessage)
+      showErrorToast({ error: err, defaultMessage: "An error occurred while updating the application" })
     } finally {
       setIsSubmitting(false)
     }
@@ -299,25 +287,26 @@ export default function EditApplicationPage() {
   }
 
   return (
-    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8"> {/* Add padding here */}
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"> {/* Add margin bottom */}
-        <Button variant="outline" size="sm" onClick={handleGoBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Edit Application</h1>
-            <p className="text-muted-foreground">Update application details for {application?.applicant_name}</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+
+
+        <div className="flex w-full flex-col items-start gap-4">
+          <div className="w-full flex items-center justify-between gap-4">
+            <div className="flex items-center justify-start gap-4 ">
+
+              <Button variant="outline" className="rounded-full aspect-square" size="sm" onClick={handleGoBack}>
+                <ArrowLeft className="h-4 w-4 md:mr-2" />
+              </Button>
+              <h1 className="text-xl md:text-2xl font-bold">Edit Application</h1>
+            </div>
+            <Button variant="outline" className="px-4" size="sm" onClick={fetchApplication}>
+              <RefreshCw className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Refresh</span>
+            </Button>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={fetchApplication}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
+          <p className="text-muted-foreground">Update application details for {application?.applicant_name}</p>
         </div>
       </div>
 
@@ -353,7 +342,7 @@ export default function EditApplicationPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="gender">Gender *</Label>
-                  <Select value={formData.gender} onValueChange={(value:any) => handleInputChange("gender", value)}>
+                  <Select value={formData.gender} onValueChange={(value: any) => handleInputChange("gender", value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -405,7 +394,7 @@ export default function EditApplicationPage() {
                   <Label htmlFor="job_position_advert">Job Position/ Title  *</Label>
                   <Select
                     value={formData.job_position_advert.toString()}
-                    onValueChange={(value:any) => handleInputChange("job_position_advert", Number.parseInt(value))}
+                    onValueChange={(value: any) => handleInputChange("job_position_advert", Number.parseInt(value))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a job advert" />
@@ -430,7 +419,7 @@ export default function EditApplicationPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status">Status *</Label>
-                  <Select value={formData.status} onValueChange={(value:any) => handleInputChange("status", value)}>
+                  <Select value={formData.status} onValueChange={(value: any) => handleInputChange("status", value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -447,7 +436,7 @@ export default function EditApplicationPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="source">Source</Label>
-                <Select value={formData.source} onValueChange={(value:any) => handleInputChange("source", value)}>
+                <Select value={formData.source} onValueChange={(value: any) => handleInputChange("source", value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -518,17 +507,20 @@ export default function EditApplicationPage() {
                 <div className="space-y-2">
                   {formData.currentResumeUrl && (
                     <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">Current resume</span>
-                      </div>
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="link"
                         size="sm"
-                        onClick={() => window.open(formData.currentResumeUrl, "_blank")}
+                        className="h-auto p-0" asChild
                       >
-                        View
+                        <a
+                          href={`${process.env.NEXT_PUBLIC_BASE_URL}${formData.currentResumeUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">View current</span>
+                        </a>
                       </Button>
                     </div>
                   )}
@@ -555,17 +547,20 @@ export default function EditApplicationPage() {
                 <div className="space-y-2">
                   {formData.currentCoverLetterUrl && (
                     <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">Current cover letter</span>
-                      </div>
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="link"
                         size="sm"
-                        onClick={() => window.open(formData.currentCoverLetterUrl!, "_blank")}
+                        className="h-auto p-0" asChild
                       >
-                        View
+                        <a
+                          href={`${process.env.NEXT_PUBLIC_BASE_URL}${formData.currentCoverLetterUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">View current</span>
+                        </a>
                       </Button>
                     </div>
                   )}
@@ -604,7 +599,5 @@ export default function EditApplicationPage() {
     </div>
   )
 }
-function clearFilters() {
-  throw new Error("Function not implemented.")
-}
+
 

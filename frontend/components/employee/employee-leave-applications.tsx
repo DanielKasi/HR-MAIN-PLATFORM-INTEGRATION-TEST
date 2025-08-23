@@ -1,10 +1,10 @@
 "use client";
 
-import React, {useState, useEffect} from "react";
-import {Card, CardContent} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
-import {Button} from "@/components/ui/button";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import React, { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -13,9 +13,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {Label} from "@/components/ui/label";
-import {Input} from "@/components/ui/input";
-import {Textarea} from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -49,7 +49,7 @@ import {
   ILeavePolicy,
   ILeaveBalance,
 } from "@/types/types.utils";
-import {toast} from "sonner";
+import { toast } from "sonner";
 
 interface EmployeeLeaveApplicationsProps {
   employeeId: string;
@@ -58,10 +58,10 @@ interface EmployeeLeaveApplicationsProps {
 }
 
 const DURATION_TYPES = [
-  {value: "full_day", label: "Full Day"},
-  {value: "half_day_morning", label: "Half Day - Morning"},
-  {value: "half_day_afternoon", label: "Half Day - Afternoon"},
-  {value: "hourly", label: "Hourly"},
+  { value: "full_day", label: "Full Day" },
+  { value: "half_day_morning", label: "Half Day - Morning" },
+  { value: "half_day_afternoon", label: "Half Day - Afternoon" },
+  { value: "hourly", label: "Hourly" },
 ];
 
 const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
@@ -322,7 +322,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
             id="start_date"
             type="date"
             value={formData.start_date}
-            onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
             className="focus:ring-orange-500 focus:border-orange-500"
             disabled={isSubmitting}
             min={
@@ -347,7 +347,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
             id="end_date"
             type="date"
             value={formData.end_date}
-            onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
             className="focus:ring-orange-500 focus:border-orange-500"
             disabled={isSubmitting}
             min={formData.start_date}
@@ -385,11 +385,10 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
             {validations.map((validation, index) => (
               <div
                 key={index}
-                className={`flex items-start gap-2 p-3 rounded-lg ${
-                  validation.type === "error"
-                    ? "bg-red-50 border border-red-200"
-                    : "bg-amber-50 border border-amber-200"
-                }`}
+                className={`flex items-start gap-2 p-3 rounded-lg ${validation.type === "error"
+                  ? "bg-red-50 border border-red-200"
+                  : "bg-amber-50 border border-amber-200"
+                  }`}
               >
                 {validation.type === "error" ? (
                   <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
@@ -397,9 +396,8 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
                   <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                 )}
                 <p
-                  className={`text-sm font-medium ${
-                    validation.type === "error" ? "text-red-800" : "text-amber-800"
-                  }`}
+                  className={`text-sm font-medium ${validation.type === "error" ? "text-red-800" : "text-amber-800"
+                    }`}
                 >
                   {validation.message}
                 </p>
@@ -415,9 +413,9 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
     setLoading(true);
     try {
       const [applicationsData, types, policiesData] = await Promise.all([
-        getLeaveApplications({institutionId, employeeId}),
-        getLeaveTypes({institutionId}),
-        getLeavePolicies({institutionId}),
+        getLeaveApplications({ institutionId, employeeId }),
+        getLeaveTypes({ institutionId }),
+        getLeavePolicies({ institutionId }),
       ]);
 
       // Backend already filters by employeeId, so we can use the data directly
@@ -460,8 +458,8 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="hidden sm:flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            <span>New Application</span>
+              <Plus className="h-4 w-4" />
+              <span>New Application</span>
             </Button>
 
           </DialogTrigger>
@@ -470,14 +468,14 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
               <DialogTitle className="text-xl font-semibold">New Leave Application</DialogTitle>
               <DialogDescription>Submit a new leave application request.</DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-h-[80vh] lg:max-h-[70svh] overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 max-h-[80vh] md:max-h-[65svh]  lg:max-h-[70svh] overflow-y-auto">
               <div className="space-y-2">
                 <Label htmlFor="leave_type" className="text-sm font-medium">
                   Leave Type *
                 </Label>
                 <Select
                   value={formData.leave_type}
-                  onValueChange={(value) => setFormData({...formData, leave_type: value})}
+                  onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
                   disabled={isSubmitting}
                 >
                   <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
@@ -512,7 +510,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
                 </Label>
                 <Select
                   value={formData.duration_type}
-                  onValueChange={(value) => setFormData({...formData, duration_type: value})}
+                  onValueChange={(value) => setFormData({ ...formData, duration_type: value })}
                   disabled={isSubmitting}
                 >
                   <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
@@ -535,7 +533,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
                 <Textarea
                   id="reason"
                   value={formData.reason}
-                  onChange={(e) => setFormData({...formData, reason: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                   rows={3}
                   className="focus:ring-orange-500 focus:border-orange-500"
                   disabled={isSubmitting}
@@ -549,7 +547,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
                 <Textarea
                   id="handover_notes"
                   value={formData.handover_notes}
-                  onChange={(e) => setFormData({...formData, handover_notes: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, handover_notes: e.target.value })}
                   rows={2}
                   placeholder="Work delegation and handover details..."
                   className="focus:ring-orange-500 focus:border-orange-500"

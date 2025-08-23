@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
-import { createEmployeeDeduction, updateEmployeeDeduction } from "@/lib/utils"
+import { createEmployeeDeduction, showErrorToast, updateEmployeeDeduction } from "@/lib/utils"
 import { formatCurrency } from "@/lib/helpers"
 import { CreateDeductionTypeDialog } from "@/components/deduction-types/create-deduction-type-dialog"
 import { ContextSelector } from "../employee-allowances/context-selector"
@@ -31,7 +31,7 @@ interface ILocalEmployeeDeduction extends IEmployeeDeduction {
 
 
 
- interface ValidationResult {
+interface ValidationResult {
   context?: string
   context_ids?: string
   allowance_type?: string
@@ -178,9 +178,9 @@ export function EmployeeDeductionFormDialog({
       return
     }
 
-    if (validationErrors.warning) {
-      toast.warning(validationErrors.warning)
-    }
+    // if (validationErrors.warning) {
+    //   toast.warning(validationErrors.warning)
+    // }
 
     setSaving(true)
     try {
@@ -240,7 +240,7 @@ export function EmployeeDeductionFormDialog({
 
       onOpenChange(false)
     } catch (error: any) {
-      toast.error(error?.message || error?.detail || "An error occurred while saving the deduction")
+      showErrorToast({ error, defaultMessage: "An error occurred while saving the deduction" })
     } finally {
       setSaving(false)
     }
@@ -310,11 +310,10 @@ export function EmployeeDeductionFormDialog({
                 disabled={saving}
               >
                 <SelectTrigger
-                  className={`focus:ring-red-500 focus:border-red-500 ${
-                    validationErrors.deduction_type
+                  className={`focus:ring-red-500 focus:border-red-500 ${validationErrors.deduction_type
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                       : ""
-                  }`}
+                    }`}
                 >
                   <SelectValue placeholder="Please select a deduction type" />
                 </SelectTrigger>
@@ -381,11 +380,10 @@ export function EmployeeDeductionFormDialog({
                     }
                   }}
                   disabled={saving}
-                  className={`focus:ring-red-500 focus:border-red-500 ${
-                    validationErrors.amount
+                  className={`focus:ring-red-500 focus:border-red-500 ${validationErrors.amount
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                       : ""
-                  }`}
+                    }`}
                 />
                 {validationErrors.amount ? (
                   <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -411,11 +409,10 @@ export function EmployeeDeductionFormDialog({
                   value={formData.percentage}
                   onChange={(e) => setFormData({ ...formData, percentage: e.target.value })}
                   disabled={saving}
-                  className={`focus:ring-red-500 focus:border-red-500 ${
-                    validationErrors.percentage
+                  className={`focus:ring-red-500 focus:border-red-500 ${validationErrors.percentage
                       ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                       : ""
-                  }`}
+                    }`}
                 />
                 {validationErrors.percentage ? (
                   <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -437,11 +434,10 @@ export function EmployeeDeductionFormDialog({
                 type="date"
                 value={formData.effective_from}
                 onChange={(e) => setFormData({ ...formData, effective_from: e.target.value })}
-                className={`focus:ring-red-500 focus:border-red-500 ${
-                  validationErrors.effective_from
+                className={`focus:ring-red-500 focus:border-red-500 ${validationErrors.effective_from
                     ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                     : ""
-                }`}
+                  }`}
                 disabled={saving}
               />
               {validationErrors.effective_from && (
@@ -461,11 +457,10 @@ export function EmployeeDeductionFormDialog({
                 type="date"
                 value={formData.effective_to}
                 onChange={(e) => setFormData({ ...formData, effective_to: e.target.value })}
-                className={`focus:ring-red-500 focus:border-red-500 ${
-                  validationErrors.effective_to
+                className={`focus:ring-red-500 focus:border-red-500 ${validationErrors.effective_to
                     ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                     : ""
-                }`}
+                  }`}
                 disabled={saving}
                 min={formData.effective_from}
               />
@@ -487,7 +482,7 @@ export function EmployeeDeductionFormDialog({
               <Switch
                 checked={formData.is_active}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                
+
                 disabled={saving}
               />
             </div>

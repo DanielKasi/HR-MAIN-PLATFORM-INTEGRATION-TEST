@@ -1,115 +1,98 @@
 "use client"
 
 import { IEmployee } from "@/types/types.utils"
-import { SearchableSelect } from "../../components/searchable-select"
-import { User } from "lucide-react"
+import PaginatedSearchableSelect, { PaginatedSelectItem } from "@/components/generic/paginated-searchable-select"
+import { getPaginatedEmployees, getPaginatedEmployeesFromUrl } from "@/lib/utils"
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { useEffect, useState } from "react";
 
-export interface Employee {
-  id: string | number
-  name?: string
-  email?: string
-  employee_id?: string
-  department?: string
-  position?: string
-  user?: {
-    fullname?: string
-    email?: string
-  }
-}
 
 export interface EmployeeSearchableSelectProps {
-  employees: IEmployee[]
-  value: (string | number)[]
-  onValueChange: (value: (string | number)[]) => void
-  disabled?: boolean
-  placeholder?: string
-  isLoading?: boolean
-  showEmployeeId?: boolean
-  showDepartment?: boolean
-  className?: string
-  triggerClassName?: string,
-  multiple?:boolean
+  value: (string | number)[];
+  onValueChange: (value: (string | number)[]) => void;
+  disabled?: boolean;
+  placeholder?: string;
+  showEmployeeId?: boolean;
+  showDepartment?: boolean;
+  className?: string;
+  triggerClassName?: string;
+  multiple?: boolean;
+  hideSelectedFromList?: boolean;
+  showSelectedItems?: boolean;
 }
 
 export const EmployeeSearchableSelect = ({
-  employees,
   value,
   onValueChange,
   disabled = false,
+  showSelectedItems = true,
   placeholder = "Select employee(s)",
-  isLoading = false,
   showEmployeeId = true,
   showDepartment = true,
   className,
   triggerClassName,
-  multiple=false
+  multiple = false,
+  hideSelectedFromList = false,
 }: EmployeeSearchableSelectProps) => {
-  
+
+  const currentInstitution = useSelector(selectSelectedInstitution);
+  const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value)
+
+  useEffect(() => {
+    setSelectedItems(value);
+  }, [value])
+
+  // Fetchers
+  const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
+    if (!currentInstitution) { throw new Error("No intitution found !") }
+    return await getPaginatedEmployees({ institutionId: currentInstitution.id, ...query });
+  };
+
+  const fetchFromUrl = async ({ url }: { url: string }) => {
+    return await getPaginatedEmployeesFromUrl({ url });
+  };
 
 
-
-  const employeeItems = employees.map((employee) => {
-
-    const details = []
-
-
-    if (showDepartment && employee.department) {
-      details.push(employee.department)
-    }
-
-    return {
-      id: employee.id,
-      label: `${employee.user?.fullname || ""} - (${employee.department.name || ""})`,
-      value: `${employee.user?.fullname} ${employee.email} ${employee.department.name || ""}`.toLowerCase(),
-    }
-  })
-
-  const selectedItems = value || []
-
-  const handleSelect = (selected: string | number) => {
-    if (!selectedItems.includes(selected)) {
-      if(multiple){
-        onValueChange([...selectedItems, selected])
-      }else {
-        onValueChange([selected])
-
+  const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
+    if (!selectedItems.includes(itemId)) {
+      if (multiple) {
+        onValueChange([...selectedItems, itemId]);
+      } else {
+        onValueChange([itemId]);
       }
     }
-  }
-
-  let displayPlaceholder = placeholder
-
-  if (isLoading) {
-    displayPlaceholder = "Loading employees..."
-  } else if (selectedItems.length > 0) {
-    const selectedNames = selectedItems
-      .map((id) => {
-        const emp = employees.find((e) => e.id.toString() === id.toString())
-        return emp ? emp.user?.fullname : null
-      })
-      .filter(Boolean)
-      .join(", ")
-    displayPlaceholder = selectedNames || placeholder
-  }
-
-  const displayEmptyMessage = isLoading ? "Loading employees..." : "No employees found"
+  };
+  const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
+    console.log("\n\n Removing item  : ", itemId)
+    if (multiple) {
+      onValueChange(selectedItems.filter((id) => String(id) !== String(itemId)));
+    }
+  };
 
   return (
     <div className={className}>
-      <SearchableSelect
-        items={employeeItems}
+      <PaginatedSearchableSelect<IEmployee, { search?: string; page?: number }>
+        paginated
+        fetchFirstPage={fetchFirstPage}
+        fetchFromUrl={fetchFromUrl}
+        getItemId={(emp) => emp.id}
+        getItemLabel={(emp) => emp.user?.fullname || ""}
+        getItemValue={(emp) => emp.id.toString()}
         selectedItems={selectedItems}
-        placeholder={displayPlaceholder}
-        emptyMessage={displayEmptyMessage}
-        searchPlaceholder="Search employees by name, email, ID, or department..."
         onSelect={handleSelect}
-        multiple={multiple} 
-        disabled={disabled || isLoading}
+        onRemove={handleRemove}
+        showSelectedItems={showSelectedItems}
+        multiple={multiple}
+        disabled={disabled}
+        placeholder={placeholder}
+        searchPlaceholder="Search employees by name, email, ID, or department..."
         triggerClassName={`w-full justify-between focus:ring-orange-500 focus:border-orange-500 ${triggerClassName || ""}`}
         popoverClassName="w-full"
+        hideSelectedFromList={hideSelectedFromList}
       />
     </div>
-  )
+  );
 }
 
 export default EmployeeSearchableSelect

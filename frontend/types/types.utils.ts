@@ -1,5 +1,5 @@
-import {ReactNode} from "react";
-import {Branch, ICustomerProfile, IUser, IUserInstitution, Permission, Role, UserProfile} from ".";
+import { ReactNode } from "react";
+import { Branch, ICustomerProfile, IUser, IUserInstitution, Permission, Role, UserProfile } from ".";
 
 export enum CUSTOM_CODES {
   BLOCKED_BY_ADMIN = "BLOCKED_BY_ADMIN",
@@ -262,9 +262,9 @@ export interface IDepartment {
   id: number;
   name: string;
   description?: string | null;
-  institution: number; 
-  institution_details?: IUserInstitution | null; 
-  job_positions?: {id: number; name: string; description: string; department_id: number}[];
+  institution: number;
+  institution_details?: IUserInstitution | null;
+  job_positions?: { id: number; name: string; description: string; department_id: number }[];
 }
 
 
@@ -554,6 +554,9 @@ export interface IInterviewStage {
   candidates_count: number;
 }
 
+export type IInterviewType = "online" | "in_person"
+
+
 export interface IInterview {
   updated_at: any;
   created_at: any;
@@ -568,7 +571,21 @@ export interface IInterview {
   rating?: number | null;
   location: string;
   interview_time: string;
-  interview_type: string;
+  interview_type: IInterviewType;
+}
+
+
+export interface IInterviewFormData {
+  job_position_application: number;
+  interview_stage: number;
+  interview_date: string;
+  feedback?: string | null;
+  rating?: number | null;
+  location: string;
+  interview_time: string;
+  interview_type: IInterviewType;
+  status: string;
+  created_by?: number;
 }
 
 export interface User {
@@ -616,7 +633,7 @@ export interface ICreateEmployeeForm {
   fullname: string;
   email: string;
   phone_number: string;
-  phone_number_country_code?:string;
+  phone_number_country_code?: string;
   position: number;
   department: number;
   work_type: number; // Added
@@ -635,7 +652,7 @@ export interface ICreateEmployeeForm {
   selected_branches: number[]; // Added for multi-branch selection
   emergency_contact_name: string;
   emergency_contact_phone: string;
-  emergency_contact_phone_country_code?:string
+  emergency_contact_phone_country_code?: string
   emergency_contact_relationship: string;
   marital_status: string;
   children_count: number;
@@ -759,18 +776,7 @@ export interface IBulkOnBoardingResponse {
   };
 }
 
-export interface IInterviewFormData {
-  job_position_application: number;
-  interview_stage: number;
-  interview_date: string;
-  feedback?: string | null;
-  rating?: number | null;
-  location: string;
-  interview_time: string;
-  interview_type: string;
-  status: string;
-  created_by: number;
-}
+
 
 export interface IWorkTypeFormData {
   name: string;
@@ -977,10 +983,10 @@ export interface IDisciplinaryAction {
     severity: "low" | "medium" | "high" | "critical";
     is_active: boolean;
     created_at: string;
-  }|null;
+  } | null;
   employee: IEmployee;
   reported_by: IEmployee;
-  assigned_to: IEmployee| null;
+  assigned_to: IEmployee | null;
   incident_date: string;
   reported_date: string;
   description: string;
@@ -1067,7 +1073,7 @@ export interface ILeaveType {
   id: number;
   created_at?: string;
   updated_at?: string;
-    name: string;
+  name: string;
   category: "annual" | "sick" | "personal" | "maternity" | "paternity" | "emergency" | "unpaid";
   description: string;
   max_days_per_year: number;
@@ -1080,8 +1086,8 @@ export interface ILeaveType {
 
 export interface ILeaveBalance {
   id: number;
-  employee:IEmployee;
-  leave_type:ILeaveType;
+  employee: IEmployee;
+  leave_type: ILeaveType;
   available_days: string | number;
   institution: number;
   year: number;
@@ -1434,9 +1440,9 @@ export interface IGeneratedDocumentTemplate {
 }
 
 export interface ICountry {
-  name: {common: string};
+  name: { common: string };
   cca2: string;
-  idd?: {root?: string; suffixes?: string[]};
+  idd?: { root?: string; suffixes?: string[] };
 }
 
 export type ApprovalStepApprover = {
@@ -1764,8 +1770,8 @@ export interface ITaxRuleFormData {
 }
 
 // Legacy interfaces for backward compatibility
-export interface Itax extends ITax {}
-export interface ItaxRules extends ITaxRule {}
+export interface Itax extends ITax { }
+export interface ItaxRules extends ITaxRule { }
 
 export interface IAssetCategory {
   id: number;
@@ -1812,12 +1818,12 @@ export interface IAssetHistory {
   id: number;
   asset: number | IAsset;
   event_type:
-    | "allocated"
-    | "returned"
-    | "maintenance"
-    | "decommissioned"
-    | "created"
-    | "reassigned";
+  | "allocated"
+  | "returned"
+  | "maintenance"
+  | "decommissioned"
+  | "created"
+  | "reassigned";
   performed_by: number | UserProfile;
   affected_user: number | UserProfile;
   notes: string | null;

@@ -1,11 +1,11 @@
 "use client";
 
-import React, {useState, useEffect} from "react";
-import {useRouter} from "next/navigation";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
-import {Textarea} from "@/components/ui/textarea";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -13,22 +13,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {ArrowLeft, Save, Calendar, Users, MapPin, Video, Repeat, Clock} from "lucide-react";
+import { ArrowLeft, Save, Calendar, Users, MapPin, Video, Repeat, Clock } from "lucide-react";
 import Link from "next/link";
-import {useSelector} from "react-redux";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import {Badge} from "@/components/ui/badge";
-import {Checkbox} from "@/components/ui/checkbox";
-import {calendarAPI, getDepartments, getAllEmployees} from "@/lib/utils";
-import {useToast} from "@/hooks/use-toast";
-import {IDepartment, IEmployee} from "@/types/types.utils";
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { calendarAPI, getDepartments, getPaginatedEmployees } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { IDepartment, IEmployee } from "@/types/types.utils";
 
 export default function AddEventPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const selectedInstitution = useSelector(selectSelectedInstitution);
-  const {toast} = useToast();
+  const { toast } = useToast();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -46,7 +46,7 @@ export default function AddEventPage() {
   const [departments, setDepartments] = useState<IDepartment[]>([]);
   const [departmentsLoading, setDepartmentsLoading] = useState(false);
   const [departmentSearchTerm, setDepartmentSearchTerm] = useState("");
-  
+
   const [employees, setEmployees] = useState<IEmployee[]>([]);
   const [employeesLoading, setEmployeesLoading] = useState(false);
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
@@ -86,14 +86,14 @@ export default function AddEventPage() {
 
       const response = await calendarAPI.createEvent(eventData);
       console.log("Event created successfully:", response);
-      
+
       // Show success message
       toast({
         title: "Event Created Successfully!",
         description: `"${eventData.title}" has been added to your calendar.`,
         duration: 3000,
       });
-      
+
       // Reset form data and go back to step 1
       setFormData({
         title: "",
@@ -110,14 +110,14 @@ export default function AddEventPage() {
       setCurrentStep(1);
       setDepartmentSearchTerm(""); // Clear search term
       setEmployeeSearchTerm(""); // Clear employee search term
-      
+
       // Redirect to events page after successful creation
       setTimeout(() => {
-      router.push("/events-holidays");
+        router.push("/events-holidays");
       }, 1000);
     } catch (error) {
       console.error("Error creating event:", error);
-      
+
       // Show error message
       toast({
         title: "Error Creating Event",
@@ -138,9 +138,9 @@ export default function AddEventPage() {
   };
 
   const steps = [
-    {id: 1, title: "Event Details", icon: Calendar},
-    {id: 2, title: "Audience & Mode", icon: Users},
-    {id: 3, title: "Schedule", icon: Clock},
+    { id: 1, title: "Event Details", icon: Calendar },
+    { id: 2, title: "Audience & Mode", icon: Users },
+    { id: 3, title: "Schedule", icon: Clock },
   ];
 
   const isStepComplete = (step: number) => {
@@ -174,7 +174,7 @@ export default function AddEventPage() {
   // Fetch departments from backend
   const fetchDepartments = async () => {
     if (!selectedInstitution?.id) return;
-    
+
     setDepartmentsLoading(true);
     try {
       const fetchedDepartments = await getDepartments({ institutionId: selectedInstitution.id });
@@ -195,10 +195,10 @@ export default function AddEventPage() {
   // Fetch employees from backend
   const fetchEmployees = async () => {
     if (!selectedInstitution?.id) return;
-    
+
     setEmployeesLoading(true);
     try {
-      const fetchedEmployees = await getAllEmployees({ institutionId: selectedInstitution.id });
+      const fetchedEmployees = await getPaginatedEmployees({ institutionId: selectedInstitution.id });
       setEmployees(fetchedEmployees.results || []);
     } catch (error) {
       console.error("Error fetching employees:", error);
@@ -251,7 +251,7 @@ export default function AddEventPage() {
           <Link href="/events-holidays" passHref>
             <Button
               variant="outline"
-              size="sm" 
+              size="sm"
               className="shadow-sm bg-transparent rounded-full w-8 h-8 p-4 flex items-center justify-center"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -264,8 +264,8 @@ export default function AddEventPage() {
             {(departmentsLoading || employeesLoading) && (
               <div className="flex items-center gap-2 text-sm text-slate-600">
                 <div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
-                {departmentsLoading && employeesLoading ? "Loading data..." : 
-                 departmentsLoading ? "Loading departments..." : "Loading employees..."}
+                {departmentsLoading && employeesLoading ? "Loading data..." :
+                  departmentsLoading ? "Loading departments..." : "Loading employees..."}
               </div>
             )}
           </div>
@@ -283,10 +283,9 @@ export default function AddEventPage() {
 
                 return (
                   <React.Fragment key={step.id}>
-                    <div 
-                      className={`flex items-center gap-3 cursor-pointer transition-all duration-200 ${
-                        canClick ? 'hover:scale-105' : ''
-                      }`}
+                    <div
+                      className={`flex items-center gap-3 cursor-pointer transition-all duration-200 ${canClick ? 'hover:scale-105' : ''
+                        }`}
                       onClick={() => {
                         if (canClick) {
                           setCurrentStep(step.id);
@@ -296,13 +295,12 @@ export default function AddEventPage() {
                       <div
                         className={`
                         w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300
-                        ${
-                          isActive
+                        ${isActive
                             ? "bg-primary text-white shadow-lg"
                             : isCompleted
                               ? "bg-primary text-white"
                               : "bg-slate-200 text-slate-600"
-                        }
+                          }
                         ${canClick ? 'hover:shadow-md' : ''}
                       `}
                       >
@@ -310,15 +308,14 @@ export default function AddEventPage() {
                       </div>
                       <div className="hidden sm:block">
                         <p
-                          className={`font-medium transition-colors duration-200 ${
-                            isActive 
-                              ? "text-primary" 
-                              : isCompleted 
-                                ? "text-primary" 
-                                : canClick 
-                                  ? "text-slate-700 hover:text-primary" 
+                          className={`font-medium transition-colors duration-200 ${isActive
+                              ? "text-primary"
+                              : isCompleted
+                                ? "text-primary"
+                                : canClick
+                                  ? "text-slate-700 hover:text-primary"
                                   : "text-slate-600"
-                          }`}
+                            }`}
                         >
                           {step.title}
                         </p>
@@ -478,7 +475,7 @@ export default function AddEventPage() {
                                       </div>
                                     </div>
                                   </div>
-                                  
+
                                   {/* Department List */}
                                   <div className="max-h-60 overflow-y-auto">
                                     {filteredDepartments.length === 0 ? (
@@ -496,7 +493,7 @@ export default function AddEventPage() {
                                               </span>
                                             )}
                                           </div>
-                                </SelectItem>
+                                        </SelectItem>
                                       ))
                                     )}
                                   </div>
@@ -510,7 +507,7 @@ export default function AddEventPage() {
                       {formData.target_audience === "specific_employees" && (
                         <div className="space-y-3">
                           <Label className="text-base font-medium">Select Employees</Label>
-                          
+
                           {/* Employee Search Input */}
                           <div className="relative">
                             <input
@@ -544,39 +541,39 @@ export default function AddEventPage() {
                               </div>
                             ) : (
                               filteredEmployees.map((employee) => (
-                              <div
-                                key={employee.id}
-                                className="flex items-center space-x-3 p-2 hover:bg-slate-50 rounded"
-                              >
-                                <Checkbox
-                                  id={`employee-${employee.id}`}
+                                <div
+                                  key={employee.id}
+                                  className="flex items-center space-x-3 p-2 hover:bg-slate-50 rounded"
+                                >
+                                  <Checkbox
+                                    id={`employee-${employee.id}`}
                                     checked={formData.specific_employees.includes(employee.id.toString())}
                                     onCheckedChange={(checked: boolean) => {
-                                    if (checked) {
-                                      handleInputChange("specific_employees", [
-                                        ...formData.specific_employees,
+                                      if (checked) {
+                                        handleInputChange("specific_employees", [
+                                          ...formData.specific_employees,
                                           employee.id.toString(),
-                                      ]);
-                                    } else {
-                                      handleInputChange(
-                                        "specific_employees",
-                                        formData.specific_employees.filter(
+                                        ]);
+                                      } else {
+                                        handleInputChange(
+                                          "specific_employees",
+                                          formData.specific_employees.filter(
                                             (id) => id !== employee.id.toString(),
-                                        ),
-                                      );
-                                    }
-                                  }}
-                                />
-                                <label
-                                  htmlFor={`employee-${employee.id}`}
-                                  className="flex-1 cursor-pointer"
-                                >
+                                          ),
+                                        );
+                                      }
+                                    }}
+                                  />
+                                  <label
+                                    htmlFor={`employee-${employee.id}`}
+                                    className="flex-1 cursor-pointer"
+                                  >
                                     <div className="font-medium text-slate-900">
                                       {employee.user?.fullname}
                                     </div>
-                                 
-                                </label>
-                              </div>
+
+                                  </label>
+                                </div>
                               ))
                             )}
                           </div>
@@ -612,10 +609,9 @@ export default function AddEventPage() {
                                 key={mode.value}
                                 className={`
                                   p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 flex-1
-                                  ${
-                                    formData.event_mode === mode.value
-                                      ? "border-blue-500 bg-blue-50"
-                                      : "border-slate-200 hover:border-slate-300"
+                                  ${formData.event_mode === mode.value
+                                    ? "border-blue-500 bg-blue-50"
+                                    : "border-slate-200 hover:border-slate-300"
                                   }
                                 `}
                                 onClick={() => handleInputChange("event_mode", mode.value)}
@@ -771,8 +767,8 @@ export default function AddEventPage() {
                     </div>
                   </div>
                 </form>
-                    </div>
-                </div>
+              </div>
+            </div>
           </div>
 
         </div>

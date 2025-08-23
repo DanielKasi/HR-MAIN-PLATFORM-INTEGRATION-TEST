@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { assetsAPI, getAllEmployees } from "@/lib/utils";
+import { assetsAPI, getPaginatedEmployees } from "@/lib/utils";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import type { IAsset, IAssetRequest, IAssetAllocationFormData } from "@/types/types.utils";
@@ -77,10 +77,10 @@ export const CreateAssetAllocationDialog = ({
     try {
       const response = await assetsAPI.getAll();
       // Filter for available assets (not currently allocated)
-      let availableAssets = response.filter((asset: IAsset) => 
+      let availableAssets = response.filter((asset: IAsset) =>
         asset.status === "available" && asset.is_active
       );
-      
+
       // If we have a pre-selected asset, include it even if not available
       if (preSelectedAsset) {
         const preSelectedAssetExists = availableAssets.find(asset => asset.id === preSelectedAsset.id);
@@ -88,7 +88,7 @@ export const CreateAssetAllocationDialog = ({
           availableAssets = [preSelectedAsset, ...availableAssets];
         }
       }
-      
+
       setAssets(availableAssets);
     } catch (error) {
       console.error("Error fetching assets:", error);
@@ -103,7 +103,7 @@ export const CreateAssetAllocationDialog = ({
     }
 
     try {
-      const data = await getAllEmployees({ institutionId: selectedInstitution.id });
+      const data = await getPaginatedEmployees({ institutionId: selectedInstitution.id });
       setEmployees(data.results || []);
     } catch (error) {
       console.error("Error fetching employees:", error);
@@ -115,7 +115,7 @@ export const CreateAssetAllocationDialog = ({
     try {
       const response = await assetsAPI.getAssetRequests();
       // Filter for approved requests
-      const approvedRequests = response.filter((request: IAssetRequest) => 
+      const approvedRequests = response.filter((request: IAssetRequest) =>
         request.asset_request_status === "approved"
       );
       setAssetRequests(approvedRequests);
@@ -130,7 +130,7 @@ export const CreateAssetAllocationDialog = ({
       fetchAssets();
       fetchEmployees();
       fetchAssetRequests();
-      
+
       // If we have a pre-selected asset, set it in the form
       if (preSelectedAsset) {
         setFormData({
@@ -236,7 +236,7 @@ export const CreateAssetAllocationDialog = ({
                     />
                   </div>
                 </div>
-                
+
                 {/* Asset Options */}
                 {filteredAssets.length > 0 ? (
                   filteredAssets.map((asset) => (
@@ -295,7 +295,7 @@ export const CreateAssetAllocationDialog = ({
                       />
                     </div>
                   </div>
-                  
+
                   {/* Employee Options */}
                   {filteredEmployees.length > 0 ? (
                     filteredEmployees.map((employee) => (
@@ -319,7 +319,7 @@ export const CreateAssetAllocationDialog = ({
             )}
           </div>
 
-          
+
         </div>
 
         <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">

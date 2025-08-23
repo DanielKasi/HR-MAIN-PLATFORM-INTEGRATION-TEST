@@ -338,7 +338,7 @@ const LeavePolicyComponent = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Leave Policies</h1>
-              
+
             </div>
           </div>
         </div>
@@ -360,7 +360,7 @@ const LeavePolicyComponent = () => {
                 <SelectTrigger className="w-full sm:w-[110px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
-                <SelectContent> 
+                <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
@@ -382,7 +382,7 @@ const LeavePolicyComponent = () => {
               </Select>
             </div>
             <div className="flex items-center gap-2">
-             
+
               <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_LEAVE_TYPES}>
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                   <DialogTrigger asChild>
@@ -391,7 +391,7 @@ const LeavePolicyComponent = () => {
                       Create Leave Policy
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[980px] w-full rounded-2xl border-0 shadow-2xl overflow-y-auto max-h-[80vh]">
+                  <DialogContent className="sm:max-w-[980px] w-full rounded-2xl border-0 shadow-2xl overflow-y-auto max-h-[80vh] md:max-h-[65svh] ">
                     <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
                       <DialogTitle className="text-2xl font-bold text-gray-900">Add Leave Policy</DialogTitle>
                       <DialogDescription className="text-gray-600 text-base">
@@ -749,7 +749,7 @@ const LeavePolicyComponent = () => {
                 page: 1,
                 search: searchTerm || undefined,
               });
-              
+
               // Transform the data to include populated leave_type
               const transformedResults = response.results.map((policy) => {
                 const leaveType = leaveTypes.find(lt => lt.id === policy.leave_type) || {
@@ -766,13 +766,13 @@ const LeavePolicyComponent = () => {
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString(),
                 } as ILeaveType;
-                
+
                 return {
                   ...policy,
                   leave_type: leaveType,
                 } as LeavePolicy;
               });
-              
+
               return {
                 ...response,
                 results: transformedResults,
@@ -780,7 +780,7 @@ const LeavePolicyComponent = () => {
             }}
             fetchFromUrl={async ({ url }) => {
               const response = await LeavePoliciesAPI.getPaginatedFromUrl({ url });
-              
+
               // Transform the data to include populated leave_type
               const transformedResults = response.results.map((policy) => {
                 const leaveType = leaveTypes.find(lt => lt.id === policy.leave_type) || {
@@ -797,13 +797,13 @@ const LeavePolicyComponent = () => {
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString(),
                 } as ILeaveType;
-                
+
                 return {
                   ...policy,
                   leave_type: leaveType,
                 } as LeavePolicy;
               });
-              
+
               return {
                 ...response,
                 results: transformedResults,
@@ -813,7 +813,7 @@ const LeavePolicyComponent = () => {
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               // Store refresh function in ref when component mounts/updates
               useEffect(() => {
                 refreshTableRef.current = refresh;
@@ -835,7 +835,7 @@ const LeavePolicyComponent = () => {
               const filteredResults = data.results.filter((policy) => {
                 const matchesStatus = statusFilter === "all" || policy.is_active === (statusFilter === "active");
                 const matchesCategory = categoryFilter === "all" || policy.leave_type?.category === categoryFilter;
-                
+
                 return matchesStatus && matchesCategory;
               });
 
@@ -919,7 +919,7 @@ const LeavePolicyComponent = () => {
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem 
+                                  <DropdownMenuItem
                                     onClick={() => {
                                       const policyWithLeaveType = {
                                         ...policy,
@@ -979,7 +979,7 @@ const LeavePolicyComponent = () => {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => {
                                   const policyWithLeaveType = {
                                     ...policy,
