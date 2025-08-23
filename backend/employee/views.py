@@ -87,7 +87,6 @@ class EmployeeListAPIView(APIView):
         try:
             employees = Employee.objects.filter(
                 department__institution_id=institution_id,
-                is_active=True,
                 deleted_at__isnull=True
             )
 
@@ -1429,7 +1428,6 @@ class EmployeeAttendanceListCreateAPIView(APIView):
             )    
         records = EmployeeAttendance.objects.filter(
             employee__department__institution=institution,
-            is_active=True,
             deleted_at__isnull=True
         ).order_by("date")
 
@@ -1563,7 +1561,7 @@ class EmployeeTypeListCreateAPIView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        data = EmployeeType.objects.filter(institution_id=institution_id, is_active=True, deleted_at__isnull=True).order_by(
+        data = EmployeeType.objects.filter(institution_id=institution_id, deleted_at__isnull=True).order_by(
             "-created_at"
         )
 
@@ -1643,7 +1641,7 @@ class WorkTypeListCreateAPIView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        data = WorkType.objects.filter(institution=institution, is_active=True, deleted_at__isnull=True).order_by("-created_at")
+        data = WorkType.objects.filter(institution=institution, deleted_at__isnull=True).order_by("-created_at")
 
         if search_query:
             data = data.filter(
@@ -1841,7 +1839,6 @@ class EmployeeContractListAPIView(APIView):
         contracts = EmployeeContract.objects.filter(
             Q(employee__department__institution=institution) |
             Q(applicant__job_position_advert__job_position__department__institution=institution),
-            is_active=True,
             deleted_at__isnull=True,
         ).order_by("-created_at")
 
