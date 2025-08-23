@@ -529,7 +529,7 @@ class Payslip(UtilityBaseModel):
         within the payroll period.
         """
 
-        # from .utils import get_employee_attendance_status_for_date
+        from .utils import get_employee_attendance_status_for_date
 
         employee = self.employee
         payroll_period = self.payroll_period
@@ -546,9 +546,7 @@ class Payslip(UtilityBaseModel):
 
         current_date = payroll_period.start_date
         while current_date <= payroll_period.end_date:
-            # status = get_employee_attendance_status_for_date(employee.id, current_date)
-            # Escaping bug
-            status = []
+            status = get_employee_attendance_status_for_date(employee.id, current_date)
 
             for d_type in attendance_deduction_types:
 
