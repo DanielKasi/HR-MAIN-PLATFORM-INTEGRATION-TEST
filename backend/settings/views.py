@@ -27,7 +27,7 @@ class SystemConfigurationListCreateAPIView(APIView):
         tags=["System Configurations"],
     )
     def get(self, request):
-        queryset = SystemConfiguration.objects.all().order_by("-id")
+        queryset = SystemConfiguration.objects.filter(deleted_at__isnull=True).order_by("-id")
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = SystemConfigurationSerializer(paginated_qs, many=True)

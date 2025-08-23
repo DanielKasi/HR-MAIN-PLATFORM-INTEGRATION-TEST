@@ -21,6 +21,7 @@ from .views import (
     GoogleAuthCallbackView,
     UserDetailsWithInstitutions,
     CountryListAPIView,
+    ChangeEmailAndResendOTPAPIView
 )
 
 
@@ -32,6 +33,7 @@ urlpatterns = [
         UserInstitutionsListAPIView.as_view(),
         name="user-attached-institutions",
     ),
+    path('change-email-and-resend-otp/', ChangeEmailAndResendOTPAPIView.as_view(), name='change-email-and-resend-otp'),
     path("verify-otp/", VerifyOTPAPIView.as_view(), name="verify-otp"),
     path(
         "reset-password/", VerifyPasswordResetAPIView.as_view(), name="reset-password"
