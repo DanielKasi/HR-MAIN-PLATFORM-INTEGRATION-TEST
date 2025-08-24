@@ -146,12 +146,12 @@ class InstitutionSerializer(serializers.ModelSerializer):
                         salary_max=job_data.get("salary_max", 100000),
                     )
 
-            # Create InstitutionDocuments
+            # Create InstitutionDocuments with correct field names
             for file, title in zip(document_files, document_titles):
                 InstitutionDocument.objects.create(
                     institution=institution,
-                    file=file,
-                    title=title,
+                    document_file=file,  # Changed from 'file' to 'document_file'
+                    document_title=title,  # Changed from 'title' to 'document_title'
                 )
 
         logger.info(
