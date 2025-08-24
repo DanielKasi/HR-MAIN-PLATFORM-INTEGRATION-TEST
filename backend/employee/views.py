@@ -330,8 +330,8 @@ class EmployeeCreateAPIView(APIView):
                 "Widowed": "widowed",
             }
 
-            # Cache foreign key mappings
-            print("Fetching foreign key mappings")
+            # Cache foreign key mappings and create missing instances
+            print("Fetching and creating foreign key mappings")
             field_mappings = {
                 "position": JobPosition,
                 "department": Department,
@@ -345,6 +345,7 @@ class EmployeeCreateAPIView(APIView):
                 if field in df.columns:
                     names = df[field].dropna().str.strip().unique()
                     if names.size > 0:
+                        # Fetch existing records
                         existing = model.objects.filter(name__in=names)
                         print(
                             f"Database {field} values: {[item.name for item in existing]}"
@@ -355,12 +356,48 @@ class EmployeeCreateAPIView(APIView):
                         instance_mappings[field] = {
                             item.name.lower(): item for item in existing
                         }
+                        # Create missing records
                         input_names = [str(name).strip().lower() for name in names]
                         missing = [
                             name for name in input_names if name not in mappings[field]
                         ]
                         if missing:
-                            print(f"Missing {field}s: {missing}")
+                            print(f"Creating missing {field}s: {missing}")
+                            for name in missing:
+                                # Basic creation with minimal required fields
+                                try:
+                                    if field == "position":
+                                        instance = model.objects.create(
+                                            name=name.title(),
+                                            institution=institution
+                                        )
+                                    elif field == "department":
+                                        instance = model.objects.create(
+                                            name=name.title(),
+                                            institution=institution
+                                        )
+                                    elif field == "work_type":
+                                        instance = model.objects.create(
+                                            name=name.title(),
+                                            institution=institution
+                                        )
+                                    elif field == "employee_type":
+                                        instance = model.objects.create(
+                                            name=name.title(),
+                                            institution=institution
+                                        )
+                                    elif field == "payroll_branch":
+                                        instance = model.objects.create(
+                                            name=name.title(),
+                                            institution=institution
+                                        )
+                                    mappings[field][name] = instance.id
+                                    instance_mappings[field][name] = instance
+                                    print(f"Created {field}: {name.title()}")
+                                except Exception as e:
+                                    print(f"Error creating {field} '{name}': {str(e)}")
+                                    # Continue with other records but log error
+                                    continue
 
             # Check for duplicate emails in the input file and existing database
             print("Checking for duplicate emails")
@@ -463,8 +500,7 @@ class EmployeeCreateAPIView(APIView):
                                     continue
                                 value = str(value).strip()
                                 if column in field_mappings and value:
-                                    mapping = instance_mappings.get(column, {})
-                                    instance = mapping.get(value.lower())
+                                    instance = instance_mappings.get(column, {}).get(value.lower())
                                     if instance is None:
                                         row_errors[column] = {"error": f'"{value}" does not exist.'}
                                     else:
@@ -527,7 +563,6 @@ class EmployeeCreateAPIView(APIView):
                                 except (ValueError, TypeError):
                                     row_errors[field] = {"error": "Must be a valid number."}
                                     employee_data[field] = 0
-
 
                         if row_errors:
                             batch_errors.append(
