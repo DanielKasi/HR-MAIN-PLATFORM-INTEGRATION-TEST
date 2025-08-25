@@ -193,6 +193,8 @@ class JobPositionAdvert(UtilityBaseModel):
         ],
         default="external",
     )
+    work_type = models.ForeignKey('employee.WorkType', null=True, blank=True, on_delete=models.SET_NULL)
+    employee_type = models.ForeignKey('employee.employeeType', null=True, blank=True, on_delete=models.SET_NULL)
     published_date = models.DateTimeField(default=timezone.now)
     expiry_date = models.DateTimeField()
     number_of_employees_expected = models.PositiveIntegerField(blank=True, null=True)
