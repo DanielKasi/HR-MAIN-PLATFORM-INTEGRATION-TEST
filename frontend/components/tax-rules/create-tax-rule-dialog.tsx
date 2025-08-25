@@ -20,6 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { taxRulesAPI } from "@/lib/utils";
 import type { ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
+import FormattedNumberInput from "../common/inputs/formatted-number-input";
 
 interface CreateTaxRuleDialogProps {
   taxId: number;
@@ -193,14 +194,14 @@ export function CreateTaxRuleDialog({
                 Percentage Rate *
               </Label>
               <div className="relative">
-                <Input
+                <FormattedNumberInput
                   id="tax_rule_percentage"
                   type="number"
                   min="0"
                   max="100"
                   step="0.01"
                   value={formData.tax_rule_percentage || ""}
-                  onChange={(e) => setFormData({ ...formData, tax_rule_percentage: parseFloat(e.target.value) || undefined })}
+                  onValuChange={(e) => setFormData({ ...formData, tax_rule_percentage: e })}
                   placeholder="e.g., 10.5"
                   disabled={isSubmitting}
                   className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pr-8"
@@ -216,13 +217,12 @@ export function CreateTaxRuleDialog({
                 Fixed Amount *
               </Label>
               <div className="relative">
-                <Input
+                <FormattedNumberInput
                   id="tax_rule_fixed_amount"
-                  type="number"
                   min="0"
                   step="0.01"
                   value={formData.tax_rule_fixed_amount || ""}
-                  onChange={(e) => setFormData({ ...formData, tax_rule_fixed_amount: parseFloat(e.target.value) || undefined })}
+                  onValuChange={(val) => setFormData({ ...formData, tax_rule_fixed_amount: val })}
                   placeholder="e.g., 5000.00"
                   disabled={isSubmitting}
                   className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pl-8"
@@ -237,13 +237,13 @@ export function CreateTaxRuleDialog({
                 Salary From *
               </Label>
               <div className="relative">
-                <Input
+                <FormattedNumberInput
                   id="salary_from"
                   type="number"
                   min="0"
                   step="0.01"
                   value={formData.salary_from || ""}
-                  onChange={(e) => setFormData({ ...formData, salary_from: parseFloat(e.target.value) || 0 })}
+                  onValuChange={(value) => setFormData({ ...formData, salary_from: value})}
                   placeholder="e.g., 0"
                   disabled={isSubmitting}
                   className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pl-8"
@@ -256,13 +256,13 @@ export function CreateTaxRuleDialog({
                 Salary To *
               </Label>
               <div className="relative">
-                <Input
+                <FormattedNumberInput
                   id="salary_to"
                   type="number"
                   min="0"
                   step="0.01"
                   value={formData.salary_to || ""}
-                  onChange={(e) => setFormData({ ...formData, salary_to: parseFloat(e.target.value) || 0 })}
+                  onValuChange={(val) => setFormData({ ...formData, salary_to: val })}
                   placeholder="e.g., 50000"
                   disabled={isSubmitting}
                   className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pl-8"

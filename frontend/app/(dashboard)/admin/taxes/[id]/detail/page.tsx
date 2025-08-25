@@ -39,6 +39,7 @@ import { taxesAPI, taxRulesAPI } from "@/lib/utils";
 import type { ITax, ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
 import { formatCurrency } from "@/lib/helpers";
+import { CardHeader } from "@/components/ui/card";
 
 // Use backend types
 export type { ITax, ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
@@ -209,23 +210,6 @@ const TaxDetailComponent = () => {
 
   const hasFilters = searchTerm || statusFilter !== "all";
 
-  if (!tax) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={handleBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Taxes
-          </Button>
-        </div>
-        <div className="text-center py-8">
-          <Info className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">Tax not found</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -236,7 +220,7 @@ const TaxDetailComponent = () => {
         </Button>
       </div>
 
-      {/* Tax Details */}
+      { tax && (
       <div className="bg-white rounded-lg border shadow-sm">
         <div className="p-6 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -254,6 +238,8 @@ const TaxDetailComponent = () => {
           </div>
         </div>
       </div>
+      )
+      }
 
             {/* Tax Rules Section */}
       <div className="bg-white rounded-lg border shadow-sm">
@@ -301,7 +287,27 @@ const TaxDetailComponent = () => {
         {/* Table */}
         <div className="p-6">
           {isLoading ? (
-            <TableSkeleton />
+                        <div className="p-2 space-y-6 ">
+              <div className="h-[calc(100vh-2rem)]">
+                <CardHeader className="border-b">
+                  <div className="flex justify-between gap-8 items-center">
+                    <div className="flex items-center justify-start gap-4">
+                      <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                      <div className="space-y-2">
+                        <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3">
+                      <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <TableSkeleton rows={10} columns={8} />
+              </div>
+            </div>
           ) : (
             <>
               {/* Desktop Table */}

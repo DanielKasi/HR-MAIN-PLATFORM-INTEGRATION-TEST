@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { taxesAPI } from "@/lib/utils";
+import { showErrorToast, taxesAPI } from "@/lib/utils";
 import type { ITax, ITaxFormData } from "@/types/types.utils";
 
 interface CreateTaxDialogProps {
@@ -61,8 +61,7 @@ export function CreateTaxDialog({
       resetFormData();
       setIsOpen(false);
     } catch (error: any) {
-      console.warn("Error creating tax:", error);
-      toast.error(error.message || "An error occurred while creating the tax");
+      showErrorToast({error, defaultMessage:"An error occurred while creating the tax"})
     } finally {
       setIsSubmitting(false);
     }

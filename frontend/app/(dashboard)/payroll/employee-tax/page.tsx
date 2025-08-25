@@ -1,149 +1,161 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { Edit, MoreVertical, Plus, Search, Settings, Trash, X } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { toast } from "sonner"
-import { useSelector } from "react-redux"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
+import {useState, useEffect, useRef} from "react";
+import {Edit, MoreVertical, Plus, Search, Settings, Trash, X} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Badge} from "@/components/ui/badge";
+import {toast} from "sonner";
+import {useSelector} from "react-redux";
 import {
-  taxAPI,
-  getPaginatedEmployees,
-  showErrorToast,
-} from "@/lib/utils"
-import type { IEmployeeTax, IEmployee, ITax } from "@/types/types.utils"
-import { selectSelectedInstitution } from "@/store/auth/selectors"
-import { EmployeeTaxFormDialog } from "@/components/employee-taxes/employee-tax-form-dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu"
-import { DeleteConfirmationDialog } from "@/components/common/dialogs/delete-confirmation-dialog"
-import { DropdownMenuLabel } from "@/components/ui/dropdown-menu"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import {taxAPI, getPaginatedEmployees, showErrorToast} from "@/lib/utils";
+import type {IEmployeeTax, IEmployee, ITax} from "@/types/types.utils";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {EmployeeTaxFormDialog} from "@/components/employee-taxes/employee-tax-form-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@radix-ui/react-dropdown-menu";
+import {DeleteConfirmationDialog} from "@/components/common/dialogs/delete-confirmation-dialog";
+import {DropdownMenuLabel} from "@/components/ui/dropdown-menu";
+import {CardHeader} from "@/components/ui/card";
+import {TableSkeleton} from "@/components/common/table-skeleton";
 
 const getStatusColor = (status: string) => {
   switch (status) {
     case "Active":
-      return "bg-green-100 text-green-800 border-green-200"
+      return "bg-green-100 text-green-800 border-green-200";
     case "Upcoming":
-      return "bg-blue-100 text-blue-800 border-blue-200"
+      return "bg-blue-100 text-blue-800 border-blue-200";
     case "Expired":
-      return "bg-red-100 text-red-800 border-red-200"
+      return "bg-red-100 text-red-800 border-red-200";
     default:
-      return "bg-gray-100 text-gray-800 border-gray-200"
+      return "bg-gray-100 text-gray-800 border-gray-200";
   }
-}
+};
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
-  })
-}
+  });
+};
 
 export default function EmployeeTaxesPage() {
-  const [employees, setEmployees] = useState<IEmployee[]>([])
-  const [taxTypes, setTaxTypes] = useState<ITax[]>([])
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingTax, setEditingTax] = useState<IEmployeeTax | null>(null)
-  const [deletingTax, setDeletingTax] = useState<IEmployeeTax | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "expired" | "upcoming">("all")
-  const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
+  const [employees, setEmployees] = useState<IEmployee[]>([]);
+  const [taxTypes, setTaxTypes] = useState<ITax[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingTax, setEditingTax] = useState<IEmployeeTax | null>(null);
+  const [deletingTax, setDeletingTax] = useState<IEmployeeTax | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "active" | "inactive" | "expired" | "upcoming"
+  >("all");
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(true);
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const [isDeleting, setIsDeleting] = useState(false);
-
 
   const refreshFunctionRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const fetchTaxTypes = async () => {
       if (!selectedInstitution?.id) {
-        return
+        return;
       }
 
       try {
-        const types = await taxAPI.getAll()
-        setTaxTypes(types || [])
+        const types = await taxAPI.getAll();
+        setTaxTypes(types || []);
       } catch (error) {
-        setTaxTypes([])
-        toast.error("Failed to load tax types")
+        setTaxTypes([]);
+        toast.error("Failed to load tax types");
       }
-    }
+    };
 
-    fetchTaxTypes()
-  }, [selectedInstitution?.id])
+    fetchTaxTypes();
+  }, [selectedInstitution?.id]);
 
   useEffect(() => {
-    fetchEmployees()
-  }, [selectedInstitution])
+    fetchEmployees();
+  }, [selectedInstitution]);
 
   const fetchEmployees = async () => {
     if (!selectedInstitution?.id) {
-      return
+      return;
     }
 
-    setIsLoadingEmployees(true)
+    setIsLoadingEmployees(true);
     try {
-      const fetchedEmployees = await getPaginatedEmployees({ institutionId: selectedInstitution.id })
-      setEmployees(fetchedEmployees.results || [])
+      const fetchedEmployees = await getPaginatedEmployees({institutionId: selectedInstitution.id});
+      setEmployees(fetchedEmployees.results || []);
     } catch (error: any) {
-      setEmployees([])
-      toast.error(error?.message || error?.detail || "Failed to load employees")
+      setEmployees([]);
+      toast.error(error?.message || error?.detail || "Failed to load employees");
     } finally {
-      setIsLoadingEmployees(false)
+      setIsLoadingEmployees(false);
     }
-  }
+  };
 
   const handleFormSuccess = (tax: IEmployeeTax, isEdit: boolean) => {
-    setEditingTax(null)
+    setEditingTax(null);
     // The PaginatedTableWrapper will handle refreshing the data
-    refreshFunctionRef.current?.()
-  }
+    refreshFunctionRef.current?.();
+  };
 
   const handleTaxTypeCreated = (newType: ITax) => {
-    setTaxTypes(prev => [...prev, newType])
-  }
+    setTaxTypes((prev) => [...prev, newType]);
+  };
 
   const handleEdit = (tax: IEmployeeTax) => {
-    setEditingTax(tax)
-    setIsDialogOpen(true)
-  }
+    setEditingTax(tax);
+    setIsDialogOpen(true);
+  };
 
   const handleDelete = async () => {
-    if (!deletingTax) { return }
+    if (!deletingTax) {
+      return;
+    }
     setIsDeleting(true);
     try {
-      await taxAPI.deleteEmployeeTax(deletingTax.id)
+      await taxAPI.deleteEmployeeTax(deletingTax.id);
       toast.success("Employee tax deleted successfully");
       if (refreshFunctionRef.current) {
-        refreshFunctionRef.current()
+        refreshFunctionRef.current();
       }
     } catch (error: any) {
-      showErrorToast({ error, defaultMessage: "An error occurred while deleting the employee tax" })
+      showErrorToast({error, defaultMessage: "An error occurred while deleting the employee tax"});
     } finally {
       setIsDeleting(false);
     }
-  }
+  };
 
   const openNewTaxDialog = () => {
-    setEditingTax(null)
-    setIsDialogOpen(true)
-  }
+    setEditingTax(null);
+    setIsDialogOpen(true);
+  };
 
   const clearFilters = () => {
-    setSearchTerm("")
-    setStatusFilter("all")
-  }
+    setSearchTerm("");
+    setStatusFilter("all");
+  };
 
   if (!selectedInstitution || !selectedInstitution.id) {
     return (
       <div className="flex justify-center items-center h-64">
         <span className="ml-2">No institution selected...</span>
       </div>
-    )
+    );
   }
 
   return (
@@ -153,7 +165,9 @@ export default function EmployeeTaxesPage() {
         <div className="p-6 border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Employee Tax Configurations</h1>
+              <h1 className="text-lg md:text-2xl font-bold text-gray-900">
+                Employee Tax Configurations
+              </h1>
             </div>
           </div>
         </div>
@@ -171,7 +185,12 @@ export default function EmployeeTaxesPage() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <Select value={statusFilter} onValueChange={(value: string) => setStatusFilter(value as "all" | "active" | "inactive" | "expired" | "upcoming")}>
+              <Select
+                value={statusFilter}
+                onValueChange={(value: string) =>
+                  setStatusFilter(value as "all" | "active" | "inactive" | "expired" | "upcoming")
+                }
+              >
                 <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
@@ -185,17 +204,12 @@ export default function EmployeeTaxesPage() {
               </Select>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                onClick={openNewTaxDialog}
-                disabled={!selectedInstitution.id}
-              >
+              <Button onClick={openNewTaxDialog} disabled={!selectedInstitution.id}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Tax Configuration
               </Button>
             </div>
           </div>
-
-
         </div>
         <div className="p-6">
           <PaginatedTableWrapper<IEmployeeTax>
@@ -212,16 +226,33 @@ export default function EmployeeTaxesPage() {
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({ data, loading, refresh }) => {
+            {({data, loading, refresh}) => {
               useEffect(() => {
                 refreshFunctionRef.current = refresh;
               }, [refresh]);
+
               if (loading) {
                 return (
-                  <div className="space-y-4">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="w-full h-12 bg-muted/10 rounded-md animate-pulse" />
-                    ))}
+                  <div className="p-2 space-y-6 ">
+                    <div className="h-[calc(100vh-2rem)]">
+                      <CardHeader className="border-b">
+                        <div className="flex justify-between gap-8 items-center">
+                          <div className="flex items-center justify-start gap-4">
+                            <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                            <div className="space-y-2">
+                              <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                              <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3">
+                            <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+                            <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+                            <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <TableSkeleton rows={10} columns={8} />
+                    </div>
                   </div>
                 );
               }
@@ -232,7 +263,9 @@ export default function EmployeeTaxesPage() {
                     <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No employee taxes found</h3>
                     <p className="text-muted-foreground mb-4">
-                      {searchTerm ? "No employee taxes match your search criteria." : "Get started by creating your first employee tax configuration."}
+                      {searchTerm
+                        ? "No employee taxes match your search criteria."
+                        : "Get started by creating your first employee tax configuration."}
                     </p>
                   </div>
                 );
@@ -244,9 +277,13 @@ export default function EmployeeTaxesPage() {
                 const effectiveFrom = new Date(tax.effective_from);
                 const effectiveTo = tax.effective_to ? new Date(tax.effective_to) : null;
 
-                const matchesStatus = statusFilter === "all" ||
-                  (statusFilter === "active" && effectiveFrom <= now && (!effectiveTo || effectiveTo >= now)) ||
-                  (statusFilter === "inactive" && (effectiveFrom > now || (effectiveTo && effectiveTo < now))) ||
+                const matchesStatus =
+                  statusFilter === "all" ||
+                  (statusFilter === "active" &&
+                    effectiveFrom <= now &&
+                    (!effectiveTo || effectiveTo >= now)) ||
+                  (statusFilter === "inactive" &&
+                    (effectiveFrom > now || (effectiveTo && effectiveTo < now))) ||
                   (statusFilter === "expired" && effectiveTo && effectiveTo < now) ||
                   (statusFilter === "upcoming" && effectiveFrom > now);
 
@@ -280,25 +317,24 @@ export default function EmployeeTaxesPage() {
                     </TableHeader>
                     <TableBody>
                       {filteredResults.map((tax) => {
-                        const now = new Date()
-                        const effectiveFrom = new Date(tax.effective_from)
-                        const effectiveTo = tax.effective_to ? new Date(tax.effective_to) : null
+                        const now = new Date();
+                        const effectiveFrom = new Date(tax.effective_from);
+                        const effectiveTo = tax.effective_to ? new Date(tax.effective_to) : null;
 
-                        let status = "Inactive"
+                        let status = "Inactive";
 
                         if (effectiveFrom <= now && (!effectiveTo || effectiveTo >= now)) {
-                          status = "Active"
+                          status = "Active";
                         } else if (effectiveFrom > now) {
-                          status = "Upcoming"
+                          status = "Upcoming";
                         } else if (effectiveTo && effectiveTo < now) {
-                          status = "Expired"
+                          status = "Expired";
                         }
 
                         return (
                           <TableRow key={tax.id}>
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-3">
-
                                 <div className="font-medium text-gray-900">
                                   {tax.employee?.user?.fullname || "N/A"}
                                 </div>
@@ -314,19 +350,19 @@ export default function EmployeeTaxesPage() {
                               {tax.effective_to ? formatDate(tax.effective_to) : "N/A"}
                             </TableCell>
                             <TableCell>
-                              <Badge className={getStatusColor(status)}>
-                                {status}
-                              </Badge>
+                              <Badge className={getStatusColor(status)}>{status}</Badge>
                             </TableCell>
                             <TableCell className="text-right">
-
-                              <DropdownMenu >
+                              <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="sm">
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="z-[100] bg-white shadow-lg shadow-black/10 rounded-md w-[10rem] p-1">
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="z-[100] bg-white shadow-lg shadow-black/10 rounded-md w-[10rem] p-1"
+                                >
                                   <DropdownMenuItem
                                     className="flex items-center justify-start gap-4 hover:bg-gray-200 cursor-pointer w-full py-2"
                                     onClick={() => handleEdit(tax)}
@@ -341,12 +377,11 @@ export default function EmployeeTaxesPage() {
                                     <Trash className="h-4 w-4 mr-1" />
                                     Delete
                                   </DropdownMenuItem>
-
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
                           </TableRow>
-                        )
+                        );
                       })}
                     </TableBody>
                   </Table>
@@ -367,7 +402,7 @@ export default function EmployeeTaxesPage() {
         onSuccess={handleFormSuccess}
         onTaxCreated={handleTaxTypeCreated}
       />
-      {deletingTax &&
+      {deletingTax && (
         <DeleteConfirmationDialog
           isOpen={!!deletingTax}
           onClose={() => setDeletingTax(null)}
@@ -376,8 +411,7 @@ export default function EmployeeTaxesPage() {
           isDeleting={isDeleting}
           onConfirm={handleDelete}
         />
-      }
+      )}
     </div>
-  )
+  );
 }
-
