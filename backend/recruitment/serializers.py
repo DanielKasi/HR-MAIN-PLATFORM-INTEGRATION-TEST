@@ -17,6 +17,8 @@ from django.db import transaction
 from users.models import CustomUser
 from users.serializers import CustomUserSerializer
 from recruitment.models import RequiredDocument
+from employee.models import Employee, WorkType, EmployeeType
+
 
 
 
@@ -198,6 +200,8 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
     applications = serializers.SerializerMethodField(read_only=True)
     job_position_details = serializers.SerializerMethodField()
     interview_stages = serializers.SerializerMethodField(read_only=True)
+    work_type = serializers.PrimaryKeyRelatedField(queryset=WorkType.objects.all(), required=False)
+    employee_type = serializers.PrimaryKeyRelatedField(queryset=EmployeeType.objects.all(), required=False)
 
     class Meta:
         model = JobPositionAdvert
@@ -212,7 +216,29 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
             "extra_information",
             "applications",
             "interview_stages",
+            "work_type",
+            "employee_type",
         ]
+
+    def to_representation(self, instance):
+        """Customize output for work_type and employee_type"""
+        representation = super().to_representation(instance)
+
+        # Add work_type details
+        if instance.work_type:
+            representation["work_type"] = {
+                "id": instance.work_type.id,
+                "name": instance.work_type.name 
+            }
+
+        # Add employee_type details
+        if instance.employee_type:
+            representation["employee_type"] = {
+                "id": instance.employee_type.id,
+                "name": instance.employee_type.name  
+            }
+
+        return representation   
 
     def get_applications(self, obj):
         applications = JobAdvertApplication.objects.filter(job_position_advert=obj)
@@ -349,7 +375,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
         # Validate employee IDs
         employee_ids = attrs.get("apply_salary_to_employees", [])
         if employee_ids:
-            from employee.models import Employee
+
 
             invalid_ids = (
                 Employee.objects.exclude(id__in=employee_ids)
@@ -406,7 +432,6 @@ class JobPositionSerializer(serializers.ModelSerializer):
         return job_position
 
     def update(self, instance, validated_data):
-        from employee.models import Employee
 
         employee_ids = validated_data.pop("apply_salary_to_employees", [])
         documents_data = validated_data.pop("required_documents", None)
