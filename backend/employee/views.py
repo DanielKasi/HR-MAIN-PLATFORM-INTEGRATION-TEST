@@ -1816,6 +1816,7 @@ class EmployeeContractListAPIView(APIView):
     def get(self, request):
         user = request.user.profile
         search_query = request.query_params.get('search', None)
+        employee_id = request.query_params.get('employee_id')
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
@@ -1831,6 +1832,9 @@ class EmployeeContractListAPIView(APIView):
             deleted_at__isnull=True,
         ).order_by("-created_at")
 
+        if employee_id:
+            contracts = contracts.filter(employee__id=employee_id)
+            
         if search_query:
             contracts = contracts.filter(
                 Q(applicant__applicant_name__icontains=search_query) |
