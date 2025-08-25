@@ -87,7 +87,7 @@ export function EmployeesTable({
   };
 
   return (
-    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 min-h-screen">
+    <div className="flex flex-col w-full h-full p-4 bg-white rounded-lg min-h-screen">
       <CardHeader className="space-y-4">
         <CardTitle className="flex flex-row items-center justify-between gap-4">
           <h1 className="text-xl md:text-2xl font-bold">Employees</h1>

@@ -1019,7 +1019,7 @@ export const downloadPayrollPasslipsReport = async ({
   period_id: string | number;
 }): Promise<void> => {
   const payload = {
-    period_id: period_id,
+    payroll_period_id: period_id,
   };
 
   const response = await fetch(
@@ -1059,33 +1059,97 @@ export const downloadSinglePayslip = async ({
   accessToken: string;
   payslipId: string | number;
 }): Promise<void> => {
+  const url = `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/payroll/payslips/${payslipId}/download/`;
 
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/payroll/payslips/${payslipId}/download/`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
     },
-  );
+  });
 
-  if (response.ok) {
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Payslip-${payslipId}.${blob.type}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  }
-  else {
+  if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
   }
+
+  // helper to parse filename from Content-Disposition header
+  const getFilenameFromContentDisposition = (cd?: string | null): string | null => {
+    if (!cd) return null;
+
+    // RFC5987: filename*=UTF-8''... (percent-encoded)
+    const fnStarMatch = cd.match(/filename\*\s*=\s*([^;]+)/i);
+    if (fnStarMatch) {
+      const part = fnStarMatch[1].trim();
+      // part may be: UTF-8''%e2%82%ac%20rates.pdf
+      const starParts = part.split("''");
+      const encoded = starParts.length > 1 ? starParts[1] : part;
+      try {
+        return decodeURIComponent(encoded.replace(/(^"|"$)/g, ""));
+      } catch {
+        return encoded.replace(/(^"|"$)/g, "");
+      }
+    }
+
+    // fallback to filename="..." or filename=...
+    const fnMatch = cd.match(/filename\s*=\s*\"?([^\";]+)\"?/i);
+    if (fnMatch) {
+      return fnMatch[1];
+    }
+
+    return null;
+  };
+
+  // lightweight mime -> ext map
+  const mimeToExt = (mime?: string | null) => {
+    if (!mime) return ".bin";
+    const m = mime.split(";")[0].trim().toLowerCase();
+    switch (m) {
+      case "application/pdf":
+        return ".pdf";
+      case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+        return ".xlsx";
+      case "application/vnd.ms-excel":
+        return ".xls";
+      case "text/csv":
+        return ".csv";
+      case "application/msword":
+        return ".doc";
+      case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        return ".docx";
+      default:
+        // try to derive from the subtype
+        const parts = m.split("/");
+        return parts.length === 2 && parts[1] ? `.${parts[1].replace(/[^a-z0-9]/g, "")}` : ".bin";
+    }
+  };
+
+  // read headers first
+  const contentDisposition = response.headers.get("content-disposition");
+  const contentTypeHeader = response.headers.get("content-type") || "";
+
+  // get the blob (we need it to build the object URL)
+  const blob = await response.blob();
+
+  // try content-disposition filename
+  let filename = getFilenameFromContentDisposition(contentDisposition);
+
+  // fallback: if filename missing, use mime/type to pick extension
+  if (!filename) {
+    const ext = mimeToExt(contentTypeHeader || blob.type);
+    filename = `Payslip-${payslipId}${ext}`;
+  }
+
+  // Create a download link
+  const urlObject = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = urlObject;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(urlObject);
 };
 
 export const downloadPayrollDocument = async ({
@@ -3972,8 +4036,9 @@ export const getPayslipItems = async (payslipId: number) => {
   }
 };
 
-export const getContracts = async ({ institutionId, page = 1, search, }: {
+export const getContracts = async ({ institutionId,employeeId ,  page = 1, search, }: {
   institutionId: number,
+  employeeId?:number,
   page?: number;
   search?: string;
 }) => {
@@ -3986,6 +4051,7 @@ export const getContracts = async ({ institutionId, page = 1, search, }: {
   if (search) {
     params.append("search", search);
   }
+  if(employeeId){params.append("employee_id", employeeId.toString())}
 
   const endpoint = `employee/employee-contracts/?${params.toString()}`;
   const response = await apiRequest.get(endpoint);
@@ -4574,11 +4640,40 @@ export const AttendanceAPI = {
     return response.data;
   },
 
-  fetchAttendanceRecords: async ({ date, institutionId, search, page }: {
+  fetchAttendanceRecords: async ({ date, institutionId, search, page=1 }: {
     date?: string, institutionId?: number, page?: number;
     search?: string;
   }) => {
-    const response = await apiRequest.get(`/employee/attendance/${date ? `?date=${date}` : ""}`);
+        const params = new URLSearchParams({
+        page: page.toString(),
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+      if(date){
+        params.append("date", date)
+      }
+    const response = await apiRequest.get(`/employee/attendance/?${params.toString()}`);
+    return response.data as IPaginatedResponse<IAttendance>;
+  },
+
+  fetchAttendanceRecordsByEmployee: async ({employee_id,  date, institutionId,  search, page=1 }: {employee_id:number,
+    date?: string, institutionId?: number, page?: number;
+    search?: string;
+  }) => {
+        const params = new URLSearchParams({
+        page: page.toString(),
+        employee_id: employee_id.toString()
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+      if(date){
+        params.append("date", date)
+      }
+    const response = await apiRequest.get(`/employee/attendance/?${params.toString()}`);
     return response.data as IPaginatedResponse<IAttendance>;
   },
 
@@ -4820,14 +4915,13 @@ export const taxRulesAPI = {
 };
 
 export const payrollAPI = {
-  getPayslipsByInstitution: async ({ institutionId, params }: {
-    institutionId: number | string, params?: {
-      employee?: number;
+  getPayslipsByInstitution: async ({ institutionId,  params}: {
+    institutionId: number | string, 
+      params:{employee_id?: number;
       payroll_period?: number;
       is_paid?: boolean;
       page?: number;
-      page_size?: number;
-    }
+      search?:string}
   }) => {
     try {
       const queryParams = new URLSearchParams();
@@ -4842,11 +4936,8 @@ export const payrollAPI = {
 
       const url = `payroll/${institutionId}/payslips/${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
       const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<IPayslip>;
 
-      const data = response.data as IPaginatedResponse<IPayslip>;
-
-      // Return the results array instead of the entire response
-      return data.results;
     } catch (error) {
       // console.error("Failed to get payslips:", error);
       throw error;

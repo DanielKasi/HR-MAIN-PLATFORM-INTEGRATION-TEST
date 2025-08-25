@@ -32,6 +32,11 @@ import {AttendanceAPI, getEmployeeById} from "@/lib/utils";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import type {IEmployee} from "@/types/types.utils";
 import {toast} from "sonner";
+import { EmployeePayrollTable } from "@/components/employee/employee-payroll";
+import ContractsTable from "@/components/contracts/contracts-table";
+import EmployeeAttendance from "@/app/(dashboard)/dashboard/EmployeeAttendance";
+import { formatCurrency } from "@/lib/helpers";
+import { useMobile } from "@/hooks/use-mobile";
 
 export default function EmployeeProfile() {
   const params = useParams();
@@ -49,13 +54,14 @@ export default function EmployeeProfile() {
   const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [leaveSubTab, setLeaveSubTab] = useState<"balances" | "applications">("balances");
+  const [documentsSubTab, setDocumentsSubTab] = useState<"contracts">("contracts");
   const [assetSubTab, setAssetSubTab] = useState<"requests" | "allocations">("requests");
   const [statusFilter, setStatusFilter] = useState("all");
 
   // Cache for tab data to prevent re-fetching
   const [tabDataCache, setTabDataCache] = useState<Record<string, any>>({});
 
-  const ATTENDANCE_PAGE_SIZE = 10;
+  const isMobile = useMobile();
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
@@ -254,6 +260,8 @@ export default function EmployeeProfile() {
       {id: "discipline", label: "Discipline", hasData: true}, // Component handles own loading
       {id: "leave", label: "Leave", hasData: true}, // Component handles own loading
       {id: "assets", label: "Assets", hasData: true}, // Component handles own loading
+       {id: "payroll", label: "Payroll", hasData: true}, // Component handles own loading
+       {id: "documents", label: "Documents", hasData: true}, // Component handles own loading
     ],
     [tabDataCache],
   );
@@ -297,9 +305,9 @@ export default function EmployeeProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f7fb]">
+    <div className="w-full h-full bg-gray-50 rounded-lg">
       {employee && (
-        <div className="w-full px-4 pb-8">
+        <div className="w-full md:px-4 md:pb-8">
           {/* Header section with back arrow, name, and action buttons */}
           <div className="flex flex-row md:flex-row md:items-center justify-between py-4 my-6 gap-4">
             <div className="flex items-center">
@@ -313,17 +321,18 @@ export default function EmployeeProfile() {
                 </Button>
               </Link>
 
-              <h1 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center justify-start gap-2 md:gap-3">
+              <h1 className="text-lg md:text-2xl font-bold text-gray-800 flex items-center justify-start gap-2 md:gap-3">
                 <span>{employee.user?.fullname || "Unknown Employee"}</span>
                 <Badge className="bg-[#e1faec] text-[#3cb371] border-[#3cb371] font-medium self-start md:self-auto">
                   {employee.is_active ? "Active" : "Inactive"}
                 </Badge>
               </h1>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-3 px-3">
               <Link href={`/employees/update-employee/${employee.id}`}>
                 <Button
                   variant="outline"
+                  size={isMobile ? "sm":"default"}
                   className="text-gray-500 hover:text-gray-600 flex items-center gap-2"
                 >
                   <Edit className="w-4 h-4" />
@@ -332,6 +341,7 @@ export default function EmployeeProfile() {
               </Link>
               <Button
                 variant="outline"
+                size={isMobile ? "sm":"default"}
                 className="text-[#e21732] hover:text-[#e21732]/90 flex items-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />
@@ -340,6 +350,7 @@ export default function EmployeeProfile() {
 
               <Button
                 variant="outline"
+                size={isMobile ? "sm":"default"}
                 onClick={() => setShowDocumentDialog(true)}
                 className="flex items-center gap-2 shadow-sm"
               >
@@ -350,7 +361,7 @@ export default function EmployeeProfile() {
           </div>
 
           {/* Profile card */}
-          <div className="bg-white rounded-lg shadow-sm border border-[#e8e8f2] mb-6 -mt-5">
+          <div className="bg-white md:rounded-lg md:shadow-sm md:border border-[#e8e8f2] mb-6 -mt-5">
             <div className="p-4 md:p-6">
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
                 {/* Left side - Avatar and basic info */}
@@ -413,11 +424,11 @@ export default function EmployeeProfile() {
                 </div>
 
                 {/* Right side - Job info and badges - show below on mobile, beside on desktop */}
-                <div className="flex flex-col items-center lg:items-start gap-4 mt-6 pt-6 border-t border-[#e8e8f2] lg:mt-0 lg:pt-0 lg:border-t-0 lg:flex-row lg:gap-4 lg:flex-shrink-0">
+                <div className="flex flex-col min-w-[16rem] items-center lg:items-start gap-4 mt-6 pt-6 border-t border-[#e8e8f2] lg:mt-0 lg:pt-0 lg:border-t-0 lg:flex-row lg:gap-4 lg:flex-shrink-0">
                   {/* Vertical divider line - only on desktop */}
                   <div className="hidden lg:block h-16 w-px bg-[#e8e8f2]"></div>
 
-                  <div className="flex flex-col items-center lg:items-start gap-3">
+                  <div className="flex flex-col items-center lg:items-start gap-3 ">
                     <div className="text-center lg:text-left">
                       <div className="font-semibold text-sm text-gray-800">
                         {employee.position?.name || "No Position"}
@@ -432,7 +443,7 @@ export default function EmployeeProfile() {
                       <div className="text-center lg:text-left">
                         <div className="text-xs text-[#848496] mb-1">Monthly Salary</div>
                         <div className="font-bold text-lg text-gray-800">
-                           {Number(employee.salary).toLocaleString()}
+                           {formatCurrency(employee.salary)}
                         </div>
                       </div>
                     )}
@@ -455,14 +466,24 @@ export default function EmployeeProfile() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
             {/* Sidebar - stack on mobile, sidebar on desktop */}
-            <div className="lg:col-span-1 order-2 lg:order-1">
-              <Card className="bg-white border-[#e8e8f2]">
+            <div className="xl:col-span-2 order-2 xl:order-1">
+              <Card className=" bg-white border-none p-0 shadow-none md:shadow-sm md:border md:border-[#e8e8f2] ">
                 <CardContent className="p-4 md:p-6 space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Additional Info</h3>
                     <div className="space-y-4">
+                      {employee.salary && (
+                        <div>
+                          <label className="text-sm font-medium text-[#848496]">
+                            Salary
+                          </label>
+                          <p className="text-gray-800 font-medium">
+                            {formatCurrency(employee.salary)}
+                          </p>
+                        </div>
+                      )}
                       {employee.date_of_joining && (
                         <div>
                           <label className="text-sm font-medium text-[#848496]">
@@ -475,7 +496,7 @@ export default function EmployeeProfile() {
                       )}
                       {employee.date_of_birth && (
                         <div>
-                          <label className="text-sm font-medium text-[#848496]">B.O.D</label>
+                          <label className="text-sm font-medium text-[#848496]">Date of Birth</label>
                           <p className="text-gray-800 font-medium">
                             {formatDate(employee.date_of_birth)}
                           </p>
@@ -596,8 +617,8 @@ export default function EmployeeProfile() {
             </div>
 
             {/* Main content area */}
-            <div className="lg:col-span-3 order-1 lg:order-2">
-              <Card className="bg-white border-[#e8e8f2]">
+            <div className="xl:col-span-2 order-1 xl:order-2">
+              <Card className="bg-white border-[#e8e8f2] border-none p-0 shadow-none md:shadow-sm md:border">
                 <CardHeader className="border-b border-[#e8e8f2] pb-0">
                   <div className="flex gap-2 md:gap-4 lg:gap-8 relative overflow-x-auto scrollbar-hide">
                     <div className="flex gap-2 md:gap-4 lg:gap-8 min-w-max">
@@ -622,71 +643,8 @@ export default function EmployeeProfile() {
                 </CardHeader>
 
                 <CardContent className="p-4 md:p-6">
-                  {activeTab === "attendance" && (
+                  {/* {activeTab === "attendance" && (
                     <div className="space-y-6">
-                      {/* Stats cards - responsive grid */}
-                      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                        <Card className="bg-[#f0f0f6] border-[#e8e8f2]">
-                          <CardContent className="p-3 md:p-4">
-                            <div className="text-xs md:text-sm text-[#848496] mb-1">
-                              Total Work Days
-                            </div>
-                            <div className="text-lg md:text-2xl font-bold text-gray-800">
-                              {attendanceSummary.totalWorkDays}{" "}
-                              <span className="text-[#848496] font-normal text-xs md:text-base">
-                                Days
-                              </span>
-                            </div>
-                          </CardContent>
-                        </Card>
-                        <Card className="bg-[#f0f0f6] border-[#e8e8f2]">
-                          <CardContent className="p-3 md:p-4">
-                            <div className="text-xs md:text-sm text-[#848496] mb-1">
-                              Days Absent
-                            </div>
-                            <div className="text-lg md:text-2xl font-bold text-[#e21732]">
-                              {attendanceSummary.daysAbsent}{" "}
-                              <span className="text-[#848496] font-normal text-xs md:text-base">
-                                Days
-                              </span>
-                            </div>
-                          </CardContent>
-                        </Card>
-                        <Card className="bg-[#f0f0f6] border-[#e8e8f2]">
-                          <CardContent className="p-3 md:p-4">
-                            <div className="text-xs md:text-sm text-[#848496] mb-1">
-                              Late Arrivals
-                            </div>
-                            <div className="text-lg md:text-2xl font-bold text-[#0ca0f5]">
-                              {attendanceSummary.lateArrivals}{" "}
-                              <span className="text-[#848496] font-normal text-xs md:text-base">
-                                Times
-                              </span>
-                            </div>
-                          </CardContent>
-                        </Card>
-                        {attendanceSummary.leaveBalance > 0 && (
-                          <Card className="bg-[#f0f0f6] border-[#e8e8f2]">
-                            <CardContent className="p-3 md:p-4">
-                              <div className="text-xs md:text-sm text-[#848496] mb-1">
-                                Leave Balance
-                              </div>
-                              <div className="text-lg md:text-2xl font-bold text-[#3cb371]">
-                                {attendanceSummary.leaveBalance}{" "}
-                                <span className="text-[#848496] font-normal text-xs md:text-base">
-                                  Days
-                                </span>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        )}
-                      </div> */}
-
-                      {/* <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-4">
-                        Attendance Records
-                      </h3> */}
-
-                      {/* Mobile-optimized table with horizontal scroll */}
                       <div className="bg-white rounded-lg overflow-hidden ">
                         <div className="overflow-x-auto">
                           <Table>
@@ -785,7 +743,13 @@ export default function EmployeeProfile() {
                         </div>
                       </div>
                     </div>
-                  )}
+                  )} */}
+
+                  {activeTab === "attendance" &&
+                  <EmployeeAttendance
+                    scope={{type:"employee", employee}}
+                  />
+                  }
 
                   {activeTab === "discipline" && (
                     <EmployeeDiscipline
@@ -900,6 +864,46 @@ export default function EmployeeProfile() {
                           compact={false}
                         />
                       )}
+                    </div>
+                  )}
+
+                  {(activeTab === "payroll" && selectedInstitution) &&  (
+                    <EmployeePayrollTable
+                      institutionId={selectedInstitution.id}
+                      scope={{type:"employee", employeeId:employeeId}}
+                      showEmployeeName={false}
+                    />
+                  )}
+
+                  {activeTab === "documents" && (
+                    <div className="space-y-6">
+                      {/* Documents Sub-tabs */}
+                      <div className="border-b border-[#e8e8f2]">
+                        <div className="flex gap-8">
+                          <button
+                            onClick={() => setDocumentsSubTab("contracts")}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${
+                              documentsSubTab === "contracts"
+                                ? "text-gray-800 font-semibold"
+                                : "text-[#848496] hover:text-gray-800"
+                            }`}
+                          >
+                            Contracts
+                            {documentsSubTab === "contracts" && (
+                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Document Sub-tab Content */}
+                      {documentsSubTab === "contracts" && (
+                        <ContractsTable
+                          searchTerm={searchTerm}
+                          scope={{type:"employee", employeeId}}
+                        />
+                      )}
+
                     </div>
                   )}
                 </CardContent>

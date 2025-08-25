@@ -1,48 +1,55 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useSelector } from "react-redux";
-import { 
-  MoreVertical, 
-  Edit, 
-  Trash2, 
-  RefreshCw, 
-  Search, 
-  Filter, 
-  ChevronLeft, 
-  ChevronRight, 
-  ChevronsLeft, 
-  ChevronsRight, 
+import {useState, useEffect, useMemo, useCallback} from "react";
+import {useSelector} from "react-redux";
+import {
+  MoreVertical,
+  Edit,
+  Trash2,
+  RefreshCw,
+  Search,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Plus,
   Settings,
-  Eye
-} from 'lucide-react';
-import { Button } from "@/components/ui/button";
+  Eye,
+} from "lucide-react";
+import {Button} from "@/components/ui/button";
 
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import {Input} from "@/components/ui/input";
+import {Badge} from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { TableSkeleton } from "@/components/common/table-skeleton";
-import { CreateTaxDialog } from "@/components/taxes/create-tax-dialog";
-import { EditTaxDialog } from "@/components/taxes/edit-tax-dialog";
-import { DeleteTaxDialog } from "@/components/taxes/delete-tax-dialog";
-import { useRouter } from "next/navigation";
-import { taxesAPI } from "@/lib/utils";
-import type { ITax, ITaxFormData } from "@/types/types.utils";
-import { useMobile } from "@/hooks/use-mobile";
-import { formatCurrency } from "@/lib/helpers";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {toast} from "sonner";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {TableSkeleton} from "@/components/common/table-skeleton";
+import {CreateTaxDialog} from "@/components/taxes/create-tax-dialog";
+import {EditTaxDialog} from "@/components/taxes/edit-tax-dialog";
+import {DeleteTaxDialog} from "@/components/taxes/delete-tax-dialog";
+import {useRouter} from "next/navigation";
+import {taxesAPI} from "@/lib/utils";
+import type {ITax, ITaxFormData} from "@/types/types.utils";
+import {useMobile} from "@/hooks/use-mobile";
+import {formatCurrency} from "@/lib/helpers";
+import {CardHeader} from "@/components/ui/card";
 
 // Use backend types
-export type { ITax, ITaxFormData } from "@/types/types.utils";
+export type {ITax, ITaxFormData} from "@/types/types.utils";
 
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -61,8 +68,6 @@ const formatDate = (dateString: string) => {
     day: "numeric",
   });
 };
-
-
 
 const TaxesComponent = () => {
   const router = useRouter();
@@ -86,11 +91,9 @@ const TaxesComponent = () => {
       if (!selectedInstitution?.id) return;
 
       try {
-      
-        
         // Use actual API call
         const data = await taxesAPI.getAll();
-        console.log("data", data)
+        console.log("data", data);
         setTaxes(data);
       } catch (error) {
         console.warn("Error fetching taxes:", error);
@@ -113,14 +116,14 @@ const TaxesComponent = () => {
   };
 
   const handleUpdateSuccess = (updatedTax: ITax) => {
-    setTaxes(taxes.map(tax => tax.id === updatedTax.id ? updatedTax : tax));
+    setTaxes(taxes.map((tax) => (tax.id === updatedTax.id ? updatedTax : tax)));
     setIsEditDialogOpen(false);
     setEditingTax(null);
     toast.success("Tax updated successfully");
   };
 
   const handleDeleteSuccess = (deletedId: number) => {
-    setTaxes(taxes.filter(tax => tax.id !== deletedId));
+    setTaxes(taxes.filter((tax) => tax.id !== deletedId));
     setIsDeleteDialogOpen(false);
     setDeletingTax(null);
     toast.success("Tax deleted successfully");
@@ -150,15 +153,15 @@ const TaxesComponent = () => {
 
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(tax =>
-        tax.tax_name.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter((tax) =>
+        tax.tax_name.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
     // Apply status filter
     if (statusFilter !== "all") {
-      filtered = filtered.filter(tax => 
-        statusFilter === "active" ? tax.tax_status : !tax.tax_status
+      filtered = filtered.filter((tax) =>
+        statusFilter === "active" ? tax.tax_status : !tax.tax_status,
       );
     }
 
@@ -193,7 +196,6 @@ const TaxesComponent = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      
 
       {/* Header and Filters */}
       <div className="bg-white rounded-lg border shadow-sm">
@@ -243,20 +245,34 @@ const TaxesComponent = () => {
         </div>
         <div className="p-6">
           {isLoading ? (
-            <TableSkeleton />
+            <div className="p-2 space-y-6 ">
+              <div className="h-[calc(100vh-2rem)]">
+                <CardHeader className="border-b">
+                  <div className="flex justify-between gap-8 items-center">
+                    <div className="flex items-center justify-start gap-4">
+                      <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                      <div className="space-y-2">
+                        <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3">
+                      <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <TableSkeleton rows={10} columns={8} />
+              </div>
+            </div>
           ) : (
             <>
               {/* Desktop Table */}
-              <div className="hidden sm:block rounded-md">
+              <div className="">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300"
-                        />
-                      </TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
@@ -273,15 +289,12 @@ const TaxesComponent = () => {
                     ) : (
                       paginatedTaxes.map((tax) => (
                         <TableRow key={tax.id}>
-                          <TableCell>
-                            <input
-                              type="checkbox"
-                              className="rounded border-gray-300"
-                            />
-                          </TableCell>
+
                           <TableCell className="font-medium">{tax.tax_name}</TableCell>
                           <TableCell>
-                            <Badge className={getStatusColor(tax.tax_status ? "active" : "inactive")}>
+                            <Badge
+                              className={getStatusColor(tax.tax_status ? "active" : "inactive")}
+                            >
                               {tax.tax_status ? "Active" : "Inactive"}
                             </Badge>
                           </TableCell>
@@ -302,7 +315,7 @@ const TaxesComponent = () => {
                                   <Edit className="h-4 w-4 mr-2" />
                                   Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   onClick={() => handleDeleteTax(tax)}
                                   className="text-red-600"
                                 >
@@ -318,119 +331,6 @@ const TaxesComponent = () => {
                   </TableBody>
                 </Table>
               </div>
-
-              {/* Mobile Cards */}
-              <div className="sm:hidden space-y-3">
-                {paginatedTaxes.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    {hasFilters ? "No taxes found matching your filters" : "No taxes found"}
-                  </div>
-                ) : (
-                  paginatedTaxes.map((tax) => (
-                    <div key={tax.id} className="bg-gray-50 rounded-lg p-4 border">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 mb-1">{tax.tax_name}</h3>
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge className={getStatusColor(tax.tax_status ? "active" : "inactive")}>
-                              {tax.tax_status ? "Active" : "Inactive"}
-                            </Badge>
-                            <span className="text-sm text-gray-500">
-                              Created: {formatDate(tax.created_at)}
-                            </span>
-                          </div>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewTaxDetails(tax)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditTax(tax)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDeleteTax(tax)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Pagination */}
-              {filteredTaxes.length > 0 && (
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
-                  <div className="text-sm text-gray-700">
-                    Showing {((currentPage - 1) * pageSize) + 1} to{" "}
-                    {Math.min(currentPage * pageSize, filteredTaxes.length)} of{" "}
-                    {filteredTaxes.length} taxes
-                  </div>
-                  <div className="flex items-center gap-4">
-                    
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(1)}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronsLeft className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        const page = i + 1;
-                        return (
-                          <Button
-                            key={page}
-                            variant={currentPage === page ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => handlePageChange(page)}
-                            className="w-8 h-8 p-0"
-                          >
-                            {page}
-                          </Button>
-                        );
-                      })}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(totalPages)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronsRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </>
           )}
         </div>
@@ -464,4 +364,4 @@ const TaxesComponent = () => {
   );
 };
 
-export default TaxesComponent; 
+export default TaxesComponent;

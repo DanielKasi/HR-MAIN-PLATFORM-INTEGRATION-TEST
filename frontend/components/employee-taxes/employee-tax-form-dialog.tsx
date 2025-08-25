@@ -123,9 +123,9 @@ export function EmployeeTaxFormDialog({
         errors.effective_to = ["Effective to date must be after effective from date"];
       }
     }
-    if (!formData.effective_to) {
-      errors.effective_to = ["Effective to date is required"];
-    }
+    // if (!formData.effective_to) {
+    //   errors.effective_to = ["Effective to date is required"];
+    // }
 
     if (selectedContext && selectedContextItems.length === 0) {
       errors.context = ["Please select at least one item"];
@@ -145,9 +145,10 @@ export function EmployeeTaxFormDialog({
       const taxData: IEmployeeTaxFormData = {
         institution_tax: formData.institution_tax,
         effective_from: formData.effective_from,
-        effective_to: formData.effective_to || "",
       };
-
+      if(formData.effective_to){
+        taxData["effective_to"] = formData.effective_to
+      }
       // Add context-specific data
       if (selectedContext && selectedContextItems.length > 0) {
         switch (selectedContext) {
@@ -298,7 +299,6 @@ export function EmployeeTaxFormDialog({
               <Input
                 id="effective_to"
                 type="date"
-                required
                 value={formData.effective_to}
                 onChange={(e) =>
                   setFormData({ ...formData, effective_to: e.target.value })

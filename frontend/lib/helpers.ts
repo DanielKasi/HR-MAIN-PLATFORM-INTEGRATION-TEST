@@ -20,6 +20,22 @@ export function capitalizeEachWord(str: string) {
     .join(" ");
 }
 
+export const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+export  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
+  };
+
 export function getDefaultInstitutionId() {
   if (typeof window !== "undefined") {
     // First try to get the selected Institution
@@ -115,7 +131,6 @@ export function formatCurrency(amount: number | string): string {
 export function formatTransactionDate(dateString: any) {
   try {
     const date = new Date(dateString);
-
     return format(date, "MMMM dd, yyyy h:mm a");
   } catch {
     return dateString;

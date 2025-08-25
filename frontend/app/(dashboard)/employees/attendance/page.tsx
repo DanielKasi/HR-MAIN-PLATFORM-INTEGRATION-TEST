@@ -10,10 +10,8 @@ import {TableSkeleton} from "@/components/common/table-skeleton";
 import {Card, CardHeader} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
-// import ProtectedComponent from "@/components/ProtectedComponent";
 
 const AttendancePage = () => {
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -102,9 +100,7 @@ const AttendancePage = () => {
           </div>
         </div>
         <EmployeeAttendance
-          selectedInstitution={selectedInstitution}
-          selectedDate={selectedDate}
-          setSelectedDate={setSelectedDate}
+          scope={{type:"default"}}
         />
       </div>
     </div>
