@@ -32,6 +32,7 @@ from .serializers import (
     RetirementRequestSerializer,
 )
 from institution.models import Institution
+from django.db.models import Q
 
 
 class OnBoardingListAPI(APIView):
@@ -56,9 +57,18 @@ class OnBoardingListAPI(APIView):
         tags=["Onboarding"],
     )
     def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
         onboardings = OnBoarding.objects.filter(
-            application__job_position_advert__job_position__department__institution_id=institution_id
+            application__job_position_advert__job_position__department__institution_id=institution_id,
+            deleted_at__isnull=True
         ).order_by("-created_at")
+
+        if search_query:
+            onboardings= onboardings.filter(
+                Q(application__applicant_name__icontains=search_query) |
+                Q(application__applicant_email__icontains=search_query) |
+                Q(application__job_position_advert__job_position__name__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(onboardings, request)
@@ -236,7 +246,7 @@ class OffboardingStageListCreateView(APIView):
         tags=["Offboarding"],
     )
     def get(self, request):
-
+        search_query = request.query_params.get('search', None)
         user = request.user
 
         institution = getattr(user.profile, "institution", None)
@@ -246,9 +256,15 @@ class OffboardingStageListCreateView(APIView):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=404)
 
-        stages = OffboardingStage.objects.filter(institution=institution).order_by(
+        stages = OffboardingStage.objects.filter(institution=institution, deleted_at__isnull=True).order_by(
             "-created_at"
         )
+
+        if search_query:
+            stages = stages.filter(
+                Q(stage_name__icontains=search_query)
+            )
+
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(stages, request)
         serializer = OffboardingStageSerializer(paginated_qs, many=True)
@@ -326,6 +342,7 @@ class InstitutionEmployeeSeparationTypesListCreateView(APIView):
         tags=["Offboarding"],
     )
     def get(self, request):
+        search_query = request.query_params.get('search', None)
         user = request.user
         institution = getattr(user.profile, "institution", None)
 
@@ -334,8 +351,14 @@ class InstitutionEmployeeSeparationTypesListCreateView(APIView):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=404)
         separation_types = InstitutionEmployeeSeparationTypes.objects.filter(
-            institution=institution
+            institution=institution,
+            deleted_at__isnull=True
         ).order_by("-created_at")
+
+        if search_query:
+            separation_types = separation_types.filter(
+                Q(separation_type__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(separation_types, request)
         serializer = InstitutionEmployeeSeparationTypesSerializer(
@@ -421,6 +444,7 @@ class InstitutionSeparationPolicyListCreateView(APIView):
         tags=["Offboarding"],
     )
     def get(self, request):
+        search_query = request.query_params.get('search', None)
         user = request.user
 
         institution = getattr(user.profile, "institution", None)
@@ -431,8 +455,15 @@ class InstitutionSeparationPolicyListCreateView(APIView):
             return Response({"detail": "Institution not found."}, status=404)
 
         policies = InstitutionSeparationPolicy.objects.filter(
-            separation_type__institution=institution
+            separation_type__institution=institution,
+            deleted_at__isnull=True
         ).order_by("-created_at")
+
+        if search_query:
+            policies = policies.filter(
+                Q(separation_type__separation_type__icontains=search_query) |
+                Q(policy_name__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(policies, request)
         serializer = InstitutionSeparationPolicySerializer(paginated_qs, many=True)
@@ -521,7 +552,22 @@ class ResignationRequestListCreateView(APIView):
         tags=["Offboarding"],
     )
     def get(self, request):
-        queryset = ResignationRequest.objects.all().order_by("-created_at")
+        user = request.user.profile
+        search_query = request.query_params.get('search', None)
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        queryset = ResignationRequest.objects.filter(separation__employee__department__institution=institution, deleted_at__isnull=True).order_by("-created_at")
+
+        if search_query:
+            queryset = queryset.filter(
+                Q(separation__employee__user__fullname__icontains=search_query)
+            )
+
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = ResignationRequestSerializer(paginated_qs, many=True)
@@ -634,7 +680,21 @@ class TerminationInitiationListCreateView(APIView):
         tags=["Offboarding"],
     )
     def get(self, request):
-        queryset = TerminationInitiation.objects.all().order_by("-created_at")
+        user = request.user.profile
+        search_query = request.query_params.get('search', None)
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        queryset = TerminationInitiation.objects.filter(separation__employee_department__institution=institution).order_by("-created_at")
+
+        if search_query:
+            queryset = queryset.filter(
+                Q(separation__employee__user__fullname__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = TerminationInitiationSerializer(paginated_qs, many=True)

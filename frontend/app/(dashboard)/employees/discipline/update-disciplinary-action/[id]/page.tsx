@@ -13,22 +13,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { updateDisciplinaryAction, createDisciplineType, getDisciplineTypes, getAllEmployees, getDisciplinaryActionById } from "@/lib/utils";
-import type { DisciplinaryActionForm, DisciplineTypeForm, IEmployee } from "@/types/types.utils";
+import { updateDisciplinaryAction, createDisciplineType, getDisciplineTypes, getPaginatedEmployees, getDisciplinaryActionById } from "@/lib/utils";
+import type { DisciplinaryActionForm, IDisciplineTypeFormData, IEmployee } from "@/types/types.utils";
 import { toast } from "sonner";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
 import { IUserInstitution } from "@/types";
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select";
 
-interface DisciplineType {
-  id?: number;
-  name: string;
-  description: string;
-  severity: "low" | "medium" | "high" | "critical";
-  is_active: boolean;
-  created_at?: string;
-}
 
 export default function DisciplinaryUpdateForm() {
   const router = useRouter();
@@ -43,10 +35,9 @@ export default function DisciplinaryUpdateForm() {
   const [isDisciplineTypeModalOpen, setIsDisciplineTypeModalOpen] = useState(false);
   const [isAddingDisciplineType, setIsAddingDisciplineType] = useState(false);
   const [isLoadingDisciplineTypes, setIsLoadingDisciplineTypes] = useState(true);
-  const [isLoadingEmployees, setIsLoadingEmployees] = useState(true);
   const [isLoadingDisciplinaryAction, setIsLoadingDisciplinaryAction] = useState(true);
 
-  const [disciplineType, setDisciplineType] = useState<DisciplineTypeForm>({
+  const [disciplineType, setDisciplineType] = useState<IDisciplineTypeFormData>({
     name: "",
     description: "",
     severity: "low",
@@ -77,7 +68,6 @@ export default function DisciplinaryUpdateForm() {
     }>
   >([]);
 
-  const [employees, setEmployees] = useState<IEmployee[]>([]);
 
   useEffect(() => {
     if (selectedInstitution) {
@@ -137,28 +127,6 @@ export default function DisciplinaryUpdateForm() {
     };
     fetchDisciplinaryAction();
   }, [disciplinaryActionId, router]);
-
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      if (!institutionId) return;
-
-      setIsLoadingEmployees(true);
-      try {
-        const fetchedEmployees = await getAllEmployees({ institutionId });
-
-
-          setEmployees(fetchedEmployees.results);
-
-      } catch (error) {
-        toast.error("Failed to load employees");
-        setEmployees([]);
-      } finally {
-        setIsLoadingEmployees(false);
-      }
-    };
-
-    fetchEmployees();
-  }, [institutionId]);
 
   useEffect(() => {
     const fetchDisciplineTypes = async () => {
@@ -363,10 +331,10 @@ export default function DisciplinaryUpdateForm() {
   }
 
 
-  const handleBack = () => {  
+  const handleBack = () => {
     router.back();
   }
-  
+
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
@@ -375,15 +343,15 @@ export default function DisciplinaryUpdateForm() {
 
           <CardHeader>
             <div className="flex items-center justify-start gap-4">
-            <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleBack}
-            className="rounded-full h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10"
-          >
-            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-          </Button>
-            <CardTitle>Update Disciplinary Action</CardTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleBack}
+                className="rounded-full h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10"
+              >
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+              </Button>
+              <CardTitle>Update Disciplinary Action</CardTitle>
             </div>
             <CardDescription>Modify the details of this disciplinary action</CardDescription>
           </CardHeader>
@@ -394,12 +362,10 @@ export default function DisciplinaryUpdateForm() {
                 <div className="space-y-2">
                   <Label htmlFor="employee">Employee *</Label>
                   <EmployeeSearchableSelect
-                    employees={employees}
                     value={[disciplinaryAction.employee]}
                     onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, employee: value.toString() })}
-                    disabled={isSubmitting || isLoadingEmployees}
+                    disabled={isSubmitting}
                     placeholder="Search and select employee"
-                    isLoading={isLoadingEmployees}
                     showEmployeeId={false}
                     showDepartment={false}
                   />
@@ -544,7 +510,7 @@ export default function DisciplinaryUpdateForm() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="incident_date">Incident Date *</Label>
                   <Input
@@ -570,7 +536,7 @@ export default function DisciplinaryUpdateForm() {
                     disabled={isSubmitting}
                   />
                 </div>
-                
+
                 <div className="flex items-center gap-4">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -604,7 +570,7 @@ export default function DisciplinaryUpdateForm() {
                       />
                     </div>
                   )}
-                </div>   
+                </div>
               </div>
 
               {/* Assignment */}
@@ -612,12 +578,12 @@ export default function DisciplinaryUpdateForm() {
                 <div className="space-y-2">
                   <Label htmlFor="reported_by">Reported By *</Label>
                   <EmployeeSearchableSelect
-                    employees={employees}
+
                     value={[disciplinaryAction.reported_by]}
                     onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, reported_by: value.toString() })}
-                    disabled={isSubmitting || isLoadingEmployees}
+                    disabled={isSubmitting}
                     placeholder="Search and select reporter"
-                    isLoading={isLoadingEmployees}
+
                     showEmployeeId={false}
                     showDepartment={false}
                   />
@@ -626,12 +592,12 @@ export default function DisciplinaryUpdateForm() {
                 <div className="space-y-2">
                   <Label htmlFor="assigned_to">Assigned To</Label>
                   <EmployeeSearchableSelect
-                    employees={employees}
+
                     value={[disciplinaryAction.assigned_to]}
                     onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, assigned_to: value.toString() })}
-                    disabled={isSubmitting || isLoadingEmployees}
+                    disabled={isSubmitting}
                     placeholder="Search and select assignee"
-                    isLoading={isLoadingEmployees}
+
                     showEmployeeId={false}
                     showDepartment={false}
                   />
@@ -699,7 +665,7 @@ export default function DisciplinaryUpdateForm() {
               </div>
 
               <div className="flex items-center justify-end gap-8 pt-4">
-                                <Button type="button" variant="outline" className="" onClick={handleDisciplinaryActionCancel} disabled={isSubmitting}>
+                <Button type="button" variant="outline" className="" onClick={handleDisciplinaryActionCancel} disabled={isSubmitting}>
                   Cancel
                 </Button>
                 <Button type="submit" className="" disabled={isSubmitting}>

@@ -133,6 +133,80 @@ class UserListAPIView(APIView):
         serializer = CustomUserSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class ChangeEmailAndResendOTPAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        request={
+            "type": "object",
+            "properties": {
+                "old_email": {"type": "string", "format": "email"},
+                "new_email": {"type": "string", "format": "email"},
+            },
+            "required": ["old_email", "new_email"],
+        },
+        responses={
+            200: {"message": "string"},
+            400: {"detail": "string"},
+            404: {"detail": "string"},
+        },
+        description="Change user email and resend OTP for registration verification",
+        summary="Change email and resend OTP",
+        tags=["User Management"],
+    )
+    def post(self, request):
+        old_email = request.data.get("old_email")
+        new_email = request.data.get("new_email")
+
+        if not old_email or not new_email:
+            return Response(
+                {"detail": "Both old_email and new_email are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if old_email == new_email:
+            return Response(
+                {"detail": "New email must be different from the old email"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            user = CustomUser.objects.get(email=old_email)
+            if CustomUser.objects.filter(email=new_email).exists():
+                return Response(
+                    {"detail": "New email is already in use"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            user.email = new_email
+            user.save()
+
+            otp = create_and_institution_otp(
+                user_id=user.id, purpose=f"registration_{user.id}", expiry_minutes=15
+            )
+            send_otp_to_user(user, otp)
+
+            cleanup_expired_otps()
+
+            logger.info(f"Email changed for user {user.id} from {old_email} to {new_email}, OTP resent")
+            return Response(
+                {"message": f"OTP sent to new email: {new_email}"},
+                status=status.HTTP_200_OK,
+            )
+
+        except CustomUser.DoesNotExist:
+            logger.error(f"User with email {old_email} not found during email change")
+            return Response(
+                {"detail": "User with old email not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            logger.error(f"Error during email change for user with email {old_email}: {str(e)}")
+            return Response(
+                {"detail": "An error occurred during email change"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )        
+
 
 class UserDetailAPIView(APIView):
     @extend_schema(

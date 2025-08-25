@@ -28,7 +28,7 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
-import { getAllEmployees, TerminationInitiationsAPI } from "@/lib/utils"
+import { getPaginatedEmployees, TerminationInitiationsAPI } from "@/lib/utils"
 import { IEmployee } from "@/types/types.utils"
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -74,7 +74,7 @@ export default function CreateTerminationInitiationPage() {
     const fetchEmployees = async () => {
       if (!institutionId) return
       try {
-        const data = await getAllEmployees({ institutionId })
+        const data = await getPaginatedEmployees({ institutionId })
         setEmployees(data.results || [])
       } catch (error) {
         toast.error("Failed to fetch employees")

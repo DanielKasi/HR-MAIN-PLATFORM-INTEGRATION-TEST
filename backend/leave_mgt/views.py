@@ -21,6 +21,7 @@ from .utils import LeaveCalculator, LeaveBalanceManager
 from employee.models import Employee
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
+from django.db.models import Q
 
 
 @extend_schema(tags=["Leave Types"])
@@ -29,9 +30,16 @@ class LeaveTypeListCreateAPIView(APIView):
         summary="List all leave types", responses={200: LeaveTypeSerializer(many=True)}
     )
     def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
         queryset = LeaveType.objects.filter(
-            is_active=True, institution_id=institution_id
+         institution_id=institution_id, deleted_at__isnull=True
         ).order_by("-created_at")
+
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |
+                Q(category__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
@@ -94,9 +102,10 @@ class LeaveBalanceListCreateAPIView(APIView):
         responses={200: LeaveBalanceSerializer(many=True)},
     )
     def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
         queryset = (
             LeaveBalance.objects.select_related("employee", "leave_type")
-            .filter(institution_id=institution_id)
+            .filter(institution_id=institution_id, deleted_at__isnull=True)
             .order_by("created_at")
         )
 
@@ -107,6 +116,12 @@ class LeaveBalanceListCreateAPIView(APIView):
             queryset = queryset.filter(employee_id=employee_id)
         if year:
             queryset = queryset.filter(year=year)
+
+        if search_query:
+            queryset = queryset.filter(
+                Q(employee__user__fullname__icontains=search_query) |
+                Q(leave_type__name__icontains=search_query)
+            )    
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
@@ -153,7 +168,9 @@ class LeaveBalanceDetailAPIView(APIView):
     @extend_schema(summary="Delete a leave balance", responses={204: None})
     def delete(self, request, pk):
         balance = get_object_or_404(LeaveBalance, pk=pk)
+        print("Deleting balance:", balance)
         balance.delete()
+        print("Balance deleted")
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -179,9 +196,10 @@ class LeaveApplicationListCreateAPIView(APIView):
         responses={200: LeaveApplicationSerializer(many=True)},
     )
     def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
         queryset = LeaveApplication.objects.select_related(
             "employee", "leave_type", "approved_by"
-        ).filter(institution_id=institution_id)
+        ).filter(institution_id=institution_id, deleted_at__isnull=True)
 
         # Optional query parameters
         employee_id = request.query_params.get("employee_id")
@@ -196,6 +214,12 @@ class LeaveApplicationListCreateAPIView(APIView):
             queryset = queryset.filter(leave_type_id=leave_type_id)
 
         queryset = queryset.order_by("-start_date", "-created_at")
+
+        if search_query:
+            queryset = queryset.filter(
+                Q(employee__user__fullname__icontains=search_query) |
+                Q(leave_type__name__icontains=search_query)
+            )
 
         pagination = CustomPageNumberPagination()
         paginated_qs = pagination.paginate_queryset(queryset, request)
@@ -451,11 +475,18 @@ class LeavePolicyListCreateAPIView(APIView):
         responses={200: LeavePolicySerializer(many=True)},
     )
     def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
         queryset = (
             LeavePolicy.objects.select_related("leave_type")
-            .filter(is_active=True, institution_id=institution_id)
+            .filter(deleted_at__isnull=True, institution_id=institution_id)
             .order_by("-created_at")
         )
+
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |
+                Q(leave_type__name__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)

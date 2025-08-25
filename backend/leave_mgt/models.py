@@ -268,6 +268,14 @@ class LeavePolicy(UtilityBaseModel):
 
     class Meta:
         db_table = "leave_policies"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['leave_type', 'institution'],
+                condition=models.Q(is_active=True),
+                name='unique_active_leave_policy_per_type_institution'
+            )
+        ]
 
     def __str__(self):
         return f"{self.name} - {self.leave_type.name}"
+

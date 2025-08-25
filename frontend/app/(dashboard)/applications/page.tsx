@@ -71,12 +71,14 @@ import {
   updateJobApplicationStatus,
   getPaginatedJobApplications,
   getPaginatedJobApplicationsFromUrl,
+  showErrorToast,
 } from "@/lib/utils";
 import type {
   JobApplication,
   JobApplicationFormData,
   JobPositionAdvert,
   IPaginatedResponse,
+  IInterviewType,
 } from "@/types/types.utils";
 import { selectUser, selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { selectApplicationForm } from "@/store/miscellaneous/selectors";
@@ -107,8 +109,7 @@ import type {
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { set } from "date-fns";
-import apiRequest from "@/lib/apiRequest";
+
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
@@ -127,6 +128,10 @@ const sourceLabels = {
   other: "Other",
 };
 
+const interviewTypes: Array<{ value: IInterviewType, label: string }> = [
+  { value: "online", label: "Virtual" }, { value: "in_person", label: "In person" }
+]
+
 export default function ApplicationsPage() {
   const refreshTableRef = useRef<(() => void) | null>(null);
   const [applications, setApplications] = useState<JobApplication[]>([]);
@@ -135,7 +140,7 @@ export default function ApplicationsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filteredApplications, setFilteredApplications] = useState<JobApplication[]>([]);
-  const [selectedApplications, setSelectedApplications] = useState<number[]>([]);
+  const [selectedApplications, setSelectedApplications] = useState<JobApplication[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [jobFilter, setJobFilter] = useState<string>("all");
@@ -144,23 +149,25 @@ export default function ApplicationsPage() {
     {},
   );
 
-  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  // const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [showCreateStageDialog, setShowCreateStageDialog] = useState(false);
   const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([]);
-  const [employees, setEmployees] = useState<IEmployee[]>([]);
   const [isSchedulingInterview, setIsSchedulingInterview] = useState(false);
   const [isCreatingStage, setIsCreatingStage] = useState(false);
   const [selectedApplicationForInterview, setSelectedApplicationForInterview] =
     useState<JobApplication | null>(null);
-  const [showBulkScheduleDialog, setShowBulkScheduleDialog] = useState(false);
-  const [bulkInterviewFormData, setBulkInterviewFormData] = useState({
+  // const [showBulkScheduleDialog, setShowBulkScheduleDialog] = useState(false);
+  const [showScheduleInterviewDialog, setShowScheduleInterviewDialog] = useState<{ type: "bulk" | "single", isOpen: boolean }>({ type: "single", isOpen: false });
+  const [bulkInterviewFormData, setBulkInterviewFormData] = useState<IInterviewFormData>({
     interview_stage: 0,
     interview_date: "",
     location: "",
-    interview_type: "",
+    interview_type: "in_person",
     status: "scheduled",
+    job_position_application: 0,
+    interview_time: ''
   });
-  const [isBulkScheduling, setIsBulkScheduling] = useState(false);
+  // const [isSchedulingInterview, setisSchedulingInterview] = useState(false);
   const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
     name: "",
     level: 1,
@@ -170,23 +177,22 @@ export default function ApplicationsPage() {
 
   const [stageErrors, setStageErrors] = useState<any>({});
 
-  const [interviewFormData, setInterviewFormData] = useState({
+  const [interviewFormData, setInterviewFormData] = useState<IInterviewFormData>({
     interview_stage: 0,
     interview_date: "",
+    interview_time: '',
     location: "",
-    interview_type: "",
+    interview_type: "in_person",
     status: "scheduled",
     feedback: "",
     rating: undefined,
+    job_position_application: 0,
   });
 
   const [interviewErrors, setInterviewErrors] = useState<any>({});
 
-  // Add refresh function for PaginatedTableWrapper
-  const [refreshFunction, setRefreshFunction] = useState<(() => void) | null>(null);
-
   // Add these helper functions
-  const updateStageFormData = (field: string, value: any) => {
+  const updateStageFormData = (field: keyof typeof stageFormData, value: any) => {
     setStageFormData((prev) => ({ ...prev, [field]: value }));
     if (stageErrors[field]) {
       setStageErrors((prev: any) => ({ ...prev, [field]: undefined }));
@@ -199,13 +205,12 @@ export default function ApplicationsPage() {
   };
 
   const fetchInterviewData = async () => {
-    if (!selectedInstitution || !selectedApplicationForInterview) return;
+
+
+    if (!selectedInstitution) return;
 
     try {
-      const [stagesResponse, employeesResponse] = await Promise.all([
-        getInterviewStages({ institutionId: selectedInstitution.id }),
-        fetchEmployees({ institutionId: selectedInstitution.id }),
-      ]);
+      const stagesResponse = await getInterviewStages({ institutionId: selectedInstitution.id });
 
       let stagesArray: IInterviewStage[] = [];
       if (stagesResponse && "results" in stagesResponse && Array.isArray(stagesResponse.results)) {
@@ -214,24 +219,19 @@ export default function ApplicationsPage() {
         stagesArray = stagesResponse;
       }
 
+      let filteredStages: IInterviewStage[] = stagesArray
       // Filter stages for this job position
-      const filteredStages = stagesArray.filter(
-        (stage) =>
-          stage.job_position_advert === selectedApplicationForInterview.job_position_advert,
-      );
-      setInterviewStages(filteredStages);
-
-      let employeesArray: IEmployee[] = [];
-      if (
-        employeesResponse &&
-        "results" in employeesResponse &&
-        Array.isArray(employeesResponse.results)
-      ) {
-        employeesArray = employeesResponse.results;
-      } else if (Array.isArray(employeesResponse)) {
-        employeesArray = employeesResponse;
+      if (selectedApplicationForInterview) {
+        filteredStages = stagesArray.filter(
+          (stage) =>
+            stage.job_position_advert === selectedApplicationForInterview.job_position_advert,
+        );
+      } else if (selectedApplications.length) {
+        filteredStages = stagesArray.filter(
+          (stage) => selectedApplications.some(selectedApp => stage.job_position_advert === selectedApp.job_position_advert)
+        );
       }
-      setEmployees(employeesArray);
+      setInterviewStages(filteredStages);
 
       // Set default interview date to tomorrow at 10 AM
       const tomorrow = new Date();
@@ -365,23 +365,22 @@ export default function ApplicationsPage() {
       });
 
       if (result) {
-        clearAllFilters()
+        clearAllFilters();
         toast.success("Interview scheduled successfully!");
-        setShowScheduleDialog(false);
+        setShowScheduleInterviewDialog({ type: "single", isOpen: false })
         setSelectedApplicationForInterview(null);
         // Reset form
         setInterviewFormData({
           interview_stage: 0,
           interview_date: "",
+          interview_time: '',
           location: "",
-          interview_type: "",
+          interview_type: "in_person",
           status: "scheduled",
           feedback: "",
-          rating: undefined,
+          job_position_application: 0
         });
         setInterviewErrors({});
-
-        // Refresh applications to show updated status
         await loadApplications();
       } else {
         toast.error("Failed to schedule interview");
@@ -397,7 +396,7 @@ export default function ApplicationsPage() {
   const handleOpenScheduleInterview = async (application: JobApplication) => {
     setSelectedApplicationForInterview(application);
     await fetchInterviewData();
-    setShowScheduleDialog(true);
+    setShowScheduleInterviewDialog({ type: "single", isOpen: true })
   };
 
   // Enhanced date filtering state
@@ -459,7 +458,7 @@ export default function ApplicationsPage() {
   const [formData, setFormData] = useState<
     Omit<JobApplicationFormData, "resume"> & {
       resume: File | null;
-      cover_letter?: File;
+      cover_letter?: File | null;
       address_latitude?: string;
       address_longitude?: string;
       recommended_by?: number;
@@ -485,7 +484,7 @@ export default function ApplicationsPage() {
 
   const [jobPositionAdverts, setJobPositionAdverts] = useState<JobPositionAdvert[]>([]);
   const [isLoadingAdverts, setIsLoadingAdverts] = useState(false);
-  
+
   // Infinite-scroll job position dropdown state
   const [jpFilterText, setJpFilterText] = useState("");
   const [jobPositionOptions, setJobPositionOptions] = useState<JobPositionAdvert[]>([]);
@@ -497,7 +496,7 @@ export default function ApplicationsPage() {
   const jobPositionDropdownRef = useRef<HTMLDivElement | null>(null);
   const jobPositionContainerRef = useRef<HTMLDivElement | null>(null);
   const jobPositionSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const [applicationLocation, setApplicationLocation] = useState<{
     latitude: string;
     longitude: string;
@@ -505,8 +504,6 @@ export default function ApplicationsPage() {
     latitude: "",
     longitude: "",
   });
-
-  console.log("jobsPositionAdverts:", jobPositionAdverts);
 
   // Load saved application form data from Redux on component mount
   useEffect(() => {
@@ -516,8 +513,8 @@ export default function ApplicationsPage() {
         applicant_name: savedApplicationForm.applicant_name,
         applicant_email: savedApplicationForm.applicant_email,
         applicant_phone: savedApplicationForm.applicant_phone || "",
-        resume: savedApplicationForm.resume,
-        cover_letter: savedApplicationForm.cover_letter ?? undefined,
+        resume: null, // Cannot serialize File object in Redux, so will always be undefined at read time from Redux Store
+        cover_letter: null, // Cannot serialize File object in Redux, so will always be undefined at read time from Redux Store
         status: savedApplicationForm.status || "new",
         gender: savedApplicationForm.gender,
         state: savedApplicationForm.state || "",
@@ -527,14 +524,14 @@ export default function ApplicationsPage() {
         country: savedApplicationForm.country,
         source: savedApplicationForm.source || "website",
         recommended_by: savedApplicationForm.recommended_by,
-        application_date: savedApplicationForm.application_date || new Date().toISOString().split("T")[0],
+        application_date:
+          savedApplicationForm.application_date || new Date().toISOString().split("T")[0],
         created_by: savedApplicationForm.created_by || userData?.id || 0,
       });
-      
     }
   }, [savedApplicationForm, userData]);
 
-  useEffect(()=>{
+  useEffect(() => {
     if (applicationLocation.latitude && applicationLocation.longitude) {
       setFormData((prev) => ({
         ...prev,
@@ -543,13 +540,13 @@ export default function ApplicationsPage() {
       }));
 
       const updatedFormData = {
-      ...formData,
-      address_latitude: applicationLocation.latitude,
-      address_longitude: applicationLocation.latitude,
-    };
-    dispatch(saveApplicationForm(updatedFormData));
+        ...formData,
+        address_latitude: applicationLocation.latitude,
+        address_longitude: applicationLocation.latitude,
+      };
+      dispatch(saveApplicationForm({ ...updatedFormData, cover_letter: null, resume: null }));// Cannot serialize File object in Redux    
     }
-  }, [applicationLocation])
+  }, [applicationLocation]);
 
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
@@ -561,33 +558,6 @@ export default function ApplicationsPage() {
     loadJobPositionAdverts();
   }, [selectedInstitution, selectedBranch, router]);
 
-  useEffect(() => {
-    if (isCreateDialogOpen && selectedInstitution) {
-      // Load employees when dialog opens
-      const loadEmployeesForForm = async () => {
-        try {
-          const employeesResponse = await fetchEmployees({ institutionId: selectedInstitution.id });
-
-          let employeesArray: IEmployee[] = [];
-          if (
-            employeesResponse &&
-            "results" in employeesResponse &&
-            Array.isArray(employeesResponse.results)
-          ) {
-            employeesArray = employeesResponse.results;
-          } else if (Array.isArray(employeesResponse)) {
-            employeesArray = employeesResponse;
-          }
-          setEmployees(employeesArray);
-        } catch (error) {
-          console.error("Failed to load employees:", error);
-          toast.error("Failed to load employees");
-        }
-      };
-
-      loadEmployeesForForm();
-    }
-  }, [isCreateDialogOpen, selectedInstitution]);
 
   useEffect(() => {
     let filtered = applications;
@@ -745,13 +715,19 @@ export default function ApplicationsPage() {
         fetchJobPositionsPaged(jpFilterText.trim(), jobPositionPage + 1, false);
       }
     },
-    [hasMoreJobPositions, isLoadingJobPositions, jpFilterText, jobPositionPage, fetchJobPositionsPaged],
+    [
+      hasMoreJobPositions,
+      isLoadingJobPositions,
+      jpFilterText,
+      jobPositionPage,
+      fetchJobPositionsPaged,
+    ],
   );
 
   // Initialize jpFilterText when jobPositionAdverts are loaded and form has a selected job position
   useEffect(() => {
     if (formData.job_position_advert && jobPositionAdverts.length > 0) {
-      const selectedAdvert = jobPositionAdverts.find(p => p.id === formData.job_position_advert);
+      const selectedAdvert = jobPositionAdverts.find((p) => p.id === formData.job_position_advert);
       if (selectedAdvert && !jpFilterText) {
         setJpFilterText(getPositionLabel(selectedAdvert));
       }
@@ -825,17 +801,17 @@ export default function ApplicationsPage() {
 
   const handleInputChange = (
     field: keyof typeof formData,
-    value: string | number | File | null,
+    value: string | number | null,
   ) => {
+    console.log("\n\n Updating field : ", field, "\n\n With value : ", value)
+
     const updatedFormData = {
       ...formData,
       [field]: value,
     };
     setFormData(updatedFormData);
-    
-    console.log("\n\n Updated form data:", updatedFormData);
-    // Save to Redux for persistence
-    dispatch(saveApplicationForm(updatedFormData));
+
+    dispatch(saveApplicationForm({ ...updatedFormData, cover_letter: null, resume: null }));// Cannot serialize File object in Redux    
   };
 
   const handleFileChange = (field: "resume" | "cover_letter", file: File | null) => {
@@ -844,9 +820,6 @@ export default function ApplicationsPage() {
       [field]: file,
     };
     setFormData(updatedFormData);
-    
-    // Save to Redux for persistence
-    dispatch(saveApplicationForm(updatedFormData));
   };
 
   const handleAddressCoordinatesChange = (lat: string, lon: string) => {
@@ -873,13 +846,13 @@ export default function ApplicationsPage() {
       application_date: new Date().toISOString().split("T")[0],
       created_by: userData?.id || 0,
     };
-    
+
     setFormData(defaultFormData);
     setError(null);
-    
+
     // Clear from Redux
     dispatch(clearApplicationForm());
-    
+
     toast.success("Form cleared successfully");
   };
 
@@ -1017,12 +990,12 @@ export default function ApplicationsPage() {
           created_by: userData.id,
           recommended_by: undefined,
         });
-        clearAllFilters()
+        clearAllFilters();
         toast.success("Application created successfully!");
         refreshTableRef.current?.();
-      
-      // Clear the saved form data from Redux on successful submission
-      dispatch(clearApplicationForm());
+
+        // Clear the saved form data from Redux on successful submission
+        dispatch(clearApplicationForm());
       } else {
         setError("Failed to create application");
       }
@@ -1039,19 +1012,140 @@ export default function ApplicationsPage() {
     }
   };
 
-  const handleSelectApplication = (applicationId: number, checked: boolean) => {
-    if (checked) {
-      setSelectedApplications((prev) => [...prev, applicationId]);
+
+  const handleSubmitInterviews = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedInstitution || !userData) { return };
+
+
+    const shortlistedApps = (showScheduleInterviewDialog.type === "single" ? [selectedApplicationForInterview] : applications).filter((app) => selectedApplications.find((s_app) => s_app.id === app?.id) && app?.status === "shortlisted",);
+
+    if (!shortlistedApps.length) { toast.error("No shortlisted applications selected"); return; }
+
+    // Validate form
+    const errors: any = {};
+    if (!bulkInterviewFormData.interview_stage) {
+      errors.interview_stage = "Please select an interview stage";
+    }
+    if (!bulkInterviewFormData.interview_date) {
+      errors.interview_date = "Interview date and time is required";
     } else {
-      setSelectedApplications((prev) => prev.filter((id) => id !== applicationId));
+      const interviewDate = new Date(bulkInterviewFormData.interview_date);
+      const now = new Date();
+      if (interviewDate <= now) {
+        errors.interview_date = "Interview date must be in the future";
+      }
+    }
+    if (!bulkInterviewFormData.location || bulkInterviewFormData.location.trim() === "") {
+      errors.location = "Interview location is required";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setInterviewErrors(errors);
+      return;
+    }
+
+
+    setIsSchedulingInterview(true);
+
+    try {
+      const interviewPromises = shortlistedApps.map(async (application, index) => {
+        // Calculate interview time (30 minutes apart)
+        const baseDateTime = new Date(bulkInterviewFormData.interview_date);
+        const interviewDateTime = new Date(
+          baseDateTime.getTime() + index * 30 * 60 * 1000,
+        );
+
+        let interviewTime = "";
+        if (bulkInterviewFormData.interview_date) {
+          const hours = interviewDateTime.getHours().toString().padStart(2, "0");
+          const minutes = interviewDateTime.getMinutes().toString().padStart(2, "0");
+          interviewTime = `${hours}:${minutes}`;
+        }
+        if (application) {
+
+          const createData: IInterviewFormData = {
+            job_position_application: application.id,
+            interview_stage: bulkInterviewFormData.interview_stage,
+            interview_date: interviewDateTime.toISOString().slice(0, 16),
+            location: bulkInterviewFormData.location,
+            interview_time: interviewTime,
+            interview_type: bulkInterviewFormData.interview_type,
+            status: bulkInterviewFormData.status || "scheduled",
+            feedback: undefined,
+            rating: undefined,
+            created_by: userData.id,
+          };
+          return await createInterview({
+            institutionId: selectedInstitution.id,
+            interviewData: createData,
+          });
+        }
+
+      }).filter(Boolean);
+
+      const results = await Promise.all(interviewPromises);
+      const successCount = results.filter((result) => result !== null).length;
+      const failureCount = results.length - successCount;
+
+      if (successCount > 0) {
+        toast.success(
+          `${successCount} interview(s) scheduled successfully!${failureCount > 0 ? ` ${failureCount} failed.` : ""
+          }`,
+        );
+        if (showScheduleInterviewDialog.type === "bulk") {
+          setBulkInterviewFormData({
+            interview_stage: 0,
+            interview_date: "",
+            location: "",
+            interview_type: "in_person",
+            status: "scheduled",
+            job_position_application: 0,
+            interview_time: ''
+          });
+        } else {
+          setInterviewFormData({
+            interview_stage: 0,
+            interview_date: "",
+            location: "",
+            interview_type: "in_person",
+            job_position_application: 0,
+            interview_time: '',
+            status: "scheduled",
+            feedback: "",
+            rating: undefined,
+          })
+        }
+        setInterviewErrors({});
+
+        setShowScheduleInterviewDialog(prev => ({ ...prev, isOpen: false }))
+        setSelectedApplications([]);
+        // Reset form
+
+        await loadApplications();
+      } else {
+        toast.error("Failed to schedule any interviews");
+      }
+    } catch (error) {
+      toast.error("Failed to schedule interviews");
+    } finally {
+      setIsSchedulingInterview(false);
+    }
+  }
+
+  const handleSelectApplication = (applicationId: number, checked: boolean) => {
+    const match = applications.find(appl => appl.id === applicationId);
+    if (!match) { return }
+    if (checked) {
+      setSelectedApplications((prev) => [...prev, match]);
+    } else {
+      setSelectedApplications((prev) => prev.filter((appl) => appl.id !== applicationId));
     }
   };
 
-  // NEW SMART VERSION:
+
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      // Only select applications that are eligible for bulk actions
-      // This prevents selecting applications that shouldn't be processed together
       const eligibleApps = currentApplications.filter((app) => {
         // Count different statuses on current page
         const statusCounts = currentApplications.reduce(
@@ -1065,7 +1159,6 @@ export default function ApplicationsPage() {
         const hasShortlisted = statusCounts.shortlisted > 0;
         const hasNewOrReviewed = (statusCounts.new || 0) + (statusCounts.reviewed || 0) > 0;
 
-        // If we have ONLY shortlisted applications, select all shortlisted
         if (hasShortlisted && !hasNewOrReviewed) {
           return app.status === "shortlisted";
         }
@@ -1081,22 +1174,22 @@ export default function ApplicationsPage() {
         return false; // Default: don't select anything
       });
 
-      setSelectedApplications(eligibleApps.map((app) => app.id));
+      setSelectedApplications(eligibleApps);
     } else {
       setSelectedApplications([]);
     }
   };
   const executeBulkAction = async (
     action: "shortlisted" | "reviewed" | "rejected",
-    applicationIds?: number[],
+    applications?: JobApplication[],
   ) => {
-    const idsToProcess = applicationIds || selectedApplications;
+    const applicationsToProcess = applications || selectedApplications;
     if (action === "shortlisted") {
       setIsBulkShortlisting(true);
     }
 
     try {
-      const promises = idsToProcess.map((applicationId) => {
+      const promises = applicationsToProcess.map((application) => {
         const updateData: {
           applicationId: number;
           status: string;
@@ -1104,7 +1197,7 @@ export default function ApplicationsPage() {
           reviewed_by?: number;
           rejected_by?: number;
         } = {
-          applicationId,
+          applicationId: application.id,
           status: action,
         };
 
@@ -1121,16 +1214,16 @@ export default function ApplicationsPage() {
 
       await Promise.all(promises);
       setApplications((prev) =>
-        prev.map((app) => (idsToProcess.includes(app.id) ? { ...app, status: action } : app)),
+        prev.map((app) => (applicationsToProcess.find(appl => appl.id === app.id) ? { ...app, status: action } : app)),
       );
       setSelectedApplications([]);
 
       toast.success(
-        `${idsToProcess.length} application${idsToProcess.length > 1 ? "s" : ""} updated to ${action}`,
+        `${applicationsToProcess.length} application${applicationsToProcess.length > 1 ? "s" : ""} updated to ${action}`,
       );
       refreshTableRef.current?.();
     } catch (error) {
-      toast.error(`Failed to update application${idsToProcess.length > 1 ? "s" : ""}`);
+      toast.error(`Failed to update application${applicationsToProcess.length > 1 ? "s" : ""}`);
     } finally {
       if (action === "shortlisted") {
         setIsBulkShortlisting(false);
@@ -1149,29 +1242,29 @@ export default function ApplicationsPage() {
     // For schedule interview, only allow shortlisted applications
     if (action === "schedule_interview") {
       const shortlistedApps = applications.filter(
-        (app) => selectedApplications.includes(app.id) && app.status === "shortlisted",
+        (app) => selectedApplications.find(appl => appl.id === app.id) && app.status === "shortlisted",
       );
+
+      console.log("\n\n Scheduling interviews with shortlisted applicants : ", shortlistedApps)
 
       if (shortlistedApps.length === 0) {
         toast.error("Please select shortlisted applications to schedule interviews");
         return;
       }
 
-      // Set default date to tomorrow at 10 AM
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(10, 0, 0, 0);
 
-      setBulkInterviewFormData({
-        interview_stage: 0,
-        interview_date: tomorrow.toISOString().slice(0, 16),
-        location: "",
-        interview_type: "",
-        status: "scheduled",
-      });
+      // setBulkInterviewFormData({
+      //   interview_stage: 0,
+      //   interview_time: "",
+      //   interview_date: "",
+      //   location: "",
+      //   interview_type: "in_person",
+      //   status: "scheduled",
+      //   job_position_application: 0,
+      // });
 
       await fetchInterviewData();
-      setShowBulkScheduleDialog(true);
+      setShowScheduleInterviewDialog({ type: "bulk", isOpen: true })
       return;
     }
 
@@ -1181,20 +1274,20 @@ export default function ApplicationsPage() {
     if (action === "reviewed") {
       // Only "new" applications can be marked as reviewed
       eligibleApps = applications.filter(
-        (app) => selectedApplications.includes(app.id) && app.status === "new",
+        (app) => selectedApplications.find(appl => appl.id === app.id) && app.status === "new",
       );
       actionText = "mark as reviewed";
     } else if (action === "shortlisted") {
       // Only "reviewed" applications can be shortlisted
       eligibleApps = applications.filter(
-        (app) => selectedApplications.includes(app.id) && app.status === "reviewed",
+        (app) => selectedApplications.find(appl => appl.id === app.id) && app.status === "reviewed",
       );
       actionText = "shortlist";
     } else if (action === "rejected") {
       // Only "new" or "reviewed" applications can be rejected
       eligibleApps = applications.filter(
         (app) =>
-          selectedApplications.includes(app.id) &&
+          selectedApplications.find(appl => appl.id === app.id) &&
           (app.status === "new" || app.status === "reviewed"),
       );
       actionText = "reject";
@@ -1234,7 +1327,7 @@ export default function ApplicationsPage() {
     // Execute directly for "reviewed" action
     await executeBulkAction(
       action,
-      eligibleApps.map((app) => app.id),
+      eligibleApps,
     );
   };
 
@@ -1245,12 +1338,12 @@ export default function ApplicationsPage() {
 
       if (confirmBulkAction.action === "shortlisted") {
         eligibleApps = applications.filter(
-          (app) => selectedApplications.includes(app.id) && app.status === "reviewed",
+          (app) => selectedApplications.find(appl => appl.id === app.id) && app.status === "reviewed",
         );
       } else if (confirmBulkAction.action === "rejected") {
         eligibleApps = applications.filter(
           (app) =>
-            selectedApplications.includes(app.id) &&
+            selectedApplications.find(appl => appl.id === app.id) &&
             (app.status === "new" || app.status === "reviewed"),
         );
       }
@@ -1259,7 +1352,7 @@ export default function ApplicationsPage() {
       // This ensures only eligible applications are processed
       await executeBulkAction(
         confirmBulkAction.action,
-        eligibleApps.map((app) => app.id),
+        eligibleApps,
       );
 
       setConfirmBulkAction({
@@ -1367,58 +1460,58 @@ export default function ApplicationsPage() {
     return <div>Loading...</div>;
   }
 
-
-    if (isLoading) {
-      return (
-        <div className="p-2 space-y-6">
-          <Card className="h-[calc(100vh-2rem)] shadow-lg">
-            <CardHeader className="border-b">
-              <div className="flex justify-between gap-8 items-center">
-                <div className="flex items-center justify-start gap-4">
-                  <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
-                  <div className="space-y-2">
-                    <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+  if (isLoading) {
+    return (
+      <div className="p-2 space-y-6">
+        <Card className="h-[calc(100vh-2rem)] shadow-lg">
+          <CardHeader className="border-b">
+            <div className="flex justify-between gap-8 items-center">
+              <div className="flex items-center justify-start gap-4">
+                <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="space-y-2">
+                  <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
                 </div>
               </div>
-            </CardHeader>
-            <TableSkeleton rows={10} columns={8} />
-          </Card>
-        </div>
-      )
-    }
-    
+              <div className="flex gap-2">
+                <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+          </CardHeader>
+          <TableSkeleton rows={10} columns={8} />
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 w-full h-full bg-white p-3 sm:p-4 lg:p-8 gap-4 rounded-lg">
-     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-      <div className="flex flex-col">
-        <h1 className="text-lg sm:text-2xl md:text-3xl font-bold whitespace-nowrap">
-          Job Applications
-        </h1>
-        <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-xs sm:max-w-none">
-          Manage and track all job applications for {selectedBranch.branch_name} -
-        </p>
+    <div className="grid grid-cols-1 w-full h-full bg-white p-3 md:p-4 lg:p-8 gap-4 rounded-lg">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ">
+        <div className="flex flex-col">
+          <h1 className="text-lg sm:text-2xl md:text-3xl font-bold whitespace-nowrap">
+            Job Applications
+          </h1>
+          <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-xs sm:max-w-none">
+            Manage and track all job applications for {selectedBranch.branch_name} -
+          </p>
+        </div>
+        <Button
+          onClick={() => setIsCreateDialogOpen(true)}
+          className="flex items-center sm:mt-15 lg:mt-0"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Create Application
+        </Button>
       </div>
-      <Button onClick={() => setIsCreateDialogOpen(true)} className="flex items-center sm:mt-15 lg:mt-0">
-        <Plus className="mr-2 h-4 w-4" />
-        Create Application
-      </Button>
-    </div>
-
 
       {/* Enhanced Filter Section */}
       <div className="space-y-4">
-        {/* Main Filters Row */}
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center mt-6">
-          <div className="relative flex-1 lg:flex-[0.7]">
-             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+
+        <div className="flex flex-col flex-wrap lg:flex-row gap-4 items-start lg:items-center mt-6">
+          <div className="relative w-full max-w-md md:max-w-lg lg:max-w-sm">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search by name, email, or phone..."
               value={searchTerm}
@@ -1426,98 +1519,96 @@ export default function ApplicationsPage() {
               className="pl-10"
             />
           </div>
-        <div className="flex flex-col sm:flex-row gap-5 flex-1 lg:flex-[0.5]">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="new">New</SelectItem>
-              <SelectItem value="reviewed">Reviewed</SelectItem>
-              <SelectItem value="shortlisted">Shortlisted</SelectItem>
-              <SelectItem value="accepted">Accepted</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={jobFilter} onValueChange={setJobFilter}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Filter by job" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Jobs</SelectItem>
-              {jobPositionAdverts.map((advert) => (
-                <SelectItem key={advert.id} value={advert.id.toString()}>
-                  {advert.job_position_details?.name || `Job Advert #${advert.id}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div> 
-
-           {/* Date Filter Row */}
-        <div className="flex flex-col sm:flex-row gap-4 p-4 ">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-gray-700">Date Filter:</span>
+          <div className="flex flex-col sm:flex-row gap-5 flex-1 lg:flex-[0.5]">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="new">New</SelectItem>
+                <SelectItem value="reviewed">Reviewed</SelectItem>
+                <SelectItem value="shortlisted">Shortlisted</SelectItem>
+                <SelectItem value="accepted">Accepted</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={jobFilter} onValueChange={setJobFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Filter by job" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Jobs</SelectItem>
+                {jobPositionAdverts.map((advert) => (
+                  <SelectItem key={advert.id} value={advert.id.toString()}>
+                    {advert.job_position_details?.name || `Job Advert #${advert.id}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <Select
-            value={dateFilter.type}
-            onValueChange={(value: "application_date" | "posted_date") =>
-              setDateFilter((prev) => ({ ...prev, type: value }))
-            }
-          >
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="application_date">Application Date</SelectItem>
-              <SelectItem value="posted_date">Posted Date</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Date Filter Row */}
+          <div className="flex flex-col sm:flex-row gap-4 p-4 ">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-gray-700">Date Filter:</span>
+            </div>
 
-          <div className="flex items-center gap-2">
-            <Label htmlFor="start-date" className="text-sm whitespace-nowrap">
-              From:
-            </Label>
-            <Input
-              id="start-date"
-              type="date"
-              value={dateFilter.startDate}
-              onChange={(e) => setDateFilter((prev) => ({ ...prev, startDate: e.target.value }))}
-              className="w-full sm:w-auto"
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Label htmlFor="end-date" className="text-sm whitespace-nowrap">
-              To:
-            </Label>
-            <Input
-              id="end-date"
-              type="date"
-              value={dateFilter.endDate}
-              onChange={(e) => setDateFilter((prev) => ({ ...prev, endDate: e.target.value }))}
-              className="w-full sm:w-auto"
-            />
-          </div>
-
-          {(dateFilter.startDate || dateFilter.endDate) && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearDateFilters}
-              className="w-full sm:w-auto"
+            <Select
+              value={dateFilter.type}
+              onValueChange={(value: "application_date" | "posted_date") =>
+                setDateFilter((prev) => ({ ...prev, type: value }))
+              }
             >
-              <X className="h-4 w-4 mr-1" />
-              Clear Dates
-            </Button>
-          )}
-        </div> 
-        </div>
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="application_date">Application Date</SelectItem>
+                <SelectItem value="posted_date">Posted Date</SelectItem>
+              </SelectContent>
+            </Select>
 
-     
+            <div className="flex items-center gap-2">
+              <Label htmlFor="start-date" className="text-sm whitespace-nowrap">
+                From:
+              </Label>
+              <Input
+                id="start-date"
+                type="date"
+                value={dateFilter.startDate}
+                onChange={(e) => setDateFilter((prev) => ({ ...prev, startDate: e.target.value }))}
+                className="w-full sm:w-auto"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Label htmlFor="end-date" className="text-sm whitespace-nowrap">
+                To:
+              </Label>
+              <Input
+                id="end-date"
+                type="date"
+                value={dateFilter.endDate}
+                onChange={(e) => setDateFilter((prev) => ({ ...prev, endDate: e.target.value }))}
+                className="w-full sm:w-auto"
+              />
+            </div>
+
+            {(dateFilter.startDate || dateFilter.endDate) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearDateFilters}
+                className="w-full sm:w-auto"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear Dates
+              </Button>
+            )}
+          </div>
+        </div>
 
         {/* Active Filters Indicator */}
         {(searchTerm ||
@@ -1557,8 +1648,8 @@ export default function ApplicationsPage() {
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Your existing review button */}
-                {selectedApplications.some((id) => {
-                  const app = applications.find((a) => a.id === id);
+                {selectedApplications.some((appl) => {
+                  const app = applications.find((a) => a.id === appl.id);
                   return app?.status === "new";
                 }) && (
                     <Button
@@ -1573,8 +1664,8 @@ export default function ApplicationsPage() {
                   )}
 
                 {/* Your existing shortlist button */}
-                {selectedApplications.some((id) => {
-                  const app = applications.find((a) => a.id === id);
+                {selectedApplications.some((appl) => {
+                  const app = applications.find((a) => a.id === appl.id);
                   return app?.status === "reviewed";
                 }) && (
                     <Button
@@ -1599,8 +1690,8 @@ export default function ApplicationsPage() {
                   )}
 
                 {/* UPDATED: Schedule Interview button - now works for multiple selections */}
-                {selectedApplications.some((id) => {
-                  const app = applications.find((a) => a.id === id);
+                {selectedApplications.some((appl) => {
+                  const app = applications.find((a) => a.id === appl.id);
                   return app?.status === "shortlisted";
                 }) && (
                     <Button
@@ -1611,8 +1702,8 @@ export default function ApplicationsPage() {
                     >
                       <Calendar className="h-4 w-4 mr-2" />
                       Schedule Interview
-                      {selectedApplications.filter((id) => {
-                        const app = applications.find((a) => a.id === id);
+                      {selectedApplications.filter((appl) => {
+                        const app = applications.find((a) => a.id === appl.id);
                         return app?.status === "shortlisted";
                       }).length > 1
                         ? "s"
@@ -1621,8 +1712,8 @@ export default function ApplicationsPage() {
                   )}
 
                 {/* Your existing reject button */}
-                {selectedApplications.some((id) => {
-                  const app = applications.find((a) => a.id === id);
+                {selectedApplications.some((appl) => {
+                  const app = applications.find((a) => a.id === appl.id);
                   return app?.status === "new" || app?.status === "reviewed";
                 }) && (
                     <Button
@@ -1658,7 +1749,7 @@ export default function ApplicationsPage() {
       )}
 
       <Card className="mt-6 h-full">
-          <CardHeader>
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             Applications ({safeFilteredApplications.length})
@@ -1681,12 +1772,14 @@ export default function ApplicationsPage() {
                 jobPositionAdvert: jobFilter !== "all" ? jobFilter : undefined,
               });
             }}
-            fetchFromUrl={async (args: { url: string }) => getPaginatedJobApplicationsFromUrl(args.url)}
+            fetchFromUrl={async (args: { url: string }) =>
+              getPaginatedJobApplicationsFromUrl(args.url)
+            }
             deps={[selectedInstitution?.id, searchTerm, statusFilter, jobFilter]}
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               // Store refresh function in ref when component mounts/updates
               useEffect(() => {
                 refreshTableRef.current = refresh;
@@ -1699,7 +1792,11 @@ export default function ApplicationsPage() {
               if (!data || data.results.length === 0) {
                 return (
                   <div className="text-center py-8 text-gray-500">
-                    {searchTerm || statusFilter !== "all" || jobFilter !== "all" || dateFilter.startDate || dateFilter.endDate
+                    {searchTerm ||
+                      statusFilter !== "all" ||
+                      jobFilter !== "all" ||
+                      dateFilter.startDate ||
+                      dateFilter.endDate
                       ? "No applications match your current filters."
                       : "No applications have been submitted yet."}
                   </div>
@@ -1750,7 +1847,7 @@ export default function ApplicationsPage() {
               return (
                 <>
                   {/* Desktop Table */}
-                  <div className="hidden sm:block">
+                  <div className="">
                     <Table className="min-w-full">
                       <TableHeader>
                         <TableRow>
@@ -1796,7 +1893,9 @@ export default function ApplicationsPage() {
                                     // Check if all selectable apps are selected
                                     return (
                                       selectableApps.length > 0 &&
-                                      selectableApps.every((app) => selectedApplications.includes(app.id))
+                                      selectableApps.every((app) =>
+                                        selectedApplications.find(appl => appl.id === app.id),
+                                      )
                                     );
                                   })()
                                 }
@@ -1870,7 +1969,7 @@ export default function ApplicationsPage() {
                             <TableCell>
                               <div className="flex items-center">
                                 <Checkbox
-                                  checked={selectedApplications.includes(application.id)}
+                                  checked={!!selectedApplications.find(appl => appl.id === application.id)}
                                   onCheckedChange={(checked: any) =>
                                     handleSelectApplication(application.id, checked as boolean)
                                   }
@@ -1897,7 +1996,9 @@ export default function ApplicationsPage() {
                             <TableCell>
                               <div className="flex items-center text-sm">
                                 <Calendar className="mr-1 h-3 w-3" />
-                                {formatDate(application.job_position_advert_job_details.job_posted_date)}
+                                {formatDate(
+                                  application.job_position_advert_job_details.job_posted_date,
+                                )}
                               </div>
                             </TableCell>
                             <TableCell>
@@ -1921,13 +2022,16 @@ export default function ApplicationsPage() {
                                   {application.country}
                                 </div>
                                 {application.state && (
-                                  <div className="text-sm text-muted-foreground">{application.state}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {application.state}
+                                  </div>
                                 )}
                               </div>
                             </TableCell>
                             <TableCell>
                               <Badge className={statusColors[application.status]}>
-                                {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                                {application.status.charAt(0).toUpperCase() +
+                                  application.status.slice(1)}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -1943,7 +2047,7 @@ export default function ApplicationsPage() {
                               <div className="py-1 flex flex-col gap-2 items-start">
                                 <Button variant="link" size="sm" className="h-auto p-0" asChild>
                                   <a
-                                    href={application.resume}
+                                    href={process.env.NEXT_PUBLIC_BASE_URL + application.resume}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
@@ -1955,7 +2059,9 @@ export default function ApplicationsPage() {
                                 {application.cover_letter && (
                                   <Button variant="link" size="sm" className="h-auto p-0" asChild>
                                     <a
-                                      href={application.cover_letter}
+                                      href={
+                                        process.env.NEXT_PUBLIC_BASE_URL + application.cover_letter
+                                      }
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
@@ -1975,11 +2081,15 @@ export default function ApplicationsPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleViewApplication(application.id)}>
+                                  <DropdownMenuItem
+                                    onClick={() => handleViewApplication(application.id)}
+                                  >
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleEditApplication(application.id)}>
+                                  <DropdownMenuItem
+                                    onClick={() => handleEditApplication(application.id)}
+                                  >
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit
                                   </DropdownMenuItem>
@@ -1991,22 +2101,31 @@ export default function ApplicationsPage() {
                                     Schedule Interview
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
-                                    onClick={() => handleIndividualAction(application.id, "reviewed")}
+                                    onClick={() =>
+                                      handleIndividualAction(application.id, "reviewed")
+                                    }
                                     disabled={application.status !== "new"}
                                   >
                                     <Eye className="h-4 w-4 mr-2" />
                                     Mark as Reviewed
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
-                                    onClick={() => handleIndividualAction(application.id, "shortlisted")}
+                                    onClick={() =>
+                                      handleIndividualAction(application.id, "shortlisted")
+                                    }
                                     disabled={application.status !== "reviewed"}
                                   >
                                     <Check className="h-4 w-4 mr-2" />
                                     Shortlist
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
-                                    onClick={() => handleIndividualAction(application.id, "rejected")}
-                                    disabled={application.status !== "new" && application.status !== "reviewed"}
+                                    onClick={() =>
+                                      handleIndividualAction(application.id, "rejected")
+                                    }
+                                    disabled={
+                                      application.status !== "new" &&
+                                      application.status !== "reviewed"
+                                    }
                                   >
                                     <X className="h-4 w-4 mr-2" />
                                     Reject
@@ -2020,88 +2139,6 @@ export default function ApplicationsPage() {
                     </Table>
                   </div>
 
-                  {/* Mobile Cards */}
-                  <div className="sm:hidden space-y-3">
-                    {sortedResults.map((application) => (
-                      <div key={application.id} className="bg-gray-50 rounded-lg p-4 border">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <User className="h-4 w-4 text-gray-500" />
-                              <h3 className="font-semibold text-gray-900">
-                                {application.applicant_name}
-                              </h3>
-                            </div>
-                            <div className="space-y-1 mb-2">
-                              <p className="text-sm text-gray-600">
-                                {application.job_position_advert_job_details?.name ||
-                                  `Advert #${application.job_position_advert}`}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                {application.applicant_email}
-                              </p>
-                              {application.applicant_phone && (
-                                <p className="text-sm text-gray-600">{application.applicant_phone}</p>
-                              )}
-                              <div className="flex items-center gap-2">
-                                <Badge className={statusColors[application.status]}>
-                                  {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                                </Badge>
-                                <span className="text-sm text-gray-500">
-                                  Applied: {formatDate(application.application_date)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleViewApplication(application.id)}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditApplication(application.id)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleOpenScheduleInterview(application)}
-                                disabled={application.status !== "shortlisted"}
-                              >
-                                <Calendar className="h-4 w-4 mr-2" />
-                                Schedule Interview
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleIndividualAction(application.id, "reviewed")}
-                                disabled={application.status !== "new"}
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                Mark as Reviewed
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleIndividualAction(application.id, "shortlisted")}
-                                disabled={application.status !== "reviewed"}
-                              >
-                                <Check className="h-4 w-4 mr-2" />
-                                Shortlist
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleIndividualAction(application.id, "rejected")}
-                                disabled={application.status !== "new" && application.status !== "reviewed"}
-                              >
-                                <X className="h-4 w-4 mr-2" />
-                                Reject
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
                 </>
               );
             }}
@@ -2111,9 +2148,11 @@ export default function ApplicationsPage() {
 
       {/* Create Application Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl">
           <DialogHeader className="pb-6">
-            <DialogTitle className="text-2xl font-semibold text-gray-800">Add Application</DialogTitle>
+            <DialogTitle className="text-2xl font-semibold text-gray-800">
+              Add Application
+            </DialogTitle>
             <DialogDescription className="text-gray-600">
               Fill in the details to create a new job application.
             </DialogDescription>
@@ -2127,368 +2166,400 @@ export default function ApplicationsPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label htmlFor="job_position_advert" className="block text-sm font-medium text-gray-800">
-                  Job Position / Title *
-                </label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground z-10" />
-                  <div className="relative" ref={jobPositionContainerRef}>
-                  <Input
-                    className="w-full bg-white border-gray-300 pl-9"
-                    placeholder="Search or select job position"
-                    type="text"
-                    value={
-                      jpFilterText ||
-                      (formData.job_position_advert
-                        ? getPositionLabel(jobPositionAdverts.find((p) => p.id === formData.job_position_advert) || ({} as JobPositionAdvert))
-                        : "")
-                    }
-                    onChange={(e) => {
-                      setJpFilterText(e.target.value);
-                      setJobPositionDropdownOpen(true);
-                    }}
-                    onFocus={handleJobPositionInputFocus}
-                  />
-                  {jobPositionDropdownOpen && (
-                    <div
-                      className="absolute top-full mt-2 left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto"
-                      ref={jobPositionDropdownRef}
-                      onScroll={handleJobPositionDropdownScroll}
-                    >
-                      {jobPositionOptions.length > 0 ? (
-                        <>
-                          {jobPositionOptions.map((advert) => (
-                            <div
-                              key={advert.id}
-                              className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                              onClick={() => {
-                                handleInputChange("job_position_advert", Number(advert.id));
-                                setJpFilterText(getPositionLabel(advert));
-                                setJobPositionDropdownOpen(false);
-                              }}
-                            >
-                              <div className="flex flex-col">
-                                <span className="font-medium">
-                                  {advert.job_position_details?.name || `Job Advert #${advert.id}`}
-                                </span>
-                              
-                              </div>
+            <div className="max-h-[80vh] md:max-h-[65svh]  overflow-y-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="job_position_advert"
+                    className="block text-sm font-medium text-gray-800"
+                  >
+                    Job Position / Title *
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground z-10" />
+                    <div className="relative" ref={jobPositionContainerRef}>
+                      <Input
+                        className="w-full bg-white border-gray-300 pl-9"
+                        placeholder="Search or select job position"
+                        type="text"
+                        value={
+                          jpFilterText ||
+                          (formData.job_position_advert
+                            ? getPositionLabel(
+                              jobPositionAdverts.find(
+                                (p) => p.id === formData.job_position_advert,
+                              ) || ({} as JobPositionAdvert),
+                            )
+                            : "")
+                        }
+                        onChange={(e) => {
+                          setJpFilterText(e.target.value);
+                          setJobPositionDropdownOpen(true);
+                        }}
+                        onFocus={handleJobPositionInputFocus}
+                      />
+                      {jobPositionDropdownOpen && (
+                        <div
+                          className="absolute top-full mt-2 left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto"
+                          ref={jobPositionDropdownRef}
+                          onScroll={handleJobPositionDropdownScroll}
+                        >
+                          {jobPositionOptions.length > 0 ? (
+                            <>
+                              {jobPositionOptions.map((advert) => (
+                                <div
+                                  key={advert.id}
+                                  className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                  onClick={() => {
+                                    handleInputChange("job_position_advert", Number(advert.id));
+                                    setJpFilterText(getPositionLabel(advert));
+                                    setJobPositionDropdownOpen(false);
+                                  }}
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">
+                                      {advert.job_position_details?.name ||
+                                        `Job Advert #${advert.id}`}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                              {isLoadingJobPositions && (
+                                <div className="flex items-center justify-center py-3 text-sm text-gray-500">
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading more...
+                                </div>
+                              )}
+                              {!hasMoreJobPositions && (
+                                <div className="text-center py-3 text-gray-500 text-sm">
+                                  No more positions
+                                </div>
+                              )}
+                            </>
+                          ) : isLoadingJobPositions ? (
+                            <div className="flex items-center justify-center py-8 text-sm text-gray-500">
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading positions...
                             </div>
-                          ))}
-                          {isLoadingJobPositions && (
-                            <div className="flex items-center justify-center py-3 text-sm text-gray-500">
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading more...
+                          ) : (
+                            <div className="text-center py-8 text-gray-500 text-sm">
+                              {jpFilterText
+                                ? `No positions found for "${jpFilterText}"`
+                                : "No positions available"}
                             </div>
                           )}
-                          {!hasMoreJobPositions && (
-                            <div className="text-center py-3 text-gray-500 text-sm">No more positions</div>
-                          )}
-                        </>
-                      ) : isLoadingJobPositions ? (
-                        <div className="flex items-center justify-center py-8 text-sm text-gray-500">
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading positions...
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-gray-500 text-sm">
-                          {jpFilterText ? `No positions found for "${jpFilterText}"` : "No positions available"}
                         </div>
                       )}
                     </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="application_date"
+                    className="block text-sm font-medium text-gray-800"
+                  >
+                    Application Date *
+                  </label>
+                  <div className="relative">
+                    <Input
+                      id="application_date"
+                      type="date"
+                      value={formData.application_date}
+                      onChange={(e) => handleInputChange("application_date", e.target.value)}
+                      className="w-full pr-10 bg-white border-gray-300"
+                      max={new Date().toISOString().split("T")[0]}
+                      required
+                    />
+                    <CalendarDays className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-gray-500 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Second Row - Name and Gender */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="applicant_name"
+                    className="block text-sm font-medium text-gray-800"
+                  >
+                    Applicant Name *
+                  </label>
+                  <Input
+                    id="applicant_name"
+                    placeholder="Applicant Name"
+                    value={formData.applicant_name}
+                    onChange={(e) => handleInputChange("applicant_name", e.target.value)}
+                    className="bg-white border-gray-300"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="gender" className="block text-sm font-medium text-gray-800">
+                    Gender *
+                  </label>
+                  <Select
+                    value={formData.gender}
+                    onValueChange={(value: any) => handleInputChange("gender", value)}
+                  >
+                    <SelectTrigger className="w-full bg-white border-gray-300">
+                      <SelectValue placeholder="Select Gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Third Row - Email and Phone */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="applicant_email"
+                    className="block text-sm font-medium text-gray-800"
+                  >
+                    Email *
+                  </label>
+                  <Input
+                    id="applicant_email"
+                    placeholder="email@email.com"
+                    type="email"
+                    value={formData.applicant_email}
+                    onChange={(e) => handleInputChange("applicant_email", e.target.value)}
+                    className="bg-white border-gray-300"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="applicant_phone"
+                    className="block text-sm font-medium text-gray-800"
+                  >
+                    Phone Number
+                  </label>
+                  <Input
+                    id="applicant_phone"
+                    placeholder="0751234567"
+                    type="tel"
+                    value={formData.applicant_phone}
+                    onChange={(e) => handleInputChange("applicant_phone", e.target.value)}
+                    className="bg-white border-gray-300"
+                  />
+                </div>
+              </div>
+
+              {/* Fourth Row - Source and Address */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label htmlFor="source" className="block text-sm font-medium text-gray-800">
+                    Source
+                  </label>
+                  <Select
+                    value={formData.source}
+                    onValueChange={(value: string) => {
+                      handleInputChange("source", value);
+                      if (value !== "head_hunt") {
+                        handleInputChange("recommended_by", null);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full bg-white border-gray-300">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="website">Website</SelectItem>
+                      <SelectItem value="referral">Referral</SelectItem>
+                      <SelectItem value="job_board">Job Board</SelectItem>
+                      <SelectItem value="social_media">Social Media</SelectItem>
+                      <SelectItem value="head_hunt">Head Hunt</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="address" className="block text-sm font-medium text-gray-800">
+                    Address *
+                  </label>
+                  <div className="relative">
+                    {/* <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground z-10" /> */}
+                    <LocationAutocomplete
+                      value={formData.address}
+                      onChange={(value) => handleInputChange("address", value)}
+                      onCoordinatesChange={handleAddressCoordinatesChange}
+                      placeholder="Search for applicant's address..."
+                      showCurrentLocationButton={true}
+                      className="w-full bg-white border-gray-300"
+                    />
+                  </div>
+                  {/* Hidden coordinate fields */}
+                  <input
+                    type="hidden"
+                    value={formData.address_latitude || ""}
+                    onChange={(e) => handleInputChange("address_latitude", e.target.value)}
+                  />
+                  <input
+                    type="hidden"
+                    value={formData.address_longitude || ""}
+                    onChange={(e) => handleInputChange("address_longitude", e.target.value)}
+                  />
+                  <input
+                    type="hidden"
+                    value={formData.created_by || userData?.id || 0}
+                    onChange={(e) => handleInputChange("created_by", Number(e.target.value))}
+                  />
+                </div>
+              </div>
+
+              {/* Head Hunt Field - Only show when source is head_hunt */}
+              {formData.source === "head_hunt" && (
+                <div className="space-y-2 my-4">
+                  <label
+                    htmlFor="recommended_by"
+                    className="block text-sm font-medium text-gray-800"
+                  >
+                    Head Hunted By *
+                  </label>
+                  <div className="w-full">
+                    <EmployeeSearchableSelect
+                      value={formData.recommended_by ? [formData.recommended_by.toString()] : []}
+                      onValueChange={(values) => {
+                        console.log("\n\n Values changed with values : ", values)
+                        const selectedValue = Array.isArray(values) ? values[0] : values;
+                        handleInputChange(
+                          "recommended_by",
+                          selectedValue ? Number(selectedValue) : null,
+                        );
+                      }}
+                      placeholder="Select the employee who head hunted this candidate"
+                      showEmployeeId={false}
+                      showDepartment={true}
+                      multiple={false}
+                    />
+                  </div>
+                  {!formData.recommended_by && (
+                    <p className="text-sm text-muted-foreground">
+                      Please select which employee was responsible for head hunting this candidate.
+                    </p>
                   )}
+                </div>
+              )}
+
+              {/* Fifth Row - State and Country */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label htmlFor="state" className="block text-sm font-medium text-gray-800">
+                    State
+                  </label>
+                  <Input
+                    id="state"
+                    placeholder="State"
+                    value={formData.state}
+                    onChange={(e) => handleInputChange("state", e.target.value)}
+                    className="bg-white border-gray-300"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="country" className="block text-sm font-medium text-gray-800">
+                    Country *
+                  </label>
+                  <Input
+                    id="country"
+                    placeholder="Country"
+                    value={formData.country}
+                    onChange={(e) => handleInputChange("country", e.target.value)}
+                    className="bg-white border-gray-300"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* File Upload Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* CV Upload */}
+                <div className="space-y-2">
+                  <label htmlFor="cv-upload" className="block text-sm font-medium text-gray-800">
+                    Curriculum Vitae / Resume *
+                  </label>
+                  <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-md bg-gray-50 text-center cursor-pointer hover:border-gray-400 transition-colors duration-200">
+                    <input
+                      id="cv-upload"
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      className="sr-only"
+                      onChange={(e) => handleFileChange("resume", e.target.files?.[0] || null)}
+                      required
+                    />
+                    <label
+                      htmlFor="cv-upload"
+                      className="flex flex-col items-center cursor-pointer"
+                    >
+                      <Upload className="h-10 w-10 text-primary mb-2" />
+                      <span className="text-sm font-medium text-primary">
+                        Click to Upload or drag and drop
+                      </span>
+                      <span className="text-xs text-gray-500">(Max. File size: 25 MB)</span>
+                    </label>
+                    {formData.resume && (
+                      <p className="text-sm text-gray-700 mt-2 flex items-center">
+                        <FileText className="mr-1 h-3 w-3" />
+                        {formData.resume.name}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Cover Letter Upload */}
+                <div className="space-y-2">
+                  <label
+                    htmlFor="cover-letter-upload"
+                    className="block text-sm font-medium text-gray-800"
+                  >
+                    Cover Letter
+                  </label>
+                  <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-md bg-gray-50 text-center cursor-pointer hover:border-gray-400 transition-colors duration-200">
+                    <input
+                      id="cover-letter-upload"
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      className="sr-only"
+                      onChange={(e) =>
+                        handleFileChange("cover_letter", e.target.files?.[0] || null)
+                      }
+                    />
+                    <label
+                      htmlFor="cover-letter-upload"
+                      className="flex flex-col items-center cursor-pointer"
+                    >
+                      <Upload className="h-10 w-10 text-primary mb-2" />
+                      <span className="text-sm font-medium text-primary">
+                        Click to Upload or drag and drop
+                      </span>
+                      <span className="text-xs text-gray-500">(Max. File size: 25 MB)</span>
+                    </label>
+                    {formData.cover_letter && (
+                      <p className="text-sm text-gray-700 mt-2 flex items-center">
+                        <FileText className="mr-1 h-3 w-3" />
+                        {formData.cover_letter.name}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="application_date" className="block text-sm font-medium text-gray-800">
-                Application Date *
-              </label>
-              <div className="relative">
-                <Input
-                  id="application_date"
-                  type="date"
-                  value={formData.application_date}
-                  onChange={(e) => handleInputChange("application_date", e.target.value)}
-                  className="w-full pr-10 bg-white border-gray-300"
-                  max={new Date().toISOString().split("T")[0]}
-                  required
-                />
-                <CalendarDays className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-gray-500 pointer-events-none" />
-              </div>
-            </div>
-          </div>
-
-          {/* Second Row - Name and Gender */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label htmlFor="applicant_name" className="block text-sm font-medium text-gray-800">
-                Applicant Name *
-              </label>
-              <Input
-                id="applicant_name"
-                placeholder="Applicant Name"
-                value={formData.applicant_name}
-                onChange={(e) => handleInputChange("applicant_name", e.target.value)}
-                className="bg-white border-gray-300"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="gender" className="block text-sm font-medium text-gray-800">
-                Gender *
-              </label>
-              <Select
-                value={formData.gender}
-                onValueChange={(value: any) => handleInputChange("gender", value)}
-              >
-                <SelectTrigger className="w-full bg-white border-gray-300">
-                  <SelectValue placeholder="Select Gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Third Row - Email and Phone */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label htmlFor="applicant_email" className="block text-sm font-medium text-gray-800">
-                Email *
-              </label>
-              <Input
-                id="applicant_email"
-                placeholder="email@email.com"
-                type="email"
-                value={formData.applicant_email}
-                onChange={(e) => handleInputChange("applicant_email", e.target.value)}
-                className="bg-white border-gray-300"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="applicant_phone" className="block text-sm font-medium text-gray-800">
-                Phone Number
-              </label>
-              <Input
-                id="applicant_phone"
-                placeholder="0751234567"
-                type="tel"
-                value={formData.applicant_phone}
-                onChange={(e) => handleInputChange("applicant_phone", e.target.value)}
-                className="bg-white border-gray-300"
-              />
-            </div>
-          </div>
-
-          {/* Fourth Row - Source and Address */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label htmlFor="source" className="block text-sm font-medium text-gray-800">
-                Source
-              </label>
-              <Select
-                value={formData.source}
-                onValueChange={(value: string | number | File | null) => {
-                  handleInputChange("source", value);
-                  if (value !== "head_hunt") {
-                    handleInputChange("recommended_by", null);
-                  }
-                }}
-              >
-                <SelectTrigger className="w-full bg-white border-gray-300">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="website">Website</SelectItem>
-                  <SelectItem value="referral">Referral</SelectItem>
-                  <SelectItem value="job_board">Job Board</SelectItem>
-                  <SelectItem value="social_media">Social Media</SelectItem>
-                  <SelectItem value="head_hunt">Head Hunt</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="address" className="block text-sm font-medium text-gray-800">
-                Address *
-              </label>
-              <div className="relative">
-                {/* <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground z-10" /> */}
-                <LocationAutocomplete
-                  value={formData.address}
-                  onChange={(value) => handleInputChange("address", value)}
-                  onCoordinatesChange={handleAddressCoordinatesChange}
-                  placeholder="Search for applicant's address..."
-                  showCurrentLocationButton={true}
-                  className="w-full bg-white border-gray-300"
-                />
-              </div>
-              {/* Hidden coordinate fields */}
-              <input
-                type="hidden"
-                value={formData.address_latitude || ""}
-                onChange={(e) => handleInputChange("address_latitude", e.target.value)}
-              />
-              <input
-                type="hidden"
-                value={formData.address_longitude || ""}
-                onChange={(e) => handleInputChange("address_longitude", e.target.value)}
-              />
-              <input
-                type="hidden"
-                value={formData.created_by || userData?.id || 0}
-                onChange={(e) => handleInputChange("created_by", Number(e.target.value))}
-              />
-            </div>
-          </div>
-
-          {/* Head Hunt Field - Only show when source is head_hunt */}
-          {formData.source === "head_hunt" && (
-            <div className="space-y-2">
-              <label htmlFor="recommended_by" className="block text-sm font-medium text-gray-800">
-                Head Hunted By *
-              </label>
-              <div className="w-full">
-                <EmployeeSearchableSelect
-                  employees={employees}
-                  value={formData.recommended_by ? [formData.recommended_by.toString()] : []}
-                  onValueChange={(values) => {
-                    const selectedValue = Array.isArray(values) ? values[0] : values;
-                    handleInputChange(
-                      "recommended_by",
-                      selectedValue ? Number(selectedValue) : null,
-                    );
-                  }}
-                  placeholder="Select the employee who head hunted this candidate"
-                  showEmployeeId={false}
-                  showDepartment={true}
-                  multiple={false}
-                />
-              </div>
-              {!formData.recommended_by && (
-                <p className="text-sm text-muted-foreground">
-                  Please select which employee was responsible for head hunting this candidate.
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Fifth Row - State and Country */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label htmlFor="state" className="block text-sm font-medium text-gray-800">
-                State
-              </label>
-              <Input
-                id="state"
-                placeholder="State"
-                value={formData.state}
-                onChange={(e) => handleInputChange("state", e.target.value)}
-                className="bg-white border-gray-300"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="country" className="block text-sm font-medium text-gray-800">
-                Country *
-              </label>
-              <Input
-                id="country"
-                placeholder="Country"
-                value={formData.country}
-                onChange={(e) => handleInputChange("country", e.target.value)}
-                className="bg-white border-gray-300"
-                required
-              />
-            </div>
-          </div>
-
-          {/* File Upload Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* CV Upload */}
-            <div className="space-y-2">
-              <label htmlFor="cv-upload" className="block text-sm font-medium text-gray-800">
-                Curriculum Vitae / Resume *
-              </label>
-              <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-md bg-gray-50 text-center cursor-pointer hover:border-gray-400 transition-colors duration-200">
-                <input
-                  id="cv-upload"
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  className="sr-only"
-                  onChange={(e) => handleFileChange("resume", e.target.files?.[0] || null)}
-                  required
-                />
-                <label htmlFor="cv-upload" className="flex flex-col items-center cursor-pointer">
-                  <Upload className="h-10 w-10 text-primary mb-2" />
-                  <span className="text-sm font-medium text-primary">Click to Upload or drag and drop</span>
-                  <span className="text-xs text-gray-500">(Max. File size: 25 MB)</span>
-                </label>
-                {formData.resume && (
-                  <p className="text-sm text-gray-700 mt-2 flex items-center">
-                    <FileText className="mr-1 h-3 w-3" />
-                    {formData.resume.name}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Cover Letter Upload */}
-            <div className="space-y-2">
-              <label htmlFor="cover-letter-upload" className="block text-sm font-medium text-gray-800">
-                Cover Letter
-              </label>
-              <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-md bg-gray-50 text-center cursor-pointer hover:border-gray-400 transition-colors duration-200">
-                <input
-                  id="cover-letter-upload"
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  className="sr-only"
-                  onChange={(e) => handleFileChange("cover_letter", e.target.files?.[0] || null)}
-                />
-                <label htmlFor="cover-letter-upload" className="flex flex-col items-center cursor-pointer">
-                  <Upload className="h-10 w-10 text-primary mb-2" />
-                  <span className="text-sm font-medium text-primary">Click to Upload or drag and drop</span>
-                  <span className="text-xs text-gray-500">(Max. File size: 25 MB)</span>
-                </label>
-                {formData.cover_letter && (
-                  <p className="text-sm text-gray-700 mt-2 flex items-center">
-                    <FileText className="mr-1 h-3 w-3" />
-                    {formData.cover_letter.name}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
             {/* Form Actions */}
             <div className="flex justify-start gap-4 pt-6 border-t">
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-              >
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Creating..." : "Add Application"}
               </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={handleClearForm}
-              >
+              <Button type="button" variant="outline" onClick={handleClearForm}>
                 Clear Form
               </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setIsCreateDialogOpen(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                 Cancel
               </Button>
             </div>
@@ -2585,155 +2656,59 @@ export default function ApplicationsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <Dialog open={showBulkScheduleDialog} onOpenChange={setShowBulkScheduleDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={showScheduleInterviewDialog.isOpen} onOpenChange={(open) => setShowScheduleInterviewDialog(prev => ({ ...prev, isOpen: open }))}>
+        <DialogContent className="w-full max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Schedule Bulk Interviews</DialogTitle>
+            <DialogTitle>Schedule {showScheduleInterviewDialog.type === "bulk" ? "Bulk" : ""} Interview{showScheduleInterviewDialog.type === "bulk" ? 's' : ''}</DialogTitle>
             <DialogDescription>
-              Schedule interviews for{" "}
-              {
-                selectedApplications.filter((id) => {
-                  const app = applications.find((a) => a.id === id);
-                  return app?.status === "shortlisted";
-                }).length
-              }{" "}
-              shortlisted applicants. Each interview will be scheduled 30 minutes apart starting
-              from your selected time.
+
+              <>
+                {showScheduleInterviewDialog.type === "single" ?
+                  <>
+                    Schedule interview for {selectedApplicationForInterview?.applicant_name || "this applicant"}.
+                  </> :
+                  <>
+                    Schedule interviews for{" "}
+                    {
+                      selectedApplications.filter((appl) => {
+                        const app = applications.find((a) => a.id === appl.id);
+                        return app?.status === "shortlisted";
+                      }).length
+                    }{" "}
+                    shortlisted applicants. Each interview will be scheduled 30 minutes apart starting
+                    from your selected time.
+                  </>
+                }
+              </>
+
             </DialogDescription>
           </DialogHeader>
 
           {/* Create Interview Stage Button */}
-          <div className="flex justify-end mb-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowCreateStageDialog(true)}
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create New Stage
-            </Button>
-          </div>
+
 
           <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-
-              const shortlistedApps = applications.filter(
-                (app) => selectedApplications.includes(app.id) && app.status === "shortlisted",
-              );
-
-              if (shortlistedApps.length === 0) {
-                toast.error("No shortlisted applications selected");
-                return;
-              }
-
-              // Validate form
-              const errors: any = {};
-              if (
-                !bulkInterviewFormData.interview_stage ||
-                bulkInterviewFormData.interview_stage === 0
-              ) {
-                errors.interview_stage = "Please select an interview stage";
-              }
-              if (!bulkInterviewFormData.interview_date) {
-                errors.interview_date = "Interview date and time is required";
-              } else {
-                const interviewDate = new Date(bulkInterviewFormData.interview_date);
-                const now = new Date();
-                if (interviewDate <= now) {
-                  errors.interview_date = "Interview date must be in the future";
-                }
-              }
-              if (!bulkInterviewFormData.location || bulkInterviewFormData.location.trim() === "") {
-                errors.location = "Interview location is required";
-              }
-
-              if (Object.keys(errors).length > 0) {
-                setInterviewErrors(errors);
-                return;
-              }
-
-              if (!userData?.id) {
-                toast.error("User information not available. Please refresh and try again.");
-                return;
-              }
-
-              setIsBulkScheduling(true);
-
-              try {
-                const interviewPromises = shortlistedApps.map(async (application, index) => {
-                  // Calculate interview time (30 minutes apart)
-                  const baseDateTime = new Date(bulkInterviewFormData.interview_date);
-                  const interviewDateTime = new Date(
-                    baseDateTime.getTime() + index * 30 * 60 * 1000,
-                  );
-
-                  let interviewTime = "";
-                  if (bulkInterviewFormData.interview_date) {
-                    const hours = interviewDateTime.getHours().toString().padStart(2, "0");
-                    const minutes = interviewDateTime.getMinutes().toString().padStart(2, "0");
-                    interviewTime = `${hours}:${minutes}`;
-                  }
-
-                  const createData: IInterviewFormData = {
-                    job_position_application: application.id,
-                    interview_stage: bulkInterviewFormData.interview_stage,
-                    interview_date: interviewDateTime.toISOString().slice(0, 16),
-                    location: bulkInterviewFormData.location,
-                    interview_time: interviewTime,
-                    interview_type: bulkInterviewFormData.interview_type,
-                    status: bulkInterviewFormData.status || "scheduled",
-                    feedback: undefined,
-                    rating: undefined,
-                    created_by: userData.id,
-                  };
-
-                  return await createInterview({
-                    institutionId: selectedInstitution.id,
-                    interviewData: createData,
-                  });
-                });
-
-                const results = await Promise.all(interviewPromises);
-                const successCount = results.filter((result) => result !== null).length;
-                const failureCount = results.length - successCount;
-
-                if (successCount > 0) {
-                  toast.success(
-                    `${successCount} interview(s) scheduled successfully!${failureCount > 0 ? ` ${failureCount} failed.` : ""
-                    }`,
-                  );
-                  setShowBulkScheduleDialog(false);
-                  setSelectedApplications([]);
-                  // Reset form
-                  setBulkInterviewFormData({
-                    interview_stage: 0,
-                    interview_date: "",
-                    location: "",
-                    interview_type: "",
-                    status: "scheduled",
-                  });
-                  setInterviewErrors({});
-                  await loadApplications();
-                } else {
-                  toast.error("Failed to schedule any interviews");
-                }
-              } catch (error) {
-                toast.error("Failed to schedule interviews");
-              } finally {
-                setIsBulkScheduling(false);
-              }
-            }}
-            className="space-y-6"
+            onSubmit={handleSubmitInterviews}
+            className="py-8 space-y-6"
           >
             {/* Form Fields - Responsive Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[60svh] overflow-y-auto">
               {/* Interview Stage */}
               <div className="space-y-2">
-                <Label htmlFor="bulk_interview_stage" className="text-sm font-medium">
-                  Interview Stage *
-                </Label>
+                <div className="flex justify-between">
+                  <Label htmlFor="bulk_interview_stage" className="text-sm font-medium">
+                    Interview Stage *
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowCreateStageDialog(true)}
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
                 <Select
                   value={bulkInterviewFormData.interview_stage.toString()}
                   onValueChange={(value: any) => {
@@ -2805,9 +2780,14 @@ export default function ApplicationsPage() {
                 {interviewErrors.interview_date && (
                   <p className="text-sm text-destructive">{interviewErrors.interview_date}</p>
                 )}
+
                 <p className="text-xs text-muted-foreground">
-                  First interview starts at this time. Subsequent interviews will be scheduled 30
-                  minutes apart.
+                  {showScheduleInterviewDialog.type === "bulk" ?
+                    <>{`First interview starts at this time. Subsequent interviews will be scheduled 30  minutes apart.`}</> :
+                    <>{"Interview starts at this time"}</>
+
+                  }
+
                 </p>
               </div>
 
@@ -2846,7 +2826,7 @@ export default function ApplicationsPage() {
                 </Label>
                 <Select
                   value={bulkInterviewFormData.interview_type}
-                  onValueChange={(value: any) =>
+                  onValueChange={(value: IInterviewType) =>
                     setBulkInterviewFormData((prev) => ({
                       ...prev,
                       interview_type: value,
@@ -2857,10 +2837,10 @@ export default function ApplicationsPage() {
                     <SelectValue placeholder="Select interview type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="in_person">In Person</SelectItem>
-                    <SelectItem value="video_call">Video Call</SelectItem>
-                    <SelectItem value="phone_call">Phone Call</SelectItem>
-                    <SelectItem value="online">Online</SelectItem>
+                    {interviewTypes.map((i_type, idx) => (
+                      <SelectItem key={idx} value={i_type.value as string}>{i_type.label}</SelectItem>
+                    ))
+                    }
                   </SelectContent>
                 </Select>
               </div>
@@ -2871,8 +2851,10 @@ export default function ApplicationsPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowBulkScheduleDialog(false)}
-                disabled={isBulkScheduling}
+                onClick={
+                  () => setShowScheduleInterviewDialog(prev => ({ ...prev, isOpen: false }))
+                }
+                disabled={isSchedulingInterview}
                 className="w-full sm:w-auto"
               >
                 Cancel
@@ -2880,15 +2862,11 @@ export default function ApplicationsPage() {
               <Button
                 type="submit"
                 disabled={
-                  isBulkScheduling ||
-                  selectedApplications.filter((id) => {
-                    const app = applications.find((a) => a.id === id);
-                    return app?.status === "shortlisted";
-                  }).length === 0
+                  isSchedulingInterview
                 }
                 className="flex items-center justify-center gap-2 w-full sm:w-auto"
               >
-                {isBulkScheduling ? (
+                {isSchedulingInterview ? (
                   <>
                     <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     Scheduling interviews...
@@ -2900,13 +2878,13 @@ export default function ApplicationsPage() {
                     {
                       applications.filter(
                         (app) =>
-                          selectedApplications.includes(app.id) && app.status === "shortlisted",
+                          selectedApplications.find(appl => appl.id === app.id) && app.status === "shortlisted",
                       ).length
                     }{" "}
                     Interview
                     {applications.filter(
                       (app) =>
-                        selectedApplications.includes(app.id) && app.status === "shortlisted",
+                        selectedApplications.find(appl => appl.id === app.id) && app.status === "shortlisted",
                     ).length !== 1
                       ? "s"
                       : ""}
@@ -2945,18 +2923,13 @@ export default function ApplicationsPage() {
               <Label htmlFor="stage_interviewers">Interviewers *</Label>
               <div className="w-full max-w-full overflow-hidden">
                 <EmployeeSearchableSelect
-                  employees={employees}
                   value={stageFormData.interviewers.map((id) => id.toString())}
                   onValueChange={(values) => {
-                    const numberValues = Array.isArray(values)
-                      ? values.map((v) => Number(v))
-                      : [Number(values)];
+                    const numberValues = values.map((v) => Number(v))
                     const uniqueValues = [...new Set(numberValues)];
-                    if (uniqueValues.length !== numberValues.length) {
-                      toast.info("Duplicate interviewers removed");
-                    }
                     updateStageFormData("interviewers", uniqueValues);
                   }}
+
                   disabled={isCreatingStage}
                   placeholder="Search and select interviewers"
                   showEmployeeId={false}
@@ -2966,53 +2939,6 @@ export default function ApplicationsPage() {
               </div>
               {stageErrors.interviewers && (
                 <p className="text-sm text-destructive">{stageErrors.interviewers}</p>
-              )}
-
-              {stageFormData.interviewers.length > 0 && (
-                <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-gray-700">
-                      Selected Interviewers ({stageFormData.interviewers.length})
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => updateStageFormData("interviewers", [])}
-                      className="text-xs text-red-600 hover:text-red-800"
-                    >
-                      Clear all
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                    {stageFormData.interviewers.map((interviewerId) => {
-                      const employee = employees.find((emp) => emp.id === interviewerId);
-                      const fullName = employee?.user?.fullname || `Employee ${interviewerId}`;
-                      const displayName =
-                        fullName.length > 30 ? `${fullName.substring(0, 30)}...` : fullName;
-
-                      return (
-                        <div
-                          key={interviewerId}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm max-w-xs"
-                          title={fullName}
-                        >
-                          <span className="truncate flex-1 min-w-0">{displayName}</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newInterviewers = stageFormData.interviewers.filter(
-                                (id) => id !== interviewerId,
-                              );
-                              updateStageFormData("interviewers", newInterviewers);
-                            }}
-                            className="flex-shrink-0 w-4 h-4 rounded-full bg-blue-200 text-blue-600 hover:bg-blue-300 flex items-center justify-center text-xs font-bold"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
               )}
             </div>
 

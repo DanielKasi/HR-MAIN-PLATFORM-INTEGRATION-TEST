@@ -51,9 +51,16 @@ class JobPositionListAPI(APIView):
         tags=["Recruitment"],
     )
     def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
         job_positions = JobPosition.objects.filter(
-            department__institution_id=institution_id
+            department__institution_id=institution_id,
+            deleted_at__isnull=True
         ).order_by("-created_at")
+
+        if search_query:
+            job_positions = job_positions.filter(
+                Q(name__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(job_positions, request)
         serializer = JobPositionWorkflowSerializer(paginated_qs, many=True)
@@ -142,9 +149,16 @@ class JobPositionAdvertListAPI(APIView):
         tags=["Recruitment"],
     )
     def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
         adverts = JobPositionAdvert.objects.filter(
-            job_position__department__institution_id=institution_id
+            job_position__department__institution_id=institution_id,
+            deleted_at__isnull=True
         ).order_by("-published_date")
+
+        if search_query:
+            adverts = adverts.filter(
+                Q(job_position__name__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(adverts, request)
@@ -212,9 +226,18 @@ class JobAdvertApplicationListAPI(APIView):
         tags=["Recruitment"],
     )
     def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
         applications = JobAdvertApplication.objects.filter(
-            job_position_advert__job_position__department__institution_id=institution_id
+            job_position_advert__job_position__department__institution_id=institution_id,
+            deleted_at__isnull=True
         ).order_by("created_at")
+
+        if search_query:
+            applications = applications.filter(
+                Q(applicant_name__icontains=search_query) |
+                Q(applicant_email__icontains=search_query) |
+                Q(applicant_phone__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(applications, request)
         serializer = JobAdvertApplicationSerializer(paginated_qs, many=True)
@@ -351,9 +374,11 @@ class JobInterviewListAPI(APIView):
         tags=["Recruitment"],
     )
     def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
         interviews = (
             JobInterview.objects.filter(
-                job_position_application__job_position_advert__job_position__department__institution_id=institution_id
+                job_position_application__job_position_advert__job_position__department__institution_id=institution_id,
+                deleted_at__isnull=True
             )
             .annotate(
                 # Calculate cumulative rating for each application across all their interviews
@@ -369,6 +394,13 @@ class JobInterviewListAPI(APIView):
             )
             .order_by("-cumulative_rating", "-created_at")
         )  # Default order by cumulative rating desc
+
+        if search_query:
+            interviews = interviews.filter(
+                Q(job_position_application__applicant_name__icontains=search_query) |
+                Q(job_position_application__job_position_advert__job_position__name__icontains=search_query)
+
+            )
 
         # Serialize interviews and add cumulative rating to response
         interview_data = []

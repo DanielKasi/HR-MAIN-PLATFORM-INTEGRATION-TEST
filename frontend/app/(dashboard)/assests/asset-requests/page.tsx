@@ -157,8 +157,8 @@ const AssetRequestsComponent = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg border shadow-sm">
-        <div className="p-6 border-b border-gray-200">
+      <div className="bg-white rounded-lg border shadow-sm min-h-screen">
+        <div className="px-6 py-3 ">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Asset Requests</h1>
@@ -177,7 +177,7 @@ const AssetRequestsComponent = () => {
         </div>
 
         {/* Filters */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="px-6 py-3 ">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
               <div className="relative flex-1 max-w-sm">
@@ -263,9 +263,7 @@ const AssetRequestsComponent = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-12">
-                            <input type="checkbox" className="rounded border-gray-300" />
-                          </TableHead>
+
                           <TableHead>Reference</TableHead>
                           <TableHead>Asset</TableHead>
                           <TableHead>Requester</TableHead>
@@ -277,9 +275,7 @@ const AssetRequestsComponent = () => {
                       <TableBody>
                         {filteredResults.map((request) => (
                           <TableRow key={request.id}>
-                            <TableCell>
-                              <input type="checkbox" className="rounded border-gray-300" />
-                            </TableCell>
+
                             <TableCell className="font-mono text-sm">
                               {request.request_reference_code}
                             </TableCell>

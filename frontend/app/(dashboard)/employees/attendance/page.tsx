@@ -81,7 +81,7 @@ const AttendancePage = () => {
   }
 
   return (
-    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 min-h-screen">
       <div className="w-full">
         <div className="mb-8">
           <div className="flex flex-col w-full">

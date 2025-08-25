@@ -242,12 +242,13 @@ export default function JobAdvertDetailsPage() {
   const expired = isExpired(jobAdvert.expiry_date);
 
   return (
-    <div className="grid grid-cols-1 p-1 sm:grid-cols-2 sm:p-2 lg:grid-cols-1 lg:p-8 w-full h-full bg-gray-50 rounded-xl">
-      <div className="w-full space-y-6">
+    <div className="w-full h-full bg-gray-50 rounded-xl p-6">
+      <div className="w-full space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="grid grid-cols-1 md:flex items-center justify-between">
           <div className="">
-            <div className="flex items-center justify-start gap-2">
+            <div className="grid grid-cols-1 md:flex items-center justify-start gap-2">
+              <div className="flex flex-wrap items-center sm:gap-3">
               <Button
                 variant="ghost"
                 size="sm"
@@ -256,7 +257,6 @@ export default function JobAdvertDetailsPage() {
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
                 <CardTitle className="text-2xl">{jobPosition?.name || "Job Opening"}</CardTitle>
 
                 <Button
@@ -280,13 +280,12 @@ export default function JobAdvertDetailsPage() {
                   <User className="h-4 w-4" />
                   <span className="hidden sm:inline">{interviewStagesCount} Interview Stages</span>
                 </Button>
-              </div>
-            </div>
-
-            <Badge className={`${getStatusColor(jobAdvert.job_position_advert_status)} md:ml-12`}>
+                            <Badge className={`${getStatusColor(jobAdvert.job_position_advert_status)} ml-0`}>
               {jobAdvert.job_position_advert_status.toUpperCase()}
             </Badge>
             {expired && <Badge variant="destructive">EXPIRED</Badge>}
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {jobAdvert.job_position_advert_status !== "closed" && (
@@ -362,7 +361,7 @@ export default function JobAdvertDetailsPage() {
             {/* Advert Details Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Advert Information */}
-              <Card>
+              <Card className="w-full">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Megaphone className="h-5 w-5" />
@@ -406,7 +405,7 @@ export default function JobAdvertDetailsPage() {
 
               {/* Department & Reporting */}
               {jobPosition && (
-                <Card>
+                <Card className="w-full">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Building2 className="h-5 w-5" />

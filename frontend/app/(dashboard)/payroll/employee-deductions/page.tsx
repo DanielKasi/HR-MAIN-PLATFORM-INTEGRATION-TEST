@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ref } from "process"
+import { formatCurrency } from "@/lib/helpers"
 
 
 
@@ -43,14 +44,14 @@ export default function EmployeeDeductionsRefactored() {
 
   useEffect(() => {
     const fetchDeductionTypes = async () => {
-    if (!selectedInstitution?.id) return
-    try {
-      const types = await getDeductionTypes(selectedInstitution.id)
-      setDeductionTypes(types)
-    } catch (error) {
-      setDeductionTypes([])
-      toast.error("Failed to load deduction types")
-    }
+      if (!selectedInstitution?.id) return
+      try {
+        const types = await getDeductionTypes(selectedInstitution.id)
+        setDeductionTypes(types)
+      } catch (error) {
+        setDeductionTypes([])
+        toast.error("Failed to load deduction types")
+      }
     }
     fetchDeductionTypes()
   }, [selectedInstitution?.id])
@@ -111,7 +112,7 @@ export default function EmployeeDeductionsRefactored() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg border shadow-sm">
+      <div className="bg-white rounded-lg border shadow-sm min-h-screen">
         <div className="p-6 border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -153,17 +154,17 @@ export default function EmployeeDeductionsRefactored() {
                   <SelectItem value="percentage">Percentage</SelectItem>
                 </SelectContent>
               </Select>
-              
+
             </div>
             <div className="flex items-center gap-2">
-                <Button onClick={openNewDeductionDialog} disabled={!selectedInstitution?.id}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Deduction
-                </Button>
-              </div>
+              <Button onClick={openNewDeductionDialog} disabled={!selectedInstitution?.id}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Deduction
+              </Button>
+            </div>
           </div>
-          
-        
+
+
         </div>
         <div className="p-6">
           <PaginatedTableWrapper<IEmployeeDeduction>
@@ -180,7 +181,7 @@ export default function EmployeeDeductionsRefactored() {
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               useEffect(() => {
                 refreshTableRef.current = refresh;
               }, [refresh]);
@@ -197,13 +198,13 @@ export default function EmployeeDeductionsRefactored() {
 
               // Apply client-side filters (status and method filters)
               const filteredResults = data.results.filter((deduction) => {
-                const matchesStatus = statusFilter === "all" || 
+                const matchesStatus = statusFilter === "all" ||
                   (statusFilter === "active" && deduction.is_active) ||
                   (statusFilter === "inactive" && !deduction.is_active);
-                
-                const matchesMethod = methodFilter === "all" || 
+
+                const matchesMethod = methodFilter === "all" ||
                   deduction.calculation_method === methodFilter;
-                
+
                 return matchesStatus && matchesMethod;
               });
 
@@ -238,22 +239,20 @@ export default function EmployeeDeductionsRefactored() {
                             <TableCell>{deduction.deduction_type.name}</TableCell>
                             <TableCell>
                               <Badge className={
-                                deduction.calculation_method === "percentage" 
-                                  ? "bg-blue-100 text-blue-800 border-blue-200" 
+                                deduction.calculation_method === "percentage"
+                                  ? "bg-blue-100 text-blue-800 border-blue-200"
                                   : "bg-purple-100 text-purple-800 border-purple-200"
                               }>
                                 {deduction.calculation_method === "percentage" ? "Percentage" : "Fixed Amount"}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              {deduction.calculation_method === "percentage" 
-                                ? `${deduction.percentage}%`
-                                : `$${Number.parseFloat(deduction.amount).toFixed(2)}`}
+                              {`${formatCurrency(deduction.amount)}`}
                             </TableCell>
                             <TableCell>
                               <Badge className={
-                                deduction.is_active 
-                                  ? "bg-green-100 text-green-800 border-green-200" 
+                                deduction.is_active
+                                  ? "bg-green-100 text-green-800 border-green-200"
                                   : "bg-gray-100 text-gray-800 border-gray-200"
                               }>
                                 {deduction.is_active ? "Active" : "Inactive"}
@@ -335,7 +334,7 @@ export default function EmployeeDeductionsRefactored() {
         </div>
       </div>
 
-     
+
 
       <EmployeeDeductionFormDialog
         isOpen={isFormDialogOpen}

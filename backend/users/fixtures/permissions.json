@@ -482,6 +482,11 @@
       "code": "can_manage_attendance_policies",
       "name": "Can Manage Attendance Policies",
       "description": "Allows managing attendance policies"
+    },
+    {
+      "code": "can_checkin_or_checkout_for_another",
+      "name": "Can Checkin or Checkout for Another",
+      "description": "Allows checking in or checking out for another employee"
     }
   ],
 

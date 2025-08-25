@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { User, Calendar, Edit, ArrowLeft, Trash2 } from "lucide-react";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { getAllLeaveBalances, updateLeaveBalance, createLeaveBalance, deleteLeaveBalance } from "@/lib/utils";
-import { getAllEmployees, getLeaveTypes } from "@/lib/utils";
+import { getPaginatedEmployees, getLeaveTypes } from "@/lib/utils";
 import { IEmployee, ILeaveBalance, ILeaveType } from "@/types/types.utils";
 import { toast } from "sonner";
 
@@ -90,7 +90,7 @@ export default function EmployeeLeaveBalanceDetails() {
       try {
         const [allBalances, allEmployees, allLeaveTypes] = await Promise.all([
           getAllLeaveBalances({ institutionId: selectedInstitution.id }),
-          getAllEmployees({ institutionId: selectedInstitution.id }),
+          getPaginatedEmployees({ institutionId: selectedInstitution.id }),
           getLeaveTypes({ institutionId: selectedInstitution.id })
         ]);
 
@@ -98,12 +98,12 @@ export default function EmployeeLeaveBalanceDetails() {
         setLeaveTypes(allLeaveTypes || []);
 
         const foundEmployee = allEmployees.results?.find(emp => emp.id === employeeIdNum);
-        
+
         setEmployee(foundEmployee || null);
 
         const employeeBalances = allBalances?.filter(balance => {
-          const balanceEmployeeId = typeof balance.employee === 'object' 
-            ? balance.employee.id 
+          const balanceEmployeeId = typeof balance.employee === 'object'
+            ? balance.employee.id
             : balance.employee;
           return balanceEmployeeId === employeeIdNum;
         }) || [];
@@ -187,8 +187,8 @@ export default function EmployeeLeaveBalanceDetails() {
 
   const totalAvailable = useMemo(() => {
     return employeeLeaveBalances.reduce((total, balance) => {
-      const available = typeof balance.available_days === 'string' 
-        ? parseFloat(balance.available_days) 
+      const available = typeof balance.available_days === 'string'
+        ? parseFloat(balance.available_days)
         : balance.available_days;
       return total + (isNaN(available) ? 0 : available);
     }, 0);
@@ -197,19 +197,19 @@ export default function EmployeeLeaveBalanceDetails() {
 
   return (
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
-       
+
       <div className="flex items-center justify-between">
         <Button
-            variant="outline"
-            onClick={() => router.push("../leave-balances")}
-            className="border-orange-300 text-orange-700 hover:bg-orange-50"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
+          variant="outline"
+          onClick={() => router.push("../leave-balances")}
+          className="border-orange-300 text-orange-700 hover:bg-orange-50"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
         <div className="flex items-center gap-2">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            
+
             {employee?.user?.fullname || "Employee"} - Leave Balances
           </h1>
         </div>
@@ -230,19 +230,19 @@ export default function EmployeeLeaveBalanceDetails() {
                 <p className="text-sm text-gray-600">Name: {employee?.user?.fullname}</p>
               </div>
             </div>
-            
+
             <div className="bg-blue-50 p-4 rounded-lg text-center">
               <p className="text-sm text-blue-600 font-medium">Leave Types</p>
               <p className="text-2xl font-bold text-blue-700">{employeeLeaveBalances.length}</p>
             </div>
-            
+
             <div className="bg-green-50 p-4 rounded-lg text-center">
               <p className="text-sm text-green-600 font-medium">Total Available</p>
               <p className={`text-2xl font-bold ${getStatusColor(totalAvailable)}`}>
                 {totalAvailable.toFixed(1)}
               </p>
             </div>
-            
+
             <div className="bg-orange-50 p-4 rounded-lg text-center">
               <p className="text-sm text-orange-600 font-medium">Overall Status</p>
               <div className="mt-2">

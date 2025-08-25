@@ -1,18 +1,18 @@
 "use client";
 
-import {useState, useMemo} from "react";
-import {useSelector} from "react-redux";
-import {MoreVertical, Edit, Trash2, Search, Settings, X, Plus} from "lucide-react";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Badge} from "@/components/ui/badge";
+import { useState, useMemo, useRef } from "react";
+import { useSelector } from "react-redux";
+import { MoreVertical, Edit, Trash2, Search, Settings, X, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -20,15 +20,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {toast} from "sonner";
-import type {IAllowanceType} from "@/types/types.utils";
-import {getPaginatedAllowanceTypes, getPaginatedAllowanceTypesFromUrl} from "@/lib/utils";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import {TableSkeleton} from "@/components/common/table-skeleton";
-import {CreateAllowanceTypeDialog} from "@/components/allowance-types/create-allowance-type-dialog";
-import {EditAllowanceTypeDialog} from "@/components/allowance-types/edit-allowance-type-dialog";
-import {DeleteAllowanceTypeDialog} from "@/components/allowance-types/delete-allowance-type-dialog";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import { toast } from "sonner";
+import type { IAllowanceType } from "@/types/types.utils";
+import { getPaginatedAllowanceTypes, getPaginatedAllowanceTypesFromUrl } from "@/lib/utils";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { TableSkeleton } from "@/components/common/table-skeleton";
+import { CreateAllowanceTypeDialog } from "@/components/allowance-types/create-allowance-type-dialog";
+import { EditAllowanceTypeDialog } from "@/components/allowance-types/edit-allowance-type-dialog";
+import { DeleteAllowanceTypeDialog } from "@/components/allowance-types/delete-allowance-type-dialog";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 
 const getStatusColor = (status: boolean) => {
   return status
@@ -58,27 +58,28 @@ const AllowanceTypesComponent = () => {
   const [deletingAllowanceType, setDeletingAllowanceType] = useState<IAllowanceType | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [refreshFunction, setRefreshFunction] = useState<(() => void) | null>(null);
+  const refreshFunctionRef = useRef<(() => void) | null>(null);
+
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  const handleCreateSuccess = (newAllowanceType: IAllowanceType) => {
-    if (refreshFunction) {
-      refreshFunction();
+  const handleCreateSuccess = () => {
+    if (refreshFunctionRef.current) {
+      refreshFunctionRef.current();
     }
   };
 
-  const handleUpdateSuccess = (updatedAllowanceType: IAllowanceType) => {
+  const handleUpdateSuccess = () => {
     setEditingAllowanceType(null);
-    if (refreshFunction) {
-      refreshFunction();
+    if (refreshFunctionRef.current) {
+      refreshFunctionRef.current();
     }
   };
 
-  const handleDeleteSuccess = (deletedId: number) => {
+  const handleDeleteSuccess = () => {
     setDeletingAllowanceType(null);
-    if (refreshFunction) {
-      refreshFunction();
+    if (refreshFunctionRef.current) {
+      refreshFunctionRef.current();
     }
   };
 
@@ -95,21 +96,21 @@ const AllowanceTypesComponent = () => {
   return (
     <div className="space-y-6">
       {/* Header and Filters */}
-      <div className="bg-white rounded-lg border shadow-sm">
+      <div className="bg-white rounded-lg border shadow-sm min-h-screen">
         <div className="p-6 border-gray-200">
 
-            <div className="flex items-center gap-4 justify-between">
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900">Allowance Types</h1>
-                            <Button
-                onClick={() => setIsCreateDialogOpen(true)}
-                disabled={!selectedInstitution?.id}
-              >
-                <Plus className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">
+          <div className="flex items-center gap-4 justify-between">
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Allowance Types</h1>
+            <Button
+              onClick={() => setIsCreateDialogOpen(true)}
+              disabled={!selectedInstitution?.id}
+            >
+              <Plus className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">
                 Create Allowance Type
-                </span>
-              </Button>
-            </div>
+              </span>
+            </Button>
+          </div>
 
         </div>
         <div className="p-6 border-gray-200">
@@ -154,8 +155,9 @@ const AllowanceTypesComponent = () => {
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
-              // Store the refresh function for use in success handlers
+            {({ data, loading, refresh }) => {
+
+              refreshFunctionRef.current = refresh
 
               if (loading) {
                 return (
@@ -284,41 +286,37 @@ const AllowanceTypesComponent = () => {
                     </Table>
                   </div>
 
-                  {/* Dialogs */}
-
-                  <CreateAllowanceTypeDialog
-                    onOpenChange={setIsCreateDialogOpen}
-                    isOpen={isCreateDialogOpen}
-                    onSuccess={(newAllowanceType) => {
-                      handleCreateSuccess(newAllowanceType);
-                      refresh();
-                    }}
-                    disabled={!selectedInstitution?.id}
-                  />
-
-                  {editingAllowanceType && (
-                    <EditAllowanceTypeDialog
-                      isOpen={isEditDialogOpen}
-                      onOpenChange={setIsEditDialogOpen}
-                      allowanceType={editingAllowanceType}
-                      onSuccess={refresh}
-                    />
-                  )}
-
-                  {deletingAllowanceType && (
-                    <DeleteAllowanceTypeDialog
-                      isOpen={isDeleteDialogOpen}
-                      onOpenChange={setIsDeleteDialogOpen}
-                      allowanceType={deletingAllowanceType}
-                      onSuccess={refresh}
-                    />
-                  )}
                 </>
               );
             }}
           </PaginatedTableWrapper>
         </div>
       </div>
+
+      <CreateAllowanceTypeDialog
+        onOpenChange={setIsCreateDialogOpen}
+        isOpen={isCreateDialogOpen}
+        onSuccess={handleCreateSuccess}
+        disabled={!selectedInstitution?.id}
+      />
+
+      {editingAllowanceType && (
+        <EditAllowanceTypeDialog
+          isOpen={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          allowanceType={editingAllowanceType}
+          onSuccess={handleUpdateSuccess}
+        />
+      )}
+
+      {deletingAllowanceType && (
+        <DeleteAllowanceTypeDialog
+          isOpen={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          allowanceType={deletingAllowanceType}
+          onSuccess={handleDeleteSuccess}
+        />
+      )}
     </div>
   );
 };

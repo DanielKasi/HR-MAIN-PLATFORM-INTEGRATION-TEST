@@ -87,7 +87,6 @@ class AssetCategoryListCreateView(APIView):
 
         categories = AssetCategory.objects.filter(
             institution=institution,
-            is_active=True,
             deleted_at__isnull=True
             )
 
@@ -226,7 +225,6 @@ class AssetListCreateView(APIView):
             )
         assets = Asset.objects.filter(
             institution=institution,
-            is_active=True,
             deleted_at__isnull=True
             )
 
@@ -240,7 +238,6 @@ class AssetListCreateView(APIView):
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(assets, request)
         serializer = AssetSerializer(paginated_qs, many=True)
-        print(f"Paginated assets: {paginated_qs}")  # Debugging line
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -324,7 +321,6 @@ class AssetRequestListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def post(self, request):
-        print(f"request {request.data}")
         serializer = AssetRequestSerializer(
             data=request.data, context={"request": request}
         )
@@ -362,7 +358,6 @@ class AssetRequestListCreateView(APIView):
         
         asset_requests = AssetRequest.objects.filter(
             asset__institution=institution,
-            is_active=True,
             deleted_at__isnull=True,
         )
 
@@ -639,11 +634,12 @@ class AssetAllocationListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def get(self, request):
+        user = request.user.profile
         search_query = request.query_params.get('search', None)
         employee_id = request.query_params.get("employee_id")
-
+        user  = request.user
         try:
-            institution = Institution.objects.get(id=user.institution.id)
+            institution = Institution.objects.get(id=user.profile.institution.id)
         except Institution.DoesNotExist:
             return Response(
                 {"detail": "Institution not found."},
@@ -651,7 +647,6 @@ class AssetAllocationListCreateView(APIView):
             )
         asset_allocations = AssetAllocation.objects.filter(
             asset__institution=institution,
-            is_active=True,
             deleted_at__isnull=True
         )
 
@@ -911,6 +906,8 @@ class AssetReturnListCreateView(APIView):
     )
     def get(self, request):
         search_query = request.query_params.get("search", None)
+        user = request.user.profile if request and hasattr(request, "user") else None
+        
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
@@ -921,7 +918,6 @@ class AssetReturnListCreateView(APIView):
             )
         asset_returns = AssetReturn.objects.filter(
             asset__institution=institution,
-            is_active=True,
             deleted_at__isnull=True
         )
 
@@ -1023,7 +1019,6 @@ class AssetHistoryListView(APIView):
             )
         asset_histories = AssetHistory.objects.filter(
             asset__institution=institution,
-            is_active=True,
             deleted_at__is_null=True
         )
 

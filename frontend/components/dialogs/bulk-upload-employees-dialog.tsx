@@ -48,9 +48,9 @@ export function BulkUploadEmployeesDialog({
 
   const handleDownloadTemplate = async () => {
     setIsDownloading(true)
-    if(!currentInstitution || !accessToken){return}
+    if (!currentInstitution || !accessToken) { return }
     try {
-      await downloadEmployeesTemplate({accessToken})
+      await downloadEmployeesTemplate({ accessToken })
       toast.success("Template downloaded successfully")
     } catch (error) {
       console.error("Error downloading template:", error)
@@ -82,21 +82,21 @@ export function BulkUploadEmployeesDialog({
       toast.error("Please select a file to upload")
       return
     }
-    if(!currentInstitution){return}
+    if (!currentInstitution) { return }
 
     setIsUploading(true)
     try {
       const results = await bulkCreateEmployees({
-        institutionId:currentInstitution.id,
+        institutionId: currentInstitution.id,
         file: uploadFile,
       })
 
       setUploadResults(results)
 
 
-        toast.success(`Successfully created ${results.created_count} employees`)
-        onUploadSuccess()
-        handleClose()
+      toast.success(`Successfully created ${results.created_count} employees`)
+      onUploadSuccess()
+      handleClose()
     } catch (error: any) {
       toast.error(error.message || "Failed to upload employees")
     } finally {
@@ -112,7 +112,7 @@ export function BulkUploadEmployeesDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[80vh] md:max-h-[65svh]  overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Bulk Upload Employees</DialogTitle>
           <DialogDescription>

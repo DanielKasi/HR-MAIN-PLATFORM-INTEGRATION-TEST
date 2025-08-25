@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Plus, Search, Settings, X } from 'lucide-react'
+import { Edit, MoreVertical, Plus, Search, Settings, Trash, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -12,11 +12,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
 import {
   taxAPI,
-  getAllEmployees,
+  getPaginatedEmployees,
+  showErrorToast,
 } from "@/lib/utils"
 import type { IEmployeeTax, IEmployee, ITax } from "@/types/types.utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { EmployeeTaxFormDialog } from "@/components/employee-taxes/employee-tax-form-dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu"
+import { DeleteConfirmationDialog } from "@/components/common/dialogs/delete-confirmation-dialog"
+import { DropdownMenuLabel } from "@/components/ui/dropdown-menu"
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -44,12 +48,15 @@ export default function EmployeeTaxesPage() {
   const [taxTypes, setTaxTypes] = useState<ITax[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingTax, setEditingTax] = useState<IEmployeeTax | null>(null)
+  const [deletingTax, setDeletingTax] = useState<IEmployeeTax | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "expired" | "upcoming">("all")
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
-  const selectedInstitution = useSelector(selectSelectedInstitution)
+  const selectedInstitution = useSelector(selectSelectedInstitution);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const refreshTableRef = useRef<(() => void) | null>(null);
+
+  const refreshFunctionRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const fetchTaxTypes = async () => {
@@ -80,7 +87,7 @@ export default function EmployeeTaxesPage() {
 
     setIsLoadingEmployees(true)
     try {
-      const fetchedEmployees = await getAllEmployees({ institutionId: selectedInstitution.id })
+      const fetchedEmployees = await getPaginatedEmployees({ institutionId: selectedInstitution.id })
       setEmployees(fetchedEmployees.results || [])
     } catch (error: any) {
       setEmployees([])
@@ -93,7 +100,7 @@ export default function EmployeeTaxesPage() {
   const handleFormSuccess = (tax: IEmployeeTax, isEdit: boolean) => {
     setEditingTax(null)
     // The PaginatedTableWrapper will handle refreshing the data
-    refreshTableRef.current?.()
+    refreshFunctionRef.current?.()
   }
 
   const handleTaxTypeCreated = (newType: ITax) => {
@@ -105,17 +112,19 @@ export default function EmployeeTaxesPage() {
     setIsDialogOpen(true)
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async () => {
+    if (!deletingTax) { return }
+    setIsDeleting(true);
     try {
-      const success = await taxAPI.deleteEmployeeTax(id)
-      if (success) {
-        toast.success("Employee tax deleted successfully")
-        // The PaginatedTableWrapper will handle refreshing the data
-      } else {
-        toast.error("Failed to delete employee tax")
+      await taxAPI.deleteEmployeeTax(deletingTax.id)
+      toast.success("Employee tax deleted successfully");
+      if (refreshFunctionRef.current) {
+        refreshFunctionRef.current()
       }
     } catch (error: any) {
-      toast.error(error.message || "An error occurred while deleting the employee tax")
+      showErrorToast({ error, defaultMessage: "An error occurred while deleting the employee tax" })
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -137,17 +146,17 @@ export default function EmployeeTaxesPage() {
     )
   }
 
-    return (
+  return (
     <div className="space-y-6">
       {/* Header and Filters */}
-      <div className="bg-white rounded-lg border shadow-sm">
+      <div className="bg-white rounded-lg border shadow-sm min-h-screen">
         <div className="p-6 border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Employee Tax Configurations</h1>
             </div>
-                </div>
-              </div>
+          </div>
+        </div>
         <div className="p-6 border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4 justify-between">
@@ -186,7 +195,7 @@ export default function EmployeeTaxesPage() {
             </div>
           </div>
 
-         
+
         </div>
         <div className="p-6">
           <PaginatedTableWrapper<IEmployeeTax>
@@ -203,9 +212,9 @@ export default function EmployeeTaxesPage() {
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               useEffect(() => {
-                refreshTableRef.current = refresh;
+                refreshFunctionRef.current = refresh;
               }, [refresh]);
               if (loading) {
                 return (
@@ -234,13 +243,13 @@ export default function EmployeeTaxesPage() {
                 const now = new Date();
                 const effectiveFrom = new Date(tax.effective_from);
                 const effectiveTo = tax.effective_to ? new Date(tax.effective_to) : null;
-                
-                const matchesStatus = statusFilter === "all" || 
+
+                const matchesStatus = statusFilter === "all" ||
                   (statusFilter === "active" && effectiveFrom <= now && (!effectiveTo || effectiveTo >= now)) ||
                   (statusFilter === "inactive" && (effectiveFrom > now || (effectiveTo && effectiveTo < now))) ||
                   (statusFilter === "expired" && effectiveTo && effectiveTo < now) ||
                   (statusFilter === "upcoming" && effectiveFrom > now);
-                
+
                 return matchesStatus;
               });
 
@@ -274,9 +283,9 @@ export default function EmployeeTaxesPage() {
                         const now = new Date()
                         const effectiveFrom = new Date(tax.effective_from)
                         const effectiveTo = tax.effective_to ? new Date(tax.effective_to) : null
-                        
+
                         let status = "Inactive"
-                        
+
                         if (effectiveFrom <= now && (!effectiveTo || effectiveTo >= now)) {
                           status = "Active"
                         } else if (effectiveFrom > now) {
@@ -289,13 +298,9 @@ export default function EmployeeTaxesPage() {
                           <TableRow key={tax.id}>
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-3">
-                                <div>
-                                  <div className="font-medium text-gray-900">
-                                    {tax.employee?.user?.fullname || "N/A"}
-                                  </div>
-                                  <div className="text-sm text-gray-500">
-                                    {tax.employee?.employee_id || "N/A"}
-                                  </div>
+
+                                <div className="font-medium text-gray-900">
+                                  {tax.employee?.user?.fullname || "N/A"}
                                 </div>
                               </div>
                             </TableCell>
@@ -314,23 +319,31 @@ export default function EmployeeTaxesPage() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                              <div className="flex items-center gap-2 justify-end">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleEdit(tax)}
-                                >
-                                  Edit
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDelete(tax.id)}
-                                  className="text-red-600 hover:text-red-700"
-                                >
-                                  Delete
-                                </Button>
-                              </div>
+
+                              <DropdownMenu >
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="z-[100] bg-white shadow-lg shadow-black/10 rounded-md w-[10rem] p-1">
+                                  <DropdownMenuItem
+                                    className="flex items-center justify-start gap-4 hover:bg-gray-200 cursor-pointer w-full py-2"
+                                    onClick={() => handleEdit(tax)}
+                                  >
+                                    <Edit className="h-4 w-4 mr-1" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="flex items-center justify-start gap-4 text-red-600 hover:text-red-700 hover:bg-gray-200 cursor-pointer w-full py-2"
+                                    onClick={() => setDeletingTax(tax)}
+                                  >
+                                    <Trash className="h-4 w-4 mr-1" />
+                                    Delete
+                                  </DropdownMenuItem>
+
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         )
@@ -344,16 +357,26 @@ export default function EmployeeTaxesPage() {
         </div>
       </div>
 
-        {/* Form Dialog */}
-        <EmployeeTaxFormDialog
-          isOpen={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          editingTax={editingTax}
-          taxes={taxTypes}
-          institutionId={selectedInstitution.id}
-          onSuccess={handleFormSuccess}
-          onTaxCreated={handleTaxTypeCreated}
+      {/* Form Dialog */}
+      <EmployeeTaxFormDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        editingTax={editingTax}
+        taxes={taxTypes}
+        institutionId={selectedInstitution.id}
+        onSuccess={handleFormSuccess}
+        onTaxCreated={handleTaxTypeCreated}
+      />
+      {deletingTax &&
+        <DeleteConfirmationDialog
+          isOpen={!!deletingTax}
+          onClose={() => setDeletingTax(null)}
+          title={`Are you sure you want to delete ${deletingTax.institution_tax.tax_name || ""}`}
+          description="This action cannot be undone"
+          isDeleting={isDeleting}
+          onConfirm={handleDelete}
         />
+      }
     </div>
   )
 }

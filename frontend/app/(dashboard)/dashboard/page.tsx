@@ -1,6 +1,6 @@
 "use client";
 
-import {SetStateAction, useEffect, useState, useMemo} from "react";
+import { SetStateAction, useEffect, useState, useMemo } from "react";
 import {
   Users,
   UserCheck,
@@ -37,14 +37,14 @@ import {
 } from "lucide-react";
 
 // HR Dashboard Components
-import {useSelector} from "react-redux";
+import { useSelector } from "react-redux";
 import {
   selectUser,
   selectSelectedInstitution,
   selectAttachedInstitutions,
 } from "@/store/auth/selectors";
 import {
-  getAllEmployees,
+  getPaginatedEmployees,
   getLeaveApplications,
   getJobPositionAdverts,
   getInterviews,
@@ -52,12 +52,12 @@ import {
   getLeavePolicies,
   getDepartments,
 } from "@/lib/utils";
-import {IUserInstitution, USER_GENDER} from "@/types";
-import {SimpleCalendarWidget} from "@/components/calendar-widget";
+import { IUserInstitution, USER_GENDER } from "@/types";
+import { SimpleCalendarWidget } from "@/components/calendar-widget";
 import { TasksCards } from "@/components/dashboard_components/tasks-cards";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
-import { IDepartment, IEmployee, IInterview, ILeaveRequest, JobPositionAdvert } from "@/types/types.utils";
+import { IDepartment, IEmployee, IInterview, ILeaveRequest, ILeaveType, JobPositionAdvert } from "@/types/types.utils";
 import { formatCurrency } from "@/lib/helpers";
 
 
@@ -108,13 +108,7 @@ interface JobAdvert {
 }
 
 
-interface LeaveType {
-  id: number;
-  name: string;
-  category: string;
-  max_days_per_year: number;
-  is_active: boolean;
-}
+
 
 
 interface LeavePolicy {
@@ -154,8 +148,8 @@ const WelcomeCard = () => {
         {userData?.gender === USER_GENDER.MALE
           ? "Mr"
           : userData?.gender === USER_GENDER.FEMALE
-          ? "Mrs"
-          : ""}.{" "}
+            ? "Mrs"
+            : ""}.{" "}
         {fullName}
       </h2>
       <p className="opacity-90">Here's your HR dashboard overview for today</p>
@@ -178,7 +172,7 @@ const StatsCards = ({
   leaveApplications: ILeaveRequest[];
   jobAdverts: JobPositionAdvert[];
   interviews: IInterview[];
-  leaveTypes: LeaveType[];
+  leaveTypes: ILeaveType[];
   leavePolicies: LeavePolicy[];
   departments: IDepartment[];
 }) => {
@@ -205,9 +199,9 @@ const StatsCards = ({
     const currentYear = new Date().getFullYear();
     const newHires = Array.isArray(filteredEmployees)
       ? filteredEmployees.filter((emp) => {
-          const joinDate = new Date(emp.date_of_joining);
-          return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear;
-        }).length
+        const joinDate = new Date(emp.date_of_joining);
+        return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear;
+      }).length
       : 0;
 
     // Calculate turnover rate (rough estimate)
@@ -217,9 +211,9 @@ const StatsCards = ({
     const avgSalary =
       filteredEmployees.length > 0
         ? filteredEmployees.reduce((sum, emp) => {
-            const baseSalary = 40000 + (emp.experience || 0) * 5000;
-            return sum + baseSalary;
-          }, 0) / filteredEmployees.length
+          const baseSalary = 40000 + (emp.experience || 0) * 5000;
+          return sum + baseSalary;
+        }, 0) / filteredEmployees.length
         : 65000;
 
     // For leave applications - filter by department employees if not "all"
@@ -250,7 +244,7 @@ const StatsCards = ({
     const avgInterviewRating =
       ratedInterviews.length > 0
         ? ratedInterviews.reduce((sum, interview) => sum + (interview.rating || 0), 0) /
-          ratedInterviews.length
+        ratedInterviews.length
         : 0;
 
     const activeLeaveTypes = Array.isArray(leaveTypes)
@@ -436,13 +430,12 @@ const StatsCards = ({
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-lg font-bold text-gray-900 leading-tight">{stat.value}</h3>
                 <div
-                  className={`text-xs font-medium ${
-                    stat.trend === "up"
+                  className={`text-xs font-medium ${stat.trend === "up"
                       ? "text-green-600"
                       : stat.trend === "down"
                         ? "text-red-600"
                         : "text-gray-500"
-                  }`}
+                    }`}
                 >
                   {stat.trend === "up" ? "↗" : stat.trend === "down" ? "↘" : "→"}
                 </div>
@@ -497,9 +490,9 @@ const WorkforceOverview = ({
     const relevantDepartments =
       departmentId === "all"
         ? new Set([
-            ...(Array.isArray(departments) ? departments.map((dept) => dept.name) : []),
-            ...Object.keys(deptCounts),
-          ])
+          ...(Array.isArray(departments) ? departments.map((dept) => dept.name) : []),
+          ...Object.keys(deptCounts),
+        ])
         : new Set([departmentId, ...Object.keys(deptCounts)]);
 
     return Array.from(relevantDepartments)
@@ -581,7 +574,7 @@ const WorkforceOverview = ({
                 <div className="flex-1 w-24 bg-gray-200 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full ${dept.color} ${dept.isEmpty ? "opacity-30" : ""}`}
-                    style={{width: `${dept.percentage}%`}}
+                    style={{ width: `${dept.percentage}%` }}
                   ></div>
                 </div>
                 <span
@@ -619,7 +612,7 @@ const WorkforceOverview = ({
                 <div className="flex-1 w-24 bg-gray-200 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full ${level.color}`}
-                    style={{width: `${level.percentage}%`}}
+                    style={{ width: `${level.percentage}%` }}
                   ></div>
                 </div>
                 <span className="text-sm text-gray-600 w-12 text-right">{level.count}</span>
@@ -657,11 +650,11 @@ const RecentActivities = ({
 
     const recentHires = Array.isArray(employees)
       ? employees
-          .filter((emp) => {
-            const joinDate = new Date(emp.date_of_joining);
-            return joinDate > sevenDaysAgo;
-          })
-          .slice(0, 2)
+        .filter((emp) => {
+          const joinDate = new Date(emp.date_of_joining);
+          return joinDate > sevenDaysAgo;
+        })
+        .slice(0, 2)
       : [];
 
     recentHires.forEach((emp) => {
@@ -680,8 +673,8 @@ const RecentActivities = ({
     // Add recent leave applications
     const recentLeaveApps = Array.isArray(leaveApplications)
       ? leaveApplications
-          .filter((app) => app.created_at && new Date(app.created_at) > sevenDaysAgo)
-          .slice(0, 2)
+        .filter((app) => app.created_at && new Date(app.created_at) > sevenDaysAgo)
+        .slice(0, 2)
       : [];
 
     recentLeaveApps.forEach((app) => {
@@ -768,19 +761,19 @@ const RecentActivities = ({
 };
 
 const QuickActions = () => {
-  const actions:Array<{
+  const actions: Array<{
     title: string;
     icon: any;
     color: string;
     actionUrl?: string;
   }> = [
-    {title: "Add New Employee", icon: UserPlus, color: "bg-blue-500 hover:bg-blue-600", actionUrl:"/employees/add-employee"},
-    {title: "Leave Management", icon: Calendar, color: "bg-green-500 hover:bg-green-600", actionUrl:"/leave/leave-policy"},
-    {title: "Schedule Interview", icon: Clock, color: "bg-orange-500 hover:bg-orange-600", actionUrl:"/job-interviews/create"},
-    {title: "Post Job Opening", icon: Megaphone, color: "bg-purple-500 hover:bg-purple-600", actionUrl:"/job-adverts/create"},
-    // {title: "View Reports", icon: BarChart3, color: "bg-indigo-500 hover:bg-indigo-600"},
-    // {title: "Manage Policies", icon: Settings, color: "bg-gray-500 hover:bg-gray-600", actionUrl:"/leave/leave-policy"},
-  ];
+      { title: "Add New Employee", icon: UserPlus, color: "bg-blue-500 hover:bg-blue-600", actionUrl: "/employees/add-employee" },
+      { title: "Leave Management", icon: Calendar, color: "bg-green-500 hover:bg-green-600", actionUrl: "/leave/leave-policy" },
+      { title: "Schedule Interview", icon: Clock, color: "bg-orange-500 hover:bg-orange-600", actionUrl: "/job-interviews/create" },
+      { title: "Post Job Opening", icon: Megaphone, color: "bg-purple-500 hover:bg-purple-600", actionUrl: "/job-adverts/create" },
+      // {title: "View Reports", icon: BarChart3, color: "bg-indigo-500 hover:bg-indigo-600"},
+      // {title: "Manage Policies", icon: Settings, color: "bg-gray-500 hover:bg-gray-600", actionUrl:"/leave/leave-policy"},
+    ];
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -963,9 +956,8 @@ const NotificationsPanel = ({
         {notifications.map((notification, index) => (
           <div
             key={index}
-            className={`p-3 rounded-lg border-l-4 ${
-              notification.urgent ? "border-red-500 bg-red-50" : "border-blue-500 bg-blue-50"
-            }`}
+            className={`p-3 rounded-lg border-l-4 ${notification.urgent ? "border-red-500 bg-red-50" : "border-blue-500 bg-blue-50"
+              }`}
           >
             <div className="flex items-start gap-3">
               <span className="text-lg">{notification.icon}</span>
@@ -991,7 +983,7 @@ export default function HRDashboard() {
   const [leaveApplications, setLeaveApplications] = useState<ILeaveRequest[]>([]);
   const [jobAdverts, setJobAdverts] = useState<JobPositionAdvert[]>([]);
   const [interviews, setInterviews] = useState<IInterview[]>([]);
-  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([]);
   const [departments, setDepartments] = useState<IDepartment[]>([]);
   const [leavePolicies, setLeavePolicies] = useState<LeavePolicy[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -1028,13 +1020,13 @@ export default function HRDashboard() {
           leavePoliciesResult,
           departmentsResult,
         ] = await Promise.all([
-          getAllEmployees({institutionId: institutionIdNumber}),
-          getLeaveApplications({institutionId: institutionIdNumber}),
-          getJobPositionAdverts({institutionId: institutionIdNumber}),
-          getInterviews({institutionId: institutionIdNumber}),
-          getLeaveTypes({institutionId: institutionIdNumber}),
-          getLeavePolicies({institutionId: institutionIdNumber}),
-          getDepartments({institutionId: institutionIdNumber}),
+          getPaginatedEmployees({ institutionId: institutionIdNumber }),
+          getLeaveApplications({ institutionId: institutionIdNumber }),
+          getJobPositionAdverts({ institutionId: institutionIdNumber }),
+          getInterviews({ institutionId: institutionIdNumber }),
+          getLeaveTypes({ institutionId: institutionIdNumber }),
+          getLeavePolicies({ institutionId: institutionIdNumber }),
+          getDepartments({ institutionId: institutionIdNumber }),
         ]);
 
         setEmployees(employeesResult.results || []); // Ensure results is an array
@@ -1110,8 +1102,8 @@ export default function HRDashboard() {
                     </SelectTrigger>
                     <SelectContent className="min-w-48 lg:min-w-64 w-full max-w-80">
                       <SelectItem value={"all"}>
-                          All departments
-                        </SelectItem>
+                        All departments
+                      </SelectItem>
                       {departments.map((dept) => (
                         <SelectItem key={dept.id} value={dept.id.toString()}>
                           {dept.name}

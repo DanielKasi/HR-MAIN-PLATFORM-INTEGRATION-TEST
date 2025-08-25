@@ -169,7 +169,7 @@ class JobPosition(UtilityBaseModel):
             )
 
 
-class JobPositionAdvert(models.Model):
+class JobPositionAdvert(UtilityBaseModel):
     status_choices = [
         ("pending_approval", "Pending Approval"),
         ("expired", "Expired"),
@@ -272,7 +272,7 @@ class JobPositionAdvert(models.Model):
         ]
 
 
-class JobAdvertApplication(models.Model):
+class JobAdvertApplication(UtilityBaseModel):
     status_choices = [
         ("new", "New"),
         ("reviewed", "Reviewed"),
@@ -451,7 +451,7 @@ class InterviewStage(models.Model):
         super().save(*args, **kwargs)
 
 
-class JobInterview(models.Model):
+class JobInterview(UtilityBaseModel):
     status_choices = [
         ("scheduled", "Scheduled"),
         ("completed", "Completed"),
@@ -483,8 +483,7 @@ class JobInterview(models.Model):
     status = models.CharField(
         max_length=20, choices=status_choices, default="scheduled"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+
     created_by = models.ForeignKey(
         "users.CustomUser",
         on_delete=models.PROTECT,

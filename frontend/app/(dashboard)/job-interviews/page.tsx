@@ -364,7 +364,7 @@ export default function InterviewsPage() {
   }
 
   return (
-    <div className="flex flex-col w-full h-auto p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg">
+    <div className="flex flex-col w-full h-auto p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg min-h-screen">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

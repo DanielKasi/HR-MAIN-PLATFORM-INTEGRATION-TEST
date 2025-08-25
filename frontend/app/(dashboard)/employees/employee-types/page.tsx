@@ -30,10 +30,12 @@ interface EmployeeTypeModalProps {
 }
 
 function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting, existingTypes }: EmployeeTypeModalProps) {
+  const selectedInstitution = useSelector(selectSelectedInstitution);
   const [formData, setFormData] = useState<IEmployeeTypeFormData>({
     name: "",
     description: "",
     code: "",
+    institution: selectedInstitution?.id || 0,
   })
   const [errors, setErrors] = useState<Partial<Record<keyof IEmployeeTypeFormData, string>>>({})
 
@@ -44,10 +46,9 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
           name: editingType.name,
           description: editingType.description || "",
           code: editingType.code || "",
+          institution : editingType.institution || selectedInstitution?.id || 0,
         })
-      } else {
-        setFormData({ name: "", description: "", code: "" })
-      }
+      } 
       setErrors({})
     }
   }, [isOpen, editingType])
@@ -253,7 +254,7 @@ export default function EmployeeTypeManagement() {
   }
 
   return (
-    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 min-h-screen">
       <div className="w-full bg-white">
         <CardHeader className="space-y-4 p-0 mb-6">
           <CardTitle className="flex flex-row items-start md:items-center justify-between gap-4">

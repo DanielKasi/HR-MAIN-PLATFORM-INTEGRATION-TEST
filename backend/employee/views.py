@@ -13,6 +13,7 @@ from .models import (
     EmployeeType,
     WorkType,
     EmployeeWorkingDays,
+    EmployeeContract,
 )
 from .serializers import (
     EmployeeAttendanceSerializer,
@@ -23,13 +24,6 @@ from .serializers import (
     EmployeeWorkingDaysSerializer,
     AttendanceReportSerializer,
     AttendanceQueryParamsSerializer,
-)
-from .models import (
-    Employee,
-    EmployeeAttendance,
-    EmployeeType,
-    WorkType,
-    EmployeeContract,
 )
 from rest_framework.parsers import MultiPartParser, FormParser
 from institution.utils import generate_compliant_password
@@ -72,7 +66,7 @@ from django.utils.dateparse import parse_date
 from .service import build_attendance_report_data
 from institution.models import Institution
 from utilities.helpers import get_or_create_default_role_with_permissions
-
+from django.db.models import Q
 
 
 class EmployeeListAPIView(APIView):
@@ -89,9 +83,11 @@ class EmployeeListAPIView(APIView):
         Retrieve a list of employees for a specific institution,
         with optional filtering via query parameters.
         """
+        search_query = request.query_params.get('search', None)
         try:
             employees = Employee.objects.filter(
-                department__institution_id=institution_id
+                department__institution_id=institution_id,
+                deleted_at__isnull=True
             )
 
             query_params = request.query_params.dict()
@@ -107,6 +103,16 @@ class EmployeeListAPIView(APIView):
                 employees = employees.filter(**filters)
 
             employees = employees.order_by("-created_at")
+            if search_query:
+                employees = employees.filter(
+                    Q(employee_id__icontains=search_query) |
+                    Q(user__fullname__icontains=search_query) |
+                    Q(work_type__name__icontains=search_query) |
+                    Q(employee_type__name__icontains=search_query) |
+                    Q(position__name__icontains=search_query) |
+                    Q(user__email__icontains=search_query) |
+                    Q(department__name__icontains=search_query)
+                )
 
             paginator = CustomPageNumberPagination()
             paginated_qs = paginator.paginate_queryset(employees, request)
@@ -324,8 +330,8 @@ class EmployeeCreateAPIView(APIView):
                 "Widowed": "widowed",
             }
 
-            # Cache foreign key mappings
-            print("Fetching foreign key mappings")
+            # Cache foreign key mappings and create missing instances
+            print("Fetching and creating foreign key mappings")
             field_mappings = {
                 "position": JobPosition,
                 "department": Department,
@@ -339,6 +345,7 @@ class EmployeeCreateAPIView(APIView):
                 if field in df.columns:
                     names = df[field].dropna().str.strip().unique()
                     if names.size > 0:
+                        # Fetch existing records
                         existing = model.objects.filter(name__in=names)
                         print(
                             f"Database {field} values: {[item.name for item in existing]}"
@@ -349,12 +356,48 @@ class EmployeeCreateAPIView(APIView):
                         instance_mappings[field] = {
                             item.name.lower(): item for item in existing
                         }
+                        # Create missing records
                         input_names = [str(name).strip().lower() for name in names]
                         missing = [
                             name for name in input_names if name not in mappings[field]
                         ]
                         if missing:
-                            print(f"Missing {field}s: {missing}")
+                            print(f"Creating missing {field}s: {missing}")
+                            for name in missing:
+                                # Basic creation with minimal required fields
+                                try:
+                                    if field == "position":
+                                        instance = model.objects.create(
+                                            name=name.title(),
+                                            institution=institution
+                                        )
+                                    elif field == "department":
+                                        instance = model.objects.create(
+                                            name=name.title(),
+                                            institution=institution
+                                        )
+                                    elif field == "work_type":
+                                        instance = model.objects.create(
+                                            name=name.title(),
+                                            institution=institution
+                                        )
+                                    elif field == "employee_type":
+                                        instance = model.objects.create(
+                                            name=name.title(),
+                                            institution=institution
+                                        )
+                                    elif field == "payroll_branch":
+                                        instance = model.objects.create(
+                                            name=name.title(),
+                                            institution=institution
+                                        )
+                                    mappings[field][name] = instance.id
+                                    instance_mappings[field][name] = instance
+                                    print(f"Created {field}: {name.title()}")
+                                except Exception as e:
+                                    print(f"Error creating {field} '{name}': {str(e)}")
+                                    # Continue with other records but log error
+                                    continue
 
             # Check for duplicate emails in the input file and existing database
             print("Checking for duplicate emails")
@@ -457,8 +500,7 @@ class EmployeeCreateAPIView(APIView):
                                     continue
                                 value = str(value).strip()
                                 if column in field_mappings and value:
-                                    mapping = instance_mappings.get(column, {})
-                                    instance = mapping.get(value.lower())
+                                    instance = instance_mappings.get(column, {}).get(value.lower())
                                     if instance is None:
                                         row_errors[column] = {"error": f'"{value}" does not exist.'}
                                     else:
@@ -521,7 +563,6 @@ class EmployeeCreateAPIView(APIView):
                                 except (ValueError, TypeError):
                                     row_errors[field] = {"error": "Must be a valid number."}
                                     employee_data[field] = 0
-
 
                         if row_errors:
                             batch_errors.append(
@@ -1405,30 +1446,43 @@ class EmployeeAttendanceListCreateAPIView(APIView):
         description="Retrieve all attendance records or for a specific employee if employee_id is provided either in path or query param.",
     )
     def get(self, request, employee_id=None):
-        # If employee_id is not in path, try query param
+        user = request.user.profile
+        search_query = request.query_params.get('search', None)
         employee_id = employee_id or request.query_params.get("employee_id")
 
         date = request.query_params.get("date")
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
 
-        records = EmployeeAttendance.objects.all()
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )    
+        records = EmployeeAttendance.objects.filter(
+            employee__department__institution=institution,
+            deleted_at__isnull=True
+        ).order_by("date")
 
-        # Filter by employee if provided
         if employee_id:
             records = records.filter(employee_id=employee_id)
 
-        # Filter by specific date
         if date:
             records = records.filter(date=date)
 
-        # Filter by date range
         if start_date:
             records = records.filter(date__gte=start_date)
         if end_date:
             records = records.filter(date__lte=end_date)
 
-        records = records.order_by("date")
+        if search_query:
+            records = records.filter(
+                Q(employee__user__fullname__icontains=search_query) |
+                Q(employee__user__email__icontains=search_query) |
+                Q(date__icontains=search_query)
+            )    
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(records, request)
@@ -1531,8 +1585,26 @@ class EmployeeTypeListCreateAPIView(APIView):
         responses=EmployeeTypeSerializer(many=True),
         description="Get list of all employee types",
     )
-    def get(self, request):
-        data = EmployeeType.objects.all().order_by("-created_at")
+    def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
+        user = request.user.profile
+        
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        data = EmployeeType.objects.filter(institution_id=institution_id, deleted_at__isnull=True).order_by(
+            "-created_at"
+        )
+
+        if search_query:
+            data = data.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(data, request)
@@ -1544,7 +1616,9 @@ class EmployeeTypeListCreateAPIView(APIView):
         responses=EmployeeTypeSerializer,
         description="Create a new employee type",
     )
-    def post(self, request):
+    def post(self, request, institution_id):
+        data = request.data.copy()
+        data["institution"] = institution_id
         serializer = EmployeeTypeSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -1591,8 +1665,24 @@ class WorkTypeListCreateAPIView(APIView):
         responses=WorkTypeSerializer(many=True),
         description="Get list of all work types",
     )
-    def get(self, request):
-        data = WorkType.objects.all().order_by("-created_at")
+    def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
+        user = request.user.profile
+        
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        data = WorkType.objects.filter(institution=institution, deleted_at__isnull=True).order_by("-created_at")
+
+        if search_query:
+            data = data.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(data, request)
@@ -1604,7 +1694,9 @@ class WorkTypeListCreateAPIView(APIView):
         responses=WorkTypeSerializer,
         description="Create a new work type",
     )
-    def post(self, request):
+    def post(self, request, institution_id):
+        data = request.data.copy()
+        data["institution"] = institution_id
         serializer = WorkTypeSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -1643,30 +1735,7 @@ class WorkTypeDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema(tags=["Employee Type"])
-class EmployeeTypeListCreateAPIView(APIView):
-    @extend_schema(
-        responses=EmployeeTypeSerializer(many=True),
-        description="Get list of all employee types",
-    )
-    def get(self, request):
-        data = EmployeeType.objects.all().order_by("-created_at")
-        paginator = CustomPageNumberPagination()
-        paginated_qs = paginator.paginate_queryset(data, request)
-        serializer = EmployeeTypeSerializer(paginated_qs, many=True)
-        return paginator.get_paginated_response(serializer.data)
 
-    @extend_schema(
-        request=EmployeeTypeSerializer,
-        responses=EmployeeTypeSerializer,
-        description="Create a new employee type",
-    )
-    def post(self, request):
-        serializer = EmployeeTypeSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(tags=["Employee Type"])
@@ -1702,30 +1771,7 @@ class EmployeeTypeDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema(tags=["Work Type"])
-class WorkTypeListCreateAPIView(APIView):
-    @extend_schema(
-        responses=WorkTypeSerializer(many=True),
-        description="Get list of all work types",
-    )
-    def get(self, request):
-        data = WorkType.objects.all().order_by("-created_at")
-        paginator = CustomPageNumberPagination()
-        paginated_qs = paginator.paginate_queryset(data, request)
-        serializer = WorkTypeSerializer(paginated_qs, many=True)
-        return paginator.get_paginated_response(serializer.data)
 
-    @extend_schema(
-        request=WorkTypeSerializer,
-        responses=WorkTypeSerializer,
-        description="Create a new work type",
-    )
-    def post(self, request):
-        serializer = WorkTypeSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(tags=["Work Type"])
@@ -1768,7 +1814,29 @@ class EmployeeContractListAPIView(APIView):
         tags=["Employee Contract"],
     )
     def get(self, request):
-        contracts = EmployeeContract.objects.all().order_by("-created_at")
+        user = request.user.profile
+        search_query = request.query_params.get('search', None)
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        contracts = EmployeeContract.objects.filter(
+            Q(employee__department__institution=institution) |
+            Q(applicant__job_position_advert__job_position__department__institution=institution),
+            deleted_at__isnull=True,
+        ).order_by("-created_at")
+
+        if search_query:
+            contracts = contracts.filter(
+                Q(applicant__applicant_name__icontains=search_query) |
+                Q(employee__user__fullname__icontains=search_query) |
+                Q(contract_reference__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(contracts, request)
         serializer = EmployeeContractSerializer(paginated_qs, many=True)

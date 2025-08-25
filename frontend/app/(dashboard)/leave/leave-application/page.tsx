@@ -1,7 +1,7 @@
 "use client";
 
-import {useState, useEffect} from "react";
-import {Button} from "@/components/ui/button";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,9 +10,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {Label} from "@/components/ui/label";
-import {Input} from "@/components/ui/input";
-import {Textarea} from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -20,10 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Badge} from "@/components/ui/badge";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  MoreHorizontal,
+  Search,
   Edit,
   Trash2,
   Check,
@@ -43,6 +43,8 @@ import {
   AlertTriangle,
   Calendar,
   MoreVertical,
+  ChevronDown,
+  Settings,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -50,15 +52,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {toast} from "sonner";
+import { toast } from "sonner";
 import {
-  createLeaveApplication,
-  getLeaveApplications,
-  updateLeaveApplication,
-  deleteLeaveApplication,
-  approveRejectLeaveApplication,
+  LeaveApplicationsAPI,
   getLeaveTypes,
-  getAllEmployees,
+  getPaginatedEmployees,
   getLeavePolicies,
 } from "@/lib/utils";
 import {
@@ -70,44 +68,80 @@ import {
   ILeaveBalance,
   IEmployee,
 } from "@/types/types.utils";
-import {selectSelectedInstitution, selectAttachedInstitutions} from "@/store/auth/selectors";
-import {IUserInstitution} from "@/types";
-import {useSelector} from "react-redux";
-import {EmployeeSearchableSelect} from "@/components/ui/employee-searchable-select";
-import {handleDownload, getFileUrl, getFileName} from "@/lib/helpers";
-import {TableSkeleton} from "@/components/common/table-skeleton";
-import {Card, CardHeader} from "@/components/ui/card";
+import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
+import { IUserInstitution } from "@/types";
+import { useSelector } from "react-redux";
+import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select";
+import { handleDownload, getFileUrl, getFileName } from "@/lib/helpers";
+import { TableSkeleton } from "@/components/common/table-skeleton";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/types/types.utils";
 
 const STATUS_CHOICES = [
-  {value: "pending", label: "Pending"},
-  {value: "approved", label: "Approved"},
-  {value: "rejected", label: "Rejected"},
-  {value: "cancelled", label: "Cancelled"},
+  { value: "pending", label: "Pending" },
+  { value: "approved", label: "Approved" },
+  { value: "rejected", label: "Rejected" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
 const DURATION_TYPES = [
-  {value: "full_day", label: "Full Day"},
-  {value: "half_day_morning", label: "Half Day - Morning"},
-  {value: "half_day_afternoon", label: "Half Day - Afternoon"},
-  {value: "hourly", label: "Hourly"},
+  { value: "full_day", label: "Full Day" },
+  { value: "half_day_morning", label: "Half Day - Morning" },
+  { value: "half_day_afternoon", label: "Half Day - Afternoon" },
+  { value: "hourly", label: "Hourly" },
 ];
 
 const LeaveApplicationComponent = () => {
-  const [applications, setApplications] = useState<ILeaveRequest[]>([]);
-  const [employees, setEmployees] = useState<IEmployee[]>([]);
   const [leavePolicies, setLeavePolicies] = useState<ILeavePolicy[]>([]);
   const [leaveBalances, setLeaveBalances] = useState<ILeaveBalance[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isLoadingEmployees, setIsLoadingEmployees] = useState(true);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [editingApplication, setEditingApplication] = useState<ILeaveRequest | null>(null);
   const [viewingApplication, setViewingApplication] = useState<ILeaveRequest | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [isLoading, setIsLoading] = useState(false);
+  const [leaveTypeFilter, setLeaveTypeFilter] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([]);
+  const refreshTableRef = useRef<(() => void) | null>(null);
   const selectedInstitution = useSelector(selectSelectedInstitution);
+
+  // Success handlers for CRUD operations
+  const handleCreateSuccess = (newApplication: ILeaveRequest) => {
+    toast.success("Leave application created successfully");
+    refreshTableRef.current?.();
+  };
+
+  const handleUpdateSuccess = (updatedApplication: ILeaveRequest) => {
+    toast.success("Leave application updated successfully");
+    refreshTableRef.current?.();
+  };
+
+  const handleDeleteSuccess = () => {
+    toast.success("Leave application deleted successfully");
+    refreshTableRef.current?.();
+  };
+
+  // Fetch functions for PaginatedTableWrapper
+  const fetchFirstPage = async (search?: string) => {
+    if (!selectedInstitution?.id) {
+      return { results: [], count: 0, next: null, previous: null };
+    }
+
+    return LeaveApplicationsAPI.getPaginated({
+      institutionId: selectedInstitution.id,
+      page: 1,
+      search,
+      status: statusFilter !== "all" ? statusFilter : undefined,
+      leaveType: leaveTypeFilter !== "all" ? leaveTypeFilter : undefined,
+    });
+  };
+
+  const fetchFromUrl = async ({ url }: { url: string }) => {
+    return LeaveApplicationsAPI.getPaginatedFromUrl({ url });
+  };
 
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -166,22 +200,7 @@ const LeaveApplicationComponent = () => {
     return "Document";
   };
 
-  const refreshApplications = async () => {
-    if (!selectedInstitution?.id) return;
 
-    try {
-      const applicationsData = await getLeaveApplications({institutionId: selectedInstitution?.id});
-      setApplications(
-        Array.isArray(applicationsData)
-          ? applicationsData
-          : applicationsData
-            ? [applicationsData]
-            : [],
-      );
-    } catch (error) {
-      toast.error("Error refreshing applications");
-    }
-  };
 
   const calculateDaysBetween = (startDate: string, endDate: string): number => {
     if (!startDate || !endDate) return 0;
@@ -192,10 +211,6 @@ const LeaveApplicationComponent = () => {
     return diffDays;
   };
 
-  const getSelectedEmployee = () => {
-    if (!formData.employee) return null;
-    return employees.find((emp) => emp.id.toString() === formData.employee);
-  };
 
   const getSelectedLeaveType = () => {
     if (!formData.leave_type) return null;
@@ -313,27 +328,7 @@ const LeaveApplicationComponent = () => {
     };
   };
 
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      if (!selectedInstitution?.id) {
-        setIsLoadingEmployees(false);
-        return;
-      }
 
-      setIsLoadingEmployees(true);
-
-      try {
-        const fetchedEmployees = await getAllEmployees({institutionId: selectedInstitution?.id});
-          setEmployees(fetchedEmployees.results || []);
-      } catch (error) {
-        setEmployees([]);
-      } finally {
-        setIsLoadingEmployees(false);
-      }
-    };
-
-    fetchEmployees();
-  }, [selectedInstitution?.id]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -341,26 +336,19 @@ const LeaveApplicationComponent = () => {
         return;
       }
 
-      setIsLoading(true);
-
       try {
-        const [leaveTypesData, applicationsData, policiesData] = await Promise.all([
-          getLeaveTypes({institutionId: selectedInstitution.id}),
-          getLeaveApplications({institutionId: selectedInstitution.id}),
-          getLeavePolicies({institutionId: selectedInstitution.id}),
+        const [leaveTypesData, policiesData] = await Promise.all([
+          getLeaveTypes({ institutionId: selectedInstitution.id }),
+          getLeavePolicies({ institutionId: selectedInstitution.id }),
         ]);
 
         const activeLeaveTypes = leaveTypesData?.filter((type) => type.is_active !== false) || [];
         setLeaveTypes(activeLeaveTypes);
-        setApplications(Array.isArray(applicationsData) ? applicationsData : []);
         setLeavePolicies(policiesData || []);
       } catch (error) {
         toast.error("Failed to load data");
         setLeaveTypes([]);
-        setApplications([]);
         setLeavePolicies([]);
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -402,14 +390,13 @@ const LeaveApplicationComponent = () => {
         applicationData.supporting_document = formData.supporting_document;
       }
 
-      const newApplication = await createLeaveApplication({
+      const newApplication = await LeaveApplicationsAPI.create({
         institutionId: selectedInstitution.id,
         leaveApplicationData: applicationData,
       });
 
       if (newApplication) {
-        setApplications([newApplication, ...applications]);
-        toast.success("Leave application created successfully");
+        handleCreateSuccess(newApplication);
         resetForm();
         setIsAddDialogOpen(false);
       } else {
@@ -455,17 +442,13 @@ const LeaveApplicationComponent = () => {
         applicationData.supporting_document = formData.supporting_document;
       }
 
-      const updatedApplication = await updateLeaveApplication({
+      const updatedApplication = await LeaveApplicationsAPI.update({
         leaveApplicationId: editingApplication.id?.toString() || "",
         leaveApplicationData: applicationData,
       });
 
       if (updatedApplication) {
-        const updatedApplications = applications.map((app) =>
-          app.id?.toString() === editingApplication.id?.toString() ? updatedApplication : app,
-        );
-        setApplications(updatedApplications);
-        toast.success("Leave application updated successfully");
+        handleUpdateSuccess(updatedApplication);
         resetForm();
         setIsEditDialogOpen(false);
         setEditingApplication(null);
@@ -491,30 +474,32 @@ const LeaveApplicationComponent = () => {
 
     setIsSubmitting(true);
     try {
-      const updatedApplication = await approveRejectLeaveApplication({
-        leaveApplicationId: id,
-        institutionId: selectedInstitution?.id,
-        action,
-        rejectionReason,
-      });
+      const updatedApplication = action === 'approve'
+        ? await LeaveApplicationsAPI.approve({
+          leaveApplicationId: id,
+          institutionId: selectedInstitution?.id,
+          rejectionReason,
+        })
+        : await LeaveApplicationsAPI.reject({
+          leaveApplicationId: id,
+          institutionId: selectedInstitution?.id,
+          rejectionReason,
+        });
 
       if (updatedApplication) {
-        const updatedApplications = applications.map((app) =>
-          app.id?.toString() === id.toString() ? updatedApplication : app,
-        );
-        setApplications(updatedApplications);
         toast.success(`Application ${action}d successfully`);
+        refreshTableRef.current?.();
       } else {
         toast.error(`Failed to ${action} application - no data returned`);
-        await refreshApplications();
+        refreshTableRef.current?.();
       }
     } catch (error) {
       toast.error(`An error occurred while ${action}ing the application`);
-      await refreshApplications();
+      refreshTableRef.current?.();
     } finally {
       setIsSubmitting(false);
     }
-    setConfirmDialog({isOpen: false, type: "approve", applicationId: "", applicationName: ""});
+    setConfirmDialog({ isOpen: false, type: "approve", applicationId: "", applicationName: "" });
   };
 
   const handleDeleteApplication = async (id: string | number) => {
@@ -523,29 +508,16 @@ const LeaveApplicationComponent = () => {
       return;
     }
 
-    const applicationToDelete = applications.find((app) => app.id?.toString() === id.toString());
-    if (applicationToDelete && applicationToDelete.status !== "pending") {
-      toast.error("Can only delete pending applications");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      const success = await deleteLeaveApplication({
-        leaveApplicationId: id,
-        institutionId: selectedInstitution?.id,
-      });
+      const success = await LeaveApplicationsAPI.delete(id);
       if (success) {
-        const filteredApplications = applications.filter(
-          (app) => app.id?.toString() !== id.toString(),
-        );
-        setApplications(filteredApplications);
-        toast.success("Leave application deleted successfully");
+        handleDeleteSuccess();
       } else {
         toast.error(
           "Failed to delete leave application. Only pending applications can be deleted.",
         );
-        await refreshApplications();
+        refreshTableRef.current?.();
       }
     } catch (error: any) {
       let errorMessage = "An error occurred while deleting the leave application";
@@ -557,11 +529,11 @@ const LeaveApplicationComponent = () => {
       }
 
       toast.error(errorMessage);
-      await refreshApplications();
+      refreshTableRef.current?.();
     } finally {
       setIsSubmitting(false);
     }
-    setConfirmDialog({isOpen: false, type: "delete", applicationId: "", applicationName: ""});
+    setConfirmDialog({ isOpen: false, type: "delete", applicationId: "", applicationName: "" });
   };
 
   const openConfirmDialog = (
@@ -688,7 +660,7 @@ const LeaveApplicationComponent = () => {
             id={isEdit ? "edit-start_date" : "start_date"}
             type="date"
             value={formData.start_date}
-            onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
             className="focus:ring-orange-500 focus:border-orange-500"
             disabled={isSubmitting}
             min={
@@ -713,7 +685,7 @@ const LeaveApplicationComponent = () => {
             id={isEdit ? "edit-end_date" : "end_date"}
             type="date"
             value={formData.end_date}
-            onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
             className="focus:ring-orange-500 focus:border-orange-500"
             disabled={isSubmitting}
             min={formData.start_date}
@@ -756,11 +728,10 @@ const LeaveApplicationComponent = () => {
             {validations.map((validation, index) => (
               <div
                 key={index}
-                className={`flex items-start gap-2 p-3 rounded-lg ${
-                  validation.type === "error"
-                    ? "bg-red-50 border border-red-200"
-                    : "bg-amber-50 border border-amber-200"
-                }`}
+                className={`flex items-start gap-2 p-3 rounded-lg ${validation.type === "error"
+                  ? "bg-red-50 border border-red-200"
+                  : "bg-amber-50 border border-amber-200"
+                  }`}
               >
                 {validation.type === "error" ? (
                   <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
@@ -768,9 +739,8 @@ const LeaveApplicationComponent = () => {
                   <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                 )}
                 <p
-                  className={`text-sm font-medium ${
-                    validation.type === "error" ? "text-red-800" : "text-amber-800"
-                  }`}
+                  className={`text-sm font-medium ${validation.type === "error" ? "text-red-800" : "text-amber-800"
+                    }`}
                 >
                   {validation.message}
                 </p>
@@ -782,73 +752,79 @@ const LeaveApplicationComponent = () => {
     );
   };
 
-  const filteredApplications = applications.filter(
-    (app) => statusFilter === "all" || app.status === statusFilter,
-  );
-
-  if (isLoading && !selectedInstitution?.id) {
+  if (!selectedInstitution?.id) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading institution data...</span>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="p-2 space-y-6">
-        <Card className="h-[calc(100vh-2rem)] shadow-lg">
-          <CardHeader className="border-b">
-            <div className="flex justify-between gap-8 items-center">
-              <div className="flex items-center justify-start gap-4">
-                <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
-                <div className="space-y-2">
-                  <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-                  <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
-              </div>
-            </div>
-          </CardHeader>
-          <TableSkeleton rows={10} columns={8} />
-        </Card>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4 text-center">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+            <Settings className="w-6 h-6 text-orange-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-gray-800">No Institution Selected</h3>
+            <p className="text-gray-600">Please select an institution to manage leave applications.</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50/30">
-      <div className="w-full px-2 py-8">
-        {/* Header Section */}
-        <div className="mb-8 px-2">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Leave Applications</h1>
-              <p className="text-gray-600">Manage employee leave requests and approvals</p>
-            </div>
-            <div className="flex gap-3">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  {STATUS_CHOICES.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+    <div className="flex flex-col w-full min-h-screen bg-white">
+      {/* Header */}
+      <div className="flex flex-col gap-6 p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Leave Applications</h1>
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-center justify-between">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search leave applications..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+                <SelectValue placeholder="All Statuses" />
+
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {STATUS_CHOICES.map((status) => (
+                  <SelectItem key={status.value} value={status.value}>
+                    {status.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={leaveTypeFilter} onValueChange={setLeaveTypeFilter}>
+              <SelectTrigger className="w-full sm:w-[150px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+                <SelectValue placeholder="All Leave Types" />
+
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Leave Types</SelectItem>
+                {leaveTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.id.toString()}>
+                    {type.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_APPLICATIONS}>
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button disabled={!selectedInstitution?.id}>
+                  <Button disabled={!selectedInstitution?.id} className="rounded-[12px]">
                     <Plus className="h-4 w-4 mr-2" />
                     New Application
                   </Button>
@@ -866,23 +842,18 @@ const LeaveApplicationComponent = () => {
                         Employee *
                       </Label>
                       <EmployeeSearchableSelect
-                        employees={employees}
+
                         value={[formData.employee]}
                         onValueChange={(value) =>
-                          setFormData({...formData, employee: value.toString()})
+                          setFormData({ ...formData, employee: value.toString() })
                         }
-                        disabled={isSubmitting || isLoadingEmployees}
+                        disabled={isSubmitting}
                         placeholder="Search and select employee"
-                        isLoading={isLoadingEmployees}
+
                         showEmployeeId={true}
                         showDepartment={false}
                       />
-                      {!isLoadingEmployees && employees.length === 0 && (
-                        <p className="text-xs text-red-500 mt-1">
-                          No employees found. Please check if employees are registered for this
-                          institution.
-                        </p>
-                      )}
+
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="leave_type" className="text-sm font-medium">
@@ -890,7 +861,7 @@ const LeaveApplicationComponent = () => {
                       </Label>
                       <Select
                         value={formData.leave_type}
-                        onValueChange={(value) => setFormData({...formData, leave_type: value})}
+                        onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
                         disabled={isSubmitting}
                       >
                         <SelectTrigger className="">
@@ -925,7 +896,7 @@ const LeaveApplicationComponent = () => {
                       </Label>
                       <Select
                         value={formData.duration_type}
-                        onValueChange={(value) => setFormData({...formData, duration_type: value})}
+                        onValueChange={(value) => setFormData({ ...formData, duration_type: value })}
                         disabled={isSubmitting}
                       >
                         <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
@@ -947,7 +918,7 @@ const LeaveApplicationComponent = () => {
                       <Textarea
                         id="reason"
                         value={formData.reason}
-                        onChange={(e) => setFormData({...formData, reason: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                         rows={3}
                         className="focus:ring-orange-500 focus:border-orange-500"
                         disabled={isSubmitting}
@@ -960,7 +931,7 @@ const LeaveApplicationComponent = () => {
                       <Textarea
                         id="handover_notes"
                         value={formData.handover_notes}
-                        onChange={(e) => setFormData({...formData, handover_notes: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, handover_notes: e.target.value })}
                         rows={2}
                         placeholder="Work delegation and handover details..."
                         className="focus:ring-orange-500 focus:border-orange-500"
@@ -994,7 +965,6 @@ const LeaveApplicationComponent = () => {
                     onClick={handleAddApplication}
                     disabled={
                       isSubmitting ||
-                      !employees.length ||
                       !leaveTypes.length ||
                       validateLeaveApplication().filter((v) => v.type === "error").length > 0
                     }
@@ -1004,585 +974,540 @@ const LeaveApplicationComponent = () => {
                   </Button>
                 </DialogContent>
               </Dialog>
-            </div>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 px-2 mt-10">
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <div className="flex items-center">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <FileText className="h-5 w-5 text-orange-600" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-600">Total Applications</p>
-                  <p className="text-2xl font-bold text-gray-900">{applications.length}</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <div className="flex items-center">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <AlertCircle className="h-5 w-5 text-yellow-600" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-600">Pending</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {applications.filter((app) => app.status === "pending").length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-600">Approved</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {applications.filter((app) => app.status === "approved").length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <XCircle className="h-5 w-5 text-red-600" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-600">Rejected</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {applications.filter((app) => app.status === "rejected").length}
-                  </p>
-                </div>
-              </div>
-            </div>
+            </ProtectedComponent>
           </div>
         </div>
 
-        {/* Applications Table */}
-        <div className="overflow-x-auto mt-10">
-          <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead className="font-semibold text-gray-900">Employee</TableHead>
-                <TableHead className="font-semibold text-gray-900">Leave Type</TableHead>
-                <TableHead className="font-semibold text-gray-900">Start Date</TableHead>
-                <TableHead className="font-semibold text-gray-900">End Date</TableHead>
-                <TableHead className="font-semibold text-gray-900">Duration</TableHead>
-                <TableHead className="font-semibold text-gray-900">Status</TableHead>
-                <TableHead className="font-semibold text-gray-900">Reason</TableHead>
-                <TableHead className="font-semibold text-gray-900">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredApplications.map((application) => (
-                <TableRow
-                  key={
-                    application.id?.toString() ||
-                    (application.employee as any)?.id ||
-                    `row-${Math.random()}`
-                  }
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <TableCell>
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {getEmployeeName(application.employee)}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={`${getCategoryColor((application.leave_type as any)?.category || "annual")} border font-medium`}
-                    >
-                      {getLeaveTypeName(application.leave_type)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm font-medium text-gray-900">
-                      {new Date(application.start_date).toLocaleDateString()}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm font-medium text-gray-900">
-                      {new Date(application.end_date).toLocaleDateString()}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-gray-900">
-                      {DURATION_TYPES.find((d) => d.value === application.duration_type)?.label ||
-                        application.duration_type}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={`${getStatusColor(application.status)} border font-medium flex items-center gap-1 w-fit`}
-                    >
-                      {getStatusIcon(application.status)}
-                      {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-xs">
-                      <p className="text-sm text-gray-900 line-clamp-2">{application.reason}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 hover:bg-gray-100"
-                          >
-                            <MoreVertical className="h-4 w-4 text-gray-600" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          {application.status === "pending" && (
-                            <>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  openConfirmDialog(
-                                    "approve",
-                                    application.id?.toString() || "",
-                                    getEmployeeName(application.employee),
-                                  )
-                                }
-                                className="cursor-pointer hover:bg-green-50 focus:bg-green-50 text-green-600"
-                                disabled={isSubmitting}
-                              >
-                                <Check className="h-4 w-4 mr-2" />
-                                Approve
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  openConfirmDialog(
-                                    "reject",
-                                    application.id?.toString() || "",
-                                    getEmployeeName(application.employee),
-                                  )
-                                }
-                                className="cursor-pointer hover:bg-red-50 focus:bg-red-50 text-red-600"
-                                disabled={isSubmitting}
-                              >
-                                <X className="h-4 w-4 mr-2" />
-                                Reject
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleEditApplication(application)}
-                                className="cursor-pointer hover:bg-orange-50 focus:bg-orange-50"
-                                disabled={isSubmitting}
-                              >
-                                <Edit className="h-4 w-4 mr-2 text-orange-600" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  openConfirmDialog(
-                                    "delete",
-                                    application.id?.toString() || "",
-                                    getEmployeeName(application.employee),
-                                  )
-                                }
-                                className="cursor-pointer hover:bg-red-50 focus:bg-red-50 text-red-600"
-                                disabled={isSubmitting}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </>
-                          )}
+        {/* Table Content */}
+        <div className="flex-1 pb-6 min-h-0">
+          <PaginatedTableWrapper
+            fetchFirstPage={() => fetchFirstPage(searchTerm)}
+            fetchFromUrl={fetchFromUrl}
+            deps={[selectedInstitution?.id, searchTerm, statusFilter, leaveTypeFilter]}
+          >
+            {({ data, loading, refresh }) => {
+              useEffect(() => {
+                refreshTableRef.current = refresh;
+              }, [refresh]);
 
-                          <DropdownMenuItem
-                            onClick={() => handleViewApplication(application)}
-                            className="cursor-pointer hover:bg-blue-50 focus:bg-blue-50"
-                          >
-                            <Eye className="h-4 w-4 mr-2 text-blue-600" />
-                            View Details
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              if (loading) return <TableSkeleton rows={10} columns={8} />;
 
-          {filteredApplications.length === 0 && (
-            <div className="text-center py-8">
-              <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No applications found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {statusFilter === "all"
-                  ? "No leave applications have been submitted yet."
-                  : `No ${statusFilter} applications found.`}
-              </p>
-            </div>
-          )}
+              if (!data?.results?.length) {
+                return (
+                  <div className="text-center py-12">
+                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No leave applications found</h3>
+                    <p className="text-muted-foreground mb-4">
+                      {searchTerm ? "No leave applications match your search." : "Get started by creating your first leave application."}
+                    </p>
+
+                  </div>
+                );
+              }
+
+              // Apply client-side filtering
+              const filteredResults = data.results.filter((app) => {
+                const matchesStatus = statusFilter === "all" || app.status === statusFilter;
+                const matchesLeaveType = leaveTypeFilter === "all" ||
+                  (typeof app.leave_type === "object" && app.leave_type !== null
+                    ? (app.leave_type as any).id?.toString() === leaveTypeFilter
+                    : app.leave_type?.toString() === leaveTypeFilter);
+                return matchesStatus && matchesLeaveType;
+              });
+
+              return (
+                <div className="rounded-lg border bg-white">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Employee</TableHead>
+                        <TableHead>Leave Type</TableHead>
+                        <TableHead>Start Date</TableHead>
+                        <TableHead>End Date</TableHead>
+                        <TableHead>Duration</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead className="w-[70px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredResults.map((application) => (
+                        <TableRow key={application.id?.toString() || Math.random()}>
+                          <TableCell>
+                            <div className="font-medium text-gray-900">
+                              {getEmployeeName(application.employee)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={`${getCategoryColor((application.leave_type as any)?.category || "annual")} border font-medium`}
+                            >
+                              {getLeaveTypeName(application.leave_type)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm font-medium text-gray-900">
+                              {new Date(application.start_date).toLocaleDateString()}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm font-medium text-gray-900">
+                              {new Date(application.end_date).toLocaleDateString()}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-gray-900">
+                              {DURATION_TYPES.find((d) => d.value === application.duration_type)?.label ||
+                                application.duration_type}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={`${getStatusColor(application.status)} border font-medium flex items-center gap-1 w-fit`}
+                            >
+                              {getStatusIcon(application.status)}
+                              {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="max-w-xs">
+                              <p className="text-sm text-gray-900 line-clamp-2">{application.reason}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {application.status === "pending" && (
+                                  <>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        openConfirmDialog(
+                                          "approve",
+                                          application.id?.toString() || "",
+                                          getEmployeeName(application.employee),
+                                        )
+                                      }
+                                      className="text-green-600"
+                                    >
+                                      <Check className="h-4 w-4 mr-2" />
+                                      Approve
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        openConfirmDialog(
+                                          "reject",
+                                          application.id?.toString() || "",
+                                          getEmployeeName(application.employee),
+                                        )
+                                      }
+                                      className="text-red-600"
+                                    >
+                                      <X className="h-4 w-4 mr-2" />
+                                      Reject
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => handleEditApplication(application)}
+                                    >
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        openConfirmDialog(
+                                          "delete",
+                                          application.id?.toString() || "",
+                                          getEmployeeName(application.employee),
+                                        )
+                                      }
+                                      className="text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                                <DropdownMenuItem
+                                  onClick={() => handleViewApplication(application)}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              );
+            }}
+          </PaginatedTableWrapper>
         </div>
+      </div>
 
-        {/* View Application Dialog */}
-        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-semibold">Leave Application Details</DialogTitle>
-              <DialogDescription>
-                Complete information about the leave application.
-              </DialogDescription>
-            </DialogHeader>
-            {viewingApplication && (
-              <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Employee</Label>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {getEmployeeName(viewingApplication.employee)}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Leave Type</Label>
-                    <Badge
-                      className={`${getCategoryColor(
-                        typeof viewingApplication.leave_type === "object" &&
-                          viewingApplication.leave_type !== null
-                          ? (viewingApplication.leave_type as ILeaveType).category
-                          : leaveTypes.find((type) => type.id === viewingApplication.leave_type)
-                              ?.category || "annual",
-                      )} border font-medium mt-1`}
-                    >
-                      {getLeaveTypeName(viewingApplication.leave_type)}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Start Date</Label>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {new Date(viewingApplication.start_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">End Date</Label>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {new Date(viewingApplication.end_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Duration Type</Label>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {DURATION_TYPES.find((d) => d.value === viewingApplication.duration_type)
-                        ?.label || viewingApplication.duration_type}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Total Days</Label>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {calculateDaysBetween(
-                        viewingApplication.start_date,
-                        viewingApplication.end_date,
-                      ) || "N/A"}
-                    </p>
-                  </div>
+      {/* View Application Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">Leave Application Details</DialogTitle>
+            <DialogDescription>
+              Complete information about the leave application.
+            </DialogDescription>
+          </DialogHeader>
+          {viewingApplication && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Employee</Label>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {getEmployeeName(viewingApplication.employee)}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-600">Status</Label>
+                  <Label className="text-sm font-medium text-gray-600">Leave Type</Label>
                   <Badge
-                    className={`${getStatusColor(viewingApplication.status)} border font-medium flex items-center gap-1 w-fit mt-1`}
+                    className={`${getCategoryColor(
+                      typeof viewingApplication.leave_type === "object" &&
+                        viewingApplication.leave_type !== null
+                        ? (viewingApplication.leave_type as ILeaveType).category
+                        : leaveTypes.find((type) => type.id === viewingApplication.leave_type)
+                          ?.category || "annual",
+                    )} border font-medium mt-1`}
                   >
-                    {getStatusIcon(viewingApplication.status)}
-                    {viewingApplication.status.charAt(0).toUpperCase() +
-                      viewingApplication.status.slice(1)}
+                    {getLeaveTypeName(viewingApplication.leave_type)}
                   </Badge>
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-600">Reason</Label>
-                  <p className="text-sm text-gray-900 mt-1">{viewingApplication.reason}</p>
+                  <Label className="text-sm font-medium text-gray-600">Start Date</Label>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {new Date(viewingApplication.start_date).toLocaleDateString()}
+                  </p>
                 </div>
-                {viewingApplication.handover_notes && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Handover Notes</Label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {viewingApplication.handover_notes}
-                    </p>
-                  </div>
-                )}
-                {viewingApplication?.supporting_document && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Supporting Document</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <FileText className="h-4 w-4 text-orange-600" />
-                      <span className="text-sm text-gray-900">
-                        {renderSupportingDocumentName(viewingApplication.supporting_document)}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-2 text-orange-600 hover:bg-orange-100"
-                        onClick={() =>
-                          handleDownload(
-                            getFileUrl(viewingApplication.supporting_document as string),
-                            getFileName(viewingApplication.supporting_document as string),
-                          )
-                        }
-                      >
-                        <Download className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                {viewingApplication.approved_by && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">
-                      {viewingApplication.status === "approved" ? "Approved by" : "Processed by"}
-                    </Label>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {getApproverName(viewingApplication.approved_by)}
-                    </p>
-                    {viewingApplication.approved_by && (
-                      <p className="text-xs text-gray-500">
-                        {new Date(viewingApplication.approved_by).toLocaleString()}
-                      </p>
-                    )}
-                  </div>
-                )}
-                {viewingApplication.rejection_reason && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Rejection Reason</Label>
-                    <p className="text-sm text-red-800 mt-1">
-                      {viewingApplication.rejection_reason}
-                    </p>
-                  </div>
-                )}
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">End Date</Label>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {new Date(viewingApplication.end_date).toLocaleDateString()}
+                  </p>
+                </div>
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Dialog */}
-        <Dialog
-          open={isEditDialogOpen}
-          onOpenChange={(open) => {
-            setIsEditDialogOpen(open);
-            if (!open) {
-              resetForm();
-            }
-          }}
-        >
-          <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-semibold">Edit Leave Application</DialogTitle>
-              <DialogDescription>Make changes to the leave application.</DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-employee" className="text-sm font-medium">
-                  Employee *
-                </Label>
-                <EmployeeSearchableSelect
-                  employees={employees}
-                  value={[formData.employee]}
-                  onValueChange={(value) => setFormData({...formData, employee: value.toString()})}
-                  disabled={isSubmitting}
-                  placeholder="Search and select employee"
-                  showEmployeeId={true}
-                  showDepartment={false}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Duration Type</Label>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {DURATION_TYPES.find((d) => d.value === viewingApplication.duration_type)
+                      ?.label || viewingApplication.duration_type}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Total Days</Label>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {calculateDaysBetween(
+                      viewingApplication.start_date,
+                      viewingApplication.end_date,
+                    ) || "N/A"}
+                  </p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-leave_type" className="text-sm font-medium">
-                  Leave Type *
-                </Label>
-                <Select
-                  value={formData.leave_type}
-                  onValueChange={(value) => setFormData({...formData, leave_type: value})}
-                  disabled={isSubmitting}
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Status</Label>
+                <Badge
+                  className={`${getStatusColor(viewingApplication.status)} border font-medium flex items-center gap-1 w-fit mt-1`}
                 >
-                  <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
-                    <SelectValue placeholder="Select leave type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {leaveTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id.toString()}>
-                        <div className="flex flex-col">
-                          <span>{type.name}</span>
-                          <span className="text-xs text-gray-500">
-                            {type.max_days_per_year} days/year • {type.category}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  {getStatusIcon(viewingApplication.status)}
+                  {viewingApplication.status.charAt(0).toUpperCase() +
+                    viewingApplication.status.slice(1)}
+                </Badge>
               </div>
-
-              {renderDateFields(true)}
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-duration_type" className="text-sm font-medium">
-                  Duration Type
-                </Label>
-                <Select
-                  value={formData.duration_type}
-                  onValueChange={(value) => setFormData({...formData, duration_type: value})}
-                  disabled={isSubmitting}
-                >
-                  <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
-                    <SelectValue placeholder="Select duration type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DURATION_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div>
+                <Label className="text-sm font-medium text-gray-600">Reason</Label>
+                <p className="text-sm text-gray-900 mt-1">{viewingApplication.reason}</p>
               </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="edit-reason" className="text-sm font-medium">
-                  Reason *
-                </Label>
-                <Textarea
-                  id="edit-reason"
-                  value={formData.reason}
-                  onChange={(e) => setFormData({...formData, reason: e.target.value})}
-                  rows={3}
-                  className="focus:ring-orange-500 focus:border-orange-500"
-                  disabled={isSubmitting}
-                  placeholder="Enter reason for leave..."
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="edit-handover_notes" className="text-sm font-medium">
-                  Handover Notes
-                </Label>
-                <Textarea
-                  id="edit-handover_notes"
-                  value={formData.handover_notes}
-                  onChange={(e) => setFormData({...formData, handover_notes: e.target.value})}
-                  rows={2}
-                  className="focus:ring-orange-500 focus:border-orange-500"
-                  disabled={isSubmitting}
-                  placeholder="Work delegation and handover details..."
-                />
-              </div>
-              {getSelectedLeaveType()?.requires_document && (
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="edit-supporting_document" className="text-sm font-medium">
-                    Supporting Document {getSelectedLeaveType()?.requires_document ? "*" : ""}
-                  </Label>
-                  <Input
-                    id="edit-supporting_document"
-                    type="file"
-                    onChange={(e) =>
-                      setFormData({...formData, supporting_document: e.target.files?.[0] || null})
-                    }
-                    className="focus:ring-orange-500 focus:border-orange-500"
-                    disabled={isSubmitting}
-                  />
-                  <p className="text-xs text-gray-500">
-                    Upload a new document to replace the existing one (if any)
+              {viewingApplication.handover_notes && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Handover Notes</Label>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {viewingApplication.handover_notes}
                   </p>
                 </div>
               )}
-              {editingApplication?.supporting_document &&
-                getSelectedLeaveType()?.requires_document && (
-                  <div className="md:col-span-2">
-                    <div className="p-2 bg-gray-50 rounded-lg border">
-                      <Label className="text-xs font-medium text-gray-600">Current Document:</Label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <FileText className="h-4 w-4 text-gray-600" />
-                        <span className="text-sm text-gray-700">
-                          {renderSupportingDocumentName(editingApplication.supporting_document)}
+              {viewingApplication?.supporting_document && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Supporting Document</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <FileText className="h-4 w-4 text-orange-600" />
+                    <span className="text-sm text-gray-900">
+                      {renderSupportingDocumentName(viewingApplication.supporting_document)}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-orange-600 hover:bg-orange-100"
+                      onClick={() =>
+                        handleDownload(
+                          getFileUrl(viewingApplication.supporting_document as string),
+                          getFileName(viewingApplication.supporting_document as string),
+                        )
+                      }
+                    >
+                      <Download className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {viewingApplication.approved_by && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">
+                    {viewingApplication.status === "approved" ? "Approved by" : "Processed by"}
+                  </Label>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {getApproverName(viewingApplication.approved_by)}
+                  </p>
+                  {viewingApplication.approved_by && (
+                    <p className="text-xs text-gray-500">
+                      {new Date(viewingApplication.approved_by).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              )}
+              {viewingApplication.rejection_reason && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Rejection Reason</Label>
+                  <p className="text-sm text-red-800 mt-1">
+                    {viewingApplication.rejection_reason}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            resetForm();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">Edit Leave Application</DialogTitle>
+            <DialogDescription>Make changes to the leave application.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-employee" className="text-sm font-medium">
+                Employee *
+              </Label>
+              <EmployeeSearchableSelect
+                value={[formData.employee]}
+                onValueChange={(value) => setFormData({ ...formData, employee: value.toString() })}
+                disabled={isSubmitting}
+                placeholder="Search and select employee"
+                showEmployeeId={true}
+                showDepartment={false}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-leave_type" className="text-sm font-medium">
+                Leave Type *
+              </Label>
+              <Select
+                value={formData.leave_type}
+                onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
+                  <SelectValue placeholder="Select leave type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {leaveTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id.toString()}>
+                      <div className="flex flex-col">
+                        <span>{type.name}</span>
+                        <span className="text-xs text-gray-500">
+                          {type.max_days_per_year} days/year • {type.category}
                         </span>
                       </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {renderDateFields(true)}
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-duration_type" className="text-sm font-medium">
+                Duration Type
+              </Label>
+              <Select
+                value={formData.duration_type}
+                onValueChange={(value) => setFormData({ ...formData, duration_type: value })}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
+                  <SelectValue placeholder="Select duration type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DURATION_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="edit-reason" className="text-sm font-medium">
+                Reason *
+              </Label>
+              <Textarea
+                id="edit-reason"
+                value={formData.reason}
+                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                rows={3}
+                className="focus:ring-orange-500 focus:border-orange-500"
+                disabled={isSubmitting}
+                placeholder="Enter reason for leave..."
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="edit-handover_notes" className="text-sm font-medium">
+                Handover Notes
+              </Label>
+              <Textarea
+                id="edit-handover_notes"
+                value={formData.handover_notes}
+                onChange={(e) => setFormData({ ...formData, handover_notes: e.target.value })}
+                rows={2}
+                className="focus:ring-orange-500 focus:border-orange-500"
+                disabled={isSubmitting}
+                placeholder="Work delegation and handover details..."
+              />
+            </div>
+            {getSelectedLeaveType()?.requires_document && (
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="edit-supporting_document" className="text-sm font-medium">
+                  Supporting Document {getSelectedLeaveType()?.requires_document ? "*" : ""}
+                </Label>
+                <Input
+                  id="edit-supporting_document"
+                  type="file"
+                  onChange={(e) =>
+                    setFormData({ ...formData, supporting_document: e.target.files?.[0] || null })
+                  }
+                  className="focus:ring-orange-500 focus:border-orange-500"
+                  disabled={isSubmitting}
+                />
+                <p className="text-xs text-gray-500">
+                  Upload a new document to replace the existing one (if any)
+                </p>
+              </div>
+            )}
+            {editingApplication?.supporting_document &&
+              getSelectedLeaveType()?.requires_document && (
+                <div className="md:col-span-2">
+                  <div className="p-2 bg-gray-50 rounded-lg border">
+                    <Label className="text-xs font-medium text-gray-600">Current Document:</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <FileText className="h-4 w-4 text-gray-600" />
+                      <span className="text-sm text-gray-700">
+                        {renderSupportingDocumentName(editingApplication.supporting_document)}
+                      </span>
                     </div>
                   </div>
-                )}
-            </div>
+                </div>
+              )}
+          </div>
+          <Button
+            onClick={handleUpdateApplication}
+            disabled={
+              isSubmitting ||
+              validateLeaveApplication().filter((v) => v.type === "error").length > 0
+            }
+          >
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting ? "Updating..." : "Update Application"}
+          </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={confirmDialog.isOpen}
+        onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, isOpen: open })}
+      >
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">
+              {confirmDialog.type === "approve" && "Approve Application"}
+              {confirmDialog.type === "reject" && "Reject Application"}
+              {confirmDialog.type === "delete" && "Delete Application"}
+            </DialogTitle>
+            <DialogDescription>
+              {confirmDialog.type === "approve" &&
+                `Are you sure you want to approve ${confirmDialog.applicationName}'s leave application? This action cannot be undone.`}
+              {confirmDialog.type === "reject" &&
+                `Are you sure you want to reject ${confirmDialog.applicationName}'s leave application? This action cannot be undone.`}
+              {confirmDialog.type === "delete" &&
+                `Are you sure you want to delete ${confirmDialog.applicationName}'s leave application? Only pending applications can be deleted.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-6">
             <Button
-              onClick={handleUpdateApplication}
-              disabled={
-                isSubmitting ||
-                validateLeaveApplication().filter((v) => v.type === "error").length > 0
+              variant="outline"
+              onClick={() =>
+                setConfirmDialog({
+                  isOpen: false,
+                  type: "approve",
+                  applicationId: "",
+                  applicationName: "",
+                })
               }
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              className={`${confirmDialog.type === "approve"
+                ? "bg-green-600 hover:bg-green-700"
+                : confirmDialog.type === "reject"
+                  ? "bg-orange-600 hover:bg-orange-700"
+                  : "bg-red-600 hover:bg-red-700"
+                } text-white`}
+              onClick={handleConfirmAction}
+              disabled={isSubmitting}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSubmitting ? "Updating..." : "Update Application"}
+              {isSubmitting ? (
+                "Processing..."
+              ) : (
+                <>
+                  {confirmDialog.type === "approve" && "Yes, Approve"}
+                  {confirmDialog.type === "reject" && "Yes, Reject"}
+                  {confirmDialog.type === "delete" && "Yes, Delete"}
+                </>
+              )}
             </Button>
-          </DialogContent>
-        </Dialog>
-
-        {/* Confirmation Dialog */}
-        <Dialog
-          open={confirmDialog.isOpen}
-          onOpenChange={(open) => setConfirmDialog({...confirmDialog, isOpen: open})}
-        >
-          <DialogContent className="sm:max-w-[400px]">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-semibold">
-                {confirmDialog.type === "approve" && "Approve Application"}
-                {confirmDialog.type === "reject" && "Reject Application"}
-                {confirmDialog.type === "delete" && "Delete Application"}
-              </DialogTitle>
-              <DialogDescription>
-                {confirmDialog.type === "approve" &&
-                  `Are you sure you want to approve ${confirmDialog.applicationName}'s leave application? This action cannot be undone.`}
-                {confirmDialog.type === "reject" &&
-                  `Are you sure you want to reject ${confirmDialog.applicationName}'s leave application? This action cannot be undone.`}
-                {confirmDialog.type === "delete" &&
-                  `Are you sure you want to delete ${confirmDialog.applicationName}'s leave application? Only pending applications can be deleted.`}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end gap-3 mt-6">
-              <Button
-                variant="outline"
-                onClick={() =>
-                  setConfirmDialog({
-                    isOpen: false,
-                    type: "approve",
-                    applicationId: "",
-                    applicationName: "",
-                  })
-                }
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                className={`${
-                  confirmDialog.type === "approve"
-                    ? "bg-green-600 hover:bg-green-700"
-                    : confirmDialog.type === "reject"
-                      ? "bg-orange-600 hover:bg-orange-700"
-                      : "bg-red-600 hover:bg-red-700"
-                } text-white`}
-                onClick={handleConfirmAction}
-                disabled={isSubmitting}
-              >
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? (
-                  "Processing..."
-                ) : (
-                  <>
-                    {confirmDialog.type === "approve" && "Yes, Approve"}
-                    {confirmDialog.type === "reject" && "Yes, Reject"}
-                    {confirmDialog.type === "delete" && "Yes, Delete"}
-                  </>
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

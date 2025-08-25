@@ -225,6 +225,7 @@ class InstitutionBankTypeListAPIView(APIView):
         tags=["Bank Type Management"],
     )
     def get(self, request):
+        search_query = request.query_params.get('search', None)
         user = request.user.profile if request.user.is_authenticated else None
 
         try:
@@ -233,8 +234,16 @@ class InstitutionBankTypeListAPIView(APIView):
             return Response({"detail": "Institution not found."}, status=404)
 
         bank_types = InstitutionBankType.objects.filter(
-            institution=institution
+            institution=institution,
+            deleted_at__isnull=True
         ).order_by("-created_at")
+
+        if search_query:
+            bank_types = bank_types.filter(
+                Q(bank_fullname__icontains=search_query) |
+                Q(bank_code__icontains=search_query) |
+                Q(br_code__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(bank_types, request)
@@ -325,6 +334,7 @@ class InstitutionBankAccountListAPIView(APIView):
         tags=["Bank Account Management"],
     )
     def get(self, request):
+        search_query = request.query_params.get('search', None)
         user = request.user.profile if request.user.is_authenticated else None
 
         try:
@@ -333,8 +343,17 @@ class InstitutionBankAccountListAPIView(APIView):
             return Response({"detail": "Institution not found."}, status=404)
 
         bank_accounts = InstitutionBankAccount.objects.filter(
-            institution_bank__institution=institution
+            institution_bank__institution=institution,
+            is_avtive=True,
+            deleted_at__isnull=True
         ).order_by("-created_at")
+
+        if search_query:
+            bank_accounts = bank_accounts.filter(
+                Q(account_name__icontains=search_query) |
+                Q(account_number__icontains=search_query) |
+                Q(institution_bank__bank_fullname__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(bank_accounts, request)
@@ -432,7 +451,7 @@ class InstitutionWorkingDaysListAPIView(APIView):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=404)
 
-        working_days = InstitutionWorkingDays.objects.filter(institution=institution)
+        working_days = InstitutionWorkingDays.objects.filter(institution=institution, deleted_at__isnull=True)
 
         serializer = InstitutionWorkingDaysSerializer(working_days, many=True)
 
@@ -495,6 +514,7 @@ class InstitutionTaxListAPIView(APIView):
         tags=["Tax Management"],
     )
     def get(self, request):
+        search_query = request.query_params.get('search', None)
         user = request.user.profile if request.user.is_authenticated else None
 
         try:
@@ -502,7 +522,12 @@ class InstitutionTaxListAPIView(APIView):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=404)
 
-        taxes = InstitutionTax.objects.filter(institution=institution)
+        taxes = InstitutionTax.objects.filter(institution=institution, deleted_at__isnull=True)
+
+        if search_query:
+            taxes = taxes.filter(
+                Q(tax_name__icontains=search_query)
+            )
 
         serializer = InstitutionTaxSerializer(taxes, many=True)
 
@@ -591,6 +616,7 @@ class InstitutionTaxRuleListAPIView(APIView):
         tags=["Tax Rule Management"],
     )
     def get(self, request):
+        search_query = request.query_params.get('search', None)
         user = request.user.profile if request.user.is_authenticated else None
 
         try:
@@ -599,8 +625,16 @@ class InstitutionTaxRuleListAPIView(APIView):
             return Response({"detail": "Institution not found."}, status=404)
 
         tax_rules = InstitutionTaxRule.objects.filter(
-            institution_tax__institution=institution
+            institution_tax__institution=institution,
+            deleted_at__isnull=True
         )
+
+        if search_query:
+            tax_rules = tax_rules.filter(
+                Q(tax_rule_name__icontains=search_query) |
+                Q(institution_tax__name__icontains=search_query) |
+                Q(institution_tax__tax_name__icontains=search_query)
+            )
 
         serializer = InstitutionTaxRuleSerializer(tax_rules, many=True)
 
@@ -708,20 +742,30 @@ class BranchListAPIView(APIView):
         tags=["Branch Management"],
     )
     def get(self, request):
-        if request.user.is_staff:
-            branches = Branch.objects.all()
-        else:
-            branches = Branch.objects.filter(
+        search_query = request.query_params.get('search', None)
+
+        branches = Branch.objects.filter(
+
+            deleted_at__isnull=True
+        ).order_by("-created_at")
+
+        if not request.user.is_staff:
+            branches = branches.filter(
                 institution__institution_owner=request.user
             )
 
-        branches = branches.order_by("-created_at")
+        if search_query:
+            branches = branches.filter(
+                Q(branch_name__icontains=search_query) |
+                Q(branch_location__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginator_qs = paginator.paginate_queryset(branches, request)
 
         serializer = BranchSerializer(paginator_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
+
 
 
 class BranchDetailAPIView(APIView):
@@ -1037,9 +1081,15 @@ class DepartmentListAPIView(APIView):
         tags=["Department Management"],
     )
     def get(self, request, institution_id=None):
-        departments = Department.objects.filter(institution_id=institution_id).order_by(
+        search_query = request.query_params.get('search', None)
+        departments = Department.objects.filter(institution_id=institution_id,  deleted_at__isnull=True).order_by(
             "-created_at"
         )
+
+        if search_query:
+            departments = departments.filter(
+                Q(name__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginator_qs = paginator.paginate_queryset(departments, request)
         serializer = DepartmentSerializer(paginator_qs, many=True)

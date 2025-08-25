@@ -74,20 +74,20 @@ urlpatterns = [
         name="attendance-detail",
     ),
     path(
-        "employee-types/",
+        "employee-types/<int:institution_id>/",
         EmployeeTypeListCreateAPIView.as_view(),
         name="employee-type-list-create",
     ),
     path(
-        "employee-types/<int:pk>/",
+        "employee-types/detail/<int:pk>/",
         EmployeeTypeDetailAPIView.as_view(),
         name="employee-type-detail",
     ),
     path(
-        "work-types/", WorkTypeListCreateAPIView.as_view(), name="work-type-list-create"
+        "work-types/<int:institution_id>/", WorkTypeListCreateAPIView.as_view(), name="work-type-list-create"
     ),
     path(
-        "work-types/<int:pk>/", WorkTypeDetailAPIView.as_view(), name="work-type-detail"
+        "work-types/detail/<int:pk>/", WorkTypeDetailAPIView.as_view(), name="work-type-detail"
     ),
     path(
         "employee-contracts/<int:pk>/",

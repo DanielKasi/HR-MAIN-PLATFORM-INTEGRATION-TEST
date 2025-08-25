@@ -1,8 +1,8 @@
 "use client";
 
-import {useState, useEffect} from "react";
-import {Plus, Loader2, AlertTriangle, Info} from "lucide-react";
-import {Button} from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { Plus, Loader2, AlertTriangle, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,8 +12,8 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {Label} from "@/components/ui/label";
-import {Input} from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -21,18 +21,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Switch} from "@/components/ui/switch";
-import {toast} from "sonner";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 import type {
   IEmployeeTax,
 
   ITax,
   IEmployeeTaxFormData,
 } from "@/types/types.utils";
-import {taxAPI} from "@/lib/utils";
-import {formatCurrency} from "@/lib/helpers";
-import {CreateTaxDialog} from "@/components/taxes/create-tax-dialog";
-import {ContextSelector} from "../employee-allowances/context-selector";
+import { taxAPI } from "@/lib/utils";
+import { formatCurrency } from "@/lib/helpers";
+import { CreateTaxDialog } from "@/components/taxes/create-tax-dialog";
+import { ContextSelector } from "../employee-allowances/context-selector";
 
 interface ContextItem {
   id: number;
@@ -123,6 +123,9 @@ export function EmployeeTaxFormDialog({
         errors.effective_to = ["Effective to date must be after effective from date"];
       }
     }
+    if (!formData.effective_to) {
+      errors.effective_to = ["Effective to date is required"];
+    }
 
     if (selectedContext && selectedContextItems.length === 0) {
       errors.context = ["Please select at least one item"];
@@ -168,7 +171,7 @@ export function EmployeeTaxFormDialog({
         onSuccess(updatedTax as unknown as IEmployeeTax, true);
         toast.success("Employee tax updated successfully");
       } else {
-        const newTax = await taxAPI.createEmployeeTaxes({data: taxData});
+        const newTax = await taxAPI.createEmployeeTaxes({ data: taxData });
         onSuccess(newTax as unknown as IEmployeeTax, false);
         toast.success("Employee tax created successfully");
       }
@@ -220,7 +223,7 @@ export function EmployeeTaxFormDialog({
             <Select
               value={formData.institution_tax}
               onValueChange={(value) =>
-                setFormData({...formData, institution_tax: value})
+                setFormData({ ...formData, institution_tax: value })
               }
               disabled={saving}
             >
@@ -272,9 +275,10 @@ export function EmployeeTaxFormDialog({
               <Input
                 id="effective_from"
                 type="date"
+                required
                 value={formData.effective_from}
                 onChange={(e) =>
-                  setFormData({...formData, effective_from: e.target.value})
+                  setFormData({ ...formData, effective_from: e.target.value })
                 }
                 disabled={saving}
                 className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20"
@@ -294,9 +298,10 @@ export function EmployeeTaxFormDialog({
               <Input
                 id="effective_to"
                 type="date"
+                required
                 value={formData.effective_to}
                 onChange={(e) =>
-                  setFormData({...formData, effective_to: e.target.value})
+                  setFormData({ ...formData, effective_to: e.target.value })
                 }
                 disabled={saving}
                 className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20"

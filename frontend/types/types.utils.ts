@@ -1,5 +1,5 @@
-import {ReactNode} from "react";
-import {Branch, ICustomerProfile, IUser, IUserInstitution, Permission, Role, UserProfile} from ".";
+import { ReactNode } from "react";
+import { Branch, ICustomerProfile, IUser, IUserInstitution, Permission, Role, UserProfile } from ".";
 
 export enum CUSTOM_CODES {
   BLOCKED_BY_ADMIN = "BLOCKED_BY_ADMIN",
@@ -262,9 +262,9 @@ export interface IDepartment {
   id: number;
   name: string;
   description?: string | null;
-  institution: number; 
-  institution_details?: IUserInstitution | null; 
-  job_positions?: {id: number; name: string; description: string; department_id: number}[];
+  institution: number;
+  institution_details?: IUserInstitution | null;
+  job_positions?: { id: number; name: string; description: string; department_id: number }[];
 }
 
 
@@ -504,8 +504,8 @@ export interface IEmployee {
   marital_status: string;
   children_count: number;
   employee_profile_picture: string | null;
-  employee_type: number | IEmployeeType;
-  work_type: number | IWorkType;
+  employee_type: IEmployeeType;
+  work_type: IWorkType;
   payroll_branch: Branch | null;
   gender: string;
   salary: string;
@@ -554,6 +554,9 @@ export interface IInterviewStage {
   candidates_count: number;
 }
 
+export type IInterviewType = "online" | "in_person"
+
+
 export interface IInterview {
   updated_at: any;
   created_at: any;
@@ -568,7 +571,21 @@ export interface IInterview {
   rating?: number | null;
   location: string;
   interview_time: string;
-  interview_type: string;
+  interview_type: IInterviewType;
+}
+
+
+export interface IInterviewFormData {
+  job_position_application: number;
+  interview_stage: number;
+  interview_date: string;
+  feedback?: string | null;
+  rating?: number | null;
+  location: string;
+  interview_time: string;
+  interview_type: IInterviewType;
+  status: string;
+  created_by?: number;
 }
 
 export interface User {
@@ -579,7 +596,7 @@ export interface User {
   permissions?: string;
 }
 
-export interface EmployeeFormData {
+export interface IEmployeeFormData {
   user: Partial<User>;
   id: number;
   email: string;
@@ -616,7 +633,7 @@ export interface ICreateEmployeeForm {
   fullname: string;
   email: string;
   phone_number: string;
-  phone_number_country_code?:string;
+  phone_number_country_code?: string;
   position: number;
   department: number;
   work_type: number; // Added
@@ -635,7 +652,7 @@ export interface ICreateEmployeeForm {
   selected_branches: number[]; // Added for multi-branch selection
   emergency_contact_name: string;
   emergency_contact_phone: string;
-  emergency_contact_phone_country_code?:string
+  emergency_contact_phone_country_code?: string
   emergency_contact_relationship: string;
   marital_status: string;
   children_count: number;
@@ -759,35 +776,27 @@ export interface IBulkOnBoardingResponse {
   };
 }
 
-export interface IInterviewFormData {
-  job_position_application: number;
-  interview_stage: number;
-  interview_date: string;
-  feedback?: string | null;
-  rating?: number | null;
-  location: string;
-  interview_time: string;
-  interview_type: string;
-  status: string;
-  created_by: number;
-}
+
 
 export interface IWorkTypeFormData {
   name: string;
   code: string;
   description: string;
+  institution: number;
 }
 
 export interface IEmployeeTypeFormData {
   name: string;
   code: string;
   description: string;
+  institution: number;
 }
 
 // Response interfaces (what you get back from the API)
 export interface IWorkType {
   id: number;
   name: string;
+  institution: number;
   code?: string;
   description?: string;
   created_at?: string;
@@ -796,6 +805,7 @@ export interface IWorkType {
 
 export interface IEmployeeType {
   id: number;
+  institution: number;
   name: string;
   code?: string;
   description?: string;
@@ -904,7 +914,7 @@ export function convertFormToApiRequest(
   };
 }
 
-export interface DisciplineType {
+export interface IDisciplineType {
   id?: number;
   name: string;
   description: string;
@@ -913,29 +923,29 @@ export interface DisciplineType {
   created_at?: string;
 }
 
-export interface DisciplineTypeForm {
+export interface IDisciplineTypeFormData {
   name: string;
   description: string;
   severity: "low" | "medium" | "high" | "critical";
   is_active: boolean;
 }
 
-export interface DisciplineTypeRequest {
+export interface IDisciplineTypeRequest {
   name: string;
   description: string;
   severity: "low" | "medium" | "high" | "critical";
   is_active: boolean;
 }
 
-export interface DisciplineTypeResponse extends DisciplineTypeRequest {
+export interface DisciplineTypeResponse extends IDisciplineTypeRequest {
   id: number;
   created_at: string;
   updated_at: string;
 }
 
 export function convertDisciplineTypeFormToApiRequest(
-  formData: DisciplineTypeForm,
-): DisciplineTypeRequest {
+  formData: IDisciplineTypeFormData,
+): IDisciplineTypeRequest {
   return {
     name: formData.name,
     description: formData.description,
@@ -944,165 +954,39 @@ export function convertDisciplineTypeFormToApiRequest(
   };
 }
 
- export interface DisciplinaryAction {
-  id: string;
-  employee_name: string;
-  employee_department: string;
-  discipline_type: string;
-  discipline_severity: "low" | "medium" | "high" | "critical";
-  incident_date: string;
-  reported_date: string;
-  description: string;
-  evidence: string;
-  reported_by: string;
-  assigned_to: string;
-  status: "pending" | "in_progress" | "completed" | "dismissed";
-  action_taken: string;
-  resolution_date: string;
-  follow_up_required: boolean;
-  follow_up_date: string;
-  notes: string;
-}
+//  export interface IDisciplinaryAction {
+//   id: string;
+//   employee_name: string;
+//   employee_department: string;
+//   discipline_type: string;
+//   discipline_severity: "low" | "medium" | "high" | "critical";
+//   incident_date: string;
+//   reported_date: string;
+//   description: string;
+//   evidence: string;
+//   reported_by: string;
+//   assigned_to: string;
+//   status: "pending" | "in_progress" | "completed" | "dismissed";
+//   action_taken: string;
+//   resolution_date: string;
+//   follow_up_required: boolean;
+//   follow_up_date: string;
+//   notes: string;
+// }
 
-export interface DisciplinaryActionAPIResponse {
+export interface IDisciplinaryAction {
   id: number;
-  discipline_type: {
+  discipline_type?: {
     id: number;
     name: string;
     description: string;
     severity: "low" | "medium" | "high" | "critical";
     is_active: boolean;
     created_at: string;
-  };
-  employee: {
-    id: number;
-    user: {
-      id: number;
-      email: string;
-      fullname: string;
-      is_active: boolean;
-      is_email_verified: boolean;
-      is_password_verified: boolean;
-      is_staff: boolean;
-      roles: any[];
-      branches: any[];
-      permissions: any[];
-    };
-    email: string;
-    phone_number: string;
-    position: {
-      id: number;
-      name: string;
-      department_id: number;
-    };
-    department: {
-      id: number;
-      name: string;
-      institution_id: number;
-    };
-    roles: any[];
-    date_of_birth: string | null;
-    date_of_joining: string;
-    address: string;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-    experience: number;
-    qualifications: string | null;
-    skills: string | null;
-    emergency_contact_name: string | null;
-    emergency_contact_phone: string | null;
-    emergency_contact_relationship: string | null;
-    marital_status: string;
-    children_count: number;
-    employee_profile_picture: string | null;
-  };
-  reported_by: {
-    id: number;
-    user: {
-      id: number;
-      email: string;
-      fullname: string;
-      is_active: boolean;
-      is_email_verified: boolean;
-      is_password_verified: boolean;
-      is_staff: boolean;
-      roles: any[];
-      branches: any[];
-      permissions: any[];
-    };
-    email: string;
-    phone_number: string;
-    position: {
-      id: number;
-      name: string;
-      department_id: number;
-    };
-    department: {
-      id: number;
-      name: string;
-      institution_id: number;
-    };
-    roles: any[];
-    date_of_birth: string | null;
-    date_of_joining: string;
-    address: string;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-    experience: number;
-    qualifications: string | null;
-    skills: string | null;
-    emergency_contact_name: string | null;
-    emergency_contact_phone: string | null;
-    emergency_contact_relationship: string | null;
-    marital_status: string;
-    children_count: number;
-    employee_profile_picture: string | null;
-  };
-  assigned_to: {
-    id: number;
-    user: {
-      id: number;
-      email: string;
-      fullname: string;
-      is_active: boolean;
-      is_email_verified: boolean;
-      is_password_verified: boolean;
-      is_staff: boolean;
-      roles: any[];
-      branches: any[];
-      permissions: any[];
-    };
-    email: string;
-    phone_number: string;
-    position: {
-      id: number;
-      name: string;
-      department_id: number;
-    };
-    department: {
-      id: number;
-      name: string;
-      institution_id: number;
-    };
-    roles: any[];
-    date_of_birth: string | null;
-    date_of_joining: string;
-    address: string;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-    experience: number;
-    qualifications: string | null;
-    skills: string | null;
-    emergency_contact_name: string | null;
-    emergency_contact_phone: string | null;
-    emergency_contact_relationship: string | null;
-    marital_status: string;
-    children_count: number;
-    employee_profile_picture: string | null;
   } | null;
+  employee: IEmployee;
+  reported_by: IEmployee;
+  assigned_to: IEmployee | null;
   incident_date: string;
   reported_date: string;
   description: string;
@@ -1118,7 +1002,7 @@ export interface DisciplinaryActionAPIResponse {
 }
 
 export const transformDisciplinaryActionData = (
-  apiData: DisciplinaryActionAPIResponse[] | null,
+  apiData: IDisciplinaryAction[] | null,
 ) => {
   if (!apiData) return [];
 
@@ -1171,17 +1055,7 @@ export const transformDisciplinaryActionData = (
   });
 };
 
-export interface LeaveType {
-  name: string;
-  category: "annual" | "sick" | "personal" | "maternity" | "paternity" | "emergency" | "unpaid";
-  description: string;
-  max_days_per_year: number;
-  carry_forward_allowed: boolean;
-  max_carry_forward_days: number;
-  is_active: boolean;
-  requires_document: boolean;
-  gender_specific: "male" | "female" | "all" | null;
-}
+
 
 export interface ILeaveTypeFormData {
   name: string;
@@ -1195,32 +1069,25 @@ export interface ILeaveTypeFormData {
   gender_specific: "male" | "female" | "all" | null;
 }
 
-export interface ILeaveType extends LeaveType {
+export interface ILeaveType {
   id: number;
   created_at?: string;
   updated_at?: string;
+  name: string;
+  category: "annual" | "sick" | "personal" | "maternity" | "paternity" | "emergency" | "unpaid";
+  description: string;
+  max_days_per_year: number;
+  carry_forward_allowed: boolean;
+  max_carry_forward_days: number;
+  is_active: boolean;
+  requires_document: boolean;
+  gender_specific: "male" | "female" | "all" | null;
 }
 
 export interface ILeaveBalance {
   id: number;
-  employee:
-    | number
-    | {
-        id: number;
-        user: {
-          id: number;
-          fullname?: string;
-          first_name?: string;
-          last_name?: string;
-        };
-        employee_id: string;
-      };
-  leave_type:
-    | number
-    | {
-        id: number;
-        name: string;
-      };
+  employee: IEmployee;
+  leave_type: ILeaveType;
   available_days: string | number;
   institution: number;
   year: number;
@@ -1573,9 +1440,9 @@ export interface IGeneratedDocumentTemplate {
 }
 
 export interface ICountry {
-  name: {common: string};
+  name: { common: string };
   cca2: string;
-  idd?: {root?: string; suffixes?: string[]};
+  idd?: { root?: string; suffixes?: string[] };
 }
 
 export type ApprovalStepApprover = {
@@ -1903,8 +1770,8 @@ export interface ITaxRuleFormData {
 }
 
 // Legacy interfaces for backward compatibility
-export interface Itax extends ITax {}
-export interface ItaxRules extends ITaxRule {}
+export interface Itax extends ITax { }
+export interface ItaxRules extends ITaxRule { }
 
 export interface IAssetCategory {
   id: number;
@@ -1951,12 +1818,12 @@ export interface IAssetHistory {
   id: number;
   asset: number | IAsset;
   event_type:
-    | "allocated"
-    | "returned"
-    | "maintenance"
-    | "decommissioned"
-    | "created"
-    | "reassigned";
+  | "allocated"
+  | "returned"
+  | "maintenance"
+  | "decommissioned"
+  | "created"
+  | "reassigned";
   performed_by: number | UserProfile;
   affected_user: number | UserProfile;
   notes: string | null;
