@@ -1,5 +1,5 @@
 from datetime import datetime
-from employee.models import Employee
+from employee.models import Employee, WorkType, EmployeeType
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
@@ -52,6 +52,9 @@ from django.db import transaction
 from utilities.default_data import default_data
 import json
 import uuid
+import json
+import os
+from decimal import Decimal
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -127,12 +130,136 @@ class InstitutionListAPIView(APIView):
                 "departments": departments_data,
             },
         )
+        
         if serializer.is_valid():
-            institution = serializer.save()
-            return Response(
-                InstitutionSerializer(institution, context={"user": request.user}).data,
-                status=status.HTTP_201_CREATED,
-            )
+            try:
+                institution = serializer.save()
+                logger.info(f"Institution created: {institution.institution_name}, Country: {institution.country_code}")
+
+                # Load defaults from JSON file
+                current_dir = os.path.dirname(__file__)  # institution folder
+                backend_dir = os.path.dirname(current_dir)  # backend folder
+                defaults_path = os.path.join(backend_dir, 'utilities', 'tax_rules.json')
+                defaults = {}
+                
+                try:
+                    with open(defaults_path, 'r') as f:
+                        defaults = json.load(f)
+                    logger.info(f"Successfully loaded defaults from {defaults_path}")
+                except FileNotFoundError:
+                    logger.error(f"Tax rules file not found at: {defaults_path}")
+                    return Response(
+                        {"detail": f"Tax rules configuration file not found at {defaults_path}"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    )
+                except json.JSONDecodeError as e:
+                    logger.error(f"Invalid JSON in tax rules file: {str(e)}")
+                    return Response(
+                        {"detail": "Invalid tax rules configuration file format"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    )
+
+                # Create global defaults (employee types and work types)
+                global_data = defaults.get('global', {})
+                logger.info(f"Global data found: {bool(global_data)}")
+                
+                # Create Employee Types
+                employee_types_data = global_data.get('employee_types', [])
+                logger.info(f"Creating {len(employee_types_data)} employee types")
+                
+                for et_data in employee_types_data:
+                    try:
+                        employee_type = EmployeeType.objects.create(
+                            institution=institution,
+                            **et_data
+                        )
+                        logger.info(f"Created employee type: {employee_type.name}")
+                    except Exception as e:
+                        logger.error(f"Error creating employee type {et_data.get('name', 'Unknown')}: {str(e)}")
+
+                # Create Work Types
+                work_types_data = global_data.get('work_types', [])
+                logger.info(f"Creating {len(work_types_data)} work types")
+                
+                for wt_data in work_types_data:
+                    try:
+                        work_type = WorkType.objects.create(
+                            institution=institution,
+                            **wt_data
+                        )
+                        logger.info(f"Created work type: {work_type.name}")
+                    except Exception as e:
+                        logger.error(f"Error creating work type {wt_data.get('name', 'Unknown')}: {str(e)}")
+
+                # Create country-specific taxes if available
+                country = institution.country_code
+                logger.info(f"Institution country code: {country}")
+                
+                if country and country in defaults:
+                    country_data = defaults[country]
+                    taxes_data = country_data.get('taxes', [])
+                    logger.info(f"Creating {len(taxes_data)} taxes for country {country}")
+                    
+                    for tax_data in taxes_data:
+                        try:
+                            tax = InstitutionTax.objects.create(
+                                institution=institution,
+                                tax_name=tax_data['tax_name'],
+                                tax_status=tax_data['tax_status'],
+                                created_by=request.user,  # Add created_by
+                            )
+                            logger.info(f"Created tax: {tax.tax_name}")
+                            
+                            # Create tax rules
+                            rules_data = tax_data.get('rules', [])
+
+                            
+                            for rule_data in rules_data:
+                                try:
+                                    # Create a copy to avoid modifying the original data
+                                    rule_data_copy = rule_data.copy()
+                                    
+                                    # Convert string values to Decimal where applicable
+                                    decimal_fields = ['tax_rule_percentage', 'tax_rule_fixed_amount', 'salary_from', 'salary_to']
+                                    for field in decimal_fields:
+                                        if field in rule_data_copy and rule_data_copy[field] is not None:
+                                            try:
+                                                rule_data_copy[field] = Decimal(str(rule_data_copy[field]))
+                                            except (ValueError, TypeError) as e:
+                                                logger.error(f"Error converting {field} to Decimal: {str(e)}")
+                                                rule_data_copy[field] = None
+
+                                    tax_rule = InstitutionTaxRule.objects.create(
+                                        institution_tax=tax,
+                                        created_by=request.user,  # Add created_by
+                                        **rule_data_copy
+                                    )
+
+                                    
+                                except Exception as e:
+                                    logger.error(f"Error creating tax rule {rule_data.get('tax_rule_name', 'Unknown')}: {str(e)}")
+                                    
+                        except Exception as e:
+                            logger.error(f"Error creating tax {tax_data.get('tax_name', 'Unknown')}: {str(e)}")
+                else:
+                    if not country:
+                        logger.warning(f"No country code determined for institution {institution.institution_name}")
+                    else:
+                        logger.warning(f"No tax defaults found for country '{country}'. Available countries: {list(defaults.keys())}")
+
+                return Response(
+                    InstitutionSerializer(institution, context={"user": request.user}).data,
+                    status=status.HTTP_201_CREATED,
+                )
+            
+            except Exception as e:
+                logger.error(f"Error creating institution: {str(e)}")
+                import traceback
+                logger.error(f"Full traceback: {traceback.format_exc()}")
+                return Response(
+                    {"detail": "An error occurred while creating the institution. Please try again."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
         return Response(
             {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
@@ -990,7 +1117,7 @@ class UserBranchListCreateView(APIView):
         if serializer.is_valid():
             user_branch = serializer.save()
 
-            from employee.models import Employee
+            
 
             try:
                 employee = Employee.objects.get(user=user_branch.user)

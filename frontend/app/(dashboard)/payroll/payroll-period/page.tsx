@@ -1,10 +1,10 @@
 "use client";
 
-import {useState, useEffect, useRef} from "react";
-import {useSelector} from "react-redux";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
+import { useState, useEffect, useRef } from "react";
+import { useSelector } from "react-redux";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -21,8 +21,8 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Badge} from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,7 +46,7 @@ import {
   X,
   Download,
 } from "lucide-react";
-import {toast} from "sonner";
+import { toast } from "sonner";
 import Link from "next/link";
 import {
   createPayrollPeriod,
@@ -59,13 +59,13 @@ import {
   downloadPayrollPasslipsReport,
   showErrorToast,
 } from "@/lib/utils";
-import {IPayrollPeriod, IPayrollPeriodFormData, IEmployee, IPayslip} from "@/types/types.utils";
-import {selectSelectedInstitution, selectAccessToken} from "@/store/auth/selectors";
+import { IPayrollPeriod, IPayrollPeriodFormData, IEmployee, IPayslip } from "@/types/types.utils";
+import { selectSelectedInstitution, selectAccessToken } from "@/store/auth/selectors";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import {PERMISSION_CODES} from "@/types/types.utils";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
-import {TableSkeleton} from "@/components/common/table-skeleton";
-import {Card, CardHeader} from "@/components/ui/card";
+import { PERMISSION_CODES } from "@/types/types.utils";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { TableSkeleton } from "@/components/common/table-skeleton";
+import { Card, CardHeader } from "@/components/ui/card";
 
 interface ValidationResult {
   name?: string;
@@ -137,7 +137,7 @@ export default function PayrollPeriods() {
         formData.name === "" ||
         formData.name === generatePeriodName(formData.start_date, formData.end_date)
       ) {
-        setFormData((prev) => ({...prev, name: generatedName}));
+        setFormData((prev) => ({ ...prev, name: generatedName }));
       }
     }
   }, [formData.start_date, formData.end_date, editingPeriod]);
@@ -162,7 +162,7 @@ export default function PayrollPeriods() {
       if (formData.start_date && formData.end_date) {
         const duration = Math.ceil(
           (new Date(formData.end_date).getTime() - new Date(formData.start_date).getTime()) /
-            (1000 * 60 * 60 * 24),
+          (1000 * 60 * 60 * 24),
         );
         if (duration > 365) {
           errors.warning =
@@ -284,9 +284,9 @@ export default function PayrollPeriods() {
     try {
       await deletePayrollPeriod(id);
       toast.success("Payroll period deleted successfully");
-        refreshTableRef.current?.();
+      refreshTableRef.current?.();
     } catch (error: any) {
-      showErrorToast({error, defaultMessage: "Failed to delete payroll period"});
+      showErrorToast({ error, defaultMessage: "Failed to delete payroll period" });
     }
     setPeriodToDelete(null);
   };
@@ -317,9 +317,9 @@ export default function PayrollPeriods() {
 
     try {
       toast.loading("Downloading payroll passlips report...");
-      await downloadPayrollPasslipsReport({accessToken, period_id});
+      await downloadPayrollPasslipsReport({ accessToken, period_id });
     } catch (error) {
-      showErrorToast({error, defaultMessage: "Failed to download payroll passlips report."});
+      showErrorToast({ error, defaultMessage: "Failed to download payroll passlips report." });
     } finally {
       setIsExcelPayslipsReportDownloading(false);
     }
@@ -423,7 +423,7 @@ export default function PayrollPeriods() {
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               // Store refresh function in ref when component mounts/updates
               useEffect(() => {
                 refreshTableRef.current = refresh;
@@ -504,7 +504,7 @@ export default function PayrollPeriods() {
                                   {Math.ceil(
                                     (new Date(period.end_date).getTime() -
                                       new Date(period.start_date).getTime()) /
-                                      (1000 * 60 * 60 * 24),
+                                    (1000 * 60 * 60 * 24),
                                   )}{" "}
                                   days
                                 </div>
@@ -517,11 +517,10 @@ export default function PayrollPeriods() {
                             </TableCell>
                             <TableCell>
                               <Badge
-                                className={`font-medium px-3 py-1 ${
-                                  period.is_processed
+                                className={`font-medium px-3 py-1 ${period.is_processed
                                     ? "bg-green-100 text-green-800 border-green-200"
                                     : "bg-yellow-100 text-yellow-800 border-yellow-200"
-                                }`}
+                                  }`}
                               >
                                 <div className="flex items-center gap-1">
                                   {period.is_processed ? (
@@ -622,12 +621,13 @@ export default function PayrollPeriods() {
                             value={formData.name}
                             onChange={(e) => handleInputChange("name", e.target.value)}
                             disabled={saving}
-                            className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
-                              validationErrors.name
-                                ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                                : ""
-                            }`}
+                            className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.name ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+                              }`}
                           />
+                          <p className="text-xs text-gray-500 mt-1 flex items-center">
+                            <Info className="h-3 w-3 mr-1" />
+                            Autogenerated from dates; you can edit as needed.
+                          </p>
                           {validationErrors.name && (
                             <p className="text-xs text-red-500 mt-1 flex items-center">
                               <AlertTriangle className="h-3 w-3 mr-1" />
@@ -648,11 +648,10 @@ export default function PayrollPeriods() {
                             value={formData.start_date}
                             onChange={(e) => handleInputChange("start_date", e.target.value)}
                             disabled={saving}
-                            className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
-                              validationErrors.start_date
+                            className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.start_date
                                 ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                                 : ""
-                            }`}
+                              }`}
                           />
                           {validationErrors.start_date && (
                             <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -672,11 +671,10 @@ export default function PayrollPeriods() {
                             onChange={(e) => handleInputChange("end_date", e.target.value)}
                             disabled={saving}
                             min={formData.start_date}
-                            className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
-                              validationErrors.end_date
+                            className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.end_date
                                 ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                                 : ""
-                            }`}
+                              }`}
                           />
                           {validationErrors.end_date && (
                             <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -695,11 +693,10 @@ export default function PayrollPeriods() {
                             value={formData.pay_date}
                             onChange={(e) => handleInputChange("pay_date", e.target.value)}
                             disabled={saving}
-                            className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
-                              validationErrors.pay_date
+                            className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.pay_date
                                 ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                                 : ""
-                            }`}
+                              }`}
                           />
                           {validationErrors.pay_date && (
                             <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -748,52 +745,52 @@ export default function PayrollPeriods() {
 
                   {/* Delete Confirmation Dialog */}
                   {periodToDelete &&
-                  <Dialog
-                    open={!!periodToDelete}
-                    onOpenChange={(open) => !open && setPeriodToDelete(null)}
-                  >
-                    <DialogContent className="sm:max-w-[500px] rounded-2xl border-0 shadow-2xl">
-                      <DialogHeader className="space-y-4 pb-6">
-                        <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto">
-                          <Trash2 className="w-8 h-8 text-red-600" />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold text-gray-900 text-center">
-                          Delete Payroll Period
-                        </DialogTitle>
-                        <DialogDescription className="text-gray-600 text-center text-base leading-relaxed">
-                          Are you sure you want to delete the payroll period{" "}
-                          <span className="font-semibold text-gray-900">"{periodToDelete.name}"</span>? This
-                          action cannot be undone.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <DialogFooter>
-                        <Button
-                          variant="outline"
-                          onClick={() => setPeriodToDelete(null)}
-                          disabled={saving}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          onClick={() => {
-                            handleDelete(periodToDelete.id);
-                            refresh();
-                          }}
-                          disabled={saving}
-                        >
-                          {saving ? (
-                            <>
-                              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                              Deleting...
-                            </>
-                          ) : (
-                            "Delete Permanently"
-                          )}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                    <Dialog
+                      open={!!periodToDelete}
+                      onOpenChange={(open) => !open && setPeriodToDelete(null)}
+                    >
+                      <DialogContent className="sm:max-w-[500px] rounded-2xl border-0 shadow-2xl">
+                        <DialogHeader className="space-y-4 pb-6">
+                          <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto">
+                            <Trash2 className="w-8 h-8 text-red-600" />
+                          </div>
+                          <DialogTitle className="text-2xl font-bold text-gray-900 text-center">
+                            Delete Payroll Period
+                          </DialogTitle>
+                          <DialogDescription className="text-gray-600 text-center text-base leading-relaxed">
+                            Are you sure you want to delete the payroll period{" "}
+                            <span className="font-semibold text-gray-900">"{periodToDelete.name}"</span>? This
+                            action cannot be undone.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <Button
+                            variant="outline"
+                            onClick={() => setPeriodToDelete(null)}
+                            disabled={saving}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={() => {
+                              handleDelete(periodToDelete.id);
+                              refresh();
+                            }}
+                            disabled={saving}
+                          >
+                            {saving ? (
+                              <>
+                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                Deleting...
+                              </>
+                            ) : (
+                              "Delete Permanently"
+                            )}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   }
                 </>
               );
