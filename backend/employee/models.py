@@ -44,19 +44,7 @@ class EmployeeType(UtilityBaseModel):
     def __str__(self):
         return self.name
 
-    class Meta:
-        constraints = [
-            UniqueConstraint(
-                fields=["name"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_type_name",
-            ),
-            UniqueConstraint(
-                fields=["code"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_type_code",
-            ),
-        ]
+
 
 
 class WorkType(UtilityBaseModel):
@@ -68,19 +56,7 @@ class WorkType(UtilityBaseModel):
     def __str__(self):
         return self.name
 
-    class Meta:
-        constraints = [
-            UniqueConstraint(
-                fields=["name"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_work_type_name",
-            ),
-            UniqueConstraint(
-                fields=["code"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_work_type_code",
-            ),
-        ]
+
 
 
 class Employee(UtilityBaseModel):
