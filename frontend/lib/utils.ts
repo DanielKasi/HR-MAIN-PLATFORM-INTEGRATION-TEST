@@ -3679,6 +3679,8 @@ export const bulkCreatePayrollPeriods = async ({
   }
 };
 
+
+
 export const validatePayrollPeriodFormData = (
   data: Partial<IPayrollPeriodFormData>,
 ): { isValid: boolean; errors: string[] } => {
@@ -3728,37 +3730,32 @@ export const validatePayrollPeriodFormData = (
   };
 };
 
-export const generatePeriodName = (startDate: string, endDate: string): string => {
+export function generatePeriodName(startDate: string, endDate: string): string {
+  if (!startDate || !endDate) {
+    return '';
+  }
+
   const start = new Date(startDate);
   const end = new Date(endDate);
 
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
+  // Optional: Calculate duration in days to customize name (e.g., for weekly vs. monthly)
+  const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
-  const startMonth = monthNames[start.getMonth()];
-  const endMonth = monthNames[end.getMonth()];
+  // Example logic: If ~7 days, name as "Week X - Month Year"; if ~30 days, "Month Year"
+  const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long' });
   const year = start.getFullYear();
 
-  if (start.getMonth() === end.getMonth()) {
-    // Same month
-    return `${startMonth} ${year}`;
+  if (durationDays <= 10) {
+    // Weekly example: Determine week number in the month
+    const weekNumber = Math.ceil(start.getDate() / 7);
+    const monthName = monthFormatter.format(start);
+    return `Week ${weekNumber} - ${monthName} ${year}`;
   } else {
-    // Different months
-    return `${startMonth} - ${endMonth} ${year}`;
+    // Monthly default: "August 2025"
+    const monthName = monthFormatter.format(start);
+    return `${monthName} ${year}`;
   }
-};
+}
 
 export const checkPeriodOverlap = async ({
   institutionId,
