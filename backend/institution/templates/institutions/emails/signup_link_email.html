@@ -98,7 +98,7 @@
         <!-- Main Content -->
         <tr>
             <td class="content-padding" style="padding: 40px 30px; color: #1f2937;">
-                <h2 style="font-size: 24px; font-weight: 600; margin: 0 0 20px 0; color: #111827;">Hello {{ user.fullname }},</h2>
+                <h2 style="font-size: 24px; font-weight: 600; margin: 0 0 20px 0; color: #111827;">Hello {{ personalized_greeting|default:user.fullname|default:"there" }},</h2>
                 
                 <p style="font-size: 16px; line-height: 1.7; margin-bottom: 25px; color: #4b5563;">
                     We're thrilled to have you join the BAIFAM HR community! To get started and secure your account, please verify your email address by clicking the button below.

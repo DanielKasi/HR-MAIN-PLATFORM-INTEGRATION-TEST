@@ -485,7 +485,7 @@ const LeavePolicyComponent = () => {
                             checked={formData.requires_manager_approval}
                             onChange={(e) => setFormData({ ...formData, requires_manager_approval: e.target.checked })}
                             disabled={isSubmitting}
-                            className="h-5 w-5 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                            className="h-5 w-5 text-myOrange focus:ring-orange-500 border-gray-300 rounded"
                           />
                           <Label htmlFor="requires_manager_approval" className="text-sm font-medium text-gray-800">
                             Requires Manager Approval
@@ -498,7 +498,7 @@ const LeavePolicyComponent = () => {
                             checked={formData.requires_hr_approval}
                             onChange={(e) => setFormData({ ...formData, requires_hr_approval: e.target.checked })}
                             disabled={isSubmitting}
-                            className="h-5 w-5 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                            className="h-5 w-5 text-myOrange focus:ring-orange-500 border-gray-300 rounded"
                           />
                           <Label htmlFor="requires_hr_approval" className="text-sm font-medium text-gray-800">
                             Requires HR Approval
@@ -639,7 +639,7 @@ const LeavePolicyComponent = () => {
                           checked={formData.requires_manager_approval}
                           onChange={(e) => setFormData({ ...formData, requires_manager_approval: e.target.checked })}
                           disabled={isSubmitting}
-                          className="h-5 w-5 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                          className="h-5 w-5 text-myOrange focus:ring-orange-500 border-gray-300 rounded"
                         />
                         <Label htmlFor="edit-requires_manager_approval" className="text-sm font-medium text-gray-800">
                           Requires Manager Approval
@@ -652,7 +652,7 @@ const LeavePolicyComponent = () => {
                           checked={formData.requires_hr_approval}
                           onChange={(e) => setFormData({ ...formData, requires_hr_approval: e.target.checked })}
                           disabled={isSubmitting}
-                          className="h-5 w-5 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                          className="h-5 w-5 text-myOrange focus:ring-orange-500 border-gray-300 rounded"
                         />
                         <Label htmlFor="edit-requires_hr_approval" className="text-sm font-medium text-gray-800">
                           Requires HR Approval

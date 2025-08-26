@@ -78,7 +78,7 @@ const getStatusIcon = (status: string) => {
     case "planning":
       return <Target className="h-4 w-4 text-yellow-600" />;
     case "on_hold":
-      return <Pause className="h-4 w-4 text-orange-600" />;
+      return <Pause className="h-4 w-4 text-myOrange" />;
     case "cancelled":
       return <XCircle className="h-4 w-4 text-red-600" />;
     default:

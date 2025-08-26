@@ -17,6 +17,7 @@ urlpatterns = [
 
     path("institution/<int:institution_id>/job-application/", JobAdvertApplicationListAPI.as_view()),
     path("job-application/<int:application_id>/", JobAdvertApplicationDetailAPI.as_view()),
+    
 
     path("institution/<int:institution_id>/interview-stage/", InterviewStageListAPI.as_view()),
     path("interview-stage/<int:stage_id>/", InterviewStageDetailAPI.as_view()),

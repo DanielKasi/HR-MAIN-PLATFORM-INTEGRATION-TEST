@@ -1229,7 +1229,7 @@ export default function UpdateEmployeePage() {
                     {step.id}
                   </div>
                   <span
-                    className={`ml-2 text-sm ${currentStep >= step.id ? "text-orange-600 font-medium" : "text-gray-500"
+                    className={`ml-2 text-sm ${currentStep >= step.id ? "text-myOrange font-medium" : "text-gray-500"
                       }`}
                   >
                     {step.title}

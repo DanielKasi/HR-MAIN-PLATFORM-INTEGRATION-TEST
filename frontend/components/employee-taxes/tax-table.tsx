@@ -136,7 +136,7 @@ export function TaxTable({
                 <TableCell>
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
-                      <User className="h-4 w-4 text-orange-600" />
+                      <User className="h-4 w-4 text-myOrange" />
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">

@@ -279,6 +279,31 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+              <h2 className="text-lg font-semibold mb-6">Leave Management</h2>
+              <Separator className="my-6" />
+
+              <div className="space-y-4">
+                <Link
+                  href="#"
+                  className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+                >
+                  <Book className="w-5 h-5 text-gray-500" />
+                  {/* <Icon icon={"hugeicons:notebook"}  className="w-5 h-5 text-gray-500" /> */}
+                  <span>Leave Types</span>
+                </Link>
+                <Link
+                  href="#"
+                  className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+                >
+                  <BookAIcon className="w-5 h-5 text-gray-500" />
+                  <span>Leave Policies</span>
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </ProtectedPage>
