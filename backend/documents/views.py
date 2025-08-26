@@ -644,6 +644,20 @@ class DocumentStatusUpdateView(BaseDocumentView):
             "hr_email": getattr(settings, "HR_EMAIL", settings.DEFAULT_FROM_EMAIL),
         }
 
+        def get_salutation(gender, name=""):
+            """Generate appropriate salutation based on gender."""
+            if not gender:
+                return f"Dear {name}" if name else "Dear Sir/Madam"
+            
+            gender_lower = gender.lower()
+            if gender_lower in ['male', 'm']:
+                return f"Dear Mr. {name}" if name else "Dear Sir"
+            elif gender_lower in ['female', 'f']:
+                return f"Dear Ms. {name}" if name else "Dear Madam"
+            else:
+                # For non-binary, prefer, or other gender identities
+                return f"Dear {name}" if name else "Dear Sir/Madam"
+
         if context == "onboarding":
             job_position = (
                 context_obj.application.job_position_advert.job_position
@@ -651,13 +665,22 @@ class DocumentStatusUpdateView(BaseDocumentView):
                 and context_obj.application.job_position_advert
                 else None
             )
+            
+            # Get gender for salutation
+            gender = None
+            employee_name = ""
+            if context_obj.application:
+                employee_name = context_obj.application.applicant_name or ""
+                # Try to get gender from applicant profile/user
+                if hasattr(context_obj.application, 'applicant') and context_obj.application.applicant:
+                    gender = getattr(context_obj.application.applicant, 'gender', None)
+                elif hasattr(context_obj.application, 'user') and context_obj.application.user:
+                    gender = getattr(context_obj.application.user, 'gender', None)
+            
             email_values.update(
                 {
-                    "employee_name": (
-                        context_obj.application.applicant_name
-                        if context_obj.application
-                        else ""
-                    ),
+                    "employee_name": employee_name,
+                    "salutation": get_salutation(gender, employee_name.split()[0] if employee_name else ""),
                     "position_title": job_position.name if job_position else "",
                     "institution_name": (
                         context_obj.application.job_position_advert.job_position.department.institution.institution_name
@@ -669,14 +692,18 @@ class DocumentStatusUpdateView(BaseDocumentView):
                     ),
                 }
             )
+            
         elif context == "employee":
+            gender = None
+            employee_name = ""
+            if hasattr(context_obj, "user") and context_obj.user:
+                employee_name = context_obj.user.fullname or ""
+                gender = getattr(context_obj.user, 'gender', None)
+            
             email_values.update(
                 {
-                    "employee_name": (
-                        context_obj.user.fullname
-                        if hasattr(context_obj, "user")
-                        else ""
-                    ),
+                    "employee_name": employee_name,
+                    "salutation": get_salutation(gender, employee_name.split()[0] if employee_name else ""),
                     "position_title": (
                         context_obj.job_position.name
                         if hasattr(context_obj, "job_position")
@@ -684,14 +711,18 @@ class DocumentStatusUpdateView(BaseDocumentView):
                     ),
                 }
             )
+            
         elif context == "leave":
+            gender = None
+            employee_name = ""
+            if hasattr(context_obj, "employee") and hasattr(context_obj.employee, "user"):
+                employee_name = context_obj.employee.user.fullname or ""
+                gender = getattr(context_obj.employee.user, 'gender', None)
+            
             email_values.update(
                 {
-                    "employee_name": (
-                        context_obj.employee.user.fullname
-                        if hasattr(context_obj.employee, "user")
-                        else ""
-                    ),
+                    "employee_name": employee_name,
+                    "salutation": get_salutation(gender, employee_name.split()[0] if employee_name else ""),
                     "leave_type": (
                         context_obj.leave_type
                         if hasattr(context_obj, "leave_type")
@@ -713,6 +744,7 @@ class DocumentStatusUpdateView(BaseDocumentView):
         for key in email_values:
             if key in placeholder_values:
                 email_values[key] = placeholder_values[key]
+        
         logger.debug(f"Email values for {context}: {email_values}")
         return email_values
 
