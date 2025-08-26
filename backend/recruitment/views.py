@@ -27,6 +27,8 @@ from .models import (
     RequiredDocument,
 )
 from django.utils import timezone
+from rest_framework.permissions import AllowAny
+
 
 
 
@@ -145,6 +147,7 @@ class JobPositionAdvertListAPI(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    permission_classes = [AllowAny]
     @extend_schema(
         responses={200: JobPositionAdvertWorkflowSerializer(many=True)},
         summary="List Job Position Adverts",
