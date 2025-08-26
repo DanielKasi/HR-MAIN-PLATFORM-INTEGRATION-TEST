@@ -21,7 +21,8 @@ from .views import (
     GoogleAuthCallbackView,
     UserDetailsWithInstitutions,
     CountryListAPIView,
-    ChangeEmailAndResendOTPAPIView
+    ChangeEmailAndResendOTPAPIView,
+    LogoutView
 )
 
 
@@ -41,6 +42,7 @@ urlpatterns = [
     path("resend-otp/", ResendOTPAPIView.as_view(), name="resend-otp"),
     path("login/", LoginView.as_view(), name="user-login"),
     path("token/refresh/", CustomTokenRefreshView.as_view(), name="token-refresh"),
+    path("logout/", LogoutView.as_view(), name="user-logout"),
     path("role/", RoleListAPIView.as_view(), name="role-list"),
     path("role/<int:role_id>/", RoleDetailAPIView.as_view(), name="role-detail"),
     path(
