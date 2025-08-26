@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import {useState, useEffect} from "react";
+import {useState, useEffect, useRef} from "react";
 import {useRouter, usePathname} from "next/navigation";
 import {
   ChevronDown,
@@ -51,6 +51,7 @@ import {
   fetchRemoteUserStart,
   fetchUpToDateInstitution,
   logoutStart,
+  userActivityDetected,
 } from "@/store/auth/actions";
 import FixedLoader from "@/components/fixed-loader";
 import {hasPermission} from "@/lib/helpers";
@@ -60,6 +61,7 @@ import CreateOrganisationWizard from "./create-organisation/page";
 import {selectSideBarOpened} from "@/store/miscellaneous/selectors";
 import {closeSideBar, openSideBar} from "@/store/miscellaneous/actions";
 import Link from "next/link";
+import LogoutWarningPopup from "@/components/inactivity/logout-warning-popup";
 
 export function hexToHSL(hex: string) {
   hex = hex.replace("#", "");
@@ -138,15 +140,21 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const isSideBarOpen = useSelector(selectSideBarOpened);
   const dispatch = useDispatch();
   const router = useRouter();
+  const appLayoutRef = useRef<HTMLDivElement|null>(null)
 
-  // useEffect(() => {
-  //   setIsPathLoading(true);
-  //   const timer = setTimeout(() => {
-  //     setIsPathLoading(false);
-  //   }, 500);
+  useEffect(() => {
+    const handleActivity = () => {
+      if (currentUser && appLayoutRef.current) {
+        dispatch(userActivityDetected());
+        
+      }
+    };
 
-  //   return () => clearTimeout(timer);
-  // }, [pathname]);
+    appLayoutRef.current?.addEventListener("mousedown", handleActivity);
+    return () => {
+      appLayoutRef.current?.removeEventListener("mousedown", handleActivity);
+    };
+  }, [dispatch, currentUser, appLayoutRef]);
 
   useEffect(() => {
     dispatch(fetchRemoteUserStart());
@@ -232,11 +240,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       ],
       requiredPermission: PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS,
     },
-    // {
-    //   title: "Onboarding",
-    //   href: "/on-boarding",
-    //   icon: <Icon height="20" icon="hugeicons:inbox-download" className="!w-6 !h-6" width="20" />,
-    // },
+
     {
       title: "Offboarding",
       href: "/off-boarding",
@@ -490,7 +494,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   };
 
   return (
-    <div className="flex h-screen bg-gray-100 overflow-hidden dashboard-layout">
+
+    <>
+    <div ref={appLayoutRef} className="flex h-screen bg-gray-100 overflow-hidden dashboard-layout">
       {/* Desktop Sidebar */}
       {!isMobile && (
         <div
@@ -716,5 +722,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
 
       {userIsLoading && <FixedLoader />}
     </div>
+    </>
+
   );
 }

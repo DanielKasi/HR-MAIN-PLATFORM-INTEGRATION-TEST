@@ -3,6 +3,7 @@ import apiRequest from "@/lib/apiRequest";
 import {getInstitutionById} from "@/lib/helpers";
 import {store} from "@/store";
 import {clearTemporaryPermissions, setTemporaryPermissions} from "@/store/auth/actions";
+import axios from "axios";
 
 export type LoginResponse = {
   tokens: {
@@ -54,6 +55,22 @@ export const fetchRemoteInstitutionById = async (
     return null;
   }
 };
+
+
+export const AUTH_API = {
+  refreshTokens: async ({refreshToken}:{refreshToken:string}) => {
+      const response  = await axios.post(
+            `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/user/token/refresh/`,
+            { refresh: refreshToken },
+            {
+              headers: {
+                "Content-Type": "application/json",
+              },
+            },
+          );
+        return response.data as LoginResponse
+  }
+}
 
 export function hasTemporaryPermissions(): boolean {
   const state = store.getState();

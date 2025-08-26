@@ -101,6 +101,9 @@ import {
   AttendanceResponse,
   IEmployeeTaxFormData,
   IEmployeeTax,
+  IInstitutionAnalytics,
+  ICalendar,
+  IEvent,
 } from "@/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -291,6 +294,19 @@ export const getJobPositions = async ({ institutionId, page = 1, search }: { ins
   const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/?${params.toString()}`);
   const data = response.data as IPaginatedResponse<IJobPosition>;
   return data.results;
+};
+
+
+export const getPaginatedJobPositions = async ({ institutionId, page = 1, search }: { institutionId: number, page?: number, search?: string }) => {
+  const params = new URLSearchParams({
+    page: page?.toString() || "1",
+  });
+
+  if (search) {
+    params.append("search", search);
+  }
+  const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/?${params.toString()}`);
+  return response.data as IPaginatedResponse<IJobPosition>;
 };
 
 export const getPaginatedJobPositionsFromUrl = async (url: string) => {
@@ -4991,6 +5007,12 @@ export const payrollAPI = {
 
 
 export const institutionAPI = {
+
+  getDasboardAnalytics: async ({institutionId}:{institutionId:number}) => {
+    const response  = await apiRequest.get(`/institution/${institutionId}/dashboard-analytics/`);
+    return response.data as IInstitutionAnalytics
+  },
+
   getWorkingDays: async () => {
     try {
       const response = await apiRequest.get("/institution/working-days/")
@@ -5668,10 +5690,10 @@ export const employeeAPI = {
 // Calendar API functions
 export const calendarAPI = {
   // Get calendar data for a specific institution and year
-  getInstitutionCalendar: async (year: number) => {
+  getInstitutionCalendar: async ({year}:{year:number, url?:string}) => {
     const response = await apiRequest.get(`calendar/institutions-calendar/?year=${year}`);
     if (response.status === 200) {
-      return response.data;
+      return response.data as ICalendar;
     } else {
       throw new Error('Failed to fetch calendar data');
     }
@@ -5682,7 +5704,7 @@ export const calendarAPI = {
   getEvents: async () => {
     const response = await apiRequest.get(`calendar/events/`);
     if (response.status === 200) {
-      return response.data;
+      return response.data as IPaginatedResponse<IEvent>;
     } else {
       throw new Error('Failed to fetch events');
     }

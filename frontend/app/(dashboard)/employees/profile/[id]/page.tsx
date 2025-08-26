@@ -34,7 +34,7 @@ import type {IEmployee} from "@/types/types.utils";
 import {toast} from "sonner";
 import { EmployeePayrollTable } from "@/components/employee/employee-payroll";
 import ContractsTable from "@/components/contracts/contracts-table";
-import EmployeeAttendance from "@/app/(dashboard)/dashboard/EmployeeAttendance";
+import EmployeeAttendance from "@/components/attendance/employee-attendance";
 import { formatCurrency } from "@/lib/helpers";
 import { useMobile } from "@/hooks/use-mobile";
 

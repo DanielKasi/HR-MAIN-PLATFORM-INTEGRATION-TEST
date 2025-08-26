@@ -148,7 +148,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-muted/40">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md shadow-none border-none md:shadow-sm md:border px-4">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-2">
             <ShoppingCart className="h-10 w-10 text-primary" />

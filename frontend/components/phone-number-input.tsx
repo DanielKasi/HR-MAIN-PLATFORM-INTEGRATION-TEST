@@ -79,14 +79,12 @@ export default function PhoneNumberInput({
 
 
   useEffect(() => {
-    console.log("\n\n Passed in value for phone number as : ", value)
     if(value && value != phoneNumber){
       setPhoneNumber(value);
     }
     if(defaultCountryCode && value){
       setPassedDefaultCountryCode(defaultCountryCode)
       if(!isValidPhoneNumber(defaultCountryCode+value, defaultCountryCode as CountryCode)){
-        console.log("\n\n Checking validity of number : ", defaultCountryCode+value , "With country code : ", defaultCountryCode)
         setPhoneError("Invalid phone number");
       }else{
         setPhoneError(null)

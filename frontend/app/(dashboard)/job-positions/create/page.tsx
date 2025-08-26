@@ -1,22 +1,22 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import { Briefcase, ArrowLeft, Check, Upload, X, FileText, Plus } from "lucide-react";
+import {useState, useEffect} from "react";
+import {useRouter} from "next/navigation";
+import {useSelector} from "react-redux";
+import {Briefcase, ArrowLeft, Check, Upload, X, FileText, Plus} from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Textarea} from "@/components/ui/textarea";
 
-import { CreateDepartmentDialog } from "@/components/dialogs/create-department-dialog";
+import {CreateDepartmentDialog} from "@/components/dialogs/create-department-dialog";
 
-import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
-import { getDepartments, getJobPositions, createJobPosition } from "@/lib/utils";
-import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
+import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
+import {getDepartments, getJobPositions, createJobPosition} from "@/lib/utils";
+import {SearchableSelect, SearchableSelectItem} from "@/components/searchable-select";
 
 import type {
   JobPositionFormData,
@@ -24,9 +24,9 @@ import type {
   IJobPosition,
   CreateJobPositionData,
 } from "@/types/types.utils";
-import { toast } from "sonner";
+import {toast} from "sonner";
 import RichTextDisplay from "@/components/common/rich-text-display";
-import { RichEditorField } from "@/components/common/rich-editor";
+import {RichEditorField} from "@/components/common/rich-editor";
 
 function formatWithCommas(value: string) {
   const num = value.replace(/,/g, "");
@@ -88,8 +88,8 @@ export default function CreateJobPositionPage() {
     try {
       setIsLoading(true);
       const [fetchedDepartments, fetchedJobPositions] = await Promise.all([
-        getDepartments({ institutionId: selectedInstitution.id }),
-        getJobPositions({ institutionId: selectedInstitution.id }),
+        getDepartments({institutionId: selectedInstitution.id}),
+        getJobPositions({institutionId: selectedInstitution.id}),
       ]);
 
       if (fetchedDepartments) {
@@ -106,9 +106,9 @@ export default function CreateJobPositionPage() {
   };
 
   const updateFormData = (field: keyof JobPositionFormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({...prev, [field]: value}));
     if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
+      setErrors((prev) => ({...prev, [field]: undefined}));
     }
   };
 
@@ -151,7 +151,11 @@ export default function CreateJobPositionPage() {
       newErrors.salary_max = "Please enter a valid maximum salary amount";
     }
 
-    if (formData.salary_min && formData.salary_max && Number(formData.salary_min) > Number(formData.salary_max)) {
+    if (
+      formData.salary_min &&
+      formData.salary_max &&
+      Number(formData.salary_min) > Number(formData.salary_max)
+    ) {
       newErrors.salary_max = "Maximum salary must be greater than minimum salary";
     }
 
@@ -226,13 +230,6 @@ export default function CreateJobPositionPage() {
     router.back();
   };
 
-  if (!selectedInstitution || !selectedBranch) {
-    return <div>Loading...</div>;
-  }
-
-  if (isLoading) {
-    return <div>Loading departments and job position/titles ...</div>;
-  }
 
   return (
     <div className="w-full h-full p-6">
@@ -252,10 +249,12 @@ export default function CreateJobPositionPage() {
                   </Button>
                   <CardTitle className="text-xl">Create New Job Position / Title </CardTitle>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Add a new job position/title to {selectedBranch.branch_name} -{" "}
-                  {selectedInstitution.institution_name}
-                </p>
+                {selectedBranch && selectedInstitution && (
+                  <p className="text-sm text-muted-foreground">
+                    Add a new job position/title to {selectedBranch.branch_name} -{" "}
+                    {selectedInstitution.institution_name}
+                  </p>
+                )}
               </div>
             </div>
           </CardHeader>
@@ -267,7 +266,7 @@ export default function CreateJobPositionPage() {
                 {/* Job Position/ Title  Name */}
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sm font-medium">
-                    Job Position / Title  Name *
+                    Job Position / Title Name *
                   </Label>
                   <Input
                     id="name"
@@ -285,54 +284,54 @@ export default function CreateJobPositionPage() {
                     Salary Range *
                   </Label>
                   <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">From </span>
+                      <Input
+                        id="salary_min"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="50,000"
+                        value={salaryMinDisplay}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          const numeric = unformat(raw);
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">From </span>
-                  <Input
-                    id="salary_min"
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="50,000"
-                    value={salaryMinDisplay}
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      const numeric = unformat(raw);
+                          if (!/^\d*$/.test(numeric)) return;
 
-                      if (!/^\d*$/.test(numeric)) return;
+                          setSalaryMinDisplay(formatWithCommas(numeric));
+                          updateFormData("salary_min", numeric);
+                        }}
+                        className={errors.salary_min ? "border-destructive" : ""}
+                      />
+                      {errors.salary_min && (
+                        <p className="text-sm text-destructive">{errors.salary_min}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">To </span>
+                      <Input
+                        id="salary_max"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="75,000"
+                        value={salaryMaxDisplay}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          const numeric = unformat(raw);
 
-                      setSalaryMinDisplay(formatWithCommas(numeric));
-                      updateFormData("salary_min", numeric);
-                    }}
-                    className={errors.salary_min ? "border-destructive" : ""}
-                  />
-                  {errors.salary_min && <p className="text-sm text-destructive">{errors.salary_min}</p>}
+                          if (!/^\d*$/.test(numeric)) return;
+
+                          setSalaryMaxDisplay(formatWithCommas(numeric));
+                          updateFormData("salary_max", numeric);
+                        }}
+                        className={errors.salary_max ? "border-destructive" : ""}
+                      />
+                      {errors.salary_max && (
+                        <p className="text-sm text-destructive">{errors.salary_max}</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">To </span>
-                    <Input
-                    id="salary_max"
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="75,000"
-                    value={salaryMaxDisplay}
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      const numeric = unformat(raw);
-
-                      if (!/^\d*$/.test(numeric)) return;
-
-                      setSalaryMaxDisplay(formatWithCommas(numeric));
-                      updateFormData("salary_max", numeric);
-                    }}
-                    className={errors.salary_max ? "border-destructive" : ""}
-                  />
-                  {errors.salary_max && <p className="text-sm text-destructive">{errors.salary_max}</p>}
-                  </div>
-                  </div>
-                  
                 </div>
-
-
 
                 {/* Department */}
                 <div className="space-y-2">
@@ -342,12 +341,7 @@ export default function CreateJobPositionPage() {
                     </Label>
                     <CreateDepartmentDialog
                       trigger={
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                        >
+                        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
                           <Plus className="h-4 w-4" />
                         </Button>
                       }
@@ -384,12 +378,13 @@ export default function CreateJobPositionPage() {
                   </Label>
                   <SearchableSelect
                     items={[
-                      { id: 0, label: "None", value: "none" },
+                      {id: 0, label: "None", value: "none"},
                       ...jobPositions.map((position) => ({
                         id: position.id,
                         label: `${position.name} - ${position.department_details?.name}`,
-                        value: `${position.name} ${position.department_details?.name}`.toLowerCase(),
-                      }))
+                        value:
+                          `${position.name} ${position.department_details?.name}`.toLowerCase(),
+                      })),
                     ]}
                     selectedItems={formData.reports_to ? [formData.reports_to] : [0]}
                     placeholder="Select a position (optional)"
@@ -402,15 +397,14 @@ export default function CreateJobPositionPage() {
                     popoverClassName="w-[500px]"
                   />
                 </div>
-
-
               </div>
               {/* Job Description */}
               <div className="space-y-2">
                 <Label htmlFor="description" className="text-sm font-medium">
                   Job Description *
                 </Label>
-                <RichEditorField id="description"
+                <RichEditorField
+                  id="description"
                   placeholder="Describe the job responsibilities, requirements, and qualifications..."
                   value={formData.description}
                   onChange={(value) => updateFormData("description", value)}
