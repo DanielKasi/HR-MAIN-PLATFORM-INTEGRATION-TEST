@@ -109,7 +109,7 @@ export function AllowanceTable({
                 </Badge>
               </TableCell>
               <TableCell>
-                <span className="text-lg font-semibold text-orange-600">
+                <span className="text-lg font-semibold text-myOrange">
                   {formatCurrency(getCalculatedAmount(allowance))}
                 </span>
               </TableCell>
@@ -145,7 +145,7 @@ export function AllowanceTable({
                       onClick={() => onEdit(allowance)}
                       className="cursor-pointer hover:bg-orange-50 focus:bg-orange-50"
                     >
-                      <Edit className="h-4 w-4 mr-2 text-orange-600" />
+                      <Edit className="h-4 w-4 mr-2 text-myOrange" />
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem

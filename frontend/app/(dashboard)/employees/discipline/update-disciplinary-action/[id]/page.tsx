@@ -320,7 +320,7 @@ export default function DisciplinaryUpdateForm() {
           <Card className="w-full">
             <CardContent className="flex items-center justify-center py-20">
               <div className="flex flex-col items-center gap-4">
-                <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
+                <Loader2 className="h-8 w-8 animate-spin text-myOrange" />
                 <p className="text-lg text-gray-600">Loading disciplinary action...</p>
               </div>
             </CardContent>

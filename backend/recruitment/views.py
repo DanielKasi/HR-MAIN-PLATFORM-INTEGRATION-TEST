@@ -185,6 +185,7 @@ class JobPositionAdvertListAPI(APIView):
 class JobPositionAdvertDetailAPI(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
+    permission_classes = [AllowAny]
     @extend_schema(
         responses={200: JobPositionAdvertWorkflowSerializer},
         summary="Get Job Position Advert",
@@ -238,6 +239,7 @@ class JobPositionAdvertDetailAPI(APIView):
 class JobAdvertApplicationListAPI(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
+    permission_classes = [AllowAny]
     @extend_schema(
         request=JobAdvertApplicationSerializer,
         responses={201: JobAdvertApplicationSerializer},
@@ -245,6 +247,7 @@ class JobAdvertApplicationListAPI(APIView):
         tags=["Recruitment"],
     )
     def post(self, request, institution_id):
+        print("Request body", request.data)
         serializer = JobAdvertApplicationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()

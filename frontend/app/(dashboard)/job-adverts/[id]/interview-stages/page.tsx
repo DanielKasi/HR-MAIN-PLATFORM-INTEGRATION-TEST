@@ -318,7 +318,7 @@ const getStageColors = (index: number) => {
   const colors = [
     { color: "text-blue-600", bgColor: "bg-blue-100" },
     { color: "text-purple-600", bgColor: "bg-purple-100" },
-    { color: "text-orange-600", bgColor: "bg-orange-100" },
+    { color: "text-myOrange", bgColor: "bg-orange-100" },
     { color: "text-yellow-600", bgColor: "bg-yellow-100" },
     { color: "text-green-600", bgColor: "bg-green-100" },
     { color: "text-emerald-600", bgColor: "bg-emerald-100" },
@@ -420,7 +420,7 @@ const CandidateHistoryDialog = ({
   const getRatingColor = (rating: number) => {
     if (rating >= 8) return "text-green-600 bg-green-100"
     if (rating >= 6) return "text-yellow-600 bg-yellow-100"
-    if (rating >= 4) return "text-orange-600 bg-orange-100"
+    if (rating >= 4) return "text-myOrange bg-orange-100"
     return "text-red-600 bg-red-100"
   }
 
@@ -2190,7 +2190,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
                                 const candidate = (viewMode === 'current' ? filteredCandidates : filteredHistoryCandidates).find(c => c.id === id)
                                 return candidate && !(candidate.feedback && candidate.rating && candidate.rating > 0)
                               }) && (
-                                  <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
+                                  <span className="text-xs text-myOrange bg-orange-100 px-2 py-1 rounded-full">
                                     Some candidates need feedback & rating first
                                   </span>
                                 )}

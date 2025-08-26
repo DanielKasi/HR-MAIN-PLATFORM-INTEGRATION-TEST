@@ -183,7 +183,7 @@ export const CreateAssetAllocationDialog = ({
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-orange-100 rounded-lg">
-              <Package className="h-5 w-5 text-orange-600" />
+              <Package className="h-5 w-5 text-myOrange" />
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">

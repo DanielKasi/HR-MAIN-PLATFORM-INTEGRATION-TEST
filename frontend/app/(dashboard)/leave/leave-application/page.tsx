@@ -1246,14 +1246,14 @@ const LeaveApplicationComponent = () => {
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Supporting Document</Label>
                   <div className="flex items-center gap-2 mt-1">
-                    <FileText className="h-4 w-4 text-orange-600" />
+                    <FileText className="h-4 w-4 text-myOrange" />
                     <span className="text-sm text-gray-900">
                       {renderSupportingDocumentName(viewingApplication.supporting_document)}
                     </span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-2 text-orange-600 hover:bg-orange-100"
+                      className="h-6 px-2 text-myOrange hover:bg-orange-100"
                       onClick={() =>
                         handleDownload(
                           getFileUrl(viewingApplication.supporting_document as string),

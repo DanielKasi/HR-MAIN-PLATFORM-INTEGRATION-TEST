@@ -253,7 +253,7 @@ export default function BankTypeManagement() {
                         {loading ? (
                             <div className="flex items-center justify-center h-64">
                                 <div className="flex items-center gap-2">
-                                    <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
+                                    <Loader2 className="h-6 w-6 animate-spin text-myOrange" />
                                     <span className="text-gray-600">Loading attached banks ...</span>
                                 </div>
                             </div>

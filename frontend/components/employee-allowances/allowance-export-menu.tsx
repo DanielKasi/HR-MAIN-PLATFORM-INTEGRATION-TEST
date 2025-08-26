@@ -149,7 +149,7 @@ export function AllowanceExportMenu({ allowances, getCalculatedAmount, disabled 
           onClick={exportToCSV}
           className="cursor-pointer hover:bg-orange-50 focus:bg-orange-50"
         >
-          <Download className="h-4 w-4 mr-2 text-orange-600" />
+          <Download className="h-4 w-4 mr-2 text-myOrange" />
           Export as CSV
         </DropdownMenuItem>
         <DropdownMenuItem
