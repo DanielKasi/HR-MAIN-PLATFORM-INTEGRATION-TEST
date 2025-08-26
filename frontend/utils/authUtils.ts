@@ -1,8 +1,8 @@
-import {IPermission, IUser, IUserInstitution, Permission} from "@/types";
+import { IPermission, IUser, IUserInstitution, Permission } from "@/types";
 import apiRequest from "@/lib/apiRequest";
-import {getInstitutionById} from "@/lib/helpers";
-import {store} from "@/store";
-import {clearTemporaryPermissions, setTemporaryPermissions} from "@/store/auth/actions";
+import { getInstitutionById } from "@/lib/helpers";
+import { store } from "@/store";
+import { clearTemporaryPermissions, setTemporaryPermissions } from "@/store/auth/actions";
 import axios from "axios";
 
 export type LoginResponse = {
@@ -15,7 +15,7 @@ export type LoginResponse = {
 };
 
 export const loginWithEmailAndPassword = async (email: string, password: string) => {
-  const response = await apiRequest.post("user/login/", {email: email, password: password});
+  const response = await apiRequest.post("user/login/", { email: email, password: password });
   const responseData = response.data;
 
   return {
@@ -58,17 +58,17 @@ export const fetchRemoteInstitutionById = async (
 
 
 export const AUTH_API = {
-  refreshTokens: async ({refreshToken}:{refreshToken:string}) => {
-      const response  = await axios.post(
-            `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/user/token/refresh/`,
-            { refresh: refreshToken },
-            {
-              headers: {
-                "Content-Type": "application/json",
-              },
-            },
-          );
-        return response.data as LoginResponse
+  refreshTokens: async ({ refreshToken }: { refreshToken: string }) => {
+    const response = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/user/token/refresh/`,
+      { refresh: refreshToken },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+    return response.data as LoginResponse
   }
 }
 
@@ -78,7 +78,7 @@ export function hasTemporaryPermissions(): boolean {
   return state.auth.temporaryPermissions.length > 0;
 }
 
-// Optional: Auto-clear temporary permissions after a certain time
+
 export function setTemporaryPermissionsWithTimeout(
   permissions: IPermission[],
   timeoutMs: number = 30 * 60 * 1000 // 30 minutes default
