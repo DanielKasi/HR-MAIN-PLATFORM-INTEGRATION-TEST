@@ -49,7 +49,7 @@ const JobPortal = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Header Section */}
-      <div className="px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-24 relative overflow-hidden">
+      <div className="py-10 w-full relative overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
           style={{
@@ -57,7 +57,7 @@ const JobPortal = () => {
           }}
         />
         <div className="absolute inset-0" />
-        <div className="max-w-4xl mx-auto text-start relative z-10">
+        <div className="w-6/12 max-lg:w-full max-lg:px-4 mx-auto text-start relative z-10">
           <div className="flex items-center justify-start gap-2 sm:gap-3 mb-4 sm:mb-6">
             <div className="flex items-center justify-start">
               <img src="/images/logo.png" alt="Logo" className="w-8 h-8" />
@@ -72,9 +72,9 @@ const JobPortal = () => {
       </div>
 
       {/* Search Section */}
-      <div className="px-4 sm:px-6 lg:px-8 -mt-6 sm:-mt-8 mb-8 sm:mb-12 relative z-20">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-3 sm:p-4 ">
+      <div className="w-6/12 max-lg:w-full max-lg:px-4 mx-auto -mt-6 sm:-mt-8 mb-8 sm:mb-12 relative z-20">
+        <div className="w-full mx-auto">
+          <div className="bg-white w-full rounded-xl shadow-lg border border-gray-200 p-3 sm:p-4 ">
             <div className="flex flex-col md:flex-row gap-3 sm:gap-4 ">
               <div className="flex-1">
                 <Input
@@ -103,10 +103,10 @@ const JobPortal = () => {
 
       {/* Jobs Section */}
       <div className="px-4 sm:px-6 lg:px-8 pb-16">
-        <div className="max-w-6xl mx-auto">
+        <div className=" w-9/12 mx-auto max-lg:w-full">
           {/* Header and Filters */}
           <div className="flex flex-col gap-4 mb-6 sm:mb-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center justify-between w-full">
               <h2 className="text-lg sm:text-xl font-medium text-gray-700">Open Job Positions</h2>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
