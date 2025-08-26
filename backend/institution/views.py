@@ -471,7 +471,6 @@ class InstitutionBankAccountListAPIView(APIView):
 
         bank_accounts = InstitutionBankAccount.objects.filter(
             institution_bank__institution=institution,
-            is_avtive=True,
             deleted_at__isnull=True
         ).order_by("-created_at")
 
