@@ -228,14 +228,15 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Job Openings", href: "/job-adverts"},
         {title: "Applications", href: "/applications"},
         {title: "Interviews", href: "/job-interviews"},
+        {title: "Onboarding", href: "/on-boarding"},
       ],
       requiredPermission: PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS,
     },
-    {
-      title: "Onboarding",
-      href: "/on-boarding",
-      icon: <Icon height="20" icon="hugeicons:inbox-download" className="!w-6 !h-6" width="20" />,
-    },
+    // {
+    //   title: "Onboarding",
+    //   href: "/on-boarding",
+    //   icon: <Icon height="20" icon="hugeicons:inbox-download" className="!w-6 !h-6" width="20" />,
+    // },
     {
       title: "Offboarding",
       href: "/off-boarding",
