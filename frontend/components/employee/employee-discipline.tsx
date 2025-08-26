@@ -17,7 +17,6 @@ interface EmployeeDisciplineProps {
 
 export default function EmployeeDiscipline({employeeId, institutionId}: EmployeeDisciplineProps) {
   const [disciplinaryActions, setDisciplinaryActions] = useState<IDisciplinaryAction[]>([]);
-  const [loadingDiscipline, setLoadingDiscipline] = useState(false);
 
   const fetchDisciplinaryActionsFirstPage = async () => {
     if (!employeeId || !institutionId) throw new Error("No employee or Institution Found !");
@@ -74,9 +73,6 @@ export default function EmployeeDiscipline({employeeId, institutionId}: Employee
     }
   };
 
-  // useEffect(() => {
-  //   fetchDisciplinaryActions();
-  // }, [employeeId, institutionId]);
 
   return (
     <div className="space-y-6">

@@ -226,6 +226,9 @@ class LoginResponseSerializer(serializers.Serializer):
     tokens = TokenObtainPairSerializer()
     user = CustomUserSerializer()
 
+class LogoutRequestSerializer(serializers.Serializer):
+    refresh = serializers.CharField(required=True)    
+
 
 class InstitutionUserLoginResponseSerializer(LoginResponseSerializer):
     from institution.serializers import InstitutionSerializer

@@ -202,6 +202,7 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
     interview_stages = serializers.SerializerMethodField(read_only=True)
     work_type = serializers.PrimaryKeyRelatedField(queryset=WorkType.objects.all(), required=False)
     employee_type = serializers.PrimaryKeyRelatedField(queryset=EmployeeType.objects.all(), required=False)
+    institution = serializers.SerializerMethodField()
 
     class Meta:
         model = JobPositionAdvert
@@ -218,7 +219,18 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
             "interview_stages",
             "work_type",
             "employee_type",
+            "institution"
         ]
+
+    def get_institution(self, obj):
+        department = getattr(obj.job_position, "department", None)
+        if department and hasattr(department, "institution") and department.institution:
+            institution = department.institution
+            return {
+                "id": institution.id,
+                "name": institution.institution_name
+            }
+        return None    
 
     def to_representation(self, instance):
         """Customize output for work_type and employee_type"""

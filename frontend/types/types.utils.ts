@@ -1331,11 +1331,11 @@ export interface IPayrollPeriodFormData {
 export interface IPayslipFormData {
   employee: number;
   payroll_period: number;
-  basic_salary: string;
-  total_allowances: string;
-  total_deductions: string;
-  gross_salary: string;
-  net_salary: string;
+  basic_salary: string|number;
+  total_allowances: string|number;
+  total_deductions: string|number;
+  gross_salary: string|number;
+  net_salary: string|number;
   days_worked: number;
   is_paid: boolean;
   paid_date: string | null;
@@ -2121,7 +2121,7 @@ export interface IEmployeeTaxFormData {
   target_job_positions?: number[];
   target_employees?: number[];
   effective_from: string;
-  effective_to: string;
+  effective_to?: string;
   institution_tax: number | string;
 }
 
