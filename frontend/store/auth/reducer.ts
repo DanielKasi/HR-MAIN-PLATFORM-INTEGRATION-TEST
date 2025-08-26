@@ -1,8 +1,8 @@
-import {AuthAction} from "./actions";
-import {AUTH_ACTION_TYPES} from "./types";
+import { AuthAction } from "./actions";
+import { AUTH_ACTION_TYPES } from "./types";
 
-import {Branch, IPermission, ITill, IUser, IUserInstitution, StoredColorData} from "@/types";
-import {CUSTOM_CODES} from "@/types/types.utils";
+import { Branch, IPermission, ITill, IUser, IUserInstitution, StoredColorData } from "@/types";
+import { CUSTOM_CODES } from "@/types/types.utils";
 
 export type AuthError = {
   customCode: CUSTOM_CODES;
@@ -47,10 +47,10 @@ const intialAuthState: AuthState = {
     value: null,
     error: null,
   },
-  InstitutionsAttached: {loading: false, value: []},
-  selectedInstitution: {loading: false, value: null},
-  selectedBranch: {loading: false, value: null},
-  selectedTill: {loading: false, value: null},
+  InstitutionsAttached: { loading: false, value: [] },
+  selectedInstitution: { loading: false, value: null },
+  selectedBranch: { loading: false, value: null },
+  selectedTill: { loading: false, value: null },
   temporaryPermissions: [],
   inactivityTimeout: 0,
   logoutWarningVisible: false,
@@ -59,32 +59,32 @@ const intialAuthState: AuthState = {
 
 export const authReducer = (
   state = intialAuthState,
-  action: AuthAction | {type: string; payload?: unknown},
+  action: AuthAction | { type: string; payload?: unknown },
 ): AuthState => {
   switch (action.type) {
     case AUTH_ACTION_TYPES.LOGIN_START:
     case AUTH_ACTION_TYPES.LOGOUT_START:
-      return {...state, user: {...state.user, loading: true}};
+      return { ...state, user: { ...state.user, loading: true } };
 
     case AUTH_ACTION_TYPES.LOGIN_FAILURE:
       return {
         ...state,
-        user: {...state.user, error: action.payload as AuthError, loading: false},
+        user: { ...state.user, error: action.payload as AuthError, loading: false },
       };
     case AUTH_ACTION_TYPES.LOGOUT_FAILURE:
       return {
         ...state,
         user: {
           ...state.user,
-          error: {...state.user.error, message: action.payload as string} as AuthError,
+          error: { ...state.user.error, message: action.payload as string } as AuthError,
           loading: false,
         },
       };
     case AUTH_ACTION_TYPES.SET_ACCESS_TOKEN:
-      return {...state, accessToken: action.payload as string};
+      return { ...state, accessToken: action.payload as string };
 
     case AUTH_ACTION_TYPES.SET_REFRESH_TOKEN:
-      return {...state, refreshToken: action.payload as string};
+      return { ...state, refreshToken: action.payload as string };
 
     case AUTH_ACTION_TYPES.SET_ATTACHED_INSTITUTIONS:
       return {
@@ -144,7 +144,7 @@ export const authReducer = (
       };
 
     case AUTH_ACTION_TYPES.CLEAR_AUTH_ERROR:
-      return {...state, user: {...state.user, error: null}};
+      return { ...state, user: { ...state.user, error: null } };
 
     case AUTH_ACTION_TYPES.UPDATE_THEME:
       return {
@@ -162,12 +162,12 @@ export const authReducer = (
         ...state,
         selectedInstitution: {
           ...state.selectedInstitution,
-          value: {...state.selectedInstitution.value, theme_color: ""} as IUserInstitution,
+          value: { ...state.selectedInstitution.value, theme_color: "" } as IUserInstitution,
         },
       };
 
     case AUTH_ACTION_TYPES.LOGOUT_SUCCESS:
-      return {...intialAuthState};
+      return { ...intialAuthState };
 
     case AUTH_ACTION_TYPES.SET_TEMPORARY_PERMISSIONS:
       return {
@@ -175,8 +175,9 @@ export const authReducer = (
         temporaryPermissions: action.payload as IPermission[],
       };
     case AUTH_ACTION_TYPES.CLEAR_TEMPORARY_PERMISSIONS:
-      return {...state, temporaryPermissions: []};
-        case AUTH_ACTION_TYPES.SET_INACTIVITY_TIMEOUT:
+      console.log("\n\n Got dispatched action : ", action)
+      return { ...state, temporaryPermissions: [] };
+    case AUTH_ACTION_TYPES.SET_INACTIVITY_TIMEOUT:
       return { ...state, inactivityTimeout: action.payload as number };
     case AUTH_ACTION_TYPES.SHOW_LOGOUT_WARNING:
       return { ...state, logoutWarningVisible: true };

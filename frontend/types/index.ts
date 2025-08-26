@@ -7,11 +7,13 @@ export interface IProductCategoryDetail {
   category_description: string | null;
 }
 
+export type InstitutionApprovalStatus = "pending" | "approved" | "rejected" | "under_review"
+
 export interface IUserInstitution {
   id: number;
   institution_email: string,
   approval_date?: string | null,
-  approval_status: string,
+  approval_status: InstitutionApprovalStatus,
   approval_status_display: string,
   institution_owner_id: number;
   institution_name: string;
@@ -22,7 +24,27 @@ export interface IUserInstitution {
   second_phone_number: string;
   latitude: number,
   longitude: number,
-  location: string
+  location: string,
+  is_attendance_penalties_enabled: boolean,
+  user_inactivity_time: number   // In minutes ,
+  country_code: string
+}
+
+export interface IUserInstitutionFormData {
+  institution_email: string,
+  approval_date?: string | null,
+  approval_status: InstitutionApprovalStatus,
+  approval_status_display: string,
+  institution_name: string;
+  theme_color: null | string;
+  first_phone_number: string;
+  second_phone_number: string;
+  latitude: number,
+  longitude: number,
+  location: string,
+  is_attendance_penalties_enabled: boolean,
+  user_inactivity_time: number   // In minutes ,
+  country_code: string
 }
 
 

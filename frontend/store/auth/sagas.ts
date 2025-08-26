@@ -1,10 +1,10 @@
-import {call, all, takeLatest, put, select, fork, take, delay, race, cancel, Effect, SelectEffect} from "redux-saga/effects";
+import { call, all, takeLatest, put, select, fork, take, delay, race, cancel, Effect, SelectEffect } from "redux-saga/effects";
 
-import {ActionWithPayLoad, parseJwtLifetime} from "../storeUtils";
-import {clearEmployeeForm, toggleSideBarAction} from "../miscellaneous/actions";
-import {selectSideBarOpened} from "../miscellaneous/selectors";
+import { ActionWithPayLoad, parseJwtLifetime } from "../storeUtils";
+import { clearEmployeeForm, toggleSideBarAction } from "../miscellaneous/actions";
+import { selectSideBarOpened } from "../miscellaneous/selectors";
 
-import {AUTH_ACTION_TYPES} from "./types";
+import { AUTH_ACTION_TYPES } from "./types";
 import {
   loginFailure,
   logoutFailure,
@@ -24,7 +24,7 @@ import {
   userActivityDetected,
   logoutStart,
 } from "./actions";
-import {selectInactivityTimeout, selectRefreshInProgress, selectRefreshToken, selectSelectedInstitution, selectUser} from "./selectors";
+import { selectInactivityTimeout, selectRefreshInProgress, selectRefreshToken, selectSelectedInstitution, selectUser } from "./selectors";
 
 import {
   AUTH_API,
@@ -33,20 +33,20 @@ import {
   LoginResponse,
   loginWithEmailAndPassword,
 } from "@/utils/authUtils";
-import {IUser, IUserInstitution} from "@/types";
+import { IUser, IUserInstitution } from "@/types";
 import { Task } from "redux-saga";
 
 
 interface InactivityRaceResult {
-        timeout?: unknown;
-        cancel?: unknown;
-        confirm?: unknown;
-        activity?: unknown;
-      }
+  timeout?: unknown;
+  cancel?: unknown;
+  confirm?: unknown;
+  activity?: unknown;
+}
 
 function* login({
-  payload: {email, password},
-}: ActionWithPayLoad<AUTH_ACTION_TYPES.LOGIN_START, {email: string; password: string}>) {
+  payload: { email, password },
+}: ActionWithPayLoad<AUTH_ACTION_TYPES.LOGIN_START, { email: string; password: string }>) {
   try {
     const loginResponse: LoginResponse = yield call(loginWithEmailAndPassword, email, password);
 
@@ -55,7 +55,7 @@ function* login({
     }
     yield put(setAccessToken(loginResponse.tokens.access));
     yield put(setRefreshToken(loginResponse.tokens.refresh));
-    
+
     const lifetime: number = parseJwtLifetime(loginResponse.tokens.access);
     yield put(setInactivityTimeout(lifetime));
     yield put(setCurrentUser(loginResponse.user));
@@ -111,7 +111,7 @@ function* fetchRemoteUser() {
     if (user) {
       yield put(setCurrentUser(user));
     }
-  } catch {}
+  } catch { }
 }
 
 function* fetchRemoteInstitution() {
@@ -121,7 +121,7 @@ function* fetchRemoteInstitution() {
 
     if (selectedInstitution) {
       const attachedInstitutions: IUserInstitution[] = yield call(fetchUserAttachedInstitutions);
-      const upToDateInstitution  = attachedInstitutions?.find(
+      const upToDateInstitution = attachedInstitutions?.find(
         (institution) => institution.id === selectedInstitution.id,
       );
 
@@ -132,13 +132,13 @@ function* fetchRemoteInstitution() {
         yield put(setAttachedInstitutions(attachedInstitutions));
       }
     }
-  } catch {}
+  } catch { }
 }
 
 function* resetInactivityOnAccessRefreshed() {
   try {
     const refreshToken: string = yield select(selectRefreshToken);
-    const response: { tokens: { access: string; refresh: string } } = yield call(AUTH_API.refreshTokens, {refreshToken});
+    const response: { tokens: { access: string; refresh: string } } = yield call(AUTH_API.refreshTokens, { refreshToken });
     yield put(setAccessToken(response.tokens.access));
     yield put(setRefreshToken(response.tokens.refresh));
     const newLifetime: number = parseJwtLifetime(response.tokens.access);
@@ -153,7 +153,7 @@ function* resetInactivityOnAccessRefreshed() {
 }
 
 function* inactivityWatcher() {
-  let timeoutTask: Task|null = null; // Track the timeout task
+  let timeoutTask: Task | null = null; // Track the timeout task
   while (true) {
     const user: IUser | null = yield select(selectUser);
     if (!user) {
@@ -166,10 +166,10 @@ function* inactivityWatcher() {
     }
     const inactivityTimeout: number = yield select(selectInactivityTimeout);
     if (inactivityTimeout <= 60000) continue; // Skip invalid timeouts
-    timeoutTask = yield fork(function* ():Generator<Effect, void, unknown>  {
+    timeoutTask = yield fork(function* (): Generator<Effect, void, unknown> {
       yield delay(inactivityTimeout - 60000); // Wait until 60s before expiry
       yield put(showLogoutWarning());
-      
+
       const raceResult = yield race({
         timeout: delay(60000), // 60s warning period
         cancel: take(AUTH_ACTION_TYPES.CANCEL_LOGOUT),
