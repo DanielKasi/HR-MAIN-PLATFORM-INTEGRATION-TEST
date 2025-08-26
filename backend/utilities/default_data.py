@@ -192,7 +192,7 @@ default_data = [
         ],
     },
     {
-        "name": "Legal Department",
+        "name": "Legal and Compliance Department",
         "description": "Manages legal affairs and compliance",
         "job_positions": [
             {
