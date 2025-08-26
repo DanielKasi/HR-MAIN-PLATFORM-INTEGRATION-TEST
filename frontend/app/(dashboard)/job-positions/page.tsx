@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
 import {
@@ -47,13 +47,14 @@ import {
 } from "@/components/ui/dialog"
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { deleteJobPosition, getJobPositions } from "@/lib/utils"
+import { deleteJobPosition, getJobPositions, getPaginatedJobPositions, getPaginatedJobPositionsFromUrl, showErrorToast } from "@/lib/utils"
 import type { IJobPosition } from "@/types/types.utils"
 import { toast } from "sonner"
 import { formatCurrency } from "@/lib/helpers"
 import ProtectedComponent from "@/components/ProtectedComponent"
 import { PERMISSION_CODES } from "@/types/types.utils"
 import { useDocumentTitle } from "@/hooks/use-document-title"
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
 
 export default function JobPositionsPage() {
   const [jobPositions, setJobPositions] = useState<IJobPosition[]>([])
@@ -67,48 +68,13 @@ export default function JobPositionsPage() {
 
   const router = useRouter()
   const selectedInstitution = useSelector(selectSelectedInstitution)
-  const selectedBranch = useSelector(selectSelectedBranch)
+  const selectedBranch = useSelector(selectSelectedBranch);
+  const refreshFunctionRef = useRef<(()=>Promise<void>|null)>(null);
 
   useDocumentTitle("JOB POSITIONS / TITLES")
 
-  useEffect(() => {
-    if (!selectedInstitution || !selectedBranch) {
-      router.push("/dashboard")
-      return
-    }
 
-    fetchJobPositions()
-  }, [selectedBranch, selectedInstitution, router])
 
-  const fetchJobPositions = async (showRefreshLoader = false) => {
-    if (!selectedInstitution) return
-
-    try {
-      if (showRefreshLoader) {
-        setIsRefreshing(true)
-      } else {
-        setIsLoading(true)
-      }
-      setError("")
-
-      const fetchedJobPositions = await getJobPositions({ institutionId: selectedInstitution.id })
-      if (fetchedJobPositions) {
-        setJobPositions(fetchedJobPositions)
-      } 
-    } catch (err) {
-      setError("Failed to fetch job position/titles . Please try again.")
-      toast.error("Failed to load job position/titles ")
-    } finally {
-      setIsLoading(false)
-      setIsRefreshing(false)
-    }
-  }
-
-  const handleRefresh = () => {
-    fetchJobPositions(true)
-  }
-
-  // Function to generate salary ranges
   const generateSalaryRanges = (positions: IJobPosition[]) => {
     if (!positions.length) return [];
 
@@ -183,10 +149,9 @@ export default function JobPositionsPage() {
     try {
       await deleteJobPosition({ jobPositionId: positionToDelete })
       toast.success("Job position deleted successfully")
-      fetchJobPositions()
+      if(refreshFunctionRef.current){refreshFunctionRef.current()}
     } catch (error) {
-      console.error("Error deleting job position:", error)
-      toast.error("Failed to delete job position")
+      showErrorToast({error, defaultMessage:"Failed to delete job position"})
     } finally {
       setIsDeleteDialogOpen(false)
       setPositionToDelete(null)
@@ -216,7 +181,7 @@ export default function JobPositionsPage() {
        {/* Stats */}
       {!isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 mt-10">
-          <Card>
+          {/* <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">{jobPositions.length}</div>
               <p className="text-xs text-muted-foreground">Total Job Positions / Titles</p>
@@ -227,7 +192,7 @@ export default function JobPositionsPage() {
               <div className="text-2xl font-bold">{filteredJobPositions.length}</div>
               <p className="text-xs text-muted-foreground">Filtered Results</p>
             </CardContent>
-          </Card>
+          </Card> */}
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">
@@ -336,10 +301,34 @@ export default function JobPositionsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Job Positions/Titles Table */}
-      {isLoading ? (
-        <div className="overflow-x-auto ">
-          <Table className="min-w-[800px] mt-10">
+
+        <PaginatedTableWrapper<IJobPosition>
+          fetchFirstPage={async() => {
+            if(!selectedInstitution){throw new Error("No institution found !")}
+            return await getPaginatedJobPositions({institutionId:selectedInstitution.id, search:searchTerm})
+          }}
+
+          fetchFromUrl={async(args:{url:string}) => getPaginatedJobPositionsFromUrl(args.url)}
+          deps={[selectedInstitution?.id, searchTerm]}
+            className="space-y-4"
+            footerClassName="pt-4"
+
+          >
+
+
+          {({data, loading, refresh}) => {
+
+            useEffect(()=>{
+              setJobPositions(data?.results || [])
+            }, [data])
+
+            refreshFunctionRef.current = refresh
+
+
+            if(loading){
+
+              return (
+                          <Table className="min-w-[800px] mt-10">
             <TableHeader>
               <TableRow className="border-b">
                 <TableHead>Name</TableHead>
@@ -365,25 +354,12 @@ export default function JobPositionsPage() {
               ))}
             </TableBody>
           </Table>
-        </div>
-      ) : filteredJobPositions.length === 0 ? (
-        <div className="p-12 text-center">
-          <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No job positions / titles found</h3>
-          <p className="text-muted-foreground mb-4">
-            {searchTerm
-              ? "No job positions/titles match your search criteria."
-              : "Get started by creating your first job position."}
-          </p>
-          {!searchTerm && (
-            <Button onClick={handleCreateJobPosition} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Create First Job Position
-            </Button>
-          )}
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
+              )
+            }
+
+
+            return (
+                        <div className="overflow-x-auto">
           <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow className="border-b bg-muted/30">
@@ -397,7 +373,7 @@ export default function JobPositionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredJobPositions.map((position) => (
+              {data?.results.map((position) => (
                 <TableRow key={position.id} className="hover:bg-muted/50 transition-colors border-b">
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
@@ -476,7 +452,10 @@ export default function JobPositionsPage() {
             </TableBody>
           </Table>
         </div>
-      )}
+            )
+          }}
+
+        </PaginatedTableWrapper>
     </div>
   )
 }
