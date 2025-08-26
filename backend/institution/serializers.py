@@ -100,6 +100,8 @@ class InstitutionSerializer(serializers.ModelSerializer):
             "document_titles",
             "branches",
             "is_active",
+            "user_inactivity_time",
+            "is_attendance_penalties_enabled"
         ]
 
     def create(self, validated_data):
