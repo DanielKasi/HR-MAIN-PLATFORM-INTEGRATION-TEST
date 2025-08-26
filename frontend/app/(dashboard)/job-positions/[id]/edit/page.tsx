@@ -931,7 +931,7 @@ export default function EditJobPositionPage() {
                           variant="ghost"
                           size="sm"
                           onClick={revertSalaryToOriginal}
-                          className="text-xs text-orange-600 hover:text-orange-700"
+                          className="text-xs text-myOrange hover:text-orange-700"
                         >
                           Revert
                         </Button>
@@ -978,7 +978,7 @@ export default function EditJobPositionPage() {
                           >
                             Select Employees (Optional)
                           </Button>
-                          <p className="text-xs text-orange-600">
+                          <p className="text-xs text-myOrange">
                             Skip to only update position base salary
                           </p>
                         </div>

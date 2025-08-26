@@ -329,7 +329,7 @@ const StatsCards = ({
       value: stats.openPositions,
       change: "Actively recruiting",
       icon: Briefcase,
-      color: "bg-orange-50 text-orange-600",
+      color: "bg-orange-50 text-myOrange",
       trend: "neutral",
     },
     {
@@ -900,7 +900,7 @@ const NotificationsPanel = ({
         type: "leave",
         message: `${pendingLeaves} leave ${pendingLeaves === 1 ? "request" : "requests"} awaiting approval`,
         icon: "📅",
-        color: "text-orange-600",
+        color: "text-myOrange",
         urgent: true,
       });
     }

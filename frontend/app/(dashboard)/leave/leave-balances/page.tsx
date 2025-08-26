@@ -588,7 +588,7 @@ export default function LeaveBalanceComponent() {
                     <div className="bg-gray-50 rounded-xl p-4 md:col-span-2">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-semibold text-gray-800">Available Days:</span>
-                        <span className="text-lg font-bold text-orange-600">{calculateAvailable(formData)}</span>
+                        <span className="text-lg font-bold text-myOrange">{calculateAvailable(formData)}</span>
                       </div>
                     </div>
                   </form>
@@ -963,7 +963,7 @@ export default function LeaveBalanceComponent() {
               <div className="bg-gray-50 rounded-xl p-4 md:col-span-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-semibold text-gray-800">Available Days:</span>
-                  <span className="text-lg font-bold text-orange-600">{calculateAvailable(formData)}</span>
+                  <span className="text-lg font-bold text-myOrange">{calculateAvailable(formData)}</span>
                 </div>
               </div>
             </form>

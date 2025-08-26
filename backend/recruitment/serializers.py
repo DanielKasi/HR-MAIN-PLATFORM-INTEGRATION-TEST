@@ -31,7 +31,7 @@ class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
 class JobAdvertApplicationSerializer(serializers.ModelSerializer):
     job_position_advert_job_details = serializers.SerializerMethodField()
     positions = serializers.SerializerMethodField()
-    created_by = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
+    created_by = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)
     reviewed_by = serializers.PrimaryKeyRelatedField(
         queryset=CustomUser.objects.all(), required=False, allow_null=True
     )

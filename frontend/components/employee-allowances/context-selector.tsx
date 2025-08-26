@@ -241,7 +241,7 @@ export function ContextSelector({
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item)}
-                      className="text-orange-600 hover:text-orange-800"
+                      className="text-myOrange hover:text-orange-800"
                       disabled={disabled}
                     >
                       ×

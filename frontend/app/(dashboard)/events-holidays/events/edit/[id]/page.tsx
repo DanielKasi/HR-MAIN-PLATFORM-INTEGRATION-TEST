@@ -184,7 +184,7 @@ export default function EditEventPage() {
           <Card className="border-orange-200 bg-orange-50">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-orange-600" />
+                <AlertTriangle className="h-5 w-5 text-myOrange" />
                 <div className="flex-1">
                   <p className="text-orange-800 font-medium">You have unsaved changes</p>
                   <p className="text-orange-700 text-sm">

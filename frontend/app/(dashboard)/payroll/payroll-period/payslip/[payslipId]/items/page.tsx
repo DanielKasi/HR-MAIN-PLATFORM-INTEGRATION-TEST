@@ -57,7 +57,7 @@ export default function PayslipItems() {
       case "deduction":
         return <TrendingDown className="h-4 w-4 text-red-600" />;
       case "overtime":
-        return <Coins className="h-4 w-4 text-orange-600" />;
+        return <Coins className="h-4 w-4 text-myOrange" />;
     }
   };
 
@@ -298,12 +298,12 @@ export default function PayslipItems() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-black">Overtime</p>
-                <p className="text-xl font-bold text-orange-600">
+                <p className="text-xl font-bold text-myOrange">
                   {formatCurrency(totals.overtime)}
                 </p>
               </div>
               <div className="p-2 bg-orange-200 rounded-full">
-                <Coins className="h-4 w-4 text-orange-600" />
+                <Coins className="h-4 w-4 text-myOrange" />
               </div>
             </div>
           </CardContent>
@@ -420,7 +420,7 @@ export default function PayslipItems() {
                 </div>
                 <div className="text-center">
                   <p className="text-gray-600">Total Overtime</p>
-                  <p className="font-semibold text-orange-600">{formatCurrency(totals.overtime)}</p>
+                  <p className="font-semibold text-myOrange">{formatCurrency(totals.overtime)}</p>
                 </div>
                 <div className="text-center border-l">
                   <p className="text-gray-600">Net Items Total</p>

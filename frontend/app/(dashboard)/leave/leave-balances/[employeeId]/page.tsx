@@ -244,7 +244,7 @@ export default function EmployeeLeaveBalanceDetails() {
             </div>
 
             <div className="bg-orange-50 p-4 rounded-lg text-center">
-              <p className="text-sm text-orange-600 font-medium">Overall Status</p>
+              <p className="text-sm text-myOrange font-medium">Overall Status</p>
               <div className="mt-2">
                 {getStatusBadge(totalAvailable)}
               </div>
@@ -288,7 +288,7 @@ export default function EmployeeLeaveBalanceDetails() {
                     <TableCell className="text-center font-medium">{item.year}</TableCell>
                     <TableCell className="text-center font-medium text-blue-600">{item.allocated_days}</TableCell>
                     <TableCell className="text-center font-medium text-green-600">{item.used_days}</TableCell>
-                    <TableCell className="text-center font-medium text-orange-600">{item.pending_days}</TableCell>
+                    <TableCell className="text-center font-medium text-myOrange">{item.pending_days}</TableCell>
                     <TableCell className="text-center font-medium text-purple-600">{item.carried_forward_days}</TableCell>
                     <TableCell className={`text-center font-bold ${getStatusColor(item.available_days)}`}>
                       {item.available_days}
