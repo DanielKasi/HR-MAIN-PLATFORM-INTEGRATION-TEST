@@ -9,7 +9,7 @@ import { calendarAPI } from "@/lib/utils"
 import { Icon } from "@iconify/react"
 import { EditEventModal } from "@/components/events-holidays/edit-event-modal"
 import { EditHolidayModal } from "@/components/events-holidays/edit-holiday-modal"
-import { IEvent, IPublicHoliday } from "@/types/types.utils"
+import { ICalendar, IEvent, IPublicHoliday } from "@/types/types.utils"
 
 // Define types inline to avoid import issues
 interface ICalendarEvent {
@@ -35,7 +35,7 @@ const MONTHS = [
 const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
 
 export default function EventsCalendarPage() {
-  const [calendar, setCalendar] = useState<ICalendarEvent[] | null>(null)
+  const [calendar, setCalendar] = useState<ICalendar | null>(null)
   const [publicHolidays, setPublicHolidays] = useState<any[]>([])
   const [currentDate, setCurrentDate] = useState(new Date())
   const [events, setEvents] = useState<IEvent[]>([])
@@ -82,14 +82,11 @@ export default function EventsCalendarPage() {
     }
   }, [showModal])
 
-  console.log("calendar", calendar)
-  console.log("publicHolidays", publicHolidays)
-  console.log("events", events)
 
   const fetchCalendar = useCallback(async (year: number) => {
     try {
       setLoading(true)
-      const response = await calendarAPI.getInstitutionCalendar(year)
+      const response = await calendarAPI.getInstitutionCalendar({year})
       if (response) {
         setCalendar(response)
         setPublicHolidays(response.public_holidays || [])

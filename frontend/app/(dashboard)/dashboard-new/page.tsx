@@ -4,7 +4,7 @@ import {useState, useCallback, useEffect} from "react";
 import {Button} from "@/components/ui/button";
 import {Icon} from "@iconify/react";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {ChevronRight} from "lucide-react";
+import {Plus, Calendar, Users, Building2, ChevronRight} from "lucide-react";
 import {MetricCards} from "@/components/dashboard-new/metric-cards";
 import {PayrollChart} from "@/components/dashboard-new/payroll-chart";
 import {DepartmentTreemap} from "@/components/dashboard-new/department-treemap";
@@ -19,7 +19,6 @@ import { institutionAPI, showErrorToast } from "@/lib/utils";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { IInstitutionAnalytics } from "@/types/types.utils";
-import EmployeeAttendance from "@/components/attendance/employee-attendance";
 
 
 export default function Dashboard() {
@@ -167,7 +166,6 @@ export default function Dashboard() {
 
             {/* Projects */}
             <ProjectCards />
-            <EmployeeAttendance showingOnDashboard={true} scope={{type:"default"}} />
           </div>
 
           {/* Sidebar */}

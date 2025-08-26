@@ -33,7 +33,7 @@ type SetRefreshToken = ActionWithPayLoad<AUTH_ACTION_TYPES.SET_REFRESH_TOKEN, st
 type SetAccessToken = ActionWithPayLoad<AUTH_ACTION_TYPES.SET_ACCESS_TOKEN, string>;
 
 type SetSelectedInstitution = ActionWithPayLoad<
-  AUTH_ACTION_TYPES.SET_SELECTED_Institution,
+  AUTH_ACTION_TYPES.SET_SELECTED_INSTITUTION,
   IUserInstitution
 >;
 type SetSelectedBranch = ActionWithPayLoad<AUTH_ACTION_TYPES.SET_SELECTED_BRANCH, Branch>;
@@ -42,13 +42,13 @@ type SetSelectedTill = ActionWithPayLoad<AUTH_ACTION_TYPES.SET_SELECTED_TILL, IT
 type ClearSelectedTill = Action<AUTH_ACTION_TYPES.CLEAR_SELECTED_TILL>;
 
 type SetAttachedInstitutions = ActionWithPayLoad<
-  AUTH_ACTION_TYPES.SET_ATTACHED_InstitutionS,
+  AUTH_ACTION_TYPES.SET_ATTACHED_INSTITUTIONS,
   IUserInstitution[]
 >;
 
 type ClearAuthError = Action<AUTH_ACTION_TYPES.CLEAR_AUTH_ERROR>;
 
-type FetchUpToDateInstitution = Action<AUTH_ACTION_TYPES.FETCH_UPTODATE_Institution>;
+type FetchUpToDateInstitution = Action<AUTH_ACTION_TYPES.FETCH_UP_TO_DATE_INSTITUTION>;
 
 type SetTemporaryPermissions = ActionWithPayLoad<
   AUTH_ACTION_TYPES.SET_TEMPORARY_PERMISSIONS,
@@ -75,7 +75,15 @@ export type AuthAction =
   | SetTemporaryPermissions
   | ClearTemporaryPermissions
   | SetSelectedTill
-  | ClearSelectedTill;
+  | ClearSelectedTill
+  | Action<AUTH_ACTION_TYPES.USER_ACTIVITY_DETECTED>
+  | Action<AUTH_ACTION_TYPES.SHOW_LOGOUT_WARNING>
+  | Action<AUTH_ACTION_TYPES.HIDE_LOGOUT_WARNING>
+  | Action<AUTH_ACTION_TYPES.CONFIRM_LOGOUT>
+  | Action<AUTH_ACTION_TYPES.CANCEL_LOGOUT>
+  | Action<AUTH_ACTION_TYPES.REFRESH_TOKENS_START>
+  | Action<AUTH_ACTION_TYPES.REFRESH_TOKENS_SUCCESS>
+  | Action<AUTH_ACTION_TYPES.REFRESH_TOKENS_FAILURE>;
 
 export const loginStart = (email: string, password: string): LoginStart =>
   createAction(AUTH_ACTION_TYPES.LOGIN_START, {email, password});
@@ -87,7 +95,7 @@ export const logoutFailure = (errorMessage: string): LogoutFailure =>
   createAction(AUTH_ACTION_TYPES.LOGOUT_FAILURE, errorMessage);
 export const logoutSuccess = (): LogoutSuccess => createAction(AUTH_ACTION_TYPES.LOGOUT_SUCCESS);
 
-export const setUserAction = (user: IUser): SetUser =>
+export const setCurrentUser = (user: IUser): SetUser =>
   createAction(AUTH_ACTION_TYPES.SET_USER, user);
 
 export const setRefreshToken = (token: string): SetRefreshToken =>
@@ -99,7 +107,7 @@ export const clearAuthError = (): ClearAuthError =>
   createAction(AUTH_ACTION_TYPES.CLEAR_AUTH_ERROR);
 
 export const setSelectedInstitution = (Institution: IUserInstitution): SetSelectedInstitution =>
-  createAction(AUTH_ACTION_TYPES.SET_SELECTED_Institution, Institution);
+  createAction(AUTH_ACTION_TYPES.SET_SELECTED_INSTITUTION, Institution);
 
 export const setSelectedBranch = (branch: Branch): SetSelectedBranch =>
   createAction(AUTH_ACTION_TYPES.SET_SELECTED_BRANCH, branch);
@@ -113,7 +121,7 @@ export const clearSelectedTill = (): ClearSelectedTill =>
 export const setAttachedInstitutions = (
   Institutions: IUserInstitution[],
 ): SetAttachedInstitutions =>
-  createAction(AUTH_ACTION_TYPES.SET_ATTACHED_InstitutionS, Institutions);
+  createAction(AUTH_ACTION_TYPES.SET_ATTACHED_INSTITUTIONS, Institutions);
 
 export const updateThemeStart = (colorData: StoredColorData): UpdateThemeAction =>
   createAction(AUTH_ACTION_TYPES.UPDATE_THEME, colorData);
@@ -125,7 +133,7 @@ export const fetchRemoteUserStart = (): FetchRemoteUserStart =>
   createAction(AUTH_ACTION_TYPES.FETCH_REMOTE_USER_START);
 
 export const fetchUpToDateInstitution = (): FetchUpToDateInstitution =>
-  createAction(AUTH_ACTION_TYPES.FETCH_UPTODATE_Institution);
+  createAction(AUTH_ACTION_TYPES.FETCH_UP_TO_DATE_INSTITUTION);
 
 export const setTemporaryPermissions = (
   temporaryPermissions: IPermission[],
@@ -133,3 +141,16 @@ export const setTemporaryPermissions = (
   createAction(AUTH_ACTION_TYPES.SET_TEMPORARY_PERMISSIONS, temporaryPermissions);
 export const clearTemporaryPermissions = (): ClearTemporaryPermissions =>
   createAction(AUTH_ACTION_TYPES.CLEAR_TEMPORARY_PERMISSIONS);
+
+// Inactivity monitoring mechanism
+
+export const userActivityDetected = () => createAction(AUTH_ACTION_TYPES.USER_ACTIVITY_DETECTED);
+export const showLogoutWarning = () => createAction(AUTH_ACTION_TYPES.SHOW_LOGOUT_WARNING);
+export const hideLogoutWarning = () => createAction(AUTH_ACTION_TYPES.HIDE_LOGOUT_WARNING);
+export const confirmLogout = () => createAction(AUTH_ACTION_TYPES.CONFIRM_LOGOUT);
+export const cancelLogout = () => createAction(AUTH_ACTION_TYPES.CANCEL_LOGOUT);
+export const refreshAccessTokenStart = () => createAction(AUTH_ACTION_TYPES.REFRESH_TOKENS_START);
+export const refreshAccessTokenSuccess = () => createAction(AUTH_ACTION_TYPES.REFRESH_TOKENS_SUCCESS);
+export const refreshAccessTokenFailure = () => createAction(AUTH_ACTION_TYPES.REFRESH_TOKENS_FAILURE);
+export const setInactivityTimeout = (timeout: number) => createAction(AUTH_ACTION_TYPES.SET_INACTIVITY_TIMEOUT, timeout);
+

@@ -1,5 +1,7 @@
-"use client";
 
+import Link from "next/link";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { AttendanceAPI, showErrorToast } from "@/lib/utils";
 
 import React, { useState, useRef, RefObject, useEffect } from "react";
 import { Search } from "lucide-react";
@@ -7,62 +9,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import Link from "next/link";
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { getPaginatedEmployees, getPaginatedEmployeesFromUrl, AttendanceAPI, showErrorToast } from "@/lib/utils";
+
 import { IAttendance, IEmployee } from "@/types/types.utils";
 import { toast } from "sonner";
 import { CheckInModal } from "@/components/checkin-modal";
 import { CheckOutModal } from "@/components/checkout-modal";
 import { getCurrentUserLocation } from "@/lib/helpers";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-
-interface EmployeeAttendanceProps {
-  searchTerm?:string,
-  scope: {type:"default"} | {type:"employee", employee:IEmployee},
-  attendanceRefreshRef?:RefObject<(()=>void|null)>
-}
-
-const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
-  scope,
-  searchTerm,
-  attendanceRefreshRef
-}) => {
-
-  const selectedInstitution = useSelector(selectSelectedInstitution);
-
-
-  return (
-    <PaginatedTableWrapper<IEmployee>
-      fetchFirstPage={async () => {
-        if (!selectedInstitution) throw new Error("No institution selected");
-        return await getPaginatedEmployees({ institutionId: selectedInstitution.id, page: 1, search: searchTerm});
-      }}
-      fetchFromUrl={getPaginatedEmployeesFromUrl}
-      deps={[selectedInstitution?.id, searchTerm]}
-      className=""
-      footerClassName="pt-4"
-    >
-      {({ data: employeesData, loading: employeesLoading, refresh: refreshEmployees }) => {
-        const employees = employeesData?.results || [];
-
-        return (
-          <>{ selectedInstitution ?
-            (
-              <AttendanceRecordsTable employeesLoading={employeesLoading} institutionId={selectedInstitution.id} searchTerm={searchTerm} 
-              attendanceRefreshRef={attendanceRefreshRef}
-              scope={scope.type === "default" ? {type:"default", employees}: {type:"employee", employee:scope.employee}}
-              />
-            ):
-            <></>
-          }
-          </>
-        );
-      }}
-    </PaginatedTableWrapper>
-  );
-};
 
 
 interface AttendanceRecordsTableProps{
@@ -72,10 +24,12 @@ interface AttendanceRecordsTableProps{
   searchTerm?:string,
   scope: {type:"default", employees:IEmployee[]} | {type:"employee", employee:IEmployee},
   attendanceRefreshRef?:RefObject<(()=>void|null)>;
-  employeesLoading:boolean
+  employeesLoading:boolean,
+  showingOnDashboard?:boolean
 }
 
-function AttendanceRecordsTable({institutionId, searchTerm, scope, attendanceRefreshRef:attendanceRef, employeesLoading}:AttendanceRecordsTableProps) {
+
+export function AttendanceRecordsTable({institutionId, searchTerm, scope, attendanceRefreshRef:attendanceRef, employeesLoading, showingOnDashboard}:AttendanceRecordsTableProps) {
   
   const [search, setSearch] = useState(searchTerm);
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
@@ -209,6 +163,8 @@ function AttendanceRecordsTable({institutionId, searchTerm, scope, attendanceRef
               <CardTitle className="flex items-center justify-between">
                 <span className="mb-2">Attendance ({employees.length})</span>
               </CardTitle>
+              {
+                !showingOnDashboard  && (
               <div className="grid grid-cols-1 md:flex flex-wrap gap-4 mb-16">
                 {stats.map((stat, idx) => (
                   <div
@@ -223,6 +179,8 @@ function AttendanceRecordsTable({institutionId, searchTerm, scope, attendanceRef
                   </div>
                 ))}
               </div>
+                )
+              }
               </>:
               <></>
 
@@ -235,15 +193,15 @@ function AttendanceRecordsTable({institutionId, searchTerm, scope, attendanceRef
                   <div className="relative md:w-full md:max-w-lg lg:max-w-xl">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
-                      type="text"
                       placeholder="Search employees..."
                       value={search || ""}
                       onChange={(e) => setSearch(e.target.value)}
-                      className="pl-10" />
+                      className="pl-10  " />
                   </div>
                   )
 
                   }
+                  {!showingOnDashboard &&
                   <Input
                     type="date"
                     value={selectedDate}
@@ -252,6 +210,7 @@ function AttendanceRecordsTable({institutionId, searchTerm, scope, attendanceRef
                     style={{ minWidth: 140 }}
                     max={new Date().toISOString().slice(0, 10)}
                     title="Filter by date" />
+                  }
                 </div>
               </div>
             </CardHeader>
@@ -360,5 +319,3 @@ function isToday(dateString: string) {
   const dd = String(today.getDate()).padStart(2, "0");
   return dateString === `${yyyy}-${mm}-${dd}`;
 }
-
-export default EmployeeAttendance;

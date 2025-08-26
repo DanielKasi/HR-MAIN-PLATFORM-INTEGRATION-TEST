@@ -55,3 +55,7 @@ export const selectTemporaryPermissions = createSelector(
   [authSlice],
   (slice) => slice.temporaryPermissions,
 );
+
+export const selectInactivityTimeout = createSelector([authSlice], (slice) => slice.inactivityTimeout);
+export const selectLogoutWarningVisible = createSelector([authSlice], (slice) => slice.logoutWarningVisible);
+export const selectRefreshInProgress = createSelector([authSlice], (slice) => slice.refreshInProgress);

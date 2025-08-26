@@ -34,6 +34,9 @@ export type AuthState = {
     loading: boolean;
   };
   temporaryPermissions: IPermission[];
+  inactivityTimeout: number; // In milliseconds
+  logoutWarningVisible: boolean;
+  refreshInProgress: boolean;
 };
 
 const intialAuthState: AuthState = {
@@ -49,6 +52,9 @@ const intialAuthState: AuthState = {
   selectedBranch: {loading: false, value: null},
   selectedTill: {loading: false, value: null},
   temporaryPermissions: [],
+  inactivityTimeout: 0,
+  logoutWarningVisible: false,
+  refreshInProgress: false,
 };
 
 export const authReducer = (
@@ -80,7 +86,7 @@ export const authReducer = (
     case AUTH_ACTION_TYPES.SET_REFRESH_TOKEN:
       return {...state, refreshToken: action.payload as string};
 
-    case AUTH_ACTION_TYPES.SET_ATTACHED_InstitutionS:
+    case AUTH_ACTION_TYPES.SET_ATTACHED_INSTITUTIONS:
       return {
         ...state,
         InstitutionsAttached: {
@@ -89,7 +95,7 @@ export const authReducer = (
         },
       };
 
-    case AUTH_ACTION_TYPES.SET_SELECTED_Institution:
+    case AUTH_ACTION_TYPES.SET_SELECTED_INSTITUTION:
       return {
         ...state,
         selectedInstitution: {
@@ -170,7 +176,17 @@ export const authReducer = (
       };
     case AUTH_ACTION_TYPES.CLEAR_TEMPORARY_PERMISSIONS:
       return {...state, temporaryPermissions: []};
-
+        case AUTH_ACTION_TYPES.SET_INACTIVITY_TIMEOUT:
+      return { ...state, inactivityTimeout: action.payload as number };
+    case AUTH_ACTION_TYPES.SHOW_LOGOUT_WARNING:
+      return { ...state, logoutWarningVisible: true };
+    case AUTH_ACTION_TYPES.HIDE_LOGOUT_WARNING:
+      return { ...state, logoutWarningVisible: false };
+    case AUTH_ACTION_TYPES.REFRESH_TOKENS_START:
+      return { ...state, refreshInProgress: true };
+    case AUTH_ACTION_TYPES.REFRESH_TOKENS_SUCCESS:
+    case AUTH_ACTION_TYPES.REFRESH_TOKENS_FAILURE:
+      return { ...state, refreshInProgress: false, logoutWarningVisible: false };
     default:
       return state;
   }

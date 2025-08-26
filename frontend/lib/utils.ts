@@ -101,6 +101,9 @@ import {
   AttendanceResponse,
   IEmployeeTaxFormData,
   IEmployeeTax,
+  IInstitutionAnalytics,
+  ICalendar,
+  IEvent,
 } from "@/types/types.utils";
 
 import apiRequest, { apiGet } from "./apiRequest";
@@ -4991,6 +4994,12 @@ export const payrollAPI = {
 
 
 export const institutionAPI = {
+
+  getDasboardAnalytics: async ({institutionId}:{institutionId:number}) => {
+    const response  = await apiRequest.get(`/institution/${institutionId}/dashboard-analytics/`);
+    return response.data as IInstitutionAnalytics
+  },
+
   getWorkingDays: async () => {
     try {
       const response = await apiRequest.get("/institution/working-days/")
@@ -5668,10 +5677,10 @@ export const employeeAPI = {
 // Calendar API functions
 export const calendarAPI = {
   // Get calendar data for a specific institution and year
-  getInstitutionCalendar: async (year: number) => {
+  getInstitutionCalendar: async ({year}:{year:number, url?:string}) => {
     const response = await apiRequest.get(`calendar/institutions-calendar/?year=${year}`);
     if (response.status === 200) {
-      return response.data;
+      return response.data as ICalendar;
     } else {
       throw new Error('Failed to fetch calendar data');
     }
@@ -5682,7 +5691,7 @@ export const calendarAPI = {
   getEvents: async () => {
     const response = await apiRequest.get(`calendar/events/`);
     if (response.status === 200) {
-      return response.data;
+      return response.data as IPaginatedResponse<IEvent>;
     } else {
       throw new Error('Failed to fetch events');
     }

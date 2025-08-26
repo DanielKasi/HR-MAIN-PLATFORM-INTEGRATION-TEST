@@ -35,7 +35,7 @@ import {
   setRefreshToken,
   setSelectedBranch,
   setSelectedInstitution,
-  setUserAction,
+  setCurrentUser,
 } from "@/store/auth/actions";
 import { toast } from "sonner";
 import type { LoginResponse } from "@/utils/authUtils";
@@ -382,7 +382,7 @@ export default function CreateOrganisationWizard() {
   const handleUserRefresh = (loginResponse: LoginResponse) => {
     dispatch(setAccessToken(loginResponse.tokens.access));
     dispatch(setRefreshToken(loginResponse.tokens.refresh));
-    dispatch(setUserAction(loginResponse.user));
+    dispatch(setCurrentUser(loginResponse.user));
 
     if (loginResponse.institution_attached.length) {
       const defaultSelectedInstitution = loginResponse.institution_attached.find(
@@ -789,7 +789,7 @@ export default function CreateOrganisationWizard() {
               <div>
                 <Label className="text-sm font-medium">Create Departments and Job Positions</Label>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Review and select the default departments and job positions for your organisation
+                  Review, create, edit or remove the departments and job positions for your organisation
                 </p>
               </div>
             </div>
