@@ -45,7 +45,7 @@ from django.shortcuts import get_object_or_404
 from .utils import generate_compliant_password
 from utilities.pagination import CustomPageNumberPagination
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from django.db.models import Q
+from django.db.models import Count, Sum, Q, F
 from django.contrib.auth import get_user_model
 import logging
 from django.db import transaction
@@ -55,6 +55,12 @@ import uuid
 import json
 import os
 from decimal import Decimal
+from django.utils import timezone
+from leave_mgt.models import LeaveApplication
+from payroll.models import Payslip
+from django.db.models.functions import ExtractMonth, ExtractYear
+from django.db.models import Value, IntegerField
+
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -73,7 +79,6 @@ class DefaultDataAPIView(APIView):
             {
                 "id": str(uuid.uuid4()),
                 "name": dept["name"],
-            
                 "description": dept["description"],
                 "job_positions": [
                     {
@@ -130,26 +135,30 @@ class InstitutionListAPIView(APIView):
                 "departments": departments_data,
             },
         )
-        
+
         if serializer.is_valid():
             try:
                 institution = serializer.save()
-                logger.info(f"Institution created: {institution.institution_name}, Country: {institution.country_code}")
+                logger.info(
+                    f"Institution created: {institution.institution_name}, Country: {institution.country_code}"
+                )
 
                 # Load defaults from JSON file
                 current_dir = os.path.dirname(__file__)  # institution folder
                 backend_dir = os.path.dirname(current_dir)  # backend folder
-                defaults_path = os.path.join(backend_dir, 'utilities', 'tax_rules.json')
+                defaults_path = os.path.join(backend_dir, "utilities", "tax_rules.json")
                 defaults = {}
-                
+
                 try:
-                    with open(defaults_path, 'r') as f:
+                    with open(defaults_path, "r") as f:
                         defaults = json.load(f)
                     logger.info(f"Successfully loaded defaults from {defaults_path}")
                 except FileNotFoundError:
                     logger.error(f"Tax rules file not found at: {defaults_path}")
                     return Response(
-                        {"detail": f"Tax rules configuration file not found at {defaults_path}"},
+                        {
+                            "detail": f"Tax rules configuration file not found at {defaults_path}"
+                        },
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     )
                 except json.JSONDecodeError as e:
@@ -160,104 +169,131 @@ class InstitutionListAPIView(APIView):
                     )
 
                 # Create global defaults (employee types and work types)
-                global_data = defaults.get('global', {})
+                global_data = defaults.get("global", {})
                 logger.info(f"Global data found: {bool(global_data)}")
-                
+
                 # Create Employee Types
-                employee_types_data = global_data.get('employee_types', [])
+                employee_types_data = global_data.get("employee_types", [])
                 logger.info(f"Creating {len(employee_types_data)} employee types")
-                
+
                 for et_data in employee_types_data:
                     try:
                         employee_type = EmployeeType.objects.create(
-                            institution=institution,
-                            **et_data
+                            institution=institution, **et_data
                         )
                         logger.info(f"Created employee type: {employee_type.name}")
                     except Exception as e:
-                        logger.error(f"Error creating employee type {et_data.get('name', 'Unknown')}: {str(e)}")
+                        logger.error(
+                            f"Error creating employee type {et_data.get('name', 'Unknown')}: {str(e)}"
+                        )
 
                 # Create Work Types
-                work_types_data = global_data.get('work_types', [])
+                work_types_data = global_data.get("work_types", [])
                 logger.info(f"Creating {len(work_types_data)} work types")
-                
+
                 for wt_data in work_types_data:
                     try:
                         work_type = WorkType.objects.create(
-                            institution=institution,
-                            **wt_data
+                            institution=institution, **wt_data
                         )
                         logger.info(f"Created work type: {work_type.name}")
                     except Exception as e:
-                        logger.error(f"Error creating work type {wt_data.get('name', 'Unknown')}: {str(e)}")
+                        logger.error(
+                            f"Error creating work type {wt_data.get('name', 'Unknown')}: {str(e)}"
+                        )
 
                 # Create country-specific taxes if available
                 country = institution.country_code
                 logger.info(f"Institution country code: {country}")
-                
+
                 if country and country in defaults:
                     country_data = defaults[country]
-                    taxes_data = country_data.get('taxes', [])
-                    logger.info(f"Creating {len(taxes_data)} taxes for country {country}")
-                    
+                    taxes_data = country_data.get("taxes", [])
+                    logger.info(
+                        f"Creating {len(taxes_data)} taxes for country {country}"
+                    )
+
                     for tax_data in taxes_data:
                         try:
                             tax = InstitutionTax.objects.create(
                                 institution=institution,
-                                tax_name=tax_data['tax_name'],
-                                tax_status=tax_data['tax_status'],
+                                tax_name=tax_data["tax_name"],
+                                tax_status=tax_data["tax_status"],
                                 created_by=request.user,  # Add created_by
                             )
                             logger.info(f"Created tax: {tax.tax_name}")
-                            
-                            # Create tax rules
-                            rules_data = tax_data.get('rules', [])
 
-                            
+                            # Create tax rules
+                            rules_data = tax_data.get("rules", [])
+
                             for rule_data in rules_data:
                                 try:
                                     # Create a copy to avoid modifying the original data
                                     rule_data_copy = rule_data.copy()
-                                    
+
                                     # Convert string values to Decimal where applicable
-                                    decimal_fields = ['tax_rule_percentage', 'tax_rule_fixed_amount', 'salary_from', 'salary_to']
+                                    decimal_fields = [
+                                        "tax_rule_percentage",
+                                        "tax_rule_fixed_amount",
+                                        "salary_from",
+                                        "salary_to",
+                                    ]
                                     for field in decimal_fields:
-                                        if field in rule_data_copy and rule_data_copy[field] is not None:
+                                        if (
+                                            field in rule_data_copy
+                                            and rule_data_copy[field] is not None
+                                        ):
                                             try:
-                                                rule_data_copy[field] = Decimal(str(rule_data_copy[field]))
+                                                rule_data_copy[field] = Decimal(
+                                                    str(rule_data_copy[field])
+                                                )
                                             except (ValueError, TypeError) as e:
-                                                logger.error(f"Error converting {field} to Decimal: {str(e)}")
+                                                logger.error(
+                                                    f"Error converting {field} to Decimal: {str(e)}"
+                                                )
                                                 rule_data_copy[field] = None
 
                                     tax_rule = InstitutionTaxRule.objects.create(
                                         institution_tax=tax,
                                         created_by=request.user,  # Add created_by
-                                        **rule_data_copy
+                                        **rule_data_copy,
                                     )
 
-                                    
                                 except Exception as e:
-                                    logger.error(f"Error creating tax rule {rule_data.get('tax_rule_name', 'Unknown')}: {str(e)}")
-                                    
+                                    logger.error(
+                                        f"Error creating tax rule {rule_data.get('tax_rule_name', 'Unknown')}: {str(e)}"
+                                    )
+
                         except Exception as e:
-                            logger.error(f"Error creating tax {tax_data.get('tax_name', 'Unknown')}: {str(e)}")
+                            logger.error(
+                                f"Error creating tax {tax_data.get('tax_name', 'Unknown')}: {str(e)}"
+                            )
                 else:
                     if not country:
-                        logger.warning(f"No country code determined for institution {institution.institution_name}")
+                        logger.warning(
+                            f"No country code determined for institution {institution.institution_name}"
+                        )
                     else:
-                        logger.warning(f"No tax defaults found for country '{country}'. Available countries: {list(defaults.keys())}")
+                        logger.warning(
+                            f"No tax defaults found for country '{country}'. Available countries: {list(defaults.keys())}"
+                        )
 
                 return Response(
-                    InstitutionSerializer(institution, context={"user": request.user}).data,
+                    InstitutionSerializer(
+                        institution, context={"user": request.user}
+                    ).data,
                     status=status.HTTP_201_CREATED,
                 )
-            
+
             except Exception as e:
                 logger.error(f"Error creating institution: {str(e)}")
                 import traceback
+
                 logger.error(f"Full traceback: {traceback.format_exc()}")
                 return Response(
-                    {"detail": "An error occurred while creating the institution. Please try again."},
+                    {
+                        "detail": "An error occurred while creating the institution. Please try again."
+                    },
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
@@ -352,7 +388,7 @@ class InstitutionBankTypeListAPIView(APIView):
         tags=["Bank Type Management"],
     )
     def get(self, request):
-        search_query = request.query_params.get('search', None)
+        search_query = request.query_params.get("search", None)
         user = request.user.profile if request.user.is_authenticated else None
 
         try:
@@ -361,15 +397,14 @@ class InstitutionBankTypeListAPIView(APIView):
             return Response({"detail": "Institution not found."}, status=404)
 
         bank_types = InstitutionBankType.objects.filter(
-            institution=institution,
-            deleted_at__isnull=True
+            institution=institution, deleted_at__isnull=True
         ).order_by("-created_at")
 
         if search_query:
             bank_types = bank_types.filter(
-                Q(bank_fullname__icontains=search_query) |
-                Q(bank_code__icontains=search_query) |
-                Q(br_code__icontains=search_query)
+                Q(bank_fullname__icontains=search_query)
+                | Q(bank_code__icontains=search_query)
+                | Q(br_code__icontains=search_query)
             )
 
         paginator = CustomPageNumberPagination()
@@ -461,7 +496,7 @@ class InstitutionBankAccountListAPIView(APIView):
         tags=["Bank Account Management"],
     )
     def get(self, request):
-        search_query = request.query_params.get('search', None)
+        search_query = request.query_params.get("search", None)
         user = request.user.profile if request.user.is_authenticated else None
 
         try:
@@ -470,15 +505,14 @@ class InstitutionBankAccountListAPIView(APIView):
             return Response({"detail": "Institution not found."}, status=404)
 
         bank_accounts = InstitutionBankAccount.objects.filter(
-            institution_bank__institution=institution,
-            deleted_at__isnull=True
+            institution_bank__institution=institution, deleted_at__isnull=True
         ).order_by("-created_at")
 
         if search_query:
             bank_accounts = bank_accounts.filter(
-                Q(account_name__icontains=search_query) |
-                Q(account_number__icontains=search_query) |
-                Q(institution_bank__bank_fullname__icontains=search_query)
+                Q(account_name__icontains=search_query)
+                | Q(account_number__icontains=search_query)
+                | Q(institution_bank__bank_fullname__icontains=search_query)
             )
 
         paginator = CustomPageNumberPagination()
@@ -577,7 +611,9 @@ class InstitutionWorkingDaysListAPIView(APIView):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=404)
 
-        working_days = InstitutionWorkingDays.objects.filter(institution=institution, deleted_at__isnull=True)
+        working_days = InstitutionWorkingDays.objects.filter(
+            institution=institution, deleted_at__isnull=True
+        )
 
         serializer = InstitutionWorkingDaysSerializer(working_days, many=True)
 
@@ -640,7 +676,7 @@ class InstitutionTaxListAPIView(APIView):
         tags=["Tax Management"],
     )
     def get(self, request):
-        search_query = request.query_params.get('search', None)
+        search_query = request.query_params.get("search", None)
         user = request.user.profile if request.user.is_authenticated else None
 
         try:
@@ -648,12 +684,12 @@ class InstitutionTaxListAPIView(APIView):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=404)
 
-        taxes = InstitutionTax.objects.filter(institution=institution, deleted_at__isnull=True)
+        taxes = InstitutionTax.objects.filter(
+            institution=institution, deleted_at__isnull=True
+        )
 
         if search_query:
-            taxes = taxes.filter(
-                Q(tax_name__icontains=search_query)
-            )
+            taxes = taxes.filter(Q(tax_name__icontains=search_query))
 
         serializer = InstitutionTaxSerializer(taxes, many=True)
 
@@ -742,7 +778,7 @@ class InstitutionTaxRuleListAPIView(APIView):
         tags=["Tax Rule Management"],
     )
     def get(self, request):
-        search_query = request.query_params.get('search', None)
+        search_query = request.query_params.get("search", None)
         user = request.user.profile if request.user.is_authenticated else None
 
         try:
@@ -751,15 +787,14 @@ class InstitutionTaxRuleListAPIView(APIView):
             return Response({"detail": "Institution not found."}, status=404)
 
         tax_rules = InstitutionTaxRule.objects.filter(
-            institution_tax__institution=institution,
-            deleted_at__isnull=True
+            institution_tax__institution=institution, deleted_at__isnull=True
         )
 
         if search_query:
             tax_rules = tax_rules.filter(
-                Q(tax_rule_name__icontains=search_query) |
-                Q(institution_tax__name__icontains=search_query) |
-                Q(institution_tax__tax_name__icontains=search_query)
+                Q(tax_rule_name__icontains=search_query)
+                | Q(institution_tax__name__icontains=search_query)
+                | Q(institution_tax__tax_name__icontains=search_query)
             )
 
         serializer = InstitutionTaxRuleSerializer(tax_rules, many=True)
@@ -868,22 +903,19 @@ class BranchListAPIView(APIView):
         tags=["Branch Management"],
     )
     def get(self, request):
-        search_query = request.query_params.get('search', None)
+        search_query = request.query_params.get("search", None)
 
-        branches = Branch.objects.filter(
-
-            deleted_at__isnull=True
-        ).order_by("-created_at")
+        branches = Branch.objects.filter(deleted_at__isnull=True).order_by(
+            "-created_at"
+        )
 
         if not request.user.is_staff:
-            branches = branches.filter(
-                institution__institution_owner=request.user
-            )
+            branches = branches.filter(institution__institution_owner=request.user)
 
         if search_query:
             branches = branches.filter(
-                Q(branch_name__icontains=search_query) |
-                Q(branch_location__icontains=search_query)
+                Q(branch_name__icontains=search_query)
+                | Q(branch_location__icontains=search_query)
             )
 
         paginator = CustomPageNumberPagination()
@@ -891,7 +923,6 @@ class BranchListAPIView(APIView):
 
         serializer = BranchSerializer(paginator_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
-
 
 
 class BranchDetailAPIView(APIView):
@@ -1116,8 +1147,6 @@ class UserBranchListCreateView(APIView):
         if serializer.is_valid():
             user_branch = serializer.save()
 
-            
-
             try:
                 employee = Employee.objects.get(user=user_branch.user)
                 if user_branch.is_default:
@@ -1207,15 +1236,13 @@ class DepartmentListAPIView(APIView):
         tags=["Department Management"],
     )
     def get(self, request, institution_id=None):
-        search_query = request.query_params.get('search', None)
-        departments = Department.objects.filter(institution_id=institution_id,  deleted_at__isnull=True).order_by(
-            "-created_at"
-        )
+        search_query = request.query_params.get("search", None)
+        departments = Department.objects.filter(
+            institution_id=institution_id, deleted_at__isnull=True
+        ).order_by("-created_at")
 
         if search_query:
-            departments = departments.filter(
-                Q(name__icontains=search_query)
-            )
+            departments = departments.filter(Q(name__icontains=search_query))
         paginator = CustomPageNumberPagination()
         paginator_qs = paginator.paginate_queryset(departments, request)
         serializer = DepartmentSerializer(paginator_qs, many=True)
@@ -1572,3 +1599,125 @@ class SystemActivationView(APIView):
                 {"error": "Failed to activate HR system", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class DashboardView(APIView):
+    def get(self, request, institution_id):
+        year = request.query_params.get("year", timezone.now().year)
+        try:
+            year = int(year)
+        except ValueError:
+            return Response(
+                {"error": "Invalid year"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        prev_year = year - 1
+        today = timezone.now().date()
+
+        employee_count = Employee.objects.filter(
+            is_active=True, department__institution_id=institution_id
+        ).count()
+
+        dep_count = Department.objects.filter(
+            is_active=True, institution_id=institution_id
+        ).count()
+
+        on_leave_count = (
+            LeaveApplication.objects.filter(
+                status="approved",
+                start_date__lte=today,
+                end_date__gte=today,
+                employee__department__institution_id=institution_id,
+            )
+            .values("employee")
+            .distinct()
+            .count()
+        )
+
+        basic_counts = {
+            "employee_count": employee_count,
+            "department_count": dep_count,
+            "on_leave_count": on_leave_count,
+        }
+
+        current_year_payslips = (
+            Payslip.objects.filter(
+                payroll_period__start_date__year=year,
+                employee__department__institution_id=institution_id,
+            )
+            .annotate(month=ExtractMonth("payroll_period__start_date"))
+            .values("month")
+            .annotate(payroll=Sum("net_salary"))
+            .order_by("month")
+        )
+
+        current_monthly = [
+            {"month": f"{item['month']:02d}", "payroll": item["payroll"] or 0}
+            for item in current_year_payslips
+        ]
+
+        for m in range(1, 13):
+            if not any(x["month"] == f"{m:02d}" for x in current_monthly):
+                current_monthly.append({"month": f"{m:02d}", "payroll": 0})
+        current_monthly.sort(key=lambda x: x["month"])
+
+        past_total = (
+            Payslip.objects.filter(
+                payroll_period__start_date__year=prev_year,
+                employee__department__institution_id=institution_id,
+            ).aggregate(total=Sum("net_salary"))["total"]
+            or 0
+        )
+
+        payroll_data = {"current": current_monthly, "past": {"total": past_total}}
+
+        employees_per_dept = (
+            Employee.objects.filter(
+                date_of_joining__year=year,
+                is_active=True,
+                department__institution_id=institution_id,
+            )
+            .values("department__name")
+            .annotate(
+                count=Count("id"),
+                dept_name=F("department__name"),
+                year=Value(year, output_field=IntegerField()),
+            )
+            .values("dept_name", "count", "year")
+        )
+
+        employees_per_dept_list = list(employees_per_dept)
+
+        gender_data = Employee.objects.filter(
+            is_active=True,
+            department__institution_id=institution_id,
+            date_of_joining__year=year,
+        ).aggregate(
+            employees_count=Count("id"),
+            male=Count("id", filter=Q(gender="male")),
+            female=Count("id", filter=Q(gender="female")),
+            other=Count("id", filter=Q(gender="other")),
+        )
+
+
+        payroll_by_dept = (
+            Payslip.objects.filter(
+                employee__department__institution_id=institution_id,
+                payroll_period__start_date__year=year,
+            )
+            .values("employee__department__name")
+            .annotate(payroll=Sum("net_salary"), dept=F("employee__department__name"))
+            .values("dept", "payroll")
+        )
+
+        payroll_by_dept_list = list(payroll_by_dept)
+
+        data = {
+            "basic_counts": basic_counts,
+            "payroll_summary": payroll_data,
+            "employees_per_department": employees_per_dept_list,
+            "gender_distribution": gender_data,
+            "payroll_by_department": payroll_by_dept_list,
+        }
+
+        return Response(data, status=status.HTTP_200_OK)

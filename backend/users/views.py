@@ -31,6 +31,7 @@ from .serializers import (
     UserSendForgotPasswordTokenSerializer,
     ResendOTPSerializer,
     ProfileSerializer,
+    LogoutRequestSerializer,
 )
 from .models import (
     CustomUser,
@@ -1168,3 +1169,24 @@ class UserDetailsWithInstitutions(APIView):
             },
             status=status.HTTP_403_FORBIDDEN,
         )
+
+class LogoutView(APIView):
+    @extend_schema(
+        request=LogoutRequestSerializer,
+        responses={205: None},
+        description="Invalidate the refresh token to log out the user.",
+        summary="User Logout",
+        tags=["Authentication"],
+    )   
+    def post(self, request):
+        serializer = LogoutRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                refresh_token = serializer.validated_data['refresh']
+                UntypedToken(refresh_token)
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+                return Response({"detail": "Successfully logged out."}, status=status.HTTP_205_RESET_CONTENT)
+            except (InvalidToken, TokenError) as e:
+                return Response({"detail": "Invalid refresh token."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)     

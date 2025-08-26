@@ -104,14 +104,14 @@ class Employee(UtilityBaseModel):
     )
     department = models.ForeignKey(
         "institution.Department",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         blank=True,
         null=True,
         related_name="employees",
     )
     payroll_branch = models.ForeignKey(
         "institution.Branch",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         blank=True,
         null=True,
         related_name="payroll_employees",
@@ -119,25 +119,26 @@ class Employee(UtilityBaseModel):
     date_of_birth = models.DateField(blank=True, null=True)
     work_type = models.ForeignKey(
         WorkType,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         blank=True,
         null=True,
         related_name="employees",
     )
     employee_type = models.ForeignKey(
         EmployeeType,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         blank=True,
         null=True,
         related_name="employees",
     )
-    date_of_joining = models.DateField(default=timezone.now)
+    date_of_joining = models.DateField(default=timezone.now, null=True, blank=True)
     address = models.TextField(blank=True, null=True)
     country = models.CharField(max_length=50, blank=True, null=True)
     nin = models.CharField(max_length=20, blank=True, null=True)
     nssf_no = models.CharField(max_length=20, blank=True, null=True)
     tin = models.CharField(max_length=12, blank=True, null=True)
     bank = models.CharField(max_length=50, blank=True, null=True)
+    # bank_account_name = models.CharField(max_length=100, blank=True, null=True)
     bank_account_number = models.CharField(max_length=20, blank=True, null=True)
     experience = models.PositiveIntegerField(default=0)
     qualifications = models.TextField(blank=True, null=True)
