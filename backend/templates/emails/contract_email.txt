@@ -1,6 +1,6 @@
 Subject: Your Employment Contract
 
-Dear {{ employee_name }},
+Dear {{ salutation }},
 
 Congratulations on your new role as {{ position_title }} at {{ institution_name }}! We are excited to welcome you to our team.
 
