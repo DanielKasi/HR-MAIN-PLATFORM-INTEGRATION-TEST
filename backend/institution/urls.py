@@ -25,6 +25,7 @@ from .views import (
     InstitutionTaxDetailView,
     InstitutionTaxRuleDetailView,
     InstitutionTaxRuleListAPIView,
+    DashboardView
 )
 
 urlpatterns = [
@@ -123,4 +124,5 @@ urlpatterns = [
     ),
     path("api/activate/", SystemActivationView.as_view(), name="system_activation"),
     path("default-data/", DefaultDataAPIView.as_view(), name="default-data"),
+    path("<int:institution_id>/dashboard-analytics/", DashboardView.as_view(), name="dash-analytics")
 ]

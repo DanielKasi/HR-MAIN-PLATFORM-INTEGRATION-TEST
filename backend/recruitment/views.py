@@ -174,8 +174,6 @@ class JobPositionAdvertListAPI(APIView):
                 Q(job_position__name__icontains=search_query)
             )
 
-              
-
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(adverts, request)
         serializer = JobPositionAdvertWorkflowSerializer(paginated_qs, many=True)
