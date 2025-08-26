@@ -787,7 +787,7 @@ export default function CreateOrganisationWizard() {
           <div className="w-full space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-sm font-medium">Departments and Job Positions</Label>
+                <Label className="text-sm font-medium">Create Departments and Job Positions</Label>
                 <p className="text-xs text-muted-foreground mt-1">
                   Review and select the default departments and job positions for your organisation
                 </p>
