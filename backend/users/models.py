@@ -14,6 +14,7 @@ from django import forms
 from jsignature.forms import JSignatureField as JSignatureFormField
 from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import UtilityBaseModel
+from datetime import timedelta
 
 
 class CustomUserManager(BaseUserManager):
@@ -64,12 +65,23 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, UtilityBaseModel):
 
     def get_token(self):
         """Generate a custom JWT token with additional user details."""
+        institution = None
+        if hasattr(self, 'profile') and self.profile:
+            institution = self.profile.institution
+
+        if institution and institution.user_inactivity_time:
+            lifetime = timedelta(minutes=institution.user_inactivity_time)
+        else:
+            lifetime = settings.SIMPLE_JWT.get('ACCESS_TOKEN_LIFETIME', timedelta(hours=1))
+
         refresh = RefreshToken.for_user(self)
+        refresh.access_token.lifetime = lifetime
         refresh["email"] = self.email
         refresh["fullname"] = self.fullname
         return {
             "refresh": str(refresh),
             "access": str(refresh.access_token),
+            "access_lifetime": lifetime.total_seconds() / 60,  
         }
 
     def get_all_permissions(self, obj=None):
