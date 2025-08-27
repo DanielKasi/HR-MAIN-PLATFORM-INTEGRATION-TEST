@@ -1,3 +1,4 @@
+
 "use client"
 
 import type React from "react"
@@ -128,44 +129,51 @@ export default function SettingsPage() {
         if (!institution) { return };
         setIsLoading(true)
         try {
-            const updateData: Partial<IUserInstitutionFormData> & {
-                institution_logo?: File;
-                document_files?: File[];
-                document_titles?: string[];
-            } = {
-                institution_name: formData.institution_name,
-                institution_email: formData.institution_email,
-                first_phone_number: formData.first_phone_number,
-                location: formData.location,
-                user_inactivity_time: formData.user_inactivity_time,
-                is_attendance_penalties_enabled: formData.is_attendance_penalties_enabled,
-                latitude: formData.latitude,
-                longitude: formData.longitude,
-            }
-
-            if (logoFile) {
-                updateData.institution_logo = logoFile
-            }
-
-            // Handle documents if any are added
             const validDocuments = documents.filter(doc => doc.file && doc.title.trim())
             if (validDocuments.length > 0) {
-                updateData.document_files = validDocuments.map(doc => doc.file!)
-                updateData.document_titles = validDocuments.map(doc => doc.title.trim())
+                // Handle KYC document upload
+                const kycDocuments = validDocuments.map(doc => ({
+                    document_title: doc.title.trim(),
+                    document_file: doc.file!
+                }))
+
+                console.log(kycDocuments)
+
+                await institutionAPI.createKYCDocuments(kycDocuments)
+                
+                setDocuments([]) // Clear documents after successful submission
+                setIsEditing(prev => ({ ...prev, documents: false })) // Close document editing mode
+                toast.success("KYC documents uploaded successfully")
+            } else {
+                // Handle institution settings update
+                const updateData: Partial<IUserInstitutionFormData> & { 
+                    institution_logo?: File;
+                } = {
+                    institution_name: formData.institution_name,
+                    institution_email: formData.institution_email,
+                    first_phone_number: formData.first_phone_number,
+                    location: formData.location,
+                    user_inactivity_time: formData.user_inactivity_time,
+                    is_attendance_penalties_enabled: formData.is_attendance_penalties_enabled,
+                    latitude: formData.latitude,
+                    longitude: formData.longitude,
+                }
+
+                if (logoFile) {
+                    updateData.institution_logo = logoFile
+                }
+
+                const updatedInstitution = await institutionAPI.updateInstitution({
+                    institutionId: institution.id,
+                    data: updateData,
+                })
+
+                dispatch(setSelectedInstitution(updatedInstitution));
+                dispatch(setAttachedInstitutions([...attachedInstitutions.map((inst) => inst.id === updatedInstitution.id ? updatedInstitution : inst)]))
+
+                setLogoFile(null)
+                toast.success("Settings updated successfully")
             }
-
-            const updatedInstitution = await institutionAPI.updateInstitution({
-                institutionId: institution.id,
-                data: updateData,
-            })
-
-            dispatch(setSelectedInstitution(updatedInstitution));
-            dispatch(setAttachedInstitutions([...attachedInstitutions.map((inst) => inst.id === updatedInstitution.id ? updatedInstitution : inst)]))
-
-            setLogoFile(null)
-            setDocuments([]) // Clear documents after successful submission
-            setIsEditing(prev => ({ ...prev, documents: false })) // Close document editing mode
-            toast.success("Settings updated successfully")
 
         } catch (error) {
             showErrorToast({ error, defaultMessage: "Failed to update settings" })
@@ -176,30 +184,43 @@ export default function SettingsPage() {
     }
 
     const handleSave = () => {
-        if (formData.user_inactivity_time > 180) {
-            toast.error("User inactivity time cannot exceed 3 hours (180 minutes)")
-            return
-        }
-
-        if (formData.user_inactivity_time < 1) {
-            toast.error("User inactivity time must be at least 1 minute")
-            return
-        }
-
-        // Validate documents if any are being added
+        // Check if we're uploading KYC documents
+        const validDocuments = documents.filter(doc => doc.file && doc.title.trim())
         const invalidDocuments = documents.filter(doc => doc.file && !doc.title.trim())
-        if (invalidDocuments.length > 0) {
-            toast.error("Please provide titles for all uploaded documents")
-            return
-        }
+        
+        if (validDocuments.length > 0) {
+            // Validate KYC documents
+            if (invalidDocuments.length > 0) {
+                toast.error("Please provide titles for all uploaded documents")
+                return
+            }
 
-        setConfirmationDialog({
-            isOpen: true,
-            title: "Update Institution Settings",
-            description:
-                "Are you sure you want to update these institution settings? This will affect all users in your institution.",
-            onConfirm: handleSubmit
-        })
+            setConfirmationDialog({
+                isOpen: true,
+                title: "Upload KYC Documents",
+                description: `Are you sure you want to upload ${validDocuments.length} KYC document(s)? This will add these documents to your institution's records.`,
+                onConfirm: handleSubmit
+            })
+        } else {
+            // Validate institution settings
+            if (formData.user_inactivity_time > 180) {
+                toast.error("User inactivity time cannot exceed 3 hours (180 minutes)")
+                return
+            }
+
+            if (formData.user_inactivity_time < 1) {
+                toast.error("User inactivity time must be at least 1 minute")
+                return
+            }
+
+            setConfirmationDialog({
+                isOpen: true,
+                title: "Update Institution Settings",
+                description:
+                    "Are you sure you want to update these institution settings? This will affect all users in your institution.",
+                onConfirm: handleSubmit
+            })
+        }
     }
 
     const formatTimeout = (minutes: number) => {
@@ -497,13 +518,13 @@ export default function SettingsPage() {
                                     </div>
                                 </div>
 
+                                {/* KYC Documents Section */}
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-gray-700">Documents (Optional)</Label>
-                                    <p className="text-xs text-gray-500 mb-2">Upload any required documents for your organisation registration</p>
-                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                                        <span className="text-gray-900">
-                                            {documents.length} document{documents.length !== 1 ? 's' : ''} uploaded
-                                        </span>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <Label className="text-sm font-medium text-gray-700">KYC Documents</Label>
+                                            <p className="text-xs text-gray-500">Upload required KYC documents for your institution</p>
+                                        </div>
                                         <Button
                                             variant="outline"
                                             size="sm"
@@ -515,132 +536,101 @@ export default function SettingsPage() {
                                     </div>
 
                                     {isEditing.documents && (
-                                        <div className="w-full space-y-4 p-4 border border-gray-200 rounded-xl bg-white">
+                                        <div className="space-y-4 p-4 bg-gray-50 rounded-xl">
                                             <div className="flex items-center justify-between">
-                                                <div>
-                                                    <Label className="text-sm font-medium">Documents (Optional)</Label>
-                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                        Upload any required documents for your organisation registration
-                                                    </p>
-                                                </div>
+                                                <h4 className="text-sm font-medium text-gray-700">Upload Documents</h4>
                                                 <Button
                                                     type="button"
                                                     variant="outline"
                                                     size="sm"
                                                     onClick={addDocument}
-                                                    className="flex items-center gap-2"
+                                                    className="rounded-xl border-gray-200 hover:bg-gray-50 flex items-center space-x-2"
                                                 >
-                                                    <Upload className="h-4 w-4" />
-                                                    Add Document
+                                                    <Upload className="w-4 h-4" />
+                                                    <span>Add Document</span>
                                                 </Button>
                                             </div>
 
                                             {documents.length === 0 ? (
-                                                <div className="w-full border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                                                    <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                                                    <h3 className="text-base font-medium mb-2">No documents added</h3>
-                                                    <p className="text-sm text-muted-foreground mb-3">Documents are optional. You can add them later from your dashboard.</p>
-                                                    <div>
-                                                        <Button type="button" onClick={addDocument} className="mt-4">
-                                                            Add Document
-                                                        </Button>
-                                                    </div>
+                                                <div className="text-center py-8 text-gray-500">
+                                                    <FileText className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                                                    <p className="text-sm">No documents added yet</p>
+                                                    <p className="text-xs">Click "Add Document" to upload KYC documents</p>
                                                 </div>
                                             ) : (
-                                                <div className="w-full space-y-3">
-                                                    {documents.map((doc, index) => (
-                                                        <div key={doc.id} className="w-full border rounded-lg p-4 space-y-3 bg-card">
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                                                        <FileText className="h-4 w-4 text-primary" />
-                                                                    </div>
-                                                                    <div>
-                                                                        <p className="text-xs text-muted-foreground">
-                                                                            {doc.fileName || "No file selected"}
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={() => removeDocument(doc.id)}
-                                                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                                                >
-                                                                    <X className="h-4 w-4" />
-                                                                </Button>
-                                                            </div>
-
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                <div className="space-y-1">
-                                                                    <Label className="text-sm font-medium">Document Title *</Label>
-                                                                    <Input
-                                                                        placeholder="e.g., Business License, Tax Certificate"
-                                                                        value={doc.title}
-                                                                        onChange={(e) => updateDocument(doc.id, "title", e.target.value)}
-                                                                        className="w-full"
+                                                <div className="space-y-3">
+                                                    {documents.map((doc) => (
+                                                        <div key={doc.id} className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-200">
+                                                            <div className="flex-1 space-y-2">
+                                                                <Input
+                                                                    placeholder="Document title (e.g., Business License, Tax Certificate)"
+                                                                    value={doc.title}
+                                                                    onChange={(e) => updateDocument(doc.id, "title", e.target.value)}
+                                                                    className="rounded-xl border-gray-200 focus:border-orange-400 focus:ring-orange-400"
+                                                                />
+                                                                <div className="flex items-center space-x-2">
+                                                                    <label htmlFor={`file-${doc.id}`} className="cursor-pointer">
+                                                                        <div className="flex items-center space-x-2 px-3 py-2 border border-gray-200 rounded-xl hover:bg-gray-50">
+                                                                            <Upload className="w-4 h-4 text-gray-500" />
+                                                                            <span className="text-sm text-gray-600">
+                                                                                {doc.fileName || "Choose file"}
+                                                                            </span>
+                                                                        </div>
+                                                                    </label>
+                                                                    <input
+                                                                        id={`file-${doc.id}`}
+                                                                        type="file"
+                                                                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                                                        onChange={(e) => handleFileChange(doc.id, e.target.files?.[0] || null)}
+                                                                        className="hidden"
                                                                     />
-                                                                </div>
-
-                                                                <div className="space-y-1">
-                                                                    <Label className="text-sm font-medium">Upload File *</Label>
-                                                                    <div className="relative">
-                                                                        <Input
-                                                                            type="file"
-                                                                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                                                            onChange={(e) => handleFileChange(doc.id, e.target.files?.[0] || null)}
-                                                                            className="w-full file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-                                                                        />
-                                                                    </div>
+                                                                    {doc.file && (
+                                                                        <div className="flex items-center space-x-1 text-green-600">
+                                                                            <Check className="w-4 h-4" />
+                                                                            <span className="text-xs">Selected</span>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             </div>
-
-                                                            {doc.file && (
-                                                                <div className="w-full p-2 bg-muted/50 rounded-md">
-                                                                    <div className="flex items-center gap-2 text-xs">
-                                                                        <Check className="h-3 w-3 text-green-600" />
-                                                                        <span className="font-medium">File uploaded:</span>
-                                                                        <span className="text-muted-foreground">{doc.fileName}</span>
-                                                                        <span className="text-xs text-muted-foreground">
-                                                                            ({(doc.file.size / 1024 / 1024).toFixed(2)} MB)
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                            )}
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => removeDocument(doc.id)}
+                                                                className="rounded-xl border-red-200 hover:bg-red-50 text-red-600 hover:text-red-700"
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </Button>
                                                         </div>
                                                     ))}
-
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        onClick={addDocument}
-                                                        className="w-full h-10 border-dashed border-2 flex items-center gap-2 hover:bg-muted/50"
-                                                    >
-                                                        <Upload className="h-4 w-4" />
-                                                        Add Another Document
-                                                    </Button>
                                                 </div>
                                             )}
 
-                                            <div className="w-full bg-muted/50 p-3 rounded-lg">
-                                                <div className="flex items-start gap-2">
-                                                    <FileText className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                                                    <div className="w-full">
-                                                        <h4 className="font-medium text-xs mb-1">Document Guidelines</h4>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-muted-foreground">
-                                                            <ul className="space-y-0.5">
-                                                                <li>• Accepted formats: PDF, DOC, DOCX, JPG, PNG</li>
-                                                                <li>• Maximum file size: 10MB per document</li>
-                                                            </ul>
-                                                            <ul className="space-y-0.5">
-                                                                <li>• Business license or registration</li>
-                                                                <li>• Tax identification documents</li>
-                                                            </ul>
+                                            {documents.length > 0 && (
+                                                <div className="pt-4 border-t border-gray-200">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="text-xs text-gray-500">
+                                                            <p>• Supported formats: PDF, DOC, DOCX, JPG, PNG</p>
+                                                            <p>• Maximum file size: 10MB per document</p>
                                                         </div>
+                                                        <Button
+                                                            type="button"
+                                                            onClick={handleSave}
+                                                            disabled={isLoading}
+                                                            className="bg-primary hover:bg-primary text-white rounded-xl px-6"
+                                                        >
+                                                            {isLoading ? (
+                                                                <div className="flex items-center space-x-2">
+                                                                    <Icon icon="hugeicons:loading-03" className="w-4 h-4 animate-spin" />
+                                                                    <span>Uploading...</span>
+                                                                </div>
+                                                            ) : (
+                                                                "Upload Documents"
+                                                            )}
+                                                        </Button>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -679,5 +669,4 @@ export default function SettingsPage() {
         </div>
     )
 }
-
 

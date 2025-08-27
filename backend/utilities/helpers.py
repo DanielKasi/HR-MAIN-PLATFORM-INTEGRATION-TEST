@@ -31,6 +31,26 @@ logger = logging.getLogger(__name__)
 
 from users.models import Role, RolePermission, Permission, UserRole
 
+from datetime import datetime, date
+
+
+def parse_date(value: str):
+    if not value:
+        return None
+
+    value = value.strip().replace("“", "").replace("”", "")
+
+    if " " in value:
+        value = value.split()[0]
+
+    formats = ["%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d"]
+    for fmt in formats:
+        try:
+            return datetime.strptime(value, fmt).date()
+        except ValueError:
+            continue
+    raise ValueError("Invalid date format. Use YYYY-MM-DD, YYYY/MM/DD, or YYYY.MM.DD")
+
 
 def get_gender_salutation(user):
     """

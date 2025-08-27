@@ -1,4 +1,4 @@
-import { PERMISSION_CODES } from "./types.utils";
+import { PERMISSION_CODES, IInstitutionDocument } from "./types.utils";
 
 export interface IProductCategoryDetail {
   id: number;
@@ -27,7 +27,8 @@ export interface IUserInstitution {
   location: string,
   is_attendance_penalties_enabled: boolean,
   user_inactivity_time: number   // In minutes ,
-  country_code: string
+  country_code: string,
+  documents?: IInstitutionDocument[]
 }
 
 export interface IUserInstitutionFormData {
