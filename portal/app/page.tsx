@@ -194,7 +194,7 @@ const JobPortal = () => {
                                 {job.job_position_details.name}
                               </h3>
                               <div className="flex items-center gap-2 mt-1 text-base text-gray-600">
-                                <span>{job.institution.name || "Unknown Institution"}</span>
+                                <span>{job.institution?.name || "Unknown Institution"}</span>
                                 <span className="hidden sm:inline">•</span>
                                 <span className="text-gray-400">{formatDate(job.published_date)}</span>
                               </div>
