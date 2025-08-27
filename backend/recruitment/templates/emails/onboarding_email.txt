@@ -1,4 +1,4 @@
-Welcome to the Team, {{ employee_name }}!
+Welcome to the Team, {{salutation}} {{ employee_name }}!
 
 We're excited to have you join us as a {{ position }} in the {{ department }} department.
 
