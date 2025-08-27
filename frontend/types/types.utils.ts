@@ -2162,3 +2162,66 @@ export interface AttendanceResponse {
   employees: AttendanceEmployeeData[];
 }
 
+
+// export interface PublicHoliday {
+//   id: number
+//   institution: number
+//   title: string
+//   date: string
+//   created_at: string
+//   updated_at: string
+// }
+
+
+
+// export interface EventOccurrence {
+//   id: number
+//   event: IEvent
+//   date: string
+// }
+
+// export interface CalendarData {
+//   id: number
+//   institution: number
+//   year: number
+//   public_holidays: PublicHoliday[]
+//   event_occurrences: EventOccurrence[]
+//   created_at: string
+//   updated_at: string
+// }
+
+export type IBasicDasboardDataCounts = {
+  employee_count: number;
+    department_count: number;
+    on_leave_count: number;
+}
+
+
+export interface IInstitutionAnalytics {
+  basic_counts: IBasicDasboardDataCounts;
+  payroll_summary: {
+    current: {
+      month: string; // e.g. "01" through "12"
+      payroll: number;
+    }[];
+    past: {
+      total: number;
+    };
+  };
+  employees_per_department: {
+    dept_name: string;
+    count: number;
+    year: number;
+  }[];
+  gender_distribution: {
+    employees_count: number;
+    male: number;
+    female: number;
+    other: number;
+  };
+  payroll_by_department: {
+    dept: string;
+    payroll: number;
+  }[];
+}
+

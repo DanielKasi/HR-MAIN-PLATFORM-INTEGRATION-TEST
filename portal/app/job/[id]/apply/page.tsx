@@ -176,7 +176,7 @@ const ApplicationPage = () => {
  
 
   return (
-    <div className="w-full max-w-6xl mx-auto min-h-screen bg-white p-4 sm:p-6 md:p-8 lg:p-12">
+    <div className="w-9/12 max-lg:w-full mx-auto min-h-screen bg-white py-10 max-lg:px-4 max-lg:py-4">
       {/* Header */}
       <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div className="w-10 h-10 border rounded-full flex items-center justify-center flex-shrink-0">

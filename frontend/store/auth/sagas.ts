@@ -1,10 +1,10 @@
-import {call, all, takeLatest, put, select, fork} from "redux-saga/effects";
+import { call, all, takeLatest, put, select, fork, take, delay, race, cancel, Effect, SelectEffect } from "redux-saga/effects";
 
-import {ActionWithPayLoad} from "../storeUtils";
-import {clearEmployeeForm, toggleSideBarAction} from "../miscellaneous/actions";
-import {selectSideBarOpened} from "../miscellaneous/selectors";
+import { ActionWithPayLoad, parseJwtLifetime } from "../storeUtils";
+import { clearEmployeeForm, toggleSideBarAction } from "../miscellaneous/actions";
+import { selectSideBarOpened } from "../miscellaneous/selectors";
 
-import {AUTH_ACTION_TYPES} from "./types";
+import { AUTH_ACTION_TYPES } from "./types";
 import {
   loginFailure,
   logoutFailure,
@@ -14,24 +14,39 @@ import {
   setRefreshToken,
   setSelectedBranch,
   setSelectedInstitution,
-  setUserAction,
+  setCurrentUser,
+  hideLogoutWarning,
+  refreshAccessTokenFailure,
+  refreshAccessTokenStart,
+  refreshAccessTokenSuccess,
+  setInactivityTimeout,
+  showLogoutWarning,
+  userActivityDetected,
+  logoutStart,
 } from "./actions";
-import {selectSelectedInstitution, selectUser} from "./selectors";
+import { selectInactivityTimeout, selectRefreshInProgress, selectRefreshToken, selectSelectedInstitution, selectUser } from "./selectors";
 
 import {
-  fetchRemoteInstitutionById,
+  AUTH_API,
   fetchUserAttachedInstitutions,
   fetchUserById,
   LoginResponse,
   loginWithEmailAndPassword,
 } from "@/utils/authUtils";
-import {IUser, IUserInstitution} from "@/types";
-// import { IUserInstitution } from "@/app/types";
-// import { selectAttachedInstitutions } from "./selectors";
+import { IUser, IUserInstitution } from "@/types";
+import { Task } from "redux-saga";
+
+
+interface InactivityRaceResult {
+  timeout?: unknown;
+  cancel?: unknown;
+  confirm?: unknown;
+  activity?: unknown;
+}
 
 function* login({
-  payload: {email, password},
-}: ActionWithPayLoad<AUTH_ACTION_TYPES.LOGIN_START, {email: string; password: string}>) {
+  payload: { email, password },
+}: ActionWithPayLoad<AUTH_ACTION_TYPES.LOGIN_START, { email: string; password: string }>) {
   try {
     const loginResponse: LoginResponse = yield call(loginWithEmailAndPassword, email, password);
 
@@ -40,7 +55,11 @@ function* login({
     }
     yield put(setAccessToken(loginResponse.tokens.access));
     yield put(setRefreshToken(loginResponse.tokens.refresh));
-    yield put(setUserAction(loginResponse.user));
+
+    const lifetime: number = parseJwtLifetime(loginResponse.tokens.access);
+    yield put(setInactivityTimeout(lifetime));
+    yield put(setCurrentUser(loginResponse.user));
+    yield put(userActivityDetected());
 
     if (loginResponse.institution_attached.length) {
       yield put(setAttachedInstitutions(loginResponse.institution_attached));
@@ -57,9 +76,7 @@ function* login({
   }
 }
 
-export function* watchLogin() {
-  yield takeLatest(AUTH_ACTION_TYPES.LOGIN_START, login);
-}
+
 
 function* logout() {
   const defaultPrimaryColor = "142.1 76.2% 36.3%";
@@ -92,9 +109,9 @@ function* fetchRemoteUser() {
     const user: IUser | null = yield call(fetchUserById, currentUser.id);
 
     if (user) {
-      yield put(setUserAction(user));
+      yield put(setCurrentUser(user));
     }
-  } catch {}
+  } catch { }
 }
 
 function* fetchRemoteInstitution() {
@@ -104,7 +121,7 @@ function* fetchRemoteInstitution() {
 
     if (selectedInstitution) {
       const attachedInstitutions: IUserInstitution[] = yield call(fetchUserAttachedInstitutions);
-      const upToDateInstitution  = attachedInstitutions?.find(
+      const upToDateInstitution = attachedInstitutions?.find(
         (institution) => institution.id === selectedInstitution.id,
       );
 
@@ -115,7 +132,78 @@ function* fetchRemoteInstitution() {
         yield put(setAttachedInstitutions(attachedInstitutions));
       }
     }
-  } catch {}
+  } catch { }
+}
+
+function* resetInactivityOnAccessRefreshed() {
+  try {
+    const refreshToken: string = yield select(selectRefreshToken);
+    const response: { tokens: { access: string; refresh: string } } = yield call(AUTH_API.refreshTokens, { refreshToken });
+    yield put(setAccessToken(response.tokens.access));
+    yield put(setRefreshToken(response.tokens.refresh));
+    const newLifetime: number = parseJwtLifetime(response.tokens.access);
+
+    yield put(setInactivityTimeout(newLifetime));
+    yield put(refreshAccessTokenSuccess());
+    yield put(userActivityDetected());
+  } catch (error) {
+    yield put(refreshAccessTokenFailure());
+    yield put(logoutSuccess()); // Logout on refresh failure
+  }
+}
+
+function* inactivityWatcher() {
+  let timeoutTask: Task | null = null; // Track the timeout task
+  while (true) {
+    const user: IUser | null = yield select(selectUser);
+    if (!user) {
+      yield take(AUTH_ACTION_TYPES.SET_USER); // Wait for login
+      continue;
+    }
+    yield take(AUTH_ACTION_TYPES.USER_ACTIVITY_DETECTED);
+    if (timeoutTask) {
+      yield cancel(timeoutTask); // Cancel previous timeout
+    }
+    const inactivityTimeout: number = yield select(selectInactivityTimeout);
+    if (inactivityTimeout <= 60000) continue; // Skip invalid timeouts
+    timeoutTask = yield fork(function* (): Generator<Effect, void, unknown> {
+      yield delay(inactivityTimeout - 60000); // Wait until 60s before expiry
+      yield put(showLogoutWarning());
+
+      const raceResult = yield race({
+        timeout: delay(60000), // 60s warning period
+        cancel: take(AUTH_ACTION_TYPES.CANCEL_LOGOUT),
+        confirm: take(AUTH_ACTION_TYPES.CONFIRM_LOGOUT),
+        activity: take(AUTH_ACTION_TYPES.USER_ACTIVITY_DETECTED),
+      });
+      const { timeout, cancel, confirm, activity } = raceResult as InactivityRaceResult;
+      if (timeout) {
+        console.log("\n\n Timeout set as : ", timeout)
+        const refreshInProgress = yield select(selectRefreshInProgress);
+        if (!refreshInProgress as unknown as boolean) {
+          yield put(logoutSuccess());
+        }
+      } else if (confirm) {
+        console.log("\n\n Logout is confirmed from saga ...")
+        yield put(hideLogoutWarning());
+        yield put(logoutStart());
+      } else if (cancel) {
+        yield put(hideLogoutWarning());
+        yield put(refreshAccessTokenStart());
+      } else if (activity) {
+        console.log("\n\n Activity detected from saga ...")
+        yield put(hideLogoutWarning());
+      }
+    });
+  }
+}
+
+export function* watchLogin() {
+  yield takeLatest(AUTH_ACTION_TYPES.LOGIN_START, login);
+}
+
+export function* watchAccessTokenRefresh() {
+  yield takeLatest(AUTH_ACTION_TYPES.REFRESH_TOKENS_START, resetInactivityOnAccessRefreshed);
 }
 
 export function* watchLogout() {
@@ -126,14 +214,16 @@ export function* watchFetchRemoteUser() {
 }
 
 export function* watchUpToDateInstitutionFetch() {
-  yield takeLatest(AUTH_ACTION_TYPES.FETCH_UPTODATE_Institution, fetchRemoteInstitution);
+  yield takeLatest(AUTH_ACTION_TYPES.FETCH_UP_TO_DATE_INSTITUTION, fetchRemoteInstitution);
 }
 
 export function* authSaga() {
   yield all([
     fork(watchLogin),
+    fork(watchAccessTokenRefresh),
     fork(watchLogout),
     fork(watchFetchRemoteUser),
     fork(watchUpToDateInstitutionFetch),
+    fork(inactivityWatcher),
   ]);
 }

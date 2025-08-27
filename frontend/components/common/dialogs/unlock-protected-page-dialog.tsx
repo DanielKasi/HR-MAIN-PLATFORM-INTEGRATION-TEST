@@ -1,10 +1,10 @@
 "use client";
 
-import {useEffect, useState} from "react";
-import {useSelector, useDispatch} from "react-redux";
-import {Eye, EyeOff} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { Eye, EyeOff } from "lucide-react";
 
-import {Button} from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,8 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -21,12 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Card, CardContent} from "@/components/ui/card";
-import apiRequest from "@/api/api-request";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import {extractRequiredPermissions, hasAnyRequiredPermissions} from "@/api/helpers";
-import {setTemporaryPermissionsWithTimeout} from "@/store/store-utils";
-import {AUTH_API} from "@/api/api.helpers";
+import { Card, CardContent } from "@/components/ui/card";
+import apiRequest from "@/lib/apiRequest";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { extractRequiredPermissions, hasAnyRequiredPermissions } from "@/lib/helpers";
+import { loginWithEmailAndPassword, setTemporaryPermissionsWithTimeout } from "@/utils/authUtils";
+import { AUTH_API } from "@/utils/authUtils";
 
 interface UserProfile {
   id: number;
@@ -146,7 +146,7 @@ export default function UnlockDialog({
       setIsLoading(true);
       setError("");
 
-      const loginResponse = await AUTH_API.loginWithEmailAndPassword(selectedUser.email, password);
+      const loginResponse = await loginWithEmailAndPassword(selectedUser.email, password);
 
       if (loginResponse.tokens) {
         // Extract only the required permissions from the authorized user

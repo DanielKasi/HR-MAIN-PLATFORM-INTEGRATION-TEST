@@ -101,15 +101,15 @@ import {
   AttendanceResponse,
   IEmployeeTaxFormData,
   IEmployeeTax,
+  IInstitutionAnalytics,
+  ICalendar,
+  IEvent,
 } from "@/types/types.utils";
 
-import apiRequest, { apiGet } from "./apiRequest";
+import apiRequest from "./apiRequest";
 import { IEmployee } from "@/types/types.utils";
-import { AxiosError, AxiosRequestConfig } from "axios";
 import { toast } from "sonner";
-import { error } from "console";
-import { Role } from "@/types";
-import { ca } from "date-fns/locale";
+import { IUserInstitution, IUserInstitutionFormData, Role } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -291,6 +291,19 @@ export const getJobPositions = async ({ institutionId, page = 1, search }: { ins
   const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/?${params.toString()}`);
   const data = response.data as IPaginatedResponse<IJobPosition>;
   return data.results;
+};
+
+
+export const getPaginatedJobPositions = async ({ institutionId, page = 1, search }: { institutionId: number, page?: number, search?: string }) => {
+  const params = new URLSearchParams({
+    page: page?.toString() || "1",
+  });
+
+  if (search) {
+    params.append("search", search);
+  }
+  const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/?${params.toString()}`);
+  return response.data as IPaginatedResponse<IJobPosition>;
 };
 
 export const getPaginatedJobPositionsFromUrl = async (url: string) => {
@@ -4036,9 +4049,9 @@ export const getPayslipItems = async (payslipId: number) => {
   }
 };
 
-export const getContracts = async ({ institutionId,employeeId ,  page = 1, search, }: {
+export const getContracts = async ({ institutionId, employeeId, page = 1, search, }: {
   institutionId: number,
-  employeeId?:number,
+  employeeId?: number,
   page?: number;
   search?: string;
 }) => {
@@ -4051,7 +4064,7 @@ export const getContracts = async ({ institutionId,employeeId ,  page = 1, searc
   if (search) {
     params.append("search", search);
   }
-  if(employeeId){params.append("employee_id", employeeId.toString())}
+  if (employeeId) { params.append("employee_id", employeeId.toString()) }
 
   const endpoint = `employee/employee-contracts/?${params.toString()}`;
   const response = await apiRequest.get(endpoint);
@@ -4640,39 +4653,40 @@ export const AttendanceAPI = {
     return response.data;
   },
 
-  fetchAttendanceRecords: async ({ date, institutionId, search, page=1 }: {
+  fetchAttendanceRecords: async ({ date, institutionId, search, page = 1 }: {
     date?: string, institutionId?: number, page?: number;
     search?: string;
   }) => {
-        const params = new URLSearchParams({
-        page: page.toString(),
-      });
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
 
-      if (search) {
-        params.append("search", search);
-      }
-      if(date){
-        params.append("date", date)
-      }
+    if (search) {
+      params.append("search", search);
+    }
+    if (date) {
+      params.append("date", date)
+    }
     const response = await apiRequest.get(`/employee/attendance/?${params.toString()}`);
     return response.data as IPaginatedResponse<IAttendance>;
   },
 
-  fetchAttendanceRecordsByEmployee: async ({employee_id,  date, institutionId,  search, page=1 }: {employee_id:number,
+  fetchAttendanceRecordsByEmployee: async ({ employee_id, date, institutionId, search, page = 1 }: {
+    employee_id: number,
     date?: string, institutionId?: number, page?: number;
     search?: string;
   }) => {
-        const params = new URLSearchParams({
-        page: page.toString(),
-        employee_id: employee_id.toString()
-      });
+    const params = new URLSearchParams({
+      page: page.toString(),
+      employee_id: employee_id.toString()
+    });
 
-      if (search) {
-        params.append("search", search);
-      }
-      if(date){
-        params.append("date", date)
-      }
+    if (search) {
+      params.append("search", search);
+    }
+    if (date) {
+      params.append("date", date)
+    }
     const response = await apiRequest.get(`/employee/attendance/?${params.toString()}`);
     return response.data as IPaginatedResponse<IAttendance>;
   },
@@ -4915,13 +4929,15 @@ export const taxRulesAPI = {
 };
 
 export const payrollAPI = {
-  getPayslipsByInstitution: async ({ institutionId,  params}: {
-    institutionId: number | string, 
-      params:{employee_id?: number;
+  getPayslipsByInstitution: async ({ institutionId, params }: {
+    institutionId: number | string,
+    params: {
+      employee_id?: number;
       payroll_period?: number;
       is_paid?: boolean;
       page?: number;
-      search?:string}
+      search?: string
+    }
   }) => {
     try {
       const queryParams = new URLSearchParams();
@@ -4991,6 +5007,12 @@ export const payrollAPI = {
 
 
 export const institutionAPI = {
+
+  getDasboardAnalytics: async ({ institutionId }: { institutionId: number }) => {
+    const response = await apiRequest.get(`/institution/${institutionId}/dashboard-analytics/`);
+    return response.data as IInstitutionAnalytics
+  },
+
   getWorkingDays: async () => {
     try {
       const response = await apiRequest.get("/institution/working-days/")
@@ -5023,6 +5045,21 @@ export const institutionAPI = {
       throw error
     }
   },
+
+  updateInstitution: async ({ institutionId, data }: { institutionId: number, data: Partial<IUserInstitutionFormData> & { institution_logo?: File } }) => {
+    const formData = new FormData()
+
+    // Append all data fields to FormData
+    Object.entries(data).forEach(([key, value]) => {
+      if (key === "institution_logo" && value instanceof File) {
+        formData.append(key, value)
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, String(value))
+      }
+    })
+    const response = await apiRequest.patch(`/institution/${institutionId}/`, formData);
+    return response.data as IUserInstitution
+  }
 }
 
 
@@ -5668,10 +5705,10 @@ export const employeeAPI = {
 // Calendar API functions
 export const calendarAPI = {
   // Get calendar data for a specific institution and year
-  getInstitutionCalendar: async (year: number) => {
+  getInstitutionCalendar: async ({ year }: { year: number, url?: string }) => {
     const response = await apiRequest.get(`calendar/institutions-calendar/?year=${year}`);
     if (response.status === 200) {
-      return response.data;
+      return response.data as ICalendar;
     } else {
       throw new Error('Failed to fetch calendar data');
     }
@@ -5682,7 +5719,7 @@ export const calendarAPI = {
   getEvents: async () => {
     const response = await apiRequest.get(`calendar/events/`);
     if (response.status === 200) {
-      return response.data;
+      return response.data as IPaginatedResponse<IEvent>;
     } else {
       throw new Error('Failed to fetch events');
     }

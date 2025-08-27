@@ -50,7 +50,7 @@ const PortalDetails = () => {
   if (loading) {
     return (
       <div className="w-full min-h-screen bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
@@ -65,7 +65,7 @@ const PortalDetails = () => {
   if (error || !job) {
     return (
       <div className="w-full min-h-screen bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className=" px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
               <Icon icon="hugeicons:alert-circle" className="h-12 w-12 text-red-500 mx-auto mb-4" />
@@ -89,25 +89,20 @@ const PortalDetails = () => {
 
   return (
     <div className="w-full min-h-screen bg-white">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto px-4 w-9/12 max-lg:w-full py-10 max-lg:py-4">
         <div className="flex flex-col gap-8">
           {/* Header Section */}
           <div className="flex flex-col gap-8">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <div className="flex flex-col  gap-4">
                 <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 border rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <div className="">
                       <Link href="/">
-                        <button
-                      className="w-10 h-10 border rounded-full flex items-center justify-center hover:bg-gray-100"
-                      >
-                        <Icon icon="hugeicons:arrow-left-02" className="w-6 h-6" />
-                      </button>
-                      </Link>
-                      
+                      <Icon icon="hugeicons:arrow-left-02" className="size-6" />
+                      </Link> 
                     </div>
-                    <div className="text-sm text-myOrange leading-5">
+                    <div className="text-sm text-gray-600">
                       Posted: {formatDate(job.published_date)}
                     </div>
                     
@@ -144,7 +139,7 @@ const PortalDetails = () => {
               </div>
               
               <Link href={`/job/${jobId}/apply`}>
-                <Button className="w-full sm:w-auto px-6 py-3 bg-myOrange hover:bg-myOrange text-white rounded-xl font-medium transition-colors">
+                <Button className="w-full sm:w-auto px-10 py-5 bg-myOrange hover:bg-myOrange text-white rounded-lg font-medium transition-colors">
                   Apply Now
                 </Button>
               </Link>
@@ -169,7 +164,7 @@ const PortalDetails = () => {
 
             <div className="flex flex-col sm:flex-row gap-4">
               <Link href={`/job/${jobId}/apply`}>
-                <Button className="w-full sm:w-auto px-6 py-3 bg-myOrange hover:bg-myOrange text-white rounded-xl font-medium transition-colors">
+                <Button className="w-full sm:w-auto px-10 py-5 bg-myOrange hover:bg-myOrange text-white rounded-lg font-medium transition-colors">
                   Apply for this Position
                 </Button>
               </Link>

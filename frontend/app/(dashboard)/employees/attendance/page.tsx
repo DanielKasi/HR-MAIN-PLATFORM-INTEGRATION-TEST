@@ -1,6 +1,6 @@
 "use client";
 import React, {useState, useEffect} from "react";
-import EmployeeAttendance from "../../dashboard/EmployeeAttendance";
+import EmployeeAttendance from "../../../../components/attendance/employee-attendance";
 import {Eye} from "lucide-react";
 
 import {useSelector} from "react-redux";
