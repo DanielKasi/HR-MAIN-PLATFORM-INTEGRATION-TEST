@@ -5046,31 +5046,36 @@ export const institutionAPI = {
     }
   },
 
-  updateInstitution: async ({ institutionId, data }: { institutionId: number, data: Partial<IUserInstitutionFormData> & { institution_logo?: File; document_files?: File[]; document_titles?: string[] } }) => {
+  updateInstitution: async ({ institutionId, data }: { institutionId: number, data: Partial<IUserInstitutionFormData> & { institution_logo?: File } }) => {
     const formData = new FormData()
 
     // Append all data fields to FormData
     Object.entries(data).forEach(([key, value]) => {
       if (key === "institution_logo" && value instanceof File) {
         formData.append(key, value)
-      } else if (key === "document_files" && Array.isArray(value)) {
-        // Handle document files array
-        value.forEach((file, index) => {
-          if (file instanceof File) {
-            formData.append(`document_files`, file)
-          }
-        })
-      } else if (key === "document_titles" && Array.isArray(value)) {
-        // Handle document titles array
-        value.forEach((title, index) => {
-          formData.append(`document_titles`, title)
-        })
       } else if (value !== undefined && value !== null) {
         formData.append(key, String(value))
       }
     })
     const response = await apiRequest.patch(`/institution/${institutionId}/`, formData);
     return response.data as IUserInstitution
+  },
+
+  createInstitutionDocuments: async ({ institutionId, documents }: { institutionId: number, documents: { document_file: File, document_title: string }[] }) => {
+    const formData = new FormData()
+    
+    // Wrap documents in a documents variable as expected by backend
+    const documentsData = { documents }
+    formData.append('documents', JSON.stringify(documentsData))
+    console.log("formdata", Object.fromEntries(formData.entries()));
+    
+    // Also append the actual files for upload
+    documents.forEach((doc) => {
+      formData.append('files', doc.document_file)
+    })
+    
+    const response = await apiRequest.post(`/institution/${institutionId}/documents/`, formData);
+    return response.data
   }
 }
 

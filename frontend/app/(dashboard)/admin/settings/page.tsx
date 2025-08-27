@@ -59,6 +59,8 @@ export default function SettingsPage() {
         onConfirm: () => { },
     })
 
+    console.log("DOcuments", documents)
+
     const dispatch = useDispatch();
 
     useEffect(() => {
@@ -130,8 +132,6 @@ export default function SettingsPage() {
         try {
             const updateData: Partial<IUserInstitutionFormData> & { 
                 institution_logo?: File;
-                document_files?: File[];
-                document_titles?: string[];
             } = {
                 institution_name: formData.institution_name,
                 institution_email: formData.institution_email,
@@ -147,13 +147,6 @@ export default function SettingsPage() {
                 updateData.institution_logo = logoFile
             }
 
-            // Handle documents if any are added
-            const validDocuments = documents.filter(doc => doc.file && doc.title.trim())
-            if (validDocuments.length > 0) {
-                updateData.document_files = validDocuments.map(doc => doc.file!)
-                updateData.document_titles = validDocuments.map(doc => doc.title.trim())
-            }
-
             const updatedInstitution = await institutionAPI.updateInstitution({
                 institutionId: institution.id,
                 data: updateData,
@@ -163,8 +156,6 @@ export default function SettingsPage() {
             dispatch(setAttachedInstitutions([...attachedInstitutions.map((inst) => inst.id === updatedInstitution.id ? updatedInstitution : inst)]))
 
             setLogoFile(null)
-            setDocuments([]) // Clear documents after successful submission
-            setIsEditing(prev => ({ ...prev, documents: false })) // Close document editing mode
             toast.success("Settings updated successfully")
 
         } catch (error) {
@@ -175,6 +166,44 @@ export default function SettingsPage() {
         setConfirmationDialog((prev) => ({ ...prev, isOpen: false }))
     }
 
+    const handleDocumentsSubmit = async () => {
+        if (!institution) { return };
+        
+        // Validate documents
+        const validDocuments = documents.filter(doc => doc.file && doc.title.trim())
+        if (validDocuments.length === 0) {
+            toast.error("Please add at least one document with a title")
+            return
+        }
+        console.log("Documents11", validDocuments)
+
+        const invalidDocuments = documents.filter(doc => doc.file && !doc.title.trim())
+        if (invalidDocuments.length > 0) {
+            toast.error("Please provide titles for all uploaded documents")
+            return
+        }
+
+        setIsLoading(true)
+        try {
+            await institutionAPI.createInstitutionDocuments({
+                institutionId: institution.id,
+                documents: validDocuments.map(doc => ({
+                    document_file: doc.file!,
+                    document_title: doc.title.trim()
+                }))
+            })
+
+            setDocuments([]) // Clear documents after successful submission
+            setIsEditing(prev => ({ ...prev, documents: false })) // Close document editing mode
+            toast.success("Documents uploaded successfully")
+
+        } catch (error) {
+            showErrorToast({ error, defaultMessage: "Failed to upload documents" })
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
     const handleSave = () => {
         if (formData.user_inactivity_time > 180) {
             toast.error("User inactivity time cannot exceed 3 hours (180 minutes)")
@@ -183,13 +212,6 @@ export default function SettingsPage() {
 
         if (formData.user_inactivity_time < 1) {
             toast.error("User inactivity time must be at least 1 minute")
-            return
-        }
-
-        // Validate documents if any are being added
-        const invalidDocuments = documents.filter(doc => doc.file && !doc.title.trim())
-        if (invalidDocuments.length > 0) {
-            toast.error("Please provide titles for all uploaded documents")
             return
         }
 
@@ -640,6 +662,24 @@ export default function SettingsPage() {
                                                         </div>
                                                     </div>
                                                 </div>
+                                            </div>
+
+                                            {/* Submit button for documents */}
+                                            <div className="pt-4 border-t border-gray-200">
+                                                <Button
+                                                    onClick={handleDocumentsSubmit}
+                                                    disabled={isLoading || documents.length === 0}
+                                                    className="w-full bg-primary text-white rounded-xl py-3 font-medium hover:bg-primary/90"
+                                                >
+                                                    {isLoading ? (
+                                                        <div className="flex items-center space-x-2">
+                                                            <Icon icon="hugeicons:loading-03" className="w-4 h-4 animate-spin" />
+                                                            <span>Uploading Documents...</span>
+                                                        </div>
+                                                    ) : (
+                                                        "Upload Documents"
+                                                    )}
+                                                </Button>
                                             </div>
                                         </div>
                                     )}
