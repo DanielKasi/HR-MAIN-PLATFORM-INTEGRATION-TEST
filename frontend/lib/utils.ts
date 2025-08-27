@@ -5051,13 +5051,26 @@ export const institutionAPI = {
     return response as IUserInstitution
   },
 
-  updateInstitution: async ({ institutionId, data }: { institutionId: number, data: Partial<IUserInstitutionFormData> & { institution_logo?: File } }) => {
+  updateInstitution: async ({ institutionId, data }: { institutionId: number, data: Partial<IUserInstitutionFormData> & { institution_logo?: File; document_files?: File[]; document_titles?: string[] } }) => {
+
     const formData = new FormData()
 
     // Append all data fields to FormData
     Object.entries(data).forEach(([key, value]) => {
       if (key === "institution_logo" && value instanceof File) {
         formData.append(key, value)
+      } else if (key === "document_files" && Array.isArray(value)) {
+        // Handle document files array
+        value.forEach((file, index) => {
+          if (file instanceof File) {
+            formData.append(`document_files`, file)
+          }
+        })
+      } else if (key === "document_titles" && Array.isArray(value)) {
+        // Handle document titles array
+        value.forEach((title, index) => {
+          formData.append(`document_titles`, title)
+        })
       } else if (value !== undefined && value !== null) {
         formData.append(key, String(value))
       }

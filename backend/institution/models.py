@@ -264,8 +264,8 @@ class InstitutionDocument(models.Model):
         return f"{self.document_title} - {self.institution.institution_name}"
 
     class Meta:
-        verbose_name = "Shop Document"
-        verbose_name_plural = "Shop Documents"
+        verbose_name = "Institution Document"
+        verbose_name_plural = "Institution Documents"
 
     def save(self, *args, **kwargs):
         if self.document_file and not self.pk:

@@ -8,7 +8,7 @@
       body {
         font-family: "Outfit", sans-serif;
         line-height: 1.6;
-        color: #333;                                                        
+        color: #333;
         max-width: 600px;
         margin: 0 auto;
         padding: 20px;
@@ -31,7 +31,7 @@
         margin-bottom: 10px;
       }
       .job-title {
-        color: #FF3403;
+        color: #ff3403;
         font-weight: bold;
         font-size: 18px;
       }
@@ -95,7 +95,7 @@
       </div>
 
       <div class="content">
-        <p>Dear <strong>{{ applicant_name }}</strong>,</p>
+        <p>Dear <strong>{{salutation}} {{ applicant_name }}</strong>,</p>
 
         <p>Great news! We have scheduled your interview for the position of:</p>
         <p class="job-title">{{ job_title }}</p>

@@ -1,90 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Interview Cancelled</title>
     <style>
-        body {
-            font-family: "Outfit", sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f9f9f9;
-        }
-        .container {
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .title {
-            color: #FF3403;
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .job-title {
-            color: #007bff;
-            font-weight: bold;
-            font-size: 18px;
-        }
-        .apology-note {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            padding: 15px;
-            border-radius: 4px;
-            margin: 20px 0;
-        }
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #dee2e6;
-            color: #6c757d;
-            font-size: 14px;
-        }
-        .company-signature {
-            margin-top: 20px;
-            font-weight: bold;
-        }
+      body {
+        font-family: "Outfit", sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f9f9f9;
+      }
+      .container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .title {
+        color: #ff3403;
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      .job-title {
+        color: #007bff;
+        font-weight: bold;
+        font-size: 18px;
+      }
+      .apology-note {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 20px 0;
+      }
+      .footer {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #dee2e6;
+        color: #6c757d;
+        font-size: 14px;
+      }
+      .company-signature {
+        margin-top: 20px;
+        font-weight: bold;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <div class="title">❌ Interview Cancelled</div>
+      <div class="header">
+        <div class="title">❌ Interview Cancelled</div>
+      </div>
+
+      <div class="content">
+        <p>Dear <strong>{{salutation}} {{ applicant_name }}</strong>,</p>
+
+        <p>
+          We regret to inform you that we need to cancel your scheduled
+          interview for the position of:
+        </p>
+        <p class="job-title">{{ job_title }}</p>
+
+        <div class="apology-note">
+          <strong
+            >We sincerely apologize for any inconvenience this may
+            cause.</strong
+          >
+          We understand that you may have made arrangements for this interview.
         </div>
-        
-        <div class="content">
-            <p>Dear <strong>{{ applicant_name }}</strong>,</p>
-            
-            <p>We regret to inform you that we need to cancel your scheduled interview for the position of:</p>
-            <p class="job-title">{{ job_title }}</p>
-            
-            <div class="apology-note">
-                <strong>We sincerely apologize for any inconvenience this may cause.</strong> We understand that you may have made arrangements for this interview.
-            </div>
-            
-            <p>We will be in touch with you soon regarding rescheduling or next steps in the recruitment process.</p>
-            
-            <p>Thank you for your understanding and continued interest in joining our team.</p>
-            
-            <p>If you have any questions or concerns, please don't hesitate to contact us.</p>
+
+        <p>
+          We will be in touch with you soon regarding rescheduling or next steps
+          in the recruitment process.
+        </p>
+
+        <p>
+          Thank you for your understanding and continued interest in joining our
+          team.
+        </p>
+
+        <p>
+          If you have any questions or concerns, please don't hesitate to
+          contact us.
+        </p>
+      </div>
+
+      <div class="footer">
+        <div class="company-signature">
+          Best regards,<br />
+          HR Team<br />
+          {{ company_name }}
         </div>
-        
-        <div class="footer">
-            <div class="company-signature">
-                Best regards,<br>
-                HR Team<br>
-                {{ company_name }}
-            </div>
-        </div>
+      </div>
     </div>
-</body>
+  </body>
 </html>

@@ -9,6 +9,7 @@ from .models import (
     InstitutionWorkingDays,
     InstitutionTax,
     InstitutionTaxRule,
+    InstitutionDocument
 )
 
 
@@ -17,6 +18,8 @@ class InstitutionAdmin(admin.ModelAdmin):
     search_fields = ("institution_name",)
     ordering = ("institution_name",)
     list_per_page = 20
+
+
 
 
 class BranchAdmin(admin.ModelAdmin):
@@ -35,3 +38,4 @@ admin.site.register(InstitutionBankAccount)
 admin.site.register(InstitutionWorkingDays)
 admin.site.register(InstitutionTax)
 admin.site.register(InstitutionTaxRule)
+admin.site.register(InstitutionDocument)
