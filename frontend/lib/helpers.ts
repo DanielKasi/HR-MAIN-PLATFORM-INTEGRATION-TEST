@@ -307,3 +307,18 @@ export const getCurrentUserLocation = async (callback: (position:GeolocationPosi
 
 }
 
+export function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+
+  if (!domain) {
+    throw new Error("Invalid email format");
+  }
+
+  // keep first 3 characters (or fewer if local part is short)
+  const visible = local.slice(0, 3);
+  const hiddenLength = Math.max(0, local.length - visible.length);
+  const hidden = "*".repeat(hiddenLength);
+
+  return `${visible}${hidden}@${domain}`;
+}
+

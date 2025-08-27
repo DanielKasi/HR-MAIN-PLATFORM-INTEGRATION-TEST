@@ -58,10 +58,7 @@ interface DocumentFile {
   fileName: string;
 }
 
-interface DefaultJobPosition {
-  name: string;
-  description: string;
-}
+
 
 
 interface OrganisationFormData {
@@ -88,7 +85,6 @@ const STEPS = [
     title: "Location Details",
     description: "Where is your organisation located",
   },
- 
   {
     id: 3,
     title: "Departments",
@@ -169,7 +165,10 @@ export default function CreateOrganisationWizard() {
   }, [router, selectedInstitution]);
 
   useEffect(() => {
-    const fetchDefaultDepartments = async () => {
+      fetchDefaultDepartments();
+  }, []);
+
+      const fetchDefaultDepartments = async () => {
       try {
         const departments = await getDefaultData();
         if (departments && organizationFormData.departments.length === 0) {
@@ -192,46 +191,12 @@ export default function CreateOrganisationWizard() {
         toast.error("Failed to fetch default departments.");
       }
     };
-    if (currentStep === 4) {
-      fetchDefaultDepartments();
-    }
-  }, [currentStep, organizationFormData.departments.length]);
 
   const updateFormData = (field: keyof OrganisationFormData, value: any) => {
     setOrganizationFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const addDocument = () => {
-    const newDoc: DocumentFile = {
-      id: Date.now().toString(),
-      title: "",
-      file: null,
-      fileName: "",
-    };
-    setOrganizationFormData((prev) => ({
-      ...prev,
-      documents: [...prev.documents, newDoc],
-    }));
-  };
 
-  const updateDocument = (id: string, field: keyof DocumentFile, value: any) => {
-    setOrganizationFormData((prev) => ({
-      ...prev,
-      documents: prev.documents.map((doc) => (doc.id === id ? { ...doc, [field]: value } : doc)),
-    }));
-  };
-
-  const removeDocument = (id: string) => {
-    setOrganizationFormData((prev) => ({
-      ...prev,
-      documents: prev.documents.filter((doc) => doc.id !== id),
-    }));
-  };
-
-  const handleFileChange = (id: string, file: File | null) => {
-    updateDocument(id, "file", file);
-    updateDocument(id, "fileName", file ? file.name : "");
-  };
 
   const removeDepartment = (deptName: string) => {
     setOrganizationFormData((prev) => ({
@@ -617,9 +582,9 @@ export default function CreateOrganisationWizard() {
           </div>
         );
 
-   
       case 3:
-        const filteredDepartments = formData.departments.filter((dept) => {
+
+        const filteredDepartments = organizationFormData.departments.filter((dept) => {
           const query = searchQuery.toLowerCase();
           const matchesDepartment =
             dept.name.toLowerCase().includes(query) ||

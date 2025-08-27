@@ -86,21 +86,7 @@ export function EditTaxRuleDialog({
 
     setIsSubmitting(true);
     try {
-      // Mock API call - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const updatedTaxRule: ITaxRule = {
-        ...taxRule,
-        calculation_type: formData.calculation_type,
-        tax_rule_name: formData.tax_rule_name,
-        tax_rule_description: formData.tax_rule_description,
-        tax_rule_percentage: formData.calculation_type === "percentage" ? formData.tax_rule_percentage : undefined,
-        tax_rule_fixed_amount: formData.calculation_type === "fixed" ? formData.tax_rule_fixed_amount : undefined,
-        salary_from: formData.salary_from,
-        salary_to: formData.salary_to,
-        updated_at: new Date().toISOString(),
-      };
-
+      const updatedTaxRule = await taxRulesAPI.update(taxRule.id, formData)
       onSuccess(updatedTaxRule);
       toast.success("Tax rule updated successfully");
       onClose();

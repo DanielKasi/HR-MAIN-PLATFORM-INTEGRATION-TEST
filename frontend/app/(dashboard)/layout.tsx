@@ -583,9 +583,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {item.submenu && isExpanded && (
           <div className="ml-6 flex flex-col mt-2 border-l-2 border-primary/20 bg-gray-200/20">
             {isSideBarOpen &&
-              item.submenu.map((sub) => (
+              item.submenu.map((sub, index) => (
                 <Button
-                  key={sub.href}
+                  key={`${sub.href}-${index}`}
                   variant="ghost"
                   className={`w-full !rounded-none !text-left flex items-center px-2 !py-4 text-sm text-gray-600 hover:bg-primary/80 ${
                     pathname === sub.href

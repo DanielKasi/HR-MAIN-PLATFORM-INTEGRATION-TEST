@@ -85,10 +85,6 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
         setSentinelNode(node);
     }, []);
 
-    React.useEffect(() => {
-        console.log("\n\n Selected items passed down as : ", selectedItems, "\n\n With data results : ", data?.results, "\n\n And first item id : ", data?.results ? getItemId(data.results[0]) : null);
-
-    }, [selectedItems])
 
     React.useEffect(() => {
         const itemMatch = !multiple && selectedItems.length > 0 ? allItems.find((item) => getItemId(item) === selectedItems[0]) : null;
@@ -186,7 +182,6 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
                                         <button className="rounded-full ml-1 !px-1 bg-red-500/20 cursor-pointer aspect-square !text-xs"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                console.log("\n\n Remove button clicked ...")
                                                 onRemove(getItemId(itemData), itemData);
                                             }}
                                         >
@@ -243,7 +238,6 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
                                                 <button className="rounded-full ml-auto !px-1 bg-red-500/20 cursor-pointer aspect-square !text-xs"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        console.log("\n\n Remove button clicked ...")
                                                         onRemove(getItemId(item), item);
                                                     }}
                                                 >

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Loader2, AlertTriangle } from 'lucide-react';
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,9 +34,7 @@ export function DeleteTaxRuleDialog({
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      // Mock API call - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await taxRulesAPI.delete(taxRule.id)
       onSuccess(taxRule.id);
       toast.success("Tax rule deleted successfully");
       onClose();
@@ -97,17 +94,17 @@ export function DeleteTaxRuleDialog({
               <div>
                 <span className="font-medium">Salary Range:</span> 
                 <span className="ml-2">
-                  {formatCurrency(taxRule.salary_from)} - {formatCurrency(taxRule.salary_to)}
+                  {taxRule.salary_from && formatCurrency(taxRule.salary_from|| 0)}{ taxRule.salary_to && ("-" + formatCurrency(taxRule.salary_to))}
                 </span>
               </div>
               <div>
                 <span className="font-medium">Status:</span> 
                 <span className={`ml-2 px-2 py-1 rounded-full text-xs ${
-                  taxRule.is_active 
+                  taxRule.institution_tax.tax_status
                     ? "bg-green-100 text-green-800" 
                     : "bg-gray-100 text-gray-800"
                 }`}>
-                  {taxRule.is_active ? "Active" : "Inactive"}
+                  {taxRule.institution_tax.tax_status ? "Active" : "Inactive"}
                 </span>
               </div>
             </div>

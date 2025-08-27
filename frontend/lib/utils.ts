@@ -4882,7 +4882,7 @@ export const taxRulesAPI = {
     try {
       const allRules = await apiRequest.get('/institution/tax-rule/');
       const rules = allRules.data as ITaxRule[];
-      return rules.filter(rule => rule.institution_tax === taxId);
+      return rules.filter(rule => rule.institution_tax.id === taxId);
     } catch (error) {
       throw error;
     }
