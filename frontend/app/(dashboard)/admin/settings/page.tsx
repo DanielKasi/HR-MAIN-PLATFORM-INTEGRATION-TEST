@@ -1,3 +1,4 @@
+
 "use client"
 
 import type React from "react"
@@ -128,7 +129,6 @@ export default function SettingsPage() {
         if (!institution) { return };
         setIsLoading(true)
         try {
-            // Check if we're uploading KYC documents
             const validDocuments = documents.filter(doc => doc.file && doc.title.trim())
             if (validDocuments.length > 0) {
                 // Handle KYC document upload
@@ -272,10 +272,10 @@ export default function SettingsPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">
-            <div className=" mx-auto">
-                <div className="inline-block bg-yellow-400 text-black px-4 py-2 rounded-xl font-semibold text-lg mb-8">
+            <div className="">
+                <h1 className="inline-block text-black px-4 py-2 rounded-xl font-semibold text-xl md:text-3xl">
                     Settings
-                </div>
+                </h1>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <Card className="lg:col-span-1 rounded-2xl border-0 shadow-sm">
