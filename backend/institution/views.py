@@ -348,6 +348,7 @@ class InstitutionDetailAPIView(APIView):
         tags=["Institution Management"],
     )
     def patch(self, request, institution_id):
+        print(f"Request data {request.data}")
         try:
             institution = Institution.objects.get(id=institution_id)
             if institution.institution_owner != request.user:

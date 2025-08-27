@@ -88,13 +88,9 @@ const STEPS = [
     title: "Location Details",
     description: "Where is your organisation located",
   },
+ 
   {
     id: 3,
-    title: "Documents",
-    description: "Upload required documents",
-  },
-  {
-    id: 4,
     title: "Departments",
     description: "Review and select default departments and job positions",
   },
@@ -638,138 +634,8 @@ export default function CreateOrganisationWizard() {
           </div>
         );
 
+   
       case 3:
-        return (
-          <div className="w-full space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-sm font-medium">Documents (Optional)</Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Upload any required documents for your organisation registration
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addDocument}
-                className="flex items-center gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                Add Document
-              </Button>
-            </div>
-
-            {formData.documents.length === 0 ? (
-              <div className="w-full border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                <h3 className="text-base font-medium mb-2">No documents added</h3>
-                <p className="text-sm text-muted-foreground mb-3">Documents are optional. You can add them later from your dashboard.</p>
-                <div>
-                  <Button type="button" onClick={addDocument} className="mt-4">
-                    Add Document
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="w-full space-y-3">
-                {formData.documents.map((doc, index) => (
-                  <div key={doc.id} className="w-full border rounded-lg p-4 space-y-3 bg-card">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <FileText className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">
-                            {doc.fileName || "No file selected"}
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeDocument(doc.id)}
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-sm font-medium">Document Title *</Label>
-                        <Input
-                          placeholder="e.g., Business License, Tax Certificate"
-                          value={doc.title}
-                          onChange={(e) => updateDocument(doc.id, "title", e.target.value)}
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-sm font-medium">Upload File *</Label>
-                        <div className="relative">
-                          <Input
-                            type="file"
-                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                            onChange={(e) => handleFileChange(doc.id, e.target.files?.[0] || null)}
-                            className="w-full file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {doc.file && (
-                      <div className="w-full p-2 bg-muted/50 rounded-md">
-                        <div className="flex items-center gap-2 text-xs">
-                          <Check className="h-3 w-3 text-green-600" />
-                          <span className="font-medium">File uploaded:</span>
-                          <span className="text-muted-foreground">{doc.fileName}</span>
-                          <span className="text-xs text-muted-foreground">
-                            ({(doc.file.size / 1024 / 1024).toFixed(2)} MB)
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addDocument}
-                  className="w-full h-10 border-dashed border-2 flex items-center gap-2 hover:bg-muted/50"
-                >
-                  <Upload className="h-4 w-4" />
-                  Add Another Document
-                </Button>
-              </div>
-            )}
-
-            <div className="w-full bg-muted/50 p-3 rounded-lg">
-              <div className="flex items-start gap-2">
-                <FileText className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                <div className="w-full">
-                  <h4 className="font-medium text-xs mb-1">Document Guidelines</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-muted-foreground">
-                    <ul className="space-y-0.5">
-                      <li>• Accepted formats: PDF, DOC, DOCX, JPG, PNG</li>
-                      <li>• Maximum file size: 10MB per document</li>
-                    </ul>
-                    <ul className="space-y-0.5">
-                      <li>• Business license or registration</li>
-                      <li>• Tax identification documents</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 4:
         const filteredDepartments = formData.departments.filter((dept) => {
           const query = searchQuery.toLowerCase();
           const matchesDepartment =
