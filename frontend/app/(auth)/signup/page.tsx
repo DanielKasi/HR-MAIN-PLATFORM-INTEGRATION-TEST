@@ -112,6 +112,7 @@ export default function SignupPage() {
         gender,
       });
 
+
       if (response.status === 201) {
         const user_id = response.data.id;
         router.push(`verify-otp?email=${encodeURIComponent(email)}`);
