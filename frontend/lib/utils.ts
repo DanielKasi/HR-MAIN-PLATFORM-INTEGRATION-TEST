@@ -669,7 +669,7 @@ export const getPaginatedJobAdverts = async ({
     const response = await apiRequest.get(endpoint);
     return response.data as IPaginatedResponse<JobPositionAdvert>;
   } catch (error) {
-    console.error("Error fetching paginated job openings:", error);
+    console.error("Error fetching paginated job adverts:", error);
     throw error;
   }
 };
@@ -679,7 +679,7 @@ export const getPaginatedJobAdvertsFromUrl = async ({ url }: { url: string }): P
     const response = await apiRequest.get(url);
     return response.data as IPaginatedResponse<JobPositionAdvert>;
   } catch (error) {
-    console.error("Error fetching paginated job openings from URL:", error);
+    console.error("Error fetching paginated job adverts from URL:", error);
     throw error;
   }
 };
@@ -5046,11 +5046,6 @@ export const institutionAPI = {
     }
   },
 
-  createInstitution: async ({data}:{data:FormData}) => {
-    const response  = await await apiRequest.post("institution/", data);
-    return response as IUserInstitution
-  },
-
   updateInstitution: async ({ institutionId, data }: { institutionId: number, data: Partial<IUserInstitutionFormData> & { institution_logo?: File } }) => {
     const formData = new FormData()
 
@@ -5066,20 +5061,21 @@ export const institutionAPI = {
     return response.data as IUserInstitution
   },
 
-  createInstitutionDocuments: async ({ institutionId, documents }: { institutionId: number, documents: { document_file: File, document_title: string }[] }) => {
+
+
+  createKYCDocuments: async (documents: { document_title: string; document_file: File }[]) => {
     const formData = new FormData()
     
-    // Wrap documents in a documents variable as expected by backend
-    const documentsData = { documents }
-    formData.append('documents', JSON.stringify(documentsData))
-    console.log("formdata", Object.fromEntries(formData.entries()));
-    
-    // Also append the actual files for upload
-    documents.forEach((doc) => {
-      formData.append('files', doc.document_file)
+    console.log("Picked data",documents)
+    // Append each document with proper structure
+    documents.forEach((doc, index) => {
+      formData.append(`documents[${index}].document_title`, doc.document_title)
+      formData.append(`documents[${index}].document_file`, doc.document_file)
     })
+
+  
     
-    const response = await apiRequest.post(`/institution/${institutionId}/documents/`, formData);
+    const response = await apiRequest.post('/institution/kyc_docs', formData);
     return response.data
   }
 }
@@ -6002,6 +5998,7 @@ export async function fetchAttendanceData(
 }
 
 export const showErrorToast = ({ error, defaultMessage }: { error: any, defaultMessage?: string }) => {
+  console.log("\n\n The received error is", error);
   const errorMessage = (error?.error && Array.isArray(error?.error)) ? error.error[0] : error?.detail || error?.message || defaultMessage || "An unexpected error occurred.";
   toast.error(errorMessage);
 }
