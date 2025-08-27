@@ -233,10 +233,17 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       href: "#1",
       icon: <Icon icon="hugeicons:user-add-02" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Job Openings", href: "/job-adverts"},
-        {title: "Applications", href: "/applications"},
+        {title: "Analytics", href:"#"},
+        {title: "Recruitment Pipeline", href:"#"},
+        {title: "Recruitment Survey", href:"#"},
+        {title: "Candidates", href: "/applications"},
         {title: "Interviews", href: "/job-interviews"},
+        {title: "Recruitment", href:"#"},
+        {title: "Open Jobs", href: "/job-adverts"},
+        {title: "Stages", href:"#"},
+        {title: "Skill Zone", href:"#"},
         {title: "Onboarding", href: "/on-boarding"},
+
       ],
       requiredPermission: PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS,
     },
@@ -258,58 +265,166 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       href: "#1",
       icon: <Icon icon="hugeicons:user-multiple-02" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
+        {title: "Analytics", href:"#"},
         {title: "Employee Information", href: "/employees/employee-list"},
+        {title: "Document Requests", href:"#"},
+        {title: "Shift Requests", href:"#"},
         {title: "Employee Types", href: "/employees/employee-types"},
         {title: "Work Types", href: "/employees/work-types"},
-        {title: "Contracts", href: "/employees/contracts"},
-        {title: "Attendance", href: "/employees/attendance"},
-        {title: "Discipline", href: "/employees/discipline"},
+        {title: "Rotating Shift Assign", href:"#"},
+        {title: "Rotating Work Type Assign", href:"#"},
+        {title: "Disciplinary Actions", href: "/employees/discipline"},
+        {title: "Policies", href:"#"},
+        {title: "Organization Chart", href: "#"},
+
+
+        
       ],
       requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
     },
     {
+      title: "Attendance",
+      href: "#",
+      icon: <Icon icon="hugeicons:inbox-upload" className="!w-6 !h-6" width="28" height="28" />,
+      submenu: [
+        {title: "Analytics", href:"#"},
+        {title: "Biometric Devices", href:"#"},
+        {title: "Attendance", href: "/employees/attendance"},
+        {title: "Attendance Requests", href:"#"},
+        {title: "Hour Account", href:"#"},
+        {title: "Work Records", href:"#"},
+        {title: "Attendance Activities", href:"#"},
+        {title: "Late Come Early Out", href:"#"},
+        {title: "My Attendances", href:"#"},
+      ],
+    },
+        {
       title: "Leave",
       href: "#1",
       icon: <Icon icon="hugeicons:calendar-03" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
+        {title: "Analytics", href:"#"},
+        {title: "My Leave Requests", href:"#"},
         {title: "Leave Types", href: "/leave/leave-types"},
+        {title: "Assigned Leave", href:"#"},
+        {title: "Leave Allocation Request", href:"#"},
+        {title: "Compensatory Leave Requests", href:"#"},
         {title: "Leave Policy", href: "/leave/leave-policy"},
         {title: "Leave Balances", href: "/leave/leave-balances"},
         {title: "Leave Application", href: "/leave/leave-application"},
       ],
     },
-    {
+        {
       title: "Payroll",
       href: "#1",
       icon: <Icon icon="hugeicons:payment-01" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
+        {title: "Analytics", href:"#"},
+        {title: "Contracts", href: "/employees/contracts"},
         {title: "Allowance Types", href: "/payroll/allowance-types"},
         {title: "Deduction Types", href: "/payroll/deduction-types"},
         {title: "Employee Allowance", href: "/payroll/employee-allowance"},
         {title: "Employee Deductions", href: "/payroll/employee-deductions"},
         {title: "Employee Tax", href: "/payroll/employee-tax"},
         {title: "Payroll Period", href: "/payroll/payroll-period"},
+        {title: "Payslips", href:"#"},
+        {title: "Loan / Advanced Salary", href:"#"},
+        {title: "Encashments & Reimbursements", href:"#"},
+        {title: "Federal Tax", href:"#"},
       ],
     },
+    {
+      title: "Performance",
+      href: "#",
+      icon: <Icon icon="hugeicons:chart-histogram" className="!w-6 !h-6" width="28" height="28" />,
+      submenu: [
+        {title: "Analytics", href:"#"},
+        {title: "Objectives", href:"#"},
+        {title: "360 Feedback", href:"#"},
+        {title: "Meetings", href:"#"},
+        {title: "Key Results", href:"#"},
+        {title: "Employee Bonus Point", href:"#"},
+        {title: "Period", href:"#"},
+        {title: "Question Template", href:"#"},
+      ],
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+    },
+
+    {
+      title: "Offboarding",
+      href: "/off-boarding",
+      icon: <Icon icon="hugeicons:inbox-upload" className="!w-6 !h-6" width="28" height="28" />,
+      submenu: [
+        {title: "Analytics", href:"#"},
+        {title: "Exit Process", href:"#"},
+        {title: "Resignation Letters", href:"#"},
+        {title: "Offboarding Stages", href: "/off-boarding/stages"},
+        {title: "Separation Types", href: "/off-boarding/separation-types"},
+        {title: "Separation Policy", href: "/off-boarding/separation-policy"},
+        {title: "Terminations", href: "/off-boarding/terminations"},
+      ],
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+    },
+
+
+
     {
       title: "Assets",
       href: "#1",
       icon: <Icon icon="hugeicons:laptop" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Asset Categories", href: "/assests/asset-categories"},
-        {title: "Assets", href: "/assests/assets"},
+        {title: "Analytics", href:"#"},
+        {title: "Asset Batches", href: "/assests/asset-categories"},
+        {title: "Asset View", href: "/assests/assets"},
         {title: "Asset Requests", href: "/assests/asset-requests"},
         {title: "Asset Allocations", href: "/assests/asset-allocations"},
         {title: "Asset Returns", href: "/assests/asset-returns"},
+        {title: "Asset History", href:"#"},
       ],
       requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
     },
     {
-      title: "Events & Holidays",
+      title: "Help Desk",
       href: "#1",
-      icon: <Icon icon="hugeicons:calendar-01" className="!w-6 !h-6" width="28" height="28" />,
-      submenu: [{title: "Calendar", href: "/events-holidays"}],
+      icon: <Icon icon="hugeicons:customer-service-01" className="!w-6 !h-6" width="28" height="28" />,
+      submenu: [
+        {title: "FAQs", href:"#"},
+        {title: "Tickets", href:"#"},
+      ],
+      requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
     },
+        {
+      title: "Project",
+      href: "#1",
+      icon: <Icon icon="hugeicons:task-done-01" className="!w-6 !h-6" width="28" height="28" />,
+      submenu: [
+        {title: "Analytics", href:"#"},
+        {title: "Projects", href:"#"},
+        {title: "Tasks", href:"#"},
+        {title: "Timesheet", href:"#"},
+      ],
+      requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
+    },
+        {
+      title: "Configuration",
+      href: "#1",
+      icon: <Icon icon="hugeicons:configuration-01" className="!w-6 !h-6" width="28" height="28" />,
+      submenu: [
+        {title: "Multiple Approvals", href:"#"},
+        {title: "Mail Templates", href:"#"},
+        {title: "Mail Automationa", href:"#"},
+        {title: "Calendar", href: "/events-holidays"},
+        {title: "Company Leaves", href:"#"},
+        {title: "Restrict Leaves", href:"#"},
+      ],
+      requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
+    },
+    // {
+    //   title: "Events & Holidays",
+    //   href: "#1",
+    //   icon: <Icon icon="hugeicons:calendar-01" className="!w-6 !h-6" width="28" height="28" />,
+    //   submenu: [{title: "Calendar", href: "/events-holidays"}],
+    // },
   ];
 
   const updateThemeColors = (hexColor: string) => {
@@ -425,14 +540,14 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     setExpandedItems((prev) => ({[title]: !prev[title]}));
   };
 
-  const renderNavigationItem = (item: NavItem, isMobileView = false) => {
+  const renderNavigationItem = ({item, isMobileView=false, index}:{item: NavItem, isMobileView:boolean,index:number}) => {
     const isActive = item.submenu
       ? item.submenu.some((sub) => pathname === sub.href)
       : pathname === item.href;
     const isExpanded = expandedItems[item.title];
 
     return (
-      <div key={item.title} className="w-full py-1">
+      <div key={`${item.title}-${index}`} className="w-full py-1">
         <Button
           variant="ghost"
           className={`w-full !rounded-xl flex items-center justify-between px-4 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 ${
@@ -527,7 +642,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             </div>
           </div>
           <div className="p-2 overflow-y-auto h-[90svh] pt-4 pb-16">
-            {filteredNavItems.map((item) => renderNavigationItem(item, false))}
+            {filteredNavItems.map((item, index) => renderNavigationItem({item, isMobileView:false, index}))}
           </div>
         </div>
       )}
@@ -584,7 +699,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
 
             {/* Navigation Items */}
             <div className="flex-1 overflow-y-auto p-2 pb-20">
-              {filteredNavItems.map((item) => renderNavigationItem(item, true))}
+              {filteredNavItems.map((item, idx) => renderNavigationItem({item, isMobileView:true, index:idx}))}
             </div>
           </div>
         </>

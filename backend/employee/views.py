@@ -83,11 +83,10 @@ class EmployeeListAPIView(APIView):
         Retrieve a list of employees for a specific institution,
         with optional filtering via query parameters.
         """
-        search_query = request.query_params.get('search', None)
+        search_query = request.query_params.get("search", None)
         try:
             employees = Employee.objects.filter(
-                department__institution_id=institution_id,
-                deleted_at__isnull=True
+                department__institution_id=institution_id, deleted_at__isnull=True
             )
 
             query_params = request.query_params.dict()
@@ -105,13 +104,13 @@ class EmployeeListAPIView(APIView):
             employees = employees.order_by("-created_at")
             if search_query:
                 employees = employees.filter(
-                    Q(employee_id__icontains=search_query) |
-                    Q(user__fullname__icontains=search_query) |
-                    Q(work_type__name__icontains=search_query) |
-                    Q(employee_type__name__icontains=search_query) |
-                    Q(position__name__icontains=search_query) |
-                    Q(user__email__icontains=search_query) |
-                    Q(department__name__icontains=search_query)
+                    Q(employee_id__icontains=search_query)
+                    | Q(user__fullname__icontains=search_query)
+                    | Q(work_type__name__icontains=search_query)
+                    | Q(employee_type__name__icontains=search_query)
+                    | Q(position__name__icontains=search_query)
+                    | Q(user__email__icontains=search_query)
+                    | Q(department__name__icontains=search_query)
                 )
 
             paginator = CustomPageNumberPagination()
@@ -368,28 +367,23 @@ class EmployeeCreateAPIView(APIView):
                                 try:
                                     if field == "position":
                                         instance = model.objects.create(
-                                            name=name.title(),
-                                            institution=institution
+                                            name=name.title(), institution=institution
                                         )
                                     elif field == "department":
                                         instance = model.objects.create(
-                                            name=name.title(),
-                                            institution=institution
+                                            name=name.title(), institution=institution
                                         )
                                     elif field == "work_type":
                                         instance = model.objects.create(
-                                            name=name.title(),
-                                            institution=institution
+                                            name=name.title(), institution=institution
                                         )
                                     elif field == "employee_type":
                                         instance = model.objects.create(
-                                            name=name.title(),
-                                            institution=institution
+                                            name=name.title(), institution=institution
                                         )
                                     elif field == "payroll_branch":
                                         instance = model.objects.create(
-                                            name=name.title(),
-                                            institution=institution
+                                            name=name.title(), institution=institution
                                         )
                                     mappings[field][name] = instance.id
                                     instance_mappings[field][name] = instance
@@ -419,7 +413,9 @@ class EmployeeCreateAPIView(APIView):
                             {
                                 "row": idx + 2,
                                 "errors": {
-                                    "user.email": {"error": f"Email '{df.loc[idx, 'user.email']}' is duplicated in the file"}
+                                    "user.email": {
+                                        "error": f"Email '{df.loc[idx, 'user.email']}' is duplicated in the file"
+                                    }
                                 },
                             }
                             for idx in duplicate_rows
@@ -443,7 +439,9 @@ class EmployeeCreateAPIView(APIView):
                             {
                                 "row": idx + 2,
                                 "errors": {
-                                    "user.email": {"error": f"Email '{df.loc[idx, 'user.email']}' already exists"}
+                                    "user.email": {
+                                        "error": f"Email '{df.loc[idx, 'user.email']}' already exists"
+                                    }
                                 },
                             }
                             for idx in duplicate_rows
@@ -488,9 +486,13 @@ class EmployeeCreateAPIView(APIView):
 
                         # Basic validation for user data
                         if not user_data["fullname"]:
-                            row_errors["user.fullname"] = {"error": "This field is required."}
+                            row_errors["user.fullname"] = {
+                                "error": "This field is required."
+                            }
                         if not user_data["email"]:
-                            row_errors["user.email"] = {"error": "This field is required."}
+                            row_errors["user.email"] = {
+                                "error": "This field is required."
+                            }
 
                         for column in df.columns:
                             if column not in ["user.fullname", "user.email"]:
@@ -500,21 +502,29 @@ class EmployeeCreateAPIView(APIView):
                                     continue
                                 value = str(value).strip()
                                 if column in field_mappings and value:
-                                    instance = instance_mappings.get(column, {}).get(value.lower())
+                                    instance = instance_mappings.get(column, {}).get(
+                                        value.lower()
+                                    )
                                     if instance is None:
-                                        row_errors[column] = {"error": f'"{value}" does not exist.'}
+                                        row_errors[column] = {
+                                            "error": f'"{value}" does not exist.'
+                                        }
                                     else:
                                         employee_data[column] = instance
                                 elif column == "gender" and value:
                                     mapped = gender_map.get(value)
                                     if mapped is None:
-                                        row_errors["gender"] = {"error": f'"{value}" is not a valid choice.'}
+                                        row_errors["gender"] = {
+                                            "error": f'"{value}" is not a valid choice.'
+                                        }
                                     else:
                                         employee_data[column] = mapped
                                 elif column == "marital_status" and value:
                                     mapped = marital_status_map.get(value)
                                     if mapped is None:
-                                        row_errors["marital_status"] = {"error": f'"{value}" is not a valid choice.'}
+                                        row_errors["marital_status"] = {
+                                            "error": f'"{value}" is not a valid choice.'
+                                        }
                                     else:
                                         employee_data[column] = mapped
                                 else:
@@ -529,39 +539,63 @@ class EmployeeCreateAPIView(APIView):
                             )
 
                         # Additional per-row validations (to mimic model/serializer)
-                        if "date_of_birth" in employee_data and employee_data["date_of_birth"]:
+                        if (
+                            "date_of_birth" in employee_data
+                            and employee_data["date_of_birth"]
+                        ):
                             try:
-                                dob = datetime.strptime(employee_data["date_of_birth"], "%Y-%m-%d").date()
+                                dob = datetime.strptime(
+                                    employee_data["date_of_birth"], "%Y-%m-%d"
+                                ).date()
                                 msgs = []
                                 if dob > date.today():
-                                    msgs.append("Date of birth cannot be in the future.")
+                                    msgs.append(
+                                        "Date of birth cannot be in the future."
+                                    )
                                 age = (date.today() - dob).days // 365
                                 if age < 18:
                                     msgs.append(
                                         f"Employee must be at least 18 years old. Current age: {age}."
                                     )
                                 if msgs:
-                                    row_errors["date_of_birth"] = {"error": " ".join(msgs)}
-                                employee_data["date_of_birth"] = dob  # Convert to date object
+                                    row_errors["date_of_birth"] = {
+                                        "error": " ".join(msgs)
+                                    }
+                                employee_data["date_of_birth"] = (
+                                    dob  # Convert to date object
+                                )
                             except ValueError:
-                                row_errors["date_of_birth"] = {"error": "Invalid date format. Use YYYY-MM-DD."}
+                                row_errors["date_of_birth"] = {
+                                    "error": "Invalid date format. Use YYYY-MM-DD."
+                                }
 
-                        if "date_of_joining" in employee_data and employee_data["date_of_joining"]:
+                        if (
+                            "date_of_joining" in employee_data
+                            and employee_data["date_of_joining"]
+                        ):
                             try:
                                 employee_data["date_of_joining"] = datetime.strptime(
                                     employee_data["date_of_joining"], "%Y-%m-%d"
                                 ).date()
                             except ValueError:
-                                row_errors["date_of_joining"] = {"error": "Invalid date format. Use YYYY-MM-DD."}
+                                row_errors["date_of_joining"] = {
+                                    "error": "Invalid date format. Use YYYY-MM-DD."
+                                }
 
                         for field in ["experience", "children_count"]:
                             if field in employee_data and employee_data[field]:
                                 try:
                                     employee_data[field] = int(
-                                        float(str(employee_data[field]).replace(" years", ""))  # Handle "11 years"
+                                        float(
+                                            str(employee_data[field]).replace(
+                                                " years", ""
+                                            )
+                                        )  # Handle "11 years"
                                     )
                                 except (ValueError, TypeError):
-                                    row_errors[field] = {"error": "Must be a valid number."}
+                                    row_errors[field] = {
+                                        "error": "Must be a valid number."
+                                    }
                                     employee_data[field] = 0
 
                         if row_errors:
@@ -595,7 +629,11 @@ class EmployeeCreateAPIView(APIView):
                     except Exception as e:
                         print(f"Error bulk creating users: {str(e)}")
                         errors.append(
-                            {"non_field_errors": {"error": f"Error creating users: {str(e)}"}}
+                            {
+                                "non_field_errors": {
+                                    "error": f"Error creating users: {str(e)}"
+                                }
+                            }
                         )
                         continue
 
@@ -610,7 +648,11 @@ class EmployeeCreateAPIView(APIView):
                     except Exception as e:
                         print(f"Error bulk creating profiles: {str(e)}")
                         errors.append(
-                            {"non_field_errors": {"error": f"Error creating profiles: {str(e)}"}}
+                            {
+                                "non_field_errors": {
+                                    "error": f"Error creating profiles: {str(e)}"
+                                }
+                            }
                         )
                         # Optionally rollback or continue, but since atomic, it will rollback on failure
 
@@ -624,7 +666,11 @@ class EmployeeCreateAPIView(APIView):
                     except Exception as e:
                         print(f"Error bulk creating user roles: {str(e)}")
                         errors.append(
-                            {"non_field_errors": {"error": f"Error creating user roles: {str(e)}"}}
+                            {
+                                "non_field_errors": {
+                                    "error": f"Error creating user roles: {str(e)}"
+                                }
+                            }
                         )
 
                     # Create Employee instances with actual CustomUser objects
@@ -646,7 +692,11 @@ class EmployeeCreateAPIView(APIView):
                     except Exception as e:
                         print(f"Error bulk creating employees: {str(e)}")
                         errors.append(
-                            {"non_field_errors": {"error": f"Error creating employees: {str(e)}"}}
+                            {
+                                "non_field_errors": {
+                                    "error": f"Error creating employees: {str(e)}"
+                                }
+                            }
                         )
                         continue
 
@@ -669,7 +719,11 @@ class EmployeeCreateAPIView(APIView):
                         last_number += 1
                         employee.employee_id = f"{prefix}{last_number:05d}"
 
-                        if employee.position and hasattr(employee.position, "salary_min") and not employee.salary:
+                        if (
+                            employee.position
+                            and hasattr(employee.position, "salary_min")
+                            and not employee.salary
+                        ):
                             employee.salary = employee.position.salary_min
 
                         if employee.user and not employee.payroll_branch:
@@ -689,7 +743,11 @@ class EmployeeCreateAPIView(APIView):
                     except Exception as e:
                         print(f"Error bulk updating employees: {str(e)}")
                         errors.append(
-                            {"non_field_errors": {"error": f"Error updating employees: {str(e)}"}}
+                            {
+                                "non_field_errors": {
+                                    "error": f"Error updating employees: {str(e)}"
+                                }
+                            }
                         )
 
                     # Send password setup emails (non-blocking)
@@ -704,7 +762,9 @@ class EmployeeCreateAPIView(APIView):
                                 {
                                     "row": start_idx + idx + 2,
                                     "errors": {
-                                        "non_field_errors": {"error": f"Error sending password email: {str(e)}"}
+                                        "non_field_errors": {
+                                            "error": f"Error sending password email: {str(e)}"
+                                        }
                                     },
                                 }
                             )
@@ -1447,7 +1507,7 @@ class EmployeeAttendanceListCreateAPIView(APIView):
     )
     def get(self, request, employee_id=None):
         user = request.user.profile
-        search_query = request.query_params.get('search', None)
+        search_query = request.query_params.get("search", None)
         employee_id = employee_id or request.query_params.get("employee_id")
 
         date = request.query_params.get("date")
@@ -1458,12 +1518,10 @@ class EmployeeAttendanceListCreateAPIView(APIView):
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
             return Response(
-                {"detail": "Institution not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )    
+                {"detail": "Institution not found"}, status=status.HTTP_404_NOT_FOUND
+            )
         records = EmployeeAttendance.objects.filter(
-            employee__department__institution=institution,
-            deleted_at__isnull=True
+            employee__department__institution=institution, deleted_at__isnull=True
         ).order_by("date")
 
         if employee_id:
@@ -1479,10 +1537,10 @@ class EmployeeAttendanceListCreateAPIView(APIView):
 
         if search_query:
             records = records.filter(
-                Q(employee__user__fullname__icontains=search_query) |
-                Q(employee__user__email__icontains=search_query) |
-                Q(date__icontains=search_query)
-            )    
+                Q(employee__user__fullname__icontains=search_query)
+                | Q(employee__user__email__icontains=search_query)
+                | Q(date__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(records, request)
@@ -1511,15 +1569,12 @@ class EmployeeAttendanceListCreateAPIView(APIView):
         ).first()
 
         # Prepare the context to pass to the serializer
-        context = {'request': request}
+        context = {"request": request}
 
         if existing:
             # Pass context to the serializer for updates
             serializer = EmployeeAttendanceSerializer(
-                existing, 
-                data=data, 
-                partial=True, 
-                context=context
+                existing, data=data, partial=True, context=context
             )
             if serializer.is_valid():
                 serializer.save()
@@ -1528,10 +1583,7 @@ class EmployeeAttendanceListCreateAPIView(APIView):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             # Pass context to the serializer for creation
-            serializer = EmployeeAttendanceSerializer(
-                data=data, 
-                context=context
-            )
+            serializer = EmployeeAttendanceSerializer(data=data, context=context)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -1586,9 +1638,9 @@ class EmployeeTypeListCreateAPIView(APIView):
         description="Get list of all employee types",
     )
     def get(self, request, institution_id):
-        search_query = request.query_params.get('search', None)
+        search_query = request.query_params.get("search", None)
         user = request.user.profile
-        
+
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
@@ -1596,14 +1648,13 @@ class EmployeeTypeListCreateAPIView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        data = EmployeeType.objects.filter(institution_id=institution_id, deleted_at__isnull=True).order_by(
-            "-created_at"
-        )
+        data = EmployeeType.objects.filter(
+            institution_id=institution_id, deleted_at__isnull=True
+        ).order_by("-created_at")
 
         if search_query:
             data = data.filter(
-                Q(name__icontains=search_query) |
-                Q(description__icontains=search_query)
+                Q(name__icontains=search_query) | Q(description__icontains=search_query)
             )
 
         paginator = CustomPageNumberPagination()
@@ -1666,9 +1717,9 @@ class WorkTypeListCreateAPIView(APIView):
         description="Get list of all work types",
     )
     def get(self, request, institution_id):
-        search_query = request.query_params.get('search', None)
+        search_query = request.query_params.get("search", None)
         user = request.user.profile
-        
+
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
@@ -1676,12 +1727,13 @@ class WorkTypeListCreateAPIView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        data = WorkType.objects.filter(institution=institution, deleted_at__isnull=True).order_by("-created_at")
+        data = WorkType.objects.filter(
+            institution=institution, deleted_at__isnull=True
+        ).order_by("-created_at")
 
         if search_query:
             data = data.filter(
-                Q(name__icontains=search_query) |
-                Q(description__icontains=search_query)
+                Q(name__icontains=search_query) | Q(description__icontains=search_query)
             )
 
         paginator = CustomPageNumberPagination()
@@ -1735,9 +1787,6 @@ class WorkTypeDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-
-
-
 @extend_schema(tags=["Employee Type"])
 class EmployeeTypeDetailAPIView(APIView):
     def get_object(self, pk):
@@ -1769,9 +1818,6 @@ class EmployeeTypeDetailAPIView(APIView):
         obj = self.get_object(pk)
         obj.delete()  # Custom method to handle soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-
 
 
 @extend_schema(tags=["Work Type"])
@@ -1815,8 +1861,8 @@ class EmployeeContractListAPIView(APIView):
     )
     def get(self, request):
         user = request.user.profile
-        search_query = request.query_params.get('search', None)
-        employee_id = request.query_params.get('employee_id')
+        search_query = request.query_params.get("search", None)
+        employee_id = request.query_params.get("employee_id")
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
@@ -1827,19 +1873,21 @@ class EmployeeContractListAPIView(APIView):
             )
 
         contracts = EmployeeContract.objects.filter(
-            Q(employee__department__institution=institution) |
-            Q(applicant__job_position_advert__job_position__department__institution=institution),
+            Q(employee__department__institution=institution)
+            | Q(
+                applicant__job_position_advert__job_position__department__institution=institution
+            ),
             deleted_at__isnull=True,
         ).order_by("-created_at")
 
         if employee_id:
             contracts = contracts.filter(employee__id=employee_id)
-            
+
         if search_query:
             contracts = contracts.filter(
-                Q(applicant__applicant_name__icontains=search_query) |
-                Q(employee__user__fullname__icontains=search_query) |
-                Q(contract_reference__icontains=search_query)
+                Q(applicant__applicant_name__icontains=search_query)
+                | Q(employee__user__fullname__icontains=search_query)
+                | Q(contract_reference__icontains=search_query)
             )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(contracts, request)
@@ -1971,6 +2019,9 @@ class EmployeeContractApprovalAPIView(APIView):
                 contract.save()
 
                 context = {
+                    "salutation": (
+                        "Madam" if contract.applicant.gender == "female" else "Mr."
+                    ),
                     "employee_name": contract.applicant.applicant_name,
                     "position": contract.applicant.job_position_advert.job_position,
                     "department": contract.applicant.job_position_advert.job_position.department,

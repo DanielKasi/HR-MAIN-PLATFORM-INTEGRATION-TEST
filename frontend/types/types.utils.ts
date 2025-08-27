@@ -430,7 +430,7 @@ export interface JobPositionAdvert {
   advert_type: JobAdvertTypes;
 }
 
-// For creating/updating job adverts
+// For creating/updating job openings
 export interface JobPositionAdvertFormData {
   level: number;
   interviewers: any;

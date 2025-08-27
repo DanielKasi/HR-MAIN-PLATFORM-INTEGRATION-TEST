@@ -17,9 +17,10 @@ import { SimpleCalendarWidget } from "@/components/calendar-widget";
 import { EventsAndHolidaysWidget } from "@/components/dashboard-new/events-and-holidays";
 import { institutionAPI, showErrorToast } from "@/lib/utils";
 import { useSelector } from "react-redux";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
 import { IInstitutionAnalytics } from "@/types/types.utils";
 import EmployeeAttendance from "@/components/attendance/employee-attendance";
+import { USER_GENDER } from "@/types";
 
 
 export default function Dashboard() {
@@ -30,6 +31,7 @@ export default function Dashboard() {
   const [totalCurrentYear, setTotalCurrentYear] = useState(0);
   const [pastYearTotal, setPastYearTotal]  = useState(0);
   const [growthPercentage, setGrowthPercentage] = useState(0);
+  const currentUser = useSelector(selectUser);
 
   useEffect(()=>{
     const percentage =
@@ -62,10 +64,23 @@ export default function Dashboard() {
     }
   }, []);
 
+  const now = new Date();
+  const hour = now.getHours();
 
 
+const capitalizeFirstLetter = (str: string) => {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
 
-
+    let greeting = "Hello";
+  if (hour >= 5 && hour < 12) {
+    greeting = "Good morning";
+  } else if (hour >= 12 && hour < 17) {
+    greeting = "Good afternoon";
+  } else if (hour >= 17 && hour < 22) {
+    greeting = "Good evening";
+  }
 
 
   return (
@@ -73,24 +88,30 @@ export default function Dashboard() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900">Good Morning, Mr. Roy Didanie</h1>
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-gray-900">{greeting}, {currentUser?.gender === USER_GENDER.MALE
+                    ? "Mr"
+                    : currentUser?.gender === USER_GENDER.FEMALE
+                      ? "Mrs"
+                      : ""}.{" "}
+                 {capitalizeFirstLetter(currentUser?.fullname || "")}</h1>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" className="rounded-xl flex items-center">
               <Link href={"/employees/employee-list"} className="flex items-center justify-start gap-3">
                 <Icon icon="hugeicons:user-add-02" className="!w-6 !h-6" />
-                Add Employee
+                <span className="hidden lg:inline">Add Employee</span>
+                
               </Link>
             </Button>
             <Button variant="outline" size="sm" className="rounded-xl flex items-center">
               <Link href={"/job-adverts/create"} className="flex items-center justify-start gap-3">
                 <Icon icon="hugeicons:advertisiment" className="!w-6 !h-6" />
-                Post Job Opening
+                <span className="hidden lg:inline">Post Job Opening</span>
               </Link>
             </Button>
             <Button variant="outline" size="sm" className="rounded-xl flex items-center">
               <Link href={"/events-holidays/events/add"} className="flex items-center justify-start gap-3">
                 <Icon icon="hugeicons:calendar-add-01" className="!w-6 !h-6" />
-                Add event
+                <span className="hidden lg:inline">Add event</span>
               </Link>
             </Button>
           </div>
@@ -166,7 +187,7 @@ export default function Dashboard() {
             </div>
 
             {/* Projects */}
-            <ProjectCards />
+            {/* <ProjectCards /> */}
             <EmployeeAttendance showingOnDashboard={true} scope={{type:"default"}} />
           </div>
 

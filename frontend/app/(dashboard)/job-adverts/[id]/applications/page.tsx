@@ -1177,7 +1177,7 @@ export default function ApplicationsPage() {
                 <SelectItem value="all">All Jobs</SelectItem>
                 {jobPositionAdverts.map((advert) => (
                   <SelectItem key={advert.id} value={advert.id.toString()}>
-                    {advert.job_position_details?.name || `Job Advert #${advert.id}`}
+                    {advert.job_position_details?.name || `Job Opening`}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1810,7 +1810,7 @@ export default function ApplicationsPage() {
                         <SelectTrigger className="w-full bg-white border-gray-300 pl-9">
                           <SelectValue
                             placeholder={
-                              isLoadingAdverts ? "Loading job adverts..." : "Search job position"
+                              isLoadingAdverts ? "Loading job openings..." : "Search job position"
                             }
                           />
                         </SelectTrigger>
@@ -1825,7 +1825,7 @@ export default function ApplicationsPage() {
                               <SelectItem key={advert.id} value={advert.id.toString()}>
                                 <div className="flex flex-col">
                                   <span className="font-medium">
-                                    {advert.job_position_details.name || `Job Advert #${advert.id}`}
+                                    {advert.job_position_details.name || `Job Opening `}
                                   </span>
                                 </div>
                               </SelectItem>

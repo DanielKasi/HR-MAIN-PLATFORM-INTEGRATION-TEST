@@ -397,7 +397,7 @@ export default function EditApplicationPage() {
                     onValueChange={(value: any) => handleInputChange("job_position_advert", Number.parseInt(value))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a job advert" />
+                      <SelectValue placeholder="Select a job opening" />
                     </SelectTrigger>
                     <SelectContent>
                       {safeJobPositionAdverts
@@ -406,7 +406,7 @@ export default function EditApplicationPage() {
                           <SelectItem key={advert.id} value={advert.id.toString()}>
                             <div className="flex flex-col">
                               <span className="font-medium">
-                                {advert.job_position_details?.name || `Job Advert #${advert.id}`}
+                                {advert.job_position_details?.name || `Job Opening `}
                               </span>
                             </div>
                           </SelectItem>
@@ -414,7 +414,7 @@ export default function EditApplicationPage() {
                     </SelectContent>
                   </Select>
                   <div className="text-xs text-muted-foreground">
-                    Available job adverts: {safeJobPositionAdverts.length}
+                    Available job openings: {safeJobPositionAdverts.length}
                   </div>
                 </div>
                 <div className="space-y-2">

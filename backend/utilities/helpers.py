@@ -35,38 +35,38 @@ from users.models import Role, RolePermission, Permission, UserRole
 def get_gender_salutation(user):
     """
     Returns appropriate salutation based on user's gender.
-    
+
     Args:
         user: User object with gender field
-        
+
     Returns:
         str: Appropriate salutation (Mr., Ms., or empty string)
     """
-    if not hasattr(user, 'gender') or not user.gender:
+    if not hasattr(user, "gender") or not user.gender:
         return ""
-    
+
     gender_salutations = {
-        'male': 'Mr.',
-        'female': 'Ms.',
-        'other': ''  # No salutation for 'other' or when gender is not specified
+        "male": "Mr.",
+        "female": "Madam",
+        "other": "",  # No salutation for 'other' or when gender is not specified
     }
-    
+
     return gender_salutations.get(user.gender.lower(), "")
 
 
 def get_personalized_greeting(user):
     """
     Returns a personalized greeting with salutation and name.
-    
+
     Args:
         user: User object with gender and fullname fields
-        
+
     Returns:
         str: Personalized greeting like "Mr. John Doe" or "Ms. Jane Smith"
     """
     salutation = get_gender_salutation(user)
-    fullname = getattr(user, 'fullname', 'there')
-    
+    fullname = getattr(user, "fullname", "there")
+
     if salutation:
         return f"{salutation} {fullname}"
     return fullname
@@ -98,7 +98,13 @@ def get_or_create_default_role_with_permissions(institution):
 
 
 def send_activation_confirmation_email(
-    owner_fullname, owner_email, institution_name, branches, departments, employees, owner_user=None
+    owner_fullname,
+    owner_email,
+    institution_name,
+    branches,
+    departments,
+    employees,
+    owner_user=None,
 ):
     """
     Sends an email to the owner confirming the activation of the institution.
@@ -256,15 +262,14 @@ def send_plain_email(receivers, subject, body, fail_silently=False):
 
 
 def send_otp_to_user(user, otp):
-    try:
         subject = "Verify Your Account"
 
         context = {
-            "user": user, 
-            "otp_code": otp, 
+            "user": user,
+            "otp_code": otp,
             "year": datetime.datetime.now().year,
             "personalized_greeting": get_personalized_greeting(user),
-            "salutation": get_gender_salutation(user)
+            "salutation": get_gender_salutation(user),
         }
 
         # Render HTML template
@@ -281,8 +286,6 @@ def send_otp_to_user(user, otp):
             html_message=html_message,
         )
         return True
-    except Exception as e:
-        return False
 
 
 def build_password_link(request, token: str) -> str:
@@ -310,14 +313,13 @@ def create_and_institution_token(user, purpose="registration", expiry_minutes=15
 
 
 def send_password_link_to_user(user, link):
-    try:
         subject = "Set Your Password"
         context = {
             "link": link,
             "user": user,
             "year": datetime.datetime.now().year,
             "personalized_greeting": get_personalized_greeting(user),
-            "salutation": get_gender_salutation(user)
+            "salutation": get_gender_salutation(user),
         }
         html_message = render_to_string(
             "institutions/emails/signup_link_email.html", context
@@ -332,8 +334,7 @@ def send_password_link_to_user(user, link):
             html_message=html_message,
         )
         return True
-    except Exception as e:
-        return False
+        print("\n\n Password code sent to ", user)
 
 
 def send_password_reset_link_to_user(user, link):
@@ -344,7 +345,7 @@ def send_password_reset_link_to_user(user, link):
             "user": user,
             "year": datetime.datetime.now().year,
             "personalized_greeting": get_personalized_greeting(user),
-            "salutation": get_gender_salutation(user)
+            "salutation": get_gender_salutation(user),
         }
         html_message = render_to_string("forgot-password/password-reset.html", context)
         plain_message = strip_tags(html_message)

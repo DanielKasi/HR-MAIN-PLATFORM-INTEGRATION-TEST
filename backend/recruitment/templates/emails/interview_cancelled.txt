@@ -1,6 +1,6 @@
 INTERVIEW CANCELLED
 
-Dear {{ applicant_name }},
+Dear {{salutation}} {{ applicant_name }},
 
 We regret to inform you that we need to cancel your scheduled interview for the position of:
 {{ job_title }}

@@ -669,7 +669,7 @@ export const getPaginatedJobAdverts = async ({
     const response = await apiRequest.get(endpoint);
     return response.data as IPaginatedResponse<JobPositionAdvert>;
   } catch (error) {
-    console.error("Error fetching paginated job adverts:", error);
+    console.error("Error fetching paginated job openings:", error);
     throw error;
   }
 };
@@ -679,7 +679,7 @@ export const getPaginatedJobAdvertsFromUrl = async ({ url }: { url: string }): P
     const response = await apiRequest.get(url);
     return response.data as IPaginatedResponse<JobPositionAdvert>;
   } catch (error) {
-    console.error("Error fetching paginated job adverts from URL:", error);
+    console.error("Error fetching paginated job openings from URL:", error);
     throw error;
   }
 };
@@ -5046,13 +5046,31 @@ export const institutionAPI = {
     }
   },
 
-  updateInstitution: async ({ institutionId, data }: { institutionId: number, data: Partial<IUserInstitutionFormData> & { institution_logo?: File } }) => {
+  createInstitution: async ({data}:{data:FormData}) => {
+    const response  = await await apiRequest.post("institution/", data);
+    return response as IUserInstitution
+  },
+
+  updateInstitution: async ({ institutionId, data }: { institutionId: number, data: Partial<IUserInstitutionFormData> & { institution_logo?: File; document_files?: File[]; document_titles?: string[] } }) => {
+
     const formData = new FormData()
 
     // Append all data fields to FormData
     Object.entries(data).forEach(([key, value]) => {
       if (key === "institution_logo" && value instanceof File) {
         formData.append(key, value)
+      } else if (key === "document_files" && Array.isArray(value)) {
+        // Handle document files array
+        value.forEach((file, index) => {
+          if (file instanceof File) {
+            formData.append(`document_files`, file)
+          }
+        })
+      } else if (key === "document_titles" && Array.isArray(value)) {
+        // Handle document titles array
+        value.forEach((title, index) => {
+          formData.append(`document_titles`, title)
+        })
       } else if (value !== undefined && value !== null) {
         formData.append(key, String(value))
       }
@@ -5060,6 +5078,8 @@ export const institutionAPI = {
     const response = await apiRequest.patch(`/institution/${institutionId}/`, formData);
     return response.data as IUserInstitution
   }
+
+
 }
 
 
@@ -5980,7 +6000,6 @@ export async function fetchAttendanceData(
 }
 
 export const showErrorToast = ({ error, defaultMessage }: { error: any, defaultMessage?: string }) => {
-  console.log("\n\n The received error is", error);
   const errorMessage = (error?.error && Array.isArray(error?.error)) ? error.error[0] : error?.detail || error?.message || defaultMessage || "An unexpected error occurred.";
   toast.error(errorMessage);
 }

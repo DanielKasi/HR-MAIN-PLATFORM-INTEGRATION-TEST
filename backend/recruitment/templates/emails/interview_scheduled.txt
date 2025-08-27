@@ -1,6 +1,6 @@
 INTERVIEW SCHEDULED
 
-Dear {{ applicant_name }},
+Dear {{salutation}} {{ applicant_name }},
 
 Great news! We have scheduled your interview for the position of:
 {{ job_title }}
