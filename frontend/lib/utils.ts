@@ -669,7 +669,7 @@ export const getPaginatedJobAdverts = async ({
     const response = await apiRequest.get(endpoint);
     return response.data as IPaginatedResponse<JobPositionAdvert>;
   } catch (error) {
-    console.error("Error fetching paginated job adverts:", error);
+    console.error("Error fetching paginated job openings:", error);
     throw error;
   }
 };
@@ -679,7 +679,7 @@ export const getPaginatedJobAdvertsFromUrl = async ({ url }: { url: string }): P
     const response = await apiRequest.get(url);
     return response.data as IPaginatedResponse<JobPositionAdvert>;
   } catch (error) {
-    console.error("Error fetching paginated job adverts from URL:", error);
+    console.error("Error fetching paginated job openings from URL:", error);
     throw error;
   }
 };
@@ -5046,6 +5046,11 @@ export const institutionAPI = {
     }
   },
 
+  createInstitution: async ({data}:{data:FormData}) => {
+    const response  = await await apiRequest.post("institution/", data);
+    return response as IUserInstitution
+  },
+
   updateInstitution: async ({ institutionId, data }: { institutionId: number, data: Partial<IUserInstitutionFormData> & { institution_logo?: File } }) => {
     const formData = new FormData()
 
@@ -5997,7 +6002,6 @@ export async function fetchAttendanceData(
 }
 
 export const showErrorToast = ({ error, defaultMessage }: { error: any, defaultMessage?: string }) => {
-  console.log("\n\n The received error is", error);
   const errorMessage = (error?.error && Array.isArray(error?.error)) ? error.error[0] : error?.detail || error?.message || defaultMessage || "An unexpected error occurred.";
   toast.error(errorMessage);
 }

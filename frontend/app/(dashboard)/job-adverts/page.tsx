@@ -145,7 +145,7 @@ export default function JobAdvertsPage() {
         });
 
         if (updatedAdvert) {
-          toast.success("Job advert closed successfully!");
+          toast.success("Job opening closed successfully!");
           refreshTableRef.current?.(); // Add refresh call
         } else {
           toast.error("Failed to close job openings");
@@ -206,7 +206,7 @@ export default function JobAdvertsPage() {
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search job advertisements..."
+                  placeholder="Search job openings..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -234,7 +234,7 @@ export default function JobAdvertsPage() {
                 className=""
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Create Job Advert
+                Create Job Opening
               </Button>
             </div>
           </div>
@@ -265,8 +265,8 @@ export default function JobAdvertsPage() {
                 return (
                   <div className="text-center py-8 text-gray-500">
                     {searchTerm 
-                      ? "No job advertisements found matching your search" 
-                      : "No job advertisements found"}
+                      ? "No job openings found matching your search" 
+                      : "No job openings found"}
                   </div>
                 );
               }
@@ -280,7 +280,7 @@ export default function JobAdvertsPage() {
               if (filteredResults?.length === 0) {
                 return (
                   <div className="text-center py-8 text-gray-500">
-                    No job advertisements match the selected status filter
+                    No job openings match the selected status filter
                   </div>
                 );
               }
@@ -375,7 +375,7 @@ export default function JobAdvertsPage() {
                                       <DialogHeader>
                                         <DialogTitle>Are you sure you want to close <span className="ml-2">"{advert.job_position_details.name}"?</span> </DialogTitle>
                                         <DialogDescription>
-                                          Closing this job advert will change its status to "closed" and prevent further applications. This action cannot be undone.
+                                          Closing this job opening will change its status to "closed" and prevent further applications. This action cannot be undone.
                                         </DialogDescription>
                                       </DialogHeader>
                                       <DialogFooter className="flex-col sm:flex-row gap-2">

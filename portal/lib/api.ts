@@ -100,7 +100,7 @@ export const JobAdvertsAPI = {
       
       return response as IPaginatedResponse<JobPositionAdvert>;
     } catch (error) {
-      console.warn("Error fetching paginated job adverts:", error);
+      console.warn("Error fetching paginated job openings:", error);
       throw error;
     }
   },
@@ -113,7 +113,7 @@ export const JobAdvertsAPI = {
       const response = await apiRequest.get(endpoint);
       return response as IPaginatedResponse<JobPositionAdvert>;
     } catch (error) {
-      console.warn("Error fetching paginated job adverts from URL:", error);
+      console.warn("Error fetching paginated job openings from URL:", error);
       throw error;
     }
   },
@@ -123,7 +123,7 @@ export const JobAdvertsAPI = {
       const response = await apiRequest.get('/recruitment/job-openings/');
       return response.results as JobPositionAdvert[];
     } catch (error) {
-      console.warn("Error fetching all job adverts:", error);
+      console.warn("Error fetching all job openings:", error);
       throw error;
     }
   },
@@ -133,7 +133,7 @@ export const JobAdvertsAPI = {
       const response = await apiRequest.get(`/recruitment/job-advert/${id}/`);
       return response as JobPositionAdvert;
     } catch (error) {
-      console.warn("Error fetching job advert by ID:", error);
+      console.warn("Error fetching job opening by ID:", error);
       return null;
     }
   },

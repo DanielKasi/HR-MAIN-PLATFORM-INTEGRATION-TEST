@@ -69,6 +69,15 @@ export const AUTH_API = {
       },
     );
     return response.data as LoginResponse
+  },
+
+  changeEmailAndResendOtp: async ({old_email,new_email}:{old_email:string, new_email:string}) => {
+    if(!old_email || !new_email){throw new Error("Both the old and new emails are required !")}
+    const response = await apiRequest.post("user/change-email-and-resend-otp/", {
+        old_email,
+        new_email,
+      });
+    return response
   }
 }
 

@@ -540,14 +540,14 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     setExpandedItems((prev) => ({[title]: !prev[title]}));
   };
 
-  const renderNavigationItem = (item: NavItem, isMobileView = false) => {
+  const renderNavigationItem = ({item, isMobileView=false, index}:{item: NavItem, isMobileView:boolean,index:number}) => {
     const isActive = item.submenu
       ? item.submenu.some((sub) => pathname === sub.href)
       : pathname === item.href;
     const isExpanded = expandedItems[item.title];
 
     return (
-      <div key={item.title} className="w-full py-1">
+      <div key={`${item.title}-${index}`} className="w-full py-1">
         <Button
           variant="ghost"
           className={`w-full !rounded-xl flex items-center justify-between px-4 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 ${
@@ -642,7 +642,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             </div>
           </div>
           <div className="p-2 overflow-y-auto h-[90svh] pt-4 pb-16">
-            {filteredNavItems.map((item) => renderNavigationItem(item, false))}
+            {filteredNavItems.map((item, index) => renderNavigationItem({item, isMobileView:false, index}))}
           </div>
         </div>
       )}
@@ -699,7 +699,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
 
             {/* Navigation Items */}
             <div className="flex-1 overflow-y-auto p-2 pb-20">
-              {filteredNavItems.map((item) => renderNavigationItem(item, true))}
+              {filteredNavItems.map((item, idx) => renderNavigationItem({item, isMobileView:true, index:idx}))}
             </div>
           </div>
         </>
