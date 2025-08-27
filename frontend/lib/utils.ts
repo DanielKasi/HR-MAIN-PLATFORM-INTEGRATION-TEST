@@ -110,6 +110,7 @@ import apiRequest from "./apiRequest";
 import { IEmployee } from "@/types/types.utils";
 import { toast } from "sonner";
 import { IUserInstitution, IUserInstitutionFormData, Role } from "@/types";
+import { forceUrlToHttps } from "./helpers";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -307,7 +308,7 @@ export const getPaginatedJobPositions = async ({ institutionId, page = 1, search
 };
 
 export const getPaginatedJobPositionsFromUrl = async (url: string) => {
-  const response = await apiRequest.get(url);
+  const response = await apiRequest.get(forceUrlToHttps(url));
   return response.data as IPaginatedResponse<IJobPosition>;
 };
 
@@ -500,7 +501,7 @@ export const getPaginatedJobApplications = async ({
 // Fetch paginated job applications from URL (for direct navigation)
 export const getPaginatedJobApplicationsFromUrl = async (url: string): Promise<IPaginatedResponse<JobApplication>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<JobApplication>;
   } catch (error) {
     // console.error("Failed to fetch paginated job applications from URL", error);
@@ -676,7 +677,7 @@ export const getPaginatedJobAdverts = async ({
 
 export const getPaginatedJobAdvertsFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<JobPositionAdvert>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<JobPositionAdvert>;
   } catch (error) {
     console.error("Error fetching paginated job adverts from URL:", error);
@@ -771,7 +772,7 @@ export const getPaginatedInterviews = async ({
 
 export const getPaginatedInterviewsFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IInterview>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IInterview>;
   } catch (error) {
     console.error("Error fetching interviews from URL:", error);
@@ -1277,7 +1278,7 @@ export const getPaginatedEmployees = async ({ institutionId, page = 1, search, }
 
 
 export const getPaginatedEmployeesFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IEmployee>> => {
-  const response = await apiRequest.get(url);
+  const response = await apiRequest.get(forceUrlToHttps(url));
   return response.data as IPaginatedResponse<IEmployee>;
 };
 
@@ -1552,7 +1553,7 @@ export const getWorkTypes = async ({ institutionId, page = 1, search, }: {
 };
 
 export const getPaginatedWorkTypesFromUrl = async ({ url }: { url: string }) => {
-  const response = await apiRequest.get(url);
+  const response = await apiRequest.get(forceUrlToHttps(url));
   return response.data as IPaginatedResponse<IWorkType>;
 };
 
@@ -1634,7 +1635,7 @@ export const getEmployeeTypes = async ({
 };
 
 export const getPaginatedEmployeeTypesFromUrl = async ({ url }: { url: string }) => {
-  const response = await apiRequest.get(url);
+  const response = await apiRequest.get(forceUrlToHttps(url));
   return response.data as IPaginatedResponse<IEmployeeType>;
 };
 
@@ -1829,7 +1830,7 @@ export const getDisciplinaryActions = async ({
 };
 
 export const getPaginatedDisciplinaryActionsFromUrl = async ({ url }: { url: string }) => {
-  const response = await apiRequest.get(url);
+  const response = await apiRequest.get(forceUrlToHttps(url));
   return response.data as IPaginatedResponse<IDisciplinaryAction>;
 };
 
@@ -1932,7 +1933,7 @@ export const LeaveTypesAPI = {
 
   getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ILeaveType>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<ILeaveType>;
     } catch (error) {
       console.error("Error fetching leave types from URL:", error);
@@ -2210,7 +2211,7 @@ export const LeavePoliciesAPI = {
 
   getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ILeavePolicy>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<ILeavePolicy>;
     } catch (error) {
       console.error("Error fetching leave policies from URL:", error);
@@ -2570,7 +2571,7 @@ export const LeaveApplicationsAPI = {
 
   getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ILeaveRequest>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<ILeaveRequest>;
     } catch (error) {
       console.error("Error fetching leave applications from URL:", error);
@@ -2727,7 +2728,7 @@ export const getPaginatedAllowanceTypes = async ({
 
 export const getPaginatedAllowanceTypesFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IAllowanceType>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IAllowanceType>;
   } catch (error) {
     console.error("Error fetching allowance types from URL:", error);
@@ -2789,7 +2790,7 @@ export const getPaginatedLeaveBalances = async ({
 
 
 export const getPaginatedLeaveBalancesFromUrl = async ({ url }: { url: string }) => {
-  const response = await apiRequest.get(url);
+  const response = await apiRequest.get(forceUrlToHttps(url));
   return response.data as IPaginatedResponse<ILeaveBalance>;
 };
 
@@ -2882,7 +2883,7 @@ export const LeaveBalancesAPI = {
 
   getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ILeaveBalance>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<ILeaveBalance>;
     } catch (error) {
       console.error("Error fetching leave balances from URL:", error);
@@ -3047,7 +3048,7 @@ export const getPaginatedDeductionTypes = async ({
 
 export const getPaginatedDeductionTypesFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IDeductionType>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IDeductionType>;
   } catch (error) {
     console.error("Error fetching deduction types from URL:", error);
@@ -3170,7 +3171,7 @@ export const getPaginatedEmployeeAllowances = async ({
 
 export const getPaginatedEmployeeAllowancesFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IEmployeeAllowance>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IEmployeeAllowance>;
   } catch (error) {
     console.error("Error fetching employee allowances from URL:", error);
@@ -3338,7 +3339,7 @@ export const getPaginatedEmployeeDeductions = async ({
 
 export const getPaginatedEmployeeDeductionsFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IEmployeeDeduction>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IEmployeeDeduction>;
   } catch (error) {
     console.error("Error fetching employee deductions from URL:", error);
@@ -3605,7 +3606,7 @@ export const getPaginatedPayrollPeriods = async ({
 
 export const getPaginatedPayrollPeriodsFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IPayrollPeriod>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IPayrollPeriod>;
   } catch (error) {
     console.error("Error fetching paginated payroll periods from URL:", error);
@@ -3947,7 +3948,7 @@ export const getPayslips = async (
     }
 
     const url = `payroll/${institutionId}/payslips/${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
 
     const data = response.data as IPaginatedResponse<IPayslip>;
 
@@ -4075,7 +4076,7 @@ export const getContracts = async ({ institutionId, employeeId, page = 1, search
 
 
 export const getPaginatedContractsFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IContract>> => {
-  const response = await apiRequest.get(url);
+  const response = await apiRequest.get(forceUrlToHttps(url));
   return response.data as IPaginatedResponse<IContract>;
 };
 
@@ -4354,7 +4355,7 @@ export const TerminationInitiationsAPI = {
 
   getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ITermination>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<ITermination>;
     } catch (error) {
       console.error("Error fetching termination initiations from URL:", error);
@@ -4482,7 +4483,7 @@ export const SeparationPolicyTypesAPI = {
 
   getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ISeparationType>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<ISeparationType>;
     } catch (error) {
       console.error("Error fetching separation policy types from URL:", error);
@@ -4586,7 +4587,7 @@ export const OffboardingStagesAPI = {
 
   getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IOffboardingStage>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IOffboardingStage>;
     } catch (error) {
       console.error("Error fetching offboarding stages from URL:", error);
@@ -4692,7 +4693,7 @@ export const AttendanceAPI = {
   },
 
   fetchAttendanceRecordsFromUrl: async (url: string) => {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IAttendance>;
   },
 
@@ -4707,7 +4708,7 @@ export const AttendanceAPI = {
     if (startDate) params.push(`start_date=${startDate}`);
     if (endDate) params.push(`end_date=${endDate}`);
     if (params.length) url += `?${params.join("&")}`;
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IAttendance>;
   },
 
@@ -4772,7 +4773,7 @@ export const bankAccountsAPI = {
   getAll: async (searchParams?: string) => {
     try {
       const url = searchParams ? `/institution/bank-account/${searchParams}` : `/institution/bank-account/`
-      const response = await apiRequest.get(url)
+      const response = await apiRequest.get(forceUrlToHttps(url))
       return response.data as IPaginatedResponse<IBankAccount>
     } catch (error) {
       throw error
@@ -4882,7 +4883,7 @@ export const taxRulesAPI = {
     try {
       const allRules = await apiRequest.get('/institution/tax-rule/');
       const rules = allRules.data as ITaxRule[];
-      return rules.filter(rule => rule.institution_tax === taxId);
+      return rules.filter(rule => rule.institution_tax.id === taxId);
     } catch (error) {
       throw error;
     }
@@ -4951,7 +4952,7 @@ export const payrollAPI = {
       }
 
       const url = `payroll/${institutionId}/payslips/${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IPayslip>;
 
     } catch (error) {
@@ -4985,7 +4986,7 @@ export const payrollAPI = {
       queryParams.append("page", page.toString())
 
       const url = `/payroll/payslips/by-payroll/${payrollId}/${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
 
       const data = response.data as IPaginatedResponse<IPayslip>;
 
@@ -4998,7 +4999,7 @@ export const payrollAPI = {
   },
 
   getPaginatedPayslipsByPeriollPeriodFromUrl: async ({ url }: { url: string }) => {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IPayslip>;
   },
 }
@@ -5156,7 +5157,7 @@ export const taxAPI = {
 
   getPaginatedEmployeeTaxesFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IEmployeeTax>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IEmployeeTax>;
     } catch (error) {
       console.error("Error fetching paginated employee taxes from URL:", error);
@@ -5235,7 +5236,7 @@ export const assetCategoriesAPI = {
 
   getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAssetCategory>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IAssetCategory>;
     } catch (error) {
       console.error("Error fetching asset categories from URL:", error);
@@ -5335,7 +5336,7 @@ export const assetsAPI = {
 
   getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAsset>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IAsset>;
     } catch (error) {
       console.error("Error fetching assets from URL:", error);
@@ -5437,7 +5438,7 @@ export const assetsAPI = {
 
   getPaginatedAssetRequestsFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAssetRequest>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IAssetRequest>;
     } catch (error) {
       console.error("Error fetching asset requests from URL:", error);
@@ -5534,7 +5535,7 @@ export const assetsAPI = {
 
   getPaginatedAssetAllocationsFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAssetAllocation>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IAssetAllocation>;
     } catch (error) {
       console.error("Error fetching asset allocations from URL:", error);
@@ -5657,7 +5658,7 @@ export const assetsAPI = {
 
   getPaginatedAssetReturnsFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAssetReturn>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IAssetReturn>;
     } catch (error) {
       console.error("Error fetching asset returns from URL:", error);
@@ -5916,7 +5917,7 @@ export const SeparationPoliciesAPI = {
 
   getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ISeparationPolicy>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<ISeparationPolicy>;
     } catch (error) {
       console.error("Error fetching separation policies from URL:", error);

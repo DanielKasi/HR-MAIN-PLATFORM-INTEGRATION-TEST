@@ -31,6 +31,26 @@ logger = logging.getLogger(__name__)
 
 from users.models import Role, RolePermission, Permission, UserRole
 
+from datetime import datetime, date
+
+
+def parse_date(value: str):
+    if not value:
+        return None
+
+    value = value.strip().replace("“", "").replace("”", "")
+
+    if " " in value:
+        value = value.split()[0]
+
+    formats = ["%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d"]
+    for fmt in formats:
+        try:
+            return datetime.strptime(value, fmt).date()
+        except ValueError:
+            continue
+    raise ValueError("Invalid date format. Use YYYY-MM-DD, YYYY/MM/DD, or YYYY.MM.DD")
+
 
 def get_gender_salutation(user):
     """
@@ -269,7 +289,6 @@ def send_otp_to_user(user, otp):
         "otp_code": otp,
         "year": datetime.datetime.now().year,
         "personalized_greeting": get_personalized_greeting(user),
-        "salutation": get_gender_salutation(user),
     }
 
     # Render HTML template
@@ -317,9 +336,9 @@ def send_password_link_to_user(user, link):
     context = {
         "link": link,
         "user": user,
+        "fullname": user.fullname,
         "year": datetime.datetime.now().year,
         "personalized_greeting": get_personalized_greeting(user),
-        "salutation": get_gender_salutation(user),
     }
     html_message = render_to_string(
         "institutions/emails/signup_link_email.html", context
@@ -345,7 +364,6 @@ def send_password_reset_link_to_user(user, link):
             "user": user,
             "year": datetime.datetime.now().year,
             "personalized_greeting": get_personalized_greeting(user),
-            "salutation": get_gender_salutation(user),
         }
         html_message = render_to_string("forgot-password/password-reset.html", context)
         plain_message = strip_tags(html_message)
