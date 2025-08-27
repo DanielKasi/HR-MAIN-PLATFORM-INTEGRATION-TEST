@@ -196,7 +196,7 @@ def create_and_institution_otp(user_id, purpose=None, expiry_minutes=15):
     otp = generate_otp()
     otp_hash = hash_otp(user_id, otp)
 
-    expiry_time = timezone.now() + datetime.timedelta(minutes=expiry_minutes)
+    expiry_time = timezone.now() + timedelta(minutes=expiry_minutes)
 
     if purpose:
         cleanup_existing_otps(user_id, purpose)
