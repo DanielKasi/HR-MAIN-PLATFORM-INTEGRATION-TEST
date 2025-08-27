@@ -67,6 +67,10 @@ from .service import build_attendance_report_data
 from institution.models import Institution
 from utilities.helpers import get_or_create_default_role_with_permissions
 from django.db.models import Q
+from datetime import datetime, date
+from utilities.helpers import parse_date
+
+
 
 
 class EmployeeListAPIView(APIView):
@@ -538,36 +542,33 @@ class EmployeeCreateAPIView(APIView):
                                 str(employee_data["is_active"]).lower() == "true"
                             )
 
-                        # Additional per-row validations (to mimic model/serializer)
                         if (
                             "date_of_birth" in employee_data
                             and employee_data["date_of_birth"]
                         ):
                             try:
-                                dob = datetime.strptime(
-                                    employee_data["date_of_birth"], "%Y-%m-%d"
-                                ).date()
-                                msgs = []
-                                if dob > date.today():
-                                    msgs.append(
-                                        "Date of birth cannot be in the future."
-                                    )
-                                age = (date.today() - dob).days // 365
-                                if age < 18:
-                                    msgs.append(
-                                        f"Employee must be at least 18 years old. Current age: {age}."
-                                    )
-                                if msgs:
-                                    row_errors["date_of_birth"] = {
-                                        "error": " ".join(msgs)
-                                    }
-                                employee_data["date_of_birth"] = (
-                                    dob  # Convert to date object
-                                )
-                            except ValueError:
-                                row_errors["date_of_birth"] = {
-                                    "error": "Invalid date format. Use YYYY-MM-DD."
-                                }
+                                dob = parse_date(employee_data["date_of_birth"])
+                                if dob:
+                                    msgs = []
+                                    if dob > date.today():
+                                        msgs.append(
+                                            "Date of birth cannot be in the future."
+                                        )
+
+                                    age = (date.today() - dob).days // 365
+                                    if age < 18:
+                                        msgs.append(
+                                            f"Employee must be at least 18 years old. Current age: {age}."
+                                        )
+
+                                    if msgs:
+                                        row_errors["date_of_birth"] = {
+                                            "error": " ".join(msgs)
+                                        }
+
+                                    employee_data["date_of_birth"] = dob
+                            except ValueError as e:
+                                row_errors["date_of_birth"] = {"error": str(e)}
 
                         if (
                             "date_of_joining" in employee_data
@@ -880,7 +881,7 @@ class EmployeeTemplateDownloadAPIView(APIView):
             "nin": "123456789",
             "bank": "National Bank",
             "bank_account_number": "123456789012",
-            "experience": "5 Years",
+            "experience": "5",
             "qualifications": "BSc Computer Science",
             "skills": "Python, Django",
             "emergency_contact_name": "Jane Doe",
