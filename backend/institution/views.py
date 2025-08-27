@@ -106,6 +106,7 @@ class InstitutionKYCDocumentListCreateView(APIView):
         tags=["KYC Documents Management"],
     )
     def post(self, request):
+        print("REquest data", request.data)
         serializer = InstitutionKYCDocumentSerializer(
             data=request.data, context={"request": request}
         )

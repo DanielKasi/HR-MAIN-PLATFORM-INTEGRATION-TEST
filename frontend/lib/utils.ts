@@ -670,7 +670,7 @@ export const getPaginatedJobAdverts = async ({
     const response = await apiRequest.get(endpoint);
     return response.data as IPaginatedResponse<JobPositionAdvert>;
   } catch (error) {
-    console.error("Error fetching paginated job openings:", error);
+    console.error("Error fetching paginated job adverts:", error);
     throw error;
   }
 };
@@ -680,7 +680,7 @@ export const getPaginatedJobAdvertsFromUrl = async ({ url }: { url: string }): P
     const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<JobPositionAdvert>;
   } catch (error) {
-    console.error("Error fetching paginated job openings from URL:", error);
+    console.error("Error fetching paginated job adverts from URL:", error);
     throw error;
   }
 };
@@ -5047,40 +5047,38 @@ export const institutionAPI = {
     }
   },
 
-  createInstitution: async ({data}:{data:FormData}) => {
-    const response  = await await apiRequest.post("institution/", data);
-    return response as IUserInstitution
-  },
-
-  updateInstitution: async ({ institutionId, data }: { institutionId: number, data: Partial<IUserInstitutionFormData> & { institution_logo?: File; document_files?: File[]; document_titles?: string[] } }) => {
-
+  updateInstitution: async ({ institutionId, data }: { institutionId: number, data: Partial<IUserInstitutionFormData> & { institution_logo?: File } }) => {
     const formData = new FormData()
 
     // Append all data fields to FormData
     Object.entries(data).forEach(([key, value]) => {
       if (key === "institution_logo" && value instanceof File) {
         formData.append(key, value)
-      } else if (key === "document_files" && Array.isArray(value)) {
-        // Handle document files array
-        value.forEach((file, index) => {
-          if (file instanceof File) {
-            formData.append(`document_files`, file)
-          }
-        })
-      } else if (key === "document_titles" && Array.isArray(value)) {
-        // Handle document titles array
-        value.forEach((title, index) => {
-          formData.append(`document_titles`, title)
-        })
       } else if (value !== undefined && value !== null) {
         formData.append(key, String(value))
       }
     })
     const response = await apiRequest.patch(`/institution/${institutionId}/`, formData);
     return response.data as IUserInstitution
+  },
+
+
+
+  createKYCDocuments: async (documents: { document_title: string; document_file: File }[]) => {
+    const formData = new FormData()
+    
+    console.log("Picked data",documents)
+    // Append each document with proper structure
+    documents.forEach((doc, index) => {
+      formData.append(`documents[${index}].document_title`, doc.document_title)
+      formData.append(`documents[${index}].document_file`, doc.document_file)
+    })
+
+  
+    
+    const response = await apiRequest.post('/institution/kyc_docs', formData);
+    return response.data
   }
-
-
 }
 
 
@@ -6001,6 +5999,7 @@ export async function fetchAttendanceData(
 }
 
 export const showErrorToast = ({ error, defaultMessage }: { error: any, defaultMessage?: string }) => {
+  console.log("\n\n The received error is", error);
   const errorMessage = (error?.error && Array.isArray(error?.error)) ? error.error[0] : error?.detail || error?.message || defaultMessage || "An unexpected error occurred.";
   toast.error(errorMessage);
 }
