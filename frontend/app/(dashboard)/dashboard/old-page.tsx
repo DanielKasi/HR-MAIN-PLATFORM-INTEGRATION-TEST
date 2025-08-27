@@ -95,7 +95,7 @@ interface LeaveApplication {
   updated_at?: string;
 }
 
-// Interface for job adverts
+// Interface for job openings
 interface JobAdvert {
   id: number;
   job_position_details?: {
@@ -231,7 +231,7 @@ const StatsCards = ({
       ? relevantLeaveApplications.filter((app) => app.status === "pending").length
       : 0;
 
-    // For job adverts and interviews, these are usually organization-wide
+    // For job openings and interviews, these are usually organization-wide
     const openPositions = Array.isArray(jobAdverts)
       ? jobAdverts.filter((advert) => advert.job_position_advert_status === "active").length
       : 0;

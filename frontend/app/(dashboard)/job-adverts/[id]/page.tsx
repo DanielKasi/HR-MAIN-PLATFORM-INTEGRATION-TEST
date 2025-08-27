@@ -78,7 +78,7 @@ export default function JobAdvertDetailsPage() {
     }
 
     if (isNaN(jobAdvertId)) {
-      toast.error("Invalid job advert ID");
+      toast.error("Invalid job opening ID");
       router.push("/job-adverts");
       return;
     }
@@ -108,8 +108,8 @@ export default function JobAdvertDetailsPage() {
       if (fetchedJobPosition) {
         setJobPosition(fetchedJobPosition);
       } else {
-        setError("Job advert not found");
-        toast.error("Job advert not found");
+        setError("Job opening not found");
+        toast.error("Job opening not found");
       }
 
       if (fetchedApplications) {
@@ -124,8 +124,8 @@ export default function JobAdvertDetailsPage() {
         setInterviewStagesCount(fetchedInterviewStages.length);
       }
     } catch (err) {
-      setError("Failed to fetch job advert details");
-      toast.error("Failed to load job advert details");
+      setError("Failed to fetch job opening details");
+      toast.error("Failed to load job opening details");
     } finally {
       setIsLoading(false);
     }
@@ -164,12 +164,12 @@ export default function JobAdvertDetailsPage() {
 
       if (updatedAdvert) {
         setJobAdvert(updatedAdvert);
-        toast.success("Job advert closed successfully!");
+        toast.success("Job opening closed successfully!");
       } else {
-        toast.error("Failed to close job advert");
+        toast.error("Failed to close job opening");
       }
     } catch (error) {
-      toast.error("Failed to close job advert");
+      toast.error("Failed to close job opening");
     } finally {
       setIsClosing(false);
     }

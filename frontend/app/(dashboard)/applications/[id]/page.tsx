@@ -542,7 +542,7 @@ export default function ApplicationViewPage() {
                 </div>
                 <p className="text-muted-foreground">
                   {application.job_position_advert_job_details?.name ||
-                    `Job Advert #${application.job_position_advert}`}{" "}
+                    `Job Opening #${application.job_position_advert}`}{" "}
                   • Applied {formatDate(application.application_date)}
                 </p>
               </div>
