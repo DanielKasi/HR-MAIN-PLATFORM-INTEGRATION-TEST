@@ -534,7 +534,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     const isExpanded = expandedItems[item.title];
 
     return (
-      <div key={`${item.title}-${index}`} className="w-full bg-blue-400 py-1">
+      <div key={`${item.title}-${index}`} className="w-full py-1">
         <Button
           variant="ghost"
           className={`w-full !rounded-xl flex items-center justify-between px-2 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 ${
