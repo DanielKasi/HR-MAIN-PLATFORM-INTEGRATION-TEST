@@ -5,6 +5,7 @@ import {ChevronLeft, ChevronRight} from "lucide-react";
 import {type IPaginatedResponse} from "@/types/types.utils";
 import {cn, showErrorToast} from "@/lib/utils";
 import {DependencyList, ReactNode, useCallback, useEffect, useState} from "react";
+import { forceUrlToHttps } from "@/lib/helpers";
 
 type FetchFromUrlFn<T> = (args: {url: string}) => Promise<IPaginatedResponse<T>>|undefined;
 type FetchFirstPageFn<T, Q> = (query?: Q) => Promise<IPaginatedResponse<T>>;
@@ -74,7 +75,7 @@ export function PaginatedTableWrapper<T, Q = unknown>({
     if (!data?.previous) return;
     setLoading(true);
     try {
-      const res = await fetchFromUrl({url: data.previous});
+      const res = await fetchFromUrl({url: forceUrlToHttps(data.previous)});
       if(!res){return}
       setData(res);
     } catch (e) {
@@ -88,7 +89,7 @@ export function PaginatedTableWrapper<T, Q = unknown>({
     if (!data?.next) return;
     setLoading(true);
     try {
-      const res = await fetchFromUrl({url: data.next});
+      const res = await fetchFromUrl({url: forceUrlToHttps(data.next)});
       if(!res){
         return
       }

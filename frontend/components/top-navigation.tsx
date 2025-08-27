@@ -73,7 +73,7 @@ export function TopNavigation() {
           variant={
             pathname === "/settings" || pathname.startsWith("/settings/") ? "default" : "ghost"
           }
-          onClick={() => router.push("/settings")}
+          onClick={() => router.push("#")}
         >
           <Settings className="mr-2 h-4 w-4" />
           Settings

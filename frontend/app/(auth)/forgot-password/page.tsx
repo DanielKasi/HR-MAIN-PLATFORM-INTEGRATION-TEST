@@ -12,6 +12,7 @@ import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {forgotPassword} from "@/lib/utils";
 import {handleApiError} from "@/lib/apiErrorHandler";
+import { Card } from "@/components/ui/card";
 
 export default function EmailRequest() {
   const [email, setEmail] = useState("");
@@ -29,7 +30,7 @@ export default function EmailRequest() {
       // Pass the frontend URL along with the email
       await forgotPassword(email, frontendUrl);
       toast.success("Email sent. Check your email for a password reset link");
-      router.push("/forgot-password/email-sent");
+      router.push(`/forgot-password/email-sent?email=${encodeURIComponent(email)}`);
     } catch (error: any) {
       toast.error("Failed to send reset email. Please try again.");
       handleApiError(error);
@@ -39,10 +40,10 @@ export default function EmailRequest() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="mx-auto w-full max-w-md px-4 py-8">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40">
+      <Card className=" shadow-none border-none bg-white md:shadow-sm md:border mx-auto w-full max-w-md px-4 py-8">
         <div className="flex flex-col items-center justify-center space-y-2 text-center">
-          <h1 className="text-2xl font-bold">Forgot your password?</h1>
+          <h1 className="text-2xl font-bold uppercase">Forgot your password?</h1>
           <p className="text-muted-foreground">
             Enter the email address linked to your account. We&apos;ll send you a link to reset your
             password.
@@ -58,12 +59,13 @@ export default function EmailRequest() {
               placeholder="name@example.com"
               type="email"
               value={email}
+              className="rounded-xl h-12"
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
           <Button
-            className="w-full bg-emerald-500 hover:bg-emerald-600"
+            className="w-full rounded-xl h-12"
             disabled={isLoading}
             type="submit"
           >
@@ -72,12 +74,14 @@ export default function EmailRequest() {
 
           <div className="text-center">
             <span>Remember your password? </span>
-            <Link className="text-emerald-500 hover:underline" href="/login">
+            <Button type="button" variant={"link"}>
+            <Link className="" href="/login">
               Login
             </Link>
+            </Button>
           </div>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }

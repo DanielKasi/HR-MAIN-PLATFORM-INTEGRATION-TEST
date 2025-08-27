@@ -96,7 +96,6 @@ export default function EditTaskPage() {
     setLoading(true);
 
     try {
-      console.log("Updating task:", formData);
       await new Promise((resolve) => setTimeout(resolve, 1000));
       router.push(`/projects/project-tasks/${params.id}`);
     } catch (error) {
