@@ -1,6 +1,6 @@
 APPLICATION RECEIVED SUCCESSFULLY
 
-Dear {{ applicant_name }},
+Dear {{salutation}} {{ applicant_name }},
 
 Thank you for your application! We have successfully received your application for the following position:
 

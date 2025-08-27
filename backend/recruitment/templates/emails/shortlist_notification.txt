@@ -1,6 +1,6 @@
 CONGRATULATIONS! You've been shortlisted!
 
-Dear {{ applicant_name }},
+Dear {{salutation}} {{ applicant_name }},
 
 We are delighted to inform you that you have been SHORTLISTED for the position of:
 

@@ -18,6 +18,7 @@ class RequiredDocument(UtilityBaseModel):
     """
     A generic model to define a document requirement for any other model.
     """
+
     document_name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     is_optional = models.BooleanField(default=False)
@@ -28,7 +29,9 @@ class RequiredDocument(UtilityBaseModel):
     content_object = GenericForeignKey("content_type", "object_id")
 
     def __str__(self):
-        return f"{self.document_name} ({'Optional' if self.is_optional else 'Required'})"
+        return (
+            f"{self.document_name} ({'Optional' if self.is_optional else 'Required'})"
+        )
 
 
 class JobPosition(UtilityBaseModel):
@@ -47,23 +50,23 @@ class JobPosition(UtilityBaseModel):
     offer_letter_template = models.FileField(
         upload_to="job_positions/offer_letters/", blank=True, null=True
     )
-    
+
     # Salary range fields
     salary_min = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        blank=True, 
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
         null=True,
-        help_text="Minimum salary for this position"
+        help_text="Minimum salary for this position",
     )
     salary_max = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        blank=True, 
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
         null=True,
-        help_text="Maximum salary for this position"
+        help_text="Maximum salary for this position",
     )
-    
+
     reports_to = models.ForeignKey(
         "self",
         on_delete=models.SET_NULL,
@@ -90,9 +93,11 @@ class JobPosition(UtilityBaseModel):
         super().clean()
         if self.salary_min and self.salary_max:
             if self.salary_max < self.salary_min:
-                raise ValidationError({
-                    'salary_max': 'Maximum salary must be greater than or equal to minimum salary.'
-                })
+                raise ValidationError(
+                    {
+                        "salary_max": "Maximum salary must be greater than or equal to minimum salary."
+                    }
+                )
 
     def save(self, *args, **kwargs):
         """Override save to call clean validation"""
@@ -126,27 +131,29 @@ class JobPosition(UtilityBaseModel):
         """Check if a given salary amount falls within the position's range"""
         if not salary_amount:
             return False
-        
+
         min_ok = True if not self.salary_min else salary_amount >= self.salary_min
         max_ok = True if not self.salary_max else salary_amount <= self.salary_max
-        
+
         return min_ok and max_ok
 
     def activate_job_position(self):
         if self.job_position_status != "inactive":
-            raise ValidationError({"error": "Only inactive job positions can be activated."})
+            raise ValidationError(
+                {"error": "Only inactive job positions can be activated."}
+            )
         self.job_position_status = "active"
         self.save()
 
     def finish_workflow(self):
         from workflows.models import ApprovalTask
         from django.contrib.contenttypes.models import ContentType
-        
+
         content_type = ContentType.objects.get_for_model(self.__class__)
         tasks = ApprovalTask.objects.filter(
             content_type=content_type, object_id=self.pk
         )
-        
+
         if tasks.exists() and tasks.filter(status="rejected").exists():
             self.job_position_status = "inactive"
             self.save()
@@ -193,8 +200,12 @@ class JobPositionAdvert(UtilityBaseModel):
         ],
         default="external",
     )
-    work_type = models.ForeignKey('employee.WorkType', null=True, blank=True, on_delete=models.SET_NULL)
-    employee_type = models.ForeignKey('employee.employeeType', null=True, blank=True, on_delete=models.SET_NULL)
+    work_type = models.ForeignKey(
+        "employee.WorkType", null=True, blank=True, on_delete=models.SET_NULL
+    )
+    employee_type = models.ForeignKey(
+        "employee.employeeType", null=True, blank=True, on_delete=models.SET_NULL
+    )
     published_date = models.DateTimeField(default=timezone.now)
     expiry_date = models.DateTimeField()
     number_of_employees_expected = models.PositiveIntegerField(blank=True, null=True)
@@ -215,7 +226,9 @@ class JobPositionAdvert(UtilityBaseModel):
             if existing_active.exists():
                 conflicting_advert = existing_active.first()
                 raise ValidationError(
-                    {"error": f"There is already an active advert for '{self.job_position.name}' (ID: {conflicting_advert.pk})."}
+                    {
+                        "error": f"There is already an active advert for '{self.job_position.name}' (ID: {conflicting_advert.pk})."
+                    }
                 )
 
     def save(self, *args, **kwargs):
@@ -227,7 +240,9 @@ class JobPositionAdvert(UtilityBaseModel):
         """Approve the advert, ensuring it’s in the correct state."""
         if self.job_position_advert_status != "pending_approval":
             raise ValidationError(
-                {"error": "Only job position adverts with 'pending_approval' status can be approved."}
+                {
+                    "error": "Only job position adverts with 'pending_approval' status can be approved."
+                }
             )
         self.job_position_advert_status = "active"  # Fixed typo
         self.full_clean()  # Validate before saving
@@ -372,6 +387,7 @@ class JobAdvertApplication(UtilityBaseModel):
 
             # Template context
             context = {
+                "salutation": "Madam" if self.gender == "female" else "Mr.",
                 "applicant_name": self.applicant_name,
                 "job_title": self.job_position_advert.job_position.name,
                 "company_name": self.job_position_advert.job_position.department.institution.institution_name,
@@ -401,6 +417,7 @@ class JobAdvertApplication(UtilityBaseModel):
 
             # Template context
             context = {
+                "salutation": "Madam" if self.gender == "female" else "Mr.",
                 "applicant_name": self.applicant_name,
                 "job_title": self.job_position_advert.job_position.name,
                 "company_name": self.job_position_advert.job_position.department.institution.institution_name,
@@ -538,6 +555,11 @@ class JobInterview(UtilityBaseModel):
 
             # Template context
             context = {
+                "salutation": (
+                    "Madam"
+                    if self.job_position_application.gender == "female"
+                    else "Mr."
+                ),
                 "applicant_name": self.job_position_application.applicant_name,
                 "job_title": self.job_position_application.job_position_advert.job_position.name,
                 "interview_stage": self.interview_stage.name,
@@ -575,6 +597,11 @@ class JobInterview(UtilityBaseModel):
 
             # Template context
             context = {
+                "salutation": (
+                    "Madam"
+                    if self.job_position_application.gender == "female"
+                    else "Mr."
+                ),
                 "applicant_name": self.job_position_application.applicant_name,
                 "job_title": self.job_position_application.job_position_advert.job_position.name,
                 "interview_stage": self.interview_stage.name,
@@ -629,6 +656,11 @@ class JobInterview(UtilityBaseModel):
             subject = f"Interview Rescheduled - {self.job_position_application.job_position_advert.job_position.name}"
 
             context = {
+                "salutation": (
+                    "Madam"
+                    if self.job_position_application.gender == "female"
+                    else "Mr."
+                ),
                 "applicant_name": self.job_position_application.applicant_name,
                 "job_title": self.job_position_application.job_position_advert.job_position.name,
                 "interview_stage": self.interview_stage.name,
