@@ -128,7 +128,7 @@ export default function SettingsPage() {
         if (!institution) { return };
         setIsLoading(true)
         try {
-            const updateData: Partial<IUserInstitutionFormData> & { 
+            const updateData: Partial<IUserInstitutionFormData> & {
                 institution_logo?: File;
                 document_files?: File[];
                 document_titles?: string[];
@@ -251,10 +251,10 @@ export default function SettingsPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">
-            <div className="max-w-6xl mx-auto">
-                <div className="inline-block bg-yellow-400 text-black px-4 py-2 rounded-xl font-semibold text-lg mb-8">
+            <div className="">
+                <h1 className="inline-block text-black px-4 py-2 rounded-xl font-semibold text-xl md:text-3xl">
                     Settings
-                </div>
+                </h1>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <Card className="lg:col-span-1 rounded-2xl border-0 shadow-sm">
