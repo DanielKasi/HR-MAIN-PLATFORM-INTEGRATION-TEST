@@ -7,7 +7,7 @@ from .models import (
     Institution,
     Branch,
     UserBranch,
-    InstitutionDocument,
+    InstitutionKYCDocument,
     InstitutionBankType,
     InstitutionWorkingDays,
     InstitutionBankAccount,
@@ -26,35 +26,47 @@ from settings.models import SystemDay
 logger = logging.getLogger(__name__)
 
 
-class InstitutionDocumentSerializer(serializers.ModelSerializer):
+class InstitutionKYCDocumentItemSerializer(serializers.Serializer):
+    document_title = serializers.CharField()
+    document_file = serializers.FileField()
+
+
+class InstitutionKYCDocumentSerializer(serializers.ModelSerializer):
+    documents = InstitutionKYCDocumentItemSerializer(many=True, write_only=True)
 
     class Meta:
-        model = InstitutionDocument
+        model = InstitutionKYCDocument
         fields = [
             "id",
             "institution",
             "document_title",
             "document_file",
-            "document_type",
-            "document_size",
+            "created_at",
+            "updated_at",
+            "documents",
+        ]
+
+        read_only_fields = [
+            "id",
+            "institution",
             "created_at",
             "updated_at",
         ]
 
-    def validate_file(self, value):
-        if value:
-            # Check file size (10MB limit)
-            if value.document_size > 10 * 1024 * 1024:
-                raise serializers.ValidationError({"error": f"File size cannot exceed 10MB."})
+    def create(self, validated_data):
+        user = self.context.get("request")
 
-            # Check file extension
-            allowed_extensions = [".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png"]
-            ext = os.path.splitext(value.document_title)[1].lower()
-            if ext not in allowed_extensions:
-                raise serializers.ValidationError(
-                    {"error": f"File type {ext} not allowed. Allowed types: {', '.join(allowed_extensions)}"
-                })
-        return value
+        try:
+            institution = Institution.objects.get(id=user.profile.institution.id)
+        except Institution.DoesNotExist:
+            raise serializers.ValidationError({"error": "Institution not found."})
+
+        docs_data = validated_data["documents"]
+
+        docs = [
+            InstitutionKYCDocument(institution=institution, **doc) for doc in docs_data
+        ]
+        return InstitutionKYCDocument.objects.bulk_create(docs)
 
 
 class InstitutionSerializer(serializers.ModelSerializer):
@@ -62,19 +74,10 @@ class InstitutionSerializer(serializers.ModelSerializer):
         queryset=CustomUser.objects.all()
     )
     institution_logo = serializers.ImageField(required=False, allow_null=True)
-    documents = InstitutionDocumentSerializer(many=True, read_only=True)
     approval_status_display = serializers.CharField(
         source="get_approval_status_display", read_only=True
     )
-    document_files = serializers.ListField(
-        child=serializers.FileField(), write_only=True, required=False, allow_empty=True
-    )
-    document_titles = serializers.ListField(
-        child=serializers.CharField(max_length=255),
-        write_only=True,
-        required=False,
-        allow_empty=True,
-    )
+
     branches = serializers.SerializerMethodField()
 
     class Meta:
@@ -95,13 +98,10 @@ class InstitutionSerializer(serializers.ModelSerializer):
             "approval_status",
             "approval_status_display",
             "approval_date",
-            "documents",
-            "document_files",
-            "document_titles",
             "branches",
             "is_active",
             "user_inactivity_time",
-            "is_attendance_penalties_enabled"
+            "is_attendance_penalties_enabled",
         ]
 
     def create(self, validated_data):
@@ -112,9 +112,6 @@ class InstitutionSerializer(serializers.ModelSerializer):
             )
 
         institution_owner = validated_data.pop("institution_owner_id")
-        document_files = validated_data.pop("document_files", [])
-        document_titles = validated_data.pop("document_titles", [])
-        departments_data = self.context.get("departments", [])
 
         # Log departments data for debugging
         logger.info(f"Creating institution with departments_data: {departments_data}")
@@ -147,14 +144,6 @@ class InstitutionSerializer(serializers.ModelSerializer):
                         salary_min=job_data.get("salary_min", 50000),
                         salary_max=job_data.get("salary_max", 100000),
                     )
-
-            # Create InstitutionDocuments with correct field names
-            for file, title in zip(document_files, document_titles):
-                InstitutionDocument.objects.create(
-                    institution=institution,
-                    document_file=file,  # Changed from 'file' to 'document_file'
-                    document_title=title,  # Changed from 'title' to 'document_title'
-                )
 
         logger.info(
             f"Institution {institution.institution_name} created successfully with {len(departments_data)} departments"
@@ -449,12 +438,16 @@ class InstitutionTaxRuleSerializer(serializers.ModelSerializer):
 
         if not tax_rule_percentage and not tax_rule_fixed_amount:
             raise serializers.ValidationError(
-                {"error": "Either tax_rule_percentage or tax_rule_fixed_amount must be provided."}
+                {
+                    "error": "Either tax_rule_percentage or tax_rule_fixed_amount must be provided."
+                }
             )
 
         if tax_rule_percentage and tax_rule_fixed_amount:
             raise serializers.ValidationError(
-                {"error": "Only one of tax_rule_percentage or tax_rule_fixed_amount can be provided."}
+                {
+                    "error": "Only one of tax_rule_percentage or tax_rule_fixed_amount can be provided."
+                }
             )
 
         return attrs

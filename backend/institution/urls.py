@@ -25,7 +25,9 @@ from .views import (
     InstitutionTaxDetailView,
     InstitutionTaxRuleDetailView,
     InstitutionTaxRuleListAPIView,
-    DashboardView
+    DashboardView,
+    InstitutionKYCDocumentListCreateView,
+    InstitutionKYCDocumentDetailView,
 )
 
 urlpatterns = [
@@ -34,6 +36,16 @@ urlpatterns = [
         "<int:institution_id>/",
         InstitutionDetailAPIView.as_view(),
         name="institution-detail",
+    ),
+    path(
+        "kyc_docs",
+        InstitutionKYCDocumentListCreateView.as_view(),
+        name="kyc-docs",
+    ),
+    path(
+        "kyc_doc/<int:document_id>/",
+        InstitutionKYCDocumentDetailView.as_view(),
+        name="kyc-doc-detail",
     ),
     path("bank-type/", InstitutionBankTypeListAPIView.as_view(), name="bank-type-list"),
     path(
@@ -124,5 +136,9 @@ urlpatterns = [
     ),
     path("api/activate/", SystemActivationView.as_view(), name="system_activation"),
     path("default-data/", DefaultDataAPIView.as_view(), name="default-data"),
-    path("<int:institution_id>/dashboard-analytics/", DashboardView.as_view(), name="dash-analytics")
+    path(
+        "<int:institution_id>/dashboard-analytics/",
+        DashboardView.as_view(),
+        name="dash-analytics",
+    ),
 ]

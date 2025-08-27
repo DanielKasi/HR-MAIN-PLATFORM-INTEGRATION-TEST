@@ -25,6 +25,7 @@ from .models import (
     InstitutionWorkingDays,
     InstitutionTax,
     InstitutionTaxRule,
+    InstitutionKYCDocument,
 )
 from users.serializers import ProfileSerializer
 from .serializers import (
@@ -40,6 +41,7 @@ from .serializers import (
     InstitutionWorkingDaysSerializer,
     InstitutionTaxSerializer,
     InstitutionTaxRuleSerializer,
+    InstitutionKYCDocumentSerializer,
 )
 from django.shortcuts import get_object_or_404
 from .utils import generate_compliant_password
@@ -74,7 +76,6 @@ class DefaultDataAPIView(APIView):
         tags=["Institution Management"],
     )
     def get(self, request):
-        # Add unique IDs to default data
         modified_data = [
             {
                 "id": str(uuid.uuid4()),
@@ -94,6 +95,84 @@ class DefaultDataAPIView(APIView):
             for dept in default_data
         ]
         return Response(modified_data, status=status.HTTP_200_OK)
+
+
+class InstitutionKYCDocumentListCreateView(APIView):
+    @extend_schema(
+        request=InstitutionKYCDocumentSerializer,
+        responses=InstitutionKYCDocumentSerializer,
+        description="Create a new KYC document for an institution",
+        summary="Create KYC Document",
+        tags=["KYC Documents Management"],
+    )
+    def post(self, request):
+        serializer = InstitutionKYCDocumentSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            document = serializer.save()
+            return Response(
+                InstitutionKYCDocumentSerializer(document).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        responses={200: InstitutionKYCDocumentSerializer},
+        description="Retrieve all KYC documents for an institution",
+        summary="Get KYC Documents",
+        tags=["KYC Documents Management"],
+    )
+    def get(self, request):
+        user = request.user.profile if request.user.is_authenticated else None
+
+        institution = user.institution
+
+        kyc_documents = InstitutionKYCDocument.objects.filter(institution=institution)
+
+        paginator = CustomPageNumberPagination()
+        paginator_qs = paginator.paginate_queryset(kyc_documents, request)
+        serializer = InstitutionKYCDocumentSerializer(paginator_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
+class InstitutionKYCDocumentDetailView(APIView):
+    @extend_schema(
+        responses={200: InstitutionKYCDocumentSerializer},
+        tags=["KYC Documents Management"],
+        summary="Get KYC Document Detail",
+    )
+    def get(self, request, document_id):
+        document = get_object_or_404(InstitutionKYCDocument, id=document_id)
+        serializer = InstitutionKYCDocumentSerializer(document)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        request=InstitutionKYCDocumentSerializer,
+        responses={200: InstitutionKYCDocumentSerializer},
+        tags=["KYC Documents Management"],
+        summary="Update KYC Document",
+    )
+    def patch(self, request, document_id):
+        document = get_object_or_404(InstitutionKYCDocument, id=document_id)
+        serializer = InstitutionKYCDocumentSerializer(
+            document, data=request.data, partial=True, context={"request": request}
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        request=InstitutionKYCDocumentSerializer,
+        responses={200: InstitutionKYCDocumentSerializer},
+        tags=["KYC Documents Management"],
+        summary="Delete KYC Document",
+    )
+    def delete(self, request, document_id):
+        document = get_object_or_404(InstitutionKYCDocument, id=document_id)
+        document.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class InstitutionListAPIView(APIView):
@@ -1699,7 +1778,6 @@ class DashboardView(APIView):
             female=Count("id", filter=Q(gender="female")),
             other=Count("id", filter=Q(gender="other")),
         )
-
 
         payroll_by_dept = (
             Payslip.objects.filter(

@@ -262,30 +262,30 @@ def send_plain_email(receivers, subject, body, fail_silently=False):
 
 
 def send_otp_to_user(user, otp):
-        subject = "Verify Your Account"
+    subject = "Verify Your Account"
 
-        context = {
-            "user": user,
-            "otp_code": otp,
-            "year": datetime.datetime.now().year,
-            "personalized_greeting": get_personalized_greeting(user),
-            "salutation": get_gender_salutation(user),
-        }
+    context = {
+        "user": user,
+        "otp_code": otp,
+        "year": datetime.datetime.now().year,
+        "personalized_greeting": get_personalized_greeting(user),
+        "salutation": get_gender_salutation(user),
+    }
 
-        # Render HTML template
-        html_message = render_to_string(
-            "users/emails/signup_otp_verification.html", context
-        )
-        plain_message = strip_tags(html_message)
+    # Render HTML template
+    html_message = render_to_string(
+        "users/emails/signup_otp_verification.html", context
+    )
+    plain_message = strip_tags(html_message)
 
-        send_mail(
-            subject,
-            plain_message,
-            settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=html_message,
-        )
-        return True
+    send_mail(
+        subject,
+        plain_message,
+        settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        html_message=html_message,
+    )
+    return True
 
 
 def build_password_link(request, token: str) -> str:
@@ -313,28 +313,28 @@ def create_and_institution_token(user, purpose="registration", expiry_minutes=15
 
 
 def send_password_link_to_user(user, link):
-        subject = "Set Your Password"
-        context = {
-            "link": link,
-            "user": user,
-            "year": datetime.datetime.now().year,
-            "personalized_greeting": get_personalized_greeting(user),
-            "salutation": get_gender_salutation(user),
-        }
-        html_message = render_to_string(
-            "institutions/emails/signup_link_email.html", context
-        )
-        plain_message = strip_tags(html_message)
+    subject = "Set Your Password"
+    context = {
+        "link": link,
+        "user": user,
+        "year": datetime.datetime.now().year,
+        "personalized_greeting": get_personalized_greeting(user),
+        "salutation": get_gender_salutation(user),
+    }
+    html_message = render_to_string(
+        "institutions/emails/signup_link_email.html", context
+    )
+    plain_message = strip_tags(html_message)
 
-        send_mail(
-            subject,
-            plain_message,
-            settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=html_message,
-        )
-        return True
-        print("\n\n Password code sent to ", user)
+    send_mail(
+        subject,
+        plain_message,
+        settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        html_message=html_message,
+    )
+    return True
+    print("\n\n Password code sent to ", user)
 
 
 def send_password_reset_link_to_user(user, link):
