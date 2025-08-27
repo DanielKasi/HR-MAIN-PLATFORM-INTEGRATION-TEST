@@ -4,10 +4,10 @@ import { format } from "date-fns";
 
 import apiRequest from "./apiRequest";
 
-import { IMarketPlaceOrder, IPaginatedResponse, IPermission, IUser, Permission, Role } from "@/types";
+import { IMarketPlaceOrder, IPaginatedResponse, IPermission, Permission, Role } from "@/types";
 import { store } from "@/store";
 import { toast } from "sonner";
-import { AttendanceResponse, ICountry } from "@/types/types.utils";
+import { ICountry } from "@/types/types.utils";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -306,4 +306,27 @@ export const getCurrentUserLocation = async (callback: (position:GeolocationPosi
   navigator.geolocation.getCurrentPosition(callback);
 
 }
+
+export function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+
+  if (!domain) {
+    throw new Error("Invalid email format");
+  }
+
+  // keep first 3 characters (or fewer if local part is short)
+  const visible = local.slice(0, 3);
+  const hiddenLength = Math.max(0, local.length - visible.length);
+  const hidden = "*".repeat(hiddenLength);
+
+  return `${visible}${hidden}@${domain}`;
+}
+
+export function forceUrlToHttps(url:string) {
+  const  FORCE_HTTPS = process.env.NEXT_PUBLIC_FORCE_HTTPS ? process.env.NEXT_PUBLIC_FORCE_HTTPS === "true" : true;
+  if(!FORCE_HTTPS){ return url}
+  return url.replace(/^http:\/\//i, "https://");
+}
+
+
 

@@ -25,6 +25,7 @@ import {selectUser, selectAuthError, selectUserLoading} from "@/store/auth/selec
 import {clearAuthError, loginStart} from "@/store/auth/actions";
 import FixedLoader from "@/components/fixed-loader";
 import { showErrorToast } from "@/lib/utils";
+import {Icon} from "@iconify/react";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -142,18 +143,15 @@ export default function LoginPage() {
     setLoadingState((prev) => ({...prev, OTP: false}));
   };
 
-  // const showErrorToast = (message:string) =>{
-  //   toast.error(message)
-  // }
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-muted/40">
       <Card className="w-full max-w-md shadow-none border-none md:shadow-sm md:border px-4">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-2">
-            <ShoppingCart className="h-10 w-10 text-primary" />
+            <Icon icon="hugeicons:user-group-02" className="!w-10 !h-10 text-primary"/>
           </div>
-          <CardTitle className="text-2xl text-center">PERACOSOFT</CardTitle>
+          <CardTitle className="text-2xl text-center">SIGN IN</CardTitle>
           <CardDescription className="text-center">
             Enter your credentials to access your account
           </CardDescription>
@@ -194,12 +192,14 @@ export default function LoginPage() {
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <a
-                  className="text-sm text-primary underline-offset-4 hover:underline"
+                <Button variant={"link"} type="button">
+                <Link
+                  className="text-sm "
                   href="/forgot-password"
                 >
                   Forgot password?
-                </a>
+                </Link>
+                </Button>
               </div>
               <div className="relative">
                 <Input

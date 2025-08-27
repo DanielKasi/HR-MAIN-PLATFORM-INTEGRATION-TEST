@@ -30,6 +30,7 @@ import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { getPaginatedEmployees, TerminationInitiationsAPI } from "@/lib/utils"
 import { IEmployee } from "@/types/types.utils"
+import EmployeeSearchableSelect from "@/components/ui/employee-searchable-select"
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ["application/pdf", "image/png", "image/jpeg"];
@@ -124,7 +125,7 @@ export default function CreateTerminationInitiationPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Employee</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    {/* <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select an employee" />
@@ -137,7 +138,27 @@ export default function CreateTerminationInitiationPage() {
                           </SelectItem>
                         ))}
                       </SelectContent>
-                    </Select>
+                    </Select> */}
+                    {/* <EmployeeSearchableSelect
+                    value={[field.value]}
+                    onValueChange={field.onChange}
+                    /> */}
+                                    <EmployeeSearchableSelect
+                                      value={[field.value]}
+                                      // onValueChange={field.onChange}
+                                      onValueChange={(values) => {
+                                        const numberValues = values.map((v) => Number(v))
+                                        const uniqueValues = [...new Set(numberValues)];
+                                        console.log("\n\n Values changed as : ", values)
+                                        form.setValue("employee_id", uniqueValues[0].toString())
+                                      }}
+                    
+                                      disabled={loading}
+                                      placeholder="Select an employee"
+                                      showEmployeeId={false}
+                                      showDepartment={false}
+                                      multiple={false}
+                                    />
                     <FormMessage />
                   </FormItem>
                 )}

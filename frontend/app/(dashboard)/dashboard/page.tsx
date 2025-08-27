@@ -91,7 +91,7 @@ const capitalizeFirstLetter = (str: string) => {
           <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-gray-900">{greeting}, {currentUser?.gender === USER_GENDER.MALE
                     ? "Mr"
                     : currentUser?.gender === USER_GENDER.FEMALE
-                      ? "Mrs"
+                      ? "Mme"
                       : ""}.{" "}
                  {capitalizeFirstLetter(currentUser?.fullname || "")}</h1>
           <div className="flex items-center gap-3">

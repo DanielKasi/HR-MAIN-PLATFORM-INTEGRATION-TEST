@@ -149,7 +149,7 @@ const WelcomeCard = () => {
         {userData?.gender === USER_GENDER.MALE
           ? "Mr"
           : userData?.gender === USER_GENDER.FEMALE
-            ? "Mrs"
+            ? "Mme"
             : ""}.{" "}
         {fullName}
       </h2>
