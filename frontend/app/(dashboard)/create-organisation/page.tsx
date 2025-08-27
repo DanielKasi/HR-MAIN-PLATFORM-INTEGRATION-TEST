@@ -38,7 +38,7 @@ import {
   setCurrentUser,
 } from "@/store/auth/actions";
 import { toast } from "sonner";
-import type { LoginResponse } from "@/utils/authUtils";
+import { AUTH_API, type LoginResponse } from "@/utils/authUtils";
 import axios from "axios";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,7 +46,7 @@ import { Progress } from "@radix-ui/react-progress";
 import PhoneNumberInput from "@/components/phone-number-input";
 import type { ICountry } from "@/types/types.utils";
 import type { IDepartment } from "@/types/types.utils";
-import { getDefaultData } from "@/lib/utils";
+import { getDefaultData, institutionAPI, showErrorToast } from "@/lib/utils";
 import DepartmentEditorDialog from "@/components/common/dialogs/setup-department-edit-dialog";
 import JobEditorDialog from "@/components/common/dialogs/setup-job-edit-dialog";
 import { DeleteConfirmationDialog } from "@/components/common/dialogs/delete-confirmation-dialog";
@@ -117,7 +117,7 @@ export default function CreateOrganisationWizard() {
   const refreshToken = useSelector(selectRefreshToken);
   const dispatch = useDispatch();
 
-  const [formData, setFormData] = useState<OrganisationFormData>({
+  const [organizationFormData, setOrganizationFormData] = useState<OrganisationFormData>({
     institutionName: "",
     institutionEmail: "",
     firstPhoneNumber: "",
@@ -149,7 +149,7 @@ export default function CreateOrganisationWizard() {
         const user = userData;
         setUserId(user.id);
         if (user.email) {
-          setFormData((prev) => ({ ...prev, institutionEmail: user.email }));
+          setOrganizationFormData((prev) => ({ ...prev, institutionEmail: user.email }));
         }
       } catch (error) {
         toast.error("Error retrieving user information. Please log out and log in again.");
@@ -172,7 +172,7 @@ export default function CreateOrganisationWizard() {
     const fetchDefaultDepartments = async () => {
       try {
         const departments = await getDefaultData();
-        if (departments && formData.departments.length === 0) {
+        if (departments && organizationFormData.departments.length === 0) {
           const mappedDepartments: IDepartment[] = departments.map((dept) => ({
             id: 0,
             name: dept.name,
@@ -186,7 +186,7 @@ export default function CreateOrganisationWizard() {
               department_id: 0,
             })),
           }));
-          setFormData((prev) => ({ ...prev, departments: mappedDepartments }));
+          setOrganizationFormData((prev) => ({ ...prev, departments: mappedDepartments }));
         }
       } catch (error) {
         toast.error("Failed to fetch default departments.");
@@ -195,10 +195,10 @@ export default function CreateOrganisationWizard() {
     if (currentStep === 4) {
       fetchDefaultDepartments();
     }
-  }, [currentStep, formData.departments.length]);
+  }, [currentStep, organizationFormData.departments.length]);
 
   const updateFormData = (field: keyof OrganisationFormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setOrganizationFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const addDocument = () => {
@@ -208,21 +208,21 @@ export default function CreateOrganisationWizard() {
       file: null,
       fileName: "",
     };
-    setFormData((prev) => ({
+    setOrganizationFormData((prev) => ({
       ...prev,
       documents: [...prev.documents, newDoc],
     }));
   };
 
   const updateDocument = (id: string, field: keyof DocumentFile, value: any) => {
-    setFormData((prev) => ({
+    setOrganizationFormData((prev) => ({
       ...prev,
       documents: prev.documents.map((doc) => (doc.id === id ? { ...doc, [field]: value } : doc)),
     }));
   };
 
   const removeDocument = (id: string) => {
-    setFormData((prev) => ({
+    setOrganizationFormData((prev) => ({
       ...prev,
       documents: prev.documents.filter((doc) => doc.id !== id),
     }));
@@ -234,14 +234,14 @@ export default function CreateOrganisationWizard() {
   };
 
   const removeDepartment = (deptName: string) => {
-    setFormData((prev) => ({
+    setOrganizationFormData((prev) => ({
       ...prev,
       departments: prev.departments.filter((dept) => dept.name !== deptName),
     }));
   };
 
   const removeJobPosition = (deptName: string, jobName: string) => {
-    setFormData((prev) => ({
+    setOrganizationFormData((prev) => ({
       ...prev,
       departments: prev.departments.map((dept) =>
         dept.name === deptName
@@ -261,7 +261,7 @@ export default function CreateOrganisationWizard() {
   };
 
   const updateDepartmentField = (index: number, field: keyof any, value: any) => {
-    setFormData((prev) => {
+    setOrganizationFormData((prev) => {
       const departments = [...prev.departments];
       departments[index] = { ...departments[index], [field]: value };
       return { ...prev, departments };
@@ -275,7 +275,7 @@ export default function CreateOrganisationWizard() {
   };
 
   const updateJobField = (deptIndex: number, jobIndex: number, field: keyof any, value: any) => {
-    setFormData((prev) => {
+    setOrganizationFormData((prev) => {
       const departments = [...prev.departments];
       const dept = { ...departments[deptIndex] };
       const jobs = [...(dept.job_positions ?? [])];
@@ -288,7 +288,7 @@ export default function CreateOrganisationWizard() {
 
   // Dialog save handlers
   const handleSaveDepartment = (dept: { id?: number; name: string; description?: string | null }) => {
-    setFormData((prev) => {
+    setOrganizationFormData((prev) => {
       const departments = [...prev.departments];
       if (editingDepartmentIndex !== null && editingDepartmentIndex >= 0 && editingDepartmentIndex < departments.length) {
         departments[editingDepartmentIndex] = { ...departments[editingDepartmentIndex], name: dept.name, description: dept.description } as any;
@@ -302,7 +302,7 @@ export default function CreateOrganisationWizard() {
   };
 
   const handleSaveJob = (job: { id?: number; name: string; description?: string | null }) => {
-    setFormData((prev) => {
+    setOrganizationFormData((prev) => {
       const departments = [...prev.departments];
       const deptIndex = editingJob ? editingJob.deptIndex : activeDeptForJob ?? departments.length - 1;
       if (deptIndex < 0 || deptIndex >= departments.length) return prev;
@@ -326,10 +326,10 @@ export default function CreateOrganisationWizard() {
     if (!deleteTarget) return;
     const { type, deptIndex, jobIndex } = deleteTarget;
     if (type === "dept") {
-      const name = formData.departments[deptIndex]?.name;
+      const name = organizationFormData.departments[deptIndex]?.name;
       if (name) removeDepartment(name);
     } else {
-      const dept = formData.departments[deptIndex];
+      const dept = organizationFormData.departments[deptIndex];
       const job = dept?.job_positions?.[jobIndex ?? 0];
       if (dept && job) removeJobPosition(dept.name, job.name);
     }
@@ -342,20 +342,20 @@ export default function CreateOrganisationWizard() {
     switch (step) {
       case 1:
         return !!(
-          formData.institutionName &&
-          formData.institutionEmail &&
+          organizationFormData.institutionName &&
+          organizationFormData.institutionEmail &&
           firstPhone.isValid &&
           firstPhone.phoneNumber
         );
       case 2:
-        return !!(formData.location && formData.latitude && formData.longitude);
+        return !!(organizationFormData.location && organizationFormData.latitude && organizationFormData.longitude);
       case 3:
         return (
-          formData.documents.length === 0 ||
-          formData.documents.every((doc) => doc.title && doc.file)
+          organizationFormData.documents.length === 0 ||
+          organizationFormData.documents.every((doc) => doc.title && doc.file)
         );
       case 4:
-        return formData.departments.length > 0;
+        return organizationFormData.departments.length > 0;
       default:
         return false;
     }
@@ -383,8 +383,8 @@ export default function CreateOrganisationWizard() {
     if (loginResponse.institution_attached.length) {
       const defaultSelectedInstitution = loginResponse.institution_attached.find(
         (institution) =>
-          institution.institution_name === formData.institutionName &&
-          institution.first_phone_number === formData.firstPhoneNumber,
+          institution.institution_name === organizationFormData.institutionName &&
+          institution.first_phone_number === organizationFormData.firstPhoneNumber,
       );
       dispatch(setAttachedInstitutions(loginResponse.institution_attached));
       dispatch(
@@ -419,20 +419,20 @@ export default function CreateOrganisationWizard() {
     try {
       const formdata = new FormData();
 
-      formdata.append("institution_name", formData.institutionName);
-      formdata.append("institution_email", formData.institutionEmail);
+      formdata.append("institution_name", organizationFormData.institutionName);
+      formdata.append("institution_email", organizationFormData.institutionEmail);
       formdata.append("first_phone_number", `${firstPhone.countryCode}${firstPhone.phoneNumber}`);
       if (secondPhone.phoneNumber) {
         formdata.append("second_phone_number", `${secondPhone.countryCode}${secondPhone.phoneNumber}`);
       }
-      if (formData.description && formData.description.trim()) {
-        formdata.append("description", formData.description);
+      if (organizationFormData.description && organizationFormData.description.trim()) {
+        formdata.append("description", organizationFormData.description);
       }
       formdata.append("institution_owner_id", userId.toString());
-      formdata.append("location", formData.location);
-      formdata.append("latitude", formData.latitude.toString());
-      formdata.append("longitude", formData.longitude.toString());
-      const backendDepartments = formData.departments.map((dept) => ({
+      formdata.append("location", organizationFormData.location);
+      formdata.append("latitude", organizationFormData.latitude.toString());
+      formdata.append("longitude", organizationFormData.longitude.toString());
+      const backendDepartments = organizationFormData.departments.map((dept) => ({
         name: dept.name,
         description: dept.description || "",
         job_positions: (dept.job_positions ?? []).map((job) => ({
@@ -443,7 +443,7 @@ export default function CreateOrganisationWizard() {
 
       formdata.append("departments", JSON.stringify(backendDepartments));
 
-      const validDocuments = formData.documents.filter(
+      const validDocuments = organizationFormData.documents.filter(
         (doc) => doc.file && doc.title && doc.title.trim(),
       );
       validDocuments.forEach((doc) => {
@@ -453,38 +453,27 @@ export default function CreateOrganisationWizard() {
         }
       });
 
-      const response = await apiRequest.post("institution/", formdata);
+      const response  = await institutionAPI.createInstitution({data:formdata});
 
-      if (response.status === 200 || response.status === 201) {
+      if (response) {
         try {
-          const fetchedUserResponse = await axios.post(
-            `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/user/token/refresh/`,
-            { refresh: refreshToken },
-            {
-              headers: {
-                "Content-Type": "application/json",
-              },
-            },
-          );
-          const responseData = fetchedUserResponse.data as LoginResponse;
-          handleUserRefresh(responseData);
+          const fetchedUserResponse = await AUTH_API.refreshTokens({refreshToken});
+          handleUserRefresh(fetchedUserResponse);
         } catch (refreshError) {
-          toast.error(
-            "Organisation created, but failed to refresh user data. Please log out and log in again.",
-          );
           dispatch(logoutStart());
+          toast.error(
+            "Organisation created, but failed to refresh user data. Please log in again.",
+          ); 
         }
       }
+
+      toast.success("Organisation created successfully !")
     } catch (error: any) {
-      toast.error("Failed to create organisation. Please try again.");
+      if (error) {
+        showErrorToast({error, defaultMessage:"Failed to create organisation !"})
 
-      if (error.response) {
-        toast.error(
-          `Server error: ${error.response.status} - ${error.response.data?.detail || "Unknown error"}`,
-        );
-
-        if (error.response.data?.detail && typeof error.response.data.detail === "object") {
-          const errorMessages = Object.entries(error.response.data.detail)
+        if (error?.detail && typeof error.detail === "object") {
+          const errorMessages = Object.entries(error.detail)
             .map(([field, messages]) => {
               if (typeof messages === "object" && messages !== null) {
                 return Object.entries(messages as Record<string, any>)
@@ -500,22 +489,16 @@ export default function CreateOrganisationWizard() {
             })
             .join("\n");
           setErrorMessage(`Validation errors:\n${errorMessages}`);
-        } else if (error.response.data?.detail) {
-          setErrorMessage(error.response.data.detail);
-        } else if (error.response.data?.message) {
-          setErrorMessage(error.response.data.message);
+        } else if (error?.detail) {
+          setErrorMessage(error.detail);
+        } else if (error?.message) {
+          setErrorMessage(error.message);
         } else {
           setErrorMessage(
-            `Server error (${error.response.status}): ${JSON.stringify(error.response.data)}`,
+            `Error ${error?.status || "" },  Something went wrong !`,
           );
         }
-      } else if (error.request) {
-        toast.error(
-          "No response from server. Please check your internet connection and try again.",
-        );
-      } else {
-        toast.error("Request setup error. Please try again.");
-      }
+      } 
     } finally {
       setIsSubmitting(false);
     }
@@ -538,7 +521,7 @@ export default function CreateOrganisationWizard() {
                   id="institutionName"
                   type="text"
                   placeholder="Eco Organisation"
-                  value={formData.institutionName}
+                  value={organizationFormData.institutionName}
                   onChange={(e) => updateFormData("institutionName", e.target.value)}
                   className="pl-10"
                   required
@@ -558,7 +541,7 @@ export default function CreateOrganisationWizard() {
                   id="institutionEmail"
                   type="email"
                   placeholder="contact@ecoorganisation.com"
-                  value={formData.institutionEmail}
+                  value={organizationFormData.institutionEmail}
                   onChange={(e) => updateFormData("institutionEmail", e.target.value)}
                   className="pl-10"
                   required
@@ -589,7 +572,7 @@ export default function CreateOrganisationWizard() {
               <Textarea
                 id="description"
                 placeholder="Tell us about your company..."
-                value={formData.description}
+                value={organizationFormData.description}
                 onChange={(e) => updateFormData("description", e.target.value)}
                 rows={3}
               />
@@ -603,7 +586,7 @@ export default function CreateOrganisationWizard() {
             <div className="grid gap-2">
               <Label className="text-sm font-medium">Organisation Location *</Label>
               <LocationAutocomplete
-                value={formData.location}
+                value={organizationFormData.location}
                 onChange={(value) => updateFormData("location", value)}
                 onCoordinatesChange={(lat, lon) => {
                   updateFormData("latitude", lat);
@@ -612,9 +595,9 @@ export default function CreateOrganisationWizard() {
                 placeholder="Search for your organisation location..."
                 showCurrentLocationButton={true}
               />
-              {formData.latitude && formData.longitude && (
+              {organizationFormData.latitude && organizationFormData.longitude && (
                 <div className="text-xs text-muted-foreground mt-1">
-                  Coordinates: {formData.latitude}, {formData.longitude}
+                  Coordinates: {organizationFormData.latitude}, {organizationFormData.longitude}
                 </div>
               )}
             </div>
@@ -920,14 +903,14 @@ export default function CreateOrganisationWizard() {
       {/* Dialogs */}
       <DepartmentEditorDialog
         open={openDepartmentDialog}
-        initial={editingDepartmentIndex !== null ? formData.departments[editingDepartmentIndex] : null}
+        initial={editingDepartmentIndex !== null ? organizationFormData.departments[editingDepartmentIndex] : null}
         onClose={() => { setOpenDepartmentDialog(false); setEditingDepartmentIndex(null); }}
         onSave={handleSaveDepartment}
       />
       <JobEditorDialog
         open={openJobDialog}
-        departmentName={activeDeptForJob !== null ? formData.departments[activeDeptForJob].name : ""}
-        initial={editingJob ? formData.departments[editingJob.deptIndex]?.job_positions?.[editingJob.jobIndex] : null}
+        departmentName={activeDeptForJob !== null ? organizationFormData.departments[activeDeptForJob].name : ""}
+        initial={editingJob ? organizationFormData.departments[editingJob.deptIndex]?.job_positions?.[editingJob.jobIndex] : null}
         onClose={() => { setOpenJobDialog(false); setEditingJob(null); setActiveDeptForJob(null); }}
         onSave={handleSaveJob}
       />

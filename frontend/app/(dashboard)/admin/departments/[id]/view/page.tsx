@@ -825,7 +825,7 @@ export default function DepartmentDetailView() {
                                   </DropdownMenuItem>
                                   <DropdownMenuItem>
                                     <Calendar className="h-4 w-4 mr-2" />
-                                    Job Advertisements
+                                    Job Openings
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem>

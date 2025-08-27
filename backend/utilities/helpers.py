@@ -262,7 +262,6 @@ def send_plain_email(receivers, subject, body, fail_silently=False):
 
 
 def send_otp_to_user(user, otp):
-    try:
         subject = "Verify Your Account"
 
         context = {
@@ -287,8 +286,6 @@ def send_otp_to_user(user, otp):
             html_message=html_message,
         )
         return True
-    except Exception as e:
-        return False
 
 
 def build_password_link(request, token: str) -> str:
@@ -316,7 +313,6 @@ def create_and_institution_token(user, purpose="registration", expiry_minutes=15
 
 
 def send_password_link_to_user(user, link):
-    try:
         subject = "Set Your Password"
         context = {
             "link": link,
@@ -338,8 +334,7 @@ def send_password_link_to_user(user, link):
             html_message=html_message,
         )
         return True
-    except Exception as e:
-        return False
+        print("\n\n Password code sent to ", user)
 
 
 def send_password_reset_link_to_user(user, link):
