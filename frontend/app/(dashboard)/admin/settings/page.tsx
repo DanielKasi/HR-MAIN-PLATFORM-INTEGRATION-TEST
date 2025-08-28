@@ -19,6 +19,7 @@ import { institutionAPI, showErrorToast } from "@/lib/utils"
 import { useDispatch } from "react-redux"
 import { setAttachedInstitutions, setSelectedInstitution } from "@/store/auth/actions"
 import { Upload, FileText, X, Check } from "lucide-react"
+import { DocumentsList } from "@/components/documents-list"
 
 interface DocumentFile {
     id: string;
@@ -655,6 +656,11 @@ export default function SettingsPage() {
                         </CardContent>
                     </Card>
                 </div>
+            </div>
+
+            {/* Documents List Section */}
+            <div className="mt-8">
+                <DocumentsList />
             </div>
 
             <ConfirmationDialog

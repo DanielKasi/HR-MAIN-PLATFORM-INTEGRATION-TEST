@@ -109,7 +109,7 @@ import {
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/types/types.utils";
 import { toast } from "sonner";
-import { IUserInstitution, IUserInstitutionFormData, Role } from "@/types";
+import { IUserInstitution, IUserInstitutionFormData, Role, IKYCDocument } from "@/types";
 import { forceUrlToHttps } from "./helpers";
 
 export function cn(...inputs: ClassValue[]) {
@@ -5078,6 +5078,16 @@ export const institutionAPI = {
     
     const response = await apiRequest.post('/institution/kyc_docs', formData);
     return response.data
+  },
+
+  getKYCDocuments: async (): Promise<IPaginatedResponse<IKYCDocument>> => {
+    const response = await apiRequest.get('/institution/kyc_docs/');
+    return response.data as IPaginatedResponse<IKYCDocument>;
+  },
+
+  getKYCDocumentsFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IKYCDocument>> => {
+    const response = await apiRequest.get(forceUrlToHttps(url));
+    return response.data as IPaginatedResponse<IKYCDocument>;
   }
 }
 
