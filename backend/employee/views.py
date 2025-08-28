@@ -571,9 +571,11 @@ class EmployeeCreateAPIView(APIView):
                                 print(f"Successfully created {len(created_instances)} {field} instances")
 
                 # Handle job positions separately, tied to departments
+                # Handle job positions separately, tied to departments
+                # Handle job positions separately, tied to departments
                 print("Handling job positions")
                 position_mappings = {}  # Key: (dep_lower or None, pos_lower): instance
-                
+
                 if 'position' in df.columns:
                     print("Processing job positions with departments")
                     
