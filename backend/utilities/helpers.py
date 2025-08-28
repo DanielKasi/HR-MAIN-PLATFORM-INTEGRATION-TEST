@@ -31,8 +31,6 @@ logger = logging.getLogger(__name__)
 
 from users.models import Role, RolePermission, Permission, UserRole
 
-from datetime import datetime, date
-
 
 def parse_date(value: str):
     if not value:
