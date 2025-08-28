@@ -107,10 +107,10 @@ import {
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
-import { IEmployee } from "@/types/types.utils";
-import { toast } from "sonner";
-import { IUserInstitution, IUserInstitutionFormData, Role } from "@/types";
-import { forceUrlToHttps } from "./helpers";
+import {IEmployee} from "@/types/types.utils";
+import {toast} from "sonner";
+import {IUserInstitution, IUserInstitutionFormData, Role, IKYCDocument} from "@/types";
+import {forceUrlToHttps} from "./helpers";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
