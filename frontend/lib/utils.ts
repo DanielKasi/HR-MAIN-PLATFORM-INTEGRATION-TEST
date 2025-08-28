@@ -5125,7 +5125,7 @@ export const institutionAPI = {
     }
   },
 
-  createWorkingDays: async (data: IWorkingDaysFormData) => {
+createWorkingDays: async (data: IWorkingDaysFormData) => {
     try {
       const response = await apiRequest.post("/institution/working-days/", data);
       return response.data as IInstitutionWorkingDays;

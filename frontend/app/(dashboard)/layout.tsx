@@ -9,7 +9,6 @@ import {
   Settings,
   User,
   LogOut,
-  ChevronLeft,
   Menu,
   X,
 } from "lucide-react";
@@ -61,7 +60,7 @@ import CreateOrganisationWizard from "./create-organisation/page";
 import {selectSideBarOpened} from "@/store/miscellaneous/selectors";
 import {closeSideBar, openSideBar} from "@/store/miscellaneous/actions";
 import Link from "next/link";
-import LogoutWarningPopup from "@/components/inactivity/logout-warning-popup";
+
 
 export function hexToHSL(hex: string) {
   hex = hex.replace("#", "");

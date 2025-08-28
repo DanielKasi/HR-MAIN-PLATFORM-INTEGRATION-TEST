@@ -1,10 +1,10 @@
 "use client"
 
-import { Card, CardContent } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
+
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { ISystemWorkingDay } from "@/types/types.utils"
+import { X } from "lucide-react"
 
 interface DaySelectionCardProps {
   day: ISystemWorkingDay
@@ -40,41 +40,60 @@ export function DaySelectionCard({ day, isSelected, onToggle, disabled = false }
     return colors[dayCode as keyof typeof colors] || "bg-gray-100 text-gray-700 border-gray-200"
   }
 
+  const handleCrossClick = (e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent triggering the main card click
+    if (!disabled && isSelected) {
+      onToggle(day.id) // This will unselect the day
+    }
+  }
+
   return (
-    <Card
+  <div
       className={cn(
-        "cursor-pointer transition-all duration-200 hover:shadow-md",
-        isSelected && "ring-2 ring-primary ring-offset-2 bg-primary/5",
+        "cursor-pointer transition-all duration-200 bg-white relative",
+        isSelected && "",
         disabled && "opacity-50 cursor-not-allowed",
       )}
       onClick={() => !disabled && onToggle(day.id)}
     >
-      <CardContent className="p-4">
-        <div className="flex items-center space-x-3">
-          <Checkbox checked={isSelected} disabled={disabled} className="pointer-events-none" />
-          <div className="flex-1">
-            <div className="flex items-center space-x-3">
+      {/* Cross symbol - only show when day is selected */}
+      {isSelected && (
+        <button
+          onClick={handleCrossClick}
+          className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center transition-colors duration-200"
+          title="Remove this day"
+        >
+          <X className="w-4 h-4 text-red-600" />
+        </button>
+      )}
+      
+      <div className="p-4">
+        <div className="flex flex-col items-center space-x-3">
+         
+          <div className="">
+            <div className="flex flex-col items-center ">
               <div
                 className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm",
+                  "w-16 h-16 rounded-full flex items-center justify-center font-bold text-lg mx-auto mb-2 border-2",
                   getDayColor(day.day_code),
                 )}
               >
                 {getDayIcon(day.day_code)}
               </div>
-              <div>
+              <div className="flex flex-col items-center">
                 <p className="font-semibold text-gray-900">{day.day_name}</p>
-                <div className="flex items-center space-x-2">
+                <div className="space-x-2">
                   <Badge variant="outline" className="text-xs">
                     {day.day_code}
                   </Badge>
-                  <span className="text-xs text-gray-500">Level {day.level}</span>
+                
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+  </div>
+
   )
 }
